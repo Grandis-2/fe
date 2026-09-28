@@ -15,6 +15,8 @@ import {
 import { Button, Input, Table } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
 
+import { DeliveryDateField } from '../DeliveryDateField'
+
 import * as styles from './AdminDispatchWindows.css'
 
 export type AdminDispatchWindowsProps = {
@@ -128,12 +130,14 @@ export function AdminDispatchWindows({
       key: 'seq',
       header: '순번',
       align: 'center',
+      width: '40%',
       render: (wave) => formatSeqRange(wave),
     },
     {
       key: 'date',
       header: '예상 배송일',
       align: 'center',
+      width: '40%',
       render: (wave) => formatDeliveryDate(wave.estimatedDeliveryDate),
     },
   ]
@@ -150,6 +154,8 @@ export function AdminDispatchWindows({
       key: 'seq',
       header: '순번',
       align: 'center',
+      // 순번과 예상 배송일이 같은 폭을 갖도록 나눈다.
+      width: '40%',
       render: (draft) => (
         <div className={styles.seqRow}>
           <Input
@@ -182,17 +188,12 @@ export function AdminDispatchWindows({
       key: 'date',
       header: '예상 배송일',
       align: 'center',
-      width: '220px',
+      width: '40%',
       render: (draft) => (
-        <Input
-          size="small"
-          label="예상 배송일"
-          type="date"
-          value={draft.estimatedDeliveryDate ?? ''}
-          onChange={(event) =>
-            patchDraft(draft.id, {
-              estimatedDeliveryDate: event.target.value || null,
-            })
+        <DeliveryDateField
+          value={draft.estimatedDeliveryDate}
+          onChange={(date) =>
+            patchDraft(draft.id, { estimatedDeliveryDate: date })
           }
         />
       ),
@@ -235,32 +236,35 @@ export function AdminDispatchWindows({
             차수 추가
           </button>
 
-          <div className={styles.undeterminedRow}>
-            <span className={styles.undeterminedLabel}>
-              배송일 미정 시작 순번
-            </span>
-            <div className={styles.undeterminedField}>
-              <Input
-                size="small"
-                label="시작 순번"
-                inputMode="numeric"
-                value={draftUndetermined}
-                onChange={(event) =>
-                  setDraftUndetermined(event.target.value.replace(/\D/g, ''))
-                }
-              />
+          {/* 미정 시작 순번과 마무리 버튼을 한 줄에 마주 보게 둔다. */}
+          <div className={styles.editFooter}>
+            <div className={styles.undeterminedRow}>
+              <span className={styles.undeterminedLabel}>
+                배송일 미정 시작 순번
+              </span>
+              <div className={styles.undeterminedField}>
+                <Input
+                  size="small"
+                  label="시작 순번"
+                  inputMode="numeric"
+                  value={draftUndetermined}
+                  onChange={(event) =>
+                    setDraftUndetermined(event.target.value.replace(/\D/g, ''))
+                  }
+                />
+              </div>
             </div>
-          </div>
 
-          <div className={styles.actions}>
-            <Button
-              variant="outline"
-              color="cancel"
-              onClick={() => onEditingChange(false)}
-            >
-              취소
-            </Button>
-            <Button onClick={save}>저장하기</Button>
+            <div className={styles.actions}>
+              <Button
+                variant="outline"
+                color="cancel"
+                onClick={() => onEditingChange(false)}
+              >
+                취소
+              </Button>
+              <Button onClick={save}>저장하기</Button>
+            </div>
           </div>
         </>
       ) : (
