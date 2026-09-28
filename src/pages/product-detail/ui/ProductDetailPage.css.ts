@@ -16,12 +16,6 @@ export const title = style([
   },
 ])
 
-export const productName = style([typography.title.lgSemibold])
-export const productOption = style([
-  typography.body.sub,
-  { color: color.text.tertiary },
-])
-
 export const layout = style({
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
@@ -48,95 +42,96 @@ export const optionColumn = style({
   paddingTop: spacing[16],
 })
 
-// 평소엔 뷰포트 위로 숨겨뒀다가, 이미지/옵션 패널(layout)이 화면에서 사라지면
-// isLayoutVisible이 false가 되면서 transform만 바뀌어 위에서 아래로 슬라이드된다.
-// ProductPageTab(tabBarWrapper)과는 분리 — 탭은 항상 떠 있어야 하고, 이 바만 나타났다 사라진다.
-export const orderBar = style({
-  position: 'fixed',
-  top: 0,
-  left: 0,
-  right: 0,
-  zIndex: 2,
-  background: `color-mix(in srgb, ${color.background.base} 80%, transparent)`,
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
-  transform: 'translateY(-100%)',
-  transition: `transform ${motion.duration.fast} ${motion.easing.default}`,
-})
-
-export const orderBarVisible = style({
-  transform: 'translateY(0)',
-})
-
-// top은 orderBar 노출 여부에 따라 인라인으로 바뀐다(0 또는 orderBar 높이) —
-// orderBar가 나타나면 그만큼 아래로 밀려서 겹치지 않는다.
+// 모바일: 하단 고정 주문바(widgets/product-purchase-bar)가 겹칠 일이 없어 top은 항상 0.
+// 데스크톱: top이 CSS 변수(--order-bar-offset)로 바뀐다(0 또는 주문바 높이) —
+// 주문바가 나타나면 그만큼 아래로 밀려서 겹치지 않는다. 변수는 JSX에서 인라인으로 채운다.
 export const tabBarWrapper = style({
   position: 'sticky',
   width: '100%',
   maxWidth: maxWidth.content,
+  top: 0,
   zIndex: 1,
-  transition: `top ${motion.duration.fast} ${motion.easing.default}`,
+  '@media': {
+    [breakpoint.desktop]: {
+      top: 'var(--order-bar-offset, 0px)',
+      transition: `top ${motion.duration.fast} ${motion.easing.default}`,
+    },
+  },
 })
 
-export const orderBarContent = style({
-  display: 'grid',
-  gridTemplateColumns: '1fr auto',
-  borderBottom: `1px solid ${color.primary.focus}`,
+// 모바일 하단 고정 바에 마지막 탭 패널이 가리지 않도록 그만큼 여백을 띄운다.
+export const orderBarSpacer = style({
+  '@media': {
+    [breakpoint.desktop]: {
+      display: 'none',
+    },
+  },
 })
 
-export const orderBarInfo = style({
+// 수량/가격, 순차배송 안내, 구매 버튼을 한 묶음으로 본다.
+export const purchaseSummary = style({
   display: 'flex',
-  alignItems: 'center',
-  gap: spacing[12],
+  flexDirection: 'column',
 })
 
-export const orderBarButtons = style({
-  display: 'flex',
-  gap: spacing[8],
-})
-
-export const orderBarIconButton = style({
-  width: '46px',
-})
-
-export const orderBarCheckoutButton = style({
-  padding: `0 ${spacing[24]}`,
-})
-
+// 모바일은 하단 고정바(widgets/product-purchase-bar)에 가격이 이미 표시되므로 패널에서는 숨긴다.
 export const quantityPriceRow = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
+  display: 'none',
   gap: spacing[8],
+  marginBottom: spacing[16],
+  '@media': {
+    [breakpoint.desktop]: {
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+  },
 })
 
-export const price = style([typography.title.lgSemibold])
-
+// 모바일은 하단 고정바(widgets/product-purchase-bar)의 버튼과 중복되므로 숨긴다.
 export const actions = style({
-  display: 'grid',
-  gridTemplateColumns: 'auto 1fr',
+  display: 'none',
   gap: spacing[8],
+  '@media': {
+    [breakpoint.desktop]: {
+      display: 'grid',
+      gridTemplateColumns: 'auto 1fr',
+    },
+  },
 })
 
 export const actionsSingle = style({
-  display: 'grid',
-  gridTemplateColumns: '1fr',
+  display: 'none',
   gap: spacing[8],
+  '@media': {
+    [breakpoint.desktop]: {
+      display: 'grid',
+      gridTemplateColumns: '1fr',
+    },
+  },
 })
 
+// 모바일은 하단 고정바(widgets/product-purchase-bar)에 같은 문구가 있으므로 패널에서는 숨긴다.
 export const shipmentNotice = style([
-  typography.body.sub,
+  typography.body.defaultMedium,
   {
-    color: color.text.tertiary,
+    display: 'none',
+    color: color.primary.base,
+    textAlign: 'center',
+    marginTop: spacing[16],
     marginBottom: spacing[8],
-    textAlign: 'right',
+    '@media': {
+      [breakpoint.desktop]: {
+        display: 'block',
+      },
+    },
   },
 ])
 
 export const imageFrame = style({
   position: 'relative',
   width: '100%',
-  aspectRatio: '8 / 5',
+  aspectRatio: '1 / 1',
   borderRadius: '16px',
   background: color.background.surface,
   overflow: 'hidden',
@@ -154,6 +149,13 @@ export const image = style({
   width: '100%',
   height: '100%',
   objectFit: 'cover',
+})
+
+export const reviewList = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[20],
+  padding: `${spacing[40]} 0`,
 })
 
 export const tabPanel = style({

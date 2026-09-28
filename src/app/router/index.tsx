@@ -2,7 +2,6 @@ import { createBrowserRouter } from 'react-router'
 
 import { AdminLayout } from '@/app/layouts/AdminLayout'
 import { MainLayout } from '@/app/layouts/MainLayout'
-import { MypageLayout } from '@/app/layouts/MypageLayout'
 import { RootLayout } from '@/app/layouts/RootLayout'
 import { KAKAO_CALLBACK_PATH } from '@/features/kakao-login'
 import { PAYMENT_CALLBACK_PATH } from '@/features/toss-payment'
@@ -21,6 +20,8 @@ import { PreorderPage } from '@/pages/preorder'
 import { PreorderDetailPage } from '@/pages/preorder-detail'
 import { ProductDetailPage } from '@/pages/product-detail'
 import { ResultPage } from '@/pages/result'
+import { ReviewsPage } from '@/pages/reviews'
+import { SearchPage } from '@/pages/search'
 import { SignupPage, SIGNUP_PATH } from '@/pages/signup'
 
 export const router = createBrowserRouter([
@@ -37,17 +38,14 @@ export const router = createBrowserRouter([
           { path: '/payment', element: <PaymentPage /> },
           { path: PAYMENT_CALLBACK_PATH, element: <PaymentCallbackPage /> },
           { path: '/result', element: <ResultPage /> },
+          { path: '/reviews', element: <ReviewsPage /> },
+          { path: '/search', element: <SearchPage /> },
           { path: SIGNUP_PATH, element: <SignupPage /> },
           {
             path: KAKAO_CALLBACK_PATH,
             element: <KakaoCallbackPage />,
           },
-          {
-            path: '/mypage',
-            element: <MypageLayout />,
-            children: [{ index: true, element: <Mypage /> }],
-          },
-          // 구매후기, 브랜드별 상품 목록(/products?brand=...) 페이지는 아직 미구현 — 만들면 여기 추가.
+          { path: '/mypage', element: <Mypage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

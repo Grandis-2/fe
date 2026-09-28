@@ -1,4 +1,5 @@
 import { Clock } from 'lucide-react'
+import { useNavigate } from 'react-router'
 
 import { ProductPaymentCard } from '@/entities/product'
 import { useCountdown } from '@/shared/lib/useCountdown'
@@ -39,6 +40,7 @@ const pad = (value: number) => String(value).padStart(2, '0')
 // 예약 건마다 마감이 달라 카운트다운도 건별로 돌아야 한다.
 // 훅은 반복문 안에서 못 쓰므로 한 건을 담당하는 컴포넌트로 분리한다.
 function PreorderCard({ item }: { item: PreorderItem }) {
+  const navigate = useNavigate()
   const { days, hours, minutes, seconds, isOver } = useCountdown(
     item.paymentDueAt,
   )
@@ -67,7 +69,12 @@ function PreorderCard({ item }: { item: PreorderItem }) {
             </span>
           )}
         </div>
-        <Button size="small" className={styles.headerAction} disabled={isOver}>
+        <Button
+          size="small"
+          className={styles.headerAction}
+          disabled={isOver}
+          onClick={() => navigate('/payment')}
+        >
           결제하기
         </Button>
       </div>

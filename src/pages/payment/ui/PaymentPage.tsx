@@ -22,7 +22,7 @@ const won = (value: number) => `${value.toLocaleString('ko-KR')}원`
 type PurchaseDraft = {
   productName: string
   colorLabel: string
-  storageLabel: string
+  optionLabel: string
   quantity: number
   unitPrice: number
 }
@@ -31,7 +31,7 @@ type PurchaseDraft = {
 const fallbackDraft: PurchaseDraft = {
   productName: '아이폰 18 Pro',
   colorLabel: '실버',
-  storageLabel: '512GB',
+  optionLabel: '512GB',
   quantity: 1,
   unitPrice: 2278100,
 }
@@ -227,7 +227,7 @@ export function PaymentPage() {
   const orderProduct = {
     name: draft.productName,
     modelNumber: 'A3714',
-    optionSummary: `${draft.colorLabel} · ${draft.storageLabel} · Apple care+`,
+    optionSummary: `${draft.colorLabel} · ${draft.optionLabel} · Apple care+`,
     quantityLabel: `${draft.quantity}개`,
     priceLabel: won(orderAmount),
   }

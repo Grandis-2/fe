@@ -29,32 +29,39 @@ export function Header({
   const openModal = useModalStore((state) => state.open)
   const { pathname } = useLocation()
   const isMainPage = pathname === '/'
-  const isProductDetailPage = pathname.startsWith('/products/')
-  const isMypage = pathname.startsWith('/mypage')
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
   const isAdminPage = pathname.startsWith('/admin')
-  const [scrolled, setScrolled] = useState(false)
+  // 메인페이지에서만 헤더가 sticky다(그 외엔 root의 기본 position: relative를 그대로
+  // 쓴다). 추후 다른 페이지도 sticky가 필요해지면 이 조건에 OR로 추가한다.
+  const isStickyPage = isMainPage
+  const [isOnDark, setIsOnDark] = useState(false)
 
-  // 메인의 배너~히어로(어두운 이미지 구간) 위에 떠 있는 동안만 배경을 없애 이미지가
-  // 헤더 뒤로 이어지게 한다. 그 구간을 지나 흰 콘텐츠가 올라오면 배경을 되살려
-  // 글자가 묻히지 않게 한다. 구간의 끝은 MainPage가 data 속성으로 알려준다.
+  // 헤더 세로 중앙선 아래 구간의 data-header-theme이 "dark"면 흰 글자로 바꾼다.
+  // 페이지는 어두운 구간에 이 속성만 달면 된다(MainPage의 배너·히어로 참고).
   useEffect(() => {
-    if (!isMainPage) return
-
-    const region = document.querySelector('[data-header-overlay-region]')
-    if (!region) return
-
-    // rootMargin으로 뷰포트 위쪽을 헤더 높이만큼 잘라내, 구간의 밑단이 헤더 아래를
-    // 지나가는 순간을 경계로 삼는다. scroll 이벤트마다 레이아웃을 읽지 않아도 된다.
-    const observer = new IntersectionObserver(
-      ([entry]) => setScrolled(!entry.isIntersecting),
-      { rootMargin: `-${styles.HEADER_HEIGHT}px 0px 0px 0px` },
+    const sections = document.querySelectorAll<HTMLElement>(
+      '[data-header-theme]',
     )
-    observer.observe(region)
-    return () => observer.disconnect()
-  }, [isMainPage])
-
-  const isOverlay = isMainPage && !scrolled
+    const probeY = styles.HEADER_HEIGHT / 2
+    const update = () => {
+      // 구간이 중첩되면 안쪽이 이긴다 — querySelectorAll은 문서 순서(바깥 먼저)라
+      // 마지막으로 걸린 게 가장 안쪽이다(어두운 히어로 안의 흰 카드 캐러셀처럼).
+      let theme: string | undefined
+      for (const section of sections) {
+        const { top, bottom } = section.getBoundingClientRect()
+        if (top <= probeY && bottom > probeY)
+          theme = section.dataset.headerTheme
+      }
+      setIsOnDark(theme === 'dark')
+    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [pathname])
 
   // 어드민과 회원 헤더 양쪽에 들어가므로 한 번만 만들어 둔다.
   const notificationButton = (
@@ -72,12 +79,9 @@ export function Header({
     <header
       className={[
         styles.root,
-        styles.surface[isOverlay ? 'transparent' : 'solid'],
         styles.border[isMainPage ? 'hidden' : 'visible'],
-        isMainPage
-          ? styles.overlay
-          : !isProductDetailPage && !isMypage && styles.sticky,
-        isOverlay && styles.onDark,
+        isStickyPage && styles.sticky,
+        isOnDark && styles.onDark,
         className,
       ]
         .filter(Boolean)
@@ -94,7 +98,7 @@ export function Header({
             {isAdminPage ? 'NOVA ADMIN' : 'NOVA'}
           </Link>
           {!isAdminPage && (
-            <CategoryNav tone={isOverlay ? 'onDark' : 'default'} />
+            <CategoryNav tone={isOnDark ? 'onDark' : 'default'} />
           )}
         </div>
         <div className={styles.actions}>

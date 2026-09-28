@@ -113,6 +113,8 @@ export type DispatchWindowVersion = {
 }
 
 export type ProductDetail = ProductSummary & {
+  // 사전예약 여부. 상세 화면은 이 값으로 수량 고정·사전예약 버튼을 결정한다.
+  saleMode: SaleMode
   categoryId: string | null
   categoryPath: string[]
   summary: string | null
@@ -129,4 +131,51 @@ export type ProductDetail = ProductSummary & {
 
 export type CategoryTreeResponse = {
   items: Category[]
+}
+
+// 메인페이지 카드 캐러셀 전용 — ProductDetail/ProductSummary는 목록 페이지·상세
+// 페이지가 필요로 하는 정보(카테고리, 평점, variants 등)까지 다 실어서 카드 하나
+// 그리는 데는 과하다. 카드가 실제로 쓰는 모양만 딱 맞춘 별도 DTO.
+export type ProductListQuery = 'best' | 'recommend'
+
+export type ProductCardColorDto = {
+  hex: string
+  label: string
+  imageUrls: string[]
+}
+
+export type ProductCardOptionDto = {
+  label: string
+  extraPrice: number
+}
+
+// 카드 목록 전용 판매 상태. ProductSummary의 saleStatus(BEFORE_OPEN/OPEN/CLOSED)와는
+// 별개로, 카드 API가 사전예약 여부만 이 값으로 내려준다.
+export type SaleMode = 'PREORDER' | 'IN_STOCK'
+
+export type ProductCardSummaryDto = {
+  productId: string
+  name: string
+  modelNumber: string
+  basePrice: number
+  saleMode: SaleMode
+  colors: ProductCardColorDto[]
+  options: ProductCardOptionDto[]
+}
+
+export type ProductCardListResponse = {
+  items: ProductCardSummaryDto[]
+}
+
+// 카테고리 검색 화면은 가격 정렬만 노출한다.
+export type ProductCardSort = Extract<ProductSort, 'PRICE_ASC' | 'PRICE_DESC'>
+
+export type ProductCardSearchParams = {
+  category?: string
+  subCategory?: string
+  sort?: ProductCardSort
+}
+
+export type ProductCardSearchResponse = ProductCardListResponse & {
+  total: number
 }
