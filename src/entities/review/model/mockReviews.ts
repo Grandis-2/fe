@@ -10,7 +10,6 @@ export type Review = Omit<ReviewCardProps, 'className'> & { id: string }
 export const mockReviews: Review[] = [
   {
     id: 'r1',
-    thumbnailSrc: macbook1,
     rating: 5,
     reviewText: '배송도 빠르고 색상이 사진이랑 똑같아서 만족합니다.',
     productName: '아이폰 18 Pro 256GB · 미드나이트',
@@ -27,7 +26,6 @@ export const mockReviews: Review[] = [
   },
   {
     id: 'r3',
-    thumbnailSrc: macbook2,
     rating: 5,
     reviewText: '좋아요',
     productName: '아이폰 18 Pro 256GB · 코즈믹 오렌지',
@@ -54,6 +52,7 @@ export const mockReviews: Review[] = [
   },
   {
     id: 'r6',
+    thumbnailSrc: macbook2,
     rating: 4,
     reviewText: '키보드 타건감이 좋아요. 색상도 예쁩니다.',
     productName: '맥북 네오 512GB · 블러시',
@@ -62,7 +61,6 @@ export const mockReviews: Review[] = [
   },
   {
     id: 'r7',
-    thumbnailSrc: macbook2,
     rating: 5,
     reviewText: '운동할 때 심박수 측정이 정확해서 만족하고 있어요.',
     productName: '갤럭시 워치 8 · 그라파이트',
