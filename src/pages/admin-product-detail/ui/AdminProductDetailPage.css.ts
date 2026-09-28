@@ -37,6 +37,14 @@ export const breadcrumbCurrent = style([
   { color: color.text.primary },
 ])
 
+// 탭과 '수정하기' 버튼이 한 줄에 마주 본다.
+export const tabRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[16],
+})
+
 export const titleRow = style({
   display: 'flex',
   alignItems: 'center',
@@ -46,20 +54,6 @@ export const titleRow = style({
 export const title = style([
   typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },
-])
-
-export const placeholder = style([
-  typography.body.sub,
-  {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: `${spacing[60]} ${spacing[20]}`,
-    borderRadius: '12px',
-    border: `1px solid ${color.border.subtle}`,
-    background: color.background.base,
-    color: color.text.tertiary,
-  },
 ])
 
 export const notFound = style([

@@ -19,8 +19,9 @@ import {
   type AdminProductStock,
   type AdminStockItemModel,
 } from '@/entities/admin-product'
-import { SegmentedTabs, Table, Tag } from '@/shared/ui'
+import { Button, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
+import { AdminDispatchWindows } from '@/widgets/admin-dispatch-windows'
 import { AdminProductForm } from '@/widgets/admin-product-form'
 
 import * as styles from './AdminProductDetailPage.css'
@@ -50,6 +51,8 @@ export function AdminProductDetailPage() {
   const [product, setProduct] = useState<AdminProductDetailModel>()
   const [stockItems, setStockItems] = useState<AdminStockItemModel[]>([])
   const [error, setError] = useState<string>()
+  // 배송 구간 편집 버튼이 탭과 같은 줄에 있어서 상태를 여기서 든다.
+  const [dispatchEditing, setDispatchEditing] = useState(false)
   useEffect(() => {
     let cancelled = false
 
@@ -169,7 +172,18 @@ export function AdminProductDetailPage() {
         </Tag>
       </div>
 
-      <SegmentedTabs items={tabs} value={tab} onChange={setTab} />
+      <div className={styles.tabRow}>
+        <SegmentedTabs items={tabs} value={tab} onChange={setTab} />
+
+        {/* 오픈 이후에는 배송 기준과 기존 배정을 바꾸지 않는다. */}
+        {tab === 'shipping' &&
+          !dispatchEditing &&
+          product.saleStatus !== 'OPEN' && (
+            <Button size="small" onClick={() => setDispatchEditing(true)}>
+              수정하기
+            </Button>
+          )}
+      </div>
 
       {error && <div className={styles.error}>{error}</div>}
 
@@ -194,10 +208,11 @@ export function AdminProductDetailPage() {
       )}
 
       {tab === 'shipping' && (
-        // 배송 구간 설정은 아직 범위가 정해지지 않아 안내만 둔다.
-        <div className={styles.placeholder}>
-          배송 구간 설정 화면은 준비 중입니다.
-        </div>
+        <AdminDispatchWindows
+          productId={product.productId}
+          editing={dispatchEditing}
+          onEditingChange={setDispatchEditing}
+        />
       )}
     </div>
   )
