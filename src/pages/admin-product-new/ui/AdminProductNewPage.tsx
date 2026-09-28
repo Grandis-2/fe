@@ -1,13 +1,13 @@
 import { useState } from 'react'
 
-import { ChevronRight } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
+import { useNavigate } from 'react-router'
 
 import {
   createAdminProduct,
   toUpsertRequest,
   type AdminProductFormValue,
 } from '@/entities/admin-product'
+import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
 import { AdminProductForm } from '@/widgets/admin-product-form'
 
 import * as styles from './AdminProductNewPage.css'
@@ -23,13 +23,12 @@ export function AdminProductNewPage() {
 
   return (
     <div className={styles.root}>
-      <nav className={styles.breadcrumb} aria-label="breadcrumb">
-        <Link className={styles.breadcrumbLink} to="/admin/products">
-          상품 관리
-        </Link>
-        <ChevronRight className={styles.breadcrumbIcon} aria-hidden="true" />
-        <span className={styles.breadcrumbCurrent}>새 상품 등록</span>
-      </nav>
+      <AdminBreadcrumb
+        items={[
+          { label: '상품 관리', to: '/admin/products' },
+          { label: '새 상품 등록' },
+        ]}
+      />
 
       <h1 className={styles.title}>새 상품 등록</h1>
 

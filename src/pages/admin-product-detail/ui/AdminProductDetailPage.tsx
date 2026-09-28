@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { ChevronRight } from 'lucide-react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
   getAdminProduct,
@@ -21,6 +20,7 @@ import {
 } from '@/entities/admin-product'
 import { Button, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
+import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
 import { AdminDispatchWindows } from '@/widgets/admin-dispatch-windows'
 import { AdminProductForm } from '@/widgets/admin-product-form'
 
@@ -142,9 +142,9 @@ export function AdminProductDetailPage() {
       <div className={styles.root}>
         <div className={styles.notFound}>
           {error ?? '불러오는 중입니다.'}
-          <Link className={styles.breadcrumbLink} to="/admin/products">
-            상품 관리로 돌아가기
-          </Link>
+          <AdminBreadcrumb
+            items={[{ label: '상품 관리로 돌아가기', to: '/admin/products' }]}
+          />
         </div>
       </div>
     )
@@ -152,13 +152,12 @@ export function AdminProductDetailPage() {
 
   return (
     <div className={styles.root}>
-      <nav className={styles.breadcrumb} aria-label="breadcrumb">
-        <Link className={styles.breadcrumbLink} to="/admin/products">
-          상품 관리
-        </Link>
-        <ChevronRight className={styles.breadcrumbIcon} aria-hidden="true" />
-        <span className={styles.breadcrumbCurrent}>{product.name}</span>
-      </nav>
+      <AdminBreadcrumb
+        items={[
+          { label: '상품 관리', to: '/admin/products' },
+          { label: product.name },
+        ]}
+      />
 
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{product.name}</h1>

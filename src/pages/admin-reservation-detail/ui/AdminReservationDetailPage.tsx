@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { ChevronRight } from 'lucide-react'
-import { Link, useParams } from 'react-router'
+import { useParams } from 'react-router'
 
 import {
   failureLabelOf,
@@ -18,8 +17,9 @@ import {
   type AdminReservationDetail,
   type AdminReservationHistoryEntry,
 } from '@/entities/admin-reservation'
-import { Button, InlineAlert, Table, Tag } from '@/shared/ui'
+import { Button, InlineAlert, Table, Tag, Textarea } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
+import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
 
 import * as styles from './AdminReservationDetailPage.css'
 
@@ -100,9 +100,9 @@ export function AdminReservationDetailPage() {
     return (
       <div className={styles.notFound}>
         <div>{error ?? '예약을 불러오는 중입니다.'}</div>
-        <Link className={styles.breadcrumbLink} to="/admin/orders">
-          예약 현황으로 돌아가기
-        </Link>
+        <AdminBreadcrumb
+          items={[{ label: '예약 현황으로 돌아가기', to: '/admin/orders' }]}
+        />
       </div>
     )
   }
@@ -155,13 +155,12 @@ export function AdminReservationDetailPage() {
 
   return (
     <div className={styles.root}>
-      <nav className={styles.breadcrumb} aria-label="breadcrumb">
-        <Link className={styles.breadcrumbLink} to="/admin/orders">
-          예약 현황
-        </Link>
-        <ChevronRight className={styles.breadcrumbIcon} aria-hidden="true" />
-        <span className={styles.breadcrumbCurrent}>{displayNo}</span>
-      </nav>
+      <AdminBreadcrumb
+        items={[
+          { label: '예약 현황', to: '/admin/orders' },
+          { label: displayNo },
+        ]}
+      />
 
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{displayNo}</h1>
@@ -216,9 +215,10 @@ export function AdminReservationDetailPage() {
       <div className={styles.memoSection}>
         <div className={styles.sectionTitle}>내부 메모</div>
         <div className={styles.memoRow}>
-          <textarea
-            className={styles.textarea}
-            aria-label="내부 메모"
+          <Textarea
+            className={styles.memoInput}
+            label="내부 메모"
+            rows={2}
             placeholder="이 예약에 대한 처리 메모를 남겨주세요. 예약 내용 자체는 수정할 수 없습니다."
             value={memo}
             onChange={(event) => {

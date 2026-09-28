@@ -1,41 +1,12 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import { color, spacing, typography } from '@/shared/config/theme'
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[20],
 })
-
-export const breadcrumb = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[4],
-})
-
-export const breadcrumbLink = style([
-  typography.body.subMedium,
-  {
-    color: color.text.tertiary,
-    textDecoration: 'none',
-    transition: `color ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { color: color.primary.base, textDecoration: 'underline' },
-    },
-  },
-])
-
-export const breadcrumbIcon = style({
-  width: '16px',
-  height: '16px',
-  color: color.text.tertiary,
-})
-
-export const breadcrumbCurrent = style([
-  typography.body.subMedium,
-  { color: color.text.primary },
-])
 
 export const titleRow = style({
   display: 'flex',
@@ -52,7 +23,7 @@ export const card = style({
   padding: spacing[24],
   border: `1px solid ${color.border.default}`,
   borderRadius: '12px',
-  background: color.background.surface,
+  background: color.background.base,
 })
 
 export const summaryGrid = style({
@@ -109,24 +80,10 @@ export const memoRow = style({
   gap: spacing[8],
 })
 
-export const textarea = style([
-  typography.body.sub,
-  {
-    flex: 1,
-    minHeight: '64px',
-    padding: spacing[16],
-    border: `1px solid ${color.border.default}`,
-    borderRadius: '12px',
-    background: color.background.surface,
-    color: color.text.primary,
-    resize: 'vertical',
-    boxSizing: 'border-box',
-    selectors: {
-      '&::placeholder': { color: color.text.tertiary },
-      '&:focus-visible': { outline: 'none', borderColor: color.border.focus },
-    },
-  },
-])
+// 저장 버튼과 한 줄에 놓여서 남는 폭을 전부 먹어야 한다.
+export const memoInput = style({
+  flex: 1,
+})
 
 export const historySection = style({
   display: 'flex',
