@@ -6,7 +6,7 @@ import { useSearchParams } from 'react-router'
 import { ProductCard, useSearchProductCards } from '@/entities/product'
 import type { ProductCardSort } from '@/entities/product'
 import { useProductCardSelection } from '@/features/product-card-select'
-import { Container, Dropdown } from '@/shared/ui'
+import { Container, Dropdown, InlineAlert } from '@/shared/ui'
 
 import * as styles from './SearchPage.css'
 
@@ -24,12 +24,19 @@ export function SearchPage() {
     ({ value }) => value === searchParams.get('sort'),
   )
   const [isSortOpen, setIsSortOpen] = useState(false)
-  const { data } = useSearchProductCards({
+  const { data, isPending, isError } = useSearchProductCards({
     category,
     subCategory,
     sort: sort?.value,
   })
   const { getCardProps } = useProductCardSelection()
+  const message = isPending
+    ? '불러오는 중이에요.'
+    : isError
+      ? '상품을 불러오지 못했어요.'
+      : data?.items.length === 0
+        ? '조건에 맞는 상품이 없어요.'
+        : null
 
   // 정렬도 URL에 남겨서 새로고침·공유해도 유지되게 한다.
   const handleSortSelect = (_: string, index: number) => {
@@ -71,11 +78,15 @@ export function SearchPage() {
           onSelect={handleSortSelect}
         />
       </div>
-      <div className={styles.cardGrid}>
-        {data?.items.map((product) => (
-          <ProductCard key={product.productId} {...getCardProps(product)} />
-        ))}
-      </div>
+      {message ? (
+        <InlineAlert status={isError ? 'error' : 'info'}>{message}</InlineAlert>
+      ) : (
+        <div className={styles.cardGrid}>
+          {data?.items.map((product) => (
+            <ProductCard key={product.productId} {...getCardProps(product)} />
+          ))}
+        </div>
+      )}
     </Container>
   )
 }
