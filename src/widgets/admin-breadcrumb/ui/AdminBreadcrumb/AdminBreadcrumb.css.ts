@@ -9,7 +9,7 @@ export const root = style({
 })
 
 export const link = style([
-  typography.body.subMedium,
+  typography.title.smMedium,
   {
     color: color.text.tertiary,
     textDecoration: 'none',
@@ -27,6 +27,6 @@ export const icon = style({
 })
 
 export const current = style([
-  typography.body.subMedium,
+  typography.title.smMedium,
   { color: color.text.primary },
 ])
