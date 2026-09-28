@@ -1,6 +1,13 @@
 import { style } from '@vanilla-extract/css'
 
 import { color, typography, spacing } from '@/shared/config/theme'
+import { HEADER_HEIGHT } from '@/widgets/header'
+
+// 헤더가 항상 sticky(= 문서 흐름 안)라 배너가 헤더 높이만큼 아래에서 시작한다 —
+// 헤더가 투명하게 배너 위에 겹쳐 보이려면 그만큼 끌어올려야 한다.
+export const bannerOverlap = style({
+  marginTop: `-${HEADER_HEIGHT}px`,
+})
 
 export const hero = style({
   position: 'relative',

@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useLocation, useSearchParams } from 'react-router'
 
 import * as styles from './CategoryNav.css'
 
@@ -54,8 +54,14 @@ const linkPaths: Record<CategoryNavLink, string> = {
 }
 
 // URLSearchParams가 인코딩까지 해주므로 쿼리를 손으로 붙이지 않는다.
-const productsPath = (params: Record<string, string>) =>
-  `/products?${new URLSearchParams(params)}`
+const searchPath = (params: Record<string, string>) =>
+  `/search?${new URLSearchParams(params)}`
+
+// 링크를 누른 뒤에도 포커스가 남아 있으면 :focus-within 때문에 이동한 페이지 위로 메뉴가
+// 계속 열려 있으므로, 실제로 이동을 일으키는 링크를 누를 때만 포커스를 풀어 닫는다
+// (컨테이너 전체에 걸면 메뉴 안 빈 공간 클릭에도 반응하고, 이 브랜드와 무관한 포커스까지 풀린다).
+const blurActiveElement = () =>
+  (document.activeElement as HTMLElement | null)?.blur()
 
 export function CategoryNav({
   tone = 'default',
@@ -63,6 +69,23 @@ export function CategoryNav({
   onLinkClick,
   className,
 }: CategoryNavProps) {
+  // 검색 페이지에 있을 때만 URL의 카테고리로 브랜드 링크·타일을 활성 표시한다.
+  const { pathname } = useLocation()
+  const [searchParams] = useSearchParams()
+  const isSearchPage = pathname === '/search'
+  const activeCategory = isSearchPage ? searchParams.get('category') : null
+  const activeSubCategory = isSearchPage
+    ? searchParams.get('subCategory')
+    : null
+  // 오른쪽 링크는 경로로 판단한다 — /preorder/:id처럼 하위 경로도 같은 메뉴로 본다.
+  // activeLink prop을 주면 그쪽이 우선한다.
+  const currentLink =
+    activeLink ??
+    links.find((link) => {
+      const base = linkPaths[link].split('?')[0]
+      return pathname === base || pathname.startsWith(`${base}/`)
+    })
+
   return (
     <nav className={[styles.root, className].filter(Boolean).join(' ')}>
       <div className={[styles.links, styles.linksTone[tone]].join(' ')}>
@@ -70,7 +93,16 @@ export function CategoryNav({
             배경을 불투명하게 바꾼다 — 흰 패널과 한 덩어리로 보이게. */}
         {Object.entries(brandMenus).map(([brand, menu]) => (
           <div key={brand} className={styles.brand} data-mega-menu>
-            <Link to={productsPath({ brand })} className={styles.link}>
+            <Link
+              to={searchPath({ category: brand })}
+              className={[
+                styles.link,
+                brand === activeCategory && styles.linkActive,
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={blurActiveElement}
+            >
               {brand}
             </Link>
             <div className={styles.menu}>
@@ -79,8 +111,18 @@ export function CategoryNav({
                   {menu.categories.map((category) => (
                     <Link
                       key={category}
-                      to={productsPath({ brand, q: category })}
+                      to={searchPath({
+                        category: brand,
+                        subCategory: category,
+                      })}
                       className={styles.menuTile}
+                      aria-current={
+                        brand === activeCategory &&
+                        category === activeSubCategory
+                          ? 'page'
+                          : undefined
+                      }
+                      onClick={blurActiveElement}
                     >
                       {category}
                     </Link>
@@ -93,6 +135,7 @@ export function CategoryNav({
                       key={item.label}
                       to={item.to}
                       className={styles.menuAsideLink}
+                      onClick={blurActiveElement}
                     >
                       {item.label}
                     </Link>
@@ -109,7 +152,7 @@ export function CategoryNav({
           <Link
             key={link}
             to={linkPaths[link]}
-            className={[styles.link, link === activeLink && styles.linkActive]
+            className={[styles.link, link === currentLink && styles.linkActive]
               .filter(Boolean)
               .join(' ')}
             onClick={() => onLinkClick?.(link)}

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import { useNavigate } from 'react-router'
+
 import { type CartItem } from '@/entities/cart'
 import { OrderSummary } from '@/entities/order'
 import { ProductPaymentCard } from '@/entities/product'
@@ -52,6 +54,7 @@ const cartItems: CartItem[] = Array.from({ length: 50 }, (_, index) => ({
 const won = (value: number) => `${value.toLocaleString('ko-KR')}원`
 
 export function MypageCart() {
+  const navigate = useNavigate()
   const [items, setItems] = useState(cartItems)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const allSelected = items.length > 0 && selectedIds.size === items.length
@@ -87,18 +90,17 @@ export function MypageCart() {
 
   return (
     <div className={styles.root}>
-      <label
-        className={[typography.body.subMedium, styles.selectAll].join(' ')}
-      >
-        <Checkbox
-          checked={allSelected}
-          onChange={(event) => toggleAll(event.target.checked)}
-        />
-        전체 선택
-        <span className={styles.selectCount}>
-          {selectedIds.size}/{items.length}
-        </span>
-      </label>
+      <div className={styles.selectAllRow}>
+        <label
+          className={[typography.body.subMedium, styles.selectAll].join(' ')}
+        >
+          <Checkbox
+            checked={allSelected}
+            onChange={(event) => toggleAll(event.target.checked)}
+          />
+          전체 선택
+        </label>
+      </div>
       <div className={styles.list}>
         {items.map((item) => (
           <ProductPaymentCard
@@ -126,12 +128,14 @@ export function MypageCart() {
       <OrderSummary
         className={styles.remote}
         rows={[
+          { label: '상품 수', value: `${selectedIds.size}개` },
           { label: '상품 금액', value: won(selectedTotal) },
           { label: '배송비', value: '무료' },
         ]}
         totalValue={won(selectedTotal)}
         actionLabel="결제하기"
         actionDisabled={selectedIds.size === 0}
+        onAction={() => navigate('/payment')}
       />
     </div>
   )

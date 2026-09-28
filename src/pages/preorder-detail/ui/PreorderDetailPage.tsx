@@ -73,10 +73,11 @@ export function PreorderDetailPage() {
         third information section
       </div>
       <div className={styles.countdownWrapper}>
-        <div className={styles.countdown}>
-          {!isOver &&
-            `${days}일 ${hours}시간 ${minutes}분 ${seconds}초 후 신청 시작`}
-        </div>
+        {!isOver && (
+          <div className={styles.countdown}>
+            {`${days}일 ${hours}시간 ${minutes}분 ${seconds}초 후 신청 시작`}
+          </div>
+        )}
         <Button
           style={{ width: '100%' }}
           onClick={handleActionClick}
@@ -105,7 +106,7 @@ export function PreorderDetailPage() {
               opensAtLabel={`오픈일 ${TEMP_OPENS_AT.toLocaleDateString()}`}
               isOver={isOver}
               isAlert={isAlert}
-              onReserve={() => navigate(`/products/1?preorder=true`)}
+              onReserve={() => navigate('/products/IP-18-PRO')}
               onNotify={handleNotify}
             />
 
@@ -114,7 +115,7 @@ export function PreorderDetailPage() {
               opensAtLabel={`오픈일 ${TEMP_OPENS_AT.toLocaleDateString()}`}
               isOver={isOver}
               isAlert={isAlert}
-              onReserve={() => navigate(`/products/2?preorder=true`)}
+              onReserve={() => navigate('/products/IP-18-PRO-MAX')}
               onNotify={handleNotify}
             />
           </div>
