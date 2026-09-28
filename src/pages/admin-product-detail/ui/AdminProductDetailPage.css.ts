@@ -48,16 +48,6 @@ export const title = style([
   { margin: 0, color: color.text.primary },
 ])
 
-export const remaining = style({
-  color: color.text.secondary,
-})
-
-// 잔여 수량이 얼마 안 남은 옵션은 한눈에 보이도록.
-export const remainingLow = style([
-  typography.body.subSemibold,
-  { color: color.status.danger },
-])
-
 export const placeholder = style([
   typography.body.sub,
   {

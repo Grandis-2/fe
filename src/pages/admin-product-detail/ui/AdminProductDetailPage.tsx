@@ -63,18 +63,7 @@ const stockColumns: TableColumn<AdminProductStock>[] = [
     key: 'remainingCount',
     header: '잔여',
     align: 'center',
-    // 잔여가 적을수록 눈에 띄어야 해서 소진 임박(10% 미만)은 색을 달리한다.
-    render: (row) => (
-      <span
-        className={
-          row.remainingCount / row.totalCount < 0.1
-            ? styles.remainingLow
-            : styles.remaining
-        }
-      >
-        {`${numberFormatter.format(row.remainingCount)}건`}
-      </span>
-    ),
+    render: (row) => `${numberFormatter.format(row.remainingCount)}건`,
   },
 ]
 
