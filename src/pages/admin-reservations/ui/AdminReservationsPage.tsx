@@ -185,7 +185,7 @@ export function AdminReservationsPage() {
       align: 'center',
       render: (reservation) => (
         <Tag
-          variant="outline"
+          variant="subtle"
           size="medium"
           rounded={false}
           widthOptions={reservationStatusLabels}
