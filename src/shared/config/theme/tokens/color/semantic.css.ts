@@ -3,7 +3,7 @@ import { createGlobalTheme, globalStyle } from '@vanilla-extract/css'
 export const color = createGlobalTheme(':root', {
   primary: {
     base: '#3F4891',
-    focus: '#1B2054',
+    focus: '#282F64',
     subtle: '#9099D1',
     subtler: '#EBEDF9',
     subtlerHover: '#DADDF1',

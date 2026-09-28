@@ -1,21 +1,24 @@
-import { useState } from 'react'
+import { type CSSProperties } from 'react'
 
-import { useNavigate, useSearchParams } from 'react-router'
+import { useNavigate, useParams } from 'react-router'
 
-import { ProductColorSwatches, ProductOptionSelector } from '@/entities/product'
+import {
+  ProductColorSwatches,
+  ProductOptionSelector,
+  useProduct,
+} from '@/entities/product'
 import { mockReviews, ReviewCard } from '@/entities/review'
+import {
+  QuantityPriceDisplay,
+  useProductPurchase,
+} from '@/features/product-purchase'
 import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
 import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
 import { color } from '@/shared/config/theme'
-import {
-  Container,
-  Slider,
-  Button,
-  QuantityStepper,
-  PriceText,
-} from '@/shared/ui'
+import { Container, Slider, Button } from '@/shared/ui'
 import { ProductPageTab } from '@/widgets/product-page-tab'
 import type { ProductPageTabKey } from '@/widgets/product-page-tab'
+import { ProductPurchaseBar } from '@/widgets/product-purchase-bar'
 
 import * as styles from './ProductDetailPage.css'
 import { useProductDetailScroll } from './useProductDetailScroll'
@@ -27,6 +30,10 @@ const colorSwatches = [
   { hex: '#F68C4C', label: '코즈믹 오렌지' },
 ]
 const optionLabels = ['256GB', '512GB']
+
+// 페이지 곳곳(제목/alt/라벨은 영문, 본문/요약 텍스트는 국문)에 흩어져 있던 상품명 리터럴을 한 곳으로 모은다.
+const PRODUCT_TITLE = 'IPhone 18 Pro'
+const PRODUCT_NAME = '아이폰 18 Pro'
 
 // ponytail: 실제 탭 콘텐츠 API 전까지 자리표시자 배경색으로 대체
 const tabPanelContent: Record<
@@ -41,7 +48,7 @@ const tabPanelContent: Record<
 
 // 상세에서는 이 상품(아이폰 18 Pro) 후기만 보여준다.
 const reviews = mockReviews.filter(({ productName }) =>
-  productName.startsWith('아이폰 18 Pro'),
+  productName.startsWith(PRODUCT_NAME),
 )
 
 // ponytail: 실제 배송 시작일 API 전까지 하드코딩
@@ -53,24 +60,41 @@ const UNIT_PRICE = 120000
 
 export function ProductDetailPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const isPreorder = searchParams.get('preorder') === 'true'
-  const [selectedColor, setSelectedColor] = useState(0)
-  const [selectedOption, setSelectedOption] = useState(0)
-  const [quantity, setQuantity] = useState(1)
-  const priceLabel = `${(UNIT_PRICE * quantity).toLocaleString()}원`
+  const { productId = '' } = useParams()
+  // 사전예약 여부는 상세 API의 saleMode로 판단한다(그 외 화면 데이터는 아직 목업).
+  const { data: product } = useProduct(productId)
+  const isPreorder = product?.saleMode === 'PREORDER'
+  const purchase = useProductPurchase({
+    colorSwatches,
+    optionLabels,
+    unitPrice: UNIT_PRICE,
+    isPreorder,
+  })
+  const {
+    selectedColor,
+    setSelectedColor,
+    selectedOption,
+    setSelectedOption,
+    quantity,
+    setQuantity,
+    colorLabel,
+    optionLabel,
+    priceLabel,
+  } = purchase
 
   // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
   const handleCheckout = () => {
-    const purchase = {
-      productName: '아이폰 18 Pro',
-      colorLabel: colorSwatches[selectedColor].label,
-      optionLabel: optionLabels[selectedOption],
+    const purchasePayload = {
+      productName: PRODUCT_NAME,
+      colorLabel,
+      optionLabel,
       quantity,
       unitPrice: UNIT_PRICE,
     }
+    // 사전예약 완료 후 뒤로가기로 상세에 돌아와 다시 제출하는 걸 막는다(결제는 되돌아가서 수정 가능해야 하므로 그대로 둠).
     navigate(isPreorder ? '/result?status=preorder' : '/payment', {
-      state: purchase,
+      state: purchasePayload,
+      replace: isPreorder,
     })
   }
   const {
@@ -81,12 +105,14 @@ export function ProductDetailPage() {
     activeTab,
     handleTabChange,
     registerPanelRef,
+    isSheetOpen,
+    setIsSheetOpen,
   } = useProductDetailScroll()
 
   return (
-    <Container desktopPaddingX={0}>
+    <Container desktopPaddingX={0} mobilePaddingX={0}>
       <div className={styles.contentPadding}>
-        <div className={styles.title}>IPhone 18 Pro</div>
+        <div className={styles.title}>{PRODUCT_TITLE}</div>
         <div className={styles.layout} ref={layoutRef}>
           <div>
             <div className={styles.imageFrame}>
@@ -94,12 +120,12 @@ export function ProductDetailPage() {
                 <Slider>
                   <img
                     src={macbook1}
-                    alt="IPhone 18 Pro"
+                    alt={PRODUCT_TITLE}
                     className={styles.image}
                   />
                   <img
                     src={macbook2}
-                    alt="IPhone 18 Pro"
+                    alt={PRODUCT_TITLE}
                     className={styles.image}
                   />
                 </Slider>
@@ -126,77 +152,54 @@ export function ProductDetailPage() {
                 onSelect={setSelectedOption}
               />
             </div>
-            <div className={styles.quantityPriceRow}>
-              {/* 사전예약은 1인 1개라 수량을 고를 수 없다 — quantity는 초기값 1 그대로 간다. */}
-              {isPreorder ? (
-                <span className={styles.fixedQuantity}>1개</span>
-              ) : (
-                <QuantityStepper
-                  value={quantity}
-                  onChange={setQuantity}
-                  label="IPhone 18 Pro"
+            <div className={styles.purchaseSummary}>
+              <div className={styles.quantityPriceRow}>
+                <QuantityPriceDisplay
+                  isPreorder={isPreorder}
+                  quantity={quantity}
+                  onQuantityChange={setQuantity}
+                  priceLabel={priceLabel}
+                  stepperLabel={PRODUCT_TITLE}
                 />
+              </div>
+              {isPreorder && (
+                <div className={styles.shipmentNotice}>{shipmentLabel}</div>
               )}
-              <span className={styles.price}>
-                <PriceText value={priceLabel} />
-              </span>
-            </div>
-            {isPreorder && (
-              <div className={styles.shipmentNotice}>{shipmentLabel}</div>
-            )}
-            <div className={isPreorder ? styles.actionsSingle : styles.actions}>
-              {!isPreorder && (
-                <Button variant="subtle" icon="handbag">
-                  장바구니
+              <div
+                className={isPreorder ? styles.actionsSingle : styles.actions}
+              >
+                {!isPreorder && (
+                  <Button variant="subtle" icon="handbag">
+                    장바구니
+                  </Button>
+                )}
+                <Button onClick={handleCheckout}>
+                  {isPreorder ? '사전예약하기' : '결제하기'}
                 </Button>
-              )}
-              <Button onClick={handleCheckout}>
-                {isPreorder ? '사전예약하기' : '결제하기'}
-              </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-      <div
-        ref={orderBarRef}
-        className={[styles.orderBar, !isLayoutVisible && styles.orderBarVisible]
-          .filter(Boolean)
-          .join(' ')}
-      >
-        <Container
-          desktopPaddingX={20}
-          desktopPaddingY={16}
-          mobilePaddingX={20}
-          mobilePaddingY={16}
-          className={styles.orderBarContent}
-        >
-          <div className={styles.orderBarInfo}>
-            <div className={styles.productName}>아이폰 18 Pro</div>
-            <div className={styles.productOption}>
-              {colorSwatches[selectedColor].label} ·{' '}
-              {optionLabels[selectedOption]}
-            </div>
-          </div>
-          <div className={styles.orderBarButtons}>
-            {!isPreorder && (
-              <Button
-                variant="subtle"
-                icon="handbag"
-                className={styles.orderBarIconButton}
-              />
-            )}
-            <Button
-              className={styles.orderBarCheckoutButton}
-              onClick={handleCheckout}
-            >
-              {isPreorder ? '사전예약하기' : `${priceLabel} 결제하기`}
-            </Button>
-          </div>
-        </Container>
-      </div>
+      <ProductPurchaseBar
+        isPreorder={isPreorder}
+        isLayoutVisible={isLayoutVisible}
+        orderBarRef={orderBarRef}
+        productName={PRODUCT_NAME}
+        stepperLabel={PRODUCT_TITLE}
+        purchase={purchase}
+        shipmentLabel={shipmentLabel}
+        isSheetOpen={isSheetOpen}
+        onSheetOpenChange={setIsSheetOpen}
+        onCheckout={handleCheckout}
+      />
       <div
         className={styles.tabBarWrapper}
-        style={{ top: isLayoutVisible ? 0 : orderBarHeight }}
+        style={
+          {
+            '--order-bar-offset': `${isLayoutVisible ? 0 : orderBarHeight}px`,
+          } as CSSProperties
+        }
       >
         <ProductPageTab
           activeTab={activeTab}
@@ -224,6 +227,10 @@ export function ProductDetailPage() {
             )}
           </div>
         ))}
+      <div
+        className={styles.orderBarSpacer}
+        style={{ height: orderBarHeight }}
+      />
     </Container>
   )
 }
