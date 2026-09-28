@@ -62,9 +62,14 @@ export function ProductDetailPage() {
   const navigate = useNavigate()
   const { productId = '' } = useParams()
   // 사전예약 여부는 상세 API의 saleMode로 판단한다(그 외 화면 데이터는 아직 목업).
-  const { data: product } = useProduct(productId)
+  const { data: product, isPending, isError } = useProduct(productId)
   const isPreorder = product?.saleMode === 'PREORDER'
+  // 조회가 끝나지 않았거나 실패한 동안은 saleMode를 모르는 채로 결제/사전예약이
+  // 진행되지 않도록 막는다 — isPreorder가 로딩 중 기본값(false)이라 그대로 두면
+  // 사전예약 상품인데도 일반 결제 흐름을 탈 수 있다.
+  const isCheckoutReady = Boolean(product) && !isPending && !isError
   const purchase = useProductPurchase({
+    productId,
     colorSwatches,
     optionLabels,
     unitPrice: UNIT_PRICE,
@@ -84,6 +89,7 @@ export function ProductDetailPage() {
 
   // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
   const handleCheckout = () => {
+    if (!isCheckoutReady) return
     const purchasePayload = {
       productName: PRODUCT_NAME,
       colorLabel,
@@ -173,7 +179,7 @@ export function ProductDetailPage() {
                     장바구니
                   </Button>
                 )}
-                <Button onClick={handleCheckout}>
+                <Button onClick={handleCheckout} disabled={!isCheckoutReady}>
                   {isPreorder ? '사전예약하기' : '결제하기'}
                 </Button>
               </div>
@@ -192,6 +198,7 @@ export function ProductDetailPage() {
         isSheetOpen={isSheetOpen}
         onSheetOpenChange={setIsSheetOpen}
         onCheckout={handleCheckout}
+        checkoutDisabled={!isCheckoutReady}
       />
       <div
         className={styles.tabBarWrapper}

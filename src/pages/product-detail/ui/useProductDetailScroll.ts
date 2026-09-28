@@ -42,8 +42,17 @@ export function useProductDetailScroll() {
     return () => observer.disconnect()
   }, [])
 
+  // 한 번만 재는 게 아니라 계속 관찰한다 — 상품 조회가 끝나 isPreorder가 바뀌면
+  // 순차배송 안내 줄이 추가/제거되는 등 바 높이 자체가 달라지고, 그러면 탭 오프셋과
+  // 마지막 탭 패널 아래 spacer(styles.orderBarSpacer)도 같이 어긋난다.
   useEffect(() => {
-    if (orderBarRef.current) setOrderBarHeight(orderBarRef.current.offsetHeight)
+    const el = orderBarRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() =>
+      setOrderBarHeight(el.offsetHeight),
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
   }, [])
 
   useEffect(() => {
