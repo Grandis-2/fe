@@ -71,7 +71,10 @@ export function MainPage() {
                 (_, i) => {
                   const product = bestProducts[i % bestProducts.length]
                   return (
-                    <div key={i} className={styles.carouselSlide}>
+                    <div
+                      key={`${product.productId}-${i}`}
+                      className={styles.carouselSlide}
+                    >
                       <ProductCard {...getCardProps(product)} />
                     </div>
                   )

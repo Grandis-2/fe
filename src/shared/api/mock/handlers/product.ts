@@ -245,7 +245,11 @@ export const productHandlers: RequestHandler[] = [
   ),
 
   http.get(url('/products/:productId/variants/:optionCode'), ({ params }) => {
-    const product = products.find((it) => it.productId === params.productId)
+    const productId = String(params.productId)
+    // /products/:productId와 조회 범위를 맞춘다 — 카드 전용 id도 같은 fallback으로 찾는다.
+    const product =
+      products.find((it) => it.productId === productId) ??
+      detailFromCard(productId)
     const variant = product?.variants.find(
       (it) => it.optionCode === params.optionCode,
     )
