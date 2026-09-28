@@ -4,11 +4,11 @@ import { color, motion, spacing, typography } from '@/shared/config/theme'
 
 export const root = style({
   display: 'flex',
-  alignItems: 'flex-start',
+  alignItems: 'center',
   gap: spacing[20],
 })
 
-const TILE_SIZE = '156px'
+const TILE_SIZE = '160px'
 
 export const preview = style({
   width: TILE_SIZE,
@@ -49,10 +49,13 @@ export const side = style({
   paddingTop: spacing[4],
 })
 
-export const guide = style([typography.body.sub, { color: color.text.primary }])
+export const guide = style([
+  typography.body.defaultRegular,
+  { color: color.text.primary },
+])
 
 export const usage = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.tertiary },
 ])
 

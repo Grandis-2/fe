@@ -5,11 +5,12 @@ import { color, motion, spacing, typography } from '@/shared/config/theme'
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[12],
+  gap: spacing[8],
+  paddingTop: spacing[16],
 })
 
 export const summary = style([
-  typography.body.caption,
+  typography.body.defaultRegular,
   { color: color.text.tertiary },
 ])
 
@@ -21,8 +22,8 @@ export const list = style({
 
 export const card = style({
   display: 'flex',
-  alignItems: 'flex-start',
-  gap: spacing[12],
+  alignItems: 'center',
+  gap: spacing[16],
   width: '100%',
   padding: spacing[20],
   border: `1px solid ${color.border.default}`,
@@ -49,13 +50,13 @@ export const body = style({
 })
 
 export const name = style([
-  typography.body.defaultMedium,
+  typography.title.smMedium,
   { color: color.text.primary },
 ])
 
 export const openAt = style([
-  typography.body.caption,
-  { color: color.text.tertiary, marginBottom: spacing[8] },
+  typography.body.sub,
+  { color: color.primary.base, marginBottom: spacing[8] },
 ])
 
 export const optionRow = style({
@@ -64,12 +65,12 @@ export const optionRow = style({
 })
 
 export const optionLabel = style([
-  typography.body.caption,
+  typography.body.subMedium,
   { width: '32px', flexShrink: 0, color: color.text.tertiary },
 ])
 
 export const optionValues = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
 
