@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 
-import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -173,22 +172,6 @@ export function AdminProductsPage() {
         </Tag>
       ),
     },
-    {
-      key: 'manage',
-      header: '관리',
-      align: 'center',
-      width: '80px',
-      render: (product) => (
-        <button
-          type="button"
-          className={styles.rowLink}
-          aria-label={`${product.name} ${productTypeLabel(product)} 상세 보기`}
-          onClick={() => openDetail(product)}
-        >
-          <ChevronRight className={styles.rowLinkIcon} aria-hidden="true" />
-        </button>
-      ),
-    },
   ]
 
   return (
@@ -255,6 +238,12 @@ export function AdminProductsPage() {
         rowKey={(product) => product.productId}
         pageSize={10}
         onRowClick={openDetail}
+        rowAction={{
+          header: '관리',
+          label: (product) =>
+            `${product.name} ${productTypeLabel(product)} 상세 보기`,
+          onClick: openDetail,
+        }}
         emptyMessage={error ?? '조건에 맞는 상품이 없습니다.'}
       />
     </div>

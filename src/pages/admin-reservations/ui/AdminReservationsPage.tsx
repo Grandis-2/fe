@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 
-import { ChevronRight, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { getAdminProducts, type AdminProduct } from '@/entities/admin-product'
@@ -20,7 +20,15 @@ import {
 } from '@/entities/admin-reservation'
 import { AdminReservationCreateModal } from '@/features/admin-reservation-create'
 import { useModalStore } from '@/shared/model/modalStore'
-import { Button, Dropdown, Input, SegmentedTabs, Table, Tag } from '@/shared/ui'
+import {
+  Button,
+  Dropdown,
+  Input,
+  SegmentedTabs,
+  StatCard,
+  Table,
+  Tag,
+} from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
 
 import * as styles from './AdminReservationsPage.css'
@@ -187,22 +195,6 @@ export function AdminReservationsPage() {
         </Tag>
       ),
     },
-    {
-      key: 'manage',
-      header: '관리',
-      align: 'center',
-      width: '80px',
-      render: (reservation) => (
-        <button
-          type="button"
-          className={styles.rowLink}
-          aria-label={`${reservationNo(reservation.reservationId)} 상세 보기`}
-          onClick={() => openDetail(reservation)}
-        >
-          <ChevronRight className={styles.rowLinkIcon} aria-hidden="true" />
-        </button>
-      ),
-    },
   ]
 
   return (
@@ -236,19 +228,20 @@ export function AdminReservationsPage() {
       </div>
 
       <div className={styles.cards}>
-        {cards.map(({ label, value }) => (
-          <div key={label} className={styles.card}>
-            <div className={styles.cardLabel}>{label}</div>
-            {/* 조회에 실패했으면 0건으로 보여주지 않는다 — 운영 판단이 정반대다. */}
-            {stats?.queryFailed || value === undefined ? (
-              <div className={styles.cardUnknown}>조회 실패</div>
-            ) : (
-              <div className={styles.cardValue}>
-                {value.toLocaleString('ko-KR')}건
-              </div>
-            )}
-          </div>
-        ))}
+        {cards.map(({ label, value }) => {
+          // 조회에 실패했으면 0건으로 보여주지 않는다 — 운영 판단이 정반대다.
+          const unknown = stats?.queryFailed || value === undefined
+          return (
+            <StatCard
+              key={label}
+              label={label}
+              muted={unknown}
+              value={
+                unknown ? '조회 실패' : `${value.toLocaleString('ko-KR')}건`
+              }
+            />
+          )
+        })}
       </div>
 
       <div className={styles.toolbar}>
@@ -290,6 +283,12 @@ export function AdminReservationsPage() {
         rowKey={(reservation) => reservation.reservationId}
         pageSize={10}
         onRowClick={openDetail}
+        rowAction={{
+          header: '관리',
+          label: (reservation) =>
+            `${reservationNo(reservation.reservationId)} 상세 보기`,
+          onClick: openDetail,
+        }}
         emptyMessage={error ?? '조건에 맞는 예약이 없습니다.'}
       />
     </div>
