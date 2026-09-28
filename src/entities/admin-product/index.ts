@@ -6,6 +6,7 @@ export {
   publishAdminProduct,
   updateAdminProduct,
 } from './api/adminProduct'
+export { getAdminProductStock, putAdminProductStock } from './api/adminStock'
 export {
   displayStatusLabel,
   isPreorder,
@@ -16,6 +17,7 @@ export {
 export type {
   AdminProduct,
   AdminProductDetailModel,
+  AdminStockItemModel,
   AdminDisplayStatus,
   AdminSaleStatus,
 } from './model/types'
@@ -27,6 +29,7 @@ export {
   createOptionValue,
   getProductVariants,
   toFormValue,
+  toStockRequests,
   toUpsertRequest,
 } from './model/form'
 export type {
