@@ -51,27 +51,6 @@ export const optionName = style([
   { color: color.text.secondary },
 ])
 
-export const textarea = style([
-  typography.body.sub,
-  {
-    minHeight: '88px',
-    padding: spacing[12],
-    border: `1px solid ${color.border.default}`,
-    borderRadius: '8px',
-    background: color.background.surface,
-    color: color.text.primary,
-    resize: 'vertical',
-    boxSizing: 'border-box',
-    selectors: {
-      '&::placeholder': { color: color.text.tertiary },
-      '&:focus-visible': {
-        outline: 'none',
-        borderColor: color.border.focus,
-      },
-    },
-  },
-])
-
 export const actions = style({
   display: 'flex',
   justifyContent: 'flex-end',

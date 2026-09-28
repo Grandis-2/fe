@@ -19,6 +19,7 @@ import {
   Dropdown,
   InlineAlert,
   Input,
+  Textarea,
   useModalTitleId,
 } from '@/shared/ui'
 
@@ -260,9 +261,9 @@ export function AdminReservationCreateModal({
 
       <div className={styles.field}>
         <div className={styles.fieldLabel}>처리 사유 (내부 메모)</div>
-        <textarea
-          className={styles.textarea}
-          aria-label="처리 사유 내부 메모"
+        <Textarea
+          size="small"
+          label="처리 사유 내부 메모"
           placeholder="예: 앱 오류로 고객센터를 통해 신청 요청"
           value={memo}
           onChange={(event) => setMemo(event.target.value)}
