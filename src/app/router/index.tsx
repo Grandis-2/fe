@@ -2,7 +2,6 @@ import { createBrowserRouter } from 'react-router'
 
 import { AdminLayout } from '@/app/layouts/AdminLayout'
 import { MainLayout } from '@/app/layouts/MainLayout'
-import { MypageLayout } from '@/app/layouts/MypageLayout'
 import { RootLayout } from '@/app/layouts/RootLayout'
 import { KAKAO_CALLBACK_PATH } from '@/features/kakao-login'
 import { AdminHomePage } from '@/pages/admin-home'
@@ -43,11 +42,7 @@ export const router = createBrowserRouter([
             path: KAKAO_CALLBACK_PATH,
             element: <KakaoCallbackPage />,
           },
-          {
-            path: '/mypage',
-            element: <MypageLayout />,
-            children: [{ index: true, element: <Mypage /> }],
-          },
+          { path: '/mypage', element: <Mypage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },
