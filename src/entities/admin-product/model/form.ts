@@ -1,6 +1,8 @@
 import type {
   AdminProductDetail,
   AdminProductUpsertRequest,
+  AdminStockItem,
+  AdminStockPutRequest,
   ProductOptionGroup as DtoOptionGroup,
   ProductVariant as DtoVariant,
 } from '@/shared/api/types'
@@ -198,6 +200,85 @@ const optionGroupCodeOf = (index: number) => `opt${index + 1}`
 const optionValueCodeOf = (groupIndex: number, valueIndex: number) =>
   `${optionGroupCodeOf(groupIndex)}-${valueIndex + 1}`
 
+type Combination = {
+  codes: Record<string, string>
+  labels: string[]
+  extraPrice: number
+}
+
+/** 옵션 그룹을 곱집합으로 펼치되 서버가 쓰는 코드까지 같이 만든다 */
+function buildCombinations(groups: ProductOptionGroup[]): Combination[] {
+  return groups.reduce<Combination[]>(
+    (acc, group, groupIndex) =>
+      acc.flatMap((combo) =>
+        group.values.map((optionValue, valueIndex) => ({
+          codes: {
+            ...combo.codes,
+            [optionGroupCodeOf(groupIndex)]: optionValueCodeOf(
+              groupIndex,
+              valueIndex,
+            ),
+          },
+          labels: [...combo.labels, optionValue.label],
+          extraPrice: combo.extraPrice + optionValue.extraPrice,
+        })),
+      ),
+    [{ codes: {}, labels: [], extraPrice: 0 }],
+  )
+}
+
+/**
+ * 상세 응답의 variant마다 폼의 수량 맵 키를 계산해 optionCode와 짝지어 둔다.
+ * 폼은 서버 옵션 코드를 들고 있지 않아서, 재고를 저장할 때 이 표로 되돌린다.
+ */
+export function buildOptionCodeByQuantityKey(
+  detail: AdminProductDetail,
+): Record<string, string> {
+  const colorGroup = detail.optionGroups.find(
+    (group) => group.groupCode === COLOR_GROUP_CODE,
+  )
+  const otherGroups = detail.optionGroups.filter(
+    (group) => group.groupCode !== COLOR_GROUP_CODE,
+  )
+
+  return Object.fromEntries(
+    detail.variants.map((variant) => {
+      const colorName =
+        colorGroup?.values.find(
+          (value) => value.valueCode === variant.optionValues.color,
+        )?.name ?? ''
+      const labels = otherGroups.map(
+        (group) =>
+          group.values.find(
+            (value) =>
+              value.valueCode === variant.optionValues[group.groupCode],
+          )?.name ?? '',
+      )
+
+      return [buildVariantKey(colorName, labels), variant.optionCode]
+    }),
+  )
+}
+
+/**
+ * 폼의 조합별 수량을 재고 API 요청들로 바꾼다.
+ * 상품 등록/수정 본문(ProductUpsert)에는 수량 필드가 없어서 재고는 따로 보낸다.
+ * 서버가 아직 옵션 코드를 발급하지 않은 조합(새로 추가한 옵션)은 건너뛴다.
+ */
+export function toStockRequests(
+  value: AdminProductFormValue,
+  detail: AdminProductDetail,
+): AdminStockPutRequest[] {
+  const optionCodeByKey = buildOptionCodeByQuantityKey(detail)
+
+  return Object.entries(value.quantities).flatMap(
+    ([quantityKey, initialQuantity]) => {
+      const optionCode = optionCodeByKey[quantityKey]
+      return optionCode ? [{ optionCode, initialQuantity }] : []
+    },
+  )
+}
+
 /**
  * 폼 값을 등록/수정 요청 본문으로 바꾼다.
  *
@@ -245,25 +326,7 @@ export function toUpsertRequest(
 
   // 조합을 코드까지 붙여 다시 펼친다 — 라벨만 있는 getProductVariants와 달리
   // 서버는 optionValues를 코드로 받는다.
-  const combos = groups.reduce<
-    { codes: Record<string, string>; labels: string[]; extraPrice: number }[]
-  >(
-    (acc, group, groupIndex) =>
-      acc.flatMap((combo) =>
-        group.values.map((optionValue, valueIndex) => ({
-          codes: {
-            ...combo.codes,
-            [optionGroupCodeOf(groupIndex)]: optionValueCodeOf(
-              groupIndex,
-              valueIndex,
-            ),
-          },
-          labels: [...combo.labels, optionValue.label],
-          extraPrice: combo.extraPrice + optionValue.extraPrice,
-        })),
-      ),
-    [{ codes: {}, labels: [], extraPrice: 0 }],
-  )
+  const combos = buildCombinations(groups)
 
   const colorAxis =
     namedColors.length > 0
@@ -308,7 +371,10 @@ export function toUpsertRequest(
 }
 
 /** 상세 응답을 폼이 편집할 수 있는 모양으로 되돌린다 */
-export function toFormValue(detail: AdminProductDetail): AdminProductFormValue {
+export function toFormValue(
+  detail: AdminProductDetail,
+  stockItems: AdminStockItem[] = [],
+): AdminProductFormValue {
   const colorGroup = detail.optionGroups.find(
     (group) => group.groupCode === COLOR_GROUP_CODE,
   )
@@ -340,5 +406,16 @@ export function toFormValue(detail: AdminProductDetail): AdminProductFormValue {
       })),
     })),
     basePrice: detail.priceRange.min,
+    // 재고 응답의 optionCode를 폼의 수량 키(색상|옵션값)로 되돌린다.
+    quantities: Object.fromEntries(
+      Object.entries(buildOptionCodeByQuantityKey(detail)).flatMap(
+        ([quantityKey, optionCode]) => {
+          const stock = stockItems.find(
+            (item) => item.optionCode === optionCode,
+          )
+          return stock ? [[quantityKey, stock.initialQuantity]] : []
+        },
+      ),
+    ),
   }
 }

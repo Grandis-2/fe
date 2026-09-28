@@ -1,6 +1,7 @@
 import type {
   AdminProductDetail,
   AdminProductSummary,
+  AdminStockItem,
   DisplayStatus,
   ProductBadge,
   SaleStatus,
@@ -11,6 +12,7 @@ export type AdminProduct = AdminProductSummary
 export type AdminProductDetailModel = AdminProductDetail
 
 // 화면(pages/widgets)은 DTO를 직접 import할 수 없어 여기서 다시 내보낸다.
+export type AdminStockItemModel = AdminStockItem
 export type AdminSaleStatus = SaleStatus
 export type AdminDisplayStatus = DisplayStatus
 

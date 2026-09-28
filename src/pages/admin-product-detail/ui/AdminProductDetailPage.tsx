@@ -5,15 +5,19 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
   getAdminProduct,
+  getAdminProductStock,
   getAdminProductStocks,
+  putAdminProductStock,
   saleStatusColor,
   saleStatusLabel,
   toFormValue,
+  toStockRequests,
   toUpsertRequest,
   updateAdminProduct,
   type AdminProductDetailModel,
   type AdminProductFormValue,
   type AdminProductStock,
+  type AdminStockItemModel,
 } from '@/entities/admin-product'
 import { SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
@@ -36,40 +40,6 @@ const isTabValue = (value: string | null): value is TabValue =>
 
 const numberFormatter = new Intl.NumberFormat('ko-KR')
 
-const stockColumns: TableColumn<AdminProductStock>[] = [
-  { key: 'color', header: '색상', align: 'center', render: (row) => row.color },
-  {
-    key: 'capacity',
-    header: '용량',
-    align: 'center',
-    render: (row) => row.capacity,
-  },
-  {
-    key: 'totalCount',
-    header: '총수량',
-    align: 'center',
-    render: (row) => numberFormatter.format(row.totalCount),
-  },
-  {
-    key: 'price',
-    header: '가격',
-    align: 'center',
-    render: (row) => `${numberFormatter.format(row.price)}원`,
-  },
-  {
-    key: 'confirmedCount',
-    header: '확정',
-    align: 'center',
-    render: (row) => `${numberFormatter.format(row.confirmedCount)}건`,
-  },
-  {
-    key: 'remainingCount',
-    header: '잔여',
-    align: 'center',
-    render: (row) => `${numberFormatter.format(row.remainingCount)}건`,
-  },
-]
-
 export function AdminProductDetailPage() {
   const navigate = useNavigate()
   const { productId = '' } = useParams()
@@ -78,17 +48,17 @@ export function AdminProductDetailPage() {
   const tab = isTabValue(tabParam) ? tabParam : DEFAULT_TAB
 
   const [product, setProduct] = useState<AdminProductDetailModel>()
+  const [stockItems, setStockItems] = useState<AdminStockItemModel[]>([])
   const [error, setError] = useState<string>()
-
   useEffect(() => {
     let cancelled = false
 
-    getAdminProduct(productId)
-      .then((detail) => {
-        if (!cancelled) {
-          setProduct(detail)
-          setError(undefined)
-        }
+    Promise.all([getAdminProduct(productId), getAdminProductStock(productId)])
+      .then(([detail, stock]) => {
+        if (cancelled) return
+        setProduct(detail)
+        setStockItems(stock.items)
+        setError(undefined)
       })
       .catch((cause: Error) => {
         if (!cancelled) setError(cause.message)
@@ -106,12 +76,65 @@ export function AdminProductDetailPage() {
     setSearchParams(params, { replace: true })
   }
 
-  const handleSubmit = (value: AdminProductFormValue) =>
+  /**
+   * 상품 본문과 재고를 함께 저장한다.
+   * ProductUpsert에는 수량 필드가 없어서 조합별 수량은 재고 API로 따로 보낸다.
+   */
+  const handleSubmit = (
+    value: AdminProductFormValue,
+    detail: AdminProductDetailModel,
+  ) =>
     void updateAdminProduct(productId, toUpsertRequest(value))
+      .then(() =>
+        Promise.all(
+          toStockRequests(value, detail).map((body) =>
+            putAdminProductStock(productId, body),
+          ),
+        ),
+      )
       .then(() => navigate('/admin/products'))
       .catch((cause: Error) => setError(cause.message))
 
-  if (error || !product) {
+  const stockColumns: TableColumn<AdminProductStock>[] = [
+    {
+      key: 'color',
+      header: '색상',
+      align: 'center',
+      render: (row) => row.color,
+    },
+    {
+      key: 'capacity',
+      header: '용량',
+      align: 'center',
+      render: (row) => row.capacity,
+    },
+    {
+      key: 'totalCount',
+      header: '총수량',
+      align: 'center',
+      render: (row) => numberFormatter.format(row.totalCount),
+    },
+    {
+      key: 'price',
+      header: '가격',
+      align: 'center',
+      render: (row) => `${numberFormatter.format(row.price)}원`,
+    },
+    {
+      key: 'confirmedCount',
+      header: '확정',
+      align: 'center',
+      render: (row) => `${numberFormatter.format(row.confirmedCount)}건`,
+    },
+    {
+      key: 'remainingCount',
+      header: '잔여',
+      align: 'center',
+      render: (row) => `${numberFormatter.format(row.remainingCount)}건`,
+    },
+  ]
+
+  if (!product) {
     return (
       <div className={styles.root}>
         <div className={styles.notFound}>
@@ -148,11 +171,13 @@ export function AdminProductDetailPage() {
 
       <SegmentedTabs items={tabs} value={tab} onChange={setTab} />
 
+      {error && <div className={styles.error}>{error}</div>}
+
       {tab === 'stock' && (
         <Table
           columns={stockColumns}
-          rows={getAdminProductStocks(product)}
-          rowKey={(row) => row.id}
+          rows={getAdminProductStocks(product, stockItems)}
+          rowKey={(row) => row.optionCode}
           pageSize={10}
           emptyMessage="등록된 재고가 없습니다."
         />
@@ -161,8 +186,8 @@ export function AdminProductDetailPage() {
       {tab === 'edit' && (
         <AdminProductForm
           mode="edit"
-          defaultValue={toFormValue(product)}
-          onSubmit={handleSubmit}
+          defaultValue={toFormValue(product, stockItems)}
+          onSubmit={(value) => handleSubmit(value, product)}
           onCancel={() => navigate('/admin/products')}
           onPreview={() => navigate(`/products/${product.productId}`)}
         />

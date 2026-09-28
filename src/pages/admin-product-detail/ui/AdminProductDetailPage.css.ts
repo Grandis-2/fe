@@ -76,3 +76,13 @@ export const notFound = style([
     color: color.text.tertiary,
   },
 ])
+
+export const error = style([
+  typography.body.sub,
+  {
+    padding: `${spacing[12]} ${spacing[16]}`,
+    borderRadius: '8px',
+    background: color.background.subtleDanger,
+    color: color.status.danger,
+  },
+])

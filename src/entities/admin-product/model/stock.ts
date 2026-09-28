@@ -1,14 +1,19 @@
-import type { AdminProductDetail } from '@/shared/api/types'
+import type { AdminProductDetail, AdminStockItem } from '@/shared/api/types'
 
 /** 재고 조회 탭의 한 줄 */
 export type AdminProductStock = {
-  id: string
+  /** 재고 API가 대상을 지정할 때 쓰는 키 */
+  optionCode: string
   color: string
   capacity: string
-  totalCount: number
   price: number
+  /** 운영자가 설정한 총 수량 */
+  totalCount: number
+  /** 예약으로 확보된 수량 */
   confirmedCount: number
+  /** 남은 수량 */
   remainingCount: number
+  adjustmentsEnabled: boolean
 }
 
 const valueName = (
@@ -21,26 +26,30 @@ const valueName = (
     ?.values.find((value) => value.valueCode === valueCode)?.name ?? '-'
 
 /**
- * 상세 응답의 variants로 재고 표를 만든다.
- *
- * ponytail: 색상·용량·가격은 실제 응답에서 오지만 총수량/확정/잔여는 관리자
- * 상품 API 스펙에 아직 없다. 재고 엔드포인트가 정해지면 아래 계산을 교체한다.
+ * 재고 응답(수량)과 상품 상세(색상·용량·가격)를 optionCode로 맞붙인다.
+ * 재고 API는 옵션 코드와 수량만 주고, 그 옵션이 무슨 색·용량인지는 상품 쪽에 있다.
  */
 export function getAdminProductStocks(
   product: AdminProductDetail,
+  stockItems: AdminStockItem[],
 ): AdminProductStock[] {
-  return product.variants.map((variant, index) => {
-    const totalCount = 1500 - index * 200
-    const confirmedCount = Math.round(totalCount * (0.7 + index * 0.05))
+  return product.variants.flatMap((variant) => {
+    const stock = stockItems.find(
+      (item) => item.optionCode === variant.optionCode,
+    )
+    if (!stock) return []
 
-    return {
-      id: `${product.productId}-${variant.optionCode}`,
-      color: valueName(product, 'color', variant.optionValues.color),
-      capacity: valueName(product, 'storage', variant.optionValues.storage),
-      totalCount,
-      price: variant.price,
-      confirmedCount,
-      remainingCount: totalCount - confirmedCount,
-    }
+    return [
+      {
+        optionCode: variant.optionCode,
+        color: valueName(product, 'color', variant.optionValues.color),
+        capacity: valueName(product, 'storage', variant.optionValues.storage),
+        price: variant.price,
+        totalCount: stock.initialQuantity,
+        confirmedCount: stock.reservedQuantity,
+        remainingCount: stock.availableQuantity,
+        adjustmentsEnabled: stock.adjustmentsEnabled,
+      },
+    ]
   })
 }
