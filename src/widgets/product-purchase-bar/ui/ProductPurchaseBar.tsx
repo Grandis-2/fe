@@ -24,6 +24,9 @@ export type ProductPurchaseBarProps = {
   isSheetOpen: boolean
   onSheetOpenChange: (open: boolean) => void
   onCheckout: () => void
+  // 상품 조회가 안 끝났거나 실패한 동안 결제/사전예약을 막는다(ProductDetailPage의
+  // isCheckoutReady 참고). 장바구니 버튼은 결제로 이어지지 않으니 그대로 둔다.
+  checkoutDisabled?: boolean
 }
 
 // 하단 고정 주문바(데스크톱은 스크롤 시 나타나는 상단 바) + 모바일 바텀시트를 한 단위로 묶는다.
@@ -40,10 +43,13 @@ export function ProductPurchaseBar({
   isSheetOpen,
   onSheetOpenChange,
   onCheckout,
+  checkoutDisabled,
 }: ProductPurchaseBarProps) {
-  // 처음 누르면 수량/가격을 확인할 바텀시트를 띄우고, 시트가 열린 상태에서
-  // 다시 누르면 그대로 결제로 넘어간다.
-  const handleCheckoutButtonClick = () => {
+  // 모바일에서만 처음 누르면 수량/가격을 확인할 바텀시트를 띄우고, 시트가 열린
+  // 상태에서 다시 누르면 그대로 결제로 넘어간다 — 데스크톱은 시트 자체가 CSS로
+  // 항상 숨겨져 있어(styles.sheet) 이 흐름을 타면 첫 클릭이 화면에 아무 변화 없이
+  // 사라져 버리므로, 데스크톱 전용 버튼은 onCheckout을 바로 부른다(아래 렌더 참고).
+  const handleMobileCheckoutClick = () => {
     if (!isSheetOpen) {
       onSheetOpenChange(true)
       return
@@ -54,7 +60,9 @@ export function ProductPurchaseBar({
   return (
     <>
       {isSheetOpen && (
-        <div
+        <button
+          type="button"
+          aria-label="닫기"
           className={styles.sheetBackdrop}
           onClick={() => onSheetOpenChange(false)}
         />
@@ -116,22 +124,26 @@ export function ProductPurchaseBar({
                   className={styles.orderBarIconButton}
                 />
               )}
+              {/* 모바일: 바텀시트를 한 번 거치는 2단계 흐름. 데스크톱: 시트가 안 보이므로 바로 결제. */}
               <Button
-                className={styles.orderBarCheckoutButton}
-                onClick={handleCheckoutButtonClick}
+                className={[
+                  styles.orderBarCheckoutButton,
+                  styles.orderBarCheckoutButtonMobile,
+                ].join(' ')}
+                onClick={handleMobileCheckoutClick}
+                disabled={checkoutDisabled}
               >
-                {isPreorder ? (
-                  '사전예약하기'
-                ) : (
-                  <>
-                    <span className={styles.orderBarCheckoutLabelMobile}>
-                      결제하기
-                    </span>
-                    <span className={styles.orderBarCheckoutLabelDesktop}>
-                      {priceLabel} 결제하기
-                    </span>
-                  </>
-                )}
+                {isPreorder ? '사전예약하기' : '결제하기'}
+              </Button>
+              <Button
+                className={[
+                  styles.orderBarCheckoutButton,
+                  styles.orderBarCheckoutButtonDesktop,
+                ].join(' ')}
+                onClick={onCheckout}
+                disabled={checkoutDisabled}
+              >
+                {isPreorder ? '사전예약하기' : `${priceLabel} 결제하기`}
               </Button>
             </div>
           </Container>

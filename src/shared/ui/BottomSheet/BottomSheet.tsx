@@ -35,9 +35,10 @@ export const Content = forwardRef<HTMLDivElement, BottomSheetContentProps>(
     return (
       <VaulDrawer.Portal>
         {/* vaul의 Overlay는 modal일 때만 렌더된다(스크롤 잠금과 한 세트라 modal={false}면 null) —
-            검은 배경은 그대로 갖고 싶어서 직접 그리고, 닫기 동작만 Close로 위임한다. */}
+            검은 배경은 그대로 갖고 싶어서 직접 그리고, 닫기 동작만 Close로 위임한다.
+            버튼으로 그려야 키보드로 포커스·Enter가 되고 스크린리더에 "닫기"로 읽힌다. */}
         <VaulDrawer.Close asChild>
-          <div className={styles.overlay} />
+          <button type="button" aria-label="닫기" className={styles.overlay} />
         </VaulDrawer.Close>
         <VaulDrawer.Content
           ref={ref}

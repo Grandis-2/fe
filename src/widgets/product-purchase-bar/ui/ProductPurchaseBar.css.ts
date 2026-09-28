@@ -133,8 +133,11 @@ export const orderBarCheckoutButton = style({
   },
 })
 
-// 모바일은 "결제하기"만, 데스크톱은 가격을 붙인 문구를 보여준다 — 텍스트라 display 스위치로 처리.
-export const orderBarCheckoutLabelMobile = style({
+// 결제 버튼 자체를 모바일/데스크톱 두 벌 렌더링한다(ProductPurchaseBar.tsx) — 문구뿐 아니라
+// 클릭 동작도 갈리기 때문이다(모바일은 바텀시트를 먼저 열고, 데스크톱은 시트가 CSS로 항상
+// 숨어 있어 곧장 결제로 넘어가야 함). 텍스트만 다르면 span 스위치로 됐겠지만 핸들러가 다르므로
+// 버튼 단위로 나눈다.
+export const orderBarCheckoutButtonMobile = style({
   '@media': {
     [breakpoint.desktop]: {
       display: 'none',
@@ -142,11 +145,11 @@ export const orderBarCheckoutLabelMobile = style({
   },
 })
 
-export const orderBarCheckoutLabelDesktop = style({
+export const orderBarCheckoutButtonDesktop = style({
   display: 'none',
   '@media': {
     [breakpoint.desktop]: {
-      display: 'inline',
+      display: 'inline-flex',
     },
   },
 })
@@ -157,7 +160,7 @@ const fadeIn = keyframes({
 })
 
 const slideUp = keyframes({
-  from: { transform: 'translateY(16px)', opacity: 0 },
+  from: { transform: `translateY(${spacing[16]})`, opacity: 0 },
   to: { transform: 'translateY(0)', opacity: 1 },
 })
 
@@ -169,7 +172,11 @@ export const sheetBackdrop = style({
   position: 'fixed',
   inset: 0,
   zIndex: 2,
-  background: 'rgba(0, 0, 0, 0.4)',
+  // CategoryNav의 메가 메뉴 딤과 같은 방식 — 순검정 대신 다크 배경 토큰을 섞는다.
+  background: `color-mix(in srgb, ${color.backgroundDark.base} 40%, transparent)`,
+  border: 'none',
+  padding: 0,
+  cursor: 'pointer',
   animation: `${fadeIn} ${motion.duration.fast} ${motion.easing.default}`,
   '@media': {
     [breakpoint.desktop]: {
@@ -182,7 +189,8 @@ export const sheet = style({
   background: color.background.base,
   borderRadius: '20px 20px 0 0',
   padding: `${spacing[8]} ${spacing[20]} ${spacing[24]}`,
-  boxShadow: '0 -8px 24px rgba(0, 0, 0, 0.12)',
+  // 프로젝트에서 쓰는 그림자 색(Calendar 등)과 맞춘다 — 순검정 대신 text.primary 계열.
+  boxShadow: '0 -8px 24px rgba(26, 26, 29, 0.12)',
   animation: `${slideUp} ${motion.duration.fast} ${motion.easing.default}`,
   '@media': {
     [breakpoint.desktop]: {

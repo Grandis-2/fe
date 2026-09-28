@@ -7,6 +7,9 @@ export const overlay = style({
   position: 'fixed',
   inset: 0,
   background: 'rgba(0, 0, 0, 0.5)',
+  border: 'none',
+  padding: 0,
+  cursor: 'pointer',
 })
 
 export const content = style({
