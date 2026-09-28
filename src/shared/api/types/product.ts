@@ -113,6 +113,8 @@ export type DispatchWindowVersion = {
 }
 
 export type ProductDetail = ProductSummary & {
+  // 사전예약 여부. 상세 화면은 이 값으로 수량 고정·사전예약 버튼을 결정한다.
+  saleMode: SaleMode
   categoryId: string | null
   categoryPath: string[]
   summary: string | null
@@ -147,11 +149,16 @@ export type ProductCardOptionDto = {
   extraPrice: number
 }
 
+// 카드 목록 전용 판매 상태. ProductSummary의 saleStatus(BEFORE_OPEN/OPEN/CLOSED)와는
+// 별개로, 카드 API가 사전예약 여부만 이 값으로 내려준다.
+export type SaleMode = 'PREORDER' | 'IN_STOCK'
+
 export type ProductCardSummaryDto = {
   productId: string
   name: string
   modelNumber: string
   basePrice: number
+  saleMode: SaleMode
   colors: ProductCardColorDto[]
   options: ProductCardOptionDto[]
 }

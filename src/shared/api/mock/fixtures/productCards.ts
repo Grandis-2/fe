@@ -1,4 +1,4 @@
-import type { ProductCardSummaryDto } from '../../types'
+import type { ProductCardSummaryDto, SaleMode } from '../../types'
 
 const COLORS: { slug: string; label: string; hex: string }[] = [
   { slug: 'sliver', label: '실버', hex: '#D9D9DE' },
@@ -24,12 +24,14 @@ function buildCards(
   count: number,
   basePrice: number,
   name = 'NOVA MacBook Neo',
+  saleMode: SaleMode = 'IN_STOCK',
 ): ProductCardSummaryDto[] {
   return Array.from({ length: count }, (_, i) => ({
     productId: `${idPrefix}-${i + 1}`,
     name: `${name} ${i + 1}`,
     modelNumber: 'MB-NEO',
     basePrice: basePrice + i * 50000,
+    saleMode,
     colors,
     options,
   }))
@@ -40,35 +42,39 @@ export const recommendedProductCards = buildCards('recommend', 8, 1690000)
 
 // 헤더 메가 메뉴(CategoryNav)의 카테고리 > 하위 카테고리와 이름을 맞춘다.
 // ponytail: 상품 이미지는 아직 맥북 촬영본뿐이라 모든 카테고리가 같은 이미지를 쓴다.
-const SEARCH_CATEGORIES: Record<string, [string, number, number][]> = {
-  모바일: [
-    ['스마트폰', 8, 1250000],
-    ['태블릿', 5, 890000],
-    ['폴더블', 3, 2190000],
-  ],
-  'PC/주변기기': [
-    ['노트북', 6, 1290000],
-    ['모니터', 4, 450000],
-    ['키보드/마우스', 7, 89000],
-  ],
-  웨어러블: [
-    ['스마트워치', 5, 390000],
-    ['무선이어폰', 6, 259000],
-    ['스마트밴드', 2, 79000],
-  ],
-}
+// saleMode 생략 시 IN_STOCK — 폴더블만 신제품 사전예약 시나리오로 PREORDER 예시를 남긴다.
+const SEARCH_CATEGORIES: Record<string, [string, number, number, SaleMode?][]> =
+  {
+    모바일: [
+      ['스마트폰', 8, 1250000],
+      ['태블릿', 5, 890000],
+      ['폴더블', 3, 2190000, 'PREORDER'],
+    ],
+    'PC/주변기기': [
+      ['노트북', 6, 1290000],
+      ['모니터', 4, 450000],
+      ['키보드/마우스', 7, 89000],
+    ],
+    웨어러블: [
+      ['스마트워치', 5, 390000],
+      ['무선이어폰', 6, 259000],
+      ['스마트밴드', 2, 79000],
+    ],
+  }
 
 export const searchProductCardGroups = Object.entries(
   SEARCH_CATEGORIES,
-).flatMap(([category, subCategories]) =>
-  subCategories.map(([subCategory, count, basePrice]) => ({
+).flatMap(([category, subCategories], categoryIndex) =>
+  subCategories.map(([subCategory, count, basePrice, saleMode], subIndex) => ({
     category,
     subCategory,
+    // id에 카테고리 이름('PC/주변기기')을 넣으면 '/' 때문에 상품 상세 경로가 깨진다.
     cards: buildCards(
-      `search-${category}-${subCategory}`,
+      `search-${categoryIndex}-${subIndex}`,
       count,
       basePrice,
       `NOVA ${subCategory}`,
+      saleMode,
     ),
   })),
 )

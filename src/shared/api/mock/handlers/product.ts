@@ -91,6 +91,23 @@ const comparators: Record<
     b.ratingSummary.reviewCount - a.ratingSummary.reviewCount,
 }
 
+const allProductCards = [
+  ...bestProductCards,
+  ...recommendedProductCards,
+  ...searchProductCardGroups.flatMap((group) => group.cards),
+]
+
+// ponytail: 카드 목업(best-1, search-0-0 …)은 상세 목업이 따로 없어서, 카드에서 상세로
+// 넘어가면 맥북 네오 상세를 틀로 쓰고 id·이름·saleMode만 카드 값으로 덮는다.
+// 상세 목업을 상품마다 만들 때 제거.
+function detailFromCard(productId: string): ProductDetail | undefined {
+  const card = allProductCards.find((it) => it.productId === productId)
+  const template = products.find((it) => it.productId === 'MB-NEO')
+  if (!card || !template) return undefined
+  const { name, saleMode } = card
+  return { ...template, productId, name, saleMode }
+}
+
 export const productHandlers: RequestHandler[] = [
   http.get(url('/categories'), () => ok({ items: categories })),
 
@@ -234,7 +251,10 @@ export const productHandlers: RequestHandler[] = [
   }),
 
   http.get(url('/products/:productId'), ({ params }) => {
-    const product = products.find((it) => it.productId === params.productId)
+    const productId = String(params.productId)
+    const product =
+      products.find((it) => it.productId === productId) ??
+      detailFromCard(productId)
     if (!product) {
       return fail(404, {
         code: 'PRODUCT_NOT_FOUND',

@@ -25,6 +25,13 @@ export const media = style({
 // height:100%를 Slider(Swiper)까지 퍼센트로 내려보내면 aspect-ratio(media) + flex(swiper-wrapper) 조합에서
 // 순환 계산이 발생해 크롬이 LayoutUnit 상한값(약 33554432px)으로 튀는 버그가 있었다 — absolute + inset:0으로
 // media의 padding box에 기하학적으로 고정시켜 퍼센트 순환 자체를 피한다.
+export const badge = style({
+  position: 'absolute',
+  top: spacing[12],
+  left: spacing[12],
+  zIndex: 1,
+})
+
 export const sliderFill = style({
   position: 'absolute',
   inset: 0,

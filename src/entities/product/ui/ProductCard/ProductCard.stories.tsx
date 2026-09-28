@@ -21,6 +21,7 @@ const colorSwatches = [
 export const Default: Story = {
   args: {
     product: {
+      productId: 'sample-1',
       imageSrcs: [macbook1, macbook2],
       name: 'NOVA Phone',
       modelNumber: 'NV-2026',
@@ -31,7 +32,14 @@ export const Default: Story = {
         { label: '512GB', extraPrice: 130000 },
       ],
       basePrice: 1290000,
+      saleMode: 'IN_STOCK',
     },
+  },
+}
+
+export const Preorder: Story = {
+  args: {
+    product: { ...Default.args.product, saleMode: 'PREORDER' },
   },
 }
 

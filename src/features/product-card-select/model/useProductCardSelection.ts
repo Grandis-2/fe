@@ -13,10 +13,12 @@ function toProductCardData(
 ): ProductCardData {
   const color = product.colors[colorIndex]
   return {
+    productId: product.productId,
     imageSrcs: color?.imageUrls ?? [],
     name: product.name,
     modelNumber: product.modelNumber,
     colorName: color?.label ?? '',
+    saleMode: product.saleMode,
     colorSwatches: product.colors.map((item, i) => ({
       ...item,
       selected: i === colorIndex,
