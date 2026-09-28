@@ -1,3 +1,4 @@
+export type * from './admin-dispatch'
 export type * from './admin-product'
 export type * from './admin-stock'
 export type * from './address'
