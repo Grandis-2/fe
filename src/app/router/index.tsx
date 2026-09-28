@@ -10,6 +10,8 @@ import { AdminPlaceholderPage } from '@/pages/admin-placeholder'
 import { AdminProductDetailPage } from '@/pages/admin-product-detail'
 import { AdminProductNewPage } from '@/pages/admin-product-new'
 import { AdminProductsPage } from '@/pages/admin-products'
+import { AdminReservationDetailPage } from '@/pages/admin-reservation-detail'
+import { AdminReservationsPage } from '@/pages/admin-reservations'
 import { KakaoCallbackPage } from '@/pages/kakao-callback'
 import { MainPage } from '@/pages/main'
 import { Mypage } from '@/pages/mypage'
@@ -64,9 +66,10 @@ export const router = createBrowserRouter([
             path: '/admin/preorders',
             element: <AdminPlaceholderPage title="사전 예약 관리" />,
           },
+          { path: '/admin/orders', element: <AdminReservationsPage /> },
           {
-            path: '/admin/orders',
-            element: <AdminPlaceholderPage title="예약 현황" />,
+            path: '/admin/orders/:reservationId',
+            element: <AdminReservationDetailPage />,
           },
           {
             path: '/admin/consistency-check',
