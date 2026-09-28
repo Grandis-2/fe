@@ -74,6 +74,14 @@ export const addIcon = style({
   height: '16px',
 })
 
+export const editFooter = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[16],
+  flexWrap: 'wrap',
+})
+
 export const undeterminedRow = style({
   display: 'flex',
   alignItems: 'center',
