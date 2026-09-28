@@ -1,6 +1,6 @@
 import { expect, fn, userEvent, waitFor } from 'storybook/test'
 
-import { createEmptyProductFormValue } from '../../model/types'
+import { createEmptyProductFormValue } from '@/entities/admin-product'
 
 import { AdminProductForm } from './AdminProductForm'
 
@@ -48,7 +48,9 @@ export const Edit: Story = {
     await expect(canvas.queryByRole('button', { name: '등록하기' })).toBeNull()
     // 사전 예약이 켜져 있으면 오픈/마감 요약이 보인다.
     await expect(
-      canvas.getByText('2026년 9월 20일 (일) 09:00 ~ 2026년 9월 20일 (일) 23:59'),
+      canvas.getByText(
+        '2026년 9월 20일 (일) 09:00 ~ 2026년 9월 20일 (일) 23:59',
+      ),
     ).toBeVisible()
 
     await userEvent.click(canvas.getByRole('button', { name: '취소' }))
@@ -94,13 +96,17 @@ export const VariantCombination: Story = {
     await userEvent.type(quantityField, '1500')
 
     // 옵션값을 하나 더 추가하면 조합이 2개로 늘어난다
-    await userEvent.click(canvas.getByRole('button', { name: '옵션 타입 추가' }))
+    await userEvent.click(
+      canvas.getByRole('button', { name: '옵션 타입 추가' }),
+    )
     await userEvent.type(canvas.getAllByLabelText('용량 값')[1], '128GB')
     await waitFor(async () =>
       expect(canvas.getAllByRole('row')).toHaveLength(3),
     )
     await expect(
-      canvas.getByText('색상 1개 X 용량 2개 = 2개 조합이 자동으로 만들어졌습니다.'),
+      canvas.getByText(
+        '색상 1개 X 용량 2개 = 2개 조합이 자동으로 만들어졌습니다.',
+      ),
     ).toBeVisible()
 
     // 먼저 입력한 수량은 그대로 남아 있어야 한다

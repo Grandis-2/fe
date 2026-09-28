@@ -1,13 +1,13 @@
 import { Plus, X } from 'lucide-react'
 
-import { Input } from '@/shared/ui'
-
 import {
   createOptionGroup,
   createOptionValue,
   type ProductOptionGroup,
   type ProductOptionValue,
-} from '../../model/types'
+} from '@/entities/admin-product'
+import { Input } from '@/shared/ui'
+
 import { ExtraPriceField } from '../ExtraPriceField'
 import * as fields from '../fields.css'
 
@@ -18,10 +18,15 @@ export type OptionGroupEditorProps = {
   onChange: (groups: ProductOptionGroup[]) => void
 }
 
-export function OptionGroupEditor({ groups, onChange }: OptionGroupEditorProps) {
+export function OptionGroupEditor({
+  groups,
+  onChange,
+}: OptionGroupEditorProps) {
   const patchGroup = (id: string, partial: Partial<ProductOptionGroup>) =>
     onChange(
-      groups.map((group) => (group.id === id ? { ...group, ...partial } : group)),
+      groups.map((group) =>
+        group.id === id ? { ...group, ...partial } : group,
+      ),
     )
 
   const patchValue = (

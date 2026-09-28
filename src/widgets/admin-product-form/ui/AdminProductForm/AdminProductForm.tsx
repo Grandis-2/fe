@@ -1,12 +1,12 @@
 import { useState, type FormEvent } from 'react'
 
-import { Button, Checkbox, ImageUploader, Input } from '@/shared/ui'
-
 import {
   createEmptyProductFormValue,
   type AdminProductFormValue,
-} from '../../model/types'
-import { getProductVariants } from '../../model/variants'
+} from '@/entities/admin-product'
+import { getProductVariants } from '@/entities/admin-product'
+import { Button, Checkbox, ImageUploader, Input } from '@/shared/ui'
+
 import { ColorOptionEditor } from '../ColorOptionEditor'
 import { FormSection } from '../FormSection'
 import { NumberField } from '../NumberField'

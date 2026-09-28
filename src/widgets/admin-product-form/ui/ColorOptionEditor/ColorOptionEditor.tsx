@@ -1,8 +1,11 @@
 import { Plus, X } from 'lucide-react'
 
+import {
+  createColorOption,
+  type ProductColorOption,
+} from '@/entities/admin-product'
 import { Checkbox, ImageUploader, Input } from '@/shared/ui'
 
-import { createColorOption, type ProductColorOption } from '../../model/types'
 import * as fields from '../fields.css'
 
 import * as styles from './ColorOptionEditor.css'

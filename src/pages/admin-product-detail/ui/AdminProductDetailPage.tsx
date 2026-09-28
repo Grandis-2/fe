@@ -1,20 +1,23 @@
+import { useEffect, useState } from 'react'
+
 import { ChevronRight } from 'lucide-react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
-  adminProductStatusColor,
-  adminProductStatusLabel,
-  findAdminProduct,
+  getAdminProduct,
   getAdminProductStocks,
+  saleStatusColor,
+  saleStatusLabel,
+  toFormValue,
+  toUpsertRequest,
+  updateAdminProduct,
+  type AdminProductDetailModel,
+  type AdminProductFormValue,
   type AdminProductStock,
 } from '@/entities/admin-product'
 import { SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
-import {
-  AdminProductForm,
-  createEmptyProductFormValue,
-} from '@/widgets/admin-product-form'
-import type { AdminProductFormValue } from '@/widgets/admin-product-form'
+import { AdminProductForm } from '@/widgets/admin-product-form'
 
 import * as styles from './AdminProductDetailPage.css'
 
@@ -74,6 +77,28 @@ export function AdminProductDetailPage() {
   const tabParam = searchParams.get('tab')
   const tab = isTabValue(tabParam) ? tabParam : DEFAULT_TAB
 
+  const [product, setProduct] = useState<AdminProductDetailModel>()
+  const [error, setError] = useState<string>()
+
+  useEffect(() => {
+    let cancelled = false
+
+    getAdminProduct(productId)
+      .then((detail) => {
+        if (!cancelled) {
+          setProduct(detail)
+          setError(undefined)
+        }
+      })
+      .catch((cause: Error) => {
+        if (!cancelled) setError(cause.message)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [productId])
+
   const setTab = (next: TabValue) => {
     const params = new URLSearchParams(searchParams)
     params.set('tab', next)
@@ -81,13 +106,16 @@ export function AdminProductDetailPage() {
     setSearchParams(params, { replace: true })
   }
 
-  const product = findAdminProduct(productId)
+  const handleSubmit = (value: AdminProductFormValue) =>
+    void updateAdminProduct(productId, toUpsertRequest(value))
+      .then(() => navigate('/admin/products'))
+      .catch((cause: Error) => setError(cause.message))
 
-  if (!product) {
+  if (error || !product) {
     return (
       <div className={styles.root}>
         <div className={styles.notFound}>
-          찾을 수 없는 상품입니다.
+          {error ?? '불러오는 중입니다.'}
           <Link className={styles.breadcrumbLink} to="/admin/products">
             상품 관리로 돌아가기
           </Link>
@@ -112,9 +140,9 @@ export function AdminProductDetailPage() {
           variant="subtle"
           size="medium"
           rounded={false}
-          color={adminProductStatusColor[product.status]}
+          color={saleStatusColor[product.saleStatus]}
         >
-          {adminProductStatusLabel[product.status]}
+          {saleStatusLabel[product.saleStatus]}
         </Tag>
       </div>
 
@@ -133,19 +161,10 @@ export function AdminProductDetailPage() {
       {tab === 'edit' && (
         <AdminProductForm
           mode="edit"
-          // ponytail: 상세 조회 API가 붙으면 서버 값을 폼 값으로 변환해 넘긴다.
-          defaultValue={{
-            ...createEmptyProductFormValue(),
-            name: product.name,
-            isPreorder: product.type === 'preorder',
-          }}
-          onSubmit={(value: AdminProductFormValue) =>
-            console.info('상품 수정', value)
-          }
+          defaultValue={toFormValue(product)}
+          onSubmit={handleSubmit}
           onCancel={() => navigate('/admin/products')}
-          onPreview={(value: AdminProductFormValue) =>
-            console.info('미리보기', value)
-          }
+          onPreview={() => navigate(`/products/${product.productId}`)}
         />
       )}
 
