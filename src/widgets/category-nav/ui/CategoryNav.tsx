@@ -1,4 +1,4 @@
-import { Link } from 'react-router'
+import { Link, useLocation, useSearchParams } from 'react-router'
 
 import * as styles from './CategoryNav.css'
 
@@ -63,6 +63,23 @@ export function CategoryNav({
   onLinkClick,
   className,
 }: CategoryNavProps) {
+  // 검색 페이지에 있을 때만 URL의 카테고리로 브랜드 링크·타일을 활성 표시한다.
+  const { pathname } = useLocation()
+  const [searchParams] = useSearchParams()
+  const isSearchPage = pathname === '/search'
+  const activeCategory = isSearchPage ? searchParams.get('category') : null
+  const activeSubCategory = isSearchPage
+    ? searchParams.get('subCategory')
+    : null
+  // 오른쪽 링크는 경로로 판단한다 — /preorder/:id처럼 하위 경로도 같은 메뉴로 본다.
+  // activeLink prop을 주면 그쪽이 우선한다.
+  const currentLink =
+    activeLink ??
+    links.find((link) => {
+      const base = linkPaths[link].split('?')[0]
+      return pathname === base || pathname.startsWith(`${base}/`)
+    })
+
   return (
     <nav className={[styles.root, className].filter(Boolean).join(' ')}>
       <div className={[styles.links, styles.linksTone[tone]].join(' ')}>
@@ -79,7 +96,15 @@ export function CategoryNav({
               (document.activeElement as HTMLElement | null)?.blur()
             }
           >
-            <Link to={searchPath({ category: brand })} className={styles.link}>
+            <Link
+              to={searchPath({ category: brand })}
+              className={[
+                styles.link,
+                brand === activeCategory && styles.linkActive,
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
               {brand}
             </Link>
             <div className={styles.menu}>
@@ -93,6 +118,12 @@ export function CategoryNav({
                         subCategory: category,
                       })}
                       className={styles.menuTile}
+                      aria-current={
+                        brand === activeCategory &&
+                        category === activeSubCategory
+                          ? 'page'
+                          : undefined
+                      }
                     >
                       {category}
                     </Link>
@@ -121,7 +152,7 @@ export function CategoryNav({
           <Link
             key={link}
             to={linkPaths[link]}
-            className={[styles.link, link === activeLink && styles.linkActive]
+            className={[styles.link, link === currentLink && styles.linkActive]
               .filter(Boolean)
               .join(' ')}
             onClick={() => onLinkClick?.(link)}

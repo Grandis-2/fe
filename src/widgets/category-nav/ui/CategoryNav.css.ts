@@ -223,7 +223,8 @@ export const menuTile = style([
       `color ${motion.duration.fast} ${motion.easing.default}`,
     ].join(', '),
     selectors: {
-      '&:hover': {
+      // aria-current: 지금 보고 있는 하위 카테고리(CategoryNav.tsx가 URL로 판단).
+      '&:hover, &[aria-current="page"]': {
         background: color.primary.subtler,
         color: color.primary.base,
       },
@@ -238,7 +239,7 @@ export const menuAside = style({
   // 카테고리 타일은 왼쪽, "더 알아보기"는 콘텐츠 박스 오른쪽 끝으로 민다.
   marginLeft: 'auto',
   boxSizing: 'border-box',
-  width: '300px',
+  width: '200px',
   paddingLeft: spacing[30],
   borderLeft: `1px solid ${color.border.subtle}`,
 })
