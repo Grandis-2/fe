@@ -1,3 +1,5 @@
+import { expect, fn } from 'storybook/test'
+
 import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
 import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
 
@@ -34,6 +36,11 @@ export const Default: Story = {
       basePrice: 1290000,
       saleMode: 'IN_STOCK',
     },
+    onOptionSelect: fn(),
+  },
+  play: async ({ args, canvas }) => {
+    await canvas.getByRole('button', { name: '512GB' }).click()
+    await expect(args.onOptionSelect).toHaveBeenCalledWith(1)
   },
 }
 

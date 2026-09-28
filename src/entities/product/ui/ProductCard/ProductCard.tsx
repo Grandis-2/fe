@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router'
+import { Link } from 'react-router'
 
 import { typography } from '@/shared/config/theme'
 import { Slider, Tag } from '@/shared/ui'
@@ -44,7 +44,6 @@ export function ProductCard({
   onOptionSelect,
   className,
 }: ProductCardProps) {
-  const navigate = useNavigate()
   const {
     productId,
     imageSrcs,
@@ -61,7 +60,6 @@ export function ProductCard({
   const selectedOption = options.find((option) => option.selected)
   const totalPrice = basePrice + (selectedOption?.extraPrice ?? 0)
   const isPreorder = saleMode === 'PREORDER'
-  const goToDetail = () => navigate(`/products/${productId}`)
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
       <div className={styles.media}>
@@ -88,9 +86,9 @@ export function ProductCard({
       </div>
       <div className={styles.content}>
         <div className={styles.nameGroup}>
-          <div className={styles.name} onClick={goToDetail}>
+          <Link to={`/products/${productId}`} className={styles.name}>
             {name}
-          </div>
+          </Link>
           <div className={[typography.body.sub, styles.modelNumber].join(' ')}>
             {modelNumber}
           </div>
