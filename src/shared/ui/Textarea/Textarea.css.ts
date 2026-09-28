@@ -3,7 +3,7 @@ import { style, styleVariants } from '@vanilla-extract/css'
 import { color, motion, spacing, typography } from '@/shared/config/theme'
 
 const base = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   {
     width: '100%',
     border: `1px solid ${color.border.default}`,

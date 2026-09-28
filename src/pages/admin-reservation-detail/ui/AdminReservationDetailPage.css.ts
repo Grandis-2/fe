@@ -39,18 +39,18 @@ export const summaryItem = style({
 })
 
 export const summaryLabel = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { color: color.text.tertiary },
 ])
 
 export const summaryValue = style([
-  typography.body.subMedium,
+  typography.body.defaultMedium,
   { color: color.text.primary },
 ])
 
 export const actionsCard = style([
   card,
-  { display: 'flex', flexDirection: 'column', gap: spacing[12] },
+  { display: 'flex', flexDirection: 'column', gap: spacing[20] },
 ])
 
 export const sectionTitle = style([
@@ -59,7 +59,7 @@ export const sectionTitle = style([
 ])
 
 export const sectionDescription = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { color: color.text.secondary },
 ])
 
@@ -68,21 +68,26 @@ export const actionButtons = style({
   gap: spacing[8],
 })
 
+export const memoHeader = style({
+  display: 'flex',
+  alignItems: 'baseline',
+  gap: spacing[8],
+})
+
+export const memoStatus = style([
+  typography.body.caption,
+  { color: color.text.tertiary },
+])
+
+export const memoError = style([
+  typography.body.caption,
+  { color: color.status.danger },
+])
+
 export const memoSection = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[12],
-})
-
-export const memoRow = style({
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: spacing[8],
-})
-
-// 저장 버튼과 한 줄에 놓여서 남는 폭을 전부 먹어야 한다.
-export const memoInput = style({
-  flex: 1,
 })
 
 export const historySection = style({

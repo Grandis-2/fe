@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useParams } from 'react-router'
 
@@ -45,14 +45,32 @@ const actorLabel: Record<AdminReservationHistoryEntry['actorType'], string> = {
   USER: '회원',
 }
 
+type MemoStatus = 'idle' | 'saving' | 'saved' | 'error'
+
+const memoStatusLabel: Record<MemoStatus, string> = {
+  idle: '',
+  saving: '저장 중…',
+  saved: '저장됨',
+  error: '저장하지 못했습니다. 잠시 후 다시 입력해 주세요.',
+}
+
+// 타이핑이 멈추고 이만큼 지나면 저장한다. 글자마다 보내면 요청이 너무 잦고,
+// 너무 길면 화면을 떠날 때 못 보낸 내용이 많아진다.
+const MEMO_SAVE_DELAY_MS = 800
+
 export function AdminReservationDetailPage() {
   const { reservationId = '' } = useParams()
 
   const [detail, setDetail] = useState<AdminReservationDetail>()
   const [memberName, setMemberName] = useState<string>()
   const [memo, setMemo] = useState('')
-  const [memoSaved, setMemoSaved] = useState(true)
+  const [memoStatus, setMemoStatus] = useState<MemoStatus>('idle')
   const [error, setError] = useState<string>()
+
+  // 저장 판단은 렌더와 무관하게 최신 값으로 해야 해서 ref로 들고 간다 —
+  // 특히 화면을 떠날 때(cleanup)는 state가 이미 과거 값일 수 있다.
+  const memoRef = useRef('')
+  const savedMemoRef = useRef('')
 
   useEffect(() => {
     let cancelled = false
@@ -62,7 +80,9 @@ export function AdminReservationDetailPage() {
         if (cancelled) return
         setDetail(loaded)
         setMemo(loaded.memo ?? '')
-        setMemoSaved(true)
+        memoRef.current = loaded.memo ?? ''
+        savedMemoRef.current = loaded.memo ?? ''
+        setMemoStatus('idle')
         setMemberName(
           members.items.find((member) => member.memberId === loaded.memberId)
             ?.name,
@@ -88,13 +108,32 @@ export function AdminReservationDetailPage() {
       .then(applyResult)
       .catch((cause: Error) => setError(cause.message))
 
-  const saveMemo = () =>
-    void putAdminReservationMemo(reservationId, memo.trim() || null)
+  /** 마지막으로 저장된 값과 다를 때만 보낸다 */
+  const saveMemo = useCallback(() => {
+    const next = memoRef.current.trim()
+    if (next === savedMemoRef.current.trim()) return
+
+    setMemoStatus('saving')
+    return putAdminReservationMemo(reservationId, next || null)
       .then((updated) => {
-        applyResult(updated)
-        setMemoSaved(true)
+        savedMemoRef.current = next
+        setDetail(updated)
+        setMemoStatus('saved')
       })
-      .catch((cause: Error) => setError(cause.message))
+      .catch(() => setMemoStatus('error'))
+  }, [reservationId])
+
+  // 타이핑이 멈추면 저장한다.
+  useEffect(() => {
+    if (memo === savedMemoRef.current) return
+    const timer = setTimeout(saveMemo, MEMO_SAVE_DELAY_MS)
+    return () => clearTimeout(timer)
+  }, [memo, saveMemo])
+
+  // 화면을 떠날 때 아직 못 보낸 내용이 있으면 마지막으로 한 번 더 보낸다.
+  // 이때는 결과를 보여줄 화면이 없으므로, 포커스가 빠질 때도 같이 저장해서
+  // 실패를 알아차릴 기회를 먼저 준다.
+  useEffect(() => () => void saveMemo(), [saveMemo])
 
   if (!detail) {
     return (
@@ -188,9 +227,11 @@ export function AdminReservationDetailPage() {
       </div>
 
       <div className={styles.actionsCard}>
-        <div className={styles.sectionTitle}>허용된 작업</div>
-        <div className={styles.sectionDescription}>
-          확정 실패 / DLQ 상태에서만 아래 조치를 실행할 수 있습니다.
+        <div>
+          <div className={styles.sectionTitle}>허용된 작업</div>
+          <div className={styles.sectionDescription}>
+            확정 실패 / DLQ 상태에서만 아래 조치를 실행할 수 있습니다.
+          </div>
         </div>
         <div className={styles.actionButtons}>
           <Button
@@ -213,23 +254,29 @@ export function AdminReservationDetailPage() {
       </div>
 
       <div className={styles.memoSection}>
-        <div className={styles.sectionTitle}>내부 메모</div>
-        <div className={styles.memoRow}>
-          <Textarea
-            className={styles.memoInput}
-            label="내부 메모"
-            rows={2}
-            placeholder="이 예약에 대한 처리 메모를 남겨주세요. 예약 내용 자체는 수정할 수 없습니다."
-            value={memo}
-            onChange={(event) => {
-              setMemo(event.target.value)
-              setMemoSaved(false)
-            }}
-          />
-          <Button size="medium" disabled={memoSaved} onClick={saveMemo}>
-            저장
-          </Button>
+        <div className={styles.memoHeader}>
+          <div className={styles.sectionTitle}>내부 메모</div>
+          <span
+            className={
+              memoStatus === 'error' ? styles.memoError : styles.memoStatus
+            }
+            // 저장 상태가 바뀔 때만 읽어준다 — 타이핑 중에는 방해하지 않는다.
+            role="status"
+          >
+            {memoStatusLabel[memoStatus]}
+          </span>
         </div>
+        <Textarea
+          label="내부 메모"
+          rows={2}
+          placeholder="입력하면 자동으로 저장됩니다. 예약 내용 자체는 수정할 수 없습니다."
+          value={memo}
+          onChange={(event) => {
+            setMemo(event.target.value)
+            memoRef.current = event.target.value
+          }}
+          onBlur={() => void saveMemo()}
+        />
       </div>
 
       <div className={styles.historySection}>
