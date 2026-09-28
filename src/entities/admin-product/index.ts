@@ -8,6 +8,22 @@ export {
 } from './api/adminProduct'
 export { getAdminProductStock, putAdminProductStock } from './api/adminStock'
 export {
+  createDispatchWindow,
+  getDispatchWindows,
+  publishDispatchWindow,
+  putProductOpenAt,
+} from './api/adminDispatch'
+export {
+  formatDeliveryDate,
+  formatSeqRange,
+  nextFromSeq,
+  pickActiveVersion,
+} from './model/dispatch'
+export type {
+  DispatchWaveModel,
+  DispatchWindowVersionModel,
+} from './model/dispatch'
+export {
   displayStatusLabel,
   isPreorder,
   productTypeLabel,
