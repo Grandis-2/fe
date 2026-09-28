@@ -4,6 +4,7 @@ import { Container } from '@/shared/ui'
 
 import * as styles from './PreorderPage.css'
 
+// ponytail: 아직 사전예약 목록 API가 없어서 목업 데이터로 대체
 const PREORDERS: PreorderCardData[] = [
   {
     id: '1',

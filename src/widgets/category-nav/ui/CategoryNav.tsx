@@ -57,6 +57,12 @@ const linkPaths: Record<CategoryNavLink, string> = {
 const searchPath = (params: Record<string, string>) =>
   `/search?${new URLSearchParams(params)}`
 
+// 링크를 누른 뒤에도 포커스가 남아 있으면 :focus-within 때문에 이동한 페이지 위로 메뉴가
+// 계속 열려 있으므로, 실제로 이동을 일으키는 링크를 누를 때만 포커스를 풀어 닫는다
+// (컨테이너 전체에 걸면 메뉴 안 빈 공간 클릭에도 반응하고, 이 브랜드와 무관한 포커스까지 풀린다).
+const blurActiveElement = () =>
+  (document.activeElement as HTMLElement | null)?.blur()
+
 export function CategoryNav({
   tone = 'default',
   activeLink,
@@ -86,16 +92,7 @@ export function CategoryNav({
         {/* data-mega-menu: 메뉴가 열렸는지(hover/focus)를 헤더가 :has()로 보고
             배경을 불투명하게 바꾼다 — 흰 패널과 한 덩어리로 보이게. */}
         {Object.entries(brandMenus).map(([brand, menu]) => (
-          // 링크를 누른 뒤에도 포커스가 남아 있으면 :focus-within 때문에 이동한 페이지 위로
-          // 메뉴가 계속 열려 있으므로, 메뉴 안에서 클릭하면 포커스를 풀어 닫는다.
-          <div
-            key={brand}
-            className={styles.brand}
-            data-mega-menu
-            onClick={() =>
-              (document.activeElement as HTMLElement | null)?.blur()
-            }
-          >
+          <div key={brand} className={styles.brand} data-mega-menu>
             <Link
               to={searchPath({ category: brand })}
               className={[
@@ -104,6 +101,7 @@ export function CategoryNav({
               ]
                 .filter(Boolean)
                 .join(' ')}
+              onClick={blurActiveElement}
             >
               {brand}
             </Link>
@@ -124,6 +122,7 @@ export function CategoryNav({
                           ? 'page'
                           : undefined
                       }
+                      onClick={blurActiveElement}
                     >
                       {category}
                     </Link>
@@ -136,6 +135,7 @@ export function CategoryNav({
                       key={item.label}
                       to={item.to}
                       className={styles.menuAsideLink}
+                      onClick={blurActiveElement}
                     >
                       {item.label}
                     </Link>
