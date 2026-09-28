@@ -18,6 +18,7 @@ export {
   reservationNo,
   reservationStatusColor,
   reservationStatusLabel,
+  reservationStatusLabels,
 } from './model/types'
 export type {
   AdminMemberModel,

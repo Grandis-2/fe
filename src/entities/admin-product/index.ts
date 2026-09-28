@@ -27,8 +27,10 @@ export {
   displayStatusLabel,
   isPreorder,
   productTypeLabel,
+  productTypeLabels,
   saleStatusColor,
   saleStatusLabel,
+  saleStatusLabels,
 } from './model/types'
 export type {
   AdminProduct,

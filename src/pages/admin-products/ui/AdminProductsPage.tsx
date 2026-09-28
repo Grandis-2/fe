@@ -7,8 +7,10 @@ import {
   getAdminProducts,
   isPreorder,
   productTypeLabel,
+  productTypeLabels,
   saleStatusColor,
   saleStatusLabel,
+  saleStatusLabels,
   type AdminProduct,
   type AdminSaleStatus,
 } from '@/entities/admin-product'
@@ -118,6 +120,7 @@ export function AdminProductsPage() {
         <Tag
           size="medium"
           rounded={false}
+          widthOptions={productTypeLabels}
           {...typeTagProps[isPreorder(product) ? 'preorder' : 'normal']}
         >
           {productTypeLabel(product)}
@@ -163,6 +166,7 @@ export function AdminProductsPage() {
           variant="subtle"
           size="medium"
           rounded={false}
+          widthOptions={saleStatusLabels}
           color={saleStatusColor[product.saleStatus]}
         >
           {saleStatusLabel[product.saleStatus]}

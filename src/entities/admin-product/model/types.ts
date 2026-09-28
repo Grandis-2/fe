@@ -40,3 +40,10 @@ export const isPreorder = (product: { badges: ProductBadge[] }) =>
 
 export const productTypeLabel = (product: { badges: ProductBadge[] }) =>
   isPreorder(product) ? '사전 예약' : '일반 판매'
+
+// 표의 Tag 열 너비를 가장 긴 문구에 맞출 때 쓴다(Tag의 widthOptions).
+export const saleStatusLabels = Object.values(saleStatusLabel)
+export const productTypeLabels = [
+  productTypeLabel({ badges: ['PREORDER'] }),
+  productTypeLabel({ badges: [] }),
+]

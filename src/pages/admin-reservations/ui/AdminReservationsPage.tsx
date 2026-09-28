@@ -12,6 +12,7 @@ import {
   reservationNo,
   reservationStatusColor,
   reservationStatusLabel,
+  reservationStatusLabels,
   type AdminMemberModel,
   type AdminReservation,
   type AdminReservationStatus,
@@ -179,6 +180,7 @@ export function AdminReservationsPage() {
           variant="outline"
           size="medium"
           rounded={false}
+          widthOptions={reservationStatusLabels}
           color={reservationStatusColor[reservation.status]}
         >
           {reservationStatusLabel[reservation.status]}

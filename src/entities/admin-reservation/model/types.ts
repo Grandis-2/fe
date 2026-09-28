@@ -41,6 +41,9 @@ export const reservationStatusColor: Record<
   CANCELED: 'gray',
 }
 
+// 표의 상태 열 너비를 가장 긴 문구('확정 실패')에 맞출 때 쓴다(Tag의 widthOptions).
+export const reservationStatusLabels = Object.values(reservationStatusLabel)
+
 export const failureCodeLabel: Record<ReservationFailureCode, string> = {
   BUSINESS_REJECTED: '업무 거절',
   STOCK_EXHAUSTED: '재고 소진',
