@@ -42,11 +42,12 @@ export const totalRow = style([
   {
     padding: `${spacing[16]} ${spacing[20]}`,
 
-    background: color.background.surface,
+    background: color.primary.surface,
+    color: color.primary.base,
   },
 ])
 
-export const totalValue = style({ color: color.primary.focus })
+// export const totalValue = style({ color: color.primary.focus })
 
 export const actionRow = style({ padding: spacing[16] })
 

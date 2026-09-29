@@ -1,16 +1,25 @@
-import { useState, type ChangeEvent } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 
-import { ChevronDown } from 'lucide-react'
-import { useLocation } from 'react-router'
+import { Settings } from 'lucide-react'
+import { Link, useLocation } from 'react-router'
 
+import { getDefaultAddress } from '@/entities/address'
 import { OrderSummary } from '@/entities/order'
 import { preparePayment } from '@/entities/payment'
 import { ProductPaymentCard } from '@/entities/product'
+import { getProfile } from '@/entities/profile'
+import {
+  DaumPostcodeSearch,
+  type DaumPostcodeAddress,
+} from '@/features/daum-postcode'
 import { requestTossPayment } from '@/features/toss-payment'
 import { ApiRequestError } from '@/shared/api/client'
-import { Button, Checkbox, Container, Input, InlineAlert } from '@/shared/ui'
+import { Button, Container, Input, InlineAlert } from '@/shared/ui'
+
+import { terms } from '../model/terms'
 
 import * as styles from './PaymentPage.css'
+import { TermsAgreement } from './TermsAgreement'
 
 const GENERIC_PAYMENT_ERROR =
   '결제 요청 중 문제가 발생했습니다. 다시 시도해 주세요.'
@@ -40,159 +49,8 @@ const fallbackDraft: PurchaseDraft = {
 // 되면서 소액 주문에서 총액이 음수로 떨어졌다 — 금액이 아니라 비율로 할인한다.
 const PREORDER_BENEFIT_RATE = 0.1
 
-type TermDetail = { heading: string; body: string }
-
-type Term = {
-  id: string
-  label: string
-  /** 체크하지 않으면 결제를 막는 항목 */
-  required: boolean
-  detail?: TermDetail[]
-}
-
-const terms: Term[] = [
-  {
-    id: 'finance',
-    label: '전자금융거래 이용약관에 동의 (필수)',
-    required: true,
-    detail: [
-      {
-        heading: '전자금융거래 이용약관 (제1조 목적)',
-        body: '이 약관은 회사가 제공하는 전자금융거래 서비스를 이용함에 있어 회사와 이용자 사이의 권리·의무 및 책임 사항을 정함을 목적으로 합니다.',
-      },
-      {
-        heading: '제2조 용어의 정의',
-        body: '"전자금융거래"란 회사가 전자적 장치를 통하여 서비스를 제공하고, 이용자가 회사의 종사자와 직접 대면하지 아니하고 자동화된 방식으로 이를 이용하는 거래를 말합니다.',
-      },
-    ],
-  },
-  {
-    id: 'third-party',
-    label: '주문 배송을 위한 개인정보 제3자 제공 동의 (필수)',
-    required: true,
-    detail: [
-      {
-        heading: '개인정보 제3자 제공 동의 (주문 및 배송 목적)',
-        body: '회사는 고객님의 주문 상품 배송 및 원활한 고객 서비스를 위해 개인정보 보호법 제17조 및 제22조에 따라 아래와 같이 개인정보를 제3자에게 제공하고자 합니다.',
-      },
-      {
-        heading: '제공하는 개인정보 항목',
-        body: '수령인 성명, 수령인 연락처(휴대전화번호), 배송지 주소',
-      },
-      {
-        heading: '제공받는 자',
-        body: 'CJ대한통운, 한진택배, 우체국택배 등',
-      },
-      {
-        heading: '제공 목적',
-        body: '주문 상품의 배송 및 배송 관련 고객 응대',
-      },
-    ],
-  },
-  {
-    id: 'delay',
-    label:
-      '예약 상품의 특성상 상품 준비 및 제작 상황에 따라 안내된 예상 배송일보다 배송이 늦어질 수 있습니다. 예상 배송일은 확정된 일정이 아니며, 배송이 지연될 수 있음을 확인하고 이에 동의합니다.',
-    required: true,
-  },
-]
-
-type TermsAgreementProps = {
-  agreedIds: Set<string>
-  onToggle: (id: string, checked: boolean) => void
-  onToggleAll: (checked: boolean) => void
-}
-
-// 약관보기 펼침 상태는 바깥에서 쓸 일이 없어서 여기서만 들고 있는다.
-function TermsAgreement({
-  agreedIds,
-  onToggle,
-  onToggleAll,
-}: TermsAgreementProps) {
-  const [openIds, setOpenIds] = useState<Set<string>>(new Set())
-
-  const toggleDetail = (id: string) =>
-    setOpenIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-
-  return (
-    <div className={styles.terms}>
-      <div className={styles.termsTitle}>약관 동의</div>
-
-      <label className={styles.agreeAll}>
-        <Checkbox
-          className={styles.checkbox}
-          checked={agreedIds.size === terms.length}
-          onChange={(event) => onToggleAll(event.target.checked)}
-        />
-        아래 내용에 모두 동의합니다.
-      </label>
-
-      <div className={styles.termList}>
-        {terms.map((term) => {
-          const open = openIds.has(term.id)
-
-          return (
-            <div key={term.id}>
-              <div className={styles.termRow}>
-                <label className={styles.termMain}>
-                  <Checkbox
-                    className={styles.checkbox}
-                    checked={agreedIds.has(term.id)}
-                    onChange={(event) =>
-                      onToggle(term.id, event.target.checked)
-                    }
-                  />
-                  <span className={styles.termLabel}>{term.label}</span>
-                </label>
-                {term.detail && (
-                  <button
-                    type="button"
-                    className={styles.detailToggle}
-                    aria-expanded={open}
-                    onClick={() => toggleDetail(term.id)}
-                  >
-                    약관보기
-                    <ChevronDown
-                      aria-hidden="true"
-                      className={[
-                        styles.detailIcon,
-                        open && styles.detailIconOpen,
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    />
-                  </button>
-                )}
-              </div>
-
-              {term.detail && open && (
-                <div className={styles.detailPanel}>
-                  {term.detail.map((section) => (
-                    <div key={section.heading} className={styles.detailGroup}>
-                      <div className={styles.detailHeading}>
-                        {section.heading}
-                      </div>
-                      <div className={styles.detailBody}>{section.body}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ponytail: 로그인 API가 없어서 수령인 이름만 목업 유저로 미리 채워 둔다.
 const initialForm = {
-  name: '기매진',
+  name: '',
   phone: '',
   email: '',
   addressLabel: '',
@@ -220,6 +78,35 @@ export function PaymentPage() {
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
   const [submitted, setSubmitted] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [addressSearchOpen, setAddressSearchOpen] = useState(false)
+
+  // 회원 프로필과 기본 배송지를 프리필한다 — 비로그인/미설정이면 그냥 빈 폼으로 둔다
+  // (SignupPage의 getProfile 프리필과 같은 패턴).
+  useEffect(() => {
+    getProfile()
+      .then((profile) =>
+        setForm((prev) => ({
+          ...prev,
+          name: profile.name ?? prev.name,
+          phone: profile.phoneNumber ?? prev.phone,
+          email: profile.email ?? prev.email,
+        })),
+      )
+      .catch(() => {})
+
+    getDefaultAddress()
+      .then(({ shippingAddress }) => {
+        if (!shippingAddress) return
+        setForm((prev) => ({
+          ...prev,
+          addressLabel: prev.addressLabel || '기본 배송지',
+          postcode: shippingAddress.postalCode,
+          address: shippingAddress.line1,
+          addressDetail: shippingAddress.line2 ?? '',
+        }))
+      })
+      .catch(() => {})
+  }, [])
 
   const orderAmount = draft.unitPrice * draft.quantity
   const preorderBenefit = Math.round(orderAmount * PREORDER_BENEFIT_RATE)
@@ -249,6 +136,16 @@ export function PaymentPage() {
     required,
     invalid: submitted && !form[key].trim(),
   })
+
+  // 검색 없이 닫으면 onComplete가 안 불려서 폼은 그대로다. 상세 주소는 이전 주소
+  // 기준 값이라 새로 찾은 주소와 안 맞을 수 있어 같이 비운다.
+  const handleAddressComplete = ({
+    postcode,
+    address,
+  }: DaumPostcodeAddress) => {
+    setForm((prev) => ({ ...prev, postcode, address, addressDetail: '' }))
+    setAddressSearchOpen(false)
+  }
 
   const toggleAgree = (id: string, checked: boolean) =>
     setAgreedIds((prev) => {
@@ -319,7 +216,13 @@ export function PaymentPage() {
             <div className={styles.sectionIntro}>
               <div className={styles.sectionHeader}>
                 <div className={styles.sectionTitle}>배송지</div>
-                <Button size="small">주소록 보기</Button>
+                <Link
+                  to="/mypage?state=address-manage"
+                  className={styles.addressManageLink}
+                >
+                  <Settings size={20} />
+                  배송지 관리
+                </Link>
               </div>
               <div className={styles.note}>
                 ※ 기본 배송지로 자동 설정되었습니다. 주문 전 주소를 확인해
@@ -333,7 +236,12 @@ export function PaymentPage() {
                 {...field('postcode', '우편 번호', true)}
                 inputMode="numeric"
               />
-              <Button className={styles.postcodeAction}>주소 찾기</Button>
+              <Button
+                className={styles.postcodeAction}
+                onClick={() => setAddressSearchOpen(true)}
+              >
+                주소 찾기
+              </Button>
             </div>
             <Input {...field('address', '기본 주소', true)} />
             <Input {...field('addressDetail', '상세 주소', true)} />
@@ -363,6 +271,12 @@ export function PaymentPage() {
           />
         </OrderSummary>
       </div>
+
+      <DaumPostcodeSearch
+        open={addressSearchOpen}
+        onOpenChange={setAddressSearchOpen}
+        onComplete={handleAddressComplete}
+      />
     </Container>
   )
 }
