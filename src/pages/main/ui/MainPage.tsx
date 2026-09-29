@@ -4,7 +4,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { ProductCard, useProductCards } from '@/entities/product'
 import { useProductCardSelection } from '@/features/product-card-select'
 import { typography } from '@/shared/config/theme'
-import { Container, InlineAlert, SwirlBackground } from '@/shared/ui'
+import { Container, InlineAlert } from '@/shared/ui'
 import { Banner } from '@/widgets/banner'
 
 import * as styles from './MainPage.css'
@@ -52,7 +52,7 @@ export function MainPage() {
       </div>
 
       <div className={styles.hero} data-header-theme="dark">
-        <SwirlBackground />
+        {/* <SwirlBackground /> */}
         <div className={styles.bestTitle}>베스트 상품을 만나보세요</div>
         {/* 어두운 히어로 안이지만 흰 카드가 대부분을 덮는 구간이라 밝은 구간으로 표시한다. */}
         {bestMessage ? (
