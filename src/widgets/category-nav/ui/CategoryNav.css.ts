@@ -47,6 +47,7 @@ export const links = style([
 ])
 
 export const divider = style({
+  padding: `0 ${NAV_LINK_PADDING_X}`,
   fontSize: '10px',
   color: color.border.default,
 })
@@ -243,6 +244,45 @@ export const menuAside = style({
   paddingLeft: spacing[30],
   borderLeft: `1px solid ${color.border.subtle}`,
 })
+
+// --- MobileCategoryNav (바텀시트 안) ---
+
+export const mobileRoot = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[24],
+  overflowY: 'auto',
+})
+
+export const mobileSection = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+})
+
+export const mobileBrand = style([
+  typography.body.defaultMedium,
+  { color: color.text.primary, textDecoration: 'none' },
+])
+
+export const mobileCategories = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: spacing[8],
+})
+
+export const mobileLinks = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[16],
+  paddingTop: spacing[20],
+  borderTop: `1px solid ${color.border.subtle}`,
+})
+
+export const mobileLink = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary, textDecoration: 'none' },
+])
 
 export const menuAsideTitle = style([
   typography.body.subMedium,

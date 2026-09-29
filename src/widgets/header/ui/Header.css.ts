@@ -1,9 +1,25 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import {
+  createVar,
+  globalStyle,
+  style,
+  styleVariants,
+} from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@/shared/config/theme'
-import { maxWidth } from '@/shared/config/theme/tokens/container'
+import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import { fontSize } from '@/shared/config/theme/tokens/typography/base'
 
-export const HEADER_HEIGHT = 63
+// 헤더 높이는 breakpoint마다 달라서 숫자 상수 대신 :root의 CSS 변수로 둔다 —
+// 헤더 밖(MainPage 배너 끌어올리기, MainLayout minHeight)에서도 같은 값을 읽어야 해서
+// 헤더 요소가 아니라 :root에 건다. calc() 안에서 그대로 쓰면 된다.
+export const headerHeight = createVar()
+
+globalStyle(':root', {
+  vars: { [headerHeight]: '63px' },
+  '@media': {
+    [breakpoint.mobile]: { vars: { [headerHeight]: '52px' } },
+  },
+})
 
 // CategoryNav의 MEGA_MENU_OPEN과 같은 선택자다 — 위젯끼리 서로 import하지 않는다는
 // 규칙 때문에 값을 가져오지 않고 계약(요소에 data-mega-menu 속성)만 복제해 둔다.
@@ -47,21 +63,33 @@ export const root = style({
 // 헤더 뒤가 어두운 섹션일 때 붙는 표시. 자식 요소들이 이 클래스를 보고 흰색으로 바뀐다.
 export const onDark = style({})
 
-// 바(root)는 뷰포트 전체 너비, 실제 콘텐츠(로고/nav/액션)만 1200px로 가운데 정렬한다.
+// 바(root)와 콘텐츠(로고/nav/액션) 모두 뷰포트 전체 너비를 쓴다 — 넓은 화면에서도
+// 로고는 왼쪽 끝, 액션은 오른쪽 끝에 붙는다.
 export const content = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
   boxSizing: 'border-box',
   width: '100%',
-  maxWidth: maxWidth.content,
-  height: `${HEADER_HEIGHT}px`,
+  height: headerHeight,
   margin: '0 auto',
-  padding: `0 ${spacing[20]}`,
+  padding: `0 ${spacing[40]}`,
+  '@media': {
+    [breakpoint.mobile]: { padding: `0 ${spacing[12]}` },
+  },
+})
+
+// 모바일(<744px)에선 CategoryNav 대신 하단 탭바(MobileTabBar)의 카테고리 시트를 쓴다.
+// '&&'로 명시도를 두 배로 — CategoryNav root의 display를 스타일시트 로드 순서와
+// 무관하게 이긴다.
+export const desktopOnly = style({
+  '@media': {
+    [breakpoint.mobile]: { selectors: { '&&': { display: 'none' } } },
+  },
 })
 
 // 페이지마다 고정이라 토글되지 않는다. hidden은 두께도 없애 헤더를 정확히
-// HEADER_HEIGHT로 맞춘다 — 메인은 그만큼 배너를 끌어올려 헤더 밑에 겹친다(MainPage.css).
+// headerHeight로 맞춘다 — 메인은 그만큼 배너를 끌어올려 헤더 밑에 겹친다(MainPage.css).
 export const border = styleVariants({
   visible: { borderBottom: `1px solid ${color.border.default}` },
   hidden: { borderBottom: 'none' },
@@ -84,17 +112,20 @@ export const leftGroup = style({
   // nav 링크가 자체 좌우 padding 15px를 갖고 있어, 여기에 15를 더해야 로고~첫 링크가
   // 링크 사이 간격(30px)과 같아진다.
   gap: NAV_LINK_PADDING_X,
-  minWidth: 0,
 })
 
 export const logo = style([
   typography.logo.wordmark,
   {
     height: 'fit-content',
+    fontSize: fontSize[20],
     color: color.primary.base,
     textDecoration: 'none',
     cursor: 'pointer',
     transition: `color ${motion.duration.fast} ${motion.easing.default}`,
+    '@media': {
+      [breakpoint.mobile]: { fontSize: fontSize[18] },
+    },
     selectors: {
       [`${onDark} &`]: { color: color.text.inverse },
       // 메뉴가 열리면 헤더가 흰색이 되므로 어두운 섹션 위라도 기본색으로 돌아간다.
@@ -116,6 +147,9 @@ export const actions = style({
   // (content가 alignItems:center라 기본은 내용 높이만큼만 잡힌다).
   alignSelf: 'stretch',
   gap: spacing[20],
+  '@media': {
+    [breakpoint.mobile]: { gap: spacing[12] },
+  },
 })
 
 export const iconButton = style({
@@ -128,18 +162,30 @@ export const iconButton = style({
   padding: 0,
   cursor: 'pointer',
   // 아이콘은 currentColor로 이 색을 상속한다(CLAUDE.md의 lucide-react 참고).
-  color: color.primary.base,
+  // 색 규칙은 CategoryNav의 link와 똑같이 맞춘다 — 평소 회색(어두운 배경에선 흰색),
+  // hover하면 남색(어두운 배경에선 흰색 유지). CategoryNav.css.ts를 고치면 여기도 같이.
+  color: color.text.secondary,
   transition: `color ${motion.duration.fast} ${motion.easing.default}`,
   selectors: {
-    '&:hover': { color: color.primary.focus },
+    '&:hover': { color: color.primary.base },
     [`${onDark} &`]: { color: color.text.inverse },
-    [`${onDark} &:hover`]: { color: color.primary.subtle },
-    [`${root}:has(${MEGA_MENU_OPEN}) &`]: { color: color.primary.base },
-    [`${root}:has(${MEGA_MENU_OPEN}) &:hover`]: { color: color.primary.focus },
+    [`${onDark} &:hover`]: { color: color.text.inverse },
+    [`${root}:has(${MEGA_MENU_OPEN}) &`]: { color: color.text.secondary },
+    [`${root}:has(${MEGA_MENU_OPEN}) &:hover`]: { color: color.primary.base },
   },
 })
 
 export const icon = style({
   width: '24px',
   height: '24px',
+  // 링크가 hover 때 글자 윤곽선으로 두꺼워지는 것에 맞춰 아이콘도 선을 굵게 한다.
+  // CSS stroke-width가 lucide의 stroke-width 속성(2)보다 우선한다.
+  strokeWidth: 2,
+  transition: `stroke-width ${motion.duration.fast} ${motion.easing.default}`,
+  selectors: {
+    [`${iconButton}:hover &`]: { strokeWidth: 2.5 },
+  },
+  '@media': {
+    [breakpoint.mobile]: { width: '20px', height: '20px' },
+  },
 })

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Bell, LogOut, Search, ShoppingCart, User } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
@@ -35,6 +35,7 @@ export function Header({
   // 쓴다). 추후 다른 페이지도 sticky가 필요해지면 이 조건에 OR로 추가한다.
   const isStickyPage = isMainPage
   const [isOnDark, setIsOnDark] = useState(false)
+  const headerRef = useRef<HTMLElement>(null)
 
   // 헤더 세로 중앙선 아래 구간의 data-header-theme이 "dark"면 흰 글자로 바꾼다.
   // 페이지는 어두운 구간에 이 속성만 달면 된다(MainPage의 배너·히어로 참고).
@@ -42,8 +43,9 @@ export function Header({
     const sections = document.querySelectorAll<HTMLElement>(
       '[data-header-theme]',
     )
-    const probeY = styles.HEADER_HEIGHT / 2
     const update = () => {
+      // 헤더 높이가 breakpoint마다 달라서(headerHeight) 매번 실제 높이를 잰다.
+      const probeY = (headerRef.current?.offsetHeight ?? 0) / 2
       // 구간이 중첩되면 안쪽이 이긴다 — querySelectorAll은 문서 순서(바깥 먼저)라
       // 마지막으로 걸린 게 가장 안쪽이다(어두운 히어로 안의 흰 카드 캐러셀처럼).
       let theme: string | undefined
@@ -77,6 +79,7 @@ export function Header({
 
   return (
     <header
+      ref={headerRef}
       className={[
         styles.root,
         styles.border[isMainPage ? 'hidden' : 'visible'],
@@ -98,7 +101,10 @@ export function Header({
             {isAdminPage ? 'NOVA ADMIN' : 'NOVA'}
           </Link>
           {!isAdminPage && (
-            <CategoryNav tone={isOnDark ? 'onDark' : 'default'} />
+            <CategoryNav
+              tone={isOnDark ? 'onDark' : 'default'}
+              className={styles.desktopOnly}
+            />
           )}
         </div>
         <div className={styles.actions}>

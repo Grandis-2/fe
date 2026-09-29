@@ -2,7 +2,7 @@ import { Link, useLocation, useSearchParams } from 'react-router'
 
 import * as styles from './CategoryNav.css'
 
-export type CategoryNavLink = '구매후기' | '사전예약' | '마이페이지'
+export type CategoryNavLink = '구매후기' | '사전예약'
 
 export type CategoryNavTone = 'default' | 'onDark'
 
@@ -46,11 +46,10 @@ const brandMenus = {
   },
 } satisfies Record<string, BrandMenu>
 
-const links: CategoryNavLink[] = ['구매후기', '사전예약', '마이페이지']
+const links: CategoryNavLink[] = ['구매후기', '사전예약']
 const linkPaths: Record<CategoryNavLink, string> = {
   구매후기: '/reviews',
   사전예약: '/preorder',
-  마이페이지: '/mypage?state=preorder-check',
 }
 
 // URLSearchParams가 인코딩까지 해주므로 쿼리를 손으로 붙이지 않는다.
@@ -62,6 +61,50 @@ const searchPath = (params: Record<string, string>) =>
 // (컨테이너 전체에 걸면 메뉴 안 빈 공간 클릭에도 반응하고, 이 브랜드와 무관한 포커스까지 풀린다).
 const blurActiveElement = () =>
   (document.activeElement as HTMLElement | null)?.blur()
+
+// 모바일 헤더의 햄버거 → 바텀시트 안에 들어가는 세로 목록. hover 메가 메뉴 대신
+// 브랜드마다 카테고리 타일을 펼쳐 둔다. 데이터는 데스크톱 nav와 같은 상수를 쓴다.
+export function MobileCategoryNav({ onNavigate }: { onNavigate?: () => void }) {
+  return (
+    <nav className={styles.mobileRoot}>
+      {Object.entries(brandMenus).map(([brand, menu]) => (
+        <div key={brand} className={styles.mobileSection}>
+          <Link
+            to={searchPath({ category: brand })}
+            className={styles.mobileBrand}
+            onClick={onNavigate}
+          >
+            {brand}
+          </Link>
+          <div className={styles.mobileCategories}>
+            {menu.categories.map((category) => (
+              <Link
+                key={category}
+                to={searchPath({ category: brand, subCategory: category })}
+                className={styles.menuTile}
+                onClick={onNavigate}
+              >
+                {category}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className={styles.mobileLinks}>
+        {links.map((link) => (
+          <Link
+            key={link}
+            to={linkPaths[link]}
+            className={styles.mobileLink}
+            onClick={onNavigate}
+          >
+            {link}
+          </Link>
+        ))}
+      </div>
+    </nav>
+  )
+}
 
 export function CategoryNav({
   tone = 'default',

@@ -7,6 +7,7 @@ import { SIGNUP_PATH } from '@/pages/signup'
 import { useModalStore } from '@/shared/model/modalStore'
 import { Modal } from '@/shared/ui'
 import { Header } from '@/widgets/header'
+import { MobileTabBar } from '@/widgets/mobile-tab-bar'
 
 export function RootLayout() {
   const { isLoggedIn, profileComplete } = useSession()
@@ -47,6 +48,7 @@ export function RootLayout() {
         }}
       />
       <Outlet />
+      <MobileTabBar />
       <Modal open={isModalOpen} onClose={closeModal}>
         {modalContent}
       </Modal>
