@@ -25,6 +25,19 @@ export const bottomBarGroup = style({
     [breakpoint.desktop]: {
       top: 0,
       bottom: 'auto',
+      // 안의 orderBar가 translateY로 화면 밖에 숨어 있어도 이 컨테이너의 레이아웃
+      // 박스(=orderBar 높이)는 헤더와 같은 자리에 그대로 남아 클릭을 가로챈다 —
+      // 평소엔 이벤트를 통과시키고, orderBar가 실제로 보일 때만(bottomBarGroupVisible)
+      // 되살린다.
+      pointerEvents: 'none',
+    },
+  },
+})
+
+export const bottomBarGroupVisible = style({
+  '@media': {
+    [breakpoint.desktop]: {
+      pointerEvents: 'auto',
     },
   },
 })
