@@ -2,39 +2,25 @@ import { typography } from '@/shared/config/theme'
 
 import * as styles from './AddressCard.css'
 
+// 주소록이 배송지 하나(기본 배송지)로 줄어서 id/label/isDefault가 필요 없다 —
+// 여러 배송지가 부활하면 그때 다시 붙인다.
 export type AddressCardData = {
-  id: string
-  label: string
   recipientName: string
   phone: string
   fullAddress: string
-  isDefault?: boolean
 }
 
 export type AddressCardProps = {
   address: AddressCardData
-  onEdit?: (id: string) => void
-  onDelete?: (id: string) => void
+  onEdit?: () => void
   className?: string
 }
 
-export function AddressCard({
-  address,
-  onEdit,
-  onDelete,
-  className,
-}: AddressCardProps) {
+export function AddressCard({ address, onEdit, className }: AddressCardProps) {
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      <div className={styles.header}>
-        <div className={[typography.body.defaultMedium, styles.label].join(' ')}>
-          {address.label}
-        </div>
-        {address.isDefault && (
-          <span className={[typography.body.caption, styles.badge].join(' ')}>
-            기본 배송지
-          </span>
-        )}
+      <div className={[typography.body.defaultMedium, styles.label].join(' ')}>
+        기본 배송지
       </div>
       <div className={[typography.body.sub, styles.recipient].join(' ')}>
         {address.recipientName} · {address.phone}
@@ -46,16 +32,9 @@ export function AddressCard({
         <button
           type="button"
           className={styles.action}
-          onClick={() => onEdit?.(address.id)}
+          onClick={() => onEdit?.()}
         >
           수정
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          onClick={() => onDelete?.(address.id)}
-        >
-          삭제
         </button>
       </div>
     </div>

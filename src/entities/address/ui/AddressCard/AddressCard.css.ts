@@ -12,25 +12,7 @@ export const root = style({
   background: color.background.base,
 })
 
-export const header = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[8],
-})
-
 export const label = style({ color: color.text.primary })
-
-export const badge = style([
-  typography.body.caption,
-  {
-    display: 'inline-flex',
-    alignItems: 'center',
-    padding: `2px ${spacing[8]}`,
-    borderRadius: '999px',
-    background: color.primary.subtler,
-    color: color.primary.base,
-  },
-])
 
 export const recipient = style({ color: color.text.secondary })
 export const fullAddress = style({ color: color.text.tertiary })

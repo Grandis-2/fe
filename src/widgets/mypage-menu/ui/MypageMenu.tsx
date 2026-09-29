@@ -17,7 +17,7 @@ const shoppingLinks: { link: MypageMenuLink; label: string }[] = [
 ]
 
 const accountLinks: { link: MypageMenuLink; label: string }[] = [
-  { link: 'address-manage', label: '주소록 관리' },
+  { link: 'address-manage', label: '배송지 관리' },
 ]
 
 export function MypageMenu({

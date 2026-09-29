@@ -18,7 +18,7 @@ const linkTitle: Record<MypageMenuLink, string> = {
   'preorder-check': '사전예약 확인',
   cart: '장바구니',
   history: '구매 내역',
-  'address-manage': '주소록 관리',
+  'address-manage': '배송지 관리',
 }
 
 function renderContent(activeLink: MypageMenuLink) {
