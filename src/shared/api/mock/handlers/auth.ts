@@ -137,6 +137,12 @@ function parseCookies(header: string): Record<string, string> {
   )
 }
 
+// 서버와 같은 계약 — `Authorization: Bearer <sessionToken>`에서 토큰만 뗀다.
+function readSessionToken(request: Request) {
+  const header = request.headers.get('Authorization')
+  return header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : null
+}
+
 function issueSession(record: SessionRecord) {
   const sessionToken = `mock-session-${crypto.randomUUID()}`
   const refreshToken = `mock-refresh-${crypto.randomUUID()}`
@@ -209,7 +215,7 @@ export const authHandlers: RequestHandler[] = [
   }),
 
   http.get(url('/api/v1/session'), ({ request }) => {
-    const token = request.headers.get('X-Session-Token')
+    const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (!record) {
       return fail(401, {
@@ -221,7 +227,7 @@ export const authHandlers: RequestHandler[] = [
   }),
 
   http.delete(url('/api/v1/session'), ({ request }) => {
-    const token = request.headers.get('X-Session-Token')
+    const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (token) sessions.delete(token)
     saveDB()
@@ -254,7 +260,7 @@ export const authHandlers: RequestHandler[] = [
   }),
 
   http.get(url('/api/v1/me/profile'), ({ request }) => {
-    const token = request.headers.get('X-Session-Token')
+    const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (!record) {
       return fail(401, {
@@ -266,7 +272,7 @@ export const authHandlers: RequestHandler[] = [
   }),
 
   http.put(url('/api/v1/me/profile'), async ({ request }) => {
-    const token = request.headers.get('X-Session-Token')
+    const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (!record) {
       return fail(401, {
