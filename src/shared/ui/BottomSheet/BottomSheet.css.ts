@@ -24,7 +24,8 @@ export const content = style({
   display: 'flex',
   flexDirection: 'column',
   maxHeight: '90vh',
-  padding: spacing[16],
+  // 윗여백은 handle이 자기 margin으로 갖는다 — padding prop을 0으로 줘도 handle은 안 붙는다.
+  padding: `0 ${spacing[16]} ${spacing[16]}`,
   background: color.background.base,
   borderTopLeftRadius: '16px',
   borderTopRightRadius: '16px',
@@ -33,7 +34,7 @@ export const content = style({
 export const handle = style({
   width: '40px',
   height: '4px',
-  margin: `0 auto ${spacing[16]}`,
+  margin: `${spacing[16]} auto`,
   borderRadius: '4px',
   background: color.border.default,
 })

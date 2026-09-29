@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentPropsWithoutRef, CSSProperties } from 'react'
 
 import { Drawer as VaulDrawer } from 'vaul'
 
@@ -28,10 +28,13 @@ export const Description = VaulDrawer.Description
 
 export type BottomSheetContentProps = ComponentPropsWithoutRef<
   typeof VaulDrawer.Content
->
+> & {
+  // 인라인이라 기본값을 항상 이긴다. handle 위 여백은 이 값과 무관하다 — 예: padding={spacing[24]}
+  padding?: CSSProperties['padding']
+}
 
 export const Content = forwardRef<HTMLDivElement, BottomSheetContentProps>(
-  function Content({ className, children, ...rest }, ref) {
+  function Content({ className, children, padding, style, ...rest }, ref) {
     return (
       <VaulDrawer.Portal>
         {/* vaul의 Overlay는 modal일 때만 렌더된다(스크롤 잠금과 한 세트라 modal={false}면 null) —
@@ -43,6 +46,7 @@ export const Content = forwardRef<HTMLDivElement, BottomSheetContentProps>(
         <VaulDrawer.Content
           ref={ref}
           className={[styles.content, className].filter(Boolean).join(' ')}
+          style={{ padding, ...style }}
           {...rest}
         >
           <div className={styles.handle} />

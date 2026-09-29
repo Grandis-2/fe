@@ -38,6 +38,7 @@ export const color = createGlobalTheme(':root', {
   },
   background: {
     base: '#FFFFFF',
+    page: '#F7F8FC',
     surface: '#F7F7F9',
     subSurface: '#EDEEF1',
     disabled: '#F1F1F3',
