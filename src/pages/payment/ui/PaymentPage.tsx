@@ -13,7 +13,7 @@ import {
   type DaumPostcodeAddress,
 } from '@/features/daum-postcode'
 import { requestTossPayment } from '@/features/toss-payment'
-import { ApiRequestError } from '@/shared/api/client'
+import { getErrorMessage } from '@/shared/api/client'
 import { mypagePath } from '@/shared/config/routes'
 import { Button, Container, Input, InlineAlert } from '@/shared/ui'
 
@@ -170,11 +170,7 @@ export function PaymentPage() {
         customerEmail: form.email || undefined,
       })
     } catch (caught) {
-      setPaymentError(
-        caught instanceof ApiRequestError
-          ? caught.error.message
-          : GENERIC_PAYMENT_ERROR,
-      )
+      setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
     }
   }
 

@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router'
 
 import { markProfileComplete } from '@/entities/auth'
 import { useProfile, useUpdateProfile } from '@/entities/profile'
-import { ApiRequestError } from '@/shared/api/client'
+import { getErrorMessage } from '@/shared/api/client'
 import { Button, Container, InlineAlert, Input } from '@/shared/ui'
 
 import * as styles from './SignupPage.css'
@@ -66,11 +66,7 @@ export function SignupPage() {
       const from = (location.state as { from?: string } | null)?.from ?? '/'
       navigate(from, { replace: true })
     } catch (caught) {
-      setError(
-        caught instanceof ApiRequestError
-          ? caught.error.message
-          : GENERIC_ERROR,
-      )
+      setError(getErrorMessage(caught, GENERIC_ERROR))
     }
   }
 

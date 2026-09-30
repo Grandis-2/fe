@@ -10,7 +10,7 @@ import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@/features/daum-postcode'
-import { ApiRequestError } from '@/shared/api/client'
+import { getErrorMessage } from '@/shared/api/client'
 import { Button, InlineAlert, Input, Modal, useModalTitleId } from '@/shared/ui'
 
 import * as styles from './AddressFormModal.css'
@@ -121,11 +121,7 @@ export function AddressFormModal({
       })
       onOpenChange(false)
     } catch (caught) {
-      setError(
-        caught instanceof ApiRequestError
-          ? caught.error.message
-          : GENERIC_ERROR,
-      )
+      setError(getErrorMessage(caught, GENERIC_ERROR))
     } finally {
       setSaving(false)
     }

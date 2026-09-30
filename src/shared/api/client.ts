@@ -29,6 +29,11 @@ export class ApiRequestError extends Error {
   }
 }
 
+// 화면에 보여줄 에러 문구 — 서버가 내려준 메시지가 있으면 그것을, 아니면(네트워크 오류 등)
+// 호출부의 기본 문구를 쓴다.
+export const getErrorMessage = (caught: unknown, fallback: string) =>
+  caught instanceof ApiRequestError ? caught.error.message : fallback
+
 export type ApiRequestOptions = {
   method?: string
   body?: unknown
