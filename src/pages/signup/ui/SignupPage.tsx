@@ -1,9 +1,9 @@
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 
 import { useLocation, useNavigate } from 'react-router'
 
 import { markProfileComplete } from '@/entities/auth'
-import { getProfile, putProfile } from '@/entities/profile'
+import { useProfile, useUpdateProfile } from '@/entities/profile'
 import { ApiRequestError } from '@/shared/api/client'
 import { Button, Container, InlineAlert, Input } from '@/shared/ui'
 
@@ -17,23 +17,21 @@ type FormKey = keyof typeof initialForm
 export function SignupPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const [form, setForm] = useState(initialForm)
+  const { data: profile } = useProfile()
+  const { mutateAsync: updateProfile } = useUpdateProfile()
+  const [edits, setEdits] = useState<Partial<typeof initialForm>>({})
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // 이전에 일부만 채우고 이탈한 사용자를 위해 기존 값을 프리필한다 — 실패해도
-  // 빈 폼으로 계속 진행(가입 직후엔 애초에 다 null이라 실패가 아니다).
-  useEffect(() => {
-    getProfile()
-      .then((profile) =>
-        setForm({
-          name: profile.name ?? '',
-          email: profile.email ?? '',
-          phoneNumber: profile.phoneNumber ?? '',
-        }),
-      )
-      .catch(() => {})
-  }, [])
+  // 이전에 일부만 채우고 이탈한 사용자를 위해 기존 값을 기본값으로 깐다 — 실패해도
+  // 빈 폼으로 계속 진행(가입 직후엔 애초에 다 null이라 실패가 아니다). 사용자가 고친
+  // 칸(edits)이 항상 우선한다.
+  const form = {
+    name: profile?.name ?? '',
+    email: profile?.email ?? '',
+    phoneNumber: profile?.phoneNumber ?? '',
+    ...edits,
+  }
 
   const requiredFilled = (Object.keys(initialForm) as FormKey[]).every((key) =>
     form[key].trim(),
@@ -47,7 +45,7 @@ export function SignupPage() {
     label,
     value: form[key],
     onChange: (event: ChangeEvent<HTMLInputElement>) =>
-      setForm((prev) => ({ ...prev, [key]: event.target.value })),
+      setEdits((prev) => ({ ...prev, [key]: event.target.value })),
     required: true,
     invalid: submitted && !form[key].trim(),
     inputMode,
@@ -59,10 +57,10 @@ export function SignupPage() {
     if (!requiredFilled) return
 
     try {
-      const profile = await putProfile(form)
+      const saved = await updateProfile(form)
       // PUT 응답엔 profileComplete 필드가 없다 — 실제로 세 칸이 다 채워져 왔는지
       // 보고서만 로컬로 반영한다(성공 200만 보고 믿지 않는다).
-      if (profile.name && profile.email && profile.phoneNumber) {
+      if (saved.name && saved.email && saved.phoneNumber) {
         markProfileComplete()
       }
       const from = (location.state as { from?: string } | null)?.from ?? '/'
