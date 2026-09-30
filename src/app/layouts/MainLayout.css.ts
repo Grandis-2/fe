@@ -1,11 +1,11 @@
 import { style } from '@vanilla-extract/css'
 
-import { color } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
 import {
+  color,
+  breakpoint,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
-} from '@/shared/config/theme/tokens/container'
+} from '@/shared/config/theme'
 import { headerHeight } from '@/widgets/header'
 
 // admin 레이아웃(AdminLayout.css.ts)과 같은 이유로 헤더 높이만큼 뺀다 — 콘텐츠가

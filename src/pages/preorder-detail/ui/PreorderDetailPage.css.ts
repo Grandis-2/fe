@@ -1,11 +1,13 @@
 import { style } from '@vanilla-extract/css'
 
-import { typography, color, spacing } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
 import {
+  typography,
+  color,
+  spacing,
+  breakpoint,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
-} from '@/shared/config/theme/tokens/container'
+} from '@/shared/config/theme'
 import {
   fontSize,
   fontWeight,

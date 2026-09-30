@@ -5,8 +5,13 @@ import {
   styleVariants,
 } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import {
+  color,
+  motion,
+  spacing,
+  typography,
+  breakpoint,
+} from '@/shared/config/theme'
 import { fontSize } from '@/shared/config/theme/tokens/typography/base'
 
 // 헤더 높이는 breakpoint마다 달라서 숫자 상수 대신 :root의 CSS 변수로 둔다 —

@@ -1,7 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import { color, spacing, typography, breakpoint } from '@/shared/config/theme'
 
 export const title = style([
   typography.title.xlSemibold,

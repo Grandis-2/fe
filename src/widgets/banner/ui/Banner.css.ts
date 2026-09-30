@@ -6,8 +6,8 @@ import {
   spacing,
   sprinkles,
   typography,
+  breakpoint,
 } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
 import { maxWidth } from '@/shared/config/theme/tokens/container'
 import { fontSize } from '@/shared/config/theme/tokens/typography/base'
 

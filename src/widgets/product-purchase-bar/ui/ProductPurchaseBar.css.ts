@@ -6,12 +6,10 @@ import {
   spacing,
   motion,
   shadow,
-} from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
-import {
+  breakpoint,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
-} from '@/shared/config/theme/tokens/container'
+} from '@/shared/config/theme'
 
 export const productName = style([typography.title.lgSemibold])
 export const productOption = style([

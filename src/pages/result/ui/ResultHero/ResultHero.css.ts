@@ -1,7 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import { color, spacing, typography, breakpoint } from '@/shared/config/theme'
 import { fontSize } from '@/shared/config/theme/tokens/typography/base'
 
 // 그라데이션 중간 지점 색. 양 끝은 토큰(primary.focus / secondary.focus)을 그대로 쓰지만

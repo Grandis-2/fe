@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 
-import { typography } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import { typography, breakpoint } from '@/shared/config/theme'
 import { BottomSheet, Modal, useModalTitleId } from '@/shared/ui'
 
 import {
