@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent, type ReactNode } from 'react'
+import { useState, type ChangeEvent } from 'react'
 
 import {
   useDefaultAddress,
@@ -11,7 +11,7 @@ import {
   type DaumPostcodeAddress,
 } from '@/features/daum-postcode'
 import { getErrorMessage } from '@/shared/api/client'
-import { Button, InlineAlert, Input, Modal, useModalTitleId } from '@/shared/ui'
+import { Button, InlineAlert, Input, Modal, ModalTitle } from '@/shared/ui'
 
 import * as styles from './AddressFormModal.css'
 
@@ -39,16 +39,6 @@ const toForm = (saved: DefaultAddress | null | undefined) =>
 export type AddressFormModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-}
-
-// Modal 안에서만 useModalTitleId()가 값을 갖는다(daum-postcode의 ModalTitle과 같은 이유).
-function FormTitle({ children }: { children: ReactNode }) {
-  const titleId = useModalTitleId()
-  return (
-    <div id={titleId} className={styles.title}>
-      {children}
-    </div>
-  )
 }
 
 // 배송지가 기본 배송지 하나뿐이라 추가/수정이 같은 폼이다 — 저장된 배송지가
@@ -131,7 +121,9 @@ export function AddressFormModal({
     <>
       <Modal open={open} onClose={() => onOpenChange(false)}>
         <div className={styles.content}>
-          <FormTitle>{isEditing ? '배송지 수정' : '배송지 추가'}</FormTitle>
+          <ModalTitle className={styles.title}>
+            {isEditing ? '배송지 수정' : '배송지 추가'}
+          </ModalTitle>
 
           {error && <InlineAlert status="error">{error}</InlineAlert>}
 

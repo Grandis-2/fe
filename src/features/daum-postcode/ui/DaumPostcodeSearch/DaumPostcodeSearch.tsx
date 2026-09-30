@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { typography, breakpoint } from '@/shared/config/theme'
-import { BottomSheet, Modal, useModalTitleId } from '@/shared/ui'
+import { BottomSheet, Modal, ModalTitle } from '@/shared/ui'
 
 import {
   useDaumPostcodeEmbed,
@@ -33,25 +33,6 @@ function useIsDesktop() {
   return isDesktop
 }
 
-// Modal 안에서만 useModalTitleId()가 값을 갖는다 — 그 문맥을 타려면 Modal의
-// children으로 진짜 자식 컴포넌트를 렌더해야 한다(DaumPostcodeSearch 자신이
-// Modal을 호출하는 쪽이라 자기 렌더 안에서 훅을 불러도 값을 못 받는다).
-function ModalTitle() {
-  const titleId = useModalTitleId()
-  return (
-    <div
-      id={titleId}
-      className={[
-        typography.title.lgSemibold,
-        styles.title,
-        styles.modalTitle,
-      ].join(' ')}
-    >
-      주소 검색
-    </div>
-  )
-}
-
 // 데스크톱은 dialog 모달, 모바일은 바텀시트 — 컨테이너만 갈리고 다음 우편번호
 // embed 로직(useDaumPostcodeEmbed)은 공유한다.
 export function DaumPostcodeSearch({
@@ -66,7 +47,15 @@ export function DaumPostcodeSearch({
     return (
       <Modal open={open} onClose={() => onOpenChange(false)} padding={0}>
         <div className={styles.modalContent}>
-          <ModalTitle />
+          <ModalTitle
+            className={[
+              typography.title.lgSemibold,
+              styles.title,
+              styles.modalTitle,
+            ].join(' ')}
+          >
+            주소 검색
+          </ModalTitle>
           <div className={styles.embedWrapper}>
             <div ref={containerRef} className={styles.embed} />
           </div>
