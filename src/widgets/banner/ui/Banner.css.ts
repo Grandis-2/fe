@@ -1,8 +1,15 @@
 import { keyframes, style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import {
+  color,
+  motion,
+  spacing,
+  sprinkles,
+  typography,
+} from '@/shared/config/theme'
 import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
 import { maxWidth } from '@/shared/config/theme/tokens/container'
+import { fontSize } from '@/shared/config/theme/tokens/typography/base'
 
 // 한 슬라이드가 머무는 시간 = 진행 바가 차오르는 시간.
 const SLIDE_DURATION = '6s'
@@ -42,7 +49,7 @@ export const inner = style({
   boxSizing: 'border-box',
   maxWidth: maxWidth.content,
   margin: '0 auto',
-  padding: `0 ${spacing[30]}`,
+  padding: `0 ${spacing[40]}`,
   '@media': {
     [stacked]: { flexDirection: 'column-reverse', gap: spacing[24] },
   },
@@ -77,6 +84,7 @@ export const title = style([
     // 슬라이드 문구의 \n을 그대로 줄바꿈으로 쓴다.
     whiteSpace: 'pre-line',
     '@media': {
+      [breakpoint.mobile]: { fontSize: fontSize[24] },
       [sideBySide]: { fontSize: '40px' },
     },
   },
@@ -87,8 +95,21 @@ export const description = style([
   {
     marginTop: spacing[24],
     whiteSpace: 'pre-line',
+    '@media': {
+      [breakpoint.mobile]: { fontSize: fontSize[14] },
+    },
   },
 ])
+
+// Tag는 breakpoint별 size prop을 받지 않으므로, 모바일/데스크톱용 Tag를 각각 렌더링해
+// 이 클래스로 번갈아 숨긴다.
+export const badgeMobile = sprinkles({
+  display: { mobile: 'inline-flex', desktop: 'none' },
+})
+
+export const badgeDesktop = sprinkles({
+  display: { mobile: 'none', desktop: 'inline-flex' },
+})
 
 export const tabs = style({
   display: 'grid',
@@ -111,6 +132,9 @@ export const tab = style([
     transition: `color ${motion.duration.fast} ${motion.easing.default}`,
     selectors: {
       '&:hover, &[aria-pressed="true"]': { color: color.text.inverse },
+    },
+    '@media': {
+      [breakpoint.mobile]: { fontSize: fontSize[12] },
     },
   },
 ])

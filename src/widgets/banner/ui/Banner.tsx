@@ -29,7 +29,7 @@ const slides: Slide[] = [
       '실패 없는 사전예약부터 순차 배송까지!\n노바에서 한 번에 끝내세요.',
     tabLabel: '아이폰 18 Pro,\nPro Max 사전예약',
     icon: Smartphone,
-    to: '/products/IP-18-PRO',
+    to: '/preorder/1',
     image: '/images/banner1.png',
     imageAlt: '아이폰 18 Pro, Pro Max',
   },
@@ -39,7 +39,7 @@ const slides: Slide[] = [
     description: '실버·블러쉬·시트러스·인디고\n취향에 맞는 컬러를 골라보세요.',
     tabLabel: '아이폰 Duo\n사전예약',
     icon: BookOpen,
-    to: '/preorder/IP-18-DUO',
+    to: '/preorder/2',
     image: '/images/banner2.png',
     imageAlt: '아이폰 Duo',
   },
@@ -69,9 +69,21 @@ export function Banner() {
         <div className={styles.text}>
           {/* key로 다시 마운트해 슬라이드마다 페이드인을 새로 건다. */}
           <div key={active} className={styles.fadeIn}>
-            <Tag color="primary" variant="solid" rounded={false} size="medium">
-              {slide.badge}
-            </Tag>
+            <span className={styles.badgeMobile}>
+              <Tag color="primary" variant="solid" rounded={false} size="small">
+                {slide.badge}
+              </Tag>
+            </span>
+            <span className={styles.badgeDesktop}>
+              <Tag
+                color="primary"
+                variant="solid"
+                rounded={false}
+                size="medium"
+              >
+                {slide.badge}
+              </Tag>
+            </span>
             <Link to={slide.to} className={styles.title}>
               {slide.title}
             </Link>
