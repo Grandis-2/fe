@@ -2,6 +2,7 @@ import { http } from 'msw'
 
 import { fail, ok } from '../response'
 import { url } from '../url'
+import { codePointLength } from '../validate'
 
 import type {
   AdminLoginRequest,
@@ -96,8 +97,6 @@ const PROFILE_LIMITS: Record<keyof UpdateProfileRequest, number> = {
   phoneNumber: 20,
 }
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-// 코드포인트 기준 — 서버와 동일하게 이모지 1개를 1로 센다.
-const codePointLength = (value: string) => [...value].length
 
 function validateProfile(body: Partial<UpdateProfileRequest> | null) {
   const violations: ApiViolation[] = []
