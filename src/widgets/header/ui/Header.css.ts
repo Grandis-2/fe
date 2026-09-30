@@ -13,6 +13,9 @@ import {
   breakpoint,
 } from '@/shared/config/theme'
 import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+// Header가 CategoryNav를 소유한다(CLAUDE.md) — 메가 메뉴 열림 선택자와 링크 padding은
+// 한 곳(CategoryNav.css)의 값을 그대로 쓴다.
+import { MEGA_MENU_OPEN, NAV_LINK_PADDING_X } from '@/widgets/category-nav'
 
 // 헤더 높이는 breakpoint마다 달라서 숫자 상수 대신 :root의 CSS 변수로 둔다 —
 // 헤더 밖(MainPage 배너 끌어올리기, MainLayout minHeight)에서도 같은 값을 읽어야 해서
@@ -25,15 +28,6 @@ globalStyle(':root', {
     [breakpoint.mobile]: { vars: { [headerHeight]: '52px' } },
   },
 })
-
-// CategoryNav의 MEGA_MENU_OPEN과 같은 선택자다 — 위젯끼리 서로 import하지 않는다는
-// 규칙 때문에 값을 가져오지 않고 계약(요소에 data-mega-menu 속성)만 복제해 둔다.
-// CategoryNav.css.ts를 고치면 여기도 같이 고친다.
-const MEGA_MENU_OPEN = '[data-mega-menu]:is(:hover, :focus-within)'
-// CategoryNav의 NAV_LINK_PADDING_X와 같은 값이다 — 링크 좌우 padding(15px)에 맞춰
-// 로고~첫 링크 간격을 링크 사이 간격(30px)과 맞춘다. 스케일에 없는 값이라 토큰화하지
-// 않고 그대로 둔다(CategoryNav.css.ts와 동일한 이유).
-const NAV_LINK_PADDING_X = '15px'
 
 // 헤더는 항상 배경이 투명하고 뒤를 blur한다. 글자색은 뒤 섹션이 어두우면 흰색
 // (onDark), 밝으면 기본색이다 — Header.tsx가 판단해 onDark를 붙인다.
