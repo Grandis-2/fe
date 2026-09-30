@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
+import { mypagePath } from '@/shared/config/routes'
 import { typography } from '@/shared/config/theme'
 import { BottomSheet } from '@/shared/ui'
 import { MobileCategoryNav } from '@/widgets/category-nav'
@@ -41,7 +42,7 @@ const tabs: Tab[] = [
   {
     label: '마이페이지',
     icon: CircleUser,
-    to: '/mypage?state=preorder-check',
+    to: mypagePath('preorder-check'),
     isActive: (p) => p.startsWith('/mypage'),
   },
 ]

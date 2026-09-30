@@ -1,7 +1,8 @@
+import type { MypageTab } from '@/shared/config/routes'
+
 import * as styles from './MypageMenu.css'
 
-export type MypageMenuLink =
-  'preorder-check' | 'cart' | 'history' | 'address-manage'
+export type MypageMenuLink = MypageTab
 
 export type MypageMenuProps = {
   userName: string

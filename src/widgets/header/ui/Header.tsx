@@ -4,6 +4,7 @@ import { Bell, CircleUser, Search, ShoppingCart } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router'
 
 import { KakaoLoginModal } from '@/features/kakao-login'
+import { mypagePath } from '@/shared/config/routes'
 import { useModalStore } from '@/shared/model/modalStore'
 import { CategoryNav } from '@/widgets/category-nav'
 
@@ -170,7 +171,7 @@ export function Header({
               {/* 비회원은 마이페이지 대신 로그인 모달을 연다. */}
               {isMember ? (
                 <Link
-                  to="/mypage?state=preorder-check"
+                  to={mypagePath('preorder-check')}
                   className={[styles.iconButton, styles.desktopOnly].join(' ')}
                   aria-label="마이페이지"
                 >

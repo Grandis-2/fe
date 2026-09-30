@@ -14,6 +14,7 @@ import {
 } from '@/features/daum-postcode'
 import { requestTossPayment } from '@/features/toss-payment'
 import { ApiRequestError } from '@/shared/api/client'
+import { mypagePath } from '@/shared/config/routes'
 import { Button, Container, Input, InlineAlert } from '@/shared/ui'
 
 import { terms } from '../model/terms'
@@ -218,7 +219,7 @@ export function PaymentPage() {
               <div className={styles.sectionHeader}>
                 <div className={styles.sectionTitle}>배송지</div>
                 <Link
-                  to="/mypage?state=address-manage"
+                  to={mypagePath('address-manage')}
                   className={styles.addressManageLink}
                 >
                   <Settings size={20} />

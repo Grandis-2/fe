@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 
 import { useSession } from '@/entities/auth'
-import { SIGNUP_PATH } from '@/pages/signup'
+import { SIGNUP_PATH } from '@/shared/config/routes'
 import { useModalStore } from '@/shared/model/modalStore'
 import { Modal } from '@/shared/ui'
 import { Header } from '@/widgets/header'

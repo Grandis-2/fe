@@ -8,8 +8,8 @@ import {
   consumeStoredState,
   KAKAO_CALLBACK_PATH,
 } from '@/features/kakao-login'
-import { SIGNUP_PATH } from '@/pages/signup'
 import { ApiRequestError } from '@/shared/api/client'
+import { SIGNUP_PATH } from '@/shared/config/routes'
 
 type Status = 'processing' | 'error'
 

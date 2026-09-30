@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router'
 
+import { MYPAGE_TABS } from '@/shared/config/routes'
 import { Container } from '@/shared/ui'
 import { MypageAddress } from '@/widgets/mypage-address'
 import { MypageCart } from '@/widgets/mypage-cart'
@@ -36,8 +37,9 @@ function renderContent(activeLink: MypageMenuLink) {
 
 export function Mypage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeLink =
-    (searchParams.get('state') as MypageMenuLink | null) ?? defaultLink
+  const state = searchParams.get('state')
+  // ?state=foo처럼 알 수 없는 값은 기본 탭으로 본다 — 캐스트만 하면 제목/내용이 비어 버린다.
+  const activeLink = MYPAGE_TABS.find((tab) => tab === state) ?? defaultLink
 
   const handleLinkClick = (link: MypageMenuLink) => {
     setSearchParams({ state: link })

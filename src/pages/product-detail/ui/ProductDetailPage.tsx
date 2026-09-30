@@ -14,6 +14,7 @@ import {
 } from '@/features/product-purchase'
 import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
 import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
+import { resultPath } from '@/shared/config/routes'
 import { color } from '@/shared/config/theme'
 import { Container, Slider, Button } from '@/shared/ui'
 import { ProductPageTab } from '@/widgets/product-page-tab'
@@ -98,7 +99,7 @@ export function ProductDetailPage() {
       unitPrice: UNIT_PRICE,
     }
     // 사전예약 완료 후 뒤로가기로 상세에 돌아와 다시 제출하는 걸 막는다(결제는 되돌아가서 수정 가능해야 하므로 그대로 둠).
-    navigate(isPreorder ? '/result?status=preorder' : '/payment', {
+    navigate(isPreorder ? resultPath('preorder') : '/payment', {
       state: purchasePayload,
       replace: isPreorder,
     })
