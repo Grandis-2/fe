@@ -17,7 +17,7 @@ export const Default: Story = {
 }
 
 export const ActiveLink: Story = {
-  args: { activeLink: '구매후기' },
+  args: { activeLink: '이벤트' },
 }
 
 // 메뉴는 CSS :hover/:focus-within으로만 열린다. 헤드리스 브라우저는 hover 가능 기기로

@@ -157,6 +157,7 @@ export type ProductCardSummaryDto = {
   productId: string
   name: string
   modelNumber: string
+  brand?: string
   basePrice: number
   saleMode: SaleMode
   colors: ProductCardColorDto[]
@@ -173,6 +174,7 @@ export type ProductCardSort = Extract<ProductSort, 'PRICE_ASC' | 'PRICE_DESC'>
 export type ProductCardSearchParams = {
   category?: string
   subCategory?: string
+  brand?: string
   sort?: ProductCardSort
 }
 
