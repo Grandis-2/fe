@@ -24,7 +24,7 @@ export function QueueCard({
   myOrderLabel = '나의 대기 순서',
   myOrderNumber,
   progressPercent,
-  noticeText = '・모달창을 닫으면 순번이 뒤로 미뤄집니다.',
+  noticeText,
   totalWaitingLabel = '전체 대기인원',
   totalWaitingCount,
   className,
@@ -43,7 +43,6 @@ export function QueueCard({
           <br />
           <span className={styles.headlineAccent}>{headlineAccent}</span>
         </div>
-        <Rocket className={styles.icon} aria-hidden="true" />
       </div>
       <div
         className={[typography.body.defaultMedium, styles.productName].join(
@@ -75,14 +74,14 @@ export function QueueCard({
             />
             <Rocket
               className={styles.progressMark}
-              style={{ left: `${clampedPercent}%` }}
+              style={{ left: `calc(${clampedPercent}% - 13px)` }}
               aria-hidden="true"
             />
           </div>
           <div
             className={[typography.body.caption, styles.noticeText].join(' ')}
           >
-            {noticeText}
+            {noticeText ?? '모달창을 닫으면 5분 동안 순번이 유지됩니다.'}
           </div>
         </div>
         <div className={styles.divider} />
