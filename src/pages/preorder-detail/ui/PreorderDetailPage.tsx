@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
@@ -41,11 +41,6 @@ export function PreorderDetailPage() {
     setBottomSheetOpen(false)
     setQueueModel({ id, name })
   }
-
-  const queueModelId = queueModel?.id
-  const handleQueueComplete = useCallback(() => {
-    navigate(`/products/${queueModelId}`)
-  }, [navigate, queueModelId])
 
   return (
     <Container
@@ -150,7 +145,7 @@ export function PreorderDetailPage() {
         {queueModel && (
           <PreorderQueueCard
             productName={queueModel.name}
-            onComplete={handleQueueComplete}
+            onComplete={() => navigate(`/products/${queueModel.id}`)}
           />
         )}
       </Modal>

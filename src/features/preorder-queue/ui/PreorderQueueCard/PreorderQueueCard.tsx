@@ -5,7 +5,7 @@ import { usePreorderQueue } from '../../model/usePreorderQueue'
 
 export type PreorderQueueCardProps = {
   productName: string
-  // 앞 대기 인원이 0이 되면 호출된다 — 매 렌더 새 함수를 넘기면 타이머가 리셋되니 useCallback으로 감싼다.
+  // 앞 대기 인원이 0이 되면 호출된다.
   onComplete: () => void
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useEffectEvent, useState } from 'react'
 
 const TICK_MS = 1000
 // 순번 1이 된 뒤 바로 넘기지 않고 100%를 잠깐 보여준 다음 이동한다.
@@ -12,10 +12,13 @@ export function usePreorderQueue(onComplete: () => void) {
   const [startOrder] = useState(() => randomInt(80, 300))
   const [myOrder, setMyOrder] = useState(startOrder)
   const [behind, setBehind] = useState(() => randomInt(100, 400))
+  // 호출부가 매 렌더 새 함수를 넘겨도 타이머가 리셋되지 않도록 Effect Event로 감싼다 —
+  // 항상 최신 onComplete를 부르되 이펙트의 의존성에는 들어가지 않는다.
+  const handleComplete = useEffectEvent(onComplete)
 
   useEffect(() => {
     if (myOrder <= 1) {
-      const id = setTimeout(onComplete, COMPLETE_DELAY_MS)
+      const id = setTimeout(() => handleComplete(), COMPLETE_DELAY_MS)
       return () => clearTimeout(id)
     }
     const id = setTimeout(() => {
@@ -26,7 +29,7 @@ export function usePreorderQueue(onComplete: () => void) {
       setBehind((count) => count + randomInt(0, 8))
     }, TICK_MS)
     return () => clearTimeout(id)
-  }, [myOrder, startOrder, onComplete])
+  }, [myOrder, startOrder])
 
   return {
     myOrder,
