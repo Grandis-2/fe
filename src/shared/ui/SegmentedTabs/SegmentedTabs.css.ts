@@ -1,6 +1,12 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import {
+  color,
+  motion,
+  spacing,
+  typography,
+  shadow,
+} from '@/shared/config/theme'
 
 export const root = style({
   display: 'inline-flex',
@@ -39,7 +45,7 @@ export const tab = styleVariants({
     {
       background: color.background.base,
       color: color.primary.base,
-      boxShadow: '0 1px 2px rgba(26, 26, 29, 0.08)',
+      boxShadow: shadow.sm,
       selectors: {
         '&:hover': { color: color.primary.base },
       },
