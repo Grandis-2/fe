@@ -1,8 +1,17 @@
 import { Link, useLocation, useSearchParams } from 'react-router'
 
+import {
+  brandMenus,
+  categoryThumbnails,
+  links,
+  linkPaths,
+  searchPath,
+  type CategoryNavLink,
+} from '../model/menu'
+
 import * as styles from './CategoryNav.css'
 
-export type CategoryNavLink = '이벤트' | '사전예약'
+export type { CategoryNavLink }
 
 export type CategoryNavTone = 'default' | 'onDark'
 
@@ -13,135 +22,11 @@ export type CategoryNavProps = {
   className?: string
 }
 
-type MenuLink = { label: string; to: string }
-
-type BrandMenu = {
-  categories: string[]
-  // 제조사 필터(텍스트 타일). 카테고리 타일과 같은 그리드/행에 나란히 들어간다.
-  brands?: string[]
-  more: MenuLink[]
-}
-
-// 브랜드에 hover/focus하면 열리는 메가 메뉴의 내용.
-// 카테고리 API가 붙으면 이 상수 대신 응답을 쓴다(썸네일도 그때 같이 붙인다).
-const brandMenus: Record<string, BrandMenu> = {
-  모바일: {
-    categories: ['스마트폰', '태블릿', '폴더블'],
-    brands: ['Apple', 'Samsung'],
-    more: [
-      { label: '사전예약 중인 모바일', to: '/preorder' },
-      { label: '모바일 구매후기', to: '/reviews' },
-    ],
-  },
-  'PC/주변기기': {
-    categories: ['노트북', '데스크탑', '모니터', '키보드', '마우스'],
-    more: [
-      { label: '사전예약 중인 PC', to: '/preorder' },
-      { label: 'PC 구매후기', to: '/reviews' },
-    ],
-  },
-  웨어러블: {
-    categories: ['스마트워치', '무선이어폰', '스마트밴드'],
-    more: [
-      { label: '사전예약 중인 웨어러블', to: '/preorder' },
-      { label: '웨어러블 구매후기', to: '/reviews' },
-    ],
-  },
-} satisfies Record<string, BrandMenu>
-
-// 모바일 바텀시트 카테고리 타일에 쓰는 썸네일. public/images/menu에 있는 이미지만 쓴다
-// (다른 브랜드/카테고리는 아직 이미지가 없어 기존 텍스트 타일 그대로 둔다).
-const categoryThumbnails: Record<string, string> = {
-  스마트폰: '/images/menu/mobile_smartphone.png',
-  태블릿: '/images/menu/mobile_tablet.png',
-  폴더블: '/images/menu/mobile_foldable.png',
-}
-
-const links: CategoryNavLink[] = ['이벤트', '사전예약']
-const linkPaths: Record<CategoryNavLink, string> = {
-  이벤트: '/events',
-  사전예약: '/preorder',
-}
-
-// URLSearchParams가 인코딩까지 해주므로 쿼리를 손으로 붙이지 않는다.
-const searchPath = (params: Record<string, string>) =>
-  `/search?${new URLSearchParams(params)}`
-
 // 링크를 누른 뒤에도 포커스가 남아 있으면 :focus-within 때문에 이동한 페이지 위로 메뉴가
 // 계속 열려 있으므로, 실제로 이동을 일으키는 링크를 누를 때만 포커스를 풀어 닫는다
 // (컨테이너 전체에 걸면 메뉴 안 빈 공간 클릭에도 반응하고, 이 브랜드와 무관한 포커스까지 풀린다).
 const blurActiveElement = () =>
   (document.activeElement as HTMLElement | null)?.blur()
-
-// 모바일 헤더의 햄버거 → 바텀시트 안에 들어가는 세로 목록. hover 메가 메뉴 대신
-// 브랜드마다 카테고리 타일을 펼쳐 둔다. 데이터는 데스크톱 nav와 같은 상수를 쓴다.
-export function MobileCategoryNav({ onNavigate }: { onNavigate?: () => void }) {
-  return (
-    <nav className={styles.mobileRoot}>
-      {Object.entries(brandMenus).map(([brand, menu]) => (
-        <div key={brand} className={styles.mobileSection}>
-          <Link
-            to={searchPath({ category: brand })}
-            className={styles.mobileBrand}
-            onClick={onNavigate}
-          >
-            {brand}
-          </Link>
-          <div className={styles.mobileCategories}>
-            {menu.categories.map((category) => {
-              const thumbnail = categoryThumbnails[category]
-              return (
-                <Link
-                  key={category}
-                  to={searchPath({ category: brand, subCategory: category })}
-                  className={
-                    thumbnail ? styles.mobileCategoryTile : styles.menuTile
-                  }
-                  onClick={onNavigate}
-                >
-                  {thumbnail && (
-                    <img
-                      src={thumbnail}
-                      alt=""
-                      className={styles.mobileCategoryThumbnail}
-                    />
-                  )}
-                  {category}
-                </Link>
-              )
-            })}
-          </div>
-          {menu.brands && (
-            <div className={styles.mobileBrands}>
-              {menu.brands.map((b) => (
-                <Link
-                  key={b}
-                  to={searchPath({ category: brand, brand: b })}
-                  className={styles.mobileBrandChip}
-                  onClick={onNavigate}
-                >
-                  {b}
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-      <div className={styles.mobileLinks}>
-        {links.map((link) => (
-          <Link
-            key={link}
-            to={linkPaths[link]}
-            className={styles.mobileLink}
-            onClick={onNavigate}
-          >
-            {link}
-          </Link>
-        ))}
-      </div>
-    </nav>
-  )
-}
 
 export function CategoryNav({
   tone = 'default',
