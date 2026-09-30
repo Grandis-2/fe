@@ -15,6 +15,7 @@ import {
 import { requestTossPayment } from '@/features/toss-payment'
 import { getErrorMessage } from '@/shared/api/client'
 import { mypagePath } from '@/shared/config/routes'
+import { formatWon } from '@/shared/lib/formatNumber'
 import { Button, Container, Input, InlineAlert } from '@/shared/ui'
 
 import { terms } from '../model/terms'
@@ -24,8 +25,6 @@ import { TermsAgreement } from './TermsAgreement'
 
 const GENERIC_PAYMENT_ERROR =
   '결제 요청 중 문제가 발생했습니다. 다시 시도해 주세요.'
-
-const won = (value: number) => `${value.toLocaleString('ko-KR')}원`
 
 // 상품 상세의 handleCheckout이 navigate(path, { state })로 넘기는 모양 —
 // 직접 /payment로 들어오면(딥링크 등) 없을 수 있어 아래 목업으로 대체한다.
@@ -107,7 +106,7 @@ export function PaymentPage() {
     modelNumber: 'A3714',
     optionSummary: `${draft.colorLabel} · ${draft.optionLabel} · Apple care+`,
     quantityLabel: `${draft.quantity}개`,
-    priceLabel: won(orderAmount),
+    priceLabel: formatWon(orderAmount),
   }
 
   const requiredAgreed = terms.every(
@@ -238,16 +237,16 @@ export function PaymentPage() {
         <OrderSummary
           rows={[
             { label: '상품 수', value: `${draft.quantity}개` },
-            { label: '주문 금액', value: won(orderAmount) },
+            { label: '주문 금액', value: formatWon(orderAmount) },
             {
               label: '사전예약 혜택',
-              value: `-${won(preorderBenefit)}`,
+              value: `-${formatWon(preorderBenefit)}`,
               highlight: true,
             },
           ]}
           totalLabel="결제 예정 금액"
-          totalValue={won(totalAmount)}
-          actionLabel={`${won(totalAmount)} 결제하기`}
+          totalValue={formatWon(totalAmount)}
+          actionLabel={`${formatWon(totalAmount)} 결제하기`}
           actionDisabled={!requiredAgreed}
           onAction={() => void handlePayment()}
         >

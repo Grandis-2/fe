@@ -1,5 +1,7 @@
 import { useState } from 'react'
 
+import { formatWon } from '@/shared/lib/formatNumber'
+
 export type ProductColorOption = { hex: string; label: string }
 
 // 색상/용량/수량 선택 + 파생되는 가격 텍스트를 한곳에 모은다. 상세 페이지의 옵션 패널과
@@ -37,7 +39,7 @@ export function useProductPurchase({
   const quantity = isPreorder ? 1 : stepperQuantity
   const colorLabel = colorSwatches[selectedColor].label
   const optionLabel = optionLabels[selectedOption]
-  const priceLabel = `${(unitPrice * quantity).toLocaleString()}원`
+  const priceLabel = formatWon(unitPrice * quantity)
 
   return {
     selectedColor,
