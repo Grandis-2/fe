@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react'
+import { useState } from 'react'
 
 import {
   useDefaultAddress,
@@ -7,11 +7,13 @@ import {
 } from '@/entities/address'
 import { getProfile } from '@/entities/profile'
 import {
+  AddressFields,
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@/features/daum-postcode'
 import { getErrorMessage } from '@/shared/api/client'
-import { Button, InlineAlert, Input, Modal, ModalTitle } from '@/shared/ui'
+import { useFormFields } from '@/shared/lib/useFormFields'
+import { Button, InlineAlert, Modal, ModalTitle } from '@/shared/ui'
 
 import * as styles from './AddressFormModal.css'
 
@@ -23,9 +25,7 @@ const emptyForm = {
   addressDetail: '',
 }
 
-type FormKey = keyof typeof emptyForm
-
-const requiredKeys: FormKey[] = ['postcode', 'address']
+const REQUIRED_KEYS = ['postcode', 'address'] as const
 
 const toForm = (saved: DefaultAddress | null | undefined) =>
   saved
@@ -49,9 +49,7 @@ export function AddressFormModal({
 }: AddressFormModalProps) {
   const { data: saved } = useDefaultAddress()
   const { mutateAsync: saveAddress } = useSaveDefaultAddress()
-  // 저장된 값 위에 사용자가 고친 칸만 얹는다 — 이펙트로 폼을 덮어쓰지 않는다.
-  const [edits, setEdits] = useState<Partial<typeof emptyForm>>({})
-  const [submitted, setSubmitted] = useState(false)
+  const form = useFormFields(toForm(saved), REQUIRED_KEYS)
   const [addressSearchOpen, setAddressSearchOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -62,40 +60,26 @@ export function AddressFormModal({
   if (open !== prevOpen) {
     setPrevOpen(open)
     if (open) {
-      setEdits({})
-      setSubmitted(false)
+      form.reset()
       setError(null)
     }
   }
 
-  const form = { ...toForm(saved), ...edits }
   const isEditing = !!saved
-
-  // 필수 입력은 저장을 한 번 눌러 본 뒤에만 빨갛게 표시한다 — PaymentPage와 같은 패턴.
-  const field = (key: FormKey, label: string, required?: boolean) => ({
-    label,
-    value: form[key],
-    onChange: (event: ChangeEvent<HTMLInputElement>) =>
-      setEdits((prev) => ({ ...prev, [key]: event.target.value })),
-    required,
-    invalid: submitted && !form[key].trim(),
-  })
 
   // 상세 주소는 이전 주소 기준 값이라 새로 찾은 주소와 안 맞을 수 있어 같이 비운다.
   const handleAddressComplete = ({
     postcode,
     address,
   }: DaumPostcodeAddress) => {
-    setEdits((prev) => ({ ...prev, postcode, address, addressDetail: '' }))
+    form.setValues({ postcode, address, addressDetail: '' })
     setAddressSearchOpen(false)
   }
 
-  const requiredFilled = requiredKeys.every((key) => form[key].trim())
-
   const handleSubmit = async () => {
-    setSubmitted(true)
+    form.markSubmitted()
     setError(null)
-    if (!requiredFilled) return
+    if (!form.requiredFilled) return
 
     setSaving(true)
     try {
@@ -105,9 +89,9 @@ export function AddressFormModal({
       await saveAddress({
         name: profile.name ?? '',
         phone: profile.phoneNumber ?? '',
-        postalCode: form.postcode,
-        line1: form.address,
-        line2: form.addressDetail || null,
+        postalCode: form.values.postcode,
+        line1: form.values.address,
+        line2: form.values.addressDetail || null,
       })
       onOpenChange(false)
     } catch (caught) {
@@ -127,20 +111,10 @@ export function AddressFormModal({
 
           {error && <InlineAlert status="error">{error}</InlineAlert>}
 
-          <div className={styles.postcodeRow}>
-            <Input
-              {...field('postcode', '우편 번호', true)}
-              inputMode="numeric"
-            />
-            <Button
-              className={styles.postcodeAction}
-              onClick={() => setAddressSearchOpen(true)}
-            >
-              주소 찾기
-            </Button>
-          </div>
-          <Input {...field('address', '기본 주소', true)} />
-          <Input {...field('addressDetail', '상세 주소')} />
+          <AddressFields
+            field={form.field}
+            onSearchClick={() => setAddressSearchOpen(true)}
+          />
 
           <Button
             className={styles.submitButton}

@@ -1,4 +1,4 @@
-import { useState, type ChangeEvent } from 'react'
+import { useState } from 'react'
 
 import { Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
@@ -9,6 +9,7 @@ import { preparePayment } from '@/entities/payment'
 import { ProductPaymentCard } from '@/entities/product'
 import { useProfile } from '@/entities/profile'
 import {
+  AddressFields,
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@/features/daum-postcode'
@@ -16,7 +17,8 @@ import { requestTossPayment } from '@/features/toss-payment'
 import { getErrorMessage } from '@/shared/api/client'
 import { mypagePath } from '@/shared/config/routes'
 import { formatWon } from '@/shared/lib/formatNumber'
-import { Button, Container, Input, InlineAlert } from '@/shared/ui'
+import { useFormFields } from '@/shared/lib/useFormFields'
+import { Container, Input, InlineAlert } from '@/shared/ui'
 
 import { terms } from '../model/terms'
 
@@ -59,32 +61,28 @@ const initialForm = {
   addressDetail: '',
 }
 
-type FormKey = keyof typeof initialForm
-
-// email을 제외한 나머지가 결제를 막는 필수 입력이다(각 field() 호출의 required와 맞춘다).
-const requiredFieldKeys: FormKey[] = [
+// email을 제외한 나머지가 결제를 막는 필수 입력이다.
+const REQUIRED_KEYS = [
   'name',
   'phone',
   'addressLabel',
   'postcode',
   'address',
   'addressDetail',
-]
+] as const
 
 export function PaymentPage() {
   const location = useLocation()
   const draft = (location.state as PurchaseDraft | null) ?? fallbackDraft
   const { data: profile } = useProfile()
   const { data: savedAddress } = useDefaultAddress()
-  const [edits, setEdits] = useState<Partial<typeof initialForm>>({})
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
-  const [submitted, setSubmitted] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [addressSearchOpen, setAddressSearchOpen] = useState(false)
 
   // 회원 프로필과 기본 배송지를 기본값으로 깐다 — 비로그인/미설정이면 그냥 빈 폼이다
-  // (SignupPage의 프로필 프리필과 같은 패턴). 사용자가 고친 칸(edits)이 항상 우선하므로
-  // 응답이 늦게 와도 입력 중인 값을 덮어쓰지 않는다.
+  // (SignupPage의 프로필 프리필과 같은 패턴). 사용자가 고친 칸이 항상 우선하므로
+  // 응답이 늦게 와도 입력 중인 값을 덮어쓰지 않는다(useFormFields).
   const prefill: Partial<typeof initialForm> = {
     name: profile?.name || savedAddress?.name || '',
     phone: profile?.phoneNumber ?? '',
@@ -96,7 +94,8 @@ export function PaymentPage() {
       addressDetail: savedAddress.line2 ?? '',
     }),
   }
-  const form = { ...initialForm, ...prefill, ...edits }
+  const form = useFormFields({ ...initialForm, ...prefill }, REQUIRED_KEYS)
+  const { field } = form
 
   const orderAmount = draft.unitPrice * draft.quantity
   const preorderBenefit = Math.round(orderAmount * PREORDER_BENEFIT_RATE)
@@ -112,28 +111,13 @@ export function PaymentPage() {
   const requiredAgreed = terms.every(
     (term) => !term.required || agreedIds.has(term.id),
   )
-  const requiredFieldsFilled = requiredFieldKeys.every((key) =>
-    form[key].trim(),
-  )
-
-  // 필수 입력은 결제를 한 번 눌러 본 뒤에만 빨갛게 표시한다 — 처음부터 빨간 화면을 보여주지 않는다.
-  // 라벨 뒤 별표와 에러 문구는 Input이 required/invalid를 보고 스스로 만든다.
-  const field = (key: FormKey, label: string, required?: boolean) => ({
-    label,
-    value: form[key],
-    onChange: (event: ChangeEvent<HTMLInputElement>) =>
-      setEdits((prev) => ({ ...prev, [key]: event.target.value })),
-    required,
-    invalid: submitted && !form[key].trim(),
-  })
-
   // 검색 없이 닫으면 onComplete가 안 불려서 폼은 그대로다. 상세 주소는 이전 주소
   // 기준 값이라 새로 찾은 주소와 안 맞을 수 있어 같이 비운다.
   const handleAddressComplete = ({
     postcode,
     address,
   }: DaumPostcodeAddress) => {
-    setEdits((prev) => ({ ...prev, postcode, address, addressDetail: '' }))
+    form.setValues({ postcode, address, addressDetail: '' })
     setAddressSearchOpen(false)
   }
 
@@ -152,9 +136,9 @@ export function PaymentPage() {
   // 브라우저가 결제창 오버레이를 띄운 뒤 successUrl/failUrl로 이동하므로, catch는
   // 오버레이가 뜨기 전 오류(파라미터 오류, 네트워크 실패 등)만 잡는다.
   const handlePayment = async () => {
-    setSubmitted(true)
+    form.markSubmitted()
     setPaymentError(null)
-    if (!requiredFieldsFilled) return
+    if (!form.requiredFilled) return
 
     try {
       const { orderId, amount } = await preparePayment({
@@ -165,8 +149,8 @@ export function PaymentPage() {
         orderId,
         amount,
         orderName: draft.productName,
-        customerName: form.name,
-        customerEmail: form.email || undefined,
+        customerName: form.values.name,
+        customerEmail: form.values.email || undefined,
       })
     } catch (caught) {
       setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
@@ -189,9 +173,9 @@ export function PaymentPage() {
           <section className={styles.section}>
             <div className={styles.sectionTitle}>수령인</div>
             <div className={styles.fieldRow}>
-              <Input {...field('name', '이름', true)} />
+              <Input {...field('name', '이름')} />
               <Input
-                {...field('phone', "휴대폰 ('-'을 제외한 숫자만)", true)}
+                {...field('phone', "휴대폰 ('-'을 제외한 숫자만)")}
                 inputMode="numeric"
               />
             </div>
@@ -216,21 +200,11 @@ export function PaymentPage() {
               </div>
             </div>
 
-            <Input {...field('addressLabel', '배송지명', true)} />
-            <div className={styles.postcodeRow}>
-              <Input
-                {...field('postcode', '우편 번호', true)}
-                inputMode="numeric"
-              />
-              <Button
-                className={styles.postcodeAction}
-                onClick={() => setAddressSearchOpen(true)}
-              >
-                주소 찾기
-              </Button>
-            </div>
-            <Input {...field('address', '기본 주소', true)} />
-            <Input {...field('addressDetail', '상세 주소', true)} />
+            <Input {...field('addressLabel', '배송지명')} />
+            <AddressFields
+              field={field}
+              onSearchClick={() => setAddressSearchOpen(true)}
+            />
           </section>
         </div>
 
