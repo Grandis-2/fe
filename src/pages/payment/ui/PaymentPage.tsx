@@ -99,6 +99,7 @@ export function PaymentPage() {
         if (!shippingAddress) return
         setForm((prev) => ({
           ...prev,
+          name: prev.name || shippingAddress.name,
           addressLabel: prev.addressLabel || '기본 배송지',
           postcode: shippingAddress.postalCode,
           address: shippingAddress.line1,
