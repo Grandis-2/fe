@@ -1,13 +1,13 @@
-import { useEffect, useState, type ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 
 import { Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
-import { getDefaultAddress } from '@/entities/address'
+import { useDefaultAddress } from '@/entities/address'
 import { OrderSummary } from '@/entities/order'
 import { preparePayment } from '@/entities/payment'
 import { ProductPaymentCard } from '@/entities/product'
-import { getProfile } from '@/entities/profile'
+import { useProfile } from '@/entities/profile'
 import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
@@ -75,40 +75,29 @@ const requiredFieldKeys: FormKey[] = [
 export function PaymentPage() {
   const location = useLocation()
   const draft = (location.state as PurchaseDraft | null) ?? fallbackDraft
-  const [form, setForm] = useState(initialForm)
+  const { data: profile } = useProfile()
+  const { data: savedAddress } = useDefaultAddress()
+  const [edits, setEdits] = useState<Partial<typeof initialForm>>({})
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
   const [submitted, setSubmitted] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [addressSearchOpen, setAddressSearchOpen] = useState(false)
 
-  // 회원 프로필과 기본 배송지를 프리필한다 — 비로그인/미설정이면 그냥 빈 폼으로 둔다
-  // (SignupPage의 getProfile 프리필과 같은 패턴).
-  useEffect(() => {
-    getProfile()
-      .then((profile) =>
-        setForm((prev) => ({
-          ...prev,
-          name: profile.name ?? prev.name,
-          phone: profile.phoneNumber ?? prev.phone,
-          email: profile.email ?? prev.email,
-        })),
-      )
-      .catch(() => {})
-
-    getDefaultAddress()
-      .then(({ shippingAddress }) => {
-        if (!shippingAddress) return
-        setForm((prev) => ({
-          ...prev,
-          name: prev.name || shippingAddress.name,
-          addressLabel: prev.addressLabel || '기본 배송지',
-          postcode: shippingAddress.postalCode,
-          address: shippingAddress.line1,
-          addressDetail: shippingAddress.line2 ?? '',
-        }))
-      })
-      .catch(() => {})
-  }, [])
+  // 회원 프로필과 기본 배송지를 기본값으로 깐다 — 비로그인/미설정이면 그냥 빈 폼이다
+  // (SignupPage의 프로필 프리필과 같은 패턴). 사용자가 고친 칸(edits)이 항상 우선하므로
+  // 응답이 늦게 와도 입력 중인 값을 덮어쓰지 않는다.
+  const prefill: Partial<typeof initialForm> = {
+    name: profile?.name || savedAddress?.name || '',
+    phone: profile?.phoneNumber ?? '',
+    email: profile?.email ?? '',
+    ...(savedAddress && {
+      addressLabel: '기본 배송지',
+      postcode: savedAddress.postalCode,
+      address: savedAddress.line1,
+      addressDetail: savedAddress.line2 ?? '',
+    }),
+  }
+  const form = { ...initialForm, ...prefill, ...edits }
 
   const orderAmount = draft.unitPrice * draft.quantity
   const preorderBenefit = Math.round(orderAmount * PREORDER_BENEFIT_RATE)
@@ -134,7 +123,7 @@ export function PaymentPage() {
     label,
     value: form[key],
     onChange: (event: ChangeEvent<HTMLInputElement>) =>
-      setForm((prev) => ({ ...prev, [key]: event.target.value })),
+      setEdits((prev) => ({ ...prev, [key]: event.target.value })),
     required,
     invalid: submitted && !form[key].trim(),
   })
@@ -145,7 +134,7 @@ export function PaymentPage() {
     postcode,
     address,
   }: DaumPostcodeAddress) => {
-    setForm((prev) => ({ ...prev, postcode, address, addressDetail: '' }))
+    setEdits((prev) => ({ ...prev, postcode, address, addressDetail: '' }))
     setAddressSearchOpen(false)
   }
 

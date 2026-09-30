@@ -15,9 +15,11 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: {
     address: {
-      recipientName: '기매진',
+      name: '기매진',
       phone: '010-1234-5678',
-      fullAddress: '서울특별시 강남구 테헤란로 123',
+      postalCode: '06234',
+      line1: '서울특별시 강남구 테헤란로 123',
+      line2: '4층',
     },
     onEdit: fn(),
   },

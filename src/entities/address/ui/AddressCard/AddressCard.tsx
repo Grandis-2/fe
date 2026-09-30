@@ -2,31 +2,27 @@ import { typography } from '@/shared/config/theme'
 
 import * as styles from './AddressCard.css'
 
-// 주소록이 배송지 하나(기본 배송지)로 줄어서 id/label/isDefault가 필요 없다 —
-// 여러 배송지가 부활하면 그때 다시 붙인다.
-export type AddressCardData = {
-  recipientName: string
-  phone: string
-  fullAddress: string
-}
+import type { DefaultAddress } from '../../model/defaultAddress'
 
 export type AddressCardProps = {
-  address: AddressCardData
+  address: DefaultAddress
   onEdit?: () => void
   className?: string
 }
 
 export function AddressCard({ address, onEdit, className }: AddressCardProps) {
+  const fullAddress = [address.line1, address.line2].filter(Boolean).join(' ')
+
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
       <div className={[typography.body.defaultMedium, styles.label].join(' ')}>
         기본 배송지
       </div>
       <div className={[typography.body.sub, styles.recipient].join(' ')}>
-        {address.recipientName} · {address.phone}
+        {address.name} · {address.phone}
       </div>
       <div className={[typography.body.sub, styles.fullAddress].join(' ')}>
-        {address.fullAddress}
+        {fullAddress}
       </div>
       <div className={styles.actionRow}>
         <button

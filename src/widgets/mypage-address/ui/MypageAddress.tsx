@@ -1,47 +1,17 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { MapPin, Plus } from 'lucide-react'
 
-import {
-  AddressCard,
-  getDefaultAddress,
-  type AddressCardData,
-} from '@/entities/address'
+import { AddressCard, useDefaultAddress } from '@/entities/address'
 import { Button } from '@/shared/ui'
 
 import { AddressFormModal } from './AddressFormModal'
 import * as styles from './MypageAddress.css'
 
 export function MypageAddress() {
-  const [address, setAddress] = useState<AddressCardData | null>(null)
+  // 저장하면 useSaveDefaultAddress가 캐시를 갱신하므로 여기서 다시 조회하지 않는다.
+  const { data: address } = useDefaultAddress()
   const [formOpen, setFormOpen] = useState(false)
-
-  const refresh = useCallback(() => {
-    getDefaultAddress()
-      .then(({ shippingAddress }) =>
-        setAddress(
-          shippingAddress
-            ? {
-                recipientName: shippingAddress.name,
-                phone: shippingAddress.phone,
-                fullAddress: [shippingAddress.line1, shippingAddress.line2]
-                  .filter(Boolean)
-                  .join(' '),
-              }
-            : null,
-        ),
-      )
-      .catch(() => {})
-  }, [])
-
-  useEffect(() => {
-    refresh()
-  }, [refresh])
-
-  const handleSaved = () => {
-    setFormOpen(false)
-    refresh()
-  }
 
   return (
     <>
@@ -75,11 +45,7 @@ export function MypageAddress() {
         </div>
       )}
 
-      <AddressFormModal
-        open={formOpen}
-        onOpenChange={setFormOpen}
-        onSaved={handleSaved}
-      />
+      <AddressFormModal open={formOpen} onOpenChange={setFormOpen} />
     </>
   )
 }

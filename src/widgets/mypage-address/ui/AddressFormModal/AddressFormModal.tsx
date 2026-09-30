@@ -1,6 +1,10 @@
-import { useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
+import { useState, type ChangeEvent, type ReactNode } from 'react'
 
-import { getDefaultAddress, putDefaultAddress } from '@/entities/address'
+import {
+  useDefaultAddress,
+  useSaveDefaultAddress,
+  type DefaultAddress,
+} from '@/entities/address'
 import { getProfile } from '@/entities/profile'
 import {
   DaumPostcodeSearch,
@@ -23,11 +27,18 @@ type FormKey = keyof typeof emptyForm
 
 const requiredKeys: FormKey[] = ['postcode', 'address']
 
+const toForm = (saved: DefaultAddress | null | undefined) =>
+  saved
+    ? {
+        postcode: saved.postalCode,
+        address: saved.line1,
+        addressDetail: saved.line2 ?? '',
+      }
+    : emptyForm
+
 export type AddressFormModalProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** 저장(PUT) 성공 후 호출된다 — 여는 쪽이 이때 닫고 목록을 새로고침한다. */
-  onSaved: () => void
 }
 
 // Modal 안에서만 useModalTitleId()가 값을 갖는다(daum-postcode의 ModalTitle과 같은 이유).
@@ -40,52 +51,42 @@ function FormTitle({ children }: { children: ReactNode }) {
   )
 }
 
-// 배송지가 기본 배송지 하나뿐이라 추가/수정이 같은 폼이다 — 열릴 때마다 현재
-// 배송지를 다시 조회해서 있으면 채우고(수정) 없으면 빈 폼으로 시작한다(추가).
+// 배송지가 기본 배송지 하나뿐이라 추가/수정이 같은 폼이다 — 저장된 배송지가
+// 있으면 채우고(수정) 없으면 빈 폼으로 시작한다(추가).
 export function AddressFormModal({
   open,
   onOpenChange,
-  onSaved,
 }: AddressFormModalProps) {
-  const [form, setForm] = useState(emptyForm)
-  const [isEditing, setIsEditing] = useState(false)
+  const { data: saved } = useDefaultAddress()
+  const { mutateAsync: saveAddress } = useSaveDefaultAddress()
+  // 저장된 값 위에 사용자가 고친 칸만 얹는다 — 이펙트로 폼을 덮어쓰지 않는다.
+  const [edits, setEdits] = useState<Partial<typeof emptyForm>>({})
   const [submitted, setSubmitted] = useState(false)
   const [addressSearchOpen, setAddressSearchOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    if (!open) return
+  // 열릴 때마다 입력하던 값과 에러를 비우고 저장된 배송지로 되돌린다. 렌더 중에 바로
+  // 초기화한다 — 이펙트에서 setState하면 react-hooks/set-state-in-effect에 걸린다.
+  const [prevOpen, setPrevOpen] = useState(open)
+  if (open !== prevOpen) {
+    setPrevOpen(open)
+    if (open) {
+      setEdits({})
+      setSubmitted(false)
+      setError(null)
+    }
+  }
 
-    getDefaultAddress()
-      .then(({ shippingAddress }) => {
-        setSubmitted(false)
-        setError(null)
-        setIsEditing(!!shippingAddress)
-        setForm(
-          shippingAddress
-            ? {
-                postcode: shippingAddress.postalCode,
-                address: shippingAddress.line1,
-                addressDetail: shippingAddress.line2 ?? '',
-              }
-            : emptyForm,
-        )
-      })
-      .catch(() => {
-        setSubmitted(false)
-        setError(null)
-        setIsEditing(false)
-        setForm(emptyForm)
-      })
-  }, [open])
+  const form = { ...toForm(saved), ...edits }
+  const isEditing = !!saved
 
   // 필수 입력은 저장을 한 번 눌러 본 뒤에만 빨갛게 표시한다 — PaymentPage와 같은 패턴.
   const field = (key: FormKey, label: string, required?: boolean) => ({
     label,
     value: form[key],
     onChange: (event: ChangeEvent<HTMLInputElement>) =>
-      setForm((prev) => ({ ...prev, [key]: event.target.value })),
+      setEdits((prev) => ({ ...prev, [key]: event.target.value })),
     required,
     invalid: submitted && !form[key].trim(),
   })
@@ -95,7 +96,7 @@ export function AddressFormModal({
     postcode,
     address,
   }: DaumPostcodeAddress) => {
-    setForm((prev) => ({ ...prev, postcode, address, addressDetail: '' }))
+    setEdits((prev) => ({ ...prev, postcode, address, addressDetail: '' }))
     setAddressSearchOpen(false)
   }
 
@@ -111,14 +112,14 @@ export function AddressFormModal({
       // 배송지는 주소만 물어본다 — 수령인은 항상 로그인한 회원 본인이라 그
       // 이름/전화번호를 그대로 가져다 쓴다(폼에 다시 입력받지 않는다).
       const profile = await getProfile()
-      await putDefaultAddress({
+      await saveAddress({
         name: profile.name ?? '',
         phone: profile.phoneNumber ?? '',
         postalCode: form.postcode,
         line1: form.address,
         line2: form.addressDetail || null,
       })
-      onSaved()
+      onOpenChange(false)
     } catch (caught) {
       setError(
         caught instanceof ApiRequestError
