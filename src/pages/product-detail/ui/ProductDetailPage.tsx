@@ -22,8 +22,9 @@ import { ProductPageTab } from '@/widgets/product-page-tab'
 import type { ProductPageTabKey } from '@/widgets/product-page-tab'
 import { ProductPurchaseBar } from '@/widgets/product-purchase-bar'
 
+import { useProductDetailScroll } from '../model/useProductDetailScroll'
+
 import * as styles from './ProductDetailPage.css'
-import { useProductDetailScroll } from './useProductDetailScroll'
 
 // ponytail: 아직 상품 상세 API가 없어서 목업 옵션 데이터로 대체
 const colorSwatches = [
@@ -115,7 +116,7 @@ export function ProductDetailPage() {
     registerPanelRef,
     isSheetOpen,
     setIsSheetOpen,
-  } = useProductDetailScroll()
+  } = useProductDetailScroll(productId)
 
   return (
     <Container desktopPaddingX={0} mobilePaddingX={0}>
