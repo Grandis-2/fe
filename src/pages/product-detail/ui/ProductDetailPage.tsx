@@ -11,6 +11,7 @@ import { mockReviews, ReviewCard } from '@/entities/review'
 import {
   QuantityPriceDisplay,
   useProductPurchase,
+  type PurchaseDraft,
 } from '@/features/product-purchase'
 import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
 import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
@@ -91,7 +92,7 @@ export function ProductDetailPage() {
   // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
   const handleCheckout = () => {
     if (!isCheckoutReady) return
-    const purchasePayload = {
+    const purchasePayload: PurchaseDraft = {
       productName: PRODUCT_NAME,
       colorLabel,
       optionLabel,

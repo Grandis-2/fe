@@ -13,6 +13,7 @@ import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@/features/daum-postcode'
+import type { PurchaseDraft } from '@/features/product-purchase'
 import { requestTossPayment } from '@/features/toss-payment'
 import { getErrorMessage } from '@/shared/api/client'
 import { mypagePath } from '@/shared/config/routes'
@@ -28,16 +29,7 @@ import { TermsAgreement } from './TermsAgreement'
 const GENERIC_PAYMENT_ERROR =
   '결제 요청 중 문제가 발생했습니다. 다시 시도해 주세요.'
 
-// 상품 상세의 handleCheckout이 navigate(path, { state })로 넘기는 모양 —
-// 직접 /payment로 들어오면(딥링크 등) 없을 수 있어 아래 목업으로 대체한다.
-type PurchaseDraft = {
-  productName: string
-  colorLabel: string
-  optionLabel: string
-  quantity: number
-  unitPrice: number
-}
-
+// 직접 /payment로 들어오면(딥링크 등) 상품 상세가 넘기는 주문 초안이 없어 아래 목업으로 대체한다.
 // ponytail: 아직 주문서 API가 없어서 목업 데이터로 대체.
 const fallbackDraft: PurchaseDraft = {
   productName: '아이폰 18 Pro',
