@@ -3,13 +3,12 @@ import { useState } from 'react'
 import { Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
-import { useDefaultAddress } from '@/entities/address'
+import { useDefaultAddress, type DefaultAddress } from '@/entities/address'
 import { OrderSummary } from '@/entities/order'
 import { preparePayment } from '@/entities/payment'
 import { ProductPaymentCard } from '@/entities/product'
 import { useProfile } from '@/entities/profile'
 import {
-  AddressFields,
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@/features/daum-postcode'
@@ -19,7 +18,7 @@ import { getErrorMessage } from '@/shared/api/client'
 import { mypagePath } from '@/shared/config/routes'
 import { formatWon } from '@/shared/lib/formatNumber'
 import { useFormFields } from '@/shared/lib/useFormFields'
-import { Container, Input, InlineAlert } from '@/shared/ui'
+import { Button, Container, Input, InlineAlert } from '@/shared/ui'
 
 import { terms } from '../model/terms'
 
@@ -43,22 +42,23 @@ const fallbackDraft: PurchaseDraft = {
 // 되면서 소액 주문에서 총액이 음수로 떨어졌다 — 금액이 아니라 비율로 할인한다.
 const PREORDER_BENEFIT_RATE = 0.1
 
-const initialForm = {
-  name: '',
-  phone: '',
-  email: '',
-  addressLabel: '',
-  postcode: '',
-  address: '',
-  addressDetail: '',
+// 저장된 기본 배송지가 없을 때의 처리(배송지 등록 유도 등)가 정해지기 전까지는 배송지가
+// 있다고 가정하고 이 값으로 채운다.
+// ponytail: 목업 — 배송지 없음 처리가 정해지면 지우고 그쪽 흐름으로 바꾼다.
+const fallbackAddress: DefaultAddress = {
+  name: '홍길동',
+  phone: '01012345678',
+  postalCode: '06234',
+  line1: '서울특별시 강남구 테헤란로 123',
+  line2: null,
 }
 
-// email을 제외한 나머지가 결제를 막는 필수 입력이다.
+// email을 제외한 나머지가 결제를 막는 필수 입력이다. 우편번호는 칸이 없고 기본 주소와
+// 같이 채워지므로(저장된 배송지·주소 찾기) 따로 검사하지 않는다.
 const REQUIRED_KEYS = [
   'name',
   'phone',
   'addressLabel',
-  'postcode',
   'address',
   'addressDetail',
 ] as const
@@ -72,22 +72,31 @@ export function PaymentPage() {
   const [paymentError, setPaymentError] = useState<string | null>(null)
   const [addressSearchOpen, setAddressSearchOpen] = useState(false)
 
-  // 회원 프로필과 기본 배송지를 기본값으로 깐다 — 비로그인/미설정이면 그냥 빈 폼이다
-  // (SignupPage의 프로필 프리필과 같은 패턴). 사용자가 고친 칸이 항상 우선하므로
-  // 응답이 늦게 와도 입력 중인 값을 덮어쓰지 않는다(useFormFields).
-  const prefill: Partial<typeof initialForm> = {
-    name: profile?.name || savedAddress?.name || '',
-    phone: profile?.phoneNumber ?? '',
-    email: profile?.email ?? '',
-    ...(savedAddress && {
+  // 회원 프로필과 기본 배송지를 기본값으로 깐다(SignupPage의 프로필 프리필과 같은
+  // 패턴). 사용자가 고친 칸이 항상 우선하므로 응답이 늦게 와도 입력 중인 값을
+  // 덮어쓰지 않는다(useFormFields). 기본 주소는 직접 입력하지 않고 주소 찾기로만 바꾼다.
+  const address = savedAddress ?? fallbackAddress
+  const form = useFormFields(
+    {
+      name: profile?.name || address.name,
+      phone: profile?.phoneNumber ?? '',
+      email: profile?.email ?? '',
       addressLabel: '기본 배송지',
-      postcode: savedAddress.postalCode,
-      address: savedAddress.line1,
-      addressDetail: savedAddress.line2 ?? '',
-    }),
-  }
-  const form = useFormFields({ ...initialForm, ...prefill }, REQUIRED_KEYS)
+      postcode: address.postalCode,
+      address: address.line1,
+      addressDetail: address.line2 ?? '',
+    },
+    REQUIRED_KEYS,
+  )
   const { field } = form
+  // 읽기 전용 칸에 우편번호를 붙여 "기본 주소 (우편번호)"로 한 칸에 보여 준다 — 폼 값은
+  // 주소와 우편번호가 따로다.
+  const addressDisplay = [
+    form.values.address,
+    form.values.postcode && `(${form.values.postcode})`,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   const orderAmount = draft.unitPrice * draft.quantity
   const preorderBenefit = Math.round(orderAmount * PREORDER_BENEFIT_RATE)
@@ -193,10 +202,20 @@ export function PaymentPage() {
             </div>
 
             <Input {...field('addressLabel', '배송지명')} />
-            <AddressFields
-              field={field}
-              onSearchClick={() => setAddressSearchOpen(true)}
-            />
+            <div className={styles.addressRow}>
+              <Input
+                {...field('address', '기본 주소')}
+                value={addressDisplay}
+                readOnly
+              />
+              <Button
+                className={styles.addressAction}
+                onClick={() => setAddressSearchOpen(true)}
+              >
+                주소 찾기
+              </Button>
+            </div>
+            <Input {...field('addressDetail', '상세 주소')} />
           </section>
         </div>
 
