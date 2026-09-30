@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { Bell, LogOut, Search, ShoppingCart, User } from 'lucide-react'
-import { Link, useLocation } from 'react-router'
+import { Bell, CircleUser, Search, ShoppingCart } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router'
 
 import { KakaoLoginModal } from '@/features/kakao-login'
 import { useModalStore } from '@/shared/model/modalStore'
@@ -14,7 +14,6 @@ export type HeaderProps = {
   onSearchClick?: () => void
   onCartClick?: () => void
   onNotificationClick?: () => void
-  onLogoutClick?: () => void
   className?: string
 }
 
@@ -23,11 +22,12 @@ export function Header({
   onSearchClick,
   onCartClick,
   onNotificationClick,
-  onLogoutClick,
   className,
 }: HeaderProps) {
   const openModal = useModalStore((state) => state.open)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
   const isMainPage = pathname === '/'
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
   const isAdminPage = pathname.startsWith('/admin')
@@ -65,7 +65,7 @@ export function Header({
     }
   }, [pathname])
 
-  // 어드민과 회원 헤더 양쪽에 들어가므로 한 번만 만들어 둔다.
+  // 어드민과 일반 헤더 양쪽에 들어가므로 한 번만 만들어 둔다.
   const notificationButton = (
     <button
       type="button"
@@ -112,42 +112,78 @@ export function Header({
             notificationButton
           ) : (
             <>
-              <button
-                type="button"
-                className={styles.iconButton}
-                aria-label="검색"
-                onClick={onSearchClick}
-              >
-                <Search className={styles.icon} aria-hidden="true" />
-              </button>
-              {isMember ? (
-                <>
-                  {notificationButton}
-                  <button
-                    type="button"
-                    className={styles.iconButton}
-                    aria-label="장바구니"
-                    onClick={onCartClick}
-                  >
-                    <ShoppingCart className={styles.icon} aria-hidden="true" />
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.iconButton}
-                    aria-label="로그아웃"
-                    onClick={onLogoutClick}
-                  >
-                    <LogOut className={styles.icon} aria-hidden="true" />
-                  </button>
-                </>
+              {/* 모바일은 하단 탭바에 검색·마이페이지가 있어 헤더엔 알림·장바구니만 둔다. */}
+              {isSearchOpen ? (
+                <form
+                  role="search"
+                  className={[styles.searchForm, styles.desktopOnly].join(' ')}
+                  onSubmit={(event) => {
+                    event.preventDefault()
+                    const keyword = new FormData(event.currentTarget)
+                      .get('keyword')
+                      ?.toString()
+                      .trim()
+                    if (!keyword) return
+                    navigate(`/search?${new URLSearchParams({ keyword })}`)
+                    setIsSearchOpen(false)
+                  }}
+                >
+                  <Search className={styles.searchIcon} aria-hidden="true" />
+                  <input
+                    name="keyword"
+                    type="search"
+                    className={styles.searchInput}
+                    placeholder="검색어를 입력해 주세요."
+                    aria-label="검색어"
+                    autoFocus
+                    // 입력 없이 포커스를 잃거나 Esc를 누르면 다시 아이콘으로 접는다.
+                    onBlur={(event) => {
+                      if (!event.currentTarget.value) setIsSearchOpen(false)
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') setIsSearchOpen(false)
+                    }}
+                  />
+                </form>
               ) : (
                 <button
                   type="button"
-                  className={styles.iconButton}
-                  aria-label="계정"
+                  className={[styles.iconButton, styles.desktopOnly].join(' ')}
+                  aria-label="검색"
+                  onClick={() => {
+                    setIsSearchOpen(true)
+                    onSearchClick?.()
+                  }}
+                >
+                  <Search className={styles.icon} aria-hidden="true" />
+                </button>
+              )}
+              {notificationButton}
+              <button
+                type="button"
+                className={styles.iconButton}
+                aria-label="장바구니"
+                onClick={onCartClick}
+              >
+                <ShoppingCart className={styles.icon} aria-hidden="true" />
+              </button>
+              {/* 비회원은 마이페이지 대신 로그인 모달을 연다. */}
+              {isMember ? (
+                <Link
+                  to="/mypage?state=preorder-check"
+                  className={[styles.iconButton, styles.desktopOnly].join(' ')}
+                  aria-label="마이페이지"
+                >
+                  <CircleUser className={styles.icon} aria-hidden="true" />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  className={[styles.iconButton, styles.desktopOnly].join(' ')}
+                  aria-label="마이페이지"
                   onClick={() => openModal(<KakaoLoginModal />)}
                 >
-                  <User className={styles.icon} aria-hidden="true" />
+                  <CircleUser className={styles.icon} aria-hidden="true" />
                 </button>
               )}
             </>
