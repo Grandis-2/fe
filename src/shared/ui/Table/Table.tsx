@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 
-import { Navigator } from '@/shared/ui/Navigator'
+import { Navigator } from '../Navigator'
 
 import * as styles from './Table.css'
 
