@@ -12,24 +12,24 @@ const PREORDERS: PreorderCardData[] = [
     imageAlt: 'Image description',
     title:
       '아이폰 18프로, 18프로맥스, 울트라 사전예약 프로모션 아이폰 18프로, 18프로맥스, 울트라 사전예약 프로모션 아이폰 18프로, 18프로맥스, 울트라 사전예약 프로모션',
-    opens_at: '2026.09.01',
-    closes_at: '2026.09.17',
+    opensAt: '2026.09.01',
+    closesAt: '2026.09.17',
   },
   {
     id: '2',
     imageSrc: placeholderImage,
     imageAlt: 'Image description',
     title: 'Preorder Title',
-    opens_at: '2026.09.01',
-    closes_at: '2026.09.17',
+    opensAt: '2026.09.01',
+    closesAt: '2026.09.17',
   },
   ...Array.from({ length: 14 }, (_, i) => ({
     id: String(i + 3),
     imageSrc: placeholderImage,
     imageAlt: 'Image description',
     title: 'Preorder Title',
-    opens_at: 'Preorder Opens At',
-    closes_at: 'Preorder Closes At',
+    opensAt: 'Preorder Opens At',
+    closesAt: 'Preorder Closes At',
   })),
 ]
 
