@@ -25,13 +25,13 @@ type Tab = {
 }
 
 const tabs: Tab[] = [
-  { label: '홈', icon: House, to: '/', isActive: (p) => p === '/' },
   {
     label: '검색',
     icon: Search,
     to: '/search',
     isActive: (p) => p === '/search',
   },
+  { label: '홈', icon: House, to: '/', isActive: (p) => p === '/' },
   {
     label: '사전예약',
     icon: CalendarCheck,
@@ -46,8 +46,9 @@ const tabs: Tab[] = [
   },
 ]
 
-// 상세 페이지(상품/사전예약)는 자체 하단 고정 주문바가 있어 겹치므로 탭바를 숨긴다.
-const HIDDEN_PATH = /^\/(admin|products\/|preorder\/)/
+// admin은 고객용 탭이 의미 없으므로 숨긴다. 상세 페이지의 하단 고정 바는 탭바 높이만큼
+// 아래를 비워 두고(ProductPurchaseBar.css, PreorderDetailPage.css) 탭바가 그 위에 뜬다.
+const HIDDEN_PATH = /^\/admin/
 
 // 모바일 전용 하단 플로팅 탭바. 카테고리는 페이지가 아니라 바텀시트(MobileCategoryNav)를 연다.
 export function MobileTabBar() {
@@ -63,10 +64,12 @@ export function MobileTabBar() {
         key={label}
         to={to}
         className={styles.tab}
-        aria-label={label}
         aria-current={active ? 'page' : undefined}
+        // 시트가 modal={false}라 바깥 클릭으로 안 닫힌다 — 탭 이동 시 직접 닫는다.
+        onClick={() => setIsCategoryOpen(false)}
       >
         <Icon className={styles.icon} aria-hidden="true" />
+        <span className={styles.label}>{label}</span>
       </Link>
     )
   }
@@ -78,16 +81,16 @@ export function MobileTabBar() {
         <button
           type="button"
           className={styles.tab}
-          aria-label="카테고리"
           aria-expanded={isCategoryOpen}
-          onClick={() => setIsCategoryOpen(true)}
+          onClick={() => setIsCategoryOpen((open) => !open)}
         >
           <LayoutGrid className={styles.icon} aria-hidden="true" />
+          <span className={styles.label}>카테고리</span>
         </button>
         {tabs.slice(1).map(renderTab)}
       </nav>
       <BottomSheet.Root open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
-        <BottomSheet.Content>
+        <BottomSheet.Content className={styles.sheetContent}>
           <BottomSheet.Title
             className={[typography.title.lgSemibold, styles.sheetTitle].join(
               ' ',
@@ -95,7 +98,9 @@ export function MobileTabBar() {
           >
             카테고리
           </BottomSheet.Title>
-          <MobileCategoryNav onNavigate={() => setIsCategoryOpen(false)} />
+          <div className={styles.sheetScroll}>
+            <MobileCategoryNav onNavigate={() => setIsCategoryOpen(false)} />
+          </div>
         </BottomSheet.Content>
       </BottomSheet.Root>
     </>

@@ -51,6 +51,7 @@ export const Content = forwardRef<HTMLDivElement, BottomSheetContentProps>(
         >
           <div className={styles.handle} />
           {children}
+          <div className={styles.tabBarSpacer} aria-hidden="true" />
         </VaulDrawer.Content>
       </VaulDrawer.Portal>
     )
