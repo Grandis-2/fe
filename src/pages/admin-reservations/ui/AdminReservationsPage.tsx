@@ -224,8 +224,9 @@ export function AdminReservationsPage() {
 
         return (
           <span className={styles.stackedCell}>
+            {/* 상태 열과 나란히 있어서 같은 모양이면 한 덩어리로 읽힌다 — 테두리형으로 구분한다. */}
             <Tag
-              variant="subtle"
+              variant="outline"
               size="medium"
               rounded={false}
               widthOptions={paymentStatusLabels}
