@@ -6,6 +6,8 @@ import { Navigator } from '../Navigator'
 
 import * as styles from './Table.css'
 
+import type { LucideIcon } from 'lucide-react'
+
 export type TableAlign = 'left' | 'center' | 'right'
 
 export type TableColumn<T> = {
@@ -21,6 +23,8 @@ export type TableRowAction<T> = {
   label: (row: T) => string
   onClick: (row: T) => void
   header?: ReactNode
+  /** 기본은 상세로 들어가는 > 다. 수정처럼 다른 동작이면 그에 맞는 아이콘을 넘긴다 */
+  icon?: LucideIcon
 }
 
 export type TableProps<T> = {
@@ -64,6 +68,7 @@ export function Table<T>({
 
   // 액션 열은 평범한 열 하나로 만들어 둔다 — 헤더·빈 상태 colSpan·정렬이
   // 나머지 열과 같은 경로를 타서 따로 챙길 게 없어진다.
+  const ActionIcon = rowAction?.icon ?? ChevronRight
   const allColumns: TableColumn<T>[] = rowAction
     ? [
         ...columns,
@@ -83,7 +88,7 @@ export function Table<T>({
                 rowAction.onClick(row)
               }}
             >
-              <ChevronRight className={styles.actionIcon} aria-hidden="true" />
+              <ActionIcon className={styles.actionIcon} aria-hidden="true" />
             </button>
           ),
         },

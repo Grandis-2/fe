@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { SquarePen } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -163,6 +164,7 @@ export function AdminPromotionsPage() {
           header: '수정',
           label: (promotion) => `${promotion.name} 수정`,
           onClick: openDetail,
+          icon: SquarePen,
         }}
         emptyMessage="조건에 맞는 프로모션이 없습니다."
       />
