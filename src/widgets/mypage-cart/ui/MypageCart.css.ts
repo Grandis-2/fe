@@ -55,23 +55,25 @@ export const card = style({
   },
 })
 
-// 카드의 체크박스와 같은 x축에 오도록 좌측 여백 없이 둔다.
-export const selectAll = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[12],
+// 구분선은 카드 목록과 폭을 맞춰야 해서(리모컨 위까지 가로지름) 줄 전체를 차지하지만,
+// 클릭 영역(label)까지 늘어나면 안 되므로 선은 이 바깥 줄에, label은 안에서 내용만큼만.
+export const selectAllRow = style({
   paddingBottom: spacing[12],
   borderBottom: `1px solid ${color.border.subtle}`,
-  color: color.text.primary,
-  cursor: 'pointer',
-  userSelect: 'none',
   '@media': {
     [breakpoint.desktop]: {
-      // 구분선이 목록 폭에서 끊기지 않도록 리모컨 위까지 두 열을 가로지른다.
       gridColumn: '1 / -1',
       gridRow: 1,
     },
   },
 })
 
-export const selectCount = style({ color: color.text.tertiary })
+// 카드의 체크박스와 같은 x축에 오도록 좌측 여백 없이 두고, 내용(체크박스+글자)만큼만 차지한다.
+export const selectAll = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: spacing[12],
+  color: color.text.primary,
+  cursor: 'pointer',
+  userSelect: 'none',
+})

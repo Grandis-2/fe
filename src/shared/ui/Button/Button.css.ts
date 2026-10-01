@@ -23,12 +23,16 @@ export const base = style({
   },
 })
 
+// line-height: 1 — 텍스트 타이포 토큰(line-height 130%)의 여유 공간이 위아래로 고르게
+// 안 나뉘어서, 아이콘과 나란히 놓으면 텍스트가 아이콘 중심보다 미세하게(1px 미만) 위로
+// 떠 보였다. 버튼 안에서만 줄간격을 줄여 글자 자체 높이에 맞춘다(공용 타이포 토큰은 안 건드림).
 export const size = styleVariants({
   large: [
     base,
     typography.button.lgSemibold,
     {
       height: spacing[60],
+      lineHeight: 1,
       gap: spacing[12],
       padding: `0 ${spacing[20]}`,
       borderRadius: '14px',
@@ -40,6 +44,7 @@ export const size = styleVariants({
     typography.body.defaultMedium,
     {
       height: '46px',
+      lineHeight: 1,
       gap: spacing[10],
       padding: `0 ${spacing[16]}`,
       borderRadius: '12px',
@@ -51,6 +56,7 @@ export const size = styleVariants({
     typography.button.smMedium,
     {
       height: '37px',
+      lineHeight: 1,
       gap: spacing[6],
       padding: `0 ${spacing[12]}`,
       borderRadius: '10px',

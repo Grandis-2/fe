@@ -1,5 +1,6 @@
 import { useSearchParams } from 'react-router'
 
+import { Container } from '@/shared/ui'
 import { MypageAddress } from '@/widgets/mypage-address'
 import { MypageCart } from '@/widgets/mypage-cart'
 import { MypageHistory } from '@/widgets/mypage-history'
@@ -43,16 +44,18 @@ export function Mypage() {
   }
 
   return (
-    <div className={styles.root}>
-      <MypageMenu
-        userName={userName}
-        activeLink={activeLink}
-        onLinkClick={handleLinkClick}
-      />
-      <div className={styles.content}>
-        <div className={styles.title}>{linkTitle[activeLink]}</div>
-        {renderContent(activeLink)}
+    <Container>
+      <div className={styles.root}>
+        <MypageMenu
+          userName={userName}
+          activeLink={activeLink}
+          onLinkClick={handleLinkClick}
+        />
+        <div className={styles.content}>
+          <div className={styles.title}>{linkTitle[activeLink]}</div>
+          {renderContent(activeLink)}
+        </div>
       </div>
-    </div>
+    </Container>
   )
 }

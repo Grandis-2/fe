@@ -5,6 +5,7 @@ import { adminReservationHandlers } from './handlers/admin-reservation'
 import { adminStockHandlers } from './handlers/admin-stock'
 import { authHandlers } from './handlers/auth'
 import { cartHandlers } from './handlers/cart'
+import { paymentHandlers } from './handlers/payment'
 import { productHandlers } from './handlers/product'
 
 import type { RequestHandler } from 'msw'
@@ -20,4 +21,5 @@ export const handlers: RequestHandler[] = [
   ...cartHandlers,
   ...authHandlers,
   ...addressHandlers,
+  ...paymentHandlers,
 ]

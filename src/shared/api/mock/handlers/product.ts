@@ -1,12 +1,19 @@
 import { http } from 'msw'
 
 import { categories, dispatchWindows, products } from '../fixtures/product'
+import {
+  bestProductCards,
+  recommendedProductCards,
+  searchProductCardGroups,
+} from '../fixtures/productCards'
 import { fail, ok } from '../response'
 import { url } from '../url'
 
 import type {
   Category,
   Paged,
+  ProductCardListResponse,
+  ProductCardSearchResponse,
   ProductDetail,
   ProductSort,
   ProductSummary,
@@ -84,8 +91,64 @@ const comparators: Record<
     b.ratingSummary.reviewCount - a.ratingSummary.reviewCount,
 }
 
+const allProductCards = [
+  ...bestProductCards,
+  ...recommendedProductCards,
+  ...searchProductCardGroups.flatMap((group) => group.cards),
+]
+
+// ponytail: 카드 목업(best-1, search-0-0 …)은 상세 목업이 따로 없어서, 카드에서 상세로
+// 넘어가면 맥북 네오 상세를 틀로 쓰고 id·이름·saleMode만 카드 값으로 덮는다.
+// 상세 목업을 상품마다 만들 때 제거.
+function detailFromCard(productId: string): ProductDetail | undefined {
+  const card = allProductCards.find((it) => it.productId === productId)
+  const template = products.find((it) => it.productId === 'MB-NEO')
+  if (!card || !template) return undefined
+  const { name, saleMode } = card
+  return { ...template, productId, name, saleMode }
+}
+
 export const productHandlers: RequestHandler[] = [
   http.get(url('/categories'), () => ok({ items: categories })),
+
+  // 메인페이지 카드 캐러셀 전용 — 페이지네이션/필터를 타지 않는 별도 curated 목록.
+  // query가 없으면 undefined를 돌려주고, 아래 일반 목록 핸들러로 넘어간다
+  // (MSW는 resolver가 undefined를 돌려주면 다음 매칭 핸들러를 이어서 시도한다).
+  // ?mock=error를 붙이면 로딩/에러 화면을 눈으로 확인할 수 있다(예: /?mock=error).
+  http.get(url('/products'), ({ request }) => {
+    const params = new URL(request.url).searchParams
+    const query = params.get('query')
+    if (query !== 'best' && query !== 'recommend') return undefined
+    if (params.get('mock') === 'error') {
+      return fail(500, { code: 'MOCK_ERROR', message: '목업 에러 응답입니다.' })
+    }
+    const items = query === 'best' ? bestProductCards : recommendedProductCards
+    return ok<ProductCardListResponse>({ items })
+  }),
+
+  // 카테고리 검색 화면(/search) 카드 목록. category·subCategory가 없으면 전체를 돌려준다.
+  // /products/:productId보다 먼저 등록해야 'search'가 productId로 잡히지 않는다.
+  http.get(url('/products/search'), ({ request }) => {
+    const params = new URL(request.url).searchParams
+    const category = params.get('category')
+    const subCategory = params.get('subCategory')
+    const sort = params.get('sort')
+    if (params.get('mock') === 'error') {
+      return fail(500, { code: 'MOCK_ERROR', message: '목업 에러 응답입니다.' })
+    }
+
+    const items = searchProductCardGroups
+      .filter(
+        (group) =>
+          (!category || group.category === category) &&
+          (!subCategory || group.subCategory === subCategory),
+      )
+      .flatMap((group) => group.cards)
+    if (sort === 'PRICE_ASC') items.sort((a, b) => a.basePrice - b.basePrice)
+    if (sort === 'PRICE_DESC') items.sort((a, b) => b.basePrice - a.basePrice)
+
+    return ok<ProductCardSearchResponse>({ items, total: items.length })
+  }),
 
   http.get(url('/products'), ({ request }) => {
     const params = new URL(request.url).searchParams
@@ -182,7 +245,11 @@ export const productHandlers: RequestHandler[] = [
   ),
 
   http.get(url('/products/:productId/variants/:optionCode'), ({ params }) => {
-    const product = products.find((it) => it.productId === params.productId)
+    const productId = String(params.productId)
+    // /products/:productId와 조회 범위를 맞춘다 — 카드 전용 id도 같은 fallback으로 찾는다.
+    const product =
+      products.find((it) => it.productId === productId) ??
+      detailFromCard(productId)
     const variant = product?.variants.find(
       (it) => it.optionCode === params.optionCode,
     )
@@ -196,7 +263,10 @@ export const productHandlers: RequestHandler[] = [
   }),
 
   http.get(url('/products/:productId'), ({ params }) => {
-    const product = products.find((it) => it.productId === params.productId)
+    const productId = String(params.productId)
+    const product =
+      products.find((it) => it.productId === productId) ??
+      detailFromCard(productId)
     if (!product) {
       return fail(404, {
         code: 'PRODUCT_NOT_FOUND',

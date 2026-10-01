@@ -1,7 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
 import { maxWidth } from '@/shared/config/theme/tokens/container'
 
 export const HEADER_HEIGHT = 63
@@ -15,24 +14,27 @@ const MEGA_MENU_OPEN = '[data-mega-menu]:is(:hover, :focus-within)'
 // 않고 그대로 둔다(CategoryNav.css.ts와 동일한 이유).
 const NAV_LINK_PADDING_X = '15px'
 
+// 헤더는 항상 배경이 투명하고 뒤를 blur한다. 글자색은 뒤 섹션이 어두우면 흰색
+// (onDark), 밝으면 기본색이다 — Header.tsx가 판단해 onDark를 붙인다.
 export const root = style({
   width: '100%',
   boxSizing: 'border-box',
   // CategoryNav의 메가 메뉴가 화면 가로 전체를 잡을 수 있게 헤더를 기준 박스로 만든다.
-  // 아래 overlay/sticky가 position을 덮어쓰지만(둘 다 뒤에 선언), 그 둘이 안 붙는
-  // 상품 상세 페이지에서도 메뉴가 헤더를 기준으로 잡히도록 여기서 보장한다.
+  // sticky 페이지에선 아래 sticky가 덮어쓰고, 나머지는 이 기본값을 쓴다.
   position: 'relative',
+  background: 'transparent',
+  backdropFilter: 'blur(12px)',
+  WebkitBackdropFilter: 'blur(12px)',
   transition: `background-color ${motion.duration.fast} ${motion.easing.default}`,
   // 메뉴가 닫힐 때 패널·딤과 같은 지연으로 움직여야 한다(CategoryNav.css) — 헤더만
   // 먼저 투명해지면 아직 떠 있는 흰 패널이 헤더에서 떨어져 나온 것처럼 보인다.
   transitionDelay: motion.duration.fast,
   selectors: {
-    // 메뉴가 열리면 흰 패널이 헤더 바로 밑에 붙는다 — 헤더가 반투명하거나 배너가
-    // 비쳐 보이면 둘이 따로 놀아서, 이때만 배경을 완전히 불투명하게 만든다.
-    // :has() 안쪽 선택자의 명시도가 더해져 surface 변형(클래스 하나)을 이긴다.
+    // 메뉴가 열리면 흰 패널이 헤더 바로 밑에 붙는다 — 이때만 불투명한 흰 헤더로
+    // 바꿔 패널과 한 덩어리로 보이게 한다.
     [`&:has(${MEGA_MENU_OPEN})`]: {
-      // 상품 상세/마이페이지는 overlay·sticky 둘 다 안 걸려 z-index가 없다 —
-      // 메뉴의 딤(body::after, z-index 5)이 그 위에 얹혀 헤더가 회색으로 비친다.
+      // sticky가 아닌 페이지는 z-index가 없어서 메뉴의 딤(body::after, z-index 5)이
+      // 헤더 위에 얹힌다.
       zIndex: 10,
       background: color.background.base,
       backdropFilter: 'none',
@@ -42,42 +44,7 @@ export const root = style({
   },
 })
 
-// 메인 최상단에선 배너가 헤더 뒤로 비쳐야 하므로 배경을 완전히 없앤다.
-// 스크롤해서 흰 콘텐츠가 올라오면 solid(프로스트)로 돌아와 글자가 계속 읽히게 한다.
-// 모바일에선 배너 높이가 100px 남짓이라 70px 헤더가 덮으면 배너가 거의 가려진다.
-// 그래서 겹치기는 데스크톱에서만 적용하고, 모바일은 기존처럼 배너 위에 쌓는다.
-export const surface = styleVariants({
-  solid: {
-    background: `color-mix(in srgb, ${color.background.base} 80%, transparent)`,
-    backdropFilter: 'blur(12px)',
-    WebkitBackdropFilter: 'blur(12px)',
-  },
-  transparent: {
-    ...{
-      background: `color-mix(in srgb, ${color.background.base} 80%, transparent)`,
-      backdropFilter: 'blur(12px)',
-      WebkitBackdropFilter: 'blur(12px)',
-    },
-    '@media': {
-      [breakpoint.desktop]: {
-        background: 'transparent',
-        backdropFilter: 'none',
-        WebkitBackdropFilter: 'none',
-      },
-    },
-  },
-})
-
-export const overlay = style({
-  position: 'sticky',
-  top: 0,
-  zIndex: 10,
-  '@media': {
-    [breakpoint.desktop]: { position: 'fixed', left: 0 },
-  },
-})
-
-// 어두운 배너 위에 얹힌 상태. 자식 요소들이 이 클래스를 보고 밝은 색으로 바뀐다.
+// 헤더 뒤가 어두운 섹션일 때 붙는 표시. 자식 요소들이 이 클래스를 보고 흰색으로 바뀐다.
 export const onDark = style({})
 
 // 바(root)는 뷰포트 전체 너비, 실제 콘텐츠(로고/nav/액션)만 1200px로 가운데 정렬한다.
@@ -93,14 +60,16 @@ export const content = style({
   padding: `0 ${spacing[20]}`,
 })
 
-// 보더 표시 여부를 토글해도 레이아웃이 흔들리지 않도록 두께는 유지하고 색만 바꾼다.
+// 페이지마다 고정이라 토글되지 않는다. hidden은 두께도 없애 헤더를 정확히
+// HEADER_HEIGHT로 맞춘다 — 메인은 그만큼 배너를 끌어올려 헤더 밑에 겹친다(MainPage.css).
 export const border = styleVariants({
   visible: { borderBottom: `1px solid ${color.border.default}` },
-  hidden: { borderBottom: '1px solid transparent' },
+  hidden: { borderBottom: 'none' },
 })
 
-// /products/:id와 /mypage를 제외한 모든 페이지에서 헤더를 sticky로 띄운다 — 상품 상세엔
-// 자체 sticky 주문바/탭바가 있어 겹치면 안 되고, 마이페이지는 스크롤에 안 따라오게 한다.
+// 메인페이지에서만 헤더가 sticky다(Header.tsx의 isStickyPage). 그 외 페이지는
+// root의 기본 position: relative를 그대로 쓴다 — 상품 상세엔 자체 sticky
+// 주문바/탭바가 있어 겹치면 안 되고, 마이페이지는 스크롤에 안 따라오게 한다.
 export const sticky = style({
   position: 'sticky',
   top: 0,
@@ -125,25 +94,11 @@ export const logo = style([
     color: color.primary.base,
     textDecoration: 'none',
     cursor: 'pointer',
-    // blend는 배너/히어로 이미지 위에 떠 있는 onDark에서만 쓴다 — 흰 헤더에 걸면
-    // |흰색 - 남색|이 계산돼 로고가 탁한 카키색으로 나온다.
+    transition: `color ${motion.duration.fast} ${motion.easing.default}`,
     selectors: {
-      // 메뉴가 열려 헤더가 불투명해지면 이미지 위가 아니므로 평소 색으로 돌아간다.
-      [`${root}:has(${MEGA_MENU_OPEN}) &`]: {
-        color: color.primary.base,
-        mixBlendMode: 'normal',
-      },
-    },
-    '@media': {
-      [breakpoint.desktop]: {
-        selectors: {
-          [`${onDark} &`]: {
-            color: color.text.inverse,
-            // 이미지의 밝은 부분에선 글자가 어두워지며 알아서 대비를 잡는다.
-            mixBlendMode: 'difference',
-          },
-        },
-      },
+      [`${onDark} &`]: { color: color.text.inverse },
+      // 메뉴가 열리면 헤더가 흰색이 되므로 어두운 섹션 위라도 기본색으로 돌아간다.
+      [`${root}:has(${MEGA_MENU_OPEN}) &`]: { color: color.primary.base },
     },
   },
 ])
@@ -172,36 +127,19 @@ export const iconButton = style({
   background: 'transparent',
   padding: 0,
   cursor: 'pointer',
+  // 아이콘은 currentColor로 이 색을 상속한다(CLAUDE.md의 lucide-react 참고).
   color: color.primary.base,
   transition: `color ${motion.duration.fast} ${motion.easing.default}`,
   selectors: {
-    '&:hover': {
-      color: color.primary.focus,
-    },
+    '&:hover': { color: color.primary.focus },
+    [`${onDark} &`]: { color: color.text.inverse },
+    [`${onDark} &:hover`]: { color: color.primary.subtle },
     [`${root}:has(${MEGA_MENU_OPEN}) &`]: { color: color.primary.base },
     [`${root}:has(${MEGA_MENU_OPEN}) &:hover`]: { color: color.primary.focus },
-  },
-  '@media': {
-    [breakpoint.desktop]: {
-      selectors: {
-        [`${onDark} &`]: { color: color.text.inverse },
-        [`${onDark} &:hover`]: { color: color.primary.subtle },
-      },
-    },
   },
 })
 
 export const icon = style({
   width: '24px',
   height: '24px',
-  selectors: {
-    [`${root}:has(${MEGA_MENU_OPEN}) &`]: { mixBlendMode: 'normal' },
-  },
-  '@media': {
-    [breakpoint.desktop]: {
-      selectors: {
-        [`${onDark} &`]: { mixBlendMode: 'difference' },
-      },
-    },
-  },
 })

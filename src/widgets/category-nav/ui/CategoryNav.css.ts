@@ -1,7 +1,6 @@
 import { globalStyle, style, styleVariants } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
 import { maxWidth } from '@/shared/config/theme/tokens/container'
 
 export const root = style({
@@ -25,19 +24,14 @@ export const NAV_LINK_PADDING_X = '15px'
 // data-mega-menu는 CategoryNav.tsx의 brand 요소에 붙어 있다.
 export const MEGA_MENU_OPEN = '[data-mega-menu]:is(:hover, :focus-within)'
 
-// 헤더 겹치기가 데스크톱 전용이라 밝은 색 처리도 같은 조건에서만 건다.
+// onDark: 헤더가 어두운 섹션 위에 있을 때(Header.tsx가 판단) 흰 글자로 그린다.
 export const linksTone = styleVariants({
   default: { color: color.text.secondary },
   onDark: {
-    color: color.text.secondary,
+    color: color.text.inverse,
     selectors: {
-      // 메뉴가 열리면 헤더가 불투명해지므로(Header.css) 밝은 색을 되돌린다.
+      // 메뉴가 열리면 헤더가 불투명한 흰색이 되므로 평소 색으로 되돌린다.
       [`${root}:has(${MEGA_MENU_OPEN}) &`]: { color: color.text.secondary },
-    },
-    '@media': {
-      [breakpoint.desktop]: {
-        color: color.text.inverse,
-      },
     },
   },
 })
@@ -78,27 +72,15 @@ export const link = style({
       color: color.primary.base,
       WebkitTextStrokeColor: 'currentColor',
     },
-    // 메뉴가 열리면 헤더가 불투명해지므로 blend를 끈다.
-    [`${root}:has(${MEGA_MENU_OPEN}) &`]: { mixBlendMode: 'normal' },
+    // 남색 hover는 어두운 배경에서 묻히므로 흰색을 유지하고 굵기로만 반응한다.
+    [`${linksTone.onDark} &:hover`]: {
+      color: color.text.inverse,
+      WebkitTextStrokeColor: 'currentColor',
+    },
     // onDark의 hover 색은 흰색이라, 불투명해진 흰 헤더에선 글자가 사라진다.
     [`${root}:has(${MEGA_MENU_OPEN}) &:hover`]: {
       color: color.primary.base,
       WebkitTextStrokeColor: 'currentColor',
-    },
-  },
-  '@media': {
-    [breakpoint.desktop]: {
-      selectors: {
-        // blend는 배너/히어로 이미지 위에서만 쓴다 — 흰 헤더에 걸면 색이 탁해진다.
-        // links가 아니라 링크 텍스트에만 거는 이유: mixBlendMode는 자식까지 한 그룹으로
-        // 묶어 blend해서, links에 걸면 그 안의 메가 메뉴(흰 배경)까지 반전된다.
-        [`${linksTone.onDark} &`]: { mixBlendMode: 'difference' },
-        // 남색 hover는 어두운 배너에서 묻히므로 흰색을 유지하고 굵기로만 반응한다.
-        [`${linksTone.onDark} &:hover`]: {
-          color: color.text.inverse,
-          WebkitTextStrokeColor: 'currentColor',
-        },
-      },
     },
   },
 })
@@ -241,7 +223,8 @@ export const menuTile = style([
       `color ${motion.duration.fast} ${motion.easing.default}`,
     ].join(', '),
     selectors: {
-      '&:hover': {
+      // aria-current: 지금 보고 있는 하위 카테고리(CategoryNav.tsx가 URL로 판단).
+      '&:hover, &[aria-current="page"]': {
         background: color.primary.subtler,
         color: color.primary.base,
       },
@@ -253,6 +236,10 @@ export const menuAside = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[12],
+  // 카테고리 타일은 왼쪽, "더 알아보기"는 콘텐츠 박스 오른쪽 끝으로 민다.
+  marginLeft: 'auto',
+  boxSizing: 'border-box',
+  width: '200px',
   paddingLeft: spacing[30],
   borderLeft: `1px solid ${color.border.subtle}`,
 })

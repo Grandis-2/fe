@@ -1,13 +1,19 @@
 import { useState, type ChangeEvent } from 'react'
 
 import { ChevronDown } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router'
+import { useLocation } from 'react-router'
 
 import { OrderSummary } from '@/entities/order'
+import { preparePayment } from '@/entities/payment'
 import { ProductPaymentCard } from '@/entities/product'
-import { Button, Checkbox, Container, Input } from '@/shared/ui'
+import { requestTossPayment } from '@/features/toss-payment'
+import { ApiRequestError } from '@/shared/api/client'
+import { Button, Checkbox, Container, Input, InlineAlert } from '@/shared/ui'
 
 import * as styles from './PaymentPage.css'
+
+const GENERIC_PAYMENT_ERROR =
+  '결제 요청 중 문제가 발생했습니다. 다시 시도해 주세요.'
 
 const won = (value: number) => `${value.toLocaleString('ko-KR')}원`
 
@@ -16,7 +22,7 @@ const won = (value: number) => `${value.toLocaleString('ko-KR')}원`
 type PurchaseDraft = {
   productName: string
   colorLabel: string
-  storageLabel: string
+  optionLabel: string
   quantity: number
   unitPrice: number
 }
@@ -25,7 +31,7 @@ type PurchaseDraft = {
 const fallbackDraft: PurchaseDraft = {
   productName: '아이폰 18 Pro',
   colorLabel: '실버',
-  storageLabel: '512GB',
+  optionLabel: '512GB',
   quantity: 1,
   unitPrice: 2278100,
 }
@@ -208,12 +214,12 @@ const requiredFieldKeys: FormKey[] = [
 ]
 
 export function PaymentPage() {
-  const navigate = useNavigate()
   const location = useLocation()
   const draft = (location.state as PurchaseDraft | null) ?? fallbackDraft
   const [form, setForm] = useState(initialForm)
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
   const [submitted, setSubmitted] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
 
   const orderAmount = draft.unitPrice * draft.quantity
   const preorderBenefit = Math.round(orderAmount * PREORDER_BENEFIT_RATE)
@@ -221,7 +227,7 @@ export function PaymentPage() {
   const orderProduct = {
     name: draft.productName,
     modelNumber: 'A3714',
-    optionSummary: `${draft.colorLabel} · ${draft.storageLabel} · Apple care+`,
+    optionSummary: `${draft.colorLabel} · ${draft.optionLabel} · Apple care+`,
     quantityLabel: `${draft.quantity}개`,
     priceLabel: won(orderAmount),
   }
@@ -255,9 +261,40 @@ export function PaymentPage() {
   const toggleAllAgree = (checked: boolean) =>
     setAgreedIds(checked ? new Set(terms.map((term) => term.id)) : new Set())
 
+  // ① 결제 준비(주문ID·금액 확정) → ② 토스 결제창(카드) 요청. 정상 진행되면
+  // 브라우저가 결제창 오버레이를 띄운 뒤 successUrl/failUrl로 이동하므로, catch는
+  // 오버레이가 뜨기 전 오류(파라미터 오류, 네트워크 실패 등)만 잡는다.
+  const handlePayment = async () => {
+    setSubmitted(true)
+    setPaymentError(null)
+    if (!requiredFieldsFilled) return
+
+    try {
+      const { orderId, amount } = await preparePayment({
+        orderName: draft.productName,
+        amount: totalAmount,
+      })
+      await requestTossPayment({
+        orderId,
+        amount,
+        orderName: draft.productName,
+        customerName: form.name,
+        customerEmail: form.email || undefined,
+      })
+    } catch (caught) {
+      setPaymentError(
+        caught instanceof ApiRequestError
+          ? caught.error.message
+          : GENERIC_PAYMENT_ERROR,
+      )
+    }
+  }
+
   return (
     <Container>
       <div className={styles.title}>주문 / 결제</div>
+
+      {paymentError && <InlineAlert status="error">{paymentError}</InlineAlert>}
 
       <div className={styles.layout}>
         <div className={styles.form}>
@@ -317,11 +354,7 @@ export function PaymentPage() {
           totalValue={won(totalAmount)}
           actionLabel={`${won(totalAmount)} 결제하기`}
           actionDisabled={!requiredAgreed}
-          onAction={() => {
-            setSubmitted(true)
-            if (!requiredFieldsFilled) return
-            navigate('/result?status=paid')
-          }}
+          onAction={() => void handlePayment()}
         >
           <TermsAgreement
             agreedIds={agreedIds}
