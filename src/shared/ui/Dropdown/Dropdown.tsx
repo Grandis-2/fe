@@ -8,6 +8,7 @@ export type DropdownProps = {
   open?: boolean
   size?: 'medium' | 'small'
   selectedOption?: string
+  width?: string
   onToggle?: () => void
   onSelect?: (option: string, index: number) => void
   className?: string
@@ -19,50 +20,62 @@ export function Dropdown({
   open = false,
   size = 'medium',
   selectedOption,
+  width,
   onToggle,
   onSelect,
   className,
 }: DropdownProps) {
   return (
     <div
-      className={[
-        styles.root,
-        styles.size[size],
-        open && styles.rootOpen,
-        className,
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      className={[styles.root, className].filter(Boolean).join(' ')}
+      style={width ? { width } : undefined}
     >
-      <button
-        type="button"
-        className={styles.trigger}
-        onClick={onToggle}
-        aria-expanded={open}
+      <div
+        className={[styles.box, styles.size[size], open && styles.boxOpen]
+          .filter(Boolean)
+          .join(' ')}
       >
-        {label}
-        {open ? (
-          <ChevronUp className={styles.triggerIcon} aria-hidden="true" />
-        ) : (
-          <ChevronDown className={styles.triggerIcon} aria-hidden="true" />
-        )}
-      </button>
-      {open &&
-        options.map((option, index) => (
-          <button
-            key={option}
-            type="button"
-            className={[
-              styles.option,
-              option === selectedOption && styles.optionSelected,
-            ]
-              .filter(Boolean)
-              .join(' ')}
-            onClick={() => onSelect?.(option, index)}
-          >
-            {option}
-          </button>
-        ))}
+        <button
+          type="button"
+          className={styles.trigger[size]}
+          onClick={onToggle}
+          aria-expanded={open}
+        >
+          <span className={styles.triggerLabel}>{selectedOption ?? label}</span>
+          {open ? (
+            <ChevronUp
+              className={styles.triggerIcon[size]}
+              aria-hidden="true"
+            />
+          ) : (
+            <ChevronDown
+              className={styles.triggerIcon[size]}
+              aria-hidden="true"
+            />
+          )}
+        </button>
+      </div>
+      {open && (
+        <div className={[styles.menu, styles.menuSize[size]].join(' ')}>
+          {options.map((option, index) => (
+            // 라벨이 겹칠 수 있다(이름이 같은 상품 등). 문자열을 key로 쓰면
+            // React가 항목을 건너뛰거나 겹쳐 그린다 — 위치로 구분한다.
+            <button
+              key={`${index}-${option}`}
+              type="button"
+              className={[
+                styles.option[size],
+                option === selectedOption && styles.optionSelected,
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={() => onSelect?.(option, index)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

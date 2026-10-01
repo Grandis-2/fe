@@ -1,4 +1,4 @@
-import placeholderImage from '@/shared/assets/react.svg'
+import placeholderImage from '@/shared/assets/macbook_neo_sliver1.png'
 
 import { ReviewCard } from './ReviewCard'
 
@@ -14,21 +14,26 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    thumbnailSrc: placeholderImage,
     rating: 5,
-    reviewText: '배송도 빠르고 만족스러운 구매였습니다.',
-    productName: 'NOVA Phone 256GB',
-    maskedAuthorName: 'juhy****',
-    date: '2026.09.10',
+    reviewText: '좋아요',
+    productName: '아이폰 17 Pro',
+    maskedAuthorName: '김**',
+    date: '2026.07.02',
   },
 }
 
-export const NoThumbnail: Story = {
+export const WithThumbnail: Story = {
+  args: { ...Default.args, thumbnailSrc: placeholderImage },
+}
+
+export const PartialRating: Story = {
+  args: { ...Default.args, rating: 3 },
+}
+
+export const LongText: Story = {
   args: {
-    rating: 3,
-    reviewText: '가격 대비 무난합니다.',
-    productName: 'NOVA Phone 512GB',
-    maskedAuthorName: 'nova****',
-    date: '2026.08.02',
+    ...Default.args,
+    reviewText:
+      '배송도 빠르고 포장도 꼼꼼했어요. 색상이 사진이랑 똑같고 화면도 정말 선명해서 만족합니다. 사전예약으로 받아서 더 기분 좋네요!',
   },
 }

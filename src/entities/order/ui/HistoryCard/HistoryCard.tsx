@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import { typography } from '@/shared/config/theme'
+import { Button } from '@/shared/ui'
 
 import * as styles from './HistoryCard.css'
 
@@ -13,21 +14,14 @@ export type HistoryCardStatus =
   | 'preparing'
   | 'cancelled'
 
-export type HistoryCardItem = {
-  imageSrc?: string
-  name: string
-  modelNumber: string
-  optionSummary: string
-  quantityLabel: string
-  priceLabel: string
-}
-
-export type HistoryCardProps = {
+// HistoryCard는 아이템을 renderItem으로 넘기기만 하고 필드는 읽지 않는다 —
+// 아이템 모양을 여기서 따로 선언하지 않고 제네릭 T로 호출부 타입을 그대로 받는다.
+export type HistoryCardProps<T> = {
   status: HistoryCardStatus
   orderDate: string
   orderNumber: string
-  items: HistoryCardItem[]
-  renderItem: (item: HistoryCardItem, index: number) => ReactNode
+  items: T[]
+  renderItem: (item: T, index: number) => ReactNode
   onWriteReview?: () => void
   onViewReview?: () => void
   onCancelOrder?: () => void
@@ -45,7 +39,7 @@ const badgeByStatus: Record<
   cancelled: { label: '취소 완료', variant: 'cancelled' },
 }
 
-export function HistoryCard({
+export function HistoryCard<T>({
   status,
   orderDate,
   orderNumber,
@@ -55,7 +49,7 @@ export function HistoryCard({
   onViewReview,
   onCancelOrder,
   className,
-}: HistoryCardProps) {
+}: HistoryCardProps<T>) {
   const [expanded, setExpanded] = useState(false)
   const badge = badgeByStatus[status]
   const [firstItem, ...restItems] = items
@@ -88,9 +82,11 @@ export function HistoryCard({
 
       {visibleItems.map((item, index) => (
         <div
-          key={`${item.name}-${index}`}
+          key={index}
           className={index > 0 ? styles.itemEnter : undefined}
-          style={index > 0 ? { animationDelay: `${(index - 1) * 50}ms` } : undefined}
+          style={
+            index > 0 ? { animationDelay: `${(index - 1) * 50}ms` } : undefined
+          }
         >
           {index > 0 && <div className={styles.divider} />}
           <div className={styles.itemRow}>{renderItem(item, index)}</div>
@@ -99,41 +95,37 @@ export function HistoryCard({
 
       {status === 'delivered-before-review' && (
         <div className={styles.actionRow}>
-          <button
-            type="button"
-            className={[typography.body.subMedium, styles.primaryAction].join(
-              ' ',
-            )}
+          <Button
+            size="small"
+            className={styles.action}
             onClick={onWriteReview}
           >
             리뷰 쓰기
-          </button>
+          </Button>
         </div>
       )}
       {status === 'delivered-after-review' && (
         <div className={styles.actionRow}>
-          <button
-            type="button"
-            className={[typography.body.subMedium, styles.secondaryAction].join(
-              ' ',
-            )}
+          <Button
+            size="small"
+            variant="subtle"
+            className={styles.action}
             onClick={onViewReview}
           >
             내가 쓴 리뷰 보기
-          </button>
+          </Button>
         </div>
       )}
       {status === 'preparing' && (
         <div className={styles.actionRow}>
-          <button
-            type="button"
-            className={[typography.body.subMedium, styles.cancelAction].join(
-              ' ',
-            )}
+          <Button
+            size="small"
+            color="cancel"
+            className={styles.action}
             onClick={onCancelOrder}
           >
             주문 취소
-          </button>
+          </Button>
         </div>
       )}
 

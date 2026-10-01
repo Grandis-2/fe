@@ -30,6 +30,9 @@ export const box = style({
   background: color.background.base,
   pointerEvents: 'none',
   selectors: {
+    [`${input}:hover ~ &`]: {
+      background: color.primary.surface,
+    },
     [`${input}:checked ~ &`]: {
       background: color.primary.base,
       borderColor: color.primary.base,
@@ -41,4 +44,8 @@ export const icon = style({
   width: '14px',
   height: '14px',
   color: color.text.inverse,
+  opacity: 0,
+  selectors: {
+    [`${input}:checked ~ ${box} &`]: { opacity: 1 },
+  },
 })

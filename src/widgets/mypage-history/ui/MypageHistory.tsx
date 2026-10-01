@@ -1,18 +1,19 @@
+import { HistoryCard, type HistoryCardStatus } from '@/entities/order'
 import {
-  HistoryCard,
-  type HistoryCardItem,
-  type HistoryCardStatus,
-} from '@/entities/order'
-import { ProductPaymentCard } from '@/entities/product'
+  ProductPaymentCard,
+  type ProductPaymentCardItem,
+} from '@/entities/product'
 
 import * as styles from './MypageHistory.css'
 
-const renderItem = (item: HistoryCardItem) => <ProductPaymentCard product={item} />
+const renderItem = (item: ProductPaymentCardItem) => (
+  <ProductPaymentCard product={item} />
+)
 
-const item: HistoryCardItem = {
-  name: 'IPhone 18 Pro',
-  modelNumber: '256GB · 스타라이트',
-  optionSummary: 'AppleCare+ 포함',
+const item: ProductPaymentCardItem = {
+  name: '아이폰 18 Pro',
+  modelNumber: 'A3714',
+  optionSummary: '스타라이트 · 256GB · AppleCare+ 포함',
   quantityLabel: '수량 1개',
   priceLabel: '2,278,100원',
 }

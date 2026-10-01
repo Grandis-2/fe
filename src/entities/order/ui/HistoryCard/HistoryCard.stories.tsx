@@ -1,16 +1,20 @@
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
 
-import { ProductPaymentCard } from '@/entities/product'
+import {
+  ProductPaymentCard,
+  type ProductPaymentCardItem,
+} from '@/entities/product'
 import placeholderImage from '@/shared/assets/react.svg'
 
-import { HistoryCard, type HistoryCardItem } from './HistoryCard'
+import { HistoryCard } from './HistoryCard'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+// 제네릭 컴포넌트라 T를 명시해야 args의 renderItem 타입이 맞는다.
 const meta = {
-  component: HistoryCard,
+  component: HistoryCard<ProductPaymentCardItem>,
   tags: ['ai-generated'],
-} satisfies Meta<typeof HistoryCard>
+} satisfies Meta<typeof HistoryCard<ProductPaymentCardItem>>
 
 export default meta
 type Story = StoryObj<typeof meta>
@@ -18,13 +22,15 @@ type Story = StoryObj<typeof meta>
 const item = {
   imageSrc: placeholderImage,
   name: 'NOVA Phone',
-  modelNumber: '256GB · 미드나이트',
-  optionSummary: 'AppleCare+ 포함',
+  modelNumber: 'NV-2026',
+  optionSummary: '미드나이트 · 256GB · AppleCare+ 포함',
   quantityLabel: '수량 1개',
   priceLabel: '1,290,000원',
 }
 
-const renderItem = (item: HistoryCardItem) => <ProductPaymentCard product={item} />
+const renderItem = (item: ProductPaymentCardItem) => (
+  <ProductPaymentCard product={item} />
+)
 
 const base = {
   orderDate: '2026.09.01',
@@ -62,6 +68,7 @@ export const ExpandableItems: Story = {
   play: async ({ canvas }) => {
     const expandButton = canvas.getByRole('button', { name: /더 보기/ })
     await expandButton.click()
-    await expect(canvas.getByText('NOVA Watch')).toBeVisible()
+    // 펼쳐진 아이템은 fadeInUp이 끝나야 보인다(backwards라 지연 동안 opacity 0).
+    await waitFor(() => expect(canvas.getByText('NOVA Watch')).toBeVisible())
   },
 }

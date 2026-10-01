@@ -3,8 +3,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { PreorderModelSummary } from '@/entities/preorder'
+import { PreorderQueueCard } from '@/features/preorder-queue'
 import { useCountdown } from '@/shared/lib/useCountdown'
-import { Container, Button, BottomSheet } from '@/shared/ui'
+import { Container, Button, BottomSheet, Modal } from '@/shared/ui'
 
 import * as styles from './PreorderDetailPage.css'
 
@@ -12,11 +13,14 @@ import * as styles from './PreorderDetailPage.css'
 const TEMP_OPENS_AT = new Date('2026-09-20T10:00:00')
 
 export function PreorderDetailPage() {
-  // const { preorderId } = useParams()
   const navigate = useNavigate()
   const { days, hours, minutes, seconds, isOver } = useCountdown(TEMP_OPENS_AT)
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false)
   const [isAlert, setIsAlert] = useState(false)
+  const [queueModel, setQueueModel] = useState<{
+    id: string
+    name: string
+  } | null>(null)
 
   const handleActionClick = () => {
     setBottomSheetOpen(true)
@@ -31,6 +35,11 @@ export function PreorderDetailPage() {
   const handleNotifySubmit = () => {
     // ponytail: 알림 신청 API 연동 전 임시 처리 — 연동 시 실제 제출 로직으로 교체
     setBottomSheetOpen(false)
+  }
+
+  const handleReserve = (id: string, name: string) => {
+    setBottomSheetOpen(false)
+    setQueueModel({ id, name })
   }
 
   return (
@@ -54,15 +63,34 @@ export function PreorderDetailPage() {
       >
         first information section
       </div>
+      <div
+        style={{
+          width: '100%',
+          height: '1000px',
+          backgroundColor: '#797979',
+        }}
+      >
+        second information section
+      </div>
+      <div
+        style={{
+          width: '100%',
+          height: '1000px',
+          backgroundColor: '#303030',
+        }}
+      >
+        third information section
+      </div>
       <div className={styles.countdownWrapper}>
-        <div className={styles.countdown}>
-          {!isOver &&
-            `${days}일 ${hours}시간 ${minutes}분 ${seconds}초 후 신청 시작`}
-        </div>
+        {!isOver && (
+          <div className={styles.countdown}>
+            {`${days}일 ${hours}시간 ${minutes}분 ${seconds}초 후 신청 시작`}
+          </div>
+        )}
         <Button
-          style={{ width: '100%' }}
+          className={styles.actionButton}
           onClick={handleActionClick}
-          size="large"
+          size="medium"
         >
           {isOver ? '사전예약 하러가기' : '예약알림 신청하기'}
         </Button>
@@ -87,7 +115,7 @@ export function PreorderDetailPage() {
               opensAtLabel={`오픈일 ${TEMP_OPENS_AT.toLocaleDateString()}`}
               isOver={isOver}
               isAlert={isAlert}
-              onReserve={() => navigate(`/products/1`)}
+              onReserve={() => handleReserve('IP-18-PRO', 'IPhone 18 Pro')}
               onNotify={handleNotify}
             />
 
@@ -96,7 +124,9 @@ export function PreorderDetailPage() {
               opensAtLabel={`오픈일 ${TEMP_OPENS_AT.toLocaleDateString()}`}
               isOver={isOver}
               isAlert={isAlert}
-              onReserve={() => navigate(`/products/2`)}
+              onReserve={() =>
+                handleReserve('IP-18-PRO-MAX', 'IPhone 18 Pro Max')
+              }
               onNotify={handleNotify}
             />
           </div>
@@ -110,6 +140,15 @@ export function PreorderDetailPage() {
           </Button>
         </BottomSheet.Content>
       </BottomSheet.Root>
+
+      <Modal open={!!queueModel} onClose={() => setQueueModel(null)}>
+        {queueModel && (
+          <PreorderQueueCard
+            productName={queueModel.name}
+            onComplete={() => navigate(`/products/${queueModel.id}`)}
+          />
+        )}
+      </Modal>
     </Container>
   )
 }

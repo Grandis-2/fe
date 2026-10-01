@@ -19,7 +19,3 @@ export const Benefits: Story = {
     await expect(args.onTabChange).toHaveBeenCalledWith('review')
   },
 }
-
-export const Review: Story = {
-  args: { activeTab: 'review' },
-}

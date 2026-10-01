@@ -1,5 +1,7 @@
 import { useSearchParams } from 'react-router'
 
+import { MYPAGE_TABS } from '@/shared/config/routes'
+import { Container } from '@/shared/ui'
 import { MypageAddress } from '@/widgets/mypage-address'
 import { MypageCart } from '@/widgets/mypage-cart'
 import { MypageHistory } from '@/widgets/mypage-history'
@@ -17,7 +19,7 @@ const linkTitle: Record<MypageMenuLink, string> = {
   'preorder-check': '사전예약 확인',
   cart: '장바구니',
   history: '구매 내역',
-  'address-manage': '주소록 관리',
+  'address-manage': '배송지 관리',
 }
 
 function renderContent(activeLink: MypageMenuLink) {
@@ -35,24 +37,27 @@ function renderContent(activeLink: MypageMenuLink) {
 
 export function Mypage() {
   const [searchParams, setSearchParams] = useSearchParams()
-  const activeLink =
-    (searchParams.get('state') as MypageMenuLink | null) ?? defaultLink
+  const state = searchParams.get('state')
+  // ?state=foo처럼 알 수 없는 값은 기본 탭으로 본다 — 캐스트만 하면 제목/내용이 비어 버린다.
+  const activeLink = MYPAGE_TABS.find((tab) => tab === state) ?? defaultLink
 
   const handleLinkClick = (link: MypageMenuLink) => {
     setSearchParams({ state: link })
   }
 
   return (
-    <div className={styles.root}>
-      <MypageMenu
-        userName={userName}
-        activeLink={activeLink}
-        onLinkClick={handleLinkClick}
-      />
-      <div className={styles.content}>
-        <div className={styles.title}>{linkTitle[activeLink]}</div>
-        {renderContent(activeLink)}
+    <Container>
+      <div className={styles.root}>
+        <MypageMenu
+          userName={userName}
+          activeLink={activeLink}
+          onLinkClick={handleLinkClick}
+        />
+        <div className={styles.content}>
+          <div className={styles.title}>{linkTitle[activeLink]}</div>
+          {renderContent(activeLink)}
+        </div>
       </div>
-    </div>
+    </Container>
   )
 }

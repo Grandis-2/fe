@@ -1,12 +1,11 @@
 import { style } from '@vanilla-extract/css'
 
-import { spacing, typography, color } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import { spacing, typography, color, breakpoint } from '@/shared/config/theme'
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[24],
+  gap: spacing[40],
   '@media': {
     [breakpoint.desktop]: {
       flexDirection: 'row',

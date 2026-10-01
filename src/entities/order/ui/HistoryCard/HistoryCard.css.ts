@@ -83,44 +83,7 @@ const actionBase = style({
   },
 })
 
-export const primaryAction = style([
-  actionBase,
-  {
-    flex: '1 0 0',
-    height: '39px',
-    borderRadius: '8px',
-    border: 'none',
-    background: color.primary.base,
-    color: color.text.inverse,
-    cursor: 'pointer',
-  },
-])
-
-export const secondaryAction = style([
-  actionBase,
-  {
-    flex: '1 0 0',
-    height: '39px',
-    borderRadius: '8px',
-    border: 'none',
-    background: color.primary.subtler,
-    color: color.primary.base,
-    cursor: 'pointer',
-  },
-])
-
-export const cancelAction = style([
-  actionBase,
-  {
-    flex: '1 0 0',
-    height: '37px',
-    borderRadius: '10px',
-    border: 'none',
-    background: color.background.subSurface,
-    color: color.text.secondary,
-    cursor: 'pointer',
-  },
-])
+export const action = style({ flex: '1 0 0' })
 
 export const divider = style({
   margin: `0 ${spacing[16]}`,

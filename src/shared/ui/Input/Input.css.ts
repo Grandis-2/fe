@@ -22,6 +22,10 @@ const boxBase = style({
     '&:focus-within': {
       borderColor: color.primary.base,
     },
+    // 읽기 전용 칸은 편집 가능한 칸과 구분되게 깐다.
+    '&:has(input:read-only)': {
+      background: color.background.surface,
+    },
   },
 })
 
@@ -46,38 +50,69 @@ export const boxError = style({
   },
 })
 
-export const field = style([
-  typography.body.defaultRegular,
-  {
-    width: '100%',
-    border: 'none',
-    outline: 'none',
-    background: 'transparent',
-    color: color.text.primary,
-    paddingTop: spacing[14],
-  },
-])
+const fieldBase = {
+  width: '100%',
+  border: 'none',
+  outline: 'none',
+  background: 'transparent',
+  color: color.primary.focus,
+  paddingTop: spacing[16],
+}
 
-export const label = style([
-  typography.body.sub,
-  {
-    position: 'absolute',
-    left: 0,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    color: color.text.tertiary,
-    pointerEvents: 'none',
-    transition: `all ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      [`${field}:focus ~ &, ${field}:not(:placeholder-shown) ~ &`]: {
-        top: spacing[8],
-        transform: 'translateY(0)',
-        fontSize: fontSize[12],
-        color: color.primary.base,
+export const field = styleVariants({
+  medium: [typography.body.defaultRegular, fieldBase],
+  small: [typography.body.sub, fieldBase],
+})
+
+export const fieldError = style({
+  color: color.status.danger,
+})
+
+const labelBase = {
+  position: 'absolute',
+  top: '50%',
+  transform: 'translateY(-50%)',
+  color: color.text.tertiary,
+  pointerEvents: 'none',
+  transition: `all ${motion.duration.fast} ${motion.easing.default}`,
+} as const
+
+export const label = styleVariants({
+  medium: [
+    typography.body.defaultRegular,
+    {
+      ...labelBase,
+      left: spacing[16],
+      selectors: {
+        [`${field.medium}:focus ~ &, ${field.medium}:not(:placeholder-shown) ~ &`]:
+          {
+            top: spacing[8],
+            transform: 'translateY(0)',
+            fontSize: fontSize[12],
+          },
       },
     },
-  },
-])
+  ],
+  small: [
+    typography.body.sub,
+    {
+      ...labelBase,
+      left: spacing[12],
+      selectors: {
+        [`${field.small}:focus ~ &, ${field.small}:not(:placeholder-shown) ~ &`]:
+          {
+            top: spacing[8],
+            transform: 'translateY(0)',
+            fontSize: '9px',
+          },
+      },
+    },
+  ],
+})
+
+export const labelError = style({
+  color: color.status.danger,
+})
 
 export const errorRow = style({
   display: 'flex',
@@ -86,10 +121,12 @@ export const errorRow = style({
   color: color.status.danger,
 })
 
-export const errorIcon = style({
-  width: '16px',
-  height: '16px',
-  flexShrink: 0,
+export const errorIcon = styleVariants({
+  medium: { width: '16px', height: '16px', flexShrink: 0 },
+  small: { width: '13px', height: '13px', flexShrink: 0 },
 })
 
-export const errorText = typography.body.caption
+export const errorText = styleVariants({
+  medium: [typography.body.caption],
+  small: [typography.body.caption, { fontSize: '10px' }],
+})

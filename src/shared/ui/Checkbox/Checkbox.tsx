@@ -25,9 +25,7 @@ export function Checkbox({
         {...rest}
       />
       <span className={styles.box}>
-        {checked && (
-          <Check className={styles.icon} aria-hidden="true" />
-        )}
+        {checked && <Check className={styles.icon} aria-hidden="true" />}
       </span>
     </span>
   )

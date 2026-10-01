@@ -10,50 +10,38 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Solid: Story = {
-  args: { children: 'NEW', color: 'primary', variant: 'solid', shape: 'pill' },
+export const Default: Story = {
+  args: { children: 'Tag', color: 'primary', variant: 'solid', rounded: true },
 }
 
 export const Subtle: Story = {
   args: {
-    children: '사전예약',
+    children: 'Tag',
     color: 'primary',
     variant: 'subtle',
-    shape: 'pill',
+    rounded: true,
   },
 }
 
 export const Outline: Story = {
   args: {
-    children: '한정수량',
-    color: 'secondary',
+    children: 'Tag',
+    color: 'primary',
     variant: 'outline',
-    shape: 'pill',
+    rounded: true,
   },
 }
 
-export const Rounded: Story = {
-  args: { children: 'BEST', color: 'blue', variant: 'solid', shape: 'rounded' },
+export const Rect: Story = {
+  args: { children: 'Tag', color: 'primary', variant: 'solid', rounded: false },
 }
 
-export const Success: Story = {
+export const Medium: Story = {
   args: {
-    children: '배송완료',
-    color: 'green',
-    variant: 'subtle',
-    shape: 'pill',
+    children: 'Tag',
+    color: 'primary',
+    variant: 'solid',
+    size: 'medium',
+    rounded: true,
   },
-}
-
-export const Warning: Story = {
-  args: {
-    children: '품절임박',
-    color: 'yellow',
-    variant: 'subtle',
-    shape: 'pill',
-  },
-}
-
-export const Danger: Story = {
-  args: { children: '품절', color: 'red', variant: 'subtle', shape: 'pill' },
 }

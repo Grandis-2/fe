@@ -2,62 +2,97 @@ import { style, styleVariants } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@/shared/config/theme'
 
-const base = style([
-  typography.body.captionMedium,
-  {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: '1px solid transparent',
-    // Pretendard's Hangul metrics push the body line-height(1.3) box's ink upward
-    // when flex-centered; a tight line-height keeps the pill text optically centered.
-    lineHeight: 1,
-    whiteSpace: 'nowrap',
-  },
-])
-
-export const shape = styleVariants({
-  pill: [base, { padding: `5px ${spacing[10]}`, borderRadius: '9999px' }],
-  rounded: [base, { padding: `5px ${spacing[8]}`, borderRadius: '6px' }],
+const base = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  border: '1px solid transparent',
+  whiteSpace: 'nowrap',
 })
 
-const solidText = { color: color.text.inverse }
+const size = styleVariants({
+  small: [
+    base,
+    typography.body.captionMedium,
+    { minWidth: '36px', fontSize: '10px' },
+  ],
+  medium: [base, typography.body.subMedium, { minWidth: '48px' }],
+})
+
+/**
+ * 같은 자리에 번갈아 나오는 Tag들의 너비를 맞추는 장치.
+ * 후보 문구를 모두 같은 그리드 칸에 겹쳐 두면 칸이 가장 넓은 문구에 맞게 잡히고,
+ * 실제로 보이는 문구 하나만 그 안에서 가운데 정렬된다. 폰트나 문구가 바뀌어도
+ * 따라오므로 픽셀 값을 박아둘 필요가 없다.
+ */
+export const sizer = style({
+  display: 'grid',
+  gridTemplateAreas: '"label"',
+  alignItems: 'center',
+  justifyItems: 'center',
+})
+
+export const sizerLabel = style({
+  gridArea: 'label',
+})
+
+export const sizerGhost = style([
+  sizerLabel,
+  { visibility: 'hidden', userSelect: 'none' },
+])
+
+export const shape = {
+  small: styleVariants({
+    full: [
+      size.small,
+      { padding: `5px ${spacing[10]}`, borderRadius: '9999px' },
+    ],
+    rect: [size.small, { padding: `5px ${spacing[8]}`, borderRadius: '6px' }],
+  }),
+  medium: styleVariants({
+    full: [
+      size.medium,
+      { padding: `8px ${spacing[12]}`, borderRadius: '9999px' },
+    ],
+    rect: [size.medium, { padding: `8px ${spacing[10]}`, borderRadius: '6px' }],
+  }),
+}
 
 export const solid = styleVariants({
   primary: {
     background: color.primary.base,
     borderColor: color.primary.base,
-    ...solidText,
+    color: color.primary.subtler,
   },
   secondary: {
     background: color.secondary.base,
     borderColor: color.secondary.base,
-    ...solidText,
+    color: color.secondary.subtler,
   },
   blue: {
     background: color.status.info,
     borderColor: color.status.info,
-    ...solidText,
+    color: color.background.subtleInfo,
   },
   green: {
     background: color.status.success,
     borderColor: color.status.success,
-    ...solidText,
+    color: color.background.subtleSuccess,
   },
   yellow: {
     background: color.status.warning,
     borderColor: color.status.warning,
-    ...solidText,
+    color: color.background.subtleWarning,
   },
   red: {
     background: color.status.danger,
     borderColor: color.status.danger,
-    ...solidText,
+    color: color.background.subtleDanger,
   },
   gray: {
     background: color.text.tertiary,
     borderColor: color.text.tertiary,
-    ...solidText,
+    color: color.background.surface,
   },
 })
 

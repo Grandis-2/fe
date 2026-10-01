@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@/shared/config/theme'
+import { color, motion, spacing, typography } from '@/shared/config/theme'
 
 export const root = style({
   display: 'inline-flex',
@@ -14,16 +14,24 @@ export const arrowButton = style({
   justifyContent: 'center',
   width: '38px',
   height: '38px',
+  padding: 0,
   borderRadius: '9999px',
   border: 'none',
-  background: color.background.base,
+  background: 'transparent',
+  color: color.text.tertiary,
   cursor: 'pointer',
+  transition: `color ${motion.duration.fast} ${motion.easing.default}`,
+  selectors: {
+    '&:hover:not(:disabled)': {
+      background: 'transparent',
+      color: color.primary.base,
+    },
+  },
 })
 
 export const arrowIcon = style({
   width: '16px',
   height: '16px',
-  color: color.text.tertiary,
 })
 
 export const arrowIconFlipped = style({
@@ -31,7 +39,7 @@ export const arrowIconFlipped = style({
 })
 
 export const pageButton = style([
-  typography.body.subMedium,
+  typography.body.sub,
   {
     display: 'inline-flex',
     alignItems: 'center',
@@ -43,10 +51,37 @@ export const pageButton = style([
     background: color.background.base,
     color: color.text.tertiary,
     cursor: 'pointer',
+    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
+    selectors: {
+      '&:hover:not(:disabled)': {
+        background: color.primary.subtler,
+      },
+    },
   },
 ])
 
-export const pageButtonActive = style({
-  background: color.primary.subtler,
-  color: color.primary.base,
-})
+export const ellipsis = style([
+  typography.body.sub,
+  {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '38px',
+    height: '38px',
+    color: color.text.tertiary,
+  },
+])
+
+export const pageButtonActive = style([
+  typography.body.subMedium,
+  {
+    background: color.primary.subtler,
+    color: color.primary.base,
+    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
+    selectors: {
+      '&:hover:not(:disabled)': {
+        background: color.primary.surface,
+      },
+    },
+  },
+])

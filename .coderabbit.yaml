@@ -1,0 +1,374 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+#
+# nova 프론트엔드 코드 리뷰 설정
+#
+# 구조: 전역 원칙(src/**/*.tsx) → FSD 레이어별 규칙 → 스타일 · 스토리 · 목 · 라우팅 · 빌드 · CI
+# 규칙은 "무엇을 지적할 것"으로만 쓴다. 토큰 이름 · 배럴 경로처럼 코드에서 대조할 수 있는 단서를 남긴다.
+# 포맷은 리뷰 대상이 아니다(prettier · eslint 가 이미 본다). 정확성과 경계 위반만 본다.
+#
+# 레이어 의존 방향(eslint import-x/no-restricted-paths 가 강제)
+#   app → pages → widgets → features → entities → shared
+#   같은 레이어끼리(엔티티 ↔ 엔티티, 위젯 ↔ 위젯)의 import 는 린트가 못 잡는다. 리뷰에서 본다.
+#
+# 데이터 흐름(CLAUDE.md "Data layer")
+#   서버 JSON → shared/api(DTO · fetch) → entities/*/api(DTO→모델) → entities/*/model → ui · features · widgets · pages
+#
+# CLAUDE.md 가 바뀌면 이 파일의 지시문도 함께 고친다. 둘이 어긋나면 CLAUDE.md 가 기준이다.
+
+language: 'ko-KR'
+
+tone_instructions: |
+  한국어로, 근거를 먼저 말하고 수정안을 제시한다.
+  추측이면 추측이라고 밝힌다. 확실하지 않은 지적은 질문 형태로 남긴다.
+  취향 차이(네이밍 선호, 줄바꿈, 주석 스타일, 컴포넌트 분리 정도)는 언급하지 않는다.
+  "이미 있는 것을 다시 만들었다"는 지적에는 반드시 기존 파일 경로를 함께 적는다.
+
+reviews:
+  profile: 'assertive' # 정확성 위주. 지적이 많다고 느끼면 chill 로 낮춘다
+  request_changes_workflow: true # 지적이 남아 있으면 Request changes 로 머지를 막는다
+  high_level_summary: true
+  review_status: true
+  collapse_walkthrough: true
+  changed_files_summary: true
+  sequence_diagrams: false # 화면 단위 PR 이라 시퀀스 다이어그램이 도움이 안 된다
+  estimate_code_review_effort: true
+  assess_linked_issues: false # Jira 연동 전이다. 연결되면 true 로 올린다
+  suggested_reviewers: true
+  auto_assign_reviewers: false
+  poem: false
+  in_progress_fortune: false
+
+  auto_review:
+    enabled: true
+    labels:
+      - '!skip-review'
+    auto_incremental_review: true
+    drafts: false
+    # 화면 하나가 커밋 여러 개로 쌓인다. 기본값(5)이면 중간에 리뷰가 멈춘다
+    auto_pause_after_reviewed_commits: 20
+    base_branches:
+      - 'main'
+      - 'develop'
+    # 부분 문자열로 매칭된다 — 'wip'을 쓰면 "swipe"처럼 무관한 단어까지 걸려 리뷰를
+    # 조용히 건너뛴다. 일반 단어 안에 나타날 일이 없는 대괄호 표기만 쓴다.
+    ignore_title_keywords:
+      - '[WIP]'
+      - '[skip review]'
+
+  path_filters:
+    - '!**/node_modules/**'
+    - '!dist/**'
+    - '!storybook-static/**'
+    - '!package-lock.json'
+    - '!public/mockServiceWorker.js' # msw init 이 만드는 파일. 손으로 고치지 않는다
+    - '!**/*.png'
+    - '!**/*.jpg'
+    - '!**/*.svg'
+    - '!**/*.woff2'
+
+  path_instructions:
+    # ─────────────────────────────────────────────────────────────
+    # 0. 전역 — 화면이 실제로 깨지는 지점
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/**/*.{ts,tsx}'
+      instructions: |
+        # 이 코드베이스가 지키려는 것
+        서버 응답 모양(DTO)이 UI 까지 새지 않는다 · 같은 것을 두 번 만들지 않는다 ·
+        레이아웃이 내용 길이나 화면 폭에 따라 무너지지 않는다.
+
+        # 반드시 지적할 것 (정확성)
+        - 제어 / 비제어 혼용. 공용 컴포넌트가 `checked` · `value` 의 기본값을 내부에서 주면
+          defaultChecked 로 비제어로 쓰려는 호출부까지 제어 컴포넌트가 돼 React 경고가 난다
+          (shared/ui/Checkbox 에서 실제로 겪었다). props 는 그대로 흘려보낸다.
+        - 순서가 바뀌거나 중간이 삭제되는 목록에서 `key={index}`.
+          장바구니처럼 삭제가 있는 목록은 안정적인 id 를 쓴다.
+        - 상태를 직접 변형(push · splice · 객체 필드 대입)한 뒤 set 함수에 넘기는 코드.
+          `setItems(prev => ...)` 로 새 값을 만든다.
+        - 앞선 상태에서 파생되는 값을 useState + useEffect 로 동기화하는 코드.
+          렌더 중 계산으로 충분하면 그렇게 바꾸도록 제안한다.
+        - 구독 · 타이머 · 이벤트 리스너를 등록하고 useEffect 정리 함수를 반환하지 않는 코드.
+        - 포맷된 문자열로 계산하는 코드(예: "2,278,100원"을 더하거나 파싱).
+          계산이 필요한 값은 숫자로 들고 표시할 때만 포맷한다.
+        - 합계 · 개수 · 선택 상태가 서로 다른 출처에서 계산돼 어긋날 수 있는 구조
+          (예: 목록에서 항목을 지웠는데 선택 집합에는 남는다).
+        - 로딩 · 에러 · 빈 목록 상태 없이 데이터를 그리는 코드.
+        - `any`, 근거 없는 `as` 단언, non-null `!` 로 타입 검사를 우회하는 코드.
+        - 토큰 · 이메일 · 결제 식별자를 console 로 남기는 코드.
+
+        # 접근성 — 지적 대상이다
+        - 아이콘만 있는 버튼에 `aria-label` 이 없다. 목록 안이면 대상까지 넣는다
+          (예: `aria-label={`${name} 삭제`}`).
+        - onClick 을 단 `<div>` · `<span>`. 이동은 `<Link>`, 동작은 `<button type="button">`.
+        - 의미 있는 이미지에 alt 가 없거나, 장식 이미지에 alt=""가 없다.
+        - form 컨트롤에 연결된 label 이 없다.
+
+        # 타입
+        - 기존 타입과 구조가 겹치는 타입을 손으로 다시 적으면 지적한다.
+          `Pick` · `Omit` · `Partial` · `Record` 로 파생시킨다(CLAUDE.md).
+          다만 호출부가 하나뿐인데 제네릭을 억지로 붙이는 설계도 지적한다.
+
+        # 지적하지 말 것
+        - 포맷팅 · import 순서 · 줄바꿈 · 변수명 취향 · 주석 유무(prettier · eslint 담당).
+        - 테스트가 없다는 사실 자체(스토리 규칙은 *.stories.tsx 경로에서 따로 본다).
+
+    # ─────────────────────────────────────────────────────────────
+    # 1. shared — 도메인을 모르는 바닥
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/shared/**'
+      instructions: |
+        - app · pages · widgets · features · entities 를 import 하면 지적한다(린트가 막지만 우회 경로를 본다).
+        - shared/ui 컴포넌트에 도메인 개념(Product · Cart · Preorder · Order)이 들어오면 지적한다.
+          shared 는 "무엇을 파는지" 몰라야 한다. 도메인이 필요하면 entities 로 올린다.
+        - shared/api: `ApiResponse` 봉투는 fetch 래퍼에서 벗겨 data 만 돌려주고 실패는 throw 한다.
+          호출부에서 `success` 를 매번 검사하게 만들면 지적한다.
+        - shared/api/types(DTO)를 shared 밖에서 쓰라고 제안하지 않는다. DTO→모델 변환은 entities/*/api 다.
+        - Repository 인터페이스 · DI 컨테이너 · UseCase 클래스를 만들면 지적한다(구현이 하나뿐인 추상화).
+        - 새 공용 컴포넌트 추가 시, shared/ui 에 이미 비슷한 게 있는지 확인하도록 요청한다
+          (Button · Checkbox · Input · Dropdown · Toggle · Tag · Slider · BottomSheet ·
+           QuantityStepper · PriceText · InlineAlert · Navigator · Container · Box).
+
+    # ─────────────────────────────────────────────────────────────
+    # 2. entities — 도메인 타입과 표시 전용 카드
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/entities/**'
+      instructions: |
+        # 경계
+        - features · widgets · pages · app 을 import 하면 지적한다.
+        - 다른 엔티티를 import 하면 지적한다(entities/order 가 entities/product 를 import 하는 식).
+          린트가 못 잡는다. 공통으로 필요하면 제네릭으로 받거나 호출부(widgets · pages)에서 조립한다.
+        - entities/*/ui 에서 `@/shared/api/types` 를 import 하면 지적한다. 모델 타입만 쓴다.
+
+        # 구조
+        - 도메인 타입은 entities/<name>/model, 조회 함수와 DTO→모델 매퍼는 entities/<name>/api 에 둔다.
+          컴포넌트 파일 안에 도메인 타입을 새로 선언하면 지적한다.
+        - 매퍼는 모양이 실제로 다를 때만 만든다(ISO 문자열 → Date, null 기본값, 필드명 변경).
+          같으면 `export type Product = ProductDetail` 로 재노출한다.
+        - 컴포넌트는 ui/ComponentName/ 폴더에 tsx · css.ts · stories.tsx · index.ts 로 둔다.
+          ui/ComponentName.tsx 처럼 평평하게 두면 지적한다.
+        - 엔티티 배럴(index.ts)에 export 를 추가하지 않아 외부에서 깊은 경로로 import 하면 지적한다.
+
+        # 표시 전용
+        - 엔티티 컴포넌트가 화면 상태(선택 · 수량 · 열림)를 스스로 소유하면 지적한다.
+          값과 콜백을 props 로 받고 상태는 widgets · pages 가 가진다.
+        - 위치 고정(position: sticky · fixed)이나 페이지 폭 가정이 엔티티 컴포넌트 안에 있으면 지적한다.
+          쓰는 쪽이 className 으로 정한다.
+        - 화면마다 달라지는 문구를 컴포넌트 안에 하드코딩하면 지적한다(라벨은 props).
+
+    # ─────────────────────────────────────────────────────────────
+    # 3. features — 사용자 행동 단위
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/features/**'
+      instructions: |
+        - widgets · pages · app 을 import 하면 지적한다.
+        - 옵션 선택 · 장바구니 담기 · 약관 동의처럼 "사용자가 하는 일" 단위로만 만든다.
+          단순 표시 컴포넌트가 features 에 들어오면 entities 나 shared/ui 로 내리도록 지적한다.
+        - 쓰는 화면이 아직 없는데 미리 만든 슬라이스는 지적한다(현재 features 는 비어 있다).
+
+    # ─────────────────────────────────────────────────────────────
+    # 4. widgets · pages — 조립과 상태
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/{widgets,pages}/**'
+      instructions: |
+        - 위젯이 다른 위젯을 import 하면 지적한다. 조립은 페이지가 한다.
+        - 페이지가 app 을 import 하면 지적한다.
+        - 엔티티 컴포넌트와 거의 같은 카드 · 행 · 배지를 위젯 안에서 새로 만들면 지적한다.
+          기존 컴포넌트에 props 를 더하는 쪽을 먼저 검토하게 한다.
+        - 목업 데이터는 `// ponytail:` 주석으로 "API 가 없어서 대체" 라고 남기고,
+          실제 API 가 생기면 지울 자리를 표시한다. 주석 없는 목업 상수는 지적한다.
+        - 목록을 렌더링하는 화면에서 항목 삭제 · 선택 · 수량 상태가 여러 곳에 흩어지면 지적한다.
+        - 반응형: 모바일 우선. 데스크톱 전용 레이아웃을 기본값으로 쓰면 지적한다.
+
+    # ─────────────────────────────────────────────────────────────
+    # 5. 스타일 — vanilla-extract · 디자인 토큰
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/**/*.css.ts'
+      instructions: |
+        # 토큰
+        - 생 hex · rgb 값을 지적한다. `color.*` 토큰에 이미 있는지 확인하게 한다
+          (배경 #F7F7F9 → color.background.surface, 테두리 #E3E4E8 → color.border.default 등).
+        - 여백에 생 px 를 쓰면 지적한다. spacing 토큰(2 · 4 · 6 · 8 · 10 · 12 · 16 · 20 · 24 · 32 · 40 …)을 쓴다.
+        - 폰트 크기 · 굵기 · 행간을 직접 적으면 지적한다. typography 프리셋을 합성한다
+          (`style([typography.body.sub, { ... }])`).
+        - 토큰은 배럴 `@/shared/config/theme` 에서 가져온다. tokens/color/semantic.css 처럼
+          개별 파일을 직접 import 하면 지적한다. 예외는 base 토큰(fontSize · fontWeight · lineHeight)과
+          tokens/container 의 maxWidth, tokens/breakpoint 뿐이다.
+        - 모서리 반경(borderRadius)은 아직 토큰이 없다. px 값 자체는 지적하지 않되,
+          같은 PR 안에서 같은 역할에 다른 값이 섞이면 지적한다.
+
+        # 레이아웃 함정 (CLAUDE.md Gotchas — 실제로 겪은 것들)
+        - maxWidth 와 padding 을 같은 요소에 주면서 `boxSizing: 'border-box'` 가 없으면 지적한다.
+        - hover 에서 font-weight 를 transition 하면 지적한다(레이아웃 폭이 흔들린다).
+          -webkit-text-stroke-color 를 transition 한다.
+        - mixBlendMode 를 컨테이너에 걸면 지적한다. 자식까지 한 그룹으로 묶여 흰 패널이 반전된다.
+        - sprinkles() 는 브레이크포인트마다 달라지는 속성에만 쓴다. 정적 값이 sprinkles 로 들어오면 지적한다.
+        - 반대로 브레이크포인트마다 달라지는 값이 미디어쿼리 없이 데스크톱 기준으로만 잡혀 있으면 지적한다.
+
+    - path: 'src/**/*.tsx'
+      instructions: |
+        - 텍스트 요소에 `<p>` 를 쓰면 지적한다. `<div>` · `<span>` 을 쓴다.
+        - lucide-react 아이콘에 `color` prop 을 직접 주면 지적한다. 정적 값이라 :hover 에 반응하지 않는다.
+          부모의 CSS color 를 transition 하고 아이콘은 currentColor 를 상속하게 둔다.
+        - 인라인 style 로 색 · 여백을 주면 지적한다. 계산된 값(애니메이션 delay 등)만 허용한다.
+        - className 을 잇는 방식이 파일마다 다르면 지적하지 않는다. 다만 조건부 클래스에서
+          `false` 가 문자열로 들어가는 실수(`.join(' ')` 전에 filter 누락)는 지적한다.
+
+    # ─────────────────────────────────────────────────────────────
+    # 6. Storybook — 이 레포의 유일한 자동 검증 수단
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/**/*.stories.tsx'
+      instructions: |
+        - 상태 · 분기가 있는 컴포넌트에 스토리가 하나뿐이면 나머지 variant · 상태 스토리를 요청한다
+          (비활성 · 빈 값 · 긴 텍스트 · 에러).
+        - 클릭 · 입력으로 값이 바뀌는 컴포넌트에 play 함수가 없으면 요청한다.
+          이 레포에는 테스트 러너가 없어서 play 함수가 사실상 유일한 회귀 방지다.
+        - 목업 이름이 반복되는 목록에서 `getByRole(..., { name })` 로 찾으면 지적한다.
+          여러 개가 잡혀 실패한다. 순서(getAllByRole)로 찾는다.
+        - 단정(expect) 없이 클릭만 하는 play 함수는 지적한다.
+        - 경로에 따라 화면이 달라지는 컴포넌트는 `parameters: { initialEntries: ['/...'] }` 로
+          진입 경로를 지정하게 한다.
+
+    # ─────────────────────────────────────────────────────────────
+    # 7. MSW 목 — 서버가 없는 동안의 계약
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/shared/api/**'
+      instructions: |
+        - 목 핸들러가 DTO 타입을 쓰지 않고 자유 형식 객체를 돌려주면 지적한다.
+          목이 곧 서버 응답 계약이다.
+        - 성공 응답만 있고 실패 · 빈 결과 핸들러가 없으면 요청한다.
+          화면의 에러 · 빈 상태를 만들 수 없다.
+        - 목 데이터에 실제 개인정보 · 실제 결제 식별자를 넣으면 지적한다.
+        - URL 문자열을 핸들러마다 다시 적으면 지적한다. mock/url.ts 의 정의를 쓴다.
+
+    # ─────────────────────────────────────────────────────────────
+    # 8. 라우팅
+    # ─────────────────────────────────────────────────────────────
+    - path: 'src/app/**'
+      instructions: |
+        - 레이아웃 분기를 prop 으로 내려보내면 지적한다. Header 안에서 useLocation() 의 pathname 으로 판단한다
+          (CLAUDE.md Routing). 새 분기도 같은 방식으로 추가한다.
+        - 라우트를 추가하면서 not-found · 에러 경계 처리를 빼면 지적한다.
+        - 경로 문자열을 화면 곳곳에 직접 적으면 지적한다(예: `/products/${id}`).
+          같은 PR 에서 세 곳 이상 반복되면 상수로 모으도록 제안한다.
+
+    # ─────────────────────────────────────────────────────────────
+    # 9. 빌드 · 의존성 · 설정
+    # ─────────────────────────────────────────────────────────────
+    - path: 'package.json'
+      instructions: |
+        - 새 의존성은 용도를 PR 설명에 적도록 요청한다.
+        - 몇 줄로 되는 일에 라이브러리를 추가하면 지적한다(className 합치기 · 날짜 포맷 · 간단한 상태).
+        - 같은 역할의 라이브러리가 이미 있으면 지적한다
+          (캐러셀은 embla, 바텀시트는 vaul, 아이콘은 lucide-react, 라우팅은 react-router).
+        - 런타임에 필요한 패키지가 devDependencies 에 들어가면 지적한다.
+
+    - path: 'eslint.config.js'
+      instructions: |
+        - FSD 경계 규칙(import-x/no-restricted-paths)의 존을 느슨하게 바꾸면 근거를 묻는다.
+        - 규칙을 끄는 변경은 끄는 이유와 영향 파일 수를 PR 설명에 적도록 요청한다.
+
+    - path: '.github/workflows/**'
+      instructions: |
+        - 시크릿을 로그로 출력하거나 PR 이벤트에서 시크릿을 쓰는 설정은 지적한다.
+        - 액션은 태그 대신 커밋 SHA 로 고정하도록 제안한다.
+        - permissions 를 명시하지 않으면 최소 권한으로 지정하도록 제안한다.
+        - 빌드 · 린트 단계를 건너뛰는 변경은 근거를 묻는다.
+
+  # 라벨은 제안만 한다. 자동 부착은 하지 않는다
+  labeling_instructions:
+    - label: 'shared-ui'
+      instructions: 'src/shared/ui 가 바뀌면 제안한다. 여러 화면에 동시에 영향이 간다'
+    - label: 'entities'
+      instructions: 'src/entities 가 바뀌면 제안한다'
+    - label: 'page'
+      instructions: 'src/pages · src/widgets 가 바뀌면 제안한다'
+    - label: 'design-token'
+      instructions: 'src/shared/config/theme 가 바뀌면 제안한다'
+    - label: 'infra'
+      instructions: 'package.json · eslint.config.js · vite · .github 가 바뀌면 제안한다'
+    - label: 'breaking-boundary'
+      instructions: 'FSD 레이어 의존 방향이나 같은 레이어끼리의 import 를 어기는 변경이면 제안한다'
+  auto_apply_labels: false
+
+  # 머지 전 점검. 실패하면 머지를 막는다.
+  # 오탐으로 막히면 skip-review 라벨 또는 관리자 우회로 푼다.
+  pre_merge_checks:
+    title:
+      mode: 'error'
+      requirements: |
+        형식은 <type>: <요약> 또는 <type>(<스코프>): <요약> 이다.
+        예: feat: 장바구니에 리모컨 연결 / feat(NF-18): 장바구니에 리모컨 연결
+        type 은 feat · fix · refactor · style · test · docs · design · chore 중 하나.
+        스코프는 선택이며, 쓸 때는 보통 Jira 이슈 키(NF-18 등)를 넣는다.
+        요약은 한국어이고 마침표로 끝내지 않는다.
+    description:
+      mode: 'warning'
+    custom_checks:
+      - name: 'FSD 경계'
+        mode: 'error'
+        instructions: |
+          의존 방향은 app → pages → widgets → features → entities → shared 다.
+          다음이면 실패로 표시한다.
+          - 하위 레이어가 상위 레이어를 import 한다(shared 가 entities 를, entities 가 widgets 를 등)
+          - 엔티티가 다른 엔티티를 import 한다
+          - 위젯이 다른 위젯을 import 한다
+          - entities/*/ui 또는 widgets · pages · features 가 `@/shared/api/types`(DTO)를 import 한다
+          - 엔티티 배럴을 거치지 않고 `@/entities/<name>/ui/...` 처럼 깊은 경로로 import 한다
+          위 조건에 해당하지 않으면 통과로 표시한다.
+      - name: '재사용 확인'
+        mode: 'warning'
+        instructions: |
+          새 컴포넌트 · 타입 · 색상이 추가된 PR 에서 다음이면 실패로 표시한다.
+          - shared/ui 에 이미 있는 것과 역할이 겹치는 컴포넌트를 새로 만들었다
+          - 기존 타입과 필드가 거의 같은 타입을 손으로 다시 선언했다
+            (Pick · Omit · Partial · Record 로 파생 가능한 경우)
+          - color · spacing · typography 토큰에 이미 있는 값을 생 값으로 적었다
+          판단 근거로 기존 파일 경로를 반드시 적는다. 추가가 없으면 통과로 표시한다.
+
+  tools:
+    # 켠다
+    eslint: { enabled: true } # 레포의 flat config 를 그대로 쓴다. FSD 경계 규칙이 여기 있다
+    gitleaks: { enabled: true }
+    actionlint: { enabled: true }
+    zizmor: { enabled: true } # 워크플로 보안
+    yamllint: { enabled: true }
+    osvScanner: { enabled: true } # 의존성 취약점
+    github-checks: { enabled: true } # CI 결과를 리뷰 맥락으로 사용
+    # 끈다 — 규칙 파일 없이 켜면 지적이 쏟아져 리뷰를 안 읽게 된다
+    semgrep: { enabled: false }
+    opengrep: { enabled: false }
+    ast-grep: { enabled: false }
+    # 끈다 — 이 레포에서 쓰지 않는 도구
+    biome: { enabled: false }
+    oxc: { enabled: false }
+    htmlhint: { enabled: false }
+    # 끈다 — 한국어 문서 · 목업 데이터에서 오탐이 많다
+    languagetool: { enabled: false }
+    vale: { enabled: false }
+    markdownlint: { enabled: false }
+    presidio: { enabled: false }
+    trufflehog: { enabled: false } # gitleaks 와 겹친다
+
+# 생성 시 지침 (🧪 체크박스로 실행할 때 적용)
+code_generation:
+  docstrings:
+    language: 'ko-KR'
+  unit_tests:
+    path_instructions:
+      - path: 'src/**/*.tsx'
+        instructions: |
+          이 레포에는 테스트 러너가 없다. 테스트 파일 대신 Storybook 스토리와 play 함수를 만든다.
+          variant · 상태별 스토리(기본 · 비활성 · 빈 값 · 긴 텍스트)를 함께 만들고,
+          클릭 · 입력으로 값이 바뀌는 경로는 play 함수에서 단정(expect)까지 한다.
+          목업 이름이 반복되는 목록은 getAllByRole 로 순서를 잡는다.
+
+chat:
+  auto_reply: true
+  art: false
+
+knowledge_base:
+  learnings:
+    scope: 'local'
+  issues:
+    scope: 'local'
+  pull_requests:
+    scope: 'local'

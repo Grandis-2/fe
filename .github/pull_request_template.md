@@ -1,6 +1,6 @@
 <!--
-[타입] #이슈번호 제목 (이슈 번호를 포함하면 자동 링크가 걸려 편리함)
-ex) [feat] #10 방 생성 API 구현=
+PR 제목은 commitlint·CodeRabbit과 같은 형식이어야 한다: <type>: <요약> 또는 <type>(<이슈 키>): <요약>
+ex) feat(NF-18): 장바구니에 결제 정보 요약(리모컨) 추가
 -->
 
 ## 📌 관련 이슈
@@ -11,25 +11,36 @@ ex) [feat] #10 방 생성 API 구현=
 
 <!-- 어떤 변경 사항이 있었는지 주요 내용을 적어주세요. -->
 
-- Room 엔티티와 Participant 엔티티 간 1:N 관계 설정
-- 방 생성 시 고유한 6자리 URL Slug 생성 로직 추가
-- NestJS ValidationPipe를 이용한 입력값 검증 적용
+- `entities/order`에 결제 정보 요약 카드(`OrderSummary`) 추가
+- `entities/cart`의 `CartItem` 타입에서 합계 계산을 위해 `priceLabel`(문자열)을 `price`(숫자)로 변경
+- `MypageCart` 위젯에 리모컨을 연결해 선택한 상품의 합계를 표시
 
-## 📸 스크린샷 / 테스트 결과
+## 📸 스크린샷 / 확인 결과
 
-<!-- API 응답 결과(Postman/Swagger)나 실행 결과 스크린샷을 첨부해주세요. -->
+<!-- 화면 변경이면 스크린샷을, 컴포넌트 변경이면 Storybook 캡처나 play 함수 통과 결과를 첨부해주세요. -->
 
-- `POST /rooms` 성공 응답 확인 완료
+- 데스크톱/모바일 캡처 (`npm run dev`)
+- `MypageCart.stories.tsx`의 `SelectAll` play 함수 통과 확인 (`npm run storybook`)
 
 ## 🔍 리뷰 포인트
 
 <!-- 리뷰어가 집중해서 봐주었으면 하는 부분이 있다면 적어주세요. -->
 
-- 슬러그 생성 알고리즘이 중복을 충분히 방지할 수 있을까요?
-- Prisma 트랜잭션 처리가 적절하게 되었는지 확인 부탁드립니다.
+- FSD 레이어 경계(`entities` → `widgets` → `pages`)를 벗어난 import가 없는지
+- `shared/config/theme`의 색상·spacing·typography 토큰 대신 값을 직접 적은 곳은 없는지
+- 이미 있는 컴포넌트(`shared/ui`, 관련 `entities/*`)와 겹치는 걸 새로 만들지 않았는지
 
 ## ✅ 체크리스트
 
-- [ ] 커밋 메시지 컨벤션을 준수했는가?
-- [ ] 로컬에서 빌드 및 테스트가 성공했는가?
-- [ ] 불필요한 주석이나 console.log를 제거했는가?
+- [ ] 커밋 메시지 컨벤션(`type: 요약` 또는 `type(이슈 키): 요약`)을 준수했는가? (`commit-msg` 훅이 자동으로 막는다)
+- [ ] `npm run build`(`tsc -b` + `vite build`)와 `npm run lint`가 통과했는가?
+- [ ] 변경한 컴포넌트의 Storybook 스토리를 추가/갱신했는가? (이 프로젝트엔 별도 테스트 러너가 없어 스토리가 사실상의 회귀 테스트다)
+- [ ] 불필요한 주석이나 `console.log`를 제거했는가?
+
+<!--
+CodeRabbit이 지적을 남기면 리뷰 상태가 "Changes requested"로 바뀐다. 오탐이면:
+- `skip-review` 라벨을 달면 이후 커밋에 대한 재검토만 멈춘다 — 이미 남은 리뷰는 사라지지 않는다.
+- main·develop엔 branch protection이 없어서 "Changes requested" 상태 자체는 머지를 막지 않는다.
+  그대로 머지하거나, 남은 리뷰를 관리자가 dismiss하면 된다.
+- 지적이 틀렸다고 판단되면 리뷰 코멘트에 이유를 남겨 반박한다.
+-->
