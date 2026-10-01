@@ -6,6 +6,7 @@ import {
   getAdminProduct,
   getAdminProductStock,
   getAdminProductStocks,
+  isPreorder,
   putAdminProductStock,
   saleStatusColor,
   saleStatusLabel,
@@ -38,17 +39,23 @@ type TabValue = (typeof tabs)[number]['value']
 
 const DEFAULT_TAB: TabValue = 'stock'
 
-const isTabValue = (value: string | null): value is TabValue =>
-  tabs.some((tab) => tab.value === value)
+// 배송 차수는 사전 예약에만 있다 — 일반 판매는 순번도 차수도 없다.
+const tabsOf = (product: AdminProductDetailModel | undefined) =>
+  product && isPreorder(product)
+    ? tabs
+    : tabs.filter((item) => item.value !== 'shipping')
 
 export function AdminProductDetailPage() {
   const navigate = useNavigate()
   const { productId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
-  const tabParam = searchParams.get('tab')
-  const tab = isTabValue(tabParam) ? tabParam : DEFAULT_TAB
 
   const [product, setProduct] = useState<AdminProductDetailModel>()
+  const visibleTabs = tabsOf(product)
+  // 일반 판매 상품에 ?tab=shipping으로 들어와도 기본 탭으로 보낸다.
+  const tab =
+    visibleTabs.find((item) => item.value === searchParams.get('tab'))?.value ??
+    DEFAULT_TAB
   const [stockItems, setStockItems] = useState<AdminStockItemModel[]>([])
   const [error, setError] = useState<string>()
   // 배송 구간 편집 버튼이 탭과 같은 줄에 있어서 상태를 여기서 든다.
@@ -171,7 +178,7 @@ export function AdminProductDetailPage() {
       </div>
 
       <div className={styles.tabRow}>
-        <SegmentedTabs items={tabs} value={tab} onChange={setTab} />
+        <SegmentedTabs items={visibleTabs} value={tab} onChange={setTab} />
 
         {/* 오픈 이후에는 배송 기준과 기존 배정을 바꾸지 않는다. */}
         {tab === 'shipping' &&
