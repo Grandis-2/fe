@@ -17,6 +17,7 @@ import {
   type AdminReservationDetail,
   type AdminReservationHistoryEntry,
 } from '@/entities/admin-reservation'
+import { ADMIN_RESERVATIONS_PATH } from '@/shared/config/routes'
 import { Button, InlineAlert, Table, Tag, Textarea } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
 import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
@@ -140,7 +141,9 @@ export function AdminReservationDetailPage() {
       <div className={styles.notFound}>
         <div>{error ?? '예약을 불러오는 중입니다.'}</div>
         <AdminBreadcrumb
-          items={[{ label: '예약 현황으로 돌아가기', to: '/admin/orders' }]}
+          items={[
+            { label: '예약 현황으로 돌아가기', to: ADMIN_RESERVATIONS_PATH },
+          ]}
         />
       </div>
     )
@@ -196,7 +199,7 @@ export function AdminReservationDetailPage() {
     <div className={styles.root}>
       <AdminBreadcrumb
         items={[
-          { label: '예약 현황', to: '/admin/orders' },
+          { label: '예약 현황', to: ADMIN_RESERVATIONS_PATH },
           { label: displayNo },
         ]}
       />

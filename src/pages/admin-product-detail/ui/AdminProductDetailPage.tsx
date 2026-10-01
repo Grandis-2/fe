@@ -18,6 +18,7 @@ import {
   type AdminProductStock,
   type AdminStockItemModel,
 } from '@/entities/admin-product'
+import { ADMIN_PRODUCTS_PATH } from '@/shared/config/routes'
 import { formatNumber, formatWon } from '@/shared/lib/formatNumber'
 import { Button, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
@@ -93,7 +94,7 @@ export function AdminProductDetailPage() {
           ),
         ),
       )
-      .then(() => navigate('/admin/products'))
+      .then(() => navigate(ADMIN_PRODUCTS_PATH))
       .catch((cause: Error) => setError(cause.message))
 
   const stockColumns: TableColumn<AdminProductStock>[] = [
@@ -141,7 +142,7 @@ export function AdminProductDetailPage() {
         <div className={styles.notFound}>
           {error ?? '불러오는 중입니다.'}
           <AdminBreadcrumb
-            items={[{ label: '상품 관리로 돌아가기', to: '/admin/products' }]}
+            items={[{ label: '상품 관리로 돌아가기', to: ADMIN_PRODUCTS_PATH }]}
           />
         </div>
       </div>
@@ -152,7 +153,7 @@ export function AdminProductDetailPage() {
     <div className={styles.root}>
       <AdminBreadcrumb
         items={[
-          { label: '상품 관리', to: '/admin/products' },
+          { label: '상품 관리', to: ADMIN_PRODUCTS_PATH },
           { label: product.name },
         ]}
       />
@@ -199,7 +200,7 @@ export function AdminProductDetailPage() {
           mode="edit"
           defaultValue={toFormValue(product, stockItems)}
           onSubmit={handleSubmit}
-          onCancel={() => navigate('/admin/products')}
+          onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
           onPreview={() => navigate(`/products/${product.productId}`)}
         />
       )}

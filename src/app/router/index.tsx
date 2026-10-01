@@ -28,7 +28,17 @@ import { ResultPage } from '@/pages/result'
 import { ReviewsPage } from '@/pages/reviews'
 import { SearchPage } from '@/pages/search'
 import { SignupPage } from '@/pages/signup'
-import { SIGNUP_PATH } from '@/shared/config/routes'
+import {
+  ADMIN_PRODUCTS_PATH,
+  ADMIN_PRODUCT_NEW_PATH,
+  ADMIN_PROMOTIONS_PATH,
+  ADMIN_PROMOTION_NEW_PATH,
+  ADMIN_RESERVATIONS_PATH,
+  SIGNUP_PATH,
+  adminProductPath,
+  adminPromotionPath,
+  adminReservationPath,
+} from '@/shared/config/routes'
 
 export const router = createBrowserRouter([
   {
@@ -61,21 +71,24 @@ export const router = createBrowserRouter([
           { path: '/admin', element: <AdminHomePage /> },
           // 홈을 제외한 나머지는 아직 기능 범위가 안 정해져서 전부 placeholder —
           // 스코프가 정해지는 대로 각자 전용 페이지로 교체.
-          { path: '/admin/products', element: <AdminProductsPage /> },
-          { path: '/admin/products/new', element: <AdminProductNewPage /> },
+          { path: ADMIN_PRODUCTS_PATH, element: <AdminProductsPage /> },
+          { path: ADMIN_PRODUCT_NEW_PATH, element: <AdminProductNewPage /> },
           {
-            path: '/admin/products/:productId',
+            path: adminProductPath(':productId'),
             element: <AdminProductDetailPage />,
           },
-          { path: '/admin/preorders', element: <AdminPromotionsPage /> },
-          { path: '/admin/preorders/new', element: <AdminPromotionNewPage /> },
+          { path: ADMIN_PROMOTIONS_PATH, element: <AdminPromotionsPage /> },
           {
-            path: '/admin/preorders/:promotionId',
+            path: ADMIN_PROMOTION_NEW_PATH,
+            element: <AdminPromotionNewPage />,
+          },
+          {
+            path: adminPromotionPath(':promotionId'),
             element: <AdminPromotionEditPage />,
           },
-          { path: '/admin/orders', element: <AdminReservationsPage /> },
+          { path: ADMIN_RESERVATIONS_PATH, element: <AdminReservationsPage /> },
           {
-            path: '/admin/orders/:reservationId',
+            path: adminReservationPath(':reservationId'),
             element: <AdminReservationDetailPage />,
           },
           {

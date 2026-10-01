@@ -7,6 +7,7 @@ import {
   toUpsertRequest,
   type AdminProductFormValue,
 } from '@/entities/admin-product'
+import { ADMIN_PRODUCTS_PATH, adminProductPath } from '@/shared/config/routes'
 import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
 import { AdminProductForm } from '@/widgets/admin-product-form'
 
@@ -18,14 +19,14 @@ export function AdminProductNewPage() {
 
   const handleSubmit = (value: AdminProductFormValue) =>
     void createAdminProduct(toUpsertRequest(value))
-      .then((created) => navigate(`/admin/products/${created.productId}`))
+      .then((created) => navigate(adminProductPath(created.productId)))
       .catch((cause: Error) => setError(cause.message))
 
   return (
     <div className={styles.root}>
       <AdminBreadcrumb
         items={[
-          { label: '상품 관리', to: '/admin/products' },
+          { label: '상품 관리', to: ADMIN_PRODUCTS_PATH },
           { label: '새 상품 등록' },
         ]}
       />
@@ -37,9 +38,9 @@ export function AdminProductNewPage() {
       <AdminProductForm
         mode="create"
         onSubmit={handleSubmit}
-        onCancel={() => navigate('/admin/products')}
+        onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
         // 등록 전에는 볼 상세 페이지가 없어 목록으로만 돌려보낸다.
-        onPreview={() => navigate('/admin/products')}
+        onPreview={() => navigate(ADMIN_PRODUCTS_PATH)}
       />
     </div>
   )
