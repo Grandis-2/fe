@@ -24,8 +24,3 @@ export const promotionName = style([
   typography.body.subMedium,
   { color: color.text.primary },
 ])
-
-export const copied = style([
-  typography.body.caption,
-  { color: color.status.success },
-])
