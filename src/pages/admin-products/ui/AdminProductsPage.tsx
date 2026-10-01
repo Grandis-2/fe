@@ -13,6 +13,10 @@ import {
   type AdminProduct,
   type AdminSaleStatus,
 } from '@/entities/admin-product'
+import {
+  ADMIN_PRODUCT_NEW_PATH,
+  adminProductPath,
+} from '@/shared/config/routes'
 import { Button, Dropdown, Input, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn, TagProps } from '@/shared/ui'
 
@@ -88,7 +92,7 @@ export function AdminProductsPage() {
   }, [saleStatus, trimmedKeyword])
 
   const openDetail = (product: AdminProduct) =>
-    navigate(`/admin/products/${product.productId}`)
+    navigate(adminProductPath(product.productId))
 
   // 유형과 정렬은 목록 응답에 해당 파라미터가 없어 화면에서 처리한다.
   const visibleProducts = products
@@ -181,7 +185,7 @@ export function AdminProductsPage() {
         <Button
           icon="plus"
           size="medium"
-          onClick={() => navigate('/admin/products/new')}
+          onClick={() => navigate(ADMIN_PRODUCT_NEW_PATH)}
         >
           새 상품 등록
         </Button>

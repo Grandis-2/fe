@@ -12,6 +12,11 @@ import {
   type AdminPromotion,
   type PromotionStatus,
 } from '@/entities/admin-promotion'
+import {
+  ADMIN_PRODUCT_NEW_PATH,
+  ADMIN_PROMOTION_NEW_PATH,
+  adminPromotionPath,
+} from '@/shared/config/routes'
 import { useModalStore } from '@/shared/model/modalStore'
 import { Button, ConfirmDialog, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
@@ -42,7 +47,7 @@ export function AdminPromotionsPage() {
   )
 
   const openDetail = (promotion: AdminPromotion) =>
-    navigate(`/admin/preorders/${promotion.promotionId}`)
+    navigate(adminPromotionPath(promotion.promotionId))
 
   // 연결할 사전예약 상품이 없으면 프로모션부터 만들 수 없다.
   const startCreate = () => {
@@ -56,14 +61,14 @@ export function AdminPromotionsPage() {
           confirmLabel="생성 하러 하기"
           onConfirm={() => {
             closeModal()
-            navigate('/admin/products/new')
+            navigate(ADMIN_PRODUCT_NEW_PATH)
           }}
           onCancel={closeModal}
         />,
       )
       return
     }
-    navigate('/admin/preorders/new')
+    navigate(ADMIN_PROMOTION_NEW_PATH)
   }
 
   const copyLink = (promotion: AdminPromotion) => {

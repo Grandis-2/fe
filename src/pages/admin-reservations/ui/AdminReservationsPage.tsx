@@ -19,6 +19,7 @@ import {
   type AdminStats,
 } from '@/entities/admin-reservation'
 import { AdminReservationCreateModal } from '@/features/admin-reservation-create'
+import { adminReservationPath } from '@/shared/config/routes'
 import { useModalStore } from '@/shared/model/modalStore'
 import {
   Button,
@@ -111,7 +112,7 @@ export function AdminReservationsPage() {
   }, [load])
 
   const openDetail = (reservation: AdminReservation) =>
-    navigate(`/admin/orders/${reservation.reservationId}`)
+    navigate(adminReservationPath(reservation.reservationId))
 
   const memberName = (memberId: string) =>
     members.find((member) => member.memberId === memberId)?.name ?? memberId
