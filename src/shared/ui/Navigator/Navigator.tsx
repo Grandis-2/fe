@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronsLeft } from 'lucide-react'
 
-import { Button } from '@/shared/ui/Button'
+import { Button } from '../Button'
 
 import * as styles from './Navigator.css'
 

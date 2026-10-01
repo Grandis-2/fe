@@ -1,32 +1,34 @@
-import { useState, type ChangeEvent } from 'react'
+import { useState } from 'react'
 
-import { ChevronDown } from 'lucide-react'
-import { useLocation } from 'react-router'
+import { Settings } from 'lucide-react'
+import { Link, useLocation } from 'react-router'
 
+import { useDefaultAddress, type DefaultAddress } from '@/entities/address'
 import { OrderSummary } from '@/entities/order'
 import { preparePayment } from '@/entities/payment'
 import { ProductPaymentCard } from '@/entities/product'
+import { useProfile } from '@/entities/profile'
+import {
+  DaumPostcodeSearch,
+  type DaumPostcodeAddress,
+} from '@/features/daum-postcode'
+import type { PurchaseDraft } from '@/features/product-purchase'
 import { requestTossPayment } from '@/features/toss-payment'
-import { ApiRequestError } from '@/shared/api/client'
-import { Button, Checkbox, Container, Input, InlineAlert } from '@/shared/ui'
+import { getErrorMessage } from '@/shared/api/client'
+import { mypagePath } from '@/shared/config/routes'
+import { formatWon } from '@/shared/lib/formatNumber'
+import { useFormFields } from '@/shared/lib/useFormFields'
+import { Button, Container, Input, InlineAlert } from '@/shared/ui'
+
+import { terms } from '../model/terms'
 
 import * as styles from './PaymentPage.css'
+import { TermsAgreement } from './TermsAgreement'
 
 const GENERIC_PAYMENT_ERROR =
   '결제 요청 중 문제가 발생했습니다. 다시 시도해 주세요.'
 
-const won = (value: number) => `${value.toLocaleString('ko-KR')}원`
-
-// 상품 상세의 handleCheckout이 navigate(path, { state })로 넘기는 모양 —
-// 직접 /payment로 들어오면(딥링크 등) 없을 수 있어 아래 목업으로 대체한다.
-type PurchaseDraft = {
-  productName: string
-  colorLabel: string
-  optionLabel: string
-  quantity: number
-  unitPrice: number
-}
-
+// 직접 /payment로 들어오면(딥링크 등) 상품 상세가 넘기는 주문 초안이 없어 아래 목업으로 대체한다.
 // ponytail: 아직 주문서 API가 없어서 목업 데이터로 대체.
 const fallbackDraft: PurchaseDraft = {
   productName: '아이폰 18 Pro',
@@ -40,186 +42,61 @@ const fallbackDraft: PurchaseDraft = {
 // 되면서 소액 주문에서 총액이 음수로 떨어졌다 — 금액이 아니라 비율로 할인한다.
 const PREORDER_BENEFIT_RATE = 0.1
 
-type TermDetail = { heading: string; body: string }
-
-type Term = {
-  id: string
-  label: string
-  /** 체크하지 않으면 결제를 막는 항목 */
-  required: boolean
-  detail?: TermDetail[]
+// 저장된 기본 배송지가 없을 때의 처리(배송지 등록 유도 등)가 정해지기 전까지는 배송지가
+// 있다고 가정하고 이 값으로 채운다.
+// ponytail: 목업 — 배송지 없음 처리가 정해지면 지우고 그쪽 흐름으로 바꾼다.
+const fallbackAddress: DefaultAddress = {
+  name: '홍길동',
+  phone: '01012345678',
+  postalCode: '06234',
+  line1: '서울특별시 강남구 테헤란로 123',
+  line2: null,
 }
 
-const terms: Term[] = [
-  {
-    id: 'finance',
-    label: '전자금융거래 이용약관에 동의 (필수)',
-    required: true,
-    detail: [
-      {
-        heading: '전자금융거래 이용약관 (제1조 목적)',
-        body: '이 약관은 회사가 제공하는 전자금융거래 서비스를 이용함에 있어 회사와 이용자 사이의 권리·의무 및 책임 사항을 정함을 목적으로 합니다.',
-      },
-      {
-        heading: '제2조 용어의 정의',
-        body: '"전자금융거래"란 회사가 전자적 장치를 통하여 서비스를 제공하고, 이용자가 회사의 종사자와 직접 대면하지 아니하고 자동화된 방식으로 이를 이용하는 거래를 말합니다.',
-      },
-    ],
-  },
-  {
-    id: 'third-party',
-    label: '주문 배송을 위한 개인정보 제3자 제공 동의 (필수)',
-    required: true,
-    detail: [
-      {
-        heading: '개인정보 제3자 제공 동의 (주문 및 배송 목적)',
-        body: '회사는 고객님의 주문 상품 배송 및 원활한 고객 서비스를 위해 개인정보 보호법 제17조 및 제22조에 따라 아래와 같이 개인정보를 제3자에게 제공하고자 합니다.',
-      },
-      {
-        heading: '제공하는 개인정보 항목',
-        body: '수령인 성명, 수령인 연락처(휴대전화번호), 배송지 주소',
-      },
-      {
-        heading: '제공받는 자',
-        body: 'CJ대한통운, 한진택배, 우체국택배 등',
-      },
-      {
-        heading: '제공 목적',
-        body: '주문 상품의 배송 및 배송 관련 고객 응대',
-      },
-    ],
-  },
-  {
-    id: 'delay',
-    label:
-      '예약 상품의 특성상 상품 준비 및 제작 상황에 따라 안내된 예상 배송일보다 배송이 늦어질 수 있습니다. 예상 배송일은 확정된 일정이 아니며, 배송이 지연될 수 있음을 확인하고 이에 동의합니다.',
-    required: true,
-  },
-]
-
-type TermsAgreementProps = {
-  agreedIds: Set<string>
-  onToggle: (id: string, checked: boolean) => void
-  onToggleAll: (checked: boolean) => void
-}
-
-// 약관보기 펼침 상태는 바깥에서 쓸 일이 없어서 여기서만 들고 있는다.
-function TermsAgreement({
-  agreedIds,
-  onToggle,
-  onToggleAll,
-}: TermsAgreementProps) {
-  const [openIds, setOpenIds] = useState<Set<string>>(new Set())
-
-  const toggleDetail = (id: string) =>
-    setOpenIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-
-  return (
-    <div className={styles.terms}>
-      <div className={styles.termsTitle}>약관 동의</div>
-
-      <label className={styles.agreeAll}>
-        <Checkbox
-          className={styles.checkbox}
-          checked={agreedIds.size === terms.length}
-          onChange={(event) => onToggleAll(event.target.checked)}
-        />
-        아래 내용에 모두 동의합니다.
-      </label>
-
-      <div className={styles.termList}>
-        {terms.map((term) => {
-          const open = openIds.has(term.id)
-
-          return (
-            <div key={term.id}>
-              <div className={styles.termRow}>
-                <label className={styles.termMain}>
-                  <Checkbox
-                    className={styles.checkbox}
-                    checked={agreedIds.has(term.id)}
-                    onChange={(event) =>
-                      onToggle(term.id, event.target.checked)
-                    }
-                  />
-                  <span className={styles.termLabel}>{term.label}</span>
-                </label>
-                {term.detail && (
-                  <button
-                    type="button"
-                    className={styles.detailToggle}
-                    aria-expanded={open}
-                    onClick={() => toggleDetail(term.id)}
-                  >
-                    약관보기
-                    <ChevronDown
-                      aria-hidden="true"
-                      className={[
-                        styles.detailIcon,
-                        open && styles.detailIconOpen,
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    />
-                  </button>
-                )}
-              </div>
-
-              {term.detail && open && (
-                <div className={styles.detailPanel}>
-                  {term.detail.map((section) => (
-                    <div key={section.heading} className={styles.detailGroup}>
-                      <div className={styles.detailHeading}>
-                        {section.heading}
-                      </div>
-                      <div className={styles.detailBody}>{section.body}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ponytail: 로그인 API가 없어서 수령인 이름만 목업 유저로 미리 채워 둔다.
-const initialForm = {
-  name: '기매진',
-  phone: '',
-  email: '',
-  addressLabel: '',
-  postcode: '',
-  address: '',
-  addressDetail: '',
-}
-
-type FormKey = keyof typeof initialForm
-
-// email을 제외한 나머지가 결제를 막는 필수 입력이다(각 field() 호출의 required와 맞춘다).
-const requiredFieldKeys: FormKey[] = [
+// email을 제외한 나머지가 결제를 막는 필수 입력이다. 우편번호는 칸이 없고 기본 주소와
+// 같이 채워지므로(저장된 배송지·주소 찾기) 따로 검사하지 않는다.
+const REQUIRED_KEYS = [
   'name',
   'phone',
   'addressLabel',
-  'postcode',
   'address',
   'addressDetail',
-]
+] as const
 
 export function PaymentPage() {
   const location = useLocation()
   const draft = (location.state as PurchaseDraft | null) ?? fallbackDraft
-  const [form, setForm] = useState(initialForm)
+  const { data: profile } = useProfile()
+  const { data: savedAddress } = useDefaultAddress()
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
-  const [submitted, setSubmitted] = useState(false)
   const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [addressSearchOpen, setAddressSearchOpen] = useState(false)
+
+  // 회원 프로필과 기본 배송지를 기본값으로 깐다(SignupPage의 프로필 프리필과 같은
+  // 패턴). 사용자가 고친 칸이 항상 우선하므로 응답이 늦게 와도 입력 중인 값을
+  // 덮어쓰지 않는다(useFormFields). 기본 주소는 직접 입력하지 않고 주소 찾기로만 바꾼다.
+  const address = savedAddress ?? fallbackAddress
+  const form = useFormFields(
+    {
+      name: profile?.name || address.name,
+      phone: profile?.phoneNumber ?? '',
+      email: profile?.email ?? '',
+      addressLabel: '기본 배송지',
+      postcode: address.postalCode,
+      address: address.line1,
+      addressDetail: address.line2 ?? '',
+    },
+    REQUIRED_KEYS,
+  )
+  const { field } = form
+  // 읽기 전용 칸에 우편번호를 붙여 "기본 주소 (우편번호)"로 한 칸에 보여 준다 — 폼 값은
+  // 주소와 우편번호가 따로다.
+  const addressDisplay = [
+    form.values.address,
+    form.values.postcode && `(${form.values.postcode})`,
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   const orderAmount = draft.unitPrice * draft.quantity
   const preorderBenefit = Math.round(orderAmount * PREORDER_BENEFIT_RATE)
@@ -229,26 +106,21 @@ export function PaymentPage() {
     modelNumber: 'A3714',
     optionSummary: `${draft.colorLabel} · ${draft.optionLabel} · Apple care+`,
     quantityLabel: `${draft.quantity}개`,
-    priceLabel: won(orderAmount),
+    priceLabel: formatWon(orderAmount),
   }
 
   const requiredAgreed = terms.every(
     (term) => !term.required || agreedIds.has(term.id),
   )
-  const requiredFieldsFilled = requiredFieldKeys.every((key) =>
-    form[key].trim(),
-  )
-
-  // 필수 입력은 결제를 한 번 눌러 본 뒤에만 빨갛게 표시한다 — 처음부터 빨간 화면을 보여주지 않는다.
-  // 라벨 뒤 별표와 에러 문구는 Input이 required/invalid를 보고 스스로 만든다.
-  const field = (key: FormKey, label: string, required?: boolean) => ({
-    label,
-    value: form[key],
-    onChange: (event: ChangeEvent<HTMLInputElement>) =>
-      setForm((prev) => ({ ...prev, [key]: event.target.value })),
-    required,
-    invalid: submitted && !form[key].trim(),
-  })
+  // 검색 없이 닫으면 onComplete가 안 불려서 폼은 그대로다. 상세 주소는 이전 주소
+  // 기준 값이라 새로 찾은 주소와 안 맞을 수 있어 같이 비운다.
+  const handleAddressComplete = ({
+    postcode,
+    address,
+  }: DaumPostcodeAddress) => {
+    form.setValues({ postcode, address, addressDetail: '' })
+    setAddressSearchOpen(false)
+  }
 
   const toggleAgree = (id: string, checked: boolean) =>
     setAgreedIds((prev) => {
@@ -265,9 +137,9 @@ export function PaymentPage() {
   // 브라우저가 결제창 오버레이를 띄운 뒤 successUrl/failUrl로 이동하므로, catch는
   // 오버레이가 뜨기 전 오류(파라미터 오류, 네트워크 실패 등)만 잡는다.
   const handlePayment = async () => {
-    setSubmitted(true)
+    form.markSubmitted()
     setPaymentError(null)
-    if (!requiredFieldsFilled) return
+    if (!form.requiredFilled) return
 
     try {
       const { orderId, amount } = await preparePayment({
@@ -278,15 +150,11 @@ export function PaymentPage() {
         orderId,
         amount,
         orderName: draft.productName,
-        customerName: form.name,
-        customerEmail: form.email || undefined,
+        customerName: form.values.name,
+        customerEmail: form.values.email || undefined,
       })
     } catch (caught) {
-      setPaymentError(
-        caught instanceof ApiRequestError
-          ? caught.error.message
-          : GENERIC_PAYMENT_ERROR,
-      )
+      setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
     }
   }
 
@@ -306,9 +174,9 @@ export function PaymentPage() {
           <section className={styles.section}>
             <div className={styles.sectionTitle}>수령인</div>
             <div className={styles.fieldRow}>
-              <Input {...field('name', '이름', true)} />
+              <Input {...field('name', '이름')} />
               <Input
-                {...field('phone', "휴대폰 ('-'을 제외한 숫자만)", true)}
+                {...field('phone', "휴대폰 ('-'을 제외한 숫자만)")}
                 inputMode="numeric"
               />
             </div>
@@ -319,7 +187,13 @@ export function PaymentPage() {
             <div className={styles.sectionIntro}>
               <div className={styles.sectionHeader}>
                 <div className={styles.sectionTitle}>배송지</div>
-                <Button size="small">주소록 보기</Button>
+                <Link
+                  to={mypagePath('address-manage')}
+                  className={styles.addressManageLink}
+                >
+                  <Settings size={20} />
+                  배송지 관리
+                </Link>
               </div>
               <div className={styles.note}>
                 ※ 기본 배송지로 자동 설정되었습니다. 주문 전 주소를 확인해
@@ -327,32 +201,37 @@ export function PaymentPage() {
               </div>
             </div>
 
-            <Input {...field('addressLabel', '배송지명', true)} />
-            <div className={styles.postcodeRow}>
+            <Input {...field('addressLabel', '배송지명')} />
+            <div className={styles.addressRow}>
               <Input
-                {...field('postcode', '우편 번호', true)}
-                inputMode="numeric"
+                {...field('address', '기본 주소')}
+                value={addressDisplay}
+                readOnly
               />
-              <Button className={styles.postcodeAction}>주소 찾기</Button>
+              <Button
+                className={styles.addressAction}
+                onClick={() => setAddressSearchOpen(true)}
+              >
+                주소 찾기
+              </Button>
             </div>
-            <Input {...field('address', '기본 주소', true)} />
-            <Input {...field('addressDetail', '상세 주소', true)} />
+            <Input {...field('addressDetail', '상세 주소')} />
           </section>
         </div>
 
         <OrderSummary
           rows={[
             { label: '상품 수', value: `${draft.quantity}개` },
-            { label: '주문 금액', value: won(orderAmount) },
+            { label: '주문 금액', value: formatWon(orderAmount) },
             {
               label: '사전예약 혜택',
-              value: `-${won(preorderBenefit)}`,
+              value: `-${formatWon(preorderBenefit)}`,
               highlight: true,
             },
           ]}
           totalLabel="결제 예정 금액"
-          totalValue={won(totalAmount)}
-          actionLabel={`${won(totalAmount)} 결제하기`}
+          totalValue={formatWon(totalAmount)}
+          actionLabel={`${formatWon(totalAmount)} 결제하기`}
           actionDisabled={!requiredAgreed}
           onAction={() => void handlePayment()}
         >
@@ -363,6 +242,12 @@ export function PaymentPage() {
           />
         </OrderSummary>
       </div>
+
+      <DaumPostcodeSearch
+        open={addressSearchOpen}
+        onOpenChange={setAddressSearchOpen}
+        onComplete={handleAddressComplete}
+      />
     </Container>
   )
 }

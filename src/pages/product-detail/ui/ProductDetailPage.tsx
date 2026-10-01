@@ -11,17 +11,20 @@ import { mockReviews, ReviewCard } from '@/entities/review'
 import {
   QuantityPriceDisplay,
   useProductPurchase,
+  type PurchaseDraft,
 } from '@/features/product-purchase'
 import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
 import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
+import { resultPath } from '@/shared/config/routes'
 import { color } from '@/shared/config/theme'
 import { Container, Slider, Button } from '@/shared/ui'
 import { ProductPageTab } from '@/widgets/product-page-tab'
 import type { ProductPageTabKey } from '@/widgets/product-page-tab'
 import { ProductPurchaseBar } from '@/widgets/product-purchase-bar'
 
+import { useProductDetailScroll } from '../model/useProductDetailScroll'
+
 import * as styles from './ProductDetailPage.css'
-import { useProductDetailScroll } from './useProductDetailScroll'
 
 // ponytail: 아직 상품 상세 API가 없어서 목업 옵션 데이터로 대체
 const colorSwatches = [
@@ -90,7 +93,7 @@ export function ProductDetailPage() {
   // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
   const handleCheckout = () => {
     if (!isCheckoutReady) return
-    const purchasePayload = {
+    const purchasePayload: PurchaseDraft = {
       productName: PRODUCT_NAME,
       colorLabel,
       optionLabel,
@@ -98,7 +101,7 @@ export function ProductDetailPage() {
       unitPrice: UNIT_PRICE,
     }
     // 사전예약 완료 후 뒤로가기로 상세에 돌아와 다시 제출하는 걸 막는다(결제는 되돌아가서 수정 가능해야 하므로 그대로 둠).
-    navigate(isPreorder ? '/result?status=preorder' : '/payment', {
+    navigate(isPreorder ? resultPath('preorder') : '/payment', {
       state: purchasePayload,
       replace: isPreorder,
     })
@@ -113,7 +116,7 @@ export function ProductDetailPage() {
     registerPanelRef,
     isSheetOpen,
     setIsSheetOpen,
-  } = useProductDetailScroll()
+  } = useProductDetailScroll(productId)
 
   return (
     <Container desktopPaddingX={0} mobilePaddingX={0}>

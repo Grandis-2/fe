@@ -22,6 +22,10 @@ const boxBase = style({
     '&:focus-within': {
       borderColor: color.primary.base,
     },
+    // 읽기 전용 칸은 편집 가능한 칸과 구분되게 깐다.
+    '&:has(input:read-only)': {
+      background: color.background.surface,
+    },
   },
 })
 

@@ -132,6 +132,7 @@ export const productHandlers: RequestHandler[] = [
     const params = new URL(request.url).searchParams
     const category = params.get('category')
     const subCategory = params.get('subCategory')
+    const brand = params.get('brand')
     const sort = params.get('sort')
     if (params.get('mock') === 'error') {
       return fail(500, { code: 'MOCK_ERROR', message: '목업 에러 응답입니다.' })
@@ -144,6 +145,7 @@ export const productHandlers: RequestHandler[] = [
           (!subCategory || group.subCategory === subCategory),
       )
       .flatMap((group) => group.cards)
+      .filter((card) => !brand || card.brand === brand)
     if (sort === 'PRICE_ASC') items.sort((a, b) => a.basePrice - b.basePrice)
     if (sort === 'PRICE_DESC') items.sort((a, b) => b.basePrice - a.basePrice)
 

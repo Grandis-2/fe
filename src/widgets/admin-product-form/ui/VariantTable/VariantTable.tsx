@@ -1,3 +1,4 @@
+import { formatNumber } from '@/shared/lib/formatNumber'
 import { Table } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
 
@@ -8,7 +9,6 @@ import * as styles from './VariantTable.css'
 import type { ProductColorOption, ProductOptionGroup } from '../../model/types'
 import type { ProductVariant } from '../../model/variants'
 
-
 export type VariantTableProps = {
   variants: ProductVariant[]
   colors: ProductColorOption[]
@@ -16,8 +16,6 @@ export type VariantTableProps = {
   quantities: Record<string, number>
   onQuantityChange: (key: string, quantity: number) => void
 }
-
-const numberFormatter = new Intl.NumberFormat('ko-KR')
 
 export function VariantTable({
   variants,
@@ -71,7 +69,7 @@ export function VariantTable({
       key: 'price',
       header: '가격',
       align: 'center',
-      render: (variant) => numberFormatter.format(variant.price),
+      render: (variant) => formatNumber(variant.price),
     },
     {
       key: 'quantity',

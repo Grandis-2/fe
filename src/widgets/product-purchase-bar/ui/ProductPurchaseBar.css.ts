@@ -1,7 +1,15 @@
 import { style, keyframes } from '@vanilla-extract/css'
 
-import { typography, color, spacing, motion } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import {
+  typography,
+  color,
+  spacing,
+  motion,
+  shadow,
+  breakpoint,
+  TAB_BAR_HEIGHT,
+  TAB_BAR_OFFSET,
+} from '@/shared/config/theme'
 
 export const productName = style([typography.title.lgSemibold])
 export const productOption = style([
@@ -25,6 +33,19 @@ export const bottomBarGroup = style({
     [breakpoint.desktop]: {
       top: 0,
       bottom: 'auto',
+      // 안의 orderBar가 translateY로 화면 밖에 숨어 있어도 이 컨테이너의 레이아웃
+      // 박스(=orderBar 높이)는 헤더와 같은 자리에 그대로 남아 클릭을 가로챈다 —
+      // 평소엔 이벤트를 통과시키고, orderBar가 실제로 보일 때만(bottomBarGroupVisible)
+      // 되살린다.
+      pointerEvents: 'none',
+    },
+  },
+})
+
+export const bottomBarGroupVisible = style({
+  '@media': {
+    [breakpoint.desktop]: {
+      pointerEvents: 'auto',
     },
   },
 })
@@ -37,6 +58,10 @@ export const orderBar = style({
   backdropFilter: 'blur(12px)',
   WebkitBackdropFilter: 'blur(12px)',
   '@media': {
+    // 모바일 탭바가 바 아래쪽에 떠 있으므로 그만큼 바 배경을 늘려 버튼이 가리지 않게 한다.
+    [breakpoint.mobile]: {
+      paddingBottom: `calc(${TAB_BAR_HEIGHT} + ${TAB_BAR_OFFSET})`,
+    },
     [breakpoint.desktop]: {
       transform: 'translateY(-100%)',
       transition: `transform ${motion.duration.fast} ${motion.easing.default}`,
@@ -190,7 +215,7 @@ export const sheet = style({
   borderRadius: '20px 20px 0 0',
   padding: `${spacing[8]} ${spacing[20]} ${spacing[24]}`,
   // 프로젝트에서 쓰는 그림자 색(Calendar 등)과 맞춘다 — 순검정 대신 text.primary 계열.
-  boxShadow: '0 -8px 24px rgba(26, 26, 29, 0.12)',
+  boxShadow: shadow.up,
   animation: `${slideUp} ${motion.duration.fast} ${motion.easing.default}`,
   '@media': {
     [breakpoint.desktop]: {

@@ -5,6 +5,11 @@ import {
   type ProductPaymentCardItem,
 } from '@/entities/product'
 import {
+  mypagePath,
+  RESULT_STATUSES,
+  type ResultStatus,
+} from '@/shared/config/routes'
+import {
   Button,
   Container,
   InlineAlert,
@@ -17,11 +22,8 @@ import * as styles from './ResultPage.css'
 
 // 예약 완료 / 결제 완료 / 결제 실패 — 배너와 본문 유무만 갈리고 뼈대를 공유해서 한 페이지로 둔다.
 // 진입할 때 ?status=preorder|paid|failed로 고른다.
-const STATUSES = ['preorder', 'paid', 'failed'] as const
-type ResultStatus = (typeof STATUSES)[number]
-
 const isResultStatus = (value: string | null): value is ResultStatus =>
-  STATUSES.includes(value as ResultStatus)
+  RESULT_STATUSES.includes(value as ResultStatus)
 
 const hero = {
   preorder: {
@@ -74,9 +76,7 @@ export function ResultPage() {
 
   const goHome = () => void navigate('/')
   const goHistory = () =>
-    void navigate(
-      isPreorder ? '/mypage?state=preorder-check' : '/mypage?state=history',
-    )
+    void navigate(mypagePath(isPreorder ? 'preorder-check' : 'history'))
 
   const infos = [
     { label: '주문 번호', value: order.orderNumber },

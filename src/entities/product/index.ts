@@ -1,4 +1,4 @@
-export { ProductCard } from './ui/ProductCard'
+export { ProductCard, toProductCardData } from './ui/ProductCard'
 export type {
   ProductCardProps,
   ProductCardData,

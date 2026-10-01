@@ -1,7 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import { color, spacing, breakpoint } from '@/shared/config/theme'
 
 // 데스크톱에선 2열 그리드 — 전체 선택 줄은 1행(왼쪽 칸)만 차지하고, 상품 목록과 리모컨이
 // 나란히 2행에서 시작한다. 그래서 리모컨 윗변이 전체 선택 아래 구분선과 맞는다.

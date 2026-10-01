@@ -8,6 +8,7 @@ import {
   getAdminProductStocks,
   type AdminProductStock,
 } from '@/entities/admin-product'
+import { formatNumber, formatWon } from '@/shared/lib/formatNumber'
 import { SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
 import {
@@ -31,8 +32,6 @@ const DEFAULT_TAB: TabValue = 'stock'
 const isTabValue = (value: string | null): value is TabValue =>
   tabs.some((tab) => tab.value === value)
 
-const numberFormatter = new Intl.NumberFormat('ko-KR')
-
 const stockColumns: TableColumn<AdminProductStock>[] = [
   { key: 'color', header: '색상', align: 'center', render: (row) => row.color },
   {
@@ -45,19 +44,19 @@ const stockColumns: TableColumn<AdminProductStock>[] = [
     key: 'totalCount',
     header: '총수량',
     align: 'center',
-    render: (row) => numberFormatter.format(row.totalCount),
+    render: (row) => formatNumber(row.totalCount),
   },
   {
     key: 'price',
     header: '가격',
     align: 'center',
-    render: (row) => `${numberFormatter.format(row.price)}원`,
+    render: (row) => formatWon(row.price),
   },
   {
     key: 'confirmedCount',
     header: '확정',
     align: 'center',
-    render: (row) => `${numberFormatter.format(row.confirmedCount)}건`,
+    render: (row) => `${formatNumber(row.confirmedCount)}건`,
   },
   {
     key: 'remainingCount',
@@ -72,7 +71,7 @@ const stockColumns: TableColumn<AdminProductStock>[] = [
             : styles.remaining
         }
       >
-        {`${numberFormatter.format(row.remainingCount)}건`}
+        {`${formatNumber(row.remainingCount)}건`}
       </span>
     ),
   },

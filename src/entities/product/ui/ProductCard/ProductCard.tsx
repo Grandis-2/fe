@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 
 import { typography } from '@/shared/config/theme'
+import { formatNumber } from '@/shared/lib/formatNumber'
 import { Slider, Tag } from '@/shared/ui'
 
 import { ProductColorSwatches } from '../ProductColorSwatches'
@@ -113,7 +114,7 @@ export function ProductCard({
               ' ',
             )}
           >
-            {totalPrice.toLocaleString()}
+            {formatNumber(totalPrice)}
           </span>
           <span
             className={[typography.title.mdSemibold, styles.priceUnit].join(

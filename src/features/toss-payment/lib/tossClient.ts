@@ -4,6 +4,6 @@ import { loadTossPayments } from '@tosspayments/tosspayments-sdk'
 let client: ReturnType<typeof loadTossPayments> | null = null
 
 export function getTossPayments() {
-  client ??= loadTossPayments(import.meta.env.VITE_TOSS_CLIENT_KEY)
+  client ??= loadTossPayments(import.meta.env.VITE_TOSS_PAYMENTS_CLIENT_KEY)
   return client
 }

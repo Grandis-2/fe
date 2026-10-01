@@ -18,8 +18,8 @@ export const Default: Story = {
       id: '1',
       imageSrc: placeholderImage,
       title: 'NOVA Phone 사전예약 혜택',
-      opens_at: '2026.09.01',
-      closes_at: '2026.09.17',
+      opensAt: '2026.09.01',
+      closesAt: '2026.09.17',
     },
   },
 }

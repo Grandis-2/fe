@@ -22,7 +22,8 @@ import { ProductDetailPage } from '@/pages/product-detail'
 import { ResultPage } from '@/pages/result'
 import { ReviewsPage } from '@/pages/reviews'
 import { SearchPage } from '@/pages/search'
-import { SignupPage, SIGNUP_PATH } from '@/pages/signup'
+import { SignupPage } from '@/pages/signup'
+import { SIGNUP_PATH } from '@/shared/config/routes'
 
 export const router = createBrowserRouter([
   {

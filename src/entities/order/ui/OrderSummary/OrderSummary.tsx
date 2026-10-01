@@ -64,9 +64,7 @@ export function OrderSummary({
         <div className={[typography.body.subMedium, styles.rowLabel].join(' ')}>
           {totalLabel}
         </div>
-        <div
-          className={[typography.title.lgSemibold, styles.totalValue].join(' ')}
-        >
+        <div className={typography.title.lgSemibold}>
           <PriceText value={totalValue} />
         </div>
       </div>

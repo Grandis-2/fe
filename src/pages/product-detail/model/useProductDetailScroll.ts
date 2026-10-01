@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { useParams } from 'react-router'
-
 import type { ProductPageTabKey } from '@/widgets/product-page-tab'
 
 // 스티키 주문바/탭바가 스크롤 위치에 따라 나타나고, 탭 패널의 스크롤 위치로
 // 활성 탭을 동기화하는 로직을 모아둔 훅. ProductDetailPage 전용이라 여기 colocate.
-export function useProductDetailScroll() {
+export function useProductDetailScroll(productId: string) {
   const panelRefs = useRef<Partial<Record<ProductPageTabKey, HTMLDivElement>>>(
     {},
   )
@@ -16,7 +14,6 @@ export function useProductDetailScroll() {
   const [orderBarHeight, setOrderBarHeight] = useState(0)
   const [activeTab, setActiveTab] = useState<ProductPageTabKey>('benefits')
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  const { productId } = useParams()
 
   // 상품이 바뀌면(다른 상품으로 이동 포함) 렌더링 중에 바로 닫는다 — 이펙트에서
   // setState하면 리렌더가 한 번 더 발생해 react-hooks/set-state-in-effect에 걸린다.

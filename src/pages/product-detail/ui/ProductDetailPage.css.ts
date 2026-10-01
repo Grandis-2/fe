@@ -1,7 +1,12 @@
 import { style } from '@vanilla-extract/css'
 
-import { typography, color, spacing, motion } from '@/shared/config/theme'
-import { breakpoint } from '@/shared/config/theme/tokens/breakpoint'
+import {
+  typography,
+  color,
+  spacing,
+  motion,
+  breakpoint,
+} from '@/shared/config/theme'
 import { maxWidth } from '@/shared/config/theme/tokens/container'
 
 export const contentPadding = style({

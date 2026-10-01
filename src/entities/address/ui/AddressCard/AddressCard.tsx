@@ -2,60 +2,35 @@ import { typography } from '@/shared/config/theme'
 
 import * as styles from './AddressCard.css'
 
-export type AddressCardData = {
-  id: string
-  label: string
-  recipientName: string
-  phone: string
-  fullAddress: string
-  isDefault?: boolean
-}
+import type { DefaultAddress } from '../../model/defaultAddress'
 
 export type AddressCardProps = {
-  address: AddressCardData
-  onEdit?: (id: string) => void
-  onDelete?: (id: string) => void
+  address: DefaultAddress
+  onEdit?: () => void
   className?: string
 }
 
-export function AddressCard({
-  address,
-  onEdit,
-  onDelete,
-  className,
-}: AddressCardProps) {
+export function AddressCard({ address, onEdit, className }: AddressCardProps) {
+  const fullAddress = [address.line1, address.line2].filter(Boolean).join(' ')
+
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      <div className={styles.header}>
-        <div className={[typography.body.defaultMedium, styles.label].join(' ')}>
-          {address.label}
-        </div>
-        {address.isDefault && (
-          <span className={[typography.body.caption, styles.badge].join(' ')}>
-            기본 배송지
-          </span>
-        )}
+      <div className={[typography.body.defaultMedium, styles.label].join(' ')}>
+        기본 배송지
       </div>
       <div className={[typography.body.sub, styles.recipient].join(' ')}>
-        {address.recipientName} · {address.phone}
+        {address.name} · {address.phone}
       </div>
       <div className={[typography.body.sub, styles.fullAddress].join(' ')}>
-        {address.fullAddress}
+        {fullAddress}
       </div>
       <div className={styles.actionRow}>
         <button
           type="button"
           className={styles.action}
-          onClick={() => onEdit?.(address.id)}
+          onClick={() => onEdit?.()}
         >
           수정
-        </button>
-        <button
-          type="button"
-          className={styles.action}
-          onClick={() => onDelete?.(address.id)}
-        >
-          삭제
         </button>
       </div>
     </div>

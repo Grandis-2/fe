@@ -10,7 +10,8 @@ export const root = style({
   width: '202px',
   padding: spacing[20],
   borderRadius: '12px',
-  background: color.background.surface,
+  background: color.background.base,
+  border: `1px solid ${color.border.default}`,
 })
 
 export const heading = style({

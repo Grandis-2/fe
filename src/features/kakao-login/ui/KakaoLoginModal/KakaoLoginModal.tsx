@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { typography } from '@/shared/config/theme'
-import { InlineAlert, useModalTitleId } from '@/shared/ui'
+import { InlineAlert, ModalTitle } from '@/shared/ui'
 
 import { getKakaoAuthorizeUrl } from '../../lib/getKakaoAuthorizeUrl'
 
@@ -13,16 +13,14 @@ const FALLBACK_ERROR = '로그인을 시작할 수 없습니다. 다시 시도�
 // 여기선 내용만 만들고, 여는 쪽이 useModalStore.open(<KakaoLoginModal />)로 띄운다.
 export function KakaoLoginModal() {
   const [error, setError] = useState<string | null>(null)
-  const titleId = useModalTitleId()
 
   return (
     <div className={styles.content}>
-      <div
-        id={titleId}
+      <ModalTitle
         className={[typography.title.lgSemibold, styles.title].join(' ')}
       >
         로그인
-      </div>
+      </ModalTitle>
       <div className={[typography.body.sub, styles.description].join(' ')}>
         카카오 계정으로 간편하게 시작하세요
       </div>

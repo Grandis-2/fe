@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef } from 'react'
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 
 import { X } from 'lucide-react'
 
@@ -10,9 +10,11 @@ export type ModalProps = {
   open: boolean
   onClose: () => void
   children: ReactNode
+  // 인라인이라 기본값(0)을 항상 이긴다 — 예: padding={spacing[24]}
+  padding?: CSSProperties['padding']
 }
 
-export function Modal({ open, onClose, children }: ModalProps) {
+export function Modal({ open, onClose, children, padding }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null)
   const titleId = useId()
 
@@ -31,6 +33,7 @@ export function Modal({ open, onClose, children }: ModalProps) {
     <dialog
       ref={dialogRef}
       className={styles.dialog}
+      style={{ padding }}
       aria-labelledby={titleId}
       onClose={onClose}
       onClick={(event) => {

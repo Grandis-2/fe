@@ -36,5 +36,3 @@ export const useSessionStore = createStore<SessionStore>((set) => ({
     }),
   markProfileComplete: () => set({ profileComplete: true }),
 }))
-
-export const isLoggedIn = () => useSessionStore.getState().sessionToken !== null

@@ -2,15 +2,11 @@ import { typography } from '@/shared/config/theme'
 
 import * as styles from './ReviewCard.css'
 
+import type { Review } from '../../model/review'
+
 const MAX_RATING = 5
 
-export type ReviewCardProps = {
-  thumbnailSrc?: string
-  rating: number
-  reviewText: string
-  productName: string
-  maskedAuthorName: string
-  date: string
+export type ReviewCardProps = Omit<Review, 'id'> & {
   className?: string
 }
 

@@ -1,2 +1,3 @@
 export * from './Modal'
-export { useModalTitleId } from './ModalTitleIdContext'
+export { ModalTitle } from './ModalTitle'
+export type { ModalTitleProps } from './ModalTitle'

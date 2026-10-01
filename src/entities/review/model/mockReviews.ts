@@ -1,9 +1,7 @@
 import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
 import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
 
-import type { ReviewCardProps } from '../ui/ReviewCard'
-
-export type Review = Omit<ReviewCardProps, 'className'> & { id: string }
+import type { Review } from './review'
 
 // ponytail: 아직 리뷰 API가 없어서 목업 후기로 대체 — API가 붙으면 entities/review/api로 교체.
 // 상품 상세 구매후기 탭과 /reviews 페이지가 같이 쓴다.

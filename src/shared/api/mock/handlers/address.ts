@@ -2,6 +2,7 @@ import { http } from 'msw'
 
 import { fail, ok } from '../response'
 import { url } from '../url'
+import { codePointLength } from '../validate'
 
 import type {
   ApiViolation,
@@ -22,9 +23,6 @@ const LIMITS: Record<keyof DefaultAddress, number> = {
   line1: 200,
   line2: 200,
 }
-
-// 코드포인트 기준 — 서버와 동일하게 이모지 1개를 1로 센다(11-frontend-guide.md §7).
-const codePointLength = (value: string) => [...value].length
 
 function validate(body: Partial<PutDefaultAddressRequest> | null) {
   const violations: ApiViolation[] = []

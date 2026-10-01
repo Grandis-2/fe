@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { confirmPayment } from '@/entities/payment'
+import { resultPath } from '@/shared/config/routes'
 
 export function PaymentCallbackPage() {
   const [searchParams] = useSearchParams()
@@ -23,13 +24,13 @@ export function PaymentCallbackPage() {
     // 실패 사유는 이미 만들어둔 /result?status=failed 화면에서 안내하므로 여기서는
     // 바로 넘긴다.
     if (!paymentKey || !orderId || !amount) {
-      navigate('/result?status=failed', { replace: true })
+      navigate(resultPath('failed'), { replace: true })
       return
     }
 
     confirmPayment({ paymentKey, orderId, amount: Number(amount) })
-      .then(() => navigate('/result?status=paid', { replace: true }))
-      .catch(() => navigate('/result?status=failed', { replace: true }))
+      .then(() => navigate(resultPath('paid'), { replace: true }))
+      .catch(() => navigate(resultPath('failed'), { replace: true }))
   }, [navigate, searchParams])
 
   return <div>결제를 확인하고 있습니다…</div>
