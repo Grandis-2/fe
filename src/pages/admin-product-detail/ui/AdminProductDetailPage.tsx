@@ -131,7 +131,8 @@ export function AdminProductDetailPage() {
     },
     {
       key: 'confirmedCount',
-      header: '확정',
+      // 같은 reservedQuantity지만 일반 판매에는 '확정' 단계가 없어 팔린 수량으로 읽힌다.
+      header: product && isPreorder(product) ? '확정' : '판매',
       align: 'center',
       render: (row) => `${formatNumber(row.confirmedCount)}건`,
     },
