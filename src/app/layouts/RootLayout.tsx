@@ -2,11 +2,12 @@ import { useEffect } from 'react'
 
 import { Outlet, useLocation, useNavigate } from 'react-router'
 
-import { logout, useSession } from '@/entities/auth'
-import { SIGNUP_PATH } from '@/pages/signup'
+import { useSession } from '@/entities/auth'
+import { SIGNUP_PATH } from '@/shared/config/routes'
 import { useModalStore } from '@/shared/model/modalStore'
 import { Modal } from '@/shared/ui'
 import { Header } from '@/widgets/header'
+import { MobileTabBar } from '@/widgets/mobile-tab-bar'
 
 export function RootLayout() {
   const { isLoggedIn, profileComplete } = useSession()
@@ -15,6 +16,12 @@ export function RootLayout() {
   const closeModal = useModalStore((state) => state.close)
   const location = useLocation()
   const navigate = useNavigate()
+
+  // react-router는 페이지 이동 시 스크롤 위치를 유지한다 — 목록 스크롤 후 상세로
+  // 들어가면 새 페이지가 그 위치에서 시작해 버리므로 경로가 바뀔 때마다 맨 위로 올린다.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [location.pathname])
 
   // profileComplete는 로그인/재발급/세션조회 세 경로 어디로 채워지든 여기 한 곳에서만
   // 본다 — 경로별로 나눠 검사하면 새로고침(재발급) 경로로 돌아온 사용자가 이 검사를
@@ -37,16 +44,9 @@ export function RootLayout() {
 
   return (
     <>
-      <Header
-        isMember={isLoggedIn}
-        onLogoutClick={() => {
-          // 로컬 세션은 logout() 안에서 항상 지워진다 — 서버 호출 실패만 알려준다.
-          logout().catch(() => {
-            alert('로그아웃 처리 중 문제가 발생했습니다. 다시 시도해 주세요.')
-          })
-        }}
-      />
+      <Header isMember={isLoggedIn} />
       <Outlet />
+      <MobileTabBar />
       <Modal open={isModalOpen} onClose={closeModal}>
         {modalContent}
       </Modal>

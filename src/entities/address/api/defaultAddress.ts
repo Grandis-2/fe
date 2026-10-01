@@ -1,17 +1,24 @@
 import { apiClient } from '@/shared/api/client'
-import type {
-  DefaultAddressResponse,
-  PutDefaultAddressRequest,
-} from '@/shared/api/types'
+import type { DefaultAddressResponse } from '@/shared/api/types'
 
-// 마이페이지에서 관리하는 여러 배송지(AddressCard)와는 다른, 결제 화면에
-// 자동으로 채워 넣을 "기본 배송지" 하나다(11-frontend-guide.md §7).
-export const getDefaultAddress = () =>
-  apiClient.request<DefaultAddressResponse>('/api/v1/me/default-address')
+import type { DefaultAddress } from '../model/defaultAddress'
+
+const PATH = '/api/v1/me/default-address'
+
+// 서버는 { shippingAddress } 봉투로 내려준다 — 화면은 주소 하나(없으면 null)만 본다.
+export const getDefaultAddress = async (): Promise<DefaultAddress | null> => {
+  const { shippingAddress } =
+    await apiClient.request<DefaultAddressResponse>(PATH)
+  return shippingAddress
+}
 
 // 다섯 칸을 항상 통째로 보낸다 — 부분 수정 없음.
-export const putDefaultAddress = (body: PutDefaultAddressRequest) =>
-  apiClient.request<DefaultAddressResponse>('/api/v1/me/default-address', {
-    method: 'PUT',
-    body,
-  })
+export const putDefaultAddress = async (
+  body: DefaultAddress,
+): Promise<DefaultAddress | null> => {
+  const { shippingAddress } = await apiClient.request<DefaultAddressResponse>(
+    PATH,
+    { method: 'PUT', body },
+  )
+  return shippingAddress
+}

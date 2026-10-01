@@ -3,6 +3,7 @@ import type {
   ProductOptionGroup,
   ProductVariant,
 } from '@/entities/admin-product'
+import { formatNumber } from '@/shared/lib/formatNumber'
 import { Table } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
 
@@ -17,8 +18,6 @@ export type VariantTableProps = {
   quantities: Record<string, number>
   onQuantityChange: (key: string, quantity: number) => void
 }
-
-const numberFormatter = new Intl.NumberFormat('ko-KR')
 
 export function VariantTable({
   variants,
@@ -72,7 +71,7 @@ export function VariantTable({
       key: 'price',
       header: '가격',
       align: 'center',
-      render: (variant) => numberFormatter.format(variant.price),
+      render: (variant) => formatNumber(variant.price),
     },
     {
       key: 'quantity',

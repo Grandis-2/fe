@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { Button } from '@/shared/ui/Button'
-import { useModalTitleId } from '@/shared/ui/Modal'
+import { ModalTitle } from '@/shared/ui/Modal'
 
 import * as styles from './ConfirmDialog.css'
 
@@ -27,13 +27,9 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const titleId = useModalTitleId()
-
   return (
     <div className={styles.content}>
-      <div id={titleId} className={styles.title}>
-        {title}
-      </div>
+      <ModalTitle className={styles.title}>{title}</ModalTitle>
       {description && <div className={styles.description}>{description}</div>}
       <div className={styles.actions}>
         <Button onClick={onConfirm}>{confirmLabel}</Button>

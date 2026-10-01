@@ -25,11 +25,13 @@ function buildCards(
   basePrice: number,
   name = 'NOVA MacBook Neo',
   saleMode: SaleMode = 'IN_STOCK',
+  brandOf?: (index: number) => string | undefined,
 ): ProductCardSummaryDto[] {
   return Array.from({ length: count }, (_, i) => ({
     productId: `${idPrefix}-${i + 1}`,
     name: `${name} ${i + 1}`,
     modelNumber: 'MB-NEO',
+    brand: brandOf?.(i),
     basePrice: basePrice + i * 50000,
     saleMode,
     colors,
@@ -52,8 +54,10 @@ const SEARCH_CATEGORIES: Record<string, [string, number, number, SaleMode?][]> =
     ],
     'PC/주변기기': [
       ['노트북', 6, 1290000],
+      ['데스크탑', 4, 1590000],
       ['모니터', 4, 450000],
-      ['키보드/마우스', 7, 89000],
+      ['키보드', 4, 89000],
+      ['마우스', 3, 59000],
     ],
     웨어러블: [
       ['스마트워치', 5, 390000],
@@ -61,6 +65,10 @@ const SEARCH_CATEGORIES: Record<string, [string, number, number, SaleMode?][]> =
       ['스마트밴드', 2, 79000],
     ],
   }
+
+// 모바일 카테고리만 헤더 메가 메뉴의 브랜드 필터(Apple/Samsung)에 쓸 브랜드가 있다 —
+// 로고 이미지가 그 둘뿐이라 카드도 절반씩 나눠 채운다.
+const mobileBrandOf = (i: number) => (i % 2 === 0 ? 'Apple' : 'Samsung')
 
 export const searchProductCardGroups = Object.entries(
   SEARCH_CATEGORIES,
@@ -75,6 +83,7 @@ export const searchProductCardGroups = Object.entries(
       basePrice,
       `NOVA ${subCategory}`,
       saleMode,
+      category === '모바일' ? mobileBrandOf : undefined,
     ),
   })),
 )

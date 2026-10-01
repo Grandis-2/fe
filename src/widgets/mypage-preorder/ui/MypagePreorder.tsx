@@ -39,7 +39,7 @@ const pad = (value: number) => String(value).padStart(2, '0')
 
 // 예약 건마다 마감이 달라 카운트다운도 건별로 돌아야 한다.
 // 훅은 반복문 안에서 못 쓰므로 한 건을 담당하는 컴포넌트로 분리한다.
-function PreorderCard({ item }: { item: PreorderItem }) {
+function PaymentDueCard({ item }: { item: PreorderItem }) {
   const navigate = useNavigate()
   const { days, hours, minutes, seconds, isOver } = useCountdown(
     item.paymentDueAt,
@@ -87,7 +87,7 @@ export function MypagePreorder() {
   return (
     <div className={styles.root}>
       {preorderItems.map((item) => (
-        <PreorderCard key={item.id} item={item} />
+        <PaymentDueCard key={item.id} item={item} />
       ))}
     </div>
   )

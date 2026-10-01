@@ -102,7 +102,7 @@ async function runRefresh(): Promise<boolean> {
 configureApiAuth({
   getAuthHeaders: (): Record<string, string> => {
     const token = useSessionStore.getState().sessionToken
-    return token ? { 'X-Session-Token': token } : {}
+    return token ? { Authorization: `Bearer ${token}` } : {}
   },
   onUnauthorized: ensureFreshSession,
 })

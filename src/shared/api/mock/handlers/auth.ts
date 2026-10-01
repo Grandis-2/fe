@@ -2,6 +2,7 @@ import { http } from 'msw'
 
 import { fail, ok } from '../response'
 import { url } from '../url'
+import { codePointLength } from '../validate'
 
 import type {
   AdminLoginRequest,
@@ -96,8 +97,6 @@ const PROFILE_LIMITS: Record<keyof UpdateProfileRequest, number> = {
   phoneNumber: 20,
 }
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-// 코드포인트 기준 — 서버와 동일하게 이모지 1개를 1로 센다.
-const codePointLength = (value: string) => [...value].length
 
 function validateProfile(body: Partial<UpdateProfileRequest> | null) {
   const violations: ApiViolation[] = []
@@ -135,6 +134,12 @@ function parseCookies(header: string): Record<string, string> {
       return [key, rest.join('=')]
     }),
   )
+}
+
+// 서버와 같은 계약 — `Authorization: Bearer <sessionToken>`에서 토큰만 뗀다.
+function readSessionToken(request: Request) {
+  const header = request.headers.get('Authorization')
+  return header?.startsWith('Bearer ') ? header.slice('Bearer '.length) : null
 }
 
 function issueSession(record: SessionRecord) {
@@ -209,7 +214,7 @@ export const authHandlers: RequestHandler[] = [
   }),
 
   http.get(url('/api/v1/session'), ({ request }) => {
-    const token = request.headers.get('X-Session-Token')
+    const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (!record) {
       return fail(401, {
@@ -221,7 +226,7 @@ export const authHandlers: RequestHandler[] = [
   }),
 
   http.delete(url('/api/v1/session'), ({ request }) => {
-    const token = request.headers.get('X-Session-Token')
+    const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (token) sessions.delete(token)
     saveDB()
@@ -254,7 +259,7 @@ export const authHandlers: RequestHandler[] = [
   }),
 
   http.get(url('/api/v1/me/profile'), ({ request }) => {
-    const token = request.headers.get('X-Session-Token')
+    const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (!record) {
       return fail(401, {
@@ -266,7 +271,7 @@ export const authHandlers: RequestHandler[] = [
   }),
 
   http.put(url('/api/v1/me/profile'), async ({ request }) => {
-    const token = request.headers.get('X-Session-Token')
+    const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (!record) {
       return fail(401, {

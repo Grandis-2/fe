@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router'
+import { Link } from 'react-router'
 
 import * as styles from './PreorderCard.css'
 
@@ -7,8 +7,8 @@ export type PreorderCardData = {
   imageSrc: string
   imageAlt?: string
   title: string
-  opens_at: string
-  closes_at: string
+  opensAt: string
+  closesAt: string
 }
 
 export type PreorderCardProps = {
@@ -17,19 +17,19 @@ export type PreorderCardProps = {
 }
 
 export function PreorderCard({ data, className }: PreorderCardProps) {
-  const { imageSrc, imageAlt = '', title, opens_at, closes_at } = data
-  const navigate = useNavigate()
+  const { imageSrc, imageAlt = '', title, opensAt, closesAt } = data
 
   return (
-    <div
+    // div onClick이 아니라 링크 — 키보드 포커스·새 탭 열기·스크린리더가 링크로 인식한다.
+    <Link
+      to={`/preorder/${data.id}`}
       className={[styles.root, className].filter(Boolean).join(' ')}
-      onClick={() => navigate(`/preorder/${data.id}`)}
     >
       <img src={imageSrc} alt={imageAlt} className={styles.image} />
       <div className={styles.body}>
         <div className={styles.title}>{title}</div>
-        <div className={styles.period}>{`${opens_at} ~ ${closes_at}`}</div>
+        <div className={styles.period}>{`${opensAt} ~ ${closesAt}`}</div>
       </div>
-    </div>
+    </Link>
   )
 }

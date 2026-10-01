@@ -6,6 +6,7 @@ import { type CartItem } from '@/entities/cart'
 import { OrderSummary } from '@/entities/order'
 import { ProductPaymentCard } from '@/entities/product'
 import { typography } from '@/shared/config/theme'
+import { formatWon } from '@/shared/lib/formatNumber'
 import { Checkbox } from '@/shared/ui'
 
 import * as styles from './MypageCart.css'
@@ -50,8 +51,6 @@ const cartItems: CartItem[] = Array.from({ length: 50 }, (_, index) => ({
   quantity: 1,
   ...products[index % products.length],
 }))
-
-const won = (value: number) => `${value.toLocaleString('ko-KR')}원`
 
 export function MypageCart() {
   const navigate = useNavigate()
@@ -115,7 +114,7 @@ export function MypageCart() {
               modelNumber: item.modelNumber,
               optionSummary: item.optionSummary,
               quantityLabel: `수량 ${item.quantity}개`,
-              priceLabel: won(item.price * item.quantity),
+              priceLabel: formatWon(item.price * item.quantity),
             }}
             checked={selectedIds.has(item.id)}
             onCheckedChange={(checked) => toggleOne(item.id, checked)}
@@ -129,10 +128,10 @@ export function MypageCart() {
         className={styles.remote}
         rows={[
           { label: '상품 수', value: `${selectedIds.size}개` },
-          { label: '상품 금액', value: won(selectedTotal) },
+          { label: '상품 금액', value: formatWon(selectedTotal) },
           { label: '배송비', value: '무료' },
         ]}
-        totalValue={won(selectedTotal)}
+        totalValue={formatWon(selectedTotal)}
         actionLabel="결제하기"
         actionDisabled={selectedIds.size === 0}
         onAction={() => navigate('/payment')}

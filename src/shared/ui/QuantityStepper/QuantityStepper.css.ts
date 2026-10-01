@@ -10,6 +10,7 @@ export const root = style({
   height: '30px',
   border: `1px solid ${color.border.default}`,
   borderRadius: '6px',
+  background: color.background.base,
 })
 
 export const step = style({

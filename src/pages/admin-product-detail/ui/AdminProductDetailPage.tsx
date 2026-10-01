@@ -18,6 +18,7 @@ import {
   type AdminProductStock,
   type AdminStockItemModel,
 } from '@/entities/admin-product'
+import { formatNumber, formatWon } from '@/shared/lib/formatNumber'
 import { Button, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
 import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
@@ -38,8 +39,6 @@ const DEFAULT_TAB: TabValue = 'stock'
 
 const isTabValue = (value: string | null): value is TabValue =>
   tabs.some((tab) => tab.value === value)
-
-const numberFormatter = new Intl.NumberFormat('ko-KR')
 
 export function AdminProductDetailPage() {
   const navigate = useNavigate()
@@ -115,25 +114,25 @@ export function AdminProductDetailPage() {
       key: 'totalCount',
       header: '총수량',
       align: 'center',
-      render: (row) => numberFormatter.format(row.totalCount),
+      render: (row) => formatNumber(row.totalCount),
     },
     {
       key: 'price',
       header: '가격',
       align: 'center',
-      render: (row) => `${numberFormatter.format(row.price)}원`,
+      render: (row) => formatWon(row.price),
     },
     {
       key: 'confirmedCount',
       header: '확정',
       align: 'center',
-      render: (row) => `${numberFormatter.format(row.confirmedCount)}건`,
+      render: (row) => `${formatNumber(row.confirmedCount)}건`,
     },
     {
       key: 'remainingCount',
       header: '잔여',
       align: 'center',
-      render: (row) => `${numberFormatter.format(row.remainingCount)}건`,
+      render: (row) => `${formatNumber(row.remainingCount)}건`,
     },
   ]
 

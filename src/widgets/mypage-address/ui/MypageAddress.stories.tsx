@@ -12,8 +12,11 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// Storybook엔 API가 없어 배송지 조회가 실패한다 — 등록된 배송지가 없는 빈 상태가 보인다.
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('기본 배송지')).toBeInTheDocument()
+    await expect(
+      await canvas.findByText('등록된 배송지가 없습니다.'),
+    ).toBeInTheDocument()
   },
 }

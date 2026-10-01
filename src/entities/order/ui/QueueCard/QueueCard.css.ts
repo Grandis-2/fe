@@ -30,13 +30,6 @@ export const headlineAccent = style({
   color: color.primary.base,
 })
 
-export const icon = style({
-  width: '24px',
-  height: '24px',
-  flexShrink: 0,
-  color: color.text.tertiary,
-})
-
 export const productName = style({ color: color.text.secondary, width: '100%' })
 
 export const panel = style({
@@ -95,7 +88,10 @@ export const progressMark = style({
   color: color.text.inverse,
 })
 
-export const noticeText = style({ color: color.text.secondary, margin: 0 })
+export const noticeText = style({
+  color: color.text.tertiary,
+  margin: '0 auto',
+})
 
 export const divider = style({
   width: '100%',

@@ -20,6 +20,7 @@ export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const category = searchParams.get('category') ?? undefined
   const subCategory = searchParams.get('subCategory') ?? undefined
+  const brand = searchParams.get('brand') ?? undefined
   const sort = SORT_OPTIONS.find(
     ({ value }) => value === searchParams.get('sort'),
   )
@@ -27,6 +28,7 @@ export function SearchPage() {
   const { data, isPending, isError } = useSearchProductCards({
     category,
     subCategory,
+    brand,
     sort: sort?.value,
   })
   const { getCardProps } = useProductCardSelection()
@@ -47,7 +49,7 @@ export function SearchPage() {
     setIsSortOpen(false)
   }
 
-  const breadcrumb = [category ?? '전체', subCategory].filter(
+  const breadcrumb = [category ?? '전체', brand, subCategory].filter(
     (label) => label !== undefined,
   )
 

@@ -1,7 +1,6 @@
 import { globalStyle, style, styleVariants } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@/shared/config/theme'
-import { maxWidth } from '@/shared/config/theme/tokens/container'
 
 export const root = style({
   display: 'flex',
@@ -47,6 +46,7 @@ export const links = style([
 ])
 
 export const divider = style({
+  padding: `0 ${NAV_LINK_PADDING_X}`,
   fontSize: '10px',
   color: color.border.default,
 })
@@ -190,21 +190,24 @@ globalStyle(`body:has(${brand}:hover)::after`, {
   },
 })
 
-// 패널은 가로 전체를 덮지만 내용은 헤더 콘텐츠와 같은 1200px 박스 안에 맞춘다.
+// 내용도 헤더 콘텐츠(Header.css의 content)처럼 뷰포트 전체 너비를 쓰고 좌우 여백만
+// 맞춘다 — 로고 아래에서 타일이 시작하고, "더 알아보기"는 액션 아이콘 아래 끝에 붙는다.
 export const menuInner = style({
   display: 'flex',
   alignItems: 'stretch',
   gap: spacing[40],
-  boxSizing: 'border-box',
-  maxWidth: maxWidth.content,
-  margin: '0 auto',
-  padding: `0 ${spacing[20]}`,
+  padding: `0 ${spacing[40]}`,
 })
 
 export const menuCategories = style({
   display: 'flex',
   gap: spacing[16],
 })
+
+// 이 행 안의 타일(menuTile/menuTileWithThumbnail)만 고정 폭으로 맞춘다 — 같은
+// 클래스를 쓰는 모바일 바텀시트 그리드는 grid-template-columns가 폭을 정하므로
+// 건드리지 않는다.
+globalStyle(`${menuCategories} > a`, { flex: '1 1 auto', maxWidth: '150px' })
 
 export const menuTile = style([
   typography.body.subMedium,
@@ -232,6 +235,21 @@ export const menuTile = style([
   },
 ])
 
+export const menuTileWithThumbnail = style([
+  menuTile,
+  {
+    flexDirection: 'column',
+    gap: spacing[8],
+    padding: spacing[12],
+  },
+])
+
+export const menuTileThumbnail = style({
+  width: '64px',
+  aspectRatio: '1 / 1',
+  objectFit: 'contain',
+})
+
 export const menuAside = style({
   display: 'flex',
   flexDirection: 'column',
@@ -243,6 +261,96 @@ export const menuAside = style({
   paddingLeft: spacing[30],
   borderLeft: `1px solid ${color.border.subtle}`,
 })
+
+// --- MobileCategoryNav (바텀시트 안) ---
+
+export const mobileRoot = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[24],
+  overflowY: 'auto',
+})
+
+export const mobileSection = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+})
+
+export const mobileBrand = style([
+  typography.body.defaultMedium,
+  { color: color.text.primary, textDecoration: 'none' },
+])
+
+export const mobileBrands = style({
+  display: 'flex',
+  gap: spacing[8],
+})
+
+export const mobileBrandChip = style([
+  typography.body.subMedium,
+  {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing[12],
+    background: color.background.surface,
+    color: color.text.secondary,
+    textDecoration: 'none',
+    selectors: {
+      '&:hover': {
+        background: color.primary.subtler,
+        color: color.primary.base,
+      },
+    },
+  },
+])
+
+export const mobileCategories = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(3, 1fr)',
+  gap: spacing[8],
+})
+
+export const mobileCategoryTile = style([
+  typography.body.subMedium,
+  {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacing[8],
+    padding: spacing[12],
+    background: color.background.surface,
+    color: color.text.secondary,
+    textDecoration: 'none',
+    selectors: {
+      '&:hover, &[aria-current="page"]': {
+        background: color.primary.subtler,
+        color: color.primary.base,
+      },
+    },
+  },
+])
+
+export const mobileCategoryThumbnail = style({
+  width: '100%',
+  aspectRatio: '1 / 1',
+  objectFit: 'contain',
+})
+
+export const mobileLinks = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[16],
+  paddingTop: spacing[20],
+  borderTop: `1px solid ${color.border.subtle}`,
+})
+
+export const mobileLink = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary, textDecoration: 'none' },
+])
 
 export const menuAsideTitle = style([
   typography.body.subMedium,

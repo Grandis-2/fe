@@ -16,8 +16,9 @@ type RequestTossPaymentParams = {
 }
 
 // 결제창(API 개별연동), CARD 고정. 정상 진행되면 브라우저가 successUrl/failUrl로
-// 이동하므로(Redirect 방식) 이 함수는 보통 끝까지 실행되지 않는다 — 오버레이가 뜨기
-// 전 파라미터 오류 등만 reject된다.
+// 이동하므로(Redirect 방식) 이 함수는 보통 끝까지 실행되지 않는다 — 파라미터 오류
+// 등은 reject된다. 사용자가 결제창을 그냥 닫은 경우(USER_CANCEL)도 SDK가 reject하지만
+// 오류가 아니므로 삼키고 정상 반환한다(호출부가 에러 문구를 띄우지 않게).
 export async function requestTossPayment({
   orderId,
   amount,
@@ -31,20 +32,26 @@ export async function requestTossPayment({
   const payment = tossPayments.payment({ customerKey: ANONYMOUS })
   const callbackUrl = `${window.location.origin}${PAYMENT_CALLBACK_PATH}`
 
-  await payment.requestPayment({
-    method: 'CARD',
-    amount: { currency: 'KRW', value: amount },
-    orderId,
-    orderName,
-    successUrl: callbackUrl,
-    failUrl: callbackUrl,
-    customerName,
-    customerEmail,
-    card: {
-      useEscrow: false,
-      flowMode: 'DEFAULT',
-      useCardPoint: false,
-      useAppCardOnly: false,
-    },
-  })
+  try {
+    await payment.requestPayment({
+      method: 'CARD',
+      amount: { currency: 'KRW', value: amount },
+      orderId,
+      orderName,
+      successUrl: callbackUrl,
+      failUrl: callbackUrl,
+      customerName,
+      customerEmail,
+      card: {
+        useEscrow: false,
+        flowMode: 'DEFAULT',
+        useCardPoint: false,
+        useAppCardOnly: false,
+      },
+    })
+  } catch (caught) {
+    if ((caught as { code?: unknown } | null)?.code !== 'USER_CANCEL') {
+      throw caught
+    }
+  }
 }

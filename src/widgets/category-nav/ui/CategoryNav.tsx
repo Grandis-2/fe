@@ -1,8 +1,17 @@
 import { Link, useLocation, useSearchParams } from 'react-router'
 
+import {
+  brandMenus,
+  categoryThumbnails,
+  links,
+  linkPaths,
+  searchPath,
+  type CategoryNavLink,
+} from '../model/menu'
+
 import * as styles from './CategoryNav.css'
 
-export type CategoryNavLink = '구매후기' | '사전예약' | '마이페이지'
+export type { CategoryNavLink }
 
 export type CategoryNavTone = 'default' | 'onDark'
 
@@ -12,50 +21,6 @@ export type CategoryNavProps = {
   onLinkClick?: (link: CategoryNavLink) => void
   className?: string
 }
-
-type MenuLink = { label: string; to: string }
-
-type BrandMenu = {
-  categories: string[]
-  more: MenuLink[]
-}
-
-// 브랜드에 hover/focus하면 열리는 메가 메뉴의 내용.
-// 카테고리 API가 붙으면 이 상수 대신 응답을 쓴다(썸네일도 그때 같이 붙인다).
-const brandMenus = {
-  모바일: {
-    categories: ['스마트폰', '태블릿', '폴더블'],
-    more: [
-      { label: '사전예약 중인 모바일', to: '/preorder' },
-      { label: '모바일 구매후기', to: '/reviews' },
-    ],
-  },
-  'PC/주변기기': {
-    categories: ['노트북', '모니터', '키보드/마우스'],
-    more: [
-      { label: '사전예약 중인 PC', to: '/preorder' },
-      { label: 'PC 구매후기', to: '/reviews' },
-    ],
-  },
-  웨어러블: {
-    categories: ['스마트워치', '무선이어폰', '스마트밴드'],
-    more: [
-      { label: '사전예약 중인 웨어러블', to: '/preorder' },
-      { label: '웨어러블 구매후기', to: '/reviews' },
-    ],
-  },
-} satisfies Record<string, BrandMenu>
-
-const links: CategoryNavLink[] = ['구매후기', '사전예약', '마이페이지']
-const linkPaths: Record<CategoryNavLink, string> = {
-  구매후기: '/reviews',
-  사전예약: '/preorder',
-  마이페이지: '/mypage?state=preorder-check',
-}
-
-// URLSearchParams가 인코딩까지 해주므로 쿼리를 손으로 붙이지 않는다.
-const searchPath = (params: Record<string, string>) =>
-  `/search?${new URLSearchParams(params)}`
 
 // 링크를 누른 뒤에도 포커스가 남아 있으면 :focus-within 때문에 이동한 페이지 위로 메뉴가
 // 계속 열려 있으므로, 실제로 이동을 일으키는 링크를 누를 때만 포커스를 풀어 닫는다
@@ -108,23 +73,47 @@ export function CategoryNav({
             <div className={styles.menu}>
               <div className={styles.menuInner}>
                 <div className={styles.menuCategories}>
-                  {menu.categories.map((category) => (
+                  {menu.categories.map((category) => {
+                    const thumbnail = categoryThumbnails[category]
+                    return (
+                      <Link
+                        key={category}
+                        to={searchPath({
+                          category: brand,
+                          subCategory: category,
+                        })}
+                        className={
+                          thumbnail
+                            ? styles.menuTileWithThumbnail
+                            : styles.menuTile
+                        }
+                        aria-current={
+                          brand === activeCategory &&
+                          category === activeSubCategory
+                            ? 'page'
+                            : undefined
+                        }
+                        onClick={blurActiveElement}
+                      >
+                        {thumbnail && (
+                          <img
+                            src={thumbnail}
+                            alt=""
+                            className={styles.menuTileThumbnail}
+                          />
+                        )}
+                        {category}
+                      </Link>
+                    )
+                  })}
+                  {menu.brands?.map((b) => (
                     <Link
-                      key={category}
-                      to={searchPath({
-                        category: brand,
-                        subCategory: category,
-                      })}
+                      key={b}
+                      to={searchPath({ category: brand, brand: b })}
                       className={styles.menuTile}
-                      aria-current={
-                        brand === activeCategory &&
-                        category === activeSubCategory
-                          ? 'page'
-                          : undefined
-                      }
                       onClick={blurActiveElement}
                     >
-                      {category}
+                      {b}
                     </Link>
                   ))}
                 </div>

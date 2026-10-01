@@ -20,7 +20,7 @@ import {
   InlineAlert,
   Input,
   Textarea,
-  useModalTitleId,
+  ModalTitle,
 } from '@/shared/ui'
 
 import * as styles from './AdminReservationCreateModal.css'
@@ -38,8 +38,6 @@ export function AdminReservationCreateModal({
   onCreated,
   onClose,
 }: AdminReservationCreateModalProps) {
-  const titleId = useModalTitleId()
-
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [members, setMembers] = useState<AdminMemberModel[]>([])
 
@@ -165,9 +163,7 @@ export function AdminReservationCreateModal({
 
   return (
     <div className={styles.content}>
-      <div id={titleId} className={styles.title}>
-        예약 생성
-      </div>
+      <ModalTitle className={styles.title}>예약 생성</ModalTitle>
       <div className={styles.description}>
         일반 사용자 신청과 동일한 절차로 접수됩니다.
         <br />

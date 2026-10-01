@@ -67,7 +67,14 @@ export function ProductPurchaseBar({
           onClick={() => onSheetOpenChange(false)}
         />
       )}
-      <div className={styles.bottomBarGroup}>
+      <div
+        className={[
+          styles.bottomBarGroup,
+          !isLayoutVisible && styles.bottomBarGroupVisible,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         {isSheetOpen && (
           <div className={styles.sheet}>
             <div className={styles.sheetHandle} />
