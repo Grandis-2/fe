@@ -4,6 +4,7 @@ import { CalendarDays } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 import { formatDeliveryDate } from '@/entities/admin-product'
+import { parseDateOnly } from '@/shared/lib/parseDateOnly'
 import { usePopoverAnchor } from '@/shared/lib/usePopoverAnchor'
 import { Calendar } from '@/shared/ui'
 
@@ -58,7 +59,7 @@ export function DeliveryDateField({ value, onChange }: DeliveryDateFieldProps) {
           <div ref={popoverRef} className={styles.popover} style={style}>
             <Calendar
               className={styles.calendar}
-              value={value ? new Date(value) : null}
+              value={value ? parseDateOnly(value) : null}
               onChange={(date) => {
                 onChange(toDateInput(date))
                 setOpen(false)

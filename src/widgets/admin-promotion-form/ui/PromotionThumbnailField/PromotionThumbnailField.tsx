@@ -2,6 +2,7 @@ import { useRef } from 'react'
 
 import { ImagePlus } from 'lucide-react'
 
+import { useObjectUrls } from '@/shared/lib/useObjectUrls'
 import { Button } from '@/shared/ui'
 import type { UploadedImage } from '@/shared/ui'
 
@@ -21,22 +22,23 @@ export function PromotionThumbnailField({
   onChange,
 }: PromotionThumbnailFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  // 업로드 API가 아직 없어서 objectURL로 미리보기만 만든다.
+  const { create, release } = useObjectUrls()
 
   const pick = (files: FileList | null) => {
     const file = files?.[0]
     if (!file) return
 
-    // 업로드 API가 아직 없어서 objectURL로 미리보기만 만든다.
-    if (value?.url.startsWith('blob:')) URL.revokeObjectURL(value.url)
+    release(value?.url)
     onChange({
       id: `${file.name}-${file.lastModified}`,
-      url: URL.createObjectURL(file),
+      url: create(file),
       name: file.name,
     })
   }
 
   const remove = () => {
-    if (value?.url.startsWith('blob:')) URL.revokeObjectURL(value.url)
+    release(value?.url)
     onChange(null)
   }
 

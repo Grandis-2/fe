@@ -81,8 +81,12 @@ export function PromotionProductLinker({
         <Button variant="outline" color="cancel" onClick={onAddProduct}>
           추가 상품 등록하기
         </Button>
-        <Button disabled={value.length === 0} onClick={onLink}>
-          {value.length}개 연결
+        {/* 이미 연결된 게 있으면 빈 선택도 확정할 수 있어야 전부 해제가 된다. */}
+        <Button
+          disabled={value.length === 0 && linkedCount === 0}
+          onClick={onLink}
+        >
+          {value.length === 0 ? '연결 해제' : `${value.length}개 연결`}
         </Button>
       </div>
     </div>

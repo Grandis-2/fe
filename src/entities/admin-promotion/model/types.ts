@@ -1,3 +1,4 @@
+import { parseDateOnly } from '@/shared/lib/parseDateOnly'
 import type { UploadedImage } from '@/shared/ui'
 
 /**
@@ -69,8 +70,8 @@ export const createEmptyPromotionFormValue = (): AdminPromotionFormValue => ({
 
 // Intl의 ko-KR은 '9. 15.'로 찍혀서 화면 문구와 달라 직접 만든다.
 const monthDay = (value: string) => {
-  const date = new Date(value)
-  return `${date.getMonth() + 1}/${date.getDate()}`
+  const date = parseDateOnly(value)
+  return date ? `${date.getMonth() + 1}/${date.getDate()}` : '미정'
 }
 
 /** 목록의 '9/15 ~ 9/21' */

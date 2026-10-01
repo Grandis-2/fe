@@ -1,6 +1,12 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import {
+  color,
+  motion,
+  shadow,
+  spacing,
+  typography,
+} from '@/shared/config/theme'
 
 export const root = style({
   position: 'relative',
@@ -56,7 +62,7 @@ export const popover = style({
   borderRadius: '12px',
   border: `1px solid ${color.border.subtle}`,
   background: color.background.base,
-  boxShadow: '0 8px 24px rgba(26, 26, 29, 0.12)',
+  boxShadow: shadow.md,
   overflow: 'hidden',
 })
 

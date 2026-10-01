@@ -22,6 +22,11 @@ const notFound = () =>
 const productExists = (productId: string) =>
   adminProductStore.some((product) => product.productId === productId)
 
+const hasVariant = (productId: string, optionCode: string) =>
+  adminProductStore
+    .find((product) => product.productId === productId)
+    ?.variants.some((variant) => variant.optionCode === optionCode) ?? false
+
 export const adminStockHandlers: RequestHandler[] = [
   http.get(url('/api/v1/admin/products/:productId/stock'), ({ params }) => {
     const productId = String(params.productId)
@@ -59,8 +64,26 @@ export const adminStockHandlers: RequestHandler[] = [
         })
       }
 
-      const item = findStockItem(productId, body.optionCode)
-      if (!item) return notFound()
+      // PUT은 업서트다. 상품을 수정하면 variant 코드가 새로 생기는데, 그때
+      // 재고 행이 아직 없다고 거절하면 새 옵션에는 수량을 넣을 방법이 없다.
+      // 상품에 없는 옵션 코드일 때만 거절한다.
+      let item = findStockItem(productId, body.optionCode)
+      if (!item) {
+        if (!hasVariant(productId, body.optionCode)) return notFound()
+
+        item = {
+          productId,
+          optionCode: body.optionCode,
+          policy: 'LIMITED',
+          initialQuantity: 0,
+          availableQuantity: 0,
+          reservedQuantity: 0,
+          adjustmentsEnabled: true,
+          updatedAt: new Date().toISOString(),
+          updatedBy: null,
+        }
+        adminStockStore.push(item)
+      }
 
       // 조정이 잠겼거나, 이미 확보된 수량보다 적게 줄이려 하면 거절한다.
       if (

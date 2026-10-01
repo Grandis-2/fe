@@ -108,7 +108,9 @@ export function AdminDispatchWindows({
         toSeq: draft.toSeq,
         estimatedDeliveryDate: draft.estimatedDeliveryDate || null,
       })),
-      undeterminedFromSeq: Number(draftUndetermined) || 0,
+      // 비워두면 0이 가서 서버가 '구간이 겹치거나 비어 있다'고만 답한다.
+      // 어느 칸이 문제인지 알 수 없으므로 마지막 차수 다음 번호를 기본값으로 쓴다.
+      undeterminedFromSeq: Number(draftUndetermined) || nextFromSeq(drafts),
     })
       .then((created) => publishDispatchWindow(productId, created.version))
       .then((published) => {

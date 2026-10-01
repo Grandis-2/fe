@@ -85,7 +85,7 @@ export function AdminPromotionForm({
 
       <FormSection
         title="프로모션 썸네일 이미지"
-        description="고객이 색상을 고르면 해당 이미지가 표시됩니다. 색상당 최대 10장, 첫 장이 대표 이미지입니다."
+        description="프로모션 목록에 표시할 대표 이미지 한 장을 등록합니다."
       >
         <PromotionThumbnailField
           value={value.thumbnail}

@@ -64,6 +64,29 @@ export const mockLinkableProducts: PromotionLinkableProduct[] = [
     colors: COLORS,
     storages: STORAGES,
   },
+  // 아래 셋은 mockPromotions가 이미 연결해 둔 상품이다. 목록에 없으면
+  // 수정 화면에서 연결 개수만 보이고 해제할 카드가 없다.
+  {
+    productId: 'SM-G999',
+    name: '갤럭시 G999',
+    openAtLabel: '10/1 10:00 오픈',
+    colors: COLORS,
+    storages: STORAGES,
+  },
+  {
+    productId: 'SM-FOLD8',
+    name: 'Samsung Fold 8',
+    openAtLabel: '7/1 10:00 오픈',
+    colors: COLORS,
+    storages: STORAGES,
+  },
+  {
+    productId: 'SM-FOLD8-SE',
+    name: 'Samsung Fold 8 SE',
+    openAtLabel: '7/1 10:00 오픈',
+    colors: COLORS,
+    storages: STORAGES,
+  },
 ]
 
 export const findMockPromotion = (promotionId: string) =>

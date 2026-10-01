@@ -82,14 +82,13 @@ export function AdminProductDetailPage() {
    * 상품 본문과 재고를 함께 저장한다.
    * ProductUpsert에는 수량 필드가 없어서 조합별 수량은 재고 API로 따로 보낸다.
    */
-  const handleSubmit = (
-    value: AdminProductFormValue,
-    detail: AdminProductDetailModel,
-  ) =>
+  const handleSubmit = (value: AdminProductFormValue) =>
+    // PATCH가 variant 코드를 새로 만들므로, 재고는 반드시 그 응답을 기준으로
+    // 보낸다. 수정 전 detail의 코드로 보내면 새 variant에 재고가 안 붙는다.
     void updateAdminProduct(productId, toUpsertRequest(value))
-      .then(() =>
+      .then((updated) =>
         Promise.all(
-          toStockRequests(value, detail).map((body) =>
+          toStockRequests(value, updated).map((body) =>
             putAdminProductStock(productId, body),
           ),
         ),
@@ -199,7 +198,7 @@ export function AdminProductDetailPage() {
         <AdminProductForm
           mode="edit"
           defaultValue={toFormValue(product, stockItems)}
-          onSubmit={(value) => handleSubmit(value, product)}
+          onSubmit={handleSubmit}
           onCancel={() => navigate('/admin/products')}
           onPreview={() => navigate(`/products/${product.productId}`)}
         />

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
+import { parseDateOnly } from '@/shared/lib/parseDateOnly'
 import { usePopoverAnchor } from '@/shared/lib/usePopoverAnchor'
 import { Calendar } from '@/shared/ui/Calendar'
 
@@ -31,11 +32,7 @@ const pad = (value: number) => String(value).padStart(2, '0')
 const toDateInput = (date: Date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 
-const parse = (value: string) => {
-  if (!value) return null
-  const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? null : date
-}
+const parse = (value: string) => (value ? parseDateOnly(value) : null)
 
 const formatKorean = (date: Date) =>
   `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 (${WEEKDAYS[date.getDay()]})`

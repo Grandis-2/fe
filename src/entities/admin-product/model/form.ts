@@ -371,6 +371,29 @@ export function toUpsertRequest(
 }
 
 /** 상세 응답을 폼이 편집할 수 있는 모양으로 되돌린다 */
+/**
+ * 옵션 값 하나의 추가금을 variant 가격에서 되돌린다.
+ *
+ * 서버 variant에는 추가금 필드가 없고 최종 가격만 있다. toUpsertRequest가
+ * `가격 = 기본가 + 고른 값들의 추가금 합`으로 만들므로 그 역이 성립한다 —
+ * 이 값을 가진 variant 중 가장 싼 것에서 기본가(최저가)를 빼면 된다.
+ *
+ * 되돌리지 않으면 수정 탭에서 아무것도 안 바꾸고 저장만 해도 모든 variant가
+ * 최저가로 덮어써진다.
+ */
+function extraPriceOf(
+  detail: AdminProductDetail,
+  groupCode: string,
+  valueCode: string,
+) {
+  const prices = detail.variants
+    .filter((variant) => variant.optionValues[groupCode] === valueCode)
+    .map((variant) => variant.price)
+
+  if (prices.length === 0) return 0
+  return Math.min(...prices) - detail.priceRange.min
+}
+
 export function toFormValue(
   detail: AdminProductDetail,
   stockItems: AdminStockItem[] = [],
@@ -402,7 +425,7 @@ export function toFormValue(
       values: group.values.map((value) => ({
         id: value.valueCode,
         label: value.name,
-        extraPrice: 0,
+        extraPrice: extraPriceOf(detail, group.groupCode, value.valueCode),
       })),
     })),
     basePrice: detail.priceRange.min,

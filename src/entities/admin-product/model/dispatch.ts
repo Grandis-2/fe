@@ -1,4 +1,5 @@
 import type { DispatchWave, DispatchWindowVersion } from '@/shared/api/types'
+import { parseDateOnly } from '@/shared/lib/parseDateOnly'
 
 export type DispatchWaveModel = DispatchWave
 export type DispatchWindowVersionModel = DispatchWindowVersion
@@ -25,7 +26,8 @@ const weekdayFormatter = new Intl.DateTimeFormat('ko-KR', { weekday: 'short' })
 export const formatDeliveryDate = (date: string | null) => {
   if (!date) return '미정'
 
-  const parsed = new Date(date)
+  const parsed = parseDateOnly(date)
+  if (!parsed) return '미정'
   return `${dateFormatter.format(parsed)} (${weekdayFormatter.format(parsed)})`
 }
 
