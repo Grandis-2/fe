@@ -121,6 +121,7 @@ function buildDetail(seed: Seed): AdminProductDetail {
     name: seed.name,
     brand: seed.brand,
     thumbnailUrl: null,
+    saleMode: seed.preorder ? 'PREORDER' : 'IN_STOCK',
     priceRange: { min: Math.min(...prices), max: Math.max(...prices) },
     openAt: seed.openAt,
     saleStatus: seed.saleStatus,
