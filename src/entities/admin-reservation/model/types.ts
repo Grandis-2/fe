@@ -92,13 +92,16 @@ export function paymentDueLabel(
   return `${Math.floor(minutes / 60)}시간 남음`
 }
 
-/** 관리자가 손봐야 하는 건수 — 자동 재시도가 소진돼 DLQ로 떨어진 등록 지시 수다 */
+/**
+ * 관리자가 손봐야 하는 건수 — 자동 재시도가 소진돼 DLQ로 떨어진 등록 지시 수다.
+ *
+ * '처리 중'(registration.acceptedBacklogCount)과 겹치지 않는다. 그쪽은 아직
+ * ACCEPTED라 시스템이 재시도를 돌리는 중인 건이고, 이쪽은 그게 끝난 건이다.
+ * REGISTER의 retryingCount는 '처리 중'의 부분집합이라 따로 보여주지 않는다 —
+ * 운영자가 할 일이 달라지지 않기 때문이다.
+ */
 export const reprocessNeededCountOf = (stats: AdminStatsResponse) =>
   stats.commands.byKind.REGISTER.deadCount
-
-/** 자동 재시도가 아직 돌고 있는 건수 — 관리자가 손댈 필요 없는 상태다 */
-export const retryingCountOf = (stats: AdminStatsResponse) =>
-  stats.commands.byKind.REGISTER.retryingCount
 
 /**
  * 예약 번호는 서버가 UUID로만 내려준다. 운영자가 눈으로 읽고 서로 부를 수 있는

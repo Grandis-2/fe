@@ -19,7 +19,6 @@ import {
   reservationStatusColor,
   reservationStatusLabel,
   reservationStatusLabels,
-  retryingCountOf,
   type AdminMemberModel,
   type AdminReservation,
   type AdminReservationStatus,
@@ -148,8 +147,8 @@ export function AdminReservationsPage() {
     { label: '접수', value: stats?.accept.uniqueAcceptedCount },
     { label: '처리 중', value: stats?.registration.acceptedBacklogCount },
     { label: '확정', value: stats?.registration.confirmedCount },
-    // 자동 재시도가 돌고 있는 건과, 그게 소진돼 사람이 손봐야 하는 건을 나눠 보여준다.
-    { label: '재시도 중', value: stats && retryingCountOf(stats) },
+    // '처리 중'은 시스템이 알아서 재시도까지 돌리는 구간이고, '재처리 필요'는
+    // 그 재시도가 소진돼 사람이 손봐야 하는 구간이다. 둘이 겹치지 않는다.
     { label: '재처리 필요', value: stats && reprocessNeededCountOf(stats) },
     // 결제 대기·취소 건수는 stats에 없어서 목록 응답에서 센다.
     {

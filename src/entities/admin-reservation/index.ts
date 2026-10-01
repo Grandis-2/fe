@@ -17,7 +17,6 @@ export {
   reservationStatusColor,
   reservationStatusLabel,
   reservationStatusLabels,
-  retryingCountOf,
 } from './model/types'
 export type {
   AdminMemberModel,
