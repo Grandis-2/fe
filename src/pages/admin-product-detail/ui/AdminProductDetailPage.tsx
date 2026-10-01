@@ -1,21 +1,29 @@
-import { ChevronRight } from 'lucide-react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
+import { useEffect, useState } from 'react'
+
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
-  adminProductStatusColor,
-  adminProductStatusLabel,
-  findAdminProduct,
+  getAdminProduct,
+  getAdminProductStock,
   getAdminProductStocks,
+  putAdminProductStock,
+  saleStatusColor,
+  saleStatusLabel,
+  toFormValue,
+  toStockRequests,
+  toUpsertRequest,
+  updateAdminProduct,
+  type AdminProductDetailModel,
+  type AdminProductFormValue,
   type AdminProductStock,
+  type AdminStockItemModel,
 } from '@/entities/admin-product'
 import { formatNumber, formatWon } from '@/shared/lib/formatNumber'
-import { SegmentedTabs, Table, Tag } from '@/shared/ui'
+import { Button, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
-import {
-  AdminProductForm,
-  createEmptyProductFormValue,
-} from '@/widgets/admin-product-form'
-import type { AdminProductFormValue } from '@/widgets/admin-product-form'
+import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
+import { AdminDispatchWindows } from '@/widgets/admin-dispatch-windows'
+import { AdminProductForm } from '@/widgets/admin-product-form'
 
 import * as styles from './AdminProductDetailPage.css'
 
@@ -32,57 +40,36 @@ const DEFAULT_TAB: TabValue = 'stock'
 const isTabValue = (value: string | null): value is TabValue =>
   tabs.some((tab) => tab.value === value)
 
-const stockColumns: TableColumn<AdminProductStock>[] = [
-  { key: 'color', header: '색상', align: 'center', render: (row) => row.color },
-  {
-    key: 'capacity',
-    header: '용량',
-    align: 'center',
-    render: (row) => row.capacity,
-  },
-  {
-    key: 'totalCount',
-    header: '총수량',
-    align: 'center',
-    render: (row) => formatNumber(row.totalCount),
-  },
-  {
-    key: 'price',
-    header: '가격',
-    align: 'center',
-    render: (row) => formatWon(row.price),
-  },
-  {
-    key: 'confirmedCount',
-    header: '확정',
-    align: 'center',
-    render: (row) => `${formatNumber(row.confirmedCount)}건`,
-  },
-  {
-    key: 'remainingCount',
-    header: '잔여',
-    align: 'center',
-    // 잔여가 적을수록 눈에 띄어야 해서 소진 임박(10% 미만)은 색을 달리한다.
-    render: (row) => (
-      <span
-        className={
-          row.remainingCount / row.totalCount < 0.1
-            ? styles.remainingLow
-            : styles.remaining
-        }
-      >
-        {`${formatNumber(row.remainingCount)}건`}
-      </span>
-    ),
-  },
-]
-
 export function AdminProductDetailPage() {
   const navigate = useNavigate()
   const { productId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('tab')
   const tab = isTabValue(tabParam) ? tabParam : DEFAULT_TAB
+
+  const [product, setProduct] = useState<AdminProductDetailModel>()
+  const [stockItems, setStockItems] = useState<AdminStockItemModel[]>([])
+  const [error, setError] = useState<string>()
+  // 배송 구간 편집 버튼이 탭과 같은 줄에 있어서 상태를 여기서 든다.
+  const [dispatchEditing, setDispatchEditing] = useState(false)
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.all([getAdminProduct(productId), getAdminProductStock(productId)])
+      .then(([detail, stock]) => {
+        if (cancelled) return
+        setProduct(detail)
+        setStockItems(stock.items)
+        setError(undefined)
+      })
+      .catch((cause: Error) => {
+        if (!cancelled) setError(cause.message)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [productId])
 
   const setTab = (next: TabValue) => {
     const params = new URLSearchParams(searchParams)
@@ -91,16 +78,71 @@ export function AdminProductDetailPage() {
     setSearchParams(params, { replace: true })
   }
 
-  const product = findAdminProduct(productId)
+  /**
+   * 상품 본문과 재고를 함께 저장한다.
+   * ProductUpsert에는 수량 필드가 없어서 조합별 수량은 재고 API로 따로 보낸다.
+   */
+  const handleSubmit = (value: AdminProductFormValue) =>
+    // PATCH가 variant 코드를 새로 만들므로, 재고는 반드시 그 응답을 기준으로
+    // 보낸다. 수정 전 detail의 코드로 보내면 새 variant에 재고가 안 붙는다.
+    void updateAdminProduct(productId, toUpsertRequest(value))
+      .then((updated) =>
+        Promise.all(
+          toStockRequests(value, updated).map((body) =>
+            putAdminProductStock(productId, body),
+          ),
+        ),
+      )
+      .then(() => navigate('/admin/products'))
+      .catch((cause: Error) => setError(cause.message))
+
+  const stockColumns: TableColumn<AdminProductStock>[] = [
+    {
+      key: 'color',
+      header: '색상',
+      align: 'center',
+      render: (row) => row.color,
+    },
+    {
+      key: 'capacity',
+      header: '용량',
+      align: 'center',
+      render: (row) => row.capacity,
+    },
+    {
+      key: 'totalCount',
+      header: '총수량',
+      align: 'center',
+      render: (row) => formatNumber(row.totalCount),
+    },
+    {
+      key: 'price',
+      header: '가격',
+      align: 'center',
+      render: (row) => formatWon(row.price),
+    },
+    {
+      key: 'confirmedCount',
+      header: '확정',
+      align: 'center',
+      render: (row) => `${formatNumber(row.confirmedCount)}건`,
+    },
+    {
+      key: 'remainingCount',
+      header: '잔여',
+      align: 'center',
+      render: (row) => `${formatNumber(row.remainingCount)}건`,
+    },
+  ]
 
   if (!product) {
     return (
       <div className={styles.root}>
         <div className={styles.notFound}>
-          찾을 수 없는 상품입니다.
-          <Link className={styles.breadcrumbLink} to="/admin/products">
-            상품 관리로 돌아가기
-          </Link>
+          {error ?? '불러오는 중입니다.'}
+          <AdminBreadcrumb
+            items={[{ label: '상품 관리로 돌아가기', to: '/admin/products' }]}
+          />
         </div>
       </div>
     )
@@ -108,13 +150,12 @@ export function AdminProductDetailPage() {
 
   return (
     <div className={styles.root}>
-      <nav className={styles.breadcrumb} aria-label="breadcrumb">
-        <Link className={styles.breadcrumbLink} to="/admin/products">
-          상품 관리
-        </Link>
-        <ChevronRight className={styles.breadcrumbIcon} aria-hidden="true" />
-        <span className={styles.breadcrumbCurrent}>{product.name}</span>
-      </nav>
+      <AdminBreadcrumb
+        items={[
+          { label: '상품 관리', to: '/admin/products' },
+          { label: product.name },
+        ]}
+      />
 
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{product.name}</h1>
@@ -122,19 +163,32 @@ export function AdminProductDetailPage() {
           variant="subtle"
           size="medium"
           rounded={false}
-          color={adminProductStatusColor[product.status]}
+          color={saleStatusColor[product.saleStatus]}
         >
-          {adminProductStatusLabel[product.status]}
+          {saleStatusLabel[product.saleStatus]}
         </Tag>
       </div>
 
-      <SegmentedTabs items={tabs} value={tab} onChange={setTab} />
+      <div className={styles.tabRow}>
+        <SegmentedTabs items={tabs} value={tab} onChange={setTab} />
+
+        {/* 오픈 이후에는 배송 기준과 기존 배정을 바꾸지 않는다. */}
+        {tab === 'shipping' &&
+          !dispatchEditing &&
+          product.saleStatus !== 'OPEN' && (
+            <Button size="small" onClick={() => setDispatchEditing(true)}>
+              수정하기
+            </Button>
+          )}
+      </div>
+
+      {error && <div className={styles.error}>{error}</div>}
 
       {tab === 'stock' && (
         <Table
           columns={stockColumns}
-          rows={getAdminProductStocks(product)}
-          rowKey={(row) => row.id}
+          rows={getAdminProductStocks(product, stockItems)}
+          rowKey={(row) => row.optionCode}
           pageSize={10}
           emptyMessage="등록된 재고가 없습니다."
         />
@@ -143,27 +197,19 @@ export function AdminProductDetailPage() {
       {tab === 'edit' && (
         <AdminProductForm
           mode="edit"
-          // ponytail: 상세 조회 API가 붙으면 서버 값을 폼 값으로 변환해 넘긴다.
-          defaultValue={{
-            ...createEmptyProductFormValue(),
-            name: product.name,
-            isPreorder: product.type === 'preorder',
-          }}
-          onSubmit={(value: AdminProductFormValue) =>
-            console.info('상품 수정', value)
-          }
+          defaultValue={toFormValue(product, stockItems)}
+          onSubmit={handleSubmit}
           onCancel={() => navigate('/admin/products')}
-          onPreview={(value: AdminProductFormValue) =>
-            console.info('미리보기', value)
-          }
+          onPreview={() => navigate(`/products/${product.productId}`)}
         />
       )}
 
       {tab === 'shipping' && (
-        // 배송 구간 설정은 아직 범위가 정해지지 않아 안내만 둔다.
-        <div className={styles.placeholder}>
-          배송 구간 설정 화면은 준비 중입니다.
-        </div>
+        <AdminDispatchWindows
+          productId={product.productId}
+          editing={dispatchEditing}
+          onEditingChange={setDispatchEditing}
+        />
       )}
     </div>
   )

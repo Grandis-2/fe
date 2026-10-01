@@ -9,7 +9,11 @@ export type FormSectionProps = {
 }
 
 /** 폼 안에서 반복되는 '작은 제목 + 설명 + 내용' 묶음 */
-export function FormSection({ title, description, children }: FormSectionProps) {
+export function FormSection({
+  title,
+  description,
+  children,
+}: FormSectionProps) {
   return (
     <section className={styles.root}>
       <div className={styles.title}>{title}</div>

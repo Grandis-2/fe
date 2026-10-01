@@ -1,3 +1,7 @@
+export type * from './admin-dispatch'
+export type * from './admin-product'
+export type * from './admin-reservation'
+export type * from './admin-stock'
 export type * from './address'
 export type * from './auth'
 export type * from './cart'

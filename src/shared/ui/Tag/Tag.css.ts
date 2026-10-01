@@ -19,6 +19,28 @@ const size = styleVariants({
   medium: [base, typography.body.subMedium, { minWidth: '48px' }],
 })
 
+/**
+ * 같은 자리에 번갈아 나오는 Tag들의 너비를 맞추는 장치.
+ * 후보 문구를 모두 같은 그리드 칸에 겹쳐 두면 칸이 가장 넓은 문구에 맞게 잡히고,
+ * 실제로 보이는 문구 하나만 그 안에서 가운데 정렬된다. 폰트나 문구가 바뀌어도
+ * 따라오므로 픽셀 값을 박아둘 필요가 없다.
+ */
+export const sizer = style({
+  display: 'grid',
+  gridTemplateAreas: '"label"',
+  alignItems: 'center',
+  justifyItems: 'center',
+})
+
+export const sizerLabel = style({
+  gridArea: 'label',
+})
+
+export const sizerGhost = style([
+  sizerLabel,
+  { visibility: 'hidden', userSelect: 'none' },
+])
+
 export const shape = {
   small: styleVariants({
     full: [

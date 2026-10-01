@@ -116,6 +116,14 @@ export const dayToday = style({
   borderColor: color.primary.base,
 })
 
+// 구간 선택에서 시작~끝 사이에 있는 날 — 양 끝은 daySelected가 진하게 칠한다.
+// vanilla-extract는 같은 특이도면 뒤에 선언된 쪽이 이기므로, 두 클래스가 한
+// 날에 겹쳐도 선택이 이기도록 daySelected보다 반드시 앞에 선언한다.
+export const dayInRange = style({
+  background: color.primary.subtler,
+  borderRadius: 0,
+})
+
 export const daySelected = style({
   background: color.primary.base,
   color: color.text.inverse,

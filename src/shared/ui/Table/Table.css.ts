@@ -83,3 +83,32 @@ export const emptyCell = style([
     textAlign: 'center',
   },
 ])
+
+// rowAction이 만드는 마지막 열의 > 버튼. 행 전체가 눌리는 경우에도
+// 눈에 보이는 진입점을 남겨 둔다.
+export const actionButton = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: spacing[4],
+  border: 'none',
+  borderRadius: '6px',
+  background: 'transparent',
+  color: color.text.tertiary,
+  cursor: 'pointer',
+  transition: [
+    `background ${motion.duration.fast} ${motion.easing.default}`,
+    `color ${motion.duration.fast} ${motion.easing.default}`,
+  ].join(', '),
+  selectors: {
+    '&:hover': {
+      background: color.background.subSurface,
+      color: color.primary.base,
+    },
+  },
+})
+
+export const actionIcon = style({
+  width: '18px',
+  height: '18px',
+})

@@ -1,15 +1,17 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import {
-  adminProducts,
-  adminProductStatusColor as statusColor,
-  adminProductStatusLabel as statusLabel,
-  adminProductTypeLabel as typeLabel,
+  getAdminProducts,
+  isPreorder,
+  productTypeLabel,
+  productTypeLabels,
+  saleStatusColor,
+  saleStatusLabel,
+  saleStatusLabels,
   type AdminProduct,
-  type AdminProductType,
+  type AdminSaleStatus,
 } from '@/entities/admin-product'
 import { Button, Dropdown, Input, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn, TagProps } from '@/shared/ui'
@@ -17,7 +19,7 @@ import type { TableColumn, TagProps } from '@/shared/ui'
 import * as styles from './AdminProductsPage.css'
 
 const typeTagProps: Record<
-  AdminProductType,
+  'preorder' | 'normal',
   Pick<TagProps, 'variant' | 'color'>
 > = {
   preorder: { variant: 'subtle', color: 'primary' },
@@ -32,8 +34,18 @@ const typeFilters = [
 
 type TypeFilter = (typeof typeFilters)[number]['value']
 
-const statusOptions = ['전체', '판매 중', '판매 예정', '판매 종료']
+// 드롭다운은 문자열만 다루므로 라벨 ↔ 서버 enum을 여기서 이어준다.
+const statusOptions = ['전체', ...Object.values(saleStatusLabel)]
+const saleStatusByLabel = Object.fromEntries(
+  Object.entries(saleStatusLabel).map(([status, label]) => [label, status]),
+) as Record<string, AdminSaleStatus>
+
 const sortOptions = ['오픈 시각순', '상품명순']
+
+const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
+  dateStyle: 'long',
+  timeStyle: 'short',
+})
 
 export function AdminProductsPage() {
   const navigate = useNavigate()
@@ -44,25 +56,52 @@ export function AdminProductsPage() {
   const [sortOpen, setSortOpen] = useState(false)
   const [sort, setSort] = useState<string>()
 
-  const openDetail = (product: AdminProduct) =>
-    navigate(`/admin/products/${product.id}`)
+  const [products, setProducts] = useState<AdminProduct[]>([])
+  const [error, setError] = useState<string>()
 
-  const visibleProducts = adminProducts
-    .filter((product) => typeFilter === 'all' || product.type === typeFilter)
+  // 검색어와 판매 상태는 서버가 걸러준다.
+  const saleStatus = status ? saleStatusByLabel[status] : undefined
+  const trimmedKeyword = keyword.trim()
+
+  useEffect(() => {
+    let cancelled = false
+
+    getAdminProducts({
+      saleStatus,
+      q: trimmedKeyword || undefined,
+      // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
+      size: 100,
+    })
+      .then((paged) => {
+        if (!cancelled) {
+          setProducts(paged.items)
+          setError(undefined)
+        }
+      })
+      .catch((cause: Error) => {
+        if (!cancelled) setError(cause.message)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [saleStatus, trimmedKeyword])
+
+  const openDetail = (product: AdminProduct) =>
+    navigate(`/admin/products/${product.productId}`)
+
+  // 유형과 정렬은 목록 응답에 해당 파라미터가 없어 화면에서 처리한다.
+  const visibleProducts = products
     .filter(
       (product) =>
-        !status || status === '전체' || statusLabel[product.status] === status,
+        typeFilter === 'all' ||
+        isPreorder(product) === (typeFilter === 'preorder'),
     )
-    .filter((product) => product.name.includes(keyword.trim()))
-    .toSorted((a, b) => {
-      if (sort === '상품명순') return a.name.localeCompare(b.name)
-      // 오픈 시각이 없는 상품('해당없음')은 빈 문자열로 치면 맨 위로 올라와서
-      // 따로 걸러내 항상 맨 아래로 내린다.
-      if (a.openPeriod === null || b.openPeriod === null) {
-        return Number(a.openPeriod === null) - Number(b.openPeriod === null)
-      }
-      return a.openPeriod.localeCompare(b.openPeriod)
-    })
+    .toSorted((a, b) =>
+      sort === '상품명순'
+        ? a.name.localeCompare(b.name)
+        : a.openAt.localeCompare(b.openAt),
+    )
 
   const columns: TableColumn<AdminProduct>[] = [
     {
@@ -77,8 +116,13 @@ export function AdminProductsPage() {
       header: '유형',
       align: 'center',
       render: (product) => (
-        <Tag size="medium" rounded={false} {...typeTagProps[product.type]}>
-          {typeLabel[product.type]}
+        <Tag
+          size="medium"
+          rounded={false}
+          widthOptions={productTypeLabels}
+          {...typeTagProps[isPreorder(product) ? 'preorder' : 'normal']}
+        >
+          {productTypeLabel(product)}
         </Tag>
       ),
     },
@@ -86,13 +130,16 @@ export function AdminProductsPage() {
       key: 'option',
       header: '옵션',
       align: 'center',
-      render: (product) => `${product.optionCount}종`,
+      render: (product) => `${product.variantCount}종`,
     },
     {
-      key: 'openPeriod',
-      header: '오픈 / 마감 시각',
+      key: 'openAt',
+      header: '오픈 시각',
       align: 'center',
-      render: (product) => product.openPeriod ?? '해당없음',
+      render: (product) =>
+        isPreorder(product)
+          ? dateFormatter.format(new Date(product.openAt))
+          : '해당없음',
     },
     {
       key: 'detail',
@@ -118,26 +165,11 @@ export function AdminProductsPage() {
           variant="subtle"
           size="medium"
           rounded={false}
-          color={statusColor[product.status]}
+          widthOptions={saleStatusLabels}
+          color={saleStatusColor[product.saleStatus]}
         >
-          {statusLabel[product.status]}
+          {saleStatusLabel[product.saleStatus]}
         </Tag>
-      ),
-    },
-    {
-      key: 'manage',
-      header: '관리',
-      align: 'center',
-      width: '80px',
-      render: (product) => (
-        <button
-          type="button"
-          className={styles.rowLink}
-          aria-label={`${product.name} ${typeLabel[product.type]} 상세 보기`}
-          onClick={() => openDetail(product)}
-        >
-          <ChevronRight className={styles.rowLinkIcon} aria-hidden="true" />
-        </button>
       ),
     },
   ]
@@ -180,7 +212,7 @@ export function AdminProductsPage() {
             selectedOption={status}
             onToggle={() => setStatusOpen((prev) => !prev)}
             onSelect={(option) => {
-              setStatus(option)
+              setStatus(option === '전체' ? undefined : option)
               setStatusOpen(false)
             }}
           />
@@ -203,10 +235,16 @@ export function AdminProductsPage() {
       <Table
         columns={columns}
         rows={visibleProducts}
-        rowKey={(product) => product.id}
+        rowKey={(product) => product.productId}
         pageSize={10}
         onRowClick={openDetail}
-        emptyMessage="조건에 맞는 상품이 없습니다."
+        rowAction={{
+          header: '관리',
+          label: (product) =>
+            `${product.name} ${productTypeLabel(product)} 상세 보기`,
+          onClick: openDetail,
+        }}
+        emptyMessage={error ?? '조건에 맞는 상품이 없습니다.'}
       />
     </div>
   )

@@ -1,3 +1,8 @@
+import type {
+  ProductColorOption,
+  ProductOptionGroup,
+  ProductVariant,
+} from '@/entities/admin-product'
 import { formatNumber } from '@/shared/lib/formatNumber'
 import { Table } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
@@ -5,9 +10,6 @@ import type { TableColumn } from '@/shared/ui'
 import { NumberField } from '../NumberField'
 
 import * as styles from './VariantTable.css'
-
-import type { ProductColorOption, ProductOptionGroup } from '../../model/types'
-import type { ProductVariant } from '../../model/variants'
 
 export type VariantTableProps = {
   variants: ProductVariant[]

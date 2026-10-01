@@ -96,6 +96,7 @@ export type DispatchWave = {
   wave: number
   fromSeq: number
   toSeq: number
+  /** 예상 배송일. null이면 미정 */
   estimatedDeliveryDate: string | null
 }
 
