@@ -5,7 +5,8 @@ import { Outlet, useLocation, useNavigate } from 'react-router'
 import { useSession } from '@/entities/auth'
 import { SIGNUP_PATH } from '@/shared/config/routes'
 import { useModalStore } from '@/shared/model/modalStore'
-import { Modal } from '@/shared/ui'
+import { useToastStore } from '@/shared/model/toastStore'
+import { Modal, ToastViewport } from '@/shared/ui'
 import { Header } from '@/widgets/header'
 import { MobileTabBar } from '@/widgets/mobile-tab-bar'
 
@@ -14,6 +15,8 @@ export function RootLayout() {
   const isModalOpen = useModalStore((state) => state.isOpen)
   const modalContent = useModalStore((state) => state.content)
   const closeModal = useModalStore((state) => state.close)
+  const toasts = useToastStore((state) => state.toasts)
+  const dismissToast = useToastStore((state) => state.dismiss)
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -50,6 +53,7 @@ export function RootLayout() {
       <Modal open={isModalOpen} onClose={closeModal}>
         {modalContent}
       </Modal>
+      <ToastViewport toasts={toasts} onDismiss={dismissToast} />
     </>
   )
 }
