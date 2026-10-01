@@ -5,12 +5,9 @@ import * as styles from './PromotionProductLinker.css'
 
 export type PromotionProductLinkerProps = {
   products: PromotionLinkableProduct[]
-  /** 지금 체크된 상품들 */
+  /** 연결할 상품들 — 체크하면 바로 여기 반영되고, 폼을 저장할 때 함께 저장된다 */
   value: string[]
   onChange: (productIds: string[]) => void
-  /** 실제로 프로모션에 묶인 상품 수 — 체크만 하고 아직 누르지 않았을 수 있다 */
-  linkedCount: number
-  onLink: () => void
   onAddProduct: () => void
 }
 
@@ -18,8 +15,6 @@ export function PromotionProductLinker({
   products,
   value,
   onChange,
-  linkedCount,
-  onLink,
   onAddProduct,
 }: PromotionProductLinkerProps) {
   const toggle = (productId: string) =>
@@ -32,9 +27,9 @@ export function PromotionProductLinker({
   return (
     <div className={styles.root}>
       <div className={styles.summary}>
-        {linkedCount === 0
-          ? '아직 연결되지 않음'
-          : `${linkedCount}개 상품이 연결됨`}
+        {value.length === 0
+          ? '선택한 상품이 없습니다'
+          : `${value.length}개 상품 선택됨`}
       </div>
 
       {products.length === 0 ? (
@@ -80,13 +75,6 @@ export function PromotionProductLinker({
       <div className={styles.footer}>
         <Button variant="outline" color="cancel" onClick={onAddProduct}>
           추가 상품 등록하기
-        </Button>
-        {/* 이미 연결된 게 있으면 빈 선택도 확정할 수 있어야 전부 해제가 된다. */}
-        <Button
-          disabled={value.length === 0 && linkedCount === 0}
-          onClick={onLink}
-        >
-          {value.length === 0 ? '연결 해제' : `${value.length}개 연결`}
         </Button>
       </div>
     </div>
