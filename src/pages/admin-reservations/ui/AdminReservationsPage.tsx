@@ -46,7 +46,7 @@ const statusFilters = [
   { value: 'all', label: '전체' },
   { value: 'CONFIRMED', label: '확정' },
   { value: 'ACCEPTED', label: '처리 중' },
-  { value: 'FAILED', label: '등록 실패' },
+  { value: 'FAILED', label: '재처리 필요' },
   { value: 'CANCELED', label: '취소' },
 ] as const
 
@@ -199,14 +199,7 @@ export function AdminReservationsPage() {
       key: 'seq',
       header: '순번',
       align: 'center',
-      render: (reservation) => (
-        <>
-          {reservation.acceptSeq.toLocaleString('ko-KR')}
-          {reservation.overdue && (
-            <span className={styles.overdueMark}> 기한 초과</span>
-          )}
-        </>
-      ),
+      render: (reservation) => reservation.acceptSeq.toLocaleString('ko-KR'),
     },
     {
       key: 'status',

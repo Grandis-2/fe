@@ -81,11 +81,6 @@ export const reservationNo = style([
   { color: color.text.primary },
 ])
 
-export const overdueMark = style([
-  typography.body.caption,
-  { color: color.status.danger },
-])
-
 /** Tag 아래에 사유·남은 시간 같은 보조 문구를 한 줄 더 붙이는 칸 */
 export const stackedCell = style({
   display: 'inline-flex',

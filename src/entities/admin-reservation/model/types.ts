@@ -21,13 +21,13 @@ export type AdminMemberModel = AdminMember
 /**
  * 화면 문구는 상태 4종을 그대로 쓴다.
  * ACCEPTED가 '처리 중'이다 — 접수는 되었지만 외부 등록이 아직 안 끝난 상태다.
- * FAILED는 '등록 실패'다 — '확정 실패'라고 쓰면 끝난 것처럼 보이는데, 실제로는
+ * FAILED는 '재처리 필요'다 — '확정 실패'라고 쓰면 끝난 것처럼 보이는데, 실제로는
  * 자동 재시도가 소진돼서 관리자 재처리를 기다리는 상태다.
  */
 export const reservationStatusLabel: Record<ReservationStatus, string> = {
   ACCEPTED: '처리 중',
   CONFIRMED: '확정',
-  FAILED: '등록 실패',
+  FAILED: '재처리 필요',
   CANCELED: '취소',
 }
 
