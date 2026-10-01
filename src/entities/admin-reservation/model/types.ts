@@ -93,7 +93,60 @@ export function paymentDueLabel(
 }
 
 /**
- * 관리자가 손봐야 하는 건수 — 자동 재시도가 소진돼 DLQ로 떨어진 등록 지시 수다.
+ * 지표 카드가 나누는 단계. 예약 한 건은 정확히 한 단계에만 속해서, 다섯 카드를
+ * 더하면 전체 예약 수가 된다.
+ *
+ * 확정(CONFIRMED)은 순번이 잡힌 상태일 뿐이고, 결제까지 끝나야 진짜 확정이다 —
+ * 24시간 안에 결제하지 않으면 자동취소돼 순번에서 빠진다. 그래서 확정을 결제
+ * 상태로 한 번 더 나눈다.
+ */
+export type ReservationStage =
+  'PROCESSING' | 'PAYMENT_PENDING' | 'PAID' | 'REPROCESS_NEEDED' | 'CANCELED'
+
+export const reservationStageLabel: Record<ReservationStage, string> = {
+  PROCESSING: '처리 중',
+  PAYMENT_PENDING: '결제 대기',
+  PAID: '결제 완료',
+  REPROCESS_NEEDED: '재처리 필요',
+  CANCELED: '취소',
+}
+
+// 객체 키 순서가 카드 순서다 — 정상 흐름(처리 중 → 결제 대기 → 결제 완료) 다음에 예외.
+export const reservationStages = Object.keys(
+  reservationStageLabel,
+) as ReservationStage[]
+
+export function reservationStageOf(
+  reservation: Pick<ReservationSummary, 'status' | 'payment'>,
+): ReservationStage {
+  switch (reservation.status) {
+    case 'ACCEPTED':
+      return 'PROCESSING'
+    case 'FAILED':
+      return 'REPROCESS_NEEDED'
+    case 'CANCELED':
+      return 'CANCELED'
+    case 'CONFIRMED':
+      // 결제 정보가 아직 없어도 결제가 끝난 건 아니므로 결제 대기로 본다.
+      return reservation.payment?.status === 'PAID' ? 'PAID' : 'PAYMENT_PENDING'
+  }
+}
+
+/** 단계별 건수. 없는 단계도 0으로 채워 둔다 */
+export function countByStage(
+  reservations: Pick<ReservationSummary, 'status' | 'payment'>[],
+) {
+  const counts = Object.fromEntries(
+    reservationStages.map((stage) => [stage, 0]),
+  ) as Record<ReservationStage, number>
+  for (const reservation of reservations) {
+    counts[reservationStageOf(reservation)] += 1
+  }
+  return counts
+}
+
+/**
+ * 관리자가 손봐야 하는 건수 —자동 재시도가 소진돼 DLQ로 떨어진 등록 지시 수다.
  *
  * '처리 중'(registration.acceptedBacklogCount)과 겹치지 않는다. 그쪽은 아직
  * ACCEPTED라 시스템이 재시도를 돌리는 중인 건이고, 이쪽은 그게 끝난 건이다.

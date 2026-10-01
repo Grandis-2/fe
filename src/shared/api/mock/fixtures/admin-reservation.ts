@@ -210,15 +210,20 @@ function buildHistory(
 }
 
 /**
- * 예약은 접수되면 일단 확정되지만 24시간 안에 결제해야 하고, 미결제는 자동취소된다.
- * 그래서 결제 상태는 예약 상태와 따로 돌아간다 — 확정이어도 결제 대기일 수 있다.
+ * 결제는 확정된 예약에만 붙는다. 확정되면 순번이 잡히고 24시간 안에 결제해야
+ * 하며, 미결제는 자동취소돼 순번에서 빠진다. 그래서 '결제 대기'는 확정의 일부다.
+ * 아직 등록 중(ACCEPTED)이거나 등록에 실패한(FAILED) 예약은 결제할 대상이 없다.
  */
 function buildPayment(
   index: number,
   status: ReservationStatus,
   acceptedAt: string,
   amount: number,
-): { payment: ReservationPayment; expired: boolean } {
+): { payment: ReservationPayment | null; expired: boolean } {
+  if (status === 'ACCEPTED' || status === 'FAILED') {
+    return { payment: null, expired: false }
+  }
+
   const dueAt = new Date(Date.parse(acceptedAt) + PAYMENT_WINDOW_MS)
   const overDue = dueAt.getTime() < Date.now()
 
@@ -228,7 +233,8 @@ function buildPayment(
   const expired =
     status === 'CANCELED' && Math.floor(index / STATUS_CYCLE.length) % 2 === 0
   // 아직 기한이 남았으면 일부는 결제를 미뤄 둔 상태로 둬서 '몇 시간 남음'이 보인다.
-  const unpaid = expired || (!overDue && index % 3 === 0)
+  // 기한이 지났는데 미결제인 확정 건은 이미 자동취소됐어야 하므로 만들지 않는다.
+  const unpaid = !overDue && index % 3 === 0
 
   const paymentStatus: PaymentStatus = expired
     ? 'EXPIRED'

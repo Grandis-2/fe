@@ -5,6 +5,7 @@ export {
   reprocessAdminReservation,
 } from './api/adminReservation'
 export {
+  countByStage,
   failureCodeLabel,
   failureLabelOf,
   isReprocessable,
@@ -14,6 +15,8 @@ export {
   paymentStatusLabels,
   reprocessNeededCountOf,
   reservationNo,
+  reservationStageLabel,
+  reservationStages,
   reservationStatusColor,
   reservationStatusLabel,
   reservationStatusLabels,
@@ -25,5 +28,6 @@ export type {
   AdminReservationFailureCode,
   AdminReservationPayment,
   AdminReservationStatus,
+  ReservationStage,
   AdminStats,
 } from './model/types'

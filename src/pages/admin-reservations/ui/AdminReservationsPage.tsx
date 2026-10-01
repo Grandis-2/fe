@@ -4,25 +4,25 @@ import { RefreshCw } from 'lucide-react'
 
 import { getAdminProducts, type AdminProduct } from '@/entities/admin-product'
 import {
+  countByStage,
   failureLabelOf,
   getAdminMembers,
   getAdminReservations,
-  getAdminStats,
   isReprocessable,
   paymentDueLabel,
   paymentStatusColor,
   paymentStatusLabel,
   paymentStatusLabels,
   reprocessAdminReservation,
-  reprocessNeededCountOf,
   reservationNo,
+  reservationStageLabel,
+  reservationStages,
   reservationStatusColor,
   reservationStatusLabel,
   reservationStatusLabels,
   type AdminMemberModel,
   type AdminReservation,
   type AdminReservationStatus,
-  type AdminStats,
 } from '@/entities/admin-reservation'
 import { useModalStore } from '@/shared/model/modalStore'
 import {
@@ -71,8 +71,8 @@ export function AdminReservationsPage() {
 
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [members, setMembers] = useState<AdminMemberModel[]>([])
-  const [reservations, setReservations] = useState<AdminReservation[]>([])
-  const [stats, setStats] = useState<AdminStats>()
+  // 아직 한 번도 못 받았으면 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
+  const [reservations, setReservations] = useState<AdminReservation[]>()
   const [refreshedAt, setRefreshedAt] = useState<Date>()
   const [error, setError] = useState<string>()
 
@@ -93,20 +93,19 @@ export function AdminReservationsPage() {
   const status: AdminReservationStatus | undefined =
     statusFilter === 'all' ? undefined : statusFilter
 
+  // 카드와 표가 같은 목록에서 나와야 숫자가 어긋나지 않는다. 그래서 상태 탭으로
+  // 서버에서 거르지 않고 상품 기준으로만 받아, 탭은 아래에서 화면이 거른다.
+  // ponytail: 결제 상태별 건수를 주는 집계 API가 없어서 목록(최대 100건)으로 센다.
+  // 100건을 넘으면 카드가 덜 세진다 — 집계 API가 생기면 카드는 그쪽으로 옮긴다.
   const load = useCallback(() => {
-    Promise.all([
-      // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
-      getAdminReservations({ status, productId, size: 100 }),
-      getAdminStats(),
-    ])
-      .then(([paged, loadedStats]) => {
+    getAdminReservations({ productId, size: 100 })
+      .then((paged) => {
         setReservations(paged.items)
-        setStats(loadedStats)
         setRefreshedAt(new Date())
         setError(undefined)
       })
       .catch((cause: Error) => setError(cause.message))
-  }, [status, productId])
+  }, [productId])
 
   // 접수는 계속 들어오므로 주기적으로 다시 받는다.
   useEffect(() => {
@@ -137,34 +136,22 @@ export function AdminReservationsPage() {
 
   // 예약번호로 거르는 쿼리 파라미터가 명세에 없어 받아온 목록에서 직접 찾는다.
   const trimmedKeyword = keyword.trim().toUpperCase()
-  const visibleReservations = trimmedKeyword
-    ? reservations.filter((reservation) =>
+  const visibleReservations = (reservations ?? [])
+    .filter((reservation) => !status || reservation.status === status)
+    .filter(
+      (reservation) =>
+        !trimmedKeyword ||
         reservationNo(reservation.reservationId).includes(trimmedKeyword),
-      )
-    : reservations
+    )
 
-  const cards: { label: string; value: number | undefined }[] = [
-    { label: '접수', value: stats?.accept.uniqueAcceptedCount },
-    { label: '처리 중', value: stats?.registration.acceptedBacklogCount },
-    { label: '확정', value: stats?.registration.confirmedCount },
-    // '처리 중'은 시스템이 알아서 재시도까지 돌리는 구간이고, '재처리 필요'는
-    // 그 재시도가 소진돼 사람이 손봐야 하는 구간이다. 둘이 겹치지 않는다.
-    { label: '재처리 필요', value: stats && reprocessNeededCountOf(stats) },
-    // 결제 대기·취소 건수는 stats에 없어서 목록 응답에서 센다.
-    {
-      label: '결제 대기',
-      value:
-        stats &&
-        reservations.filter(
-          (reservation) => reservation.payment?.status === 'PENDING',
-        ).length,
-    },
-    {
-      label: '취소',
-      value:
-        stats && reservations.filter((r) => r.status === 'CANCELED').length,
-    },
-  ]
+  const stageCounts = reservations && countByStage(reservations)
+
+  // 예약 한 건이 정확히 한 카드에만 들어간다 — 다섯 카드의 합이 전체 예약 수다.
+  // 누적 '접수'는 이 단계들과 겹쳐서 헷갈리므로 카드로 두지 않는다.
+  const cards = reservationStages.map((stage) => ({
+    label: reservationStageLabel[stage],
+    value: stageCounts?.[stage],
+  }))
 
   const columns: TableColumn<AdminReservation>[] = [
     {
@@ -305,7 +292,7 @@ export function AdminReservationsPage() {
       <div className={styles.cards}>
         {cards.map(({ label, value }) => {
           // 조회에 실패했으면 0건으로 보여주지 않는다 — 운영 판단이 정반대다.
-          const unknown = stats?.queryFailed || value === undefined
+          const unknown = value === undefined
           return (
             <StatCard
               key={label}
