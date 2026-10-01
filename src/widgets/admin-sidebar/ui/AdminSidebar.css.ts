@@ -26,7 +26,7 @@ export const navItem = style([
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    padding: `${spacing[12]} ${spacing[20]}`,
+    padding: `${spacing[12]} ${spacing[40]}`,
     borderLeft: '3px solid transparent',
     color: color.text.secondary,
     textDecoration: 'none',

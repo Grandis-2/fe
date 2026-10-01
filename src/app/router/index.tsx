@@ -13,7 +13,6 @@ import { AdminProductsPage } from '@/pages/admin-products'
 import { AdminPromotionEditPage } from '@/pages/admin-promotion-edit'
 import { AdminPromotionNewPage } from '@/pages/admin-promotion-new'
 import { AdminPromotionsPage } from '@/pages/admin-promotions'
-import { AdminReservationDetailPage } from '@/pages/admin-reservation-detail'
 import { AdminReservationsPage } from '@/pages/admin-reservations'
 import { KakaoCallbackPage } from '@/pages/kakao-callback'
 import { MainPage } from '@/pages/main'
@@ -37,7 +36,6 @@ import {
   SIGNUP_PATH,
   adminProductPath,
   adminPromotionPath,
-  adminReservationPath,
 } from '@/shared/config/routes'
 
 export const router = createBrowserRouter([
@@ -87,10 +85,6 @@ export const router = createBrowserRouter([
             element: <AdminPromotionEditPage />,
           },
           { path: ADMIN_RESERVATIONS_PATH, element: <AdminReservationsPage /> },
-          {
-            path: adminReservationPath(':reservationId'),
-            element: <AdminReservationDetailPage />,
-          },
           {
             path: '/admin/consistency-check',
             element: <AdminPlaceholderPage title="정합성 대조" />,

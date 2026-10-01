@@ -156,6 +156,9 @@ function buildDetail(seed: Seed): AdminProductDetail {
 }
 
 // 페이지네이션을 확인할 수 있도록 4종을 반복해 채운다.
+// 이름까지 그대로 베끼면 같은 이름이 3~4개씩 생겨서, 예약 현황의 상품 필터
+// 드롭다운이 '갤럭시 G999'만 네 줄 나오는 모양이 된다(어느 걸 고른 건지 알 수
+// 없다). productId에 붙이는 번호를 이름에도 붙여 서로 구분되게 한다.
 export const adminProductStore: AdminProductDetail[] = Array.from(
   { length: 13 },
   (_, index) => {
@@ -163,6 +166,7 @@ export const adminProductStore: AdminProductDetail[] = Array.from(
     return buildDetail({
       ...seed,
       productId: `${seed.productId}-${index + 1}`,
+      name: `${seed.name} ${index + 1}`,
     })
   },
 )

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { SquarePen } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -18,6 +19,7 @@ import {
   adminPromotionPath,
 } from '@/shared/config/routes'
 import { useModalStore } from '@/shared/model/modalStore'
+import { showToast } from '@/shared/model/toastStore'
 import { Button, ConfirmDialog, SegmentedTabs, Table, Tag } from '@/shared/ui'
 import type { TableColumn } from '@/shared/ui'
 
@@ -38,7 +40,6 @@ export function AdminPromotionsPage() {
   const closeModal = useModalStore((state) => state.close)
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
-  const [copiedId, setCopiedId] = useState<string>()
 
   const visiblePromotions = mockPromotions.filter(
     (promotion) =>
@@ -71,11 +72,13 @@ export function AdminPromotionsPage() {
     navigate(ADMIN_PROMOTION_NEW_PATH)
   }
 
-  const copyLink = (promotion: AdminPromotion) => {
-    void navigator.clipboard.writeText(promotion.publicUrl).then(() => {
-      setCopiedId(promotion.promotionId)
-    })
-  }
+  // 버튼은 그대로 두고 결과만 토스트로 알린다 — 여러 번 눌러도 매번 같은 피드백을 준다.
+  // 클립보드는 권한·비보안 컨텍스트(http)에서 거절될 수 있어 실패도 알린다.
+  const copyLink = (promotion: AdminPromotion) =>
+    void navigator.clipboard
+      .writeText(promotion.publicUrl)
+      .then(() => showToast('링크가 복사되었습니다!'))
+      .catch(() => showToast('링크를 복사하지 못했습니다. 다시 시도해 주세요.'))
 
   const columns: TableColumn<AdminPromotion>[] = [
     {
@@ -118,23 +121,20 @@ export function AdminPromotionsPage() {
       key: 'link',
       header: '링크복사',
       align: 'center',
-      render: (promotion) =>
-        copiedId === promotion.promotionId ? (
-          <span className={styles.copied}>복사됨</span>
-        ) : (
-          <Button
-            size="small"
-            variant="outline"
-            color="cancel"
-            onClick={(event) => {
-              // 행 클릭으로 상세까지 열리면 안 된다.
-              event.stopPropagation()
-              copyLink(promotion)
-            }}
-          >
-            링크 복사
-          </Button>
-        ),
+      render: (promotion) => (
+        <Button
+          size="small"
+          variant="outline"
+          color="cancel"
+          onClick={(event) => {
+            // 행 클릭으로 상세까지 열리면 안 된다.
+            event.stopPropagation()
+            copyLink(promotion)
+          }}
+        >
+          링크 복사
+        </Button>
+      ),
     },
   ]
 
@@ -163,6 +163,7 @@ export function AdminPromotionsPage() {
           header: '수정',
           label: (promotion) => `${promotion.name} 수정`,
           onClick: openDetail,
+          icon: SquarePen,
         }}
         emptyMessage="조건에 맞는 프로모션이 없습니다."
       />
