@@ -4,8 +4,6 @@ import type {
   AdminReservationListParams,
   AdminStatsResponse,
   Paged,
-  ReservationCreateRequest,
-  ReservationDetail,
   ReservationSummary,
 } from '@/shared/api/types'
 
@@ -24,37 +22,17 @@ const toQuery = (params: AdminReservationListParams) => {
 export const getAdminReservations = (params: AdminReservationListParams = {}) =>
   apiClient.request<Paged<ReservationSummary>>(`${BASE}${toQuery(params)}`)
 
-export const getAdminReservation = (reservationId: string) =>
-  apiClient.request<ReservationDetail>(`${BASE}/${reservationId}`)
-
 export const getAdminStats = (runId?: string) =>
   apiClient.request<AdminStatsResponse>(
     `/api/v1/admin/stats${runId ? `?runId=${runId}` : ''}`,
   )
 
-// ponytail: 아래 넷은 명세에 없는 임시 계약이다(shared/api/mock/handlers/
+// ponytail: 재처리 엔드포인트는 명세에 없다(shared/api/mock/handlers/
 // admin-reservation.ts의 같은 주석 참고). 계약이 나오면 함께 고친다.
-export const createAdminReservation = (body: ReservationCreateRequest) =>
-  apiClient.request<ReservationDetail>(BASE, { method: 'POST', body })
-
+// 응답 본문은 쓰지 않는다 — 호출부가 목록을 다시 받아 표 전체를 갱신한다.
 export const reprocessAdminReservation = (reservationId: string) =>
-  apiClient.request<ReservationDetail>(`${BASE}/${reservationId}/reprocess`, {
+  apiClient.request<unknown>(`${BASE}/${reservationId}/reprocess`, {
     method: 'POST',
-  })
-
-export const forceFinalizeAdminReservation = (reservationId: string) =>
-  apiClient.request<ReservationDetail>(
-    `${BASE}/${reservationId}/force-finalize`,
-    { method: 'POST' },
-  )
-
-export const putAdminReservationMemo = (
-  reservationId: string,
-  memo: string | null,
-) =>
-  apiClient.request<ReservationDetail>(`${BASE}/${reservationId}/memo`, {
-    method: 'PATCH',
-    body: { memo },
   })
 
 export const getAdminMembers = (keyword?: string) =>

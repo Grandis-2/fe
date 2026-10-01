@@ -1,6 +1,5 @@
 import { http } from 'msw'
 
-import { adminProductStore } from '../fixtures/admin-product'
 import {
   findReservation,
   mockMembers,
@@ -12,10 +11,8 @@ import { url } from '../url'
 import type {
   AdminStatsResponse,
   Paged,
-  ReservationCreateRequest,
   ReservationDetail,
   ReservationFailureCode,
-  ReservationMemoRequest,
   ReservationStatus,
   ReservationSummary,
 } from '../../types'
@@ -52,6 +49,7 @@ function toSummary(detail: ReservationDetail, now: number): ReservationSummary {
     memberId: detail.memberId,
     runId: detail.runId,
     cleanup: detail.cleanup,
+    payment: detail.payment,
     failureCode: detail.failure?.code ?? null,
     overdue:
       detail.status === 'ACCEPTED' && Date.parse(detail.deadlineAt) < now,
@@ -61,15 +59,6 @@ function toSummary(detail: ReservationDetail, now: number): ReservationSummary {
 
 const hasPendingCleanup = (detail: ReservationDetail) =>
   Object.values(detail.cleanup).some((state) => state !== 'NOT_REQUIRED')
-
-/** 같은 회원이 같은 상품에 이미 진행 중인 예약을 들고 있는지 */
-const findActiveReservation = (memberId: string, productId: string) =>
-  reservationStore.find(
-    (item) =>
-      item.memberId === memberId &&
-      item.productId === productId &&
-      (item.status === 'ACCEPTED' || item.status === 'CONFIRMED'),
-  )
 
 const countByStatus = (status: ReservationStatus) =>
   reservationStore.filter((item) => item.status === status).length
@@ -118,9 +107,16 @@ function buildStats(): AdminStatsResponse {
     },
     commands: {
       byKind: {
+        // 기한을 넘긴 접수는 자동 재시도가 돌고 있는 중이고(retrying),
+        // 재시도가 소진된 건이 DLQ로 떨어져(dead) 관리자 재처리를 기다린다.
         REGISTER: {
           ...emptyKind,
-          inProgressCount: accepted.length,
+          inProgressCount: accepted.filter(
+            (item) => Date.parse(item.deadlineAt) >= now,
+          ).length,
+          retryingCount: accepted.filter(
+            (item) => Date.parse(item.deadlineAt) < now,
+          ).length,
           deadCount: countByStatus('FAILED'),
         },
         CANCEL_COMPENSATION: emptyKind,
@@ -207,90 +203,8 @@ export const adminReservationHandlers: RequestHandler[] = [
     return detail ? ok(detail) : notFound()
   }),
 
-  // ponytail: 아래 다섯 핸들러는 명세에 없는 임시 계약이다. 와이어프레임의
-  // '예약 생성 / 재처리 시도 / 강제 종결 / 내부 메모'를 붙이려면 필요해서
-  // 기존 명세의 작명 규칙을 따라 임의로 정했다. 실제 계약이 나오면 교체한다.
-  http.post(url('/api/v1/admin/reservations'), async ({ request }) => {
-    const body = (await request.json()) as ReservationCreateRequest
-
-    const product = adminProductStore.find(
-      (item) => item.productId === body.productId,
-    )
-    if (!product) return notFound()
-
-    const duplicated = findActiveReservation(body.memberId, body.productId)
-    if (duplicated) {
-      return fail(409, {
-        code: 'ACTIVE_RESERVATION_EXISTS',
-        message: '이미 진행 중인 예약이 있습니다.',
-        retryable: false,
-        // 화면이 '어느 예약과 겹쳤는지'를 보여줘야 해서 예약 ID를 함께 내린다.
-        violations: [{ field: 'memberId', message: duplicated.reservationId }],
-      })
-    }
-
-    const variant = product.variants.find(
-      (item) => item.optionCode === body.optionCode,
-    )
-    if (!variant) return notFound()
-
-    const now = new Date()
-    const acceptedAt = now.toISOString()
-    const reservationId = crypto.randomUUID()
-
-    const created: ReservationDetail = {
-      reservationId,
-      productId: product.productId,
-      productName: product.name,
-      optionCode: variant.optionCode,
-      optionName: variant.name,
-      quantity: body.quantity,
-      status: 'ACCEPTED',
-      acceptSeq:
-        Math.max(0, ...reservationStore.map((item) => item.acceptSeq)) + 1,
-      dispatch: null,
-      externalReservationNo: null,
-      acceptedAt,
-      deadlineAt: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
-      finalizedAt: null,
-      version: 1,
-      memberId: body.memberId,
-      runId: null,
-      cleanup: {
-        externalCancel: 'NOT_REQUIRED',
-        refund: 'NOT_REQUIRED',
-        stockRestore: 'NOT_REQUIRED',
-      },
-      failure: null,
-      cancelable: true,
-      payment: null,
-      externalKey: `EK-${reservationId.slice(-8)}`,
-      memo: body.memo ?? null,
-      // 운영자가 대신 접수해도 절차는 회원 신청과 같다 — 주체만 ADMIN으로 남긴다.
-      createdByActorType: 'ADMIN',
-      createdByActorId: 'admin',
-      commands: [],
-      stockReservation: null,
-      history: [
-        {
-          historySeq: 0,
-          transition: 'T1',
-          fromStatus: null,
-          toStatus: 'ACCEPTED',
-          actorType: 'ADMIN',
-          actorId: 'admin',
-          reasonCode: null,
-          note: body.memo ?? '관리자 대리 접수',
-          decidedAt: acceptedAt,
-          committedAt: acceptedAt,
-        },
-      ],
-    }
-    reservationStore.push(created)
-
-    return ok(created, 201)
-  }),
-
+  // ponytail: 재처리 핸들러는 명세에 없는 임시 계약이다. 와이어프레임의 '재처리
+  // 시도'를 붙이려면 필요해서 기존 명세의 작명 규칙을 따라 임의로 정했다.
   http.post(
     url('/api/v1/admin/reservations/:reservationId/reprocess'),
     ({ params }) => {
@@ -299,7 +213,7 @@ export const adminReservationHandlers: RequestHandler[] = [
       if (detail.status !== 'FAILED') {
         return fail(409, {
           code: 'RESERVATION_NOT_REPROCESSABLE',
-          message: '확정 실패 상태에서만 재처리할 수 있습니다.',
+          message: '등록 실패 상태에서만 재처리할 수 있습니다.',
           retryable: false,
         })
       }
@@ -332,56 +246,8 @@ export const adminReservationHandlers: RequestHandler[] = [
     },
   ),
 
-  http.post(
-    url('/api/v1/admin/reservations/:reservationId/force-finalize'),
-    ({ params }) => {
-      const detail = findReservation(String(params.reservationId))
-      if (!detail) return notFound()
-      if (detail.status !== 'FAILED') {
-        return fail(409, {
-          code: 'RESERVATION_NOT_REPROCESSABLE',
-          message: '확정 실패 상태에서만 강제 종결할 수 있습니다.',
-          retryable: false,
-        })
-      }
-
-      const at = new Date().toISOString()
-      detail.status = 'CANCELED'
-      detail.finalizedAt = at
-      detail.cancelable = false
-      detail.version += 1
-      detail.cleanup = { ...detail.cleanup, stockRestore: 'PENDING' }
-      detail.history.push({
-        historySeq: detail.history.length,
-        transition: 'T7',
-        fromStatus: 'FAILED',
-        toStatus: 'CANCELED',
-        actorType: 'ADMIN',
-        actorId: 'admin',
-        reasonCode: 'FORCE_FINALIZE',
-        note: '강제 종결',
-        decidedAt: at,
-        committedAt: at,
-      })
-
-      return ok(detail)
-    },
-  ),
-
-  http.patch(
-    url('/api/v1/admin/reservations/:reservationId/memo'),
-    async ({ request, params }) => {
-      const detail = findReservation(String(params.reservationId))
-      if (!detail) return notFound()
-
-      const body = (await request.json()) as ReservationMemoRequest
-      detail.memo = body.memo
-      return ok(detail)
-    },
-  ),
-
-  // ponytail: 회원을 이름으로 찾는 API가 명세에 없다. 생성 모달의 '대상 회원'
-  // 입력을 만들려면 필요해서 목에만 둔다.
+  // ponytail: 회원 이름을 주는 API가 명세에 없다. 예약 응답에 이름이 없어서
+  // 표의 '예약자' 열이 memberId를 이름으로 바꾸려면 필요해 목에만 둔다.
   http.get(url('/api/v1/admin/members'), ({ request }) => {
     const keyword = new URL(request.url).searchParams.get('q')?.trim() ?? ''
     const items = keyword
