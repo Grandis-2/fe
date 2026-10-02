@@ -10,11 +10,20 @@ import {
   TAB_BAR_OFFSET,
 } from '@shared/config/theme'
 
-export const productName = style([typography.title.lgSemibold])
+// 모바일은 화면 위쪽에 상품명이 이미 있어 바에서는 옵션 줄만 남긴다.
+export const productName = style([
+  typography.title.lgSemibold,
+  { '@media': { [breakpoint.mobile]: { display: 'none' } } },
+])
 export const productOption = style([
   typography.body.sub,
   { color: color.text.tertiary },
 ])
+
+// 모바일 전용 — 상품명 없이 옵션 줄만 남으니 무엇인지 앞에 붙인다. 데스크톱은 상품명 아래라 필요 없다.
+export const optionPrefix = style({
+  '@media': { [breakpoint.desktop]: { display: 'none' } },
+})
 
 // 모바일: 화면 하단에 항상 고정(장바구니/결제하기가 스크롤과 무관하게 늘 보여야 함).
 // 바텀시트(sheet)와 같은 flex-column 컨테이너에 넣어서 시트가 항상 바로 위에 딱 붙는다 —
@@ -110,16 +119,11 @@ export const orderBarShipmentNotice = style([
   },
 ])
 
-// 모바일은 수량/가격 줄이 있어 상품명/옵션 텍스트는 고정바에서 숨긴다.
+// 상품명 + 선택한 옵션. 모바일은 상품명을 숨기고(productName) 옵션 줄만 수량/가격 줄 위에 보여준다.
 export const orderBarInfo = style({
-  display: 'none',
-  '@media': {
-    [breakpoint.desktop]: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: spacing[2],
-    },
-  },
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[2],
 })
 
 // 모바일 전용 — 수량 스테퍼와 가격을 버튼 줄 위에 양 끝으로 보여준다. 데스크톱은 옵션

@@ -76,6 +76,7 @@ export function ProductPurchaseBar({
             <div className={styles.orderBarInfo}>
               <div className={styles.productName}>{productName}</div>
               <div className={styles.productOption}>
+                <span className={styles.optionPrefix}>옵션 : </span>
                 {colorLabel} · {optionLabel}
               </div>
             </div>

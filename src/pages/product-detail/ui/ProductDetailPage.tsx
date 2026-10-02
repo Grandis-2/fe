@@ -133,12 +133,6 @@ export function ProductDetailPage() {
     totalPrice,
   } = purchase
 
-  // 구매 요약 카드에 보여줄 값들 — 고른 옵션 라벨(제목), 할인, 총 결제 금액.
-  const selectedLabels = optionGroups.map(
-    (group, i) => group.values[selectedOptions[i]].label,
-  )
-  const labelOf = (groupLabel: string) =>
-    selectedLabels[optionGroups.findIndex(({ label }) => label === groupLabel)]
   // 결제 화면(PaymentPage)과 같은 비율로 할인해서 두 화면의 합계가 맞는다.
   const benefitAmount = Math.round(totalPrice * PREORDER_BENEFIT_RATE)
 
@@ -260,7 +254,7 @@ export function ProductDetailPage() {
               </div>
             </div>
             <PurchaseSummary
-              title={`${labelOf('칩')} 칩 탑재 ${colorLabel} MacBook Pro ${labelOf('크기')} 모델`}
+              title={`옵션 : ${colorLabel} · ${optionLabel}`}
               rows={[
                 { label: '상품 금액', value: formatWon(totalPrice) },
                 { label: '수량', value: `${quantity}개` },

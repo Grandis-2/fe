@@ -35,7 +35,15 @@ export function ProductOptionSelector({
 }: ProductOptionSelectorProps) {
   return (
     <div className={[styles.root[size], className].filter(Boolean).join(' ')}>
-      <div className={[labelTypography[size], styles.label].join(' ')}>
+      <div
+        className={[
+          labelTypography[size],
+          styles.label,
+          size === 'medium' && styles.labelMedium,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+      >
         {label}
       </div>
       <div className={styles.optionRow[size]}>

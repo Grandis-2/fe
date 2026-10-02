@@ -8,7 +8,7 @@ export type PurchaseSummaryRow = {
 }
 
 export type PurchaseSummaryProps = {
-  // 선택한 구성을 한 문장으로 — 예: "M5 칩 탑재 실버 MacBook Pro 14인치 모델"
+  // 선택한 구성 — 모바일 하단 바와 같은 형식, 예: "옵션 : 실버 · 14인치 · 16GB · 512GB · M5"
   title: string
   // 합계 위에 쌓이는 금액 줄(상품 금액, 할인 등).
   rows: PurchaseSummaryRow[]

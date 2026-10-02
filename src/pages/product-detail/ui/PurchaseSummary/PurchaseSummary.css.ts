@@ -20,7 +20,11 @@ export const root = style({
   },
 })
 
-export const title = style([typography.title.mdSemibold])
+// 모바일 하단 바의 옵션 줄(ProductPurchaseBar의 productOption)과 같은 모양.
+export const title = style([
+  typography.body.sub,
+  { color: color.text.tertiary },
+])
 
 export const prices = style({
   display: 'flex',
