@@ -11,11 +11,11 @@ const renderItem = (item: ProductPaymentCardItem) => (
 )
 
 const item: ProductPaymentCardItem = {
-  name: '아이폰 18 Pro',
-  modelNumber: 'A3714',
-  optionSummary: '스타라이트 · 256GB · AppleCare+ 포함',
+  name: '맥북 프로 14',
+  modelNumber: 'A3112',
+  optionSummary: '스페이스 블랙 · 512GB · AppleCare+ 포함',
   quantityLabel: '수량 1개',
-  priceLabel: '2,278,100원',
+  priceLabel: '2,390,000원',
 }
 
 // ponytail: 아직 구매 내역 API가 없어서 상태별 목업 데이터로 대체

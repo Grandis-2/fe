@@ -3,21 +3,21 @@ import type { AdminProduct, AdminProductStock } from './types'
 // ponytail: 아직 관리자 상품 API가 없어서 목업 데이터로 화면을 채운다.
 const baseProducts: Omit<AdminProduct, 'id'>[] = [
   {
-    name: '아이폰 18 PRO',
+    name: '맥북 프로 14',
     type: 'preorder',
     optionCount: 4,
     openPeriod: '2026년 9월 15일 09:00 ~ 2026년 9월 15일 23:59',
     status: 'selling',
   },
   {
-    name: '아이폰 18',
+    name: '맥북 에어 15',
     type: 'normal',
     optionCount: 4,
     openPeriod: null,
     status: 'selling',
   },
   {
-    name: 'Samsung Fold 8',
+    name: 'Samsung Galaxy Book 6',
     type: 'preorder',
     optionCount: 2,
     openPeriod: '2026년 9월 20일 10:00 ~ 2026년 9월 21일 23:59',

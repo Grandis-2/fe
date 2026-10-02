@@ -11,7 +11,7 @@ const PREORDERS: PreorderCardData[] = [
     imageSrc: placeholderImage,
     imageAlt: 'Image description',
     title:
-      '아이폰 18프로, 18프로맥스, 울트라 사전예약 프로모션 아이폰 18프로, 18프로맥스, 울트라 사전예약 프로모션 아이폰 18프로, 18프로맥스, 울트라 사전예약 프로모션',
+      '맥북 프로 14, 맥북 프로 16, 맥북 에어 사전예약 프로모션 맥북 프로 14, 맥북 프로 16, 맥북 에어 사전예약 프로모션 맥북 프로 14, 맥북 프로 16, 맥북 에어 사전예약 프로모션',
     opensAt: '2026.09.01',
     closesAt: '2026.09.17',
   },
