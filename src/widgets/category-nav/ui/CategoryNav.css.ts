@@ -58,6 +58,8 @@ export const link = style({
   font: 'inherit',
   color: 'inherit',
   textDecoration: 'none',
+  // root가 minWidth: 0이라 좁은 화면에서 링크가 줄어들며 글자가 두 줄로 꺾인다.
+  whiteSpace: 'nowrap',
   cursor: 'pointer',
   // font-weight를 바꾸면 글자 폭이 늘어나 레이아웃이 흔들리므로, 실제 두께는 유지하고
   // 글자 윤곽선 전체에 얇은 stroke를 둘러 가로/세로 모두 고르게 두꺼워 보이게 한다.
@@ -199,15 +201,35 @@ export const menuInner = style({
   padding: `0 ${spacing[40]}`,
 })
 
-export const menuCategories = style({
+// 카테고리 / 브랜드 두 묶음을 세로로 쌓는다. 남은 폭을 차지해야 타일이 오른쪽
+// menuAside("더 알아보기")를 밀어내지 않고 줄바꿈한다.
+export const menuGroups = style({
   display: 'flex',
-  gap: spacing[16],
+  flexDirection: 'column',
+  gap: spacing[24],
+  flex: 1,
+  minWidth: 0,
+  // menuInner가 stretch라 두면 aside 높이만큼 늘어난다.
+  alignSelf: 'flex-start',
 })
 
-// 이 행 안의 타일(menuTile/menuTileWithThumbnail)만 고정 폭으로 맞춘다 — 같은
-// 클래스를 쓰는 모바일 바텀시트 그리드는 grid-template-columns가 폭을 정하므로
-// 건드리지 않는다.
-globalStyle(`${menuCategories} > a`, { flex: '1 1 auto', maxWidth: '150px' })
+export const menuGroup = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+})
+
+// 타일은 폭 180px 고정이고, 넘치면 다음 줄로 넘어간다. 높이도 모든 타일이 같아야
+// 해서 행 높이를 썸네일 타일 내용 높이(패딩 12×2 + 썸네일 64 + gap 8 + 글자 한 줄
+// ≈ 114.2px)보다 조금 큰 116px로 맞춘다 — 카테고리/브랜드가 서로 다른 그리드라 1fr로는
+// 둘을 맞출 수 없고, 딱 114px면 내용 높이와 0.2px씩 어긋난다.
+// (menuTile은 모바일 바텀시트도 써서 폭/높이는 타일이 아니라 이 그리드에서 정한다.)
+export const menuTileGrid = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fill, 180px)',
+  gridAutoRows: 'minmax(116px, auto)',
+  gap: spacing[16],
+})
 
 export const menuTile = style([
   typography.body.subMedium,
@@ -258,6 +280,8 @@ export const menuAside = style({
   marginLeft: 'auto',
   boxSizing: 'border-box',
   width: '200px',
+  // 타일 쪽이 줄어들며 줄바꿈하지, 이 칸이 같이 줄어들면 안 된다.
+  flexShrink: 0,
   paddingLeft: spacing[30],
   borderLeft: `1px solid ${color.border.subtle}`,
 })
@@ -270,6 +294,12 @@ export const mobileRoot = style({
   gap: spacing[24],
   overflowY: 'auto',
 })
+
+// 이벤트 배너와 브랜드 섹션 사이 구분 제목. 시트 제목(메뉴)보다 한 단계 작게.
+export const mobileHeading = style([
+  typography.title.mdSemibold,
+  { color: color.text.primary },
+])
 
 export const mobileSection = style({
   display: 'flex',
@@ -339,20 +369,26 @@ export const mobileCategoryThumbnail = style({
   objectFit: 'contain',
 })
 
-export const mobileLinks = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[16],
-  paddingTop: spacing[20],
-  borderTop: `1px solid ${color.border.subtle}`,
-})
-
-export const mobileLink = style([
-  typography.body.defaultRegular,
-  { color: color.text.secondary, textDecoration: 'none' },
+// 시트 맨 위 이벤트 배너. 상품 카테고리와 성격이 달라 목록과 떼어 위에 둔다.
+export const mobileEventBanner = style([
+  typography.body.defaultMedium,
+  {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing[16],
+    background: color.primary.subtler,
+    color: color.primary.base,
+    textDecoration: 'none',
+    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
+    selectors: {
+      '&:hover': { background: color.primary.subtlerHover },
+    },
+  },
 ])
 
-export const menuAsideTitle = style([
+// 메가 메뉴의 소제목 — 카테고리/브랜드 묶음과 "더 알아보기"가 같이 쓴다.
+export const menuSectionTitle = style([
   typography.body.subMedium,
   { color: color.text.tertiary },
 ])

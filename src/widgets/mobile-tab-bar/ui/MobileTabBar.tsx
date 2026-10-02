@@ -86,7 +86,7 @@ export function MobileTabBar() {
           onClick={() => setIsCategoryOpen((open) => !open)}
         >
           <LayoutGrid className={styles.icon} aria-hidden="true" />
-          <span className={styles.label}>카테고리</span>
+          <span className={styles.label}>메뉴</span>
         </button>
         {tabs.slice(1).map(renderTab)}
       </nav>
@@ -97,7 +97,7 @@ export function MobileTabBar() {
               ' ',
             )}
           >
-            카테고리
+            메뉴
           </BottomSheet.Title>
           <div className={styles.sheetScroll}>
             <MobileCategoryNav onNavigate={() => setIsCategoryOpen(false)} />
