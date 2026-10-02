@@ -98,6 +98,9 @@ const PROFILE_LIMITS: Record<keyof UpdateProfileRequest, number> = {
 }
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const hasCompleteProfile = () =>
+  Boolean(profile.name && profile.email && profile.phoneNumber)
+
 function validateProfile(body: Partial<UpdateProfileRequest> | null) {
   const violations: ApiViolation[] = []
   const required = ['name', 'email', 'phoneNumber'] as const
@@ -183,8 +186,15 @@ export const authHandlers: RequestHandler[] = [
     usedCodes.add(body.code)
     saveDB()
 
-    const { sessionToken, cookie } = issueSession(MOCK_USER)
-    const response = ok<Session>({ sessionToken, ...MOCK_USER })
+    // 이미 가입(프로필 입력)을 마친 회원은 다시 로그인해도 profileComplete: true다 —
+    // MOCK_USER는 새로고침마다 false로 다시 만들어지는데 프로필은 sessionStorage DB에 남아 있어서,
+    // 그대로 쓰면 가입을 마친 뒤 재로그인할 때마다 /signup으로 되돌려진다.
+    const record: SessionRecord = {
+      ...MOCK_USER,
+      profileComplete: hasCompleteProfile(),
+    }
+    const { sessionToken, cookie } = issueSession(record)
+    const response = ok<Session>({ sessionToken, ...record })
     response.headers.set('X-Mock-Set-Cookie', cookie)
     return response
   }),
