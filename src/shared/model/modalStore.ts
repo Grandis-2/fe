@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { createStore } from '@shared/lib/createStore'
+import { create } from 'zustand'
 
 type ModalStore = {
   isOpen: boolean
@@ -12,7 +12,7 @@ type ModalStore = {
 // 모달은 RootLayout에 하나만 띄워두고, 내용은 여는 쪽이 넘긴다 —
 // open(<KakaoLoginModal />). 모달이 늘어나도 RootLayout은 그대로다.
 // 한 번에 하나만 열린다(나중에 겹쳐 띄울 일이 생기면 스택으로 바꾼다).
-export const useModalStore = createStore<ModalStore>((set) => ({
+export const useModalStore = create<ModalStore>()((set) => ({
   isOpen: false,
   content: null,
   open: (content) => set({ isOpen: true, content }),
