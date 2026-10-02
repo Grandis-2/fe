@@ -11,6 +11,8 @@ import * as styles from './PreorderDetailPage.css'
 
 // ponytail: 임시 하드코딩된 오픈 시간, 실제 데이터 연동 시 API 응답으로 교체
 const TEMP_OPENS_AT = new Date('2026-09-20T10:00:00')
+// ponytail: 사전예약 목록 목업(PreorderPage)의 첫 카드와 같은 기간 — API 연동 시 응답의 opensAt/closesAt으로 교체
+const TEMP_PERIOD = '2026.09.01 ~ 2026.09.17'
 
 export function PreorderDetailPage() {
   const navigate = useNavigate()
@@ -29,7 +31,7 @@ export function PreorderDetailPage() {
   const handleNotify = () => {
     // ponytail: 알림 신청 API 연동 전 임시 처리 — 연동 시 실제 제출 로직으로 교체
     setIsAlert(true)
-    alert('IPhone 18 Pro 알림 신청이 완료됐습니다.')
+    alert('MacBook Pro 14 알림 신청이 완료됐습니다.')
   }
 
   const handleNotifySubmit = () => {
@@ -51,7 +53,8 @@ export function PreorderDetailPage() {
       className={styles.Container}
     >
       <div className={styles.title}>
-        아이폰 18프로, 18프로맥스, 울트라 사전예약 프로모션
+        맥북 프로 14, 맥북 프로 16, 맥북 에어 사전예약 프로모션
+        <div className={styles.period}>{TEMP_PERIOD}</div>
       </div>
 
       <div
@@ -111,22 +114,20 @@ export function PreorderDetailPage() {
           </BottomSheet.Description>
           <div className={styles.modelSummary}>
             <PreorderModelSummary
-              name="IPhone 18 Pro"
+              name="MacBook Pro 14"
               opensAtLabel={`오픈일 ${TEMP_OPENS_AT.toLocaleDateString()}`}
               isOver={isOver}
               isAlert={isAlert}
-              onReserve={() => handleReserve('IP-18-PRO', 'IPhone 18 Pro')}
+              onReserve={() => handleReserve('MBP-14', 'MacBook Pro 14')}
               onNotify={handleNotify}
             />
 
             <PreorderModelSummary
-              name="IPhone 18 Pro Max"
+              name="MacBook Pro 16"
               opensAtLabel={`오픈일 ${TEMP_OPENS_AT.toLocaleDateString()}`}
               isOver={isOver}
               isAlert={isAlert}
-              onReserve={() =>
-                handleReserve('IP-18-PRO-MAX', 'IPhone 18 Pro Max')
-              }
+              onReserve={() => handleReserve('MBP-16', 'MacBook Pro 16')}
               onNotify={handleNotify}
             />
           </div>

@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, typography, spacing } from '@/shared/config/theme'
+import { breakpoint, color, typography, spacing } from '@/shared/config/theme'
 import { headerHeight } from '@/widgets/header'
 
 // 헤더가 항상 sticky(= 문서 흐름 안)라 배너가 헤더 높이만큼 아래에서 시작한다 —
@@ -56,6 +56,11 @@ export const carouselSlide = style({
       marginRight: spacing[24],
     },
   },
+  // 슬라이드 폭은 카드의 minWidth(230px)가 정해 왔는데, 모바일 카드는 그 최소 폭을
+  // 풀어서(ProductCard.css) 폭을 여기서 직접 준다.
+  '@media': {
+    [breakpoint.mobile]: { width: '230px' },
+  },
 })
 
 // apple-design 스킬 §15(타이포그래피) + §12(vibrancy): 배경 위에 얹히는 큰 텍스트는
@@ -83,6 +88,13 @@ export const recommendedSection = style({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
   gap: spacing[24],
+  '@media': {
+    // 모바일 카드는 검색 페이지처럼 2열로 놓는 작은 카드다.
+    [breakpoint.mobile]: {
+      gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+      gap: spacing[12],
+    },
+  },
 })
 
 export const recommendedTitle = style([

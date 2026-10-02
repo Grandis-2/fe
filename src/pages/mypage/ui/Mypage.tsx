@@ -1,7 +1,7 @@
 import { useSearchParams } from 'react-router'
 
 import { MYPAGE_TABS } from '@/shared/config/routes'
-import { Container } from '@/shared/ui'
+import { Container, SegmentedTabs } from '@/shared/ui'
 import { MypageAddress } from '@/widgets/mypage-address'
 import { MypageCart } from '@/widgets/mypage-cart'
 import { MypageHistory } from '@/widgets/mypage-history'
@@ -21,6 +21,19 @@ const linkTitle: Record<MypageMenuLink, string> = {
   history: '구매 내역',
   'address-manage': '배송지 관리',
 }
+
+// 모바일 탭은 4개가 한 줄에 들어가야 해서 제목보다 짧게 쓴다.
+const mobileTabLabel: Record<MypageMenuLink, string> = {
+  'preorder-check': '사전예약',
+  cart: '장바구니',
+  history: '구매내역',
+  'address-manage': '배송지',
+}
+
+const mobileTabs = MYPAGE_TABS.map((tab) => ({
+  value: tab,
+  label: mobileTabLabel[tab],
+}))
 
 function renderContent(activeLink: MypageMenuLink) {
   switch (activeLink) {
@@ -48,7 +61,18 @@ export function Mypage() {
   return (
     <Container>
       <div className={styles.root}>
+        {/* 모바일은 사이드 메뉴 대신 이름 + 가로 탭을 쓴다 — 노출 전환은 CSS 미디어쿼리로. */}
+        <div className={styles.mobileHeader}>
+          <div className={styles.mobileUserName}>{userName} 님</div>
+          <SegmentedTabs
+            className={styles.mobileTabs}
+            items={mobileTabs}
+            value={activeLink}
+            onChange={handleLinkClick}
+          />
+        </div>
         <MypageMenu
+          className={styles.desktopOnly}
           userName={userName}
           activeLink={activeLink}
           onLinkClick={handleLinkClick}

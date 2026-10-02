@@ -13,10 +13,7 @@ import type { SaleMode } from '../../model/productCard'
 import type { ProductColorSwatchItem } from '../ProductColorSwatches'
 import type { ProductOption } from '../ProductOptionSelector'
 
-export type ProductCardOption = ProductOption & {
-  // 이 옵션을 고르면 기본가에 더해지는 추가요금. 없으면 0원 취급.
-  extraPrice?: number
-}
+export type ProductCardOption = ProductOption
 
 export type ProductCardData = {
   productId: string

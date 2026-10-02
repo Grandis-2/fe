@@ -27,9 +27,9 @@ export const MediumInteractive: Story = {
     colorName: '미드나이트',
     size: 'medium',
     colors: [
-      { hex: '#1A1A1D', selected: true },
-      { hex: '#F5F5F0' },
-      { hex: '#3F4891' },
+      { hex: '#1A1A1D', label: '미드나이트', selected: true },
+      { hex: '#F5F5F0', label: '스타라이트' },
+      { hex: '#3F4891', label: '코발트' },
     ],
     onSelect: () => {},
   },

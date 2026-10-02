@@ -47,10 +47,6 @@ export function AdminPromotionForm({
   const [value, setValue] = useState(
     defaultValue ?? createEmptyPromotionFormValue(),
   )
-  // 체크 상태와 실제 연결은 다르다 — 'N개 연결'을 눌러야 확정된다.
-  const [checkedProductIds, setCheckedProductIds] = useState(
-    value.linkedProductIds,
-  )
 
   const patch = (partial: Partial<AdminPromotionFormValue>) =>
     setValue((prev) => ({ ...prev, ...partial }))
@@ -113,10 +109,8 @@ export function AdminPromotionForm({
       >
         <PromotionProductLinker
           products={products}
-          value={checkedProductIds}
-          onChange={setCheckedProductIds}
-          linkedCount={value.linkedProductIds.length}
-          onLink={() => patch({ linkedProductIds: checkedProductIds })}
+          value={value.linkedProductIds}
+          onChange={(linkedProductIds) => patch({ linkedProductIds })}
           onAddProduct={onAddProduct}
         />
       </FormSection>

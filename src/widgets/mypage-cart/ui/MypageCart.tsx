@@ -14,10 +14,10 @@ import * as styles from './MypageCart.css'
 // ponytail: 아직 장바구니 API가 없어서 목업 데이터로 대체
 const products = [
   {
-    name: '아이폰 18 Pro',
-    modelNumber: 'A3714',
+    name: '맥북 프로 14',
+    modelNumber: 'A3112',
     optionSummary: '실버 · 512GB · AppleCare+ 포함',
-    price: 2278100,
+    price: 2390000,
   },
   {
     name: '맥북 네오',
@@ -26,10 +26,10 @@ const products = [
     price: 1690000,
   },
   {
-    name: '아이패드 오로라',
-    modelNumber: 'A2696',
-    optionSummary: '스타라이트 · 128GB',
-    price: 990000,
+    name: '맥북 에어 15',
+    modelNumber: 'A3114',
+    optionSummary: '스타라이트 · 256GB',
+    price: 1890000,
   },
   {
     name: '워치 노바',

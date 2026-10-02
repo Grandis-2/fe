@@ -43,6 +43,16 @@ export const title = style([
   },
 ])
 
+// 제목 아래 기간 — 모바일은 PreorderCard의 기간과 같은 12px.
+export const period = style([
+  typography.body.sub,
+  {
+    marginTop: spacing[4],
+    color: color.text.tertiary,
+    '@media': { [breakpoint.mobile]: { fontSize: fontSize[12] } },
+  },
+])
+
 export const countdownWrapper = style({
   position: 'fixed',
   bottom: 0,

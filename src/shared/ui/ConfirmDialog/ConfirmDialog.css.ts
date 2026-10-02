@@ -13,9 +13,16 @@ export const content = style({
   boxSizing: 'border-box',
 })
 
+// 한글은 기본값이면 글자 단위로 끊겨 '시도합니 / 다'처럼 단어 중간에서 줄이 바뀐다.
+// keep-all로 어절 단위로만 끊고, 띄어쓰기 없는 긴 값(예약번호 등)은 넘치지 않게 끊어 준다.
+const wrapByWord = {
+  wordBreak: 'keep-all',
+  overflowWrap: 'break-word',
+} as const
+
 export const title = style([
   typography.title.mdSemibold,
-  { color: color.text.primary },
+  { color: color.text.primary, textAlign: 'center', ...wrapByWord },
 ])
 
 export const description = style([
@@ -25,6 +32,7 @@ export const description = style([
     textAlign: 'center',
     // 줄바꿈을 그대로 살린다 — 안내 문구는 문장 단위로 끊어 읽힌다.
     whiteSpace: 'pre-line',
+    ...wrapByWord,
   },
 ])
 

@@ -72,53 +72,65 @@ export function CategoryNav({
             </Link>
             <div className={styles.menu}>
               <div className={styles.menuInner}>
-                <div className={styles.menuCategories}>
-                  {menu.categories.map((category) => {
-                    const thumbnail = categoryThumbnails[category]
-                    return (
-                      <Link
-                        key={category}
-                        to={searchPath({
-                          category: brand,
-                          subCategory: category,
-                        })}
-                        className={
-                          thumbnail
-                            ? styles.menuTileWithThumbnail
-                            : styles.menuTile
-                        }
-                        aria-current={
-                          brand === activeCategory &&
-                          category === activeSubCategory
-                            ? 'page'
-                            : undefined
-                        }
-                        onClick={blurActiveElement}
-                      >
-                        {thumbnail && (
-                          <img
-                            src={thumbnail}
-                            alt=""
-                            className={styles.menuTileThumbnail}
-                          />
-                        )}
-                        {category}
-                      </Link>
-                    )
-                  })}
-                  {menu.brands?.map((b) => (
-                    <Link
-                      key={b}
-                      to={searchPath({ category: brand, brand: b })}
-                      className={styles.menuTile}
-                      onClick={blurActiveElement}
-                    >
-                      {b}
-                    </Link>
-                  ))}
+                <div className={styles.menuGroups}>
+                  <div className={styles.menuGroup}>
+                    <div className={styles.menuSectionTitle}>카테고리</div>
+                    <div className={styles.menuTileGrid}>
+                      {menu.categories.map((category) => {
+                        const thumbnail = categoryThumbnails[category]
+                        return (
+                          <Link
+                            key={category}
+                            to={searchPath({
+                              category: brand,
+                              subCategory: category,
+                            })}
+                            className={
+                              thumbnail
+                                ? styles.menuTileWithThumbnail
+                                : styles.menuTile
+                            }
+                            aria-current={
+                              brand === activeCategory &&
+                              category === activeSubCategory
+                                ? 'page'
+                                : undefined
+                            }
+                            onClick={blurActiveElement}
+                          >
+                            {thumbnail && (
+                              <img
+                                src={thumbnail}
+                                alt=""
+                                className={styles.menuTileThumbnail}
+                              />
+                            )}
+                            {category}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  {menu.brands && (
+                    <div className={styles.menuGroup}>
+                      <div className={styles.menuSectionTitle}>브랜드</div>
+                      <div className={styles.menuTileGrid}>
+                        {menu.brands.map((b) => (
+                          <Link
+                            key={b}
+                            to={searchPath({ category: brand, brand: b })}
+                            className={styles.menuTile}
+                            onClick={blurActiveElement}
+                          >
+                            {b}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className={styles.menuAside}>
-                  <div className={styles.menuAsideTitle}>더 알아보기</div>
+                  <div className={styles.menuSectionTitle}>더 알아보기</div>
                   {menu.more.map((item) => (
                     <Link
                       key={item.label}

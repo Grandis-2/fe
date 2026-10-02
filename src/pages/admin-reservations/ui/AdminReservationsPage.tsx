@@ -1,28 +1,33 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { RefreshCw } from 'lucide-react'
-import { useNavigate } from 'react-router'
 
 import { getAdminProducts, type AdminProduct } from '@/entities/admin-product'
 import {
-  failedCountOf,
+  countByStage,
+  failureLabelOf,
   getAdminMembers,
   getAdminReservations,
-  getAdminStats,
+  isReprocessable,
+  paymentDueLabel,
+  paymentStatusColor,
+  paymentStatusLabel,
+  paymentStatusLabels,
+  reprocessAdminReservation,
   reservationNo,
+  reservationStageLabel,
+  reservationStages,
   reservationStatusColor,
   reservationStatusLabel,
   reservationStatusLabels,
   type AdminMemberModel,
   type AdminReservation,
   type AdminReservationStatus,
-  type AdminStats,
 } from '@/entities/admin-reservation'
-import { AdminReservationCreateModal } from '@/features/admin-reservation-create'
-import { adminReservationPath } from '@/shared/config/routes'
 import { useModalStore } from '@/shared/model/modalStore'
 import {
   Button,
+  ConfirmDialog,
   Dropdown,
   Input,
   SegmentedTabs,
@@ -41,7 +46,7 @@ const statusFilters = [
   { value: 'all', label: '전체' },
   { value: 'CONFIRMED', label: '확정' },
   { value: 'ACCEPTED', label: '처리 중' },
-  { value: 'FAILED', label: '확정 실패' },
+  { value: 'FAILED', label: '재처리 필요' },
   { value: 'CANCELED', label: '취소' },
 ] as const
 
@@ -55,7 +60,6 @@ const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
 })
 
 export function AdminReservationsPage() {
-  const navigate = useNavigate()
   const openModal = useModalStore((state) => state.open)
   const closeModal = useModalStore((state) => state.close)
 
@@ -67,8 +71,8 @@ export function AdminReservationsPage() {
 
   const [products, setProducts] = useState<AdminProduct[]>([])
   const [members, setMembers] = useState<AdminMemberModel[]>([])
-  const [reservations, setReservations] = useState<AdminReservation[]>([])
-  const [stats, setStats] = useState<AdminStats>()
+  // 아직 한 번도 못 받았으면 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
+  const [reservations, setReservations] = useState<AdminReservation[]>()
   const [refreshedAt, setRefreshedAt] = useState<Date>()
   const [error, setError] = useState<string>()
 
@@ -89,20 +93,19 @@ export function AdminReservationsPage() {
   const status: AdminReservationStatus | undefined =
     statusFilter === 'all' ? undefined : statusFilter
 
+  // 카드와 표가 같은 목록에서 나와야 숫자가 어긋나지 않는다. 그래서 상태 탭으로
+  // 서버에서 거르지 않고 상품 기준으로만 받아, 탭은 아래에서 화면이 거른다.
+  // ponytail: 결제 상태별 건수를 주는 집계 API가 없어서 목록(최대 100건)으로 센다.
+  // 100건을 넘으면 카드가 덜 세진다 — 집계 API가 생기면 카드는 그쪽으로 옮긴다.
   const load = useCallback(() => {
-    Promise.all([
-      // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
-      getAdminReservations({ status, productId, size: 100 }),
-      getAdminStats(),
-    ])
-      .then(([paged, loadedStats]) => {
+    getAdminReservations({ productId, size: 100 })
+      .then((paged) => {
         setReservations(paged.items)
-        setStats(loadedStats)
         setRefreshedAt(new Date())
         setError(undefined)
       })
       .catch((cause: Error) => setError(cause.message))
-  }, [status, productId])
+  }, [productId])
 
   // 접수는 계속 들어오므로 주기적으로 다시 받는다.
   useEffect(() => {
@@ -111,32 +114,44 @@ export function AdminReservationsPage() {
     return () => clearInterval(timer)
   }, [load])
 
-  const openDetail = (reservation: AdminReservation) =>
-    navigate(adminReservationPath(reservation.reservationId))
-
   const memberName = (memberId: string) =>
     members.find((member) => member.memberId === memberId)?.name ?? memberId
 
+  // 되돌릴 수 없는 조치라서 한 번 더 묻는다. 끝나면 목록을 다시 받아 표를 갱신한다.
+  const confirmReprocess = (reservation: AdminReservation) =>
+    openModal(
+      <ConfirmDialog
+        title="재처리를 시도할까요?"
+        description={`${reservationNo(reservation.reservationId)} · ${reservation.productName}의 외부 등록을 다시 시도합니다.`}
+        confirmLabel="재처리"
+        onCancel={closeModal}
+        onConfirm={() => {
+          closeModal()
+          void reprocessAdminReservation(reservation.reservationId)
+            .then(load)
+            .catch((cause: Error) => setError(cause.message))
+        }}
+      />,
+    )
+
   // 예약번호로 거르는 쿼리 파라미터가 명세에 없어 받아온 목록에서 직접 찾는다.
   const trimmedKeyword = keyword.trim().toUpperCase()
-  const visibleReservations = trimmedKeyword
-    ? reservations.filter((reservation) =>
+  const visibleReservations = (reservations ?? [])
+    .filter((reservation) => !status || reservation.status === status)
+    .filter(
+      (reservation) =>
+        !trimmedKeyword ||
         reservationNo(reservation.reservationId).includes(trimmedKeyword),
-      )
-    : reservations
+    )
 
-  const cards: { label: string; value: number | undefined }[] = [
-    { label: '접수', value: stats?.accept.uniqueAcceptedCount },
-    { label: '처리 중', value: stats?.registration.acceptedBacklogCount },
-    { label: '확정', value: stats?.registration.confirmedCount },
-    { label: '확정 실패', value: stats && failedCountOf(stats) },
-    // 취소 건수는 stats에 없어서 목록 응답에서 센다.
-    {
-      label: '취소',
-      value:
-        stats && reservations.filter((r) => r.status === 'CANCELED').length,
-    },
-  ]
+  const stageCounts = reservations && countByStage(reservations)
+
+  // 예약 한 건이 정확히 한 카드에만 들어간다 — 다섯 카드의 합이 전체 예약 수다.
+  // 누적 '접수'는 이 단계들과 겹쳐서 헷갈리므로 카드로 두지 않는다.
+  const cards = reservationStages.map((stage) => ({
+    label: reservationStageLabel[stage],
+    value: stageCounts?.[stage],
+  }))
 
   const columns: TableColumn<AdminReservation>[] = [
     {
@@ -171,30 +186,77 @@ export function AdminReservationsPage() {
       key: 'seq',
       header: '순번',
       align: 'center',
-      render: (reservation) => (
-        <>
-          {reservation.acceptSeq.toLocaleString('ko-KR')}
-          {reservation.overdue && (
-            <span className={styles.overdueMark}> 기한 초과</span>
-          )}
-        </>
-      ),
+      render: (reservation) => reservation.acceptSeq.toLocaleString('ko-KR'),
     },
     {
       key: 'status',
       header: '상태',
       align: 'center',
-      render: (reservation) => (
-        <Tag
-          variant="subtle"
-          size="medium"
-          rounded={false}
-          widthOptions={reservationStatusLabels}
-          color={reservationStatusColor[reservation.status]}
-        >
-          {reservationStatusLabel[reservation.status]}
-        </Tag>
-      ),
+      render: (reservation) => {
+        const failure = failureLabelOf(reservation.failureCode)
+        return (
+          <span className={styles.stackedCell}>
+            <Tag
+              variant="subtle"
+              size="medium"
+              rounded={false}
+              widthOptions={reservationStatusLabels}
+              color={reservationStatusColor[reservation.status]}
+            >
+              {reservationStatusLabel[reservation.status]}
+            </Tag>
+            {failure && <span className={styles.subText}>{failure}</span>}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'payment',
+      header: '결제',
+      align: 'center',
+      render: (reservation) => {
+        const { payment } = reservation
+        if (!payment) return <span className={styles.subText}>—</span>
+
+        // 결제 대기만 남은 시간을 보여준다 — 24시간을 넘기면 예약이 자동취소된다.
+        const due =
+          payment.status === 'PENDING' ? paymentDueLabel(payment) : null
+
+        return (
+          <span className={styles.stackedCell}>
+            {/* 상태 열과 나란히 있어서 같은 모양이면 한 덩어리로 읽힌다 — 테두리형으로 구분한다. */}
+            <Tag
+              variant="outline"
+              size="medium"
+              rounded={false}
+              widthOptions={paymentStatusLabels}
+              color={paymentStatusColor[payment.status]}
+            >
+              {paymentStatusLabel[payment.status]}
+            </Tag>
+            {due && <span className={styles.dueText}>{due}</span>}
+          </span>
+        )
+      },
+    },
+    {
+      key: 'reprocess',
+      header: '재처리',
+      align: 'center',
+      width: '120px',
+      render: (reservation) =>
+        isReprocessable(reservation) ? (
+          <span className={styles.stackedCell}>
+            <Button size="small" onClick={() => confirmReprocess(reservation)}>
+              재처리
+            </Button>
+            <span className={styles.attemptText}>
+              시도 {reservation.registerAttemptCount}회
+            </span>
+          </span>
+        ) : (
+          <span className={styles.subText}>—</span>
+        ),
     },
   ]
 
@@ -231,7 +293,7 @@ export function AdminReservationsPage() {
       <div className={styles.cards}>
         {cards.map(({ label, value }) => {
           // 조회에 실패했으면 0건으로 보여주지 않는다 — 운영 판단이 정반대다.
-          const unknown = stats?.queryFailed || value === undefined
+          const unknown = value === undefined
           return (
             <StatCard
               key={label}
@@ -261,20 +323,6 @@ export function AdminReservationsPage() {
               onChange={(event) => setKeyword(event.target.value)}
             />
           </div>
-          <Button
-            icon="plus"
-            size="medium"
-            onClick={() =>
-              openModal(
-                <AdminReservationCreateModal
-                  onCreated={load}
-                  onClose={closeModal}
-                />,
-              )
-            }
-          >
-            예약 생성
-          </Button>
         </div>
       </div>
 
@@ -283,13 +331,6 @@ export function AdminReservationsPage() {
         rows={visibleReservations}
         rowKey={(reservation) => reservation.reservationId}
         pageSize={10}
-        onRowClick={openDetail}
-        rowAction={{
-          header: '관리',
-          label: (reservation) =>
-            `${reservationNo(reservation.reservationId)} 상세 보기`,
-          onClick: openDetail,
-        }}
         emptyMessage={error ?? '조건에 맞는 예약이 없습니다.'}
       />
     </div>

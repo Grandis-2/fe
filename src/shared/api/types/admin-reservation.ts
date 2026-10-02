@@ -1,6 +1,12 @@
 /** 예약 상태. 화면의 '처리 중'이 ACCEPTED다 */
 export type ReservationStatus = 'ACCEPTED' | 'CONFIRMED' | 'FAILED' | 'CANCELED'
 
+/**
+ * 명세의 실패 사유 enum. 다만 운영 규칙상 실제로 발생하지 않는 값이 섞여 있다 —
+ * 예약 접수는 재고로 막지 않으므로 STOCK_EXHAUSTED는 나오지 않고, 등록 실패는
+ * 자동 재시도 후 관리자 재처리로 풀리므로 DEADLINE_EXCEEDED도 쓰이지 않을 것으로
+ * 보인다. 서버가 보낼 수 있는 값은 그대로 받아둔다.
+ */
 export type ReservationFailureCode =
   | 'BUSINESS_REJECTED'
   | 'STOCK_EXHAUSTED'
@@ -23,6 +29,22 @@ export type ActorType = 'USER' | 'ADMIN' | 'SYSTEM'
 // ponytail: 명세 예시에 TRANSIENT_FAILURE만 등장한다. 나머지는 추정이다.
 export type AttemptOutcome =
   'SUCCESS' | 'TRANSIENT_FAILURE' | 'PERMANENT_FAILURE'
+
+/**
+ * ponytail: 명세가 payment를 내려주는데 예시가 전부 null이라 스키마를 모른다.
+ * "예약하면 예약은 확정되지만 24시간 안에 결제해야 하고, 미결제는 자동취소"라는
+ * 운영 규칙을 운영자가 화면에서 보려면 상태와 기한이 필요해서 최소 필드만 임시로
+ * 정했다. 실제 스키마가 나오면 여기와 목 픽스처를 함께 고친다.
+ */
+export type PaymentStatus = 'PENDING' | 'PAID' | 'EXPIRED' | 'REFUNDED'
+
+export type ReservationPayment = {
+  status: PaymentStatus
+  /** 결제 기한 — 접수 시점 + 24시간 */
+  dueAt: string
+  paidAt: string | null
+  amount: number
+}
 
 /** 종단 상태 이후 남은 뒷정리 — 셋 다 NOT_REQUIRED여야 완전히 끝난 것이다 */
 export type ReservationCleanup = {
@@ -51,6 +73,11 @@ type ReservationBase = {
   memberId: string
   runId: string | null
   cleanup: ReservationCleanup
+  /**
+   * ponytail: 명세는 상세에만 payment를 준다. 목록 표에 결제 상태 열이 필요해서
+   * 공통 본문으로 올렸다 — 목록 응답에도 내려달라고 백엔드에 요청해야 한다.
+   */
+  payment: ReservationPayment | null
 }
 
 export type ReservationSummary = ReservationBase & {
@@ -106,8 +133,6 @@ export type ReservationHistoryEntry = {
 export type ReservationDetail = ReservationBase & {
   failure: ReservationFailure | null
   cancelable: boolean
-  // ponytail: 명세 예시가 null뿐이라 스키마를 모른다.
-  payment: unknown | null
   externalKey: string
   memo: string | null
   createdByActorType: ActorType
@@ -177,23 +202,11 @@ export type AdminStatsResponse = {
   }
 }
 
-// ponytail: 아래 넷은 명세에 없다. 와이어프레임의 '예약 생성' 모달과 '재처리
-// 시도 / 강제 종결 / 내부 메모'를 만들려면 필요해서 같은 작명 규칙으로 임시
-// 정의했다. 백엔드 계약이 나오면 이 블록과 handlers/admin-reservation.ts의
-// 해당 핸들러를 함께 고친다.
-export type ReservationCreateRequest = {
-  memberId: string
-  productId: string
-  optionCode: string
-  quantity: number
-  memo?: string | null
-}
+// ponytail: 재처리 엔드포인트는 명세에 없다. 와이어프레임의 '재처리 시도'를
+// 만들려면 필요해서 같은 작명 규칙으로 임시 정의했다(handlers/admin-reservation.ts
+// 의 같은 주석 참고). 백엔드 계약이 나오면 함께 고친다.
 
-export type ReservationMemoRequest = {
-  memo: string | null
-}
-
-/** 생성 모달이 '대상 회원'을 이름으로 찾을 때 쓴다 */
+/** 예약 응답에 회원 이름이 없어서, 표의 '예약자' 열이 memberId를 이름으로 바꿀 때 쓴다 */
 export type AdminMember = {
   memberId: string
   name: string

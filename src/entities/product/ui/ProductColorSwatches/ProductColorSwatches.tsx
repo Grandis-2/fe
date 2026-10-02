@@ -37,13 +37,18 @@ export function ProductColorSwatches({
   return (
     <div className={[styles.root[size], className].filter(Boolean).join(' ')}>
       {size === 'medium' && (
-        <div className={[typography.title.smMedium, styles.label].join(' ')}>
+        <div className={[typography.title.lgSemibold, styles.label].join(' ')}>
           색상
         </div>
       )}
-      <div className={[colorNameTypography[size], styles.colorName].join(' ')}>
-        {selectedLabel}
-      </div>
+      {/* medium은 선택 색 이름 한 줄 대신 모든 색 이름을 동그라미 아래에 보여준다. */}
+      {size === 'small' && (
+        <div
+          className={[colorNameTypography.small, styles.colorName].join(' ')}
+        >
+          {selectedLabel}
+        </div>
+      )}
       <div className={styles.swatchRow[size]}>
         {colors.map((item, index) => (
           <button
@@ -53,18 +58,35 @@ export function ProductColorSwatches({
             disabled={!onSelect}
             aria-pressed={onSelect ? item.selected : undefined}
             className={[
-              styles.swatch[size],
-              item.selected && styles.swatchSelected,
+              styles.swatchButton,
               onSelect && styles.swatchInteractive,
             ]
               .filter(Boolean)
               .join(' ')}
-            style={{
-              background: item.hex,
-              ...(item.selected ? { outline: `1.5px solid ${item.hex}` } : {}),
-            }}
             onClick={() => onSelect?.(index)}
-          />
+          >
+            <span
+              className={[
+                styles.swatch[size],
+                item.selected && styles.swatchSelected,
+              ]
+                .filter(Boolean)
+                .join(' ')}
+              style={{
+                background: item.hex,
+                ...(item.selected
+                  ? { outline: `1.5px solid ${item.hex}` }
+                  : {}),
+              }}
+            />
+            {size === 'medium' && item.label && (
+              <span
+                className={[typography.body.sub, styles.swatchLabel].join(' ')}
+              >
+                {item.label}
+              </span>
+            )}
+          </button>
         ))}
       </div>
     </div>

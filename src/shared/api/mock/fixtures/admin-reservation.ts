@@ -1,11 +1,13 @@
 import { adminProductStore } from './admin-product'
 
 import type {
+  PaymentStatus,
   ReservationCleanup,
   ReservationCommand,
   ReservationDetail,
   ReservationFailureCode,
   ReservationHistoryEntry,
+  ReservationPayment,
   ReservationStatus,
 } from '../../types'
 
@@ -27,26 +29,39 @@ const NOT_REQUIRED: ReservationCleanup = {
 }
 
 // 상태를 정해진 비율로 돌려서 카드/탭이 모두 값을 갖게 한다.
+// 실제 등록 실패율이 5% 정도라서 16개 중 1개만 FAILED로 둔다 — 과거에 8개 중
+// 1개(12.5%)로 두니 화면이 장애 상황처럼 보였다.
 const STATUS_CYCLE: ReservationStatus[] = [
   'CONFIRMED',
   'CONFIRMED',
+  'CONFIRMED',
   'ACCEPTED',
+  'CONFIRMED',
+  'CONFIRMED',
+  'CANCELED',
+  'CONFIRMED',
+  'CONFIRMED',
+  'ACCEPTED',
+  'CONFIRMED',
   'CONFIRMED',
   'FAILED',
   'CONFIRMED',
-  'ACCEPTED',
   'CANCELED',
+  'CONFIRMED',
 ]
 
+// 접수를 재고로 막지 않으므로 STOCK_EXHAUSTED는, 재시도로 끝까지 밀어붙이므로
+// DEADLINE_EXCEEDED는 실제로 나오지 않는다. BUSINESS_REJECTED는 무엇을 거절하는
+// 건지 확인 중이라 빼 뒀다.
 const FAILURE_CYCLE: ReservationFailureCode[] = [
   'RETRY_EXHAUSTED',
   'INTEGRATION_ERROR',
-  'STOCK_EXHAUSTED',
-  'DEADLINE_EXCEEDED',
-  'BUSINESS_REJECTED',
 ]
 
-const BASE_AT = Date.parse('2026-09-20T12:00:00.000Z')
+// 결제 기한이 24시간이라 그보다 넓게 깔아야 '기한 만료'와 '몇 시간 남음'이 같이 보인다.
+const BASE_AT = Date.now() - 30 * 60 * 60 * 1000
+const ACCEPT_GAP_MS = 38 * 60 * 1000
+const PAYMENT_WINDOW_MS = 24 * 60 * 60 * 1000
 
 /** 목이 새로고침돼도 같은 값이 나오도록 인덱스로 UUID를 만든다 */
 const seededId = (index: number) =>
@@ -109,6 +124,7 @@ function buildCommands(
 function buildHistory(
   status: ReservationStatus,
   acceptedAt: string,
+  paymentExpired: boolean,
 ): ReservationHistoryEntry[] {
   const at = (offsetSeconds: number) =>
     new Date(Date.parse(acceptedAt) + offsetSeconds * 1000).toISOString()
@@ -148,15 +164,42 @@ function buildHistory(
         16,
         '외부 등록 시도 3회 / 상한 초과',
       ),
-      entry(3, 'T4', 'ACCEPTED', 'FAILED', 16, '확정 실패 / DLQ 진입'),
+      entry(3, 'T4', 'ACCEPTED', 'FAILED', 16, '등록 실패 / DLQ 진입'),
     ]
   }
 
   if (status === 'CANCELED') {
+    const confirmed = entry(
+      1,
+      'T3',
+      'ACCEPTED',
+      'CONFIRMED',
+      6,
+      '외부 등록 성공',
+    )
+    // 미결제 자동취소는 시스템이, 회원 취소는 회원이 일으킨다. 같은 CANCELED라도
+    // 운영 의미가 정반대라서 actorType과 reasonCode로 갈라 둔다.
+    if (paymentExpired) {
+      return [
+        accepted,
+        confirmed,
+        {
+          ...entry(2, 'T5', 'CONFIRMED', 'CANCELED', 24 * 60 * 60, null),
+          actorType: 'SYSTEM',
+          reasonCode: 'PAYMENT_DEADLINE_EXCEEDED',
+          note: '결제 기한 24시간 초과 / 자동 취소',
+        },
+      ]
+    }
     return [
       accepted,
-      entry(1, 'T3', 'ACCEPTED', 'CONFIRMED', 6, '외부 등록 성공'),
-      entry(2, 'T5', 'CONFIRMED', 'CANCELED', 120, '회원 취소'),
+      confirmed,
+      {
+        ...entry(2, 'T5', 'CONFIRMED', 'CANCELED', 120, null),
+        actorType: 'USER',
+        reasonCode: 'USER_REQUESTED',
+        note: '회원 취소',
+      },
     ]
   }
 
@@ -164,6 +207,55 @@ function buildHistory(
     accepted,
     entry(1, 'T3', 'ACCEPTED', 'CONFIRMED', 6, '외부 등록 성공'),
   ]
+}
+
+/**
+ * 결제는 확정된 예약에만 붙는다. 확정되면 순번이 잡히고 24시간 안에 결제해야
+ * 하며, 미결제는 자동취소돼 순번에서 빠진다. 그래서 '결제 대기'는 확정의 일부다.
+ * 아직 등록 중(ACCEPTED)이거나 등록에 실패한(FAILED) 예약은 결제할 대상이 없다.
+ */
+function buildPayment(
+  index: number,
+  status: ReservationStatus,
+  acceptedAt: string,
+  amount: number,
+): { payment: ReservationPayment | null; expired: boolean } {
+  if (status === 'ACCEPTED' || status === 'FAILED') {
+    return { payment: null, expired: false }
+  }
+
+  const dueAt = new Date(Date.parse(acceptedAt) + PAYMENT_WINDOW_MS)
+  const overDue = dueAt.getTime() < Date.now()
+
+  // 취소 건은 절반이 미결제 자동취소, 절반이 결제 후 회원 취소다.
+  // STATUS_CYCLE에서 CANCELED가 걸리는 자리가 전부 짝수 인덱스라서 index % 2로
+  // 가르면 한쪽만 나온다 — 몇 번째 주기인지로 갈라야 양쪽이 다 보인다.
+  const expired =
+    status === 'CANCELED' && Math.floor(index / STATUS_CYCLE.length) % 2 === 0
+  // 아직 기한이 남았으면 일부는 결제를 미뤄 둔 상태로 둬서 '몇 시간 남음'이 보인다.
+  // 기한이 지났는데 미결제인 확정 건은 이미 자동취소됐어야 하므로 만들지 않는다.
+  const unpaid = !overDue && index % 3 === 0
+
+  const paymentStatus: PaymentStatus = expired
+    ? 'EXPIRED'
+    : status === 'CANCELED'
+      ? 'REFUNDED'
+      : unpaid
+        ? 'PENDING'
+        : 'PAID'
+
+  return {
+    expired,
+    payment: {
+      status: paymentStatus,
+      dueAt: dueAt.toISOString(),
+      paidAt:
+        paymentStatus === 'PAID' || paymentStatus === 'REFUNDED'
+          ? new Date(Date.parse(acceptedAt) + 42 * 60 * 1000).toISOString()
+          : null,
+      amount,
+    },
+  }
 }
 
 function buildReservation(index: number): ReservationDetail {
@@ -175,12 +267,18 @@ function buildReservation(index: number): ReservationDetail {
     status === 'FAILED' ? FAILURE_CYCLE[index % FAILURE_CYCLE.length] : null
 
   const reservationId = seededId(index)
-  const acceptedAt = new Date(BASE_AT + index * 13_000).toISOString()
+  const acceptedAt = new Date(BASE_AT + index * ACCEPT_GAP_MS).toISOString()
   // 접수 후 30분 안에 확정되어야 한다.
   const deadlineAt = new Date(
     Date.parse(acceptedAt) + 30 * 60 * 1000,
   ).toISOString()
   const finalized = status !== 'ACCEPTED'
+  const { payment, expired } = buildPayment(
+    index,
+    status,
+    acceptedAt,
+    variant.price,
+  )
 
   return {
     reservationId,
@@ -214,14 +312,14 @@ function buildReservation(index: number): ReservationDetail {
         }
       : null,
     cancelable: status === 'ACCEPTED' || status === 'CONFIRMED',
-    payment: null,
+    payment,
     externalKey: `EK-${reservationId.slice(-8)}`,
     memo: null,
     createdByActorType: 'USER',
     createdByActorId: member.memberId,
     commands: buildCommands(reservationId, status, failureCode, acceptedAt),
     stockReservation: null,
-    history: buildHistory(status, acceptedAt),
+    history: buildHistory(status, acceptedAt, expired),
   }
 }
 
