@@ -1,7 +1,7 @@
 import { QueueCard } from '@entities/order'
 import { formatNumber } from '@shared/lib/formatNumber'
 
-import { usePreorderQueue } from '../../model/usePreorderQueue'
+import { usePreorderQueue } from '../../lib/usePreorderQueue'
 
 export type PreorderQueueCardProps = {
   productName: string

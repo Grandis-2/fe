@@ -16,8 +16,8 @@ import {
   PlanetIcon,
   PriceText,
 } from '@shared/ui'
+import { ResultHero, type ResultHeroProps } from '@widgets/result-hero'
 
-import { ResultHero, type ResultHeroProps } from './ResultHero'
 import * as styles from './ResultPage.css'
 
 // 예약 완료 / 결제 완료 / 결제 실패 — 배너와 본문 유무만 갈리고 뼈대를 공유해서 한 페이지로 둔다.

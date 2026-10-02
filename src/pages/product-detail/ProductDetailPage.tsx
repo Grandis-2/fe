@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import type { CSSProperties } from 'react'
 
 import { useNavigate, useParams } from 'react-router'
 
@@ -8,8 +8,10 @@ import {
   useProduct,
 } from '@entities/product'
 import { mockReviews, ReviewCard } from '@entities/review'
+import { ProductGallery } from '@features/product-gallery'
 import {
   PREORDER_BENEFIT_RATE,
+  PurchaseSummary,
   QuantityControl,
   useProductPurchase,
   type PurchaseDraft,
@@ -20,15 +22,13 @@ import macbook2 from '@shared/assets/macbook_neo_sliver2.png'
 import { resultPath } from '@shared/config/routes'
 import { color } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
-import { Container, Slider, Button } from '@shared/ui'
+import { Container, Button } from '@shared/ui'
 import { ProductPageTab } from '@widgets/product-page-tab'
 import type { ProductPageTabKey } from '@widgets/product-page-tab'
 import { ProductPurchaseBar } from '@widgets/product-purchase-bar'
 
-import { useProductDetailScroll } from '../model/useProductDetailScroll'
-
 import * as styles from './ProductDetailPage.css'
-import { PurchaseSummary } from './PurchaseSummary'
+import { useProductDetailScroll } from './useProductDetailScroll'
 
 // ponytail: 아직 상품 상세 API가 없어서 목업 옵션 데이터로 대체
 const colorSwatches = [
@@ -103,8 +103,6 @@ const BASE_PRICE = 2390000
 
 export function ProductDetailPage() {
   const navigate = useNavigate()
-  // 슬라이더와 미리보기 목록이 같은 이미지를 가리키도록 현재 번호를 여기서 들고 있는다.
-  const [imageIndex, setImageIndex] = useState(0)
   const { productId = '' } = useParams()
   // 사전예약 여부는 상세 API의 saleMode로 판단한다(그 외 화면 데이터는 아직 목업).
   const { data: product, isPending, isError } = useProduct(productId)
@@ -182,44 +180,10 @@ export function ProductDetailPage() {
       <div className={styles.contentPadding}>
         <div className={styles.layout} ref={layoutRef}>
           <div className={styles.imageColumn}>
-            <div className={styles.imageFrame}>
-              <div className={styles.sliderFill}>
-                <Slider
-                  navigation
-                  activeIndex={imageIndex}
-                  onActiveIndexChange={setImageIndex}
-                >
-                  {PRODUCT_IMAGES.map((src) => (
-                    <img
-                      key={src}
-                      src={src}
-                      alt={PRODUCT_TITLE}
-                      className={styles.image}
-                    />
-                  ))}
-                </Slider>
-              </div>
-            </div>
-            {/* 웹에서만 슬라이더 밑에 미리보기를 보여준다. 누르면 그 이미지로 이동한다. */}
-            <div className={styles.thumbnails}>
-              {PRODUCT_IMAGES.map((src, index) => (
-                <button
-                  key={src}
-                  type="button"
-                  aria-label={`${PRODUCT_TITLE} 이미지 ${index + 1}`}
-                  aria-pressed={index === imageIndex}
-                  className={[
-                    styles.thumbnail,
-                    index === imageIndex && styles.thumbnailSelected,
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                  onClick={() => setImageIndex(index)}
-                >
-                  <img src={src} alt="" className={styles.thumbnailImage} />
-                </button>
-              ))}
-            </div>
+            <ProductGallery
+              images={PRODUCT_IMAGES}
+              productName={PRODUCT_TITLE}
+            />
           </div>
           <div className={styles.optionPanel}>
             <div className={styles.optionColumn}>

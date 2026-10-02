@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router'
 import { mypagePath } from '@shared/config/routes'
 import { CategoryNav } from '@widgets/category-nav'
 
-import { useHeaderTheme } from '../model/useHeaderTheme'
+import { useHeaderTheme } from '../lib/useHeaderTheme'
 
 import * as styles from './Header.css'
 import { HeaderSearch } from './HeaderSearch'

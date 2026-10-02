@@ -10,7 +10,7 @@ import {
   AddressFields,
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
-} from '@features/daum-postcode'
+} from '@features/address-search'
 import { getErrorMessage } from '@shared/api/client'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { Button, InlineAlert, Modal, ModalTitle } from '@shared/ui'

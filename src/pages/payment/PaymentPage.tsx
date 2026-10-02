@@ -11,22 +11,20 @@ import { useProfile } from '@entities/profile'
 import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
-} from '@features/daum-postcode'
+} from '@features/address-search'
+import { requestTossPayment } from '@features/payment'
 import {
   PREORDER_BENEFIT_RATE,
   type PurchaseDraft,
 } from '@features/product-purchase'
-import { requestTossPayment } from '@features/toss-payment'
+import { terms, TermsAgreement } from '@features/terms-agreement'
 import { getErrorMessage } from '@shared/api/client'
 import { mypagePath } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { Button, Container, Input, InlineAlert } from '@shared/ui'
 
-import { terms } from '../model/terms'
-
 import * as styles from './PaymentPage.css'
-import { TermsAgreement } from './TermsAgreement'
 
 const GENERIC_PAYMENT_ERROR =
   '결제 요청 중 문제가 발생했습니다. 다시 시도해 주세요.'

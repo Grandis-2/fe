@@ -6,8 +6,8 @@ import { loginWithKakao } from '@entities/auth'
 import { ApiRequestError } from '@shared/api/client'
 import { SIGNUP_PATH } from '@shared/config/routes'
 
-import { KAKAO_CALLBACK_PATH } from '../lib/getKakaoAuthorizeUrl'
-import { consumeReturnTo, consumeStoredState } from '../lib/kakaoState'
+import { KAKAO_CALLBACK_PATH } from './getKakaoAuthorizeUrl'
+import { consumeReturnTo, consumeStoredState } from './kakaoState'
 
 type Status = 'processing' | 'error'
 
