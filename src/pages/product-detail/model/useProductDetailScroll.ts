@@ -13,15 +13,6 @@ export function useProductDetailScroll(productId: string) {
   const orderBarRef = useRef<HTMLDivElement>(null)
   const [orderBarHeight, setOrderBarHeight] = useState(0)
   const [activeTab, setActiveTab] = useState<ProductPageTabKey>('benefits')
-  const [isSheetOpen, setIsSheetOpen] = useState(false)
-
-  // 상품이 바뀌면(다른 상품으로 이동 포함) 렌더링 중에 바로 닫는다 — 이펙트에서
-  // setState하면 리렌더가 한 번 더 발생해 react-hooks/set-state-in-effect에 걸린다.
-  const [prevProductId, setPrevProductId] = useState(productId)
-  if (productId !== prevProductId) {
-    setPrevProductId(productId)
-    setIsSheetOpen(false)
-  }
 
   // 라우터는 이전 페이지의 스크롤 위치를 그대로 두므로, 상품에 들어올 때마다
   // (상품 → 다른 상품 이동 포함) 맨 위로 부드럽게 올린다.
@@ -86,7 +77,5 @@ export function useProductDetailScroll(productId: string) {
     activeTab,
     handleTabChange,
     registerPanelRef,
-    isSheetOpen,
-    setIsSheetOpen,
   }
 }

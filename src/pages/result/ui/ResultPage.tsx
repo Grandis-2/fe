@@ -55,8 +55,8 @@ const order = {
   totalLabel: '2,000,000원',
   items: [
     {
-      name: '아이폰 18 Pro',
-      modelNumber: 'A3714',
+      name: '맥북 프로 14',
+      modelNumber: 'A3112',
       optionSummary: '실버 · 512GB · Apple care+',
       quantityLabel: '1 개',
       priceLabel: '2,000,000원',

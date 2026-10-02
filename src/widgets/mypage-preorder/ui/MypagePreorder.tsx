@@ -15,20 +15,20 @@ const HOUR = 60 * 60 * 1000
 const preorderItems = [
   {
     id: '1',
-    name: '아이폰 18 Pro',
-    modelNumber: 'A3714',
-    optionSummary: '스타라이트 · 256GB · AppleCare+ 포함',
+    name: '맥북 프로 14',
+    modelNumber: 'A3112',
+    optionSummary: '스페이스 블랙 · 512GB · AppleCare+ 포함',
     quantityLabel: '수량 1개',
-    priceLabel: '2,278,100원',
+    priceLabel: '2,390,000원',
     paymentDueAt: new Date(Date.now() + 24 * HOUR),
   },
   {
     id: '2',
-    name: '아이패드 오로라',
-    modelNumber: 'A2696',
-    optionSummary: '스타라이트 · 128GB',
+    name: '맥북 에어 15',
+    modelNumber: 'A3114',
+    optionSummary: '스타라이트 · 256GB',
     quantityLabel: '수량 1개',
-    priceLabel: '990,000원',
+    priceLabel: '1,890,000원',
     paymentDueAt: new Date(Date.now() + 11 * HOUR),
   },
 ]

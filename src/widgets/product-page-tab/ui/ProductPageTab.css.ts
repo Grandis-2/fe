@@ -1,6 +1,7 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, typography } from '@/shared/config/theme'
+import { breakpoint, color, motion, typography } from '@/shared/config/theme'
+import { fontSize } from '@/shared/config/theme/tokens/typography/base'
 
 export const root = style({
   display: 'flex',
@@ -29,6 +30,11 @@ export const tab = style([
       `color ${motion.duration.fast} ${motion.easing.default}`,
       `border-bottom-color ${motion.duration.fast} ${motion.easing.default}`,
     ].join(', '),
+    '@media': {
+      // 20px 글자 4개가 좁은 폭에서 붙어 보여 모바일만 줄인다. 미디어 규칙이 뒤에 출력돼
+      // tabActive의 20px도 함께 덮인다. 높이를 바꾸면 ProductDetailPage의 tabPanel scrollMarginTop도 맞출 것.
+      [breakpoint.mobile]: { height: '44px', fontSize: fontSize[16] },
+    },
   },
 ])
 

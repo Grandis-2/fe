@@ -35,8 +35,8 @@ const slides: Slide[] = [
   },
   {
     badge: '사전예약',
-    title: '아이폰 Duo\n네 가지 컬러로 만나보세요',
-    description: '실버·블러쉬·시트러스·인디고\n취향에 맞는 컬러를 골라보세요.',
+    title: '아이폰 Duo\n새로운 형태의 디자인을\n만나보세요',
+    description: 'Apple의 첫 폴더블 스마트폰',
     tabLabel: '아이폰 Duo\n사전예약',
     icon: BookOpen,
     to: '/preorder/2',

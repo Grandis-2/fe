@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText('아이폰 18 Pro')[0]).toBeInTheDocument()
+    await expect(canvas.getAllByText('맥북 프로 14')[0]).toBeInTheDocument()
     await expect(canvas.getByText('0/50')).toBeInTheDocument()
   },
 }

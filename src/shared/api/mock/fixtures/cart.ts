@@ -3,10 +3,10 @@ import type { CartItem } from '../../types'
 export const cartItems: CartItem[] = [
   {
     cartItemId: 'cart-1',
-    productId: 'IP-18-PRO',
-    optionCode: '256-STL',
+    productId: 'MBP-14',
+    optionCode: '512-SPB',
     quantity: 1,
-    unitPrice: 2278100,
+    unitPrice: 2390000,
   },
   {
     cartItemId: 'cart-2',

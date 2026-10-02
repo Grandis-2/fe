@@ -12,7 +12,10 @@ import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@/features/daum-postcode'
-import type { PurchaseDraft } from '@/features/product-purchase'
+import {
+  PREORDER_BENEFIT_RATE,
+  type PurchaseDraft,
+} from '@/features/product-purchase'
 import { requestTossPayment } from '@/features/toss-payment'
 import { getErrorMessage } from '@/shared/api/client'
 import { mypagePath } from '@/shared/config/routes'
@@ -31,16 +34,12 @@ const GENERIC_PAYMENT_ERROR =
 // 직접 /payment로 들어오면(딥링크 등) 상품 상세가 넘기는 주문 초안이 없어 아래 목업으로 대체한다.
 // ponytail: 아직 주문서 API가 없어서 목업 데이터로 대체.
 const fallbackDraft: PurchaseDraft = {
-  productName: '아이폰 18 Pro',
+  productName: '맥북 프로 14',
   colorLabel: '실버',
   optionLabel: '512GB',
   quantity: 1,
-  unitPrice: 2278100,
+  unitPrice: 2390000,
 }
-
-// 원래 고정 금액(278,100원)이었는데, orderAmount가 선택한 수량에 따라 달라지게
-// 되면서 소액 주문에서 총액이 음수로 떨어졌다 — 금액이 아니라 비율로 할인한다.
-const PREORDER_BENEFIT_RATE = 0.1
 
 // 저장된 기본 배송지가 없을 때의 처리(배송지 등록 유도 등)가 정해지기 전까지는 배송지가
 // 있다고 가정하고 이 값으로 채운다.
@@ -103,7 +102,7 @@ export function PaymentPage() {
   const totalAmount = orderAmount - preorderBenefit
   const orderProduct = {
     name: draft.productName,
-    modelNumber: 'A3714',
+    modelNumber: 'A3112',
     optionSummary: `${draft.colorLabel} · ${draft.optionLabel} · Apple care+`,
     quantityLabel: `${draft.quantity}개`,
     priceLabel: formatWon(orderAmount),

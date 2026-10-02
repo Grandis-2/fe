@@ -170,24 +170,24 @@ export const products: ProductDetail[] = [
     my: null,
   },
   {
-    productId: 'IP-18-PRO',
-    name: '아이폰 18 Pro',
+    productId: 'MBP-14',
+    name: '맥북 프로 14',
     brand: 'Apple',
-    thumbnailUrl: 'https://cdn.example.test/p/ip-18-pro/thumb.jpg',
-    priceRange: { min: 2278100, max: 2678100 },
+    thumbnailUrl: 'https://cdn.example.test/p/mbp-14/thumb.jpg',
+    priceRange: { min: 2390000, max: 3190000 },
     openAt: '2026-10-01T01:00:00.000Z',
     saleStatus: 'BEFORE_OPEN',
     stockPolicy: 'UNLIMITED',
     ratingSummary: { averageRating: null, reviewCount: 0 },
     badges: ['PREORDER'],
     saleMode: 'PREORDER',
-    categoryId: 'smartphone-apple',
-    categoryPath: ['smartphone', 'smartphone-apple'],
+    categoryId: 'laptop-apple',
+    categoryPath: ['laptop', 'laptop-apple'],
     summary: '사전예약 한정 혜택',
-    descriptionHtml: '<h2>아이폰 18 Pro</h2><p>상세 설명이 들어갑니다.</p>',
-    images: [image('https://cdn.example.test/p/ip-18-pro/1.jpg', 0)],
+    descriptionHtml: '<h2>맥북 프로 14</h2><p>상세 설명이 들어갑니다.</p>',
+    images: [image('https://cdn.example.test/p/mbp-14/1.jpg', 0)],
     specs: [
-      { name: '디스플레이', items: [{ label: '크기', value: '6.3인치' }] },
+      { name: '디스플레이', items: [{ label: '크기', value: '14.2인치' }] },
     ],
     optionGroups: [
       {
@@ -196,9 +196,9 @@ export const products: ProductDetail[] = [
         sortOrder: 0,
         values: [
           {
-            valueCode: 'STL',
-            name: '스타라이트',
-            colorHex: '#F5F2ED',
+            valueCode: 'SPB',
+            name: '스페이스 블랙',
+            colorHex: '#2E2E32',
             imageUrl: null,
             sortOrder: 0,
           },
@@ -210,8 +210,8 @@ export const products: ProductDetail[] = [
         sortOrder: 1,
         values: [
           {
-            valueCode: '256',
-            name: '256GB',
+            valueCode: '512',
+            name: '512GB',
             colorHex: null,
             imageUrl: null,
             sortOrder: 0,
@@ -221,10 +221,10 @@ export const products: ProductDetail[] = [
     ],
     variants: [
       {
-        optionCode: '256-STL',
-        name: '256GB 스타라이트',
-        optionValues: { color: 'STL', storage: '256' },
-        price: 2278100,
+        optionCode: '512-SPB',
+        name: '512GB 스페이스 블랙',
+        optionValues: { color: 'SPB', storage: '512' },
+        price: 2390000,
         listPrice: null,
         available: true,
         sortOrder: 0,
@@ -242,24 +242,24 @@ export const products: ProductDetail[] = [
     my: null,
   },
   {
-    productId: 'IP-18-PRO-MAX',
-    name: '아이폰 18 Pro Max',
+    productId: 'MBP-16',
+    name: '맥북 프로 16',
     brand: 'Apple',
-    thumbnailUrl: 'https://cdn.example.test/p/ip-18-pro-max/thumb.jpg',
-    priceRange: { min: 2478100, max: 2878100 },
+    thumbnailUrl: 'https://cdn.example.test/p/mbp-16/thumb.jpg',
+    priceRange: { min: 3490000, max: 4290000 },
     openAt: '2026-10-01T01:00:00.000Z',
     saleStatus: 'BEFORE_OPEN',
     stockPolicy: 'UNLIMITED',
     ratingSummary: { averageRating: null, reviewCount: 0 },
     badges: ['PREORDER'],
     saleMode: 'PREORDER',
-    categoryId: 'smartphone-apple',
-    categoryPath: ['smartphone', 'smartphone-apple'],
+    categoryId: 'laptop-apple',
+    categoryPath: ['laptop', 'laptop-apple'],
     summary: '사전예약 한정 혜택',
-    descriptionHtml: '<h2>아이폰 18 Pro Max</h2><p>상세 설명이 들어갑니다.</p>',
-    images: [image('https://cdn.example.test/p/ip-18-pro-max/1.jpg', 0)],
+    descriptionHtml: '<h2>맥북 프로 16</h2><p>상세 설명이 들어갑니다.</p>',
+    images: [image('https://cdn.example.test/p/mbp-16/1.jpg', 0)],
     specs: [
-      { name: '디스플레이', items: [{ label: '크기', value: '6.9인치' }] },
+      { name: '디스플레이', items: [{ label: '크기', value: '16.2인치' }] },
     ],
     optionGroups: [
       {
@@ -268,9 +268,9 @@ export const products: ProductDetail[] = [
         sortOrder: 0,
         values: [
           {
-            valueCode: 'STL',
-            name: '스타라이트',
-            colorHex: '#F5F2ED',
+            valueCode: 'SPB',
+            name: '스페이스 블랙',
+            colorHex: '#2E2E32',
             imageUrl: null,
             sortOrder: 0,
           },
@@ -282,8 +282,8 @@ export const products: ProductDetail[] = [
         sortOrder: 1,
         values: [
           {
-            valueCode: '256',
-            name: '256GB',
+            valueCode: '512',
+            name: '512GB',
             colorHex: null,
             imageUrl: null,
             sortOrder: 0,
@@ -293,10 +293,10 @@ export const products: ProductDetail[] = [
     ],
     variants: [
       {
-        optionCode: '256-STL',
-        name: '256GB 스타라이트',
-        optionValues: { color: 'STL', storage: '256' },
-        price: 2478100,
+        optionCode: '512-SPB',
+        name: '512GB 스페이스 블랙',
+        optionValues: { color: 'SPB', storage: '512' },
+        price: 3490000,
         listPrice: null,
         available: true,
         sortOrder: 0,
@@ -376,10 +376,10 @@ export const dispatchWindows: Record<string, DispatchWindowVersion> = {
     publishedAt: '2026-09-02T02:00:00.000Z',
     confirmedCountByWave: { '1': 500, '2': 318 },
   },
-  'IP-18-PRO': {
+  'MBP-14': {
     waves: [{ wave: 1, fromSeq: 1, toSeq: 1, estimatedDeliveryDate: null }],
     undeterminedFromSeq: 2,
-    productId: 'IP-18-PRO',
+    productId: 'MBP-14',
     version: 1,
     status: 'DRAFT',
     createdAt: '2026-09-12T03:00:00.000Z',

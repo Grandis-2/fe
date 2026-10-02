@@ -1,9 +1,9 @@
+import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 
 import {
   brandMenus,
   categoryThumbnails,
-  links,
   linkPaths,
   searchPath,
 } from '../model/menu'
@@ -15,6 +15,15 @@ import * as styles from './CategoryNav.css'
 export function MobileCategoryNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className={styles.mobileRoot}>
+      <Link
+        to={linkPaths.이벤트}
+        className={styles.mobileEventBanner}
+        onClick={onNavigate}
+      >
+        진행 중인 이벤트 보러가기
+        <ChevronRight size={18} aria-hidden="true" />
+      </Link>
+      <div className={styles.mobileHeading}>카테고리</div>
       {Object.entries(brandMenus).map(([brand, menu]) => (
         <div key={brand} className={styles.mobileSection}>
           <Link
@@ -64,18 +73,6 @@ export function MobileCategoryNav({ onNavigate }: { onNavigate?: () => void }) {
           )}
         </div>
       ))}
-      <div className={styles.mobileLinks}>
-        {links.map((link) => (
-          <Link
-            key={link}
-            to={linkPaths[link]}
-            className={styles.mobileLink}
-            onClick={onNavigate}
-          >
-            {link}
-          </Link>
-        ))}
-      </div>
     </nav>
   )
 }

@@ -1,4 +1,5 @@
 import { typography } from '@/shared/config/theme'
+import { formatWon } from '@/shared/lib/formatNumber'
 import { SelectButton } from '@/shared/ui'
 
 import * as styles from './ProductOptionSelector.css'
@@ -7,12 +8,14 @@ import * as styles from './ProductOptionSelector.css'
 // 상세 페이지 옵션 패널(크게)이 같은 컴포넌트를 쓰되 맥락에 맞는 크기를 쓴다.
 const labelTypography = {
   small: typography.body.subMedium,
-  medium: typography.title.smMedium,
+  medium: typography.title.lgSemibold,
 }
 
 export type ProductOption = {
   label: string
   selected?: boolean
+  // 이 옵션을 고르면 기본가에 더해지는 추가요금. 없으면 0원 취급.
+  extraPrice?: number
 }
 
 export type ProductOptionSelectorProps = {
@@ -41,6 +44,11 @@ export function ProductOptionSelector({
             key={option.label}
             size={size}
             selected={option.selected}
+            extra={
+              size === 'medium' && option.extraPrice
+                ? `+${formatWon(option.extraPrice)}`
+                : undefined
+            }
             onClick={() => onSelect?.(index)}
           >
             {option.label}
