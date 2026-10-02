@@ -174,6 +174,36 @@ export const iconButton = style({
   },
 })
 
+// 배지를 아이콘 오른쪽 위에 겹쳐 띄우는 기준 박스.
+export const badgeAnchor = style({ position: 'relative' })
+
+// 알림·장바구니 개수. 헤더 높이를 꽉 채운 버튼 안에서 아이콘 위쪽에 맞춘다.
+export const countBadge = style([
+  typography.body.caption,
+  {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: '-20px',
+    marginLeft: '4px',
+    minWidth: '18px',
+    height: '18px',
+    padding: `0 ${spacing[4]}`,
+    boxSizing: 'border-box',
+    borderRadius: '9px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: color.primary.base,
+    color: color.text.inverse,
+    fontSize: '11px',
+    lineHeight: 1,
+    '@media': {
+      [breakpoint.mobile]: { marginTop: '-17px', marginLeft: '2px' },
+    },
+  },
+])
+
 export const icon = style({
   width: '24px',
   height: '24px',

@@ -5,7 +5,7 @@ import { products } from '../fixtures/product'
 import { fail, ok } from '../response'
 import { url } from '../url'
 
-import type { ApiViolation, Cart, CartItem } from '../../types'
+import type { ApiViolation, Cart, CartItem, CountResponse } from '../../types'
 import type { RequestHandler } from 'msw'
 
 // ponytail: 메모리 상태라 새로고침하면 시드로 돌아간다. 유지가 필요하면 sessionStorage로 옮긴다.
@@ -53,6 +53,11 @@ const optionNotFound = () =>
   })
 
 export const cartHandlers: RequestHandler[] = [
+  // 헤더 배지용 — 담긴 항목(줄) 수. 같은 상품 2개는 1로 센다.
+  http.get(url('/api/v1/cart/count'), () =>
+    ok<CountResponse>({ count: items.length }),
+  ),
+
   http.get(url('/api/v1/cart'), () =>
     ok<Cart>({
       items,
