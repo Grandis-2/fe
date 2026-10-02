@@ -28,14 +28,28 @@ import { ReviewsPage } from '@pages/reviews/ReviewsPage'
 import { SearchPage } from '@pages/search/SearchPage'
 import { SignupPage } from '@pages/signup/SignupPage'
 import {
-  ADMIN_PRODUCTS_PATH,
+  ADMIN_CONSISTENCY_CHECK_PATH,
+  ADMIN_HOME_PATH,
+  ADMIN_LOAD_TEST_PATH,
+  ADMIN_MOCK_SETTINGS_PATH,
+  ADMIN_NOTIFICATIONS_PATH,
   ADMIN_PRODUCT_NEW_PATH,
-  ADMIN_PROMOTIONS_PATH,
+  ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTION_NEW_PATH,
+  ADMIN_PROMOTIONS_PATH,
   ADMIN_RESERVATIONS_PATH,
-  SIGNUP_PATH,
   adminProductPath,
   adminPromotionPath,
+  HOME_PATH,
+  MYPAGE_PATH,
+  PAYMENT_PATH,
+  PREORDER_PATH,
+  preorderPath,
+  productPath,
+  RESULT_PATH,
+  REVIEWS_PATH,
+  SEARCH_PATH,
+  SIGNUP_PATH,
 } from '@shared/config/routes'
 
 export const router = createBrowserRouter([
@@ -45,28 +59,34 @@ export const router = createBrowserRouter([
       {
         element: <MainLayout />,
         children: [
-          { path: '/', element: <MainPage /> },
-          { path: '/preorder', element: <PreorderPage /> },
-          { path: '/preorder/:preorderId', element: <PreorderDetailPage /> },
-          { path: '/products/:productId', element: <ProductDetailPage /> },
-          { path: '/payment', element: <PaymentPage /> },
+          { path: HOME_PATH, element: <MainPage /> },
+          { path: PREORDER_PATH, element: <PreorderPage /> },
+          {
+            path: preorderPath(':preorderId'),
+            element: <PreorderDetailPage />,
+          },
+          {
+            path: productPath(':productId'),
+            element: <ProductDetailPage />,
+          },
+          { path: PAYMENT_PATH, element: <PaymentPage /> },
           { path: PAYMENT_CALLBACK_PATH, element: <PaymentCallbackPage /> },
-          { path: '/result', element: <ResultPage /> },
-          { path: '/reviews', element: <ReviewsPage /> },
-          { path: '/search', element: <SearchPage /> },
+          { path: RESULT_PATH, element: <ResultPage /> },
+          { path: REVIEWS_PATH, element: <ReviewsPage /> },
+          { path: SEARCH_PATH, element: <SearchPage /> },
           { path: SIGNUP_PATH, element: <SignupPage /> },
           {
             path: KAKAO_CALLBACK_PATH,
             element: <KakaoCallbackPage />,
           },
-          { path: '/mypage', element: <Mypage /> },
+          { path: MYPAGE_PATH, element: <Mypage /> },
           { path: '*', element: <NotFoundPage /> },
         ],
       },
       {
         element: <AdminLayout />,
         children: [
-          { path: '/admin', element: <AdminHomePage /> },
+          { path: ADMIN_HOME_PATH, element: <AdminHomePage /> },
           // 홈을 제외한 나머지는 아직 기능 범위가 안 정해져서 전부 placeholder —
           // 스코프가 정해지는 대로 각자 전용 페이지로 교체.
           { path: ADMIN_PRODUCTS_PATH, element: <AdminProductsPage /> },
@@ -86,19 +106,19 @@ export const router = createBrowserRouter([
           },
           { path: ADMIN_RESERVATIONS_PATH, element: <AdminReservationsPage /> },
           {
-            path: '/admin/consistency-check',
+            path: ADMIN_CONSISTENCY_CHECK_PATH,
             element: <AdminPlaceholderPage title="정합성 대조" />,
           },
           {
-            path: '/admin/load-test',
+            path: ADMIN_LOAD_TEST_PATH,
             element: <AdminPlaceholderPage title="부하 검증" />,
           },
           {
-            path: '/admin/notifications',
+            path: ADMIN_NOTIFICATIONS_PATH,
             element: <AdminPlaceholderPage title="관리자 알림 내역 확인" />,
           },
           {
-            path: '/admin/mock-settings',
+            path: ADMIN_MOCK_SETTINGS_PATH,
             element: <AdminPlaceholderPage title="Mock 설정" />,
           },
         ],

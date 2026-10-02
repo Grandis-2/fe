@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router'
 
 import { PreorderModelSummary } from '@entities/preorder'
 import { PreorderQueueCard } from '@features/preorder-queue'
+import { productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
 import { Container, Button, BottomSheet, Modal } from '@shared/ui'
 
@@ -146,7 +147,7 @@ export function PreorderDetailPage() {
         {queueModel && (
           <PreorderQueueCard
             productName={queueModel.name}
-            onComplete={() => navigate(`/products/${queueModel.id}`)}
+            onComplete={() => navigate(productPath(queueModel.id))}
           />
         )}
       </Modal>

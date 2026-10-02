@@ -1,3 +1,5 @@
+import { HOME_PATH } from '@shared/config/routes'
+
 // CSRF 방지용 state — 탭별 sessionStorage에 둔다. localStorage는 다른 탭·다음
 // 세션까지 남아서 금지(11-frontend-guide.md §3).
 const STATE_KEY = 'kakao_oauth_state'
@@ -49,8 +51,8 @@ export function consumeReturnTo(): string {
     sessionStorage.removeItem(RETURN_TO_KEY)
     return stored && stored.startsWith('/') && !stored.startsWith('//')
       ? stored
-      : '/'
+      : HOME_PATH
   } catch {
-    return '/'
+    return HOME_PATH
   }
 }

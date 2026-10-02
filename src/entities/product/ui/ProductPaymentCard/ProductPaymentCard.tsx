@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { Link } from 'react-router'
 
+import { productPath } from '@shared/config/routes'
 import { Button, Checkbox, PriceText, QuantityStepper } from '@shared/ui'
 
 import * as styles from './ProductPaymentCard.css'
@@ -87,10 +88,7 @@ export function ProductPaymentCard({
             <div>
               <div className={styles.titleRow}>
                 {productId ? (
-                  <Link
-                    to={`/products/${productId}`}
-                    className={styles.nameLink}
-                  >
+                  <Link to={productPath(productId)} className={styles.nameLink}>
                     {name}
                   </Link>
                 ) : (

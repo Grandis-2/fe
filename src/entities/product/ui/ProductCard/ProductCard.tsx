@@ -1,5 +1,6 @@
 import { Link } from 'react-router'
 
+import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { Slider, Tag } from '@shared/ui'
@@ -84,7 +85,7 @@ export function ProductCard({
       </div>
       <div className={styles.content}>
         <div className={styles.nameGroup}>
-          <Link to={`/products/${productId}`} className={styles.name}>
+          <Link to={productPath(productId)} className={styles.name}>
             {name}
           </Link>
           <div className={[typography.body.sub, styles.modelNumber].join(' ')}>

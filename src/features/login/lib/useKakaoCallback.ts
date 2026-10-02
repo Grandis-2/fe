@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 
 import { loginWithKakao } from '@entities/auth'
 import { ApiRequestError } from '@shared/api/client'
-import { SIGNUP_PATH } from '@shared/config/routes'
+import { HOME_PATH, SIGNUP_PATH } from '@shared/config/routes'
 
 import { KAKAO_CALLBACK_PATH } from './getKakaoAuthorizeUrl'
 import { consumeReturnTo, consumeStoredState } from './kakaoState'
@@ -23,7 +23,7 @@ export function useKakaoCallback() {
   // StrictMode에서 effect가 두 번 실행돼도 code(1회용)를 두 번 보내지 않도록 막는다.
   const started = useRef(false)
   // 성공/실패 모두 로그인을 시작한 화면으로 돌아간다 — state와 같이 한 번만 소비한다.
-  const destination = useRef('/')
+  const destination = useRef(HOME_PATH)
 
   useEffect(() => {
     if (started.current) return

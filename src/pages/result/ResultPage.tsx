@@ -5,6 +5,7 @@ import {
   type ProductPaymentCardItem,
 } from '@entities/product'
 import {
+  HOME_PATH,
   mypagePath,
   RESULT_STATUSES,
   type ResultStatus,
@@ -74,7 +75,7 @@ export function ResultPage() {
     : 'paid'
   const isPreorder = status === 'preorder'
 
-  const goHome = () => void navigate('/')
+  const goHome = () => void navigate(HOME_PATH)
   const goHistory = () =>
     void navigate(mypagePath(isPreorder ? 'preorder-check' : 'history'))
 

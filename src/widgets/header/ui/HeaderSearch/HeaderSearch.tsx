@@ -3,6 +3,8 @@ import { useState } from 'react'
 import { Search } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
+import { searchPath } from '@shared/config/routes'
+
 import * as headerStyles from '../Header.css'
 
 import * as styles from './HeaderSearch.css'
@@ -46,7 +48,7 @@ export function HeaderSearch({ onSearchClick }: HeaderSearchProps) {
           ?.toString()
           .trim()
         if (!keyword) return
-        navigate(`/search?${new URLSearchParams({ keyword })}`)
+        navigate(searchPath({ keyword }))
         setIsOpen(false)
       }}
     >

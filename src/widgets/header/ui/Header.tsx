@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
-import { mypagePath } from '@shared/config/routes'
+import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { CategoryNav } from '@widgets/category-nav'
 
 import { useHeaderTheme } from '../lib/useHeaderTheme'
@@ -25,9 +25,9 @@ export function Header({
   className,
 }: HeaderProps) {
   const { pathname } = useLocation()
-  const isMainPage = pathname === '/'
+  const isMainPage = pathname === HOME_PATH
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
-  const isAdminPage = pathname.startsWith('/admin')
+  const isAdminPage = pathname.startsWith(ADMIN_HOME_PATH)
   // 메인페이지에서만 헤더가 sticky다(그 외엔 root의 기본 position: relative를 그대로
   // 쓴다). 추후 다른 페이지도 sticky가 필요해지면 이 조건에 OR로 추가한다.
   const isStickyPage = isMainPage
@@ -76,7 +76,7 @@ export function Header({
       <div className={styles.content}>
         <div className={styles.leftGroup}>
           <Link
-            to={isAdminPage ? '/admin' : '/'}
+            to={isAdminPage ? ADMIN_HOME_PATH : HOME_PATH}
             className={[styles.logo, isMember && styles.logoMember]
               .filter(Boolean)
               .join(' ')}

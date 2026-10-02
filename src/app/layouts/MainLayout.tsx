@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router'
 
+import { PREORDER_PATH, PRODUCTS_PATH } from '@shared/config/routes'
 import { sprinkles } from '@shared/config/theme'
 
 import * as styles from './MainLayout.css'
@@ -7,9 +8,9 @@ import * as styles from './MainLayout.css'
 export function MainLayout() {
   const { pathname } = useLocation()
   const isBaseBackground =
-    pathname === '/preorder' ||
-    pathname.startsWith('/preorder/') ||
-    pathname.startsWith('/products/')
+    pathname === PREORDER_PATH ||
+    pathname.startsWith(`${PREORDER_PATH}/`) ||
+    pathname.startsWith(`${PRODUCTS_PATH}/`)
 
   return (
     <div

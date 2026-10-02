@@ -19,7 +19,7 @@ import {
   type AdminProductStock,
   type AdminStockItemModel,
 } from '@entities/admin-product'
-import { ADMIN_PRODUCTS_PATH } from '@shared/config/routes'
+import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
 import { Button, SegmentedTabs, Table, Tag } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
@@ -209,7 +209,7 @@ export function AdminProductDetailPage() {
           defaultValue={toFormValue(product, stockItems)}
           onSubmit={handleSubmit}
           onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
-          onPreview={() => navigate(`/products/${product.productId}`)}
+          onPreview={() => navigate(productPath(product.productId))}
         />
       )}
 

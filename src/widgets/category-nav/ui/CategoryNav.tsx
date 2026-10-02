@@ -1,11 +1,12 @@
 import { Link, useLocation, useSearchParams } from 'react-router'
 
+import { SEARCH_PATH, searchPath } from '@shared/config/routes'
+
 import {
   brandMenus,
   categoryThumbnails,
   links,
   linkPaths,
-  searchPath,
   type CategoryNavLink,
 } from '../model/menu'
 
@@ -37,7 +38,7 @@ export function CategoryNav({
   // 검색 페이지에 있을 때만 URL의 카테고리로 브랜드 링크·타일을 활성 표시한다.
   const { pathname } = useLocation()
   const [searchParams] = useSearchParams()
-  const isSearchPage = pathname === '/search'
+  const isSearchPage = pathname === SEARCH_PATH
   const activeCategory = isSearchPage ? searchParams.get('category') : null
   const activeSubCategory = isSearchPage
     ? searchParams.get('subCategory')

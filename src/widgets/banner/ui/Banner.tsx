@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { MessageSquareText, Smartphone, BookOpen } from 'lucide-react'
 import { Link } from 'react-router'
 
+import { preorderPath, REVIEWS_PATH } from '@shared/config/routes'
 import { Tag } from '@shared/ui'
 
 import * as styles from './Banner.css'
@@ -29,7 +30,7 @@ const slides: Slide[] = [
       '실패 없는 사전예약부터 순차 배송까지!\n노바에서 한 번에 끝내세요.',
     tabLabel: '아이폰 18 Pro,\nPro Max 사전예약',
     icon: Smartphone,
-    to: '/preorder/1',
+    to: preorderPath('1'),
     image: '/images/banner1.png',
     imageAlt: '아이폰 18 Pro, Pro Max',
   },
@@ -39,7 +40,7 @@ const slides: Slide[] = [
     description: 'Apple의 첫 폴더블 스마트폰',
     tabLabel: '아이폰 Duo\n사전예약',
     icon: BookOpen,
-    to: '/preorder/2',
+    to: preorderPath('2'),
     image: '/images/banner2.png',
     imageAlt: '아이폰 Duo',
   },
@@ -49,7 +50,7 @@ const slides: Slide[] = [
     description: '실제 구매자 후기로\n나에게 맞는 제품을 찾아보세요.',
     tabLabel: '구매후기\n모아보기',
     icon: MessageSquareText,
-    to: '/reviews',
+    to: REVIEWS_PATH,
     image: '/images/macbook_neo_citrus1.png',
     imageAlt: '시트러스 컬러 맥북 네오',
   },
