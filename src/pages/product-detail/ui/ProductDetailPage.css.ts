@@ -8,6 +8,7 @@ import {
   breakpoint,
 } from '@/shared/config/theme'
 import { maxWidth } from '@/shared/config/theme/tokens/container'
+import { fontSize } from '@/shared/config/theme/tokens/typography/base'
 
 export const contentPadding = style({
   padding: `0 ${spacing[20]}`,
@@ -22,8 +23,9 @@ export const title = style([
   typography.title.xlSemibold,
   {
     '@media': {
-      // 글자 크기 토큰에 28px가 없어 웹에서만 값으로 덮는다(모바일은 24px 그대로).
+      // 글자 크기 토큰에 28px가 없어 웹에서만 값으로 덮는다.
       [breakpoint.desktop]: { fontSize: '28px' },
+      [breakpoint.mobile]: { fontSize: fontSize[20] },
     },
   },
 ])
@@ -69,6 +71,10 @@ export const optionColumn = style({
   // 옵션 섹션(크기/색상/RAM…) 사이를 넉넉히 띄워 한 섹션씩 읽히게 한다.
   gap: spacing[60],
   paddingTop: spacing[16],
+  '@media': {
+    // 모바일은 세로 공간이 귀해서 줄인다 — 옵션 그룹(medium)의 위아래 패딩 12px씩이 더해져 눈으로는 54px.
+    [breakpoint.mobile]: { gap: spacing[30] },
+  },
 })
 
 // 모바일: 하단 고정 주문바(widgets/product-purchase-bar)가 겹칠 일이 없어 top은 항상 0.

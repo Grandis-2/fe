@@ -1,6 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, spacing } from '@/shared/config/theme'
+import { breakpoint, color, spacing } from '@/shared/config/theme'
 
 const rootBase = style({
   display: 'flex',
@@ -26,6 +26,11 @@ export const optionRow = styleVariants({
   small: [optionRowBase, { gap: spacing[6] }],
   medium: [
     optionRowBase,
-    { flexDirection: 'column', alignItems: 'stretch', gap: spacing[14] },
+    {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      gap: spacing[14],
+      '@media': { [breakpoint.mobile]: { gap: spacing[8] } },
+    },
   ],
 })
