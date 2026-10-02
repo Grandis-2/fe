@@ -113,7 +113,7 @@ DLQ에 들어간 것 자체가 예약의 최종 실패는 아닙니다.
 **2. 저장소 클론**
 
 ```bash
-git clone https://github.com/Grandis-Nova/fe.git
+git clone https://github.com/Grandis-2/fe.git
 cd fe
 ```
 
