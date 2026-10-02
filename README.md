@@ -304,9 +304,8 @@ src/
 
 **관리자 목 계정**: `admin` / `admin1234`
 
-주의할 점 둘:
+주의할 점:
 
-- **핸들러 순서가 중요합니다.** 구매자용 `/products`가 `*/products`로 컴파일돼서 `/api/v1/admin/products`까지 가로챕니다. MSW는 먼저 일치하는 핸들러를 쓰므로 `handlers/index.ts`에서 admin을 앞에 둡니다.
 - **목은 쿠키를 진짜로 심지 못합니다.** 브라우저가 Service Worker의 합성 응답에 담긴 `Set-Cookie`를 무시하는 건 의도된 보안 제약입니다(MSW 한계가 아님). 그래서 핸들러가 `X-Mock-Set-Cookie` 커스텀 헤더로 내려보내고 `mock/browser.ts`가 페이지 쪽에서 대신 심습니다. `HttpOnly`는 흉내낼 수 없습니다.
 
 ### 배포 환경에서는 목이 동작하지 않습니다

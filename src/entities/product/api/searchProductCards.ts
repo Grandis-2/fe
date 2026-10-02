@@ -16,6 +16,6 @@ export const searchProductCards = (
     ),
   )
   return apiClient.request<ProductCardSearchResponse>(
-    `/products/search?${query}`,
+    `/api/v1/products/search?${query}`,
   )
 }

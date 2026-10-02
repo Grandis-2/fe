@@ -10,7 +10,7 @@ export const getProductCards = async (
   query: ProductListQuery,
 ): Promise<ProductCardSummary[]> => {
   const { items } = await apiClient.request<ProductCardListResponse>(
-    `/products?query=${query}`,
+    `/api/v1/products?query=${query}`,
   )
   return items
 }

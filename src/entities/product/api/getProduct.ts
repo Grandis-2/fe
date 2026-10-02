@@ -4,4 +4,6 @@ import type { ProductDetail } from '@shared/api/types'
 import type { Product } from '../model/product'
 
 export const getProduct = (productId: string): Promise<Product> =>
-  apiClient.request<ProductDetail>(`/products/${encodeURIComponent(productId)}`)
+  apiClient.request<ProductDetail>(
+    `/api/v1/products/${encodeURIComponent(productId)}`,
+  )
