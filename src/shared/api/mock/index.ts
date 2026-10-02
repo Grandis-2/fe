@@ -1,6 +1,9 @@
-// dev에서만 동작한다. 실제 API로 붙어볼 땐 VITE_USE_MSW=false로 끈다.
+// dev는 기본 on(실제 API로 붙어볼 땐 VITE_USE_MSW=false), 배포(prod)는 VITE_USE_MSW=true일 때만 on.
 export async function startMockWorker() {
-  if (!import.meta.env.DEV || import.meta.env.VITE_USE_MSW === 'false') return
+  const enabled = import.meta.env.DEV
+    ? import.meta.env.VITE_USE_MSW !== 'false'
+    : import.meta.env.VITE_USE_MSW === 'true'
+  if (!enabled) return
 
   const { worker } = await import('./browser')
   // 핸들러가 없는 요청은 그대로 네트워크로 흘려보낸다(정적 자산 경고 방지).
