@@ -1,6 +1,6 @@
 import { Rocket } from 'lucide-react'
 
-import { typography } from '@/shared/config/theme'
+import { typography } from '@shared/config/theme'
 
 import * as styles from './QueueCard.css'
 

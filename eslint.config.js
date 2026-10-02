@@ -12,7 +12,7 @@ import unusedImports from 'eslint-plugin-unused-imports'
 import prettierConfig from 'eslint-config-prettier'
 
 // import 순서를 그룹별로 강제하는 공통 규칙.
-// 외부 패키지 → 내부 별칭(@/) → 상대경로 → 타입 import 순으로 정렬한다.
+// 외부 패키지 → 내부 별칭(@shared/ 등 레이어별) → 상대경로 → 타입 import 순으로 정렬한다.
 const importOrderRules = {
   'import-x/order': [
     'error',
@@ -29,7 +29,10 @@ const importOrderRules = {
       pathGroups: [
         { pattern: 'react', group: 'external', position: 'before' },
         { pattern: 'react/**', group: 'external', position: 'before' },
-        { pattern: '@/**', group: 'internal' },
+        {
+          pattern: '@{app,pages,widgets,features,entities,shared}/**',
+          group: 'internal',
+        },
       ],
       pathGroupsExcludedImportTypes: ['react'],
       'newlines-between': 'always',

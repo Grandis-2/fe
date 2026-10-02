@@ -1,6 +1,6 @@
 import { globalStyle, style } from '@vanilla-extract/css'
 
-import { breakpoint, color, spacing } from '@/shared/config/theme'
+import { breakpoint, color, spacing } from '@shared/config/theme'
 
 export const root = style({
   width: '100%',

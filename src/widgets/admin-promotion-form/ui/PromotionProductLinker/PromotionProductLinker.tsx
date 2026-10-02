@@ -1,5 +1,5 @@
-import type { PromotionLinkableProduct } from '@/entities/admin-promotion'
-import { Button, Checkbox } from '@/shared/ui'
+import type { PromotionLinkableProduct } from '@entities/admin-promotion'
+import { Button, Checkbox } from '@shared/ui'
 
 import * as styles from './PromotionProductLinker.css'
 

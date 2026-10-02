@@ -3,15 +3,15 @@ import { useState, type FormEvent } from 'react'
 import {
   createEmptyProductFormValue,
   type AdminProductFormValue,
-} from '@/entities/admin-product'
-import { getProductVariants } from '@/entities/admin-product'
+} from '@entities/admin-product'
+import { getProductVariants } from '@entities/admin-product'
 import {
   Button,
   Checkbox,
   FormSection,
   ImageUploader,
   Input,
-} from '@/shared/ui'
+} from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
 import { NumberField } from '../NumberField'

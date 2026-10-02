@@ -3,10 +3,10 @@ import { useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
-import { formatDeliveryDate } from '@/entities/admin-product'
-import { parseDateOnly } from '@/shared/lib/parseDateOnly'
-import { usePopoverAnchor } from '@/shared/lib/usePopoverAnchor'
-import { Calendar } from '@/shared/ui'
+import { formatDeliveryDate } from '@entities/admin-product'
+import { parseDateOnly } from '@shared/lib/parseDateOnly'
+import { usePopoverAnchor } from '@shared/lib/usePopoverAnchor'
+import { Calendar } from '@shared/ui'
 
 import * as styles from './DeliveryDateField.css'
 

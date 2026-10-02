@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@/shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 
 import { onDark } from '../Header.css'
 

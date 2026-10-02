@@ -1,5 +1,5 @@
-import { apiClient } from '@/shared/api/client'
-import type { AdminStockPutRequest, AdminStockResponse, AdminStockItem  } from '@/shared/api/types'
+import { apiClient } from '@shared/api/client'
+import type { AdminStockPutRequest, AdminStockResponse, AdminStockItem  } from '@shared/api/types'
 
 const stockPath = (productId: string) =>
   `/api/v1/admin/products/${productId}/stock`

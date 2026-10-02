@@ -8,7 +8,7 @@ import {
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
   typography,
-} from '@/shared/config/theme'
+} from '@shared/config/theme'
 
 // 아래에서 살짝 올라오며 커진다 — 움직임은 작게 두고 opacity가 대부분을 맡는다.
 const enter = keyframes({

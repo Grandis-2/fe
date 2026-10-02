@@ -1,5 +1,5 @@
-import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
-import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
+import macbook1 from '@shared/assets/macbook_neo_sliver1.png'
+import macbook2 from '@shared/assets/macbook_neo_sliver2.png'
 
 import type { Review } from './review'
 

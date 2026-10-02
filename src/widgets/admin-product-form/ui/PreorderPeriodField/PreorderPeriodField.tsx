@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { CalendarDays } from 'lucide-react'
 
-import { Calendar } from '@/shared/ui'
+import { Calendar } from '@shared/ui'
 
 import * as styles from './PreorderPeriodField.css'
 

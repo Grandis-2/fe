@@ -8,14 +8,14 @@ import {
   promotionStatusLabels,
   toPromotionFormValue,
   type AdminPromotionFormValue,
-} from '@/entities/admin-promotion'
+} from '@entities/admin-promotion'
 import {
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
-} from '@/shared/config/routes'
-import { Tag } from '@/shared/ui'
-import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
-import { AdminPromotionForm } from '@/widgets/admin-promotion-form'
+} from '@shared/config/routes'
+import { Tag } from '@shared/ui'
+import { AdminBreadcrumb } from '@widgets/admin-breadcrumb'
+import { AdminPromotionForm } from '@widgets/admin-promotion-form'
 
 import * as styles from './AdminPromotionEditPage.css'
 

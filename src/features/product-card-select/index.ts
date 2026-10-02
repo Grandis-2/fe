@@ -1,1 +1,1 @@
-export { useProductCardSelection } from './model/useProductCardSelection'
+export { useProductCardSelection } from './lib/useProductCardSelection'

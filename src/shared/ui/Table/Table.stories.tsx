@@ -1,6 +1,6 @@
 import { expect, userEvent } from 'storybook/test'
 
-import { Tag } from '@/shared/ui/Tag'
+import { Tag } from '@shared/ui/Tag'
 
 import { Table, type TableColumn, type TableProps } from './Table'
 

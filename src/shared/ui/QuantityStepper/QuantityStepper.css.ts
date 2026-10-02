@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, typography } from '@/shared/config/theme'
+import { color, motion, typography } from '@shared/config/theme'
 
 export const root = style({
   boxSizing: 'border-box',

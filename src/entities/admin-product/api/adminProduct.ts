@@ -1,4 +1,4 @@
-import { apiClient } from '@/shared/api/client'
+import { apiClient } from '@shared/api/client'
 import type {
   AdminProductDetail,
   AdminProductHideRequest,
@@ -6,7 +6,7 @@ import type {
   AdminProductSummary,
   AdminProductUpsertRequest,
   Paged,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 const BASE = '/api/v1/admin/products'
 

@@ -1,5 +1,5 @@
-import { typography } from '@/shared/config/theme'
-import { Button } from '@/shared/ui'
+import { typography } from '@shared/config/theme'
+import { Button } from '@shared/ui'
 
 import * as styles from './PreorderModelSummary.css'
 

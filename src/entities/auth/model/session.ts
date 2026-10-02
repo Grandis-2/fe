@@ -1,4 +1,4 @@
-import type { KakaoCallbackRequest } from '@/shared/api/types'
+import type { KakaoCallbackRequest } from '@shared/api/types'
 
 import { deleteSession, postKakaoCallback } from '../api/auth'
 

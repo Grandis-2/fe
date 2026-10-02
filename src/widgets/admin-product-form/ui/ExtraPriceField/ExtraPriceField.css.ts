@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import { color, motion, spacing, typography } from '@shared/config/theme'
 
 // small Input과 같은 높이·라운드·패딩
 export const root = style({

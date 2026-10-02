@@ -2,12 +2,13 @@ import { useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
-import { type CartItem } from '@/entities/cart'
-import { OrderSummary } from '@/entities/order'
-import { ProductPaymentCard } from '@/entities/product'
-import { typography } from '@/shared/config/theme'
-import { formatWon } from '@/shared/lib/formatNumber'
-import { Checkbox } from '@/shared/ui'
+import { type CartItem } from '@entities/cart'
+import { OrderSummary } from '@entities/order'
+import { ProductPaymentCard } from '@entities/product'
+import { PAYMENT_PATH } from '@shared/config/routes'
+import { typography } from '@shared/config/theme'
+import { formatWon } from '@shared/lib/formatNumber'
+import { Checkbox } from '@shared/ui'
 
 import * as styles from './MypageCart.css'
 
@@ -134,7 +135,7 @@ export function MypageCart() {
         totalValue={formatWon(selectedTotal)}
         actionLabel="결제하기"
         actionDisabled={selectedIds.size === 0}
-        onAction={() => navigate('/payment')}
+        onAction={() => navigate(PAYMENT_PATH)}
       />
     </div>
   )

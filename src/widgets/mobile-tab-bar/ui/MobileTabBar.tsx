@@ -9,10 +9,16 @@ import {
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
-import { mypagePath } from '@/shared/config/routes'
-import { typography } from '@/shared/config/theme'
-import { BottomSheet } from '@/shared/ui'
-import { MobileCategoryNav } from '@/widgets/category-nav'
+import {
+  HOME_PATH,
+  MYPAGE_PATH,
+  mypagePath,
+  PREORDER_PATH,
+  SEARCH_PATH,
+} from '@shared/config/routes'
+import { typography } from '@shared/config/theme'
+import { BottomSheet } from '@shared/ui'
+import { MobileCategoryNav } from '@widgets/category-nav'
 
 import * as styles from './MobileTabBar.css'
 
@@ -29,21 +35,26 @@ const tabs: Tab[] = [
   {
     label: '검색',
     icon: Search,
-    to: '/search',
-    isActive: (p) => p === '/search',
+    to: SEARCH_PATH,
+    isActive: (p) => p === SEARCH_PATH,
   },
-  { label: '홈', icon: House, to: '/', isActive: (p) => p === '/' },
+  {
+    label: '홈',
+    icon: House,
+    to: HOME_PATH,
+    isActive: (p) => p === HOME_PATH,
+  },
   {
     label: '사전예약',
     icon: CalendarCheck,
-    to: '/preorder',
-    isActive: (p) => p.startsWith('/preorder'),
+    to: PREORDER_PATH,
+    isActive: (p) => p.startsWith(PREORDER_PATH),
   },
   {
     label: '마이페이지',
     icon: CircleUser,
     to: mypagePath('preorder-check'),
-    isActive: (p) => p.startsWith('/mypage'),
+    isActive: (p) => p.startsWith(MYPAGE_PATH),
   },
 ]
 

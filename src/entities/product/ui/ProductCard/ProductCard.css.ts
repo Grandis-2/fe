@@ -6,8 +6,8 @@ import {
   lineClamp,
   spacing,
   typography,
-} from '@/shared/config/theme'
-import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+} from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 // 모바일은 검색 페이지처럼 2열로 놓이는 작은 카드라서(폭 ≈ 170px) 모서리·여백·글자를 줄인다.
 // 데스크톱 값은 그대로 두고 아래 '@media'의 mobile 블록에서만 덮어쓴다.

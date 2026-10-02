@@ -5,7 +5,7 @@ import { products } from '../fixtures/product'
 import { fail, ok } from '../response'
 import { url } from '../url'
 
-import type { ApiViolation, Cart, CartItem } from '../../types'
+import type { ApiViolation, Cart, CartItem, CountResponse } from '../../types'
 import type { RequestHandler } from 'msw'
 
 // ponytail: 메모리 상태라 새로고침하면 시드로 돌아간다. 유지가 필요하면 sessionStorage로 옮긴다.
@@ -53,7 +53,12 @@ const optionNotFound = () =>
   })
 
 export const cartHandlers: RequestHandler[] = [
-  http.get(url('/cart'), () =>
+  // 헤더 배지용 — 담긴 항목(줄) 수. 같은 상품 2개는 1로 센다.
+  http.get(url('/api/v1/cart/count'), () =>
+    ok<CountResponse>({ count: items.length }),
+  ),
+
+  http.get(url('/api/v1/cart'), () =>
     ok<Cart>({
       items,
       totalAmount: items.reduce(
@@ -63,7 +68,7 @@ export const cartHandlers: RequestHandler[] = [
     }),
   ),
 
-  http.post(url('/cart/items'), async ({ request }) => {
+  http.post(url('/api/v1/cart/items'), async ({ request }) => {
     const body = await readBody(request)
     const violations = [
       typeof body.productId !== 'string' || body.productId === ''
@@ -96,45 +101,50 @@ export const cartHandlers: RequestHandler[] = [
     return ok(created, 201)
   }),
 
-  http.patch(url('/cart/items/:cartItemId'), async ({ request, params }) => {
-    const body = await readBody(request)
-    const hasOption = body.optionCode !== undefined
-    const hasQuantity = body.quantity !== undefined
+  http.patch(
+    url('/api/v1/cart/items/:cartItemId'),
+    async ({ request, params }) => {
+      const body = await readBody(request)
+      const hasOption = body.optionCode !== undefined
+      const hasQuantity = body.quantity !== undefined
 
-    if (!hasOption && !hasQuantity) {
-      return validationFailed('변경할 옵션 또는 수량을 보내 주세요.', [])
-    }
-    const violations = [
-      hasOption && (typeof body.optionCode !== 'string' || !body.optionCode)
-        ? { field: 'optionCode', message: '올바른 옵션 코드를 보내 주세요.' }
-        : null,
-      hasQuantity && !isValidQuantity(body.quantity) ? quantityViolation : null,
-    ].filter((violation) => violation !== null)
-    if (violations.length > 0) {
-      return validationFailed('입력값을 확인해 주세요.', violations)
-    }
+      if (!hasOption && !hasQuantity) {
+        return validationFailed('변경할 옵션 또는 수량을 보내 주세요.', [])
+      }
+      const violations = [
+        hasOption && (typeof body.optionCode !== 'string' || !body.optionCode)
+          ? { field: 'optionCode', message: '올바른 옵션 코드를 보내 주세요.' }
+          : null,
+        hasQuantity && !isValidQuantity(body.quantity)
+          ? quantityViolation
+          : null,
+      ].filter((violation) => violation !== null)
+      if (violations.length > 0) {
+        return validationFailed('입력값을 확인해 주세요.', violations)
+      }
 
-    const target = items.find((item) => item.cartItemId === params.cartItemId)
-    if (!target) return cartItemNotFound()
+      const target = items.find((item) => item.cartItemId === params.cartItemId)
+      if (!target) return cartItemNotFound()
 
-    let updated = target
-    if (hasOption) {
-      const optionCode = body.optionCode as string
-      const variant = findVariant(target.productId, optionCode)
-      if (!variant) return optionNotFound()
-      updated = { ...updated, optionCode, unitPrice: variant.price }
-    }
-    if (hasQuantity) {
-      updated = { ...updated, quantity: body.quantity as number }
-    }
+      let updated = target
+      if (hasOption) {
+        const optionCode = body.optionCode as string
+        const variant = findVariant(target.productId, optionCode)
+        if (!variant) return optionNotFound()
+        updated = { ...updated, optionCode, unitPrice: variant.price }
+      }
+      if (hasQuantity) {
+        updated = { ...updated, quantity: body.quantity as number }
+      }
 
-    items = items.map((item) =>
-      item.cartItemId === updated.cartItemId ? updated : item,
-    )
-    return ok(updated)
-  }),
+      items = items.map((item) =>
+        item.cartItemId === updated.cartItemId ? updated : item,
+      )
+      return ok(updated)
+    },
+  ),
 
-  http.delete(url('/cart/items/:cartItemId'), ({ params }) => {
+  http.delete(url('/api/v1/cart/items/:cartItemId'), ({ params }) => {
     const exists = items.some((item) => item.cartItemId === params.cartItemId)
     if (!exists) return cartItemNotFound()
 

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
-import { typography } from '@/shared/config/theme'
-import { Button, PriceText } from '@/shared/ui'
+import { typography } from '@shared/config/theme'
+import { Button, PriceText } from '@shared/ui'
 
 import * as styles from './OrderSummary.css'
 

@@ -2,7 +2,7 @@ import { useId, useRef } from 'react'
 
 import { Plus, X } from 'lucide-react'
 
-import { useObjectUrls } from '@/shared/lib/useObjectUrls'
+import { useObjectUrls } from '@shared/lib/useObjectUrls'
 
 import * as styles from './ImageUploader.css'
 

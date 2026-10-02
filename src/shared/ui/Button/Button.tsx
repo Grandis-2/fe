@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes } from 'react'
 
 import { DynamicIcon, type IconName } from 'lucide-react/dynamic'
 
-import { spacing } from '@/shared/config/theme'
+import { spacing } from '@shared/config/theme'
 
 import * as styles from './Button.css'
 

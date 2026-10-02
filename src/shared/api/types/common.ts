@@ -34,6 +34,12 @@ export type ApiResponse<TData> =
       traceId: string
     }
 
+// 헤더 배지처럼 숫자 하나만 필요한 화면용 응답 — 목록 전체를 받아 세지 않는다.
+// ponytail: 백엔드 명세 전 프론트 제안 모양(/cart/count, /notifications/unread-count). 확정되면 맞출 것.
+export type CountResponse = {
+  count: number
+}
+
 export type Paged<TItem> = {
   items: TItem[]
   page: number

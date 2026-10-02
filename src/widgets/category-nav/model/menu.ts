@@ -1,3 +1,5 @@
+import { EVENTS_PATH, PREORDER_PATH, REVIEWS_PATH } from '@shared/config/routes'
+
 export type CategoryNavLink = '이벤트' | '사전예약'
 
 export type MenuLink = { label: string; to: string }
@@ -16,24 +18,24 @@ export const brandMenus: Record<string, BrandMenu> = {
     categories: ['스마트폰', '태블릿', '폴더블'],
     brands: ['Apple', 'Samsung'],
     more: [
-      { label: '사전예약 중인 모바일', to: '/preorder' },
-      { label: '모바일 구매후기', to: '/reviews' },
+      { label: '사전예약 중인 모바일', to: PREORDER_PATH },
+      { label: '모바일 구매후기', to: REVIEWS_PATH },
     ],
   },
   'PC/주변기기': {
     categories: ['노트북', '데스크탑', '모니터', '키보드', '마우스'],
     brands: ['Apple', 'Samsung', 'LG'],
     more: [
-      { label: '사전예약 중인 PC', to: '/preorder' },
-      { label: 'PC 구매후기', to: '/reviews' },
+      { label: '사전예약 중인 PC', to: PREORDER_PATH },
+      { label: 'PC 구매후기', to: REVIEWS_PATH },
     ],
   },
   웨어러블: {
     categories: ['스마트워치', '무선이어폰', '스마트밴드'],
     brands: ['Apple', 'Samsung'],
     more: [
-      { label: '사전예약 중인 웨어러블', to: '/preorder' },
-      { label: '웨어러블 구매후기', to: '/reviews' },
+      { label: '사전예약 중인 웨어러블', to: PREORDER_PATH },
+      { label: '웨어러블 구매후기', to: REVIEWS_PATH },
     ],
   },
 } satisfies Record<string, BrandMenu>
@@ -56,10 +58,6 @@ export const categoryThumbnails: Record<string, string> = {
 
 export const links: CategoryNavLink[] = ['이벤트', '사전예약']
 export const linkPaths: Record<CategoryNavLink, string> = {
-  이벤트: '/events',
-  사전예약: '/preorder',
+  이벤트: EVENTS_PATH,
+  사전예약: PREORDER_PATH,
 }
-
-// URLSearchParams가 인코딩까지 해주므로 쿼리를 손으로 붙이지 않는다.
-export const searchPath = (params: Record<string, string>) =>
-  `/search?${new URLSearchParams(params)}`

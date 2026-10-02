@@ -5,8 +5,8 @@ import type {
   AdminStockPutRequest,
   ProductOptionGroup as DtoOptionGroup,
   ProductVariant as DtoVariant,
-} from '@/shared/api/types'
-import type { UploadedImage } from '@/shared/ui'
+} from '@shared/api/types'
+import type { UploadedImage } from '@shared/ui'
 
 /* ------------------------------------------------------------------ *
  * 폼이 편집하는 모양 — 서버 DTO와 형태가 달라서 별도로 둔다.

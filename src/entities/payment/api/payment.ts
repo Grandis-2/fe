@@ -1,10 +1,10 @@
-import { apiClient } from '@/shared/api/client'
+import { apiClient } from '@shared/api/client'
 import type {
   ConfirmPaymentRequest,
   ConfirmPaymentResponse,
   PreparePaymentRequest,
   PreparePaymentResponse,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 // ① 결제 준비 — 토스 결제창을 열기 전에 주문ID·금액을 서버에 먼저 확정해 둔다.
 export const preparePayment = (body: PreparePaymentRequest) =>

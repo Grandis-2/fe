@@ -1,5 +1,7 @@
 import { Link } from 'react-router'
 
+import { preorderPath } from '@shared/config/routes'
+
 import * as styles from './PreorderCard.css'
 
 export type PreorderCardData = {
@@ -22,7 +24,7 @@ export function PreorderCard({ data, className }: PreorderCardProps) {
   return (
     // div onClick이 아니라 링크 — 키보드 포커스·새 탭 열기·스크린리더가 링크로 인식한다.
     <Link
-      to={`/preorder/${data.id}`}
+      to={preorderPath(data.id)}
       className={[styles.root, className].filter(Boolean).join(' ')}
     >
       <img src={imageSrc} alt={imageAlt} className={styles.image} />

@@ -6,10 +6,10 @@ import {
   createAdminProduct,
   toUpsertRequest,
   type AdminProductFormValue,
-} from '@/entities/admin-product'
-import { ADMIN_PRODUCTS_PATH, adminProductPath } from '@/shared/config/routes'
-import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
-import { AdminProductForm } from '@/widgets/admin-product-form'
+} from '@entities/admin-product'
+import { ADMIN_PRODUCTS_PATH, adminProductPath } from '@shared/config/routes'
+import { AdminBreadcrumb } from '@widgets/admin-breadcrumb'
+import { AdminProductForm } from '@widgets/admin-product-form'
 
 import * as styles from './AdminProductNewPage.css'
 

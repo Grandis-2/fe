@@ -6,7 +6,7 @@ import type {
   ReservationPayment,
   ReservationStatus,
   ReservationSummary,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 // 서버 응답과 화면이 쓰는 모양이 같아서 매퍼 없이 그대로 재노출한다.
 // 화면(pages/widgets)은 DTO를 직접 import할 수 없어 여기가 통로가 된다.

@@ -1,3 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 
-export const queryClient = new QueryClient()
+import { defaultQueryOptions } from '@shared/api/queryPolicy'
+
+export const queryClient = new QueryClient({
+  defaultOptions: defaultQueryOptions,
+})

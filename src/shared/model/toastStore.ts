@@ -1,5 +1,5 @@
-import { createStore } from '@/shared/lib/createStore'
-import type { ToastItem } from '@/shared/ui'
+import { createStore } from '@shared/lib/createStore'
+import type { ToastItem } from '@shared/ui'
 
 type ToastStore = {
   toasts: ToastItem[]

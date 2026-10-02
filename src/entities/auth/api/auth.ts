@@ -1,10 +1,10 @@
-import { apiClient } from '@/shared/api/client'
+import { apiClient } from '@shared/api/client'
 import type {
   AdminLoginRequest,
   KakaoCallbackRequest,
   Session,
   SessionInfo,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 // 로그인 API에는 Idempotency-Key가 필요 없다(11-frontend-guide.md §2).
 export const postKakaoCallback = (body: KakaoCallbackRequest) =>
