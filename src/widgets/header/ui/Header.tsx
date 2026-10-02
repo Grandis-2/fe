@@ -1,9 +1,7 @@
 import { Bell, CircleUser, ShoppingCart } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
-import { KakaoLoginModal } from '@/features/kakao-login'
 import { mypagePath } from '@/shared/config/routes'
-import { useModalStore } from '@/shared/model/modalStore'
 import { CategoryNav } from '@/widgets/category-nav'
 
 import { useHeaderTheme } from '../model/useHeaderTheme'
@@ -26,7 +24,6 @@ export function Header({
   onNotificationClick,
   className,
 }: HeaderProps) {
-  const openModal = useModalStore((state) => state.open)
   const { pathname } = useLocation()
   const isMainPage = pathname === '/'
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
@@ -94,25 +91,13 @@ export function Header({
               >
                 <ShoppingCart className={styles.icon} aria-hidden="true" />
               </button>
-              {/* 비회원은 마이페이지 대신 로그인 모달을 연다. */}
-              {isMember ? (
-                <Link
-                  to={mypagePath('preorder-check')}
-                  className={[styles.iconButton, styles.desktopOnly].join(' ')}
-                  aria-label="마이페이지"
-                >
-                  <CircleUser className={styles.icon} aria-hidden="true" />
-                </Link>
-              ) : (
-                <button
-                  type="button"
-                  className={[styles.iconButton, styles.desktopOnly].join(' ')}
-                  aria-label="마이페이지"
-                  onClick={() => openModal(<KakaoLoginModal />)}
-                >
-                  <CircleUser className={styles.icon} aria-hidden="true" />
-                </button>
-              )}
+              <Link
+                to={mypagePath('preorder-check')}
+                className={[styles.iconButton, styles.desktopOnly].join(' ')}
+                aria-label="마이페이지"
+              >
+                <CircleUser className={styles.icon} aria-hidden="true" />
+              </Link>
             </>
           )}
         </div>
