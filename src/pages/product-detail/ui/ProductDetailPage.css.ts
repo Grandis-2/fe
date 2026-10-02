@@ -224,4 +224,8 @@ export const tabPanel = style({
   // stickyHeader(주문 요약 바 + ProductPageTab, 총 135px)가 top에 고정돼있어
   // scrollIntoView로 top 0에 붙이면 그 밑에 가려지므로, 그만큼 여유를 둔다.
   scrollMarginTop: '135px',
+  '@media': {
+    // 모바일은 주문 요약 바가 하단에 있어 위에는 ProductPageTab(44px)만 고정된다.
+    [breakpoint.mobile]: { scrollMarginTop: '44px' },
+  },
 })
