@@ -6,8 +6,8 @@ import {
   breakpoint,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
-} from '@/shared/config/theme'
-import { maxWidth } from '@/shared/config/theme/tokens/container'
+} from '@shared/config/theme'
+import { maxWidth } from '@shared/config/theme/tokens/container'
 
 // 포털이 body 끝에 붙어도 z-index가 없으면 z-index를 가진 요소(상품 카드 Swiper 1,
 // 헤더 10, 탭바 12, 드롭다운·메가 메뉴 20~21)가 시트 위로 올라온다 — 그 전부보다 위.

@@ -1,9 +1,10 @@
 import { Clock } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
-import { ProductPaymentCard } from '@/entities/product'
-import { useCountdown } from '@/shared/lib/useCountdown'
-import { Button } from '@/shared/ui'
+import { ProductPaymentCard } from '@entities/product'
+import { PAYMENT_PATH } from '@shared/config/routes'
+import { useCountdown } from '@shared/lib/useCountdown'
+import { Button } from '@shared/ui'
 
 import * as styles from './MypagePreorder.css'
 
@@ -73,7 +74,7 @@ function PaymentDueCard({ item }: { item: PreorderItem }) {
           size="small"
           className={styles.headerAction}
           disabled={isOver}
-          onClick={() => navigate('/payment')}
+          onClick={() => navigate(PAYMENT_PATH)}
         >
           결제하기
         </Button>

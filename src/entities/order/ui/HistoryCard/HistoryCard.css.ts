@@ -1,6 +1,6 @@
 import { keyframes, style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing } from '@/shared/config/theme'
+import { color, motion, spacing } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',

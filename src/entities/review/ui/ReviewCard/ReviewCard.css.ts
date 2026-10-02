@@ -1,7 +1,7 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, lineClamp, spacing } from '@/shared/config/theme'
-import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+import { color, lineClamp, spacing } from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
   display: 'flex',

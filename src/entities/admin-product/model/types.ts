@@ -5,7 +5,7 @@ import type {
   DisplayStatus,
   ProductBadge,
   SaleStatus,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 // 서버 응답과 화면이 쓰는 모양이 같아서 매퍼 없이 그대로 재노출한다.
 export type AdminProduct = AdminProductSummary

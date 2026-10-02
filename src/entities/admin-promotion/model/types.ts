@@ -1,5 +1,5 @@
-import { parseDateOnly } from '@/shared/lib/parseDateOnly'
-import type { UploadedImage } from '@/shared/ui'
+import { parseDateOnly } from '@shared/lib/parseDateOnly'
+import type { UploadedImage } from '@shared/ui'
 
 /**
  * 사전예약 프로모션은 아직 API 명세가 없다. 화면부터 만들고 있어서

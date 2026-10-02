@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 import { RefreshCw } from 'lucide-react'
 
-import { getAdminProducts, type AdminProduct } from '@/entities/admin-product'
+import { getAdminProducts, type AdminProduct } from '@entities/admin-product'
 import {
   countByStage,
   failureLabelOf,
@@ -23,8 +23,8 @@ import {
   type AdminMemberModel,
   type AdminReservation,
   type AdminReservationStatus,
-} from '@/entities/admin-reservation'
-import { useModalStore } from '@/shared/model/modalStore'
+} from '@entities/admin-reservation'
+import { useModalStore } from '@shared/model/modalStore'
 import {
   Button,
   ConfirmDialog,
@@ -34,8 +34,8 @@ import {
   StatCard,
   Table,
   Tag,
-} from '@/shared/ui'
-import type { TableColumn } from '@/shared/ui'
+} from '@shared/ui'
+import type { TableColumn } from '@shared/ui'
 
 import * as styles from './AdminReservationsPage.css'
 

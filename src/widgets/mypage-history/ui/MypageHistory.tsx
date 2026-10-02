@@ -1,8 +1,8 @@
-import { HistoryCard, type HistoryCardStatus } from '@/entities/order'
+import { HistoryCard, type HistoryCardStatus } from '@entities/order'
 import {
   ProductPaymentCard,
   type ProductPaymentCardItem,
-} from '@/entities/product'
+} from '@entities/product'
 
 import * as styles from './MypageHistory.css'
 

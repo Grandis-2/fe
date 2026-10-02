@@ -3,8 +3,8 @@ import { expect, waitFor } from 'storybook/test'
 import {
   ProductPaymentCard,
   type ProductPaymentCardItem,
-} from '@/entities/product'
-import placeholderImage from '@/shared/assets/react.svg'
+} from '@entities/product'
+import placeholderImage from '@shared/assets/react.svg'
 
 import { HistoryCard } from './HistoryCard'
 

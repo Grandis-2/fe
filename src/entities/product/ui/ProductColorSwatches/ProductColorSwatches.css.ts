@@ -1,6 +1,7 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, spacing } from '@/shared/config/theme'
+import { breakpoint, color, spacing } from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 const rootBase = style({
   display: 'flex',
@@ -54,4 +55,8 @@ export const swatchInteractive = style({ cursor: 'pointer' })
 
 export const swatchLabel = style({ color: color.text.secondary })
 
-export const label = style({ color: color.text.primary })
+// medium 전용 '색상' 제목 — ProductOptionSelector 제목과 맞춰 모바일에서 한 단계 작게.
+export const label = style({
+  color: color.text.primary,
+  '@media': { [breakpoint.mobile]: { fontSize: fontSize[16] } },
+})

@@ -1,4 +1,4 @@
-import placeholderImage from '@/shared/assets/macbook_neo_sliver1.png'
+import placeholderImage from '@shared/assets/macbook_neo_sliver1.png'
 
 import { ReviewCard } from './ReviewCard'
 

@@ -6,11 +6,11 @@ import {
   spacing,
   typography,
   breakpoint,
-} from '@/shared/config/theme'
+} from '@shared/config/theme'
 import {
   fontSize,
   lineHeight,
-} from '@/shared/config/theme/tokens/typography/base'
+} from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
   display: 'flex',

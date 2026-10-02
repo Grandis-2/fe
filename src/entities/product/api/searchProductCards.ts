@@ -1,13 +1,14 @@
-import { apiClient } from '@/shared/api/client'
+import { apiClient } from '@shared/api/client'
 import type {
   ProductCardSearchParams,
   ProductCardSearchResponse,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 import type { ProductCardSearchResult } from '../model/productCard'
 
 export const searchProductCards = (
   params: ProductCardSearchParams,
+  signal?: AbortSignal,
 ): Promise<ProductCardSearchResult> => {
   // 값이 없는 키는 빼야 'undefined' 문자열이 쿼리로 새지 않는다.
   const query = new URLSearchParams(
@@ -16,6 +17,7 @@ export const searchProductCards = (
     ),
   )
   return apiClient.request<ProductCardSearchResponse>(
-    `/products/search?${query}`,
+    `/api/v1/products/search?${query}`,
+    { signal },
   )
 }

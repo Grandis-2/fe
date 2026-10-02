@@ -109,13 +109,13 @@ function detailFromCard(productId: string): ProductDetail | undefined {
 }
 
 export const productHandlers: RequestHandler[] = [
-  http.get(url('/categories'), () => ok({ items: categories })),
+  http.get(url('/api/v1/categories'), () => ok({ items: categories })),
 
   // 메인페이지 카드 캐러셀 전용 — 페이지네이션/필터를 타지 않는 별도 curated 목록.
   // query가 없으면 undefined를 돌려주고, 아래 일반 목록 핸들러로 넘어간다
   // (MSW는 resolver가 undefined를 돌려주면 다음 매칭 핸들러를 이어서 시도한다).
   // ?mock=error를 붙이면 로딩/에러 화면을 눈으로 확인할 수 있다(예: /?mock=error).
-  http.get(url('/products'), ({ request }) => {
+  http.get(url('/api/v1/products'), ({ request }) => {
     const params = new URL(request.url).searchParams
     const query = params.get('query')
     if (query !== 'best' && query !== 'recommend') return undefined
@@ -128,7 +128,7 @@ export const productHandlers: RequestHandler[] = [
 
   // 카테고리 검색 화면(/search) 카드 목록. category·subCategory가 없으면 전체를 돌려준다.
   // /products/:productId보다 먼저 등록해야 'search'가 productId로 잡히지 않는다.
-  http.get(url('/products/search'), ({ request }) => {
+  http.get(url('/api/v1/products/search'), ({ request }) => {
     const params = new URL(request.url).searchParams
     const category = params.get('category')
     const subCategory = params.get('subCategory')
@@ -152,7 +152,7 @@ export const productHandlers: RequestHandler[] = [
     return ok<ProductCardSearchResponse>({ items, total: items.length })
   }),
 
-  http.get(url('/products'), ({ request }) => {
+  http.get(url('/api/v1/products'), ({ request }) => {
     const params = new URL(request.url).searchParams
     const page = Number(params.get('page') ?? 0)
     const size = Number(params.get('size') ?? 20)
@@ -232,7 +232,7 @@ export const productHandlers: RequestHandler[] = [
   }),
 
   http.get(
-    url('/products/:productId/dispatch-windows/active'),
+    url('/api/v1/products/:productId/dispatch-windows/active'),
     ({ params }) => {
       const productId = String(params.productId)
       const version = dispatchWindows[productId]
@@ -246,25 +246,28 @@ export const productHandlers: RequestHandler[] = [
     },
   ),
 
-  http.get(url('/products/:productId/variants/:optionCode'), ({ params }) => {
-    const productId = String(params.productId)
-    // /products/:productId와 조회 범위를 맞춘다 — 카드 전용 id도 같은 fallback으로 찾는다.
-    const product =
-      products.find((it) => it.productId === productId) ??
-      detailFromCard(productId)
-    const variant = product?.variants.find(
-      (it) => it.optionCode === params.optionCode,
-    )
-    if (!variant) {
-      return fail(404, {
-        code: 'PRODUCT_OPTION_NOT_FOUND',
-        message: '대상을 찾을 수 없습니다.',
-      })
-    }
-    return ok(variant)
-  }),
+  http.get(
+    url('/api/v1/products/:productId/variants/:optionCode'),
+    ({ params }) => {
+      const productId = String(params.productId)
+      // /products/:productId와 조회 범위를 맞춘다 — 카드 전용 id도 같은 fallback으로 찾는다.
+      const product =
+        products.find((it) => it.productId === productId) ??
+        detailFromCard(productId)
+      const variant = product?.variants.find(
+        (it) => it.optionCode === params.optionCode,
+      )
+      if (!variant) {
+        return fail(404, {
+          code: 'PRODUCT_OPTION_NOT_FOUND',
+          message: '대상을 찾을 수 없습니다.',
+        })
+      }
+      return ok(variant)
+    },
+  ),
 
-  http.get(url('/products/:productId'), ({ params }) => {
+  http.get(url('/api/v1/products/:productId'), ({ params }) => {
     const productId = String(params.productId)
     const product =
       products.find((it) => it.productId === productId) ??

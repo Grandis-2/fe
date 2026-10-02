@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing } from '@/shared/config/theme'
+import { color, motion, spacing } from '@shared/config/theme'
 
 // 크기·여백은 내용에 따라 다르므로 여기서 정하지 않는다 — 쓰는 쪽이 className으로 준다.
 // position은 건드리지 않는다 — <dialog>를 showModal()로 띄우면 브라우저 기본

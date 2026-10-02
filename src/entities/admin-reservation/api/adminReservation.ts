@@ -1,11 +1,11 @@
-import { apiClient } from '@/shared/api/client'
+import { apiClient } from '@shared/api/client'
 import type {
   AdminMemberListResponse,
   AdminReservationListParams,
   AdminStatsResponse,
   Paged,
   ReservationSummary,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 const BASE = '/api/v1/admin/reservations'
 

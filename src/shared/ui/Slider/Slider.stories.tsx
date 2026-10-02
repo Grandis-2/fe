@@ -1,7 +1,7 @@
-import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
-import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
-import macbook3 from '@/shared/assets/macbook_neo_sliver3.png'
-import macbook4 from '@/shared/assets/macbook_neo_sliver4.png'
+import macbook1 from '@shared/assets/macbook_neo_sliver1.png'
+import macbook2 from '@shared/assets/macbook_neo_sliver2.png'
+import macbook3 from '@shared/assets/macbook_neo_sliver3.png'
+import macbook4 from '@shared/assets/macbook_neo_sliver4.png'
 
 import { Slider } from './Slider'
 

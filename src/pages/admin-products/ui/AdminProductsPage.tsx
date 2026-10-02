@@ -12,13 +12,13 @@ import {
   saleStatusLabels,
   type AdminProduct,
   type AdminSaleStatus,
-} from '@/entities/admin-product'
+} from '@entities/admin-product'
 import {
   ADMIN_PRODUCT_NEW_PATH,
   adminProductPath,
-} from '@/shared/config/routes'
-import { Button, Dropdown, Input, SegmentedTabs, Table, Tag } from '@/shared/ui'
-import type { TableColumn, TagProps } from '@/shared/ui'
+} from '@shared/config/routes'
+import { Button, Dropdown, Input, SegmentedTabs, Table, Tag } from '@shared/ui'
+import type { TableColumn, TagProps } from '@shared/ui'
 
 import * as styles from './AdminProductsPage.css'
 

@@ -1,11 +1,11 @@
-import { apiClient } from '@/shared/api/client'
+import { apiClient } from '@shared/api/client'
 import type {
   AdminProductDetail,
   DispatchWindowCreateRequest,
   DispatchWindowListResponse,
   DispatchWindowVersion,
   ProductOpenAtRequest,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 const dispatchPath = (productId: string) =>
   `/api/v1/admin/products/${productId}/dispatch-windows`

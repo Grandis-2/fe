@@ -1,10 +1,12 @@
 import { Bell, CircleUser, ShoppingCart } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
-import { mypagePath } from '@/shared/config/routes'
-import { CategoryNav } from '@/widgets/category-nav'
+import { useCartCount } from '@entities/cart'
+import { useUnreadNotificationCount } from '@entities/notification'
+import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
+import { CategoryNav } from '@widgets/category-nav'
 
-import { useHeaderTheme } from '../model/useHeaderTheme'
+import { useHeaderTheme } from '../lib/useHeaderTheme'
 
 import * as styles from './Header.css'
 import { HeaderSearch } from './HeaderSearch'
@@ -12,7 +14,6 @@ import { HeaderSearch } from './HeaderSearch'
 export type HeaderProps = {
   isMember?: boolean
   onSearchClick?: () => void
-  onCartClick?: () => void
   onNotificationClick?: () => void
   className?: string
 }
@@ -20,28 +21,42 @@ export type HeaderProps = {
 export function Header({
   isMember = false,
   onSearchClick,
-  onCartClick,
   onNotificationClick,
   className,
 }: HeaderProps) {
   const { pathname } = useLocation()
-  const isMainPage = pathname === '/'
+  const isMainPage = pathname === HOME_PATH
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
-  const isAdminPage = pathname.startsWith('/admin')
+  const isAdminPage = pathname.startsWith(ADMIN_HOME_PATH)
   // 메인페이지에서만 헤더가 sticky다(그 외엔 root의 기본 position: relative를 그대로
   // 쓴다). 추후 다른 페이지도 sticky가 필요해지면 이 조건에 OR로 추가한다.
   const isStickyPage = isMainPage
   const { headerRef, isOnDark } = useHeaderTheme(pathname)
+  // 개수 배지는 회원 쇼핑 화면에서만 — 어드민 종 아이콘은 관리자 알림이라 대상이 다르다.
+  const showCounts = isMember && !isAdminPage
+  const { data: cartCount = 0 } = useCartCount(showCounts)
+  const { data: notificationCount = 0 } = useUnreadNotificationCount(showCounts)
+
+  // 아이콘 오른쪽 위 숫자. 0이면 안 그린다(개수는 aria-label에 따로 담는다).
+  const countBadge = (count: number) =>
+    count > 0 && (
+      <span className={styles.countBadge} aria-hidden="true">
+        {count > 99 ? '99+' : count}
+      </span>
+    )
 
   // 어드민과 일반 헤더 양쪽에 들어가므로 한 번만 만들어 둔다.
   const notificationButton = (
     <button
       type="button"
-      className={styles.iconButton}
-      aria-label="알림"
+      className={[styles.iconButton, styles.badgeAnchor].join(' ')}
+      aria-label={
+        notificationCount > 0 ? `알림 ${notificationCount}개` : '알림'
+      }
       onClick={onNotificationClick}
     >
       <Bell className={styles.icon} aria-hidden="true" />
+      {countBadge(notificationCount)}
     </button>
   )
 
@@ -61,7 +76,7 @@ export function Header({
       <div className={styles.content}>
         <div className={styles.leftGroup}>
           <Link
-            to={isAdminPage ? '/admin' : '/'}
+            to={isAdminPage ? ADMIN_HOME_PATH : HOME_PATH}
             className={[styles.logo, isMember && styles.logoMember]
               .filter(Boolean)
               .join(' ')}
@@ -83,14 +98,16 @@ export function Header({
               {/* 모바일은 하단 탭바에 검색·마이페이지가 있어 헤더엔 알림·장바구니만 둔다. */}
               <HeaderSearch onSearchClick={onSearchClick} />
               {notificationButton}
-              <button
-                type="button"
-                className={styles.iconButton}
-                aria-label="장바구니"
-                onClick={onCartClick}
+              <Link
+                to={mypagePath('cart')}
+                className={[styles.iconButton, styles.badgeAnchor].join(' ')}
+                aria-label={
+                  cartCount > 0 ? `장바구니 ${cartCount}개` : '장바구니'
+                }
               >
                 <ShoppingCart className={styles.icon} aria-hidden="true" />
-              </button>
+                {countBadge(cartCount)}
+              </Link>
               <Link
                 to={mypagePath('preorder-check')}
                 className={[styles.iconButton, styles.desktopOnly].join(' ')}

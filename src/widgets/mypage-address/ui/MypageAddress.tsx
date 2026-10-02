@@ -2,8 +2,8 @@ import { useState } from 'react'
 
 import { MapPin, Plus } from 'lucide-react'
 
-import { AddressCard, useDefaultAddress } from '@/entities/address'
-import { Button } from '@/shared/ui'
+import { AddressCard, useDefaultAddress } from '@entities/address'
+import { Button } from '@shared/ui'
 
 import { AddressFormModal } from './AddressFormModal'
 import * as styles from './MypageAddress.css'

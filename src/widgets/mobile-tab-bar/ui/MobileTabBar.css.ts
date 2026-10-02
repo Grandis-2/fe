@@ -9,8 +9,8 @@ import {
   breakpoint,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
-} from '@/shared/config/theme'
-import { fontWeight } from '@/shared/config/theme/tokens/typography/base'
+} from '@shared/config/theme'
+import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
   position: 'fixed',

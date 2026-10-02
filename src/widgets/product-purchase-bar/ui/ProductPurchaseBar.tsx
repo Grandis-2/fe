@@ -3,8 +3,8 @@ import type { RefObject } from 'react'
 import {
   QuantityPriceDisplay,
   type ProductPurchase,
-} from '@/features/product-purchase'
-import { Button, Container } from '@/shared/ui'
+} from '@features/product-purchase'
+import { Button, Container } from '@shared/ui'
 
 import * as styles from './ProductPurchaseBar.css'
 
@@ -76,6 +76,7 @@ export function ProductPurchaseBar({
             <div className={styles.orderBarInfo}>
               <div className={styles.productName}>{productName}</div>
               <div className={styles.productOption}>
+                <span className={styles.optionPrefix}>옵션 : </span>
                 {colorLabel} · {optionLabel}
               </div>
             </div>

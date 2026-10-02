@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { spacing, sprinkles } from '@/shared/config/theme'
+import { spacing, sprinkles } from '@shared/config/theme'
 
 export type ContainerProps = {
   children: ReactNode

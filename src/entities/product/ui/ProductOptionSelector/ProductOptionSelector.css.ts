@@ -1,6 +1,7 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { breakpoint, color, spacing } from '@/shared/config/theme'
+import { breakpoint, color, spacing } from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 const rootBase = style({
   display: 'flex',
@@ -18,6 +19,11 @@ export const root = styleVariants({
 })
 
 export const label = style({ color: color.text.primary })
+
+// medium(상세 옵션 패널) 제목은 모바일에서 한 단계 작게.
+export const labelMedium = style({
+  '@media': { [breakpoint.mobile]: { fontSize: fontSize[16] } },
+})
 
 const optionRowBase = style({ display: 'flex', alignItems: 'center' })
 

@@ -1,6 +1,6 @@
 import { DynamicIcon, type IconName } from 'lucide-react/dynamic'
 
-import { spacing } from '@/shared/config/theme'
+import { spacing } from '@shared/config/theme'
 
 import { PlanetIcon } from '../PlanetIcon'
 

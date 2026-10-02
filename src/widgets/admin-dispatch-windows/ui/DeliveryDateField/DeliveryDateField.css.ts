@@ -6,7 +6,7 @@ import {
   shadow,
   spacing,
   typography,
-} from '@/shared/config/theme'
+} from '@shared/config/theme'
 
 export const root = style({
   position: 'relative',

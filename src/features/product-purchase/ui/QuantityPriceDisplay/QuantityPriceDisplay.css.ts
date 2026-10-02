@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, typography } from '@/shared/config/theme'
+import { color, typography } from '@shared/config/theme'
 
 export const fixedQuantity = style([
   typography.body.defaultMedium,

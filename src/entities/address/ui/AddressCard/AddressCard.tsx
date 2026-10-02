@@ -1,4 +1,4 @@
-import { typography } from '@/shared/config/theme'
+import { typography } from '@shared/config/theme'
 
 import * as styles from './AddressCard.css'
 

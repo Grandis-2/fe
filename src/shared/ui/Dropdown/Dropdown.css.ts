@@ -1,6 +1,6 @@
 import { keyframes, style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import { color, motion, spacing, typography } from '@shared/config/theme'
 
 const optionEnter = keyframes({
   from: { opacity: 0, transform: 'translateY(-4px)' },

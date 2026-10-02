@@ -4,14 +4,14 @@ import {
   createEmptyPromotionFormValue,
   type AdminPromotionFormValue,
   type PromotionLinkableProduct,
-} from '@/entities/admin-promotion'
+} from '@entities/admin-promotion'
 import {
   Button,
   DateRangeField,
   FormSection,
   ImageUploader,
   Input,
-} from '@/shared/ui'
+} from '@shared/ui'
 
 import { PromotionProductLinker } from '../PromotionProductLinker'
 import { PromotionThumbnailField } from '../PromotionThumbnailField'

@@ -1,6 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import { color, motion, spacing, typography } from '@shared/config/theme'
 
 export const base = style({
   display: 'inline-flex',

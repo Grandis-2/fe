@@ -11,9 +11,9 @@ import {
   pickActiveVersion,
   publishDispatchWindow,
   type DispatchWaveModel,
-} from '@/entities/admin-product'
-import { Button, Input, Table } from '@/shared/ui'
-import type { TableColumn } from '@/shared/ui'
+} from '@entities/admin-product'
+import { Button, Input, Table } from '@shared/ui'
+import type { TableColumn } from '@shared/ui'
 
 import { DeliveryDateField } from '../DeliveryDateField'
 

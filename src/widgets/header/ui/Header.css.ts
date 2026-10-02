@@ -11,11 +11,11 @@ import {
   spacing,
   typography,
   breakpoint,
-} from '@/shared/config/theme'
-import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+} from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 // Header가 CategoryNav를 소유한다(CLAUDE.md) — 메가 메뉴 열림 선택자와 링크 padding은
 // 한 곳(CategoryNav.css)의 값을 그대로 쓴다.
-import { MEGA_MENU_OPEN, NAV_LINK_PADDING_X } from '@/widgets/category-nav'
+import { MEGA_MENU_OPEN, NAV_LINK_PADDING_X } from '@widgets/category-nav'
 
 // 헤더 높이는 breakpoint마다 달라서 숫자 상수 대신 :root의 CSS 변수로 둔다 —
 // 헤더 밖(MainPage 배너 끌어올리기, MainLayout minHeight)에서도 같은 값을 읽어야 해서
@@ -173,6 +173,36 @@ export const iconButton = style({
     [`${root}:has(${MEGA_MENU_OPEN}) &:hover`]: { color: color.primary.base },
   },
 })
+
+// 배지를 아이콘 오른쪽 위에 겹쳐 띄우는 기준 박스.
+export const badgeAnchor = style({ position: 'relative' })
+
+// 알림·장바구니 개수. 헤더 높이를 꽉 채운 버튼 안에서 아이콘 위쪽에 맞춘다.
+export const countBadge = style([
+  typography.body.caption,
+  {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: '-20px',
+    marginLeft: '4px',
+    minWidth: '18px',
+    height: '18px',
+    padding: `0 ${spacing[4]}`,
+    boxSizing: 'border-box',
+    borderRadius: '9px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: color.primary.base,
+    color: color.text.inverse,
+    fontSize: '11px',
+    lineHeight: 1,
+    '@media': {
+      [breakpoint.mobile]: { marginTop: '-17px', marginLeft: '2px' },
+    },
+  },
+])
 
 export const icon = style({
   width: '24px',

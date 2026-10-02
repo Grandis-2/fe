@@ -12,16 +12,16 @@ import {
   promotionStatusLabels,
   type AdminPromotion,
   type PromotionStatus,
-} from '@/entities/admin-promotion'
+} from '@entities/admin-promotion'
 import {
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PROMOTION_NEW_PATH,
   adminPromotionPath,
-} from '@/shared/config/routes'
-import { useModalStore } from '@/shared/model/modalStore'
-import { showToast } from '@/shared/model/toastStore'
-import { Button, ConfirmDialog, SegmentedTabs, Table, Tag } from '@/shared/ui'
-import type { TableColumn } from '@/shared/ui'
+} from '@shared/config/routes'
+import { useModalStore } from '@shared/model/modalStore'
+import { showToast } from '@shared/model/toastStore'
+import { Button, ConfirmDialog, SegmentedTabs, Table, Tag } from '@shared/ui'
+import type { TableColumn } from '@shared/ui'
 
 import * as styles from './AdminPromotionsPage.css'
 

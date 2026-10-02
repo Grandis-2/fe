@@ -1,4 +1,4 @@
-import placeholderImage from '@/shared/assets/react.svg'
+import placeholderImage from '@shared/assets/react.svg'
 
 import { PreorderCard } from './PreorderCard'
 

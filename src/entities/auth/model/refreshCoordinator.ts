@@ -1,5 +1,5 @@
-import { ApiRequestError, configureApiAuth } from '@/shared/api/client'
-import type { Session } from '@/shared/api/types'
+import { ApiRequestError, configureApiAuth } from '@shared/api/client'
+import type { Session } from '@shared/api/types'
 
 import { refreshSession } from '../api/auth'
 

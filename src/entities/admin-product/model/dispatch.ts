@@ -1,5 +1,5 @@
-import type { DispatchWave, DispatchWindowVersion } from '@/shared/api/types'
-import { parseDateOnly } from '@/shared/lib/parseDateOnly'
+import type { DispatchWave, DispatchWindowVersion } from '@shared/api/types'
+import { parseDateOnly } from '@shared/lib/parseDateOnly'
 
 export type DispatchWaveModel = DispatchWave
 export type DispatchWindowVersionModel = DispatchWindowVersion

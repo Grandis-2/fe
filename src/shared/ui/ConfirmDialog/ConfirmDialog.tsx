@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
-import { Button } from '@/shared/ui/Button'
-import { ModalTitle } from '@/shared/ui/Modal'
+import { Button } from '@shared/ui/Button'
+import { ModalTitle } from '@shared/ui/Modal'
 
 import * as styles from './ConfirmDialog.css'
 

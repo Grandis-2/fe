@@ -5,8 +5,8 @@ import {
   createOptionValue,
   type ProductOptionGroup,
   type ProductOptionValue,
-} from '@/entities/admin-product'
-import { Input } from '@/shared/ui'
+} from '@entities/admin-product'
+import { Input } from '@shared/ui'
 
 import { ExtraPriceField } from '../ExtraPriceField'
 import * as fields from '../fields.css'

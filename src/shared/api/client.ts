@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { type AxiosResponse } from 'axios'
 
 import type { ApiError, ApiResponse } from './types'
 
@@ -43,35 +43,76 @@ export type ApiRequestOptions = {
    * 그 자체가 인증 흐름인 호출에 쓴다. 안 그러면 재발급 실패가 또 재발급을 부른다.
    */
   skipAuthRefresh?: boolean
+  /**
+   * TanStack Query의 queryFn이 넘겨주는 signal. 쿼리 키가 바뀌거나(검색 조건 변경 등)
+   * 화면을 떠나면 이전 요청을 취소해서, 늦게 온 옛 응답이 새 화면을 덮지 않게 한다.
+   */
+  signal?: AbortSignal
 }
+
+// 응답이 이 시간 안에 안 오면 끊고 TIMEOUT으로 던진다 — 안 끊으면 로딩이 끝나지 않는다.
+const TIMEOUT_MS = 10_000
 
 // 서버가 401 같은 실패도 JSON 봉투로 내려주므로, axios가 비2xx를 reject하지
 // 않게 하고 아래에서 envelope의 success로 직접 판단한다.
-const http = axios.create({ withCredentials: true, validateStatus: () => true })
+const http = axios.create({
+  withCredentials: true,
+  timeout: TIMEOUT_MS,
+  validateStatus: () => true,
+})
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // 짧은 요청 ID. 서버 제약(영숫자·.·_·-, 64자 이하)을 만족한다.
 const requestId = () => crypto.randomUUID().replace(/-/g, '')
 
-async function request<TData>(
+type RawResponse<TData> = AxiosResponse<ApiResponse<TData> | string>
+
+// 응답 자체를 못 받은 경우(타임아웃, 네트워크 끊김)도 다른 실패와 같은 ApiRequestError로
+// 바꾼다 — status 0이 "서버까지 못 갔다"는 표시다(queryPolicy의 재시도 판단이 이걸 본다).
+// 취소는 실패가 아니라서 그대로 던진다(TanStack Query가 알아서 무시한다).
+function toTransportError(caught: unknown): unknown {
+  if (axios.isCancel(caught) || !axios.isAxiosError(caught)) return caught
+  const timedOut = caught.code === 'ECONNABORTED' || caught.code === 'ETIMEDOUT'
+  return new ApiRequestError(
+    timedOut
+      ? {
+          code: 'TIMEOUT',
+          message: '서버 응답이 늦어지고 있습니다. 잠시 후 다시 시도해 주세요.',
+          details: null,
+        }
+      : {
+          code: 'NETWORK_ERROR',
+          message: '네트워크 연결을 확인해 주세요.',
+          details: null,
+        },
+    0,
+  )
+}
+
+async function send<TData>(
   path: string,
-  options: ApiRequestOptions = {},
-  attempted = false,
-): Promise<TData> {
-  const { body, skipAuthRefresh, method = 'GET', headers } = options
+  { body, method = 'GET', headers, signal }: ApiRequestOptions,
+): Promise<RawResponse<TData>> {
+  try {
+    return await http.request<ApiResponse<TData> | string>({
+      url: path,
+      method,
+      data: body,
+      signal,
+      headers: {
+        'X-Request-Id': requestId(),
+        ...getAuthHeaders(),
+        ...headers,
+      },
+    })
+  } catch (caught) {
+    throw toTransportError(caught)
+  }
+}
 
-  const response = await http.request<ApiResponse<TData> | string>({
-    url: path,
-    method,
-    data: body,
-    headers: {
-      'X-Request-Id': requestId(),
-      ...getAuthHeaders(),
-      ...headers,
-    },
-  })
-
+// 봉투를 벗겨 data만 돌려주고, 실패는 ApiRequestError로 던진다.
+function unwrap<TData>(response: RawResponse<TData>): TData {
   // 로그아웃 등 204 No Content는 파싱할 본문이 없다.
   if (response.status === 204) return undefined as TData
 
@@ -89,23 +130,42 @@ async function request<TData>(
     )
   }
   if (json.success) return json.data
+  throw new ApiRequestError(json.error, response.status)
+}
 
-  const { error } = json
-
-  // 재시도는 최초 1회만 — 재시도한 요청이 또 401이면 그대로 던진다.
-  if (response.status === 401 && !attempted) {
-    if (error.details?.retryable) {
-      // 서버 쪽 일시 장애(폐기 조회 실패 등) — 재발급이 아니라 같은 요청을 잠시 후 한 번 더.
-      await delay(2000)
-      return request<TData>(path, options, true)
-    }
-    if (!skipAuthRefresh && onUnauthorized) {
-      const shouldRetry = await onUnauthorized()
-      if (shouldRetry) return request<TData>(path, options, true)
-    }
+// 401을 받았을 때 같은 요청을 다시 보내도 되는 상태로 만들어 본다. true면 한 번 더 보낸다.
+async function recoverFromUnauthorized(
+  response: RawResponse<unknown>,
+  { skipAuthRefresh }: ApiRequestOptions,
+): Promise<boolean> {
+  const json = response.data
+  if (
+    typeof json === 'object' &&
+    json !== null &&
+    !json.success &&
+    json.error.details?.retryable
+  ) {
+    // 서버 쪽 일시 장애(폐기 조회 실패 등) — 재발급이 아니라 같은 요청을 잠시 후 한 번 더.
+    await delay(2000)
+    return true
   }
+  if (skipAuthRefresh || !onUnauthorized) return false
+  return onUnauthorized()
+}
 
-  throw new ApiRequestError(error, response.status)
+async function request<TData>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<TData> {
+  const response = await send<TData>(path, options)
+  // 401은 딱 한 번만 회복을 시도한다 — 다시 보낸 요청이 또 401이면 그대로 던진다.
+  if (
+    response.status === 401 &&
+    (await recoverFromUnauthorized(response, options))
+  ) {
+    return unwrap(await send<TData>(path, options))
+  }
+  return unwrap(response)
 }
 
 export const apiClient = { request }

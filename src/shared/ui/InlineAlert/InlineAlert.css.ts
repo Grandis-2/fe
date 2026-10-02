@@ -1,6 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@/shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 
 export const root = style([
   typography.body.sub,

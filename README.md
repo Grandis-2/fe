@@ -53,7 +53,7 @@
 
 DLQ에 들어간 것 자체가 예약의 최종 실패는 아닙니다.
 
-그래서 UI에서 `FAILED`를 '확정 실패'가 아니라 **'재처리 필요'**로 부릅니다. 끝난 게 아니라 손이 필요한 상태라서요.
+그래서 UI에서 `FAILED`를 '확정 실패'가 아니라 '재처리 필요'로 부릅니다. 끝난 게 아니라 손이 필요한 상태라서요.
 
 ---
 
@@ -186,7 +186,7 @@ src/app → pages → widgets → features → entities → shared
 | `entities` | 도메인 모델 + 조회 함수 (상품, 예약, 장바구니, 인증)      |
 | `shared`   | 공용 UI, 디자인 토큰, fetch 래퍼, DTO, 훅                 |
 
-**Import 경로 규칙**: 슬라이스 밖은 `@/` 별칭, 슬라이스 안은 상대경로를 씁니다. 슬라이스 안에서 자기 배럴(`@/features/kakao-login`)을 import하면 `index.ts` → 컴포넌트 → `index.ts` 순환이 생기므로 파일을 직접 가리킵니다.
+**Import 경로 규칙**: 슬라이스 밖은 레이어별 별칭(`@app`·`@pages`·`@widgets`·`@features`·`@entities`·`@shared`), 슬라이스 안은 상대경로를 씁니다. 슬라이스 안에서 자기 배럴(`@features/login`)을 import하면 `index.ts` → 컴포넌트 → `index.ts` 순환이 생기므로 파일을 직접 가리킵니다.
 
 ### 데이터 레이어
 
@@ -197,7 +197,7 @@ src/app → pages → widgets → features → entities → shared
              (DTO, fetch)   (DTO→모델)      (도메인 타입)
 ```
 
-- `@/shared/api/types`(DTO)는 `entities/*/api`, `entities/*/model`에서만 import합니다. 나머지는 엔티티 배럴이 내보내는 모델 타입만 씁니다 — lint로 강제됩니다.
+- `@shared/api/types`(DTO)는 `entities/*/api`, `entities/*/model`에서만 import합니다. 나머지는 엔티티 배럴이 내보내는 모델 타입만 씁니다 — lint로 강제됩니다.
 - 매퍼는 모양이 실제로 다를 때만 만듭니다(ISO 문자열 → `Date`, 필드명 변경 등). 같으면 `export type Product = ProductDetail`로 재노출하고 끝냅니다.
 - `ApiResponse` 봉투는 fetch 래퍼가 벗겨 `data`만 돌려주고 실패는 throw합니다. 호출부에서 `success`를 매번 검사하지 않습니다.
 - Repository 인터페이스, DI 컨테이너, `UseCase` 클래스는 만들지 않습니다(구현이 하나뿐인 추상화).
@@ -205,7 +205,7 @@ src/app → pages → widgets → features → entities → shared
 ### 스타일
 
 - 디자인 토큰은 `src/shared/config/theme/tokens/`에 있습니다 — `color`, `typography`, `spacing`, `breakpoint`, `container`, `motion`, `shadow`
-- 토큰은 **항상 배럴(`@/shared/config/theme`)에서** 가져옵니다. 개별 토큰 파일을 직접 import하지 않습니다.
+- 토큰은 **항상 배럴(`@shared/config/theme`)에서** 가져옵니다. 개별 토큰 파일을 직접 import하지 않습니다.
 - 반응형은 `sprinkles()`로, 기준은 mobile-first에 `desktop = (min-width: 744px)`입니다. **브레이크포인트마다 값이 실제로 다른 속성에만** `sprinkles()`를 쓰고, 고정값은 평범한 `style()`에 둡니다.
 - 색은 용도명을 씁니다(`primary.focus`). base 색상 이름이나 생 hex를 하드코딩하지 않습니다.
 
@@ -230,8 +230,8 @@ src/
 │  └─ admin-sidebar/  admin-product-form/  admin-promotion-form/ …
 │
 ├─ features/                 # 사용자 행동 단위
-│  ├─ kakao-login/  toss-payment/  daum-postcode/
-│  └─ preorder-queue/  product-purchase/  product-card-select/
+│  ├─ login/  payment/  address-search/  terms-agreement/
+│  └─ preorder-queue/  product-purchase/  product-card-select/  product-gallery/
 │
 ├─ entities/                 # 도메인
 │  └─ product/
@@ -246,7 +246,8 @@ src/
 │
 └─ shared/
    ├─ api/
-   │  ├─ client.ts           # axios 래퍼 (봉투 해제, 401 재발급)
+   │  ├─ client.ts           # axios 래퍼 (봉투 해제, 401 재발급, 10초 타임아웃)
+   │  ├─ queryPolicy.ts      # TanStack Query 캐시·재시도 프리셋 (catalog/account/live)
    │  ├─ types/              # 서버 DTO
    │  └─ mock/               # MSW
    │     ├─ handlers/        # 엔드포인트별 핸들러
@@ -304,9 +305,8 @@ src/
 
 **관리자 목 계정**: `admin` / `admin1234`
 
-주의할 점 둘:
+주의할 점:
 
-- **핸들러 순서가 중요합니다.** 구매자용 `/products`가 `*/products`로 컴파일돼서 `/api/v1/admin/products`까지 가로챕니다. MSW는 먼저 일치하는 핸들러를 쓰므로 `handlers/index.ts`에서 admin을 앞에 둡니다.
 - **목은 쿠키를 진짜로 심지 못합니다.** 브라우저가 Service Worker의 합성 응답에 담긴 `Set-Cookie`를 무시하는 건 의도된 보안 제약입니다(MSW 한계가 아님). 그래서 핸들러가 `X-Mock-Set-Cookie` 커스텀 헤더로 내려보내고 `mock/browser.ts`가 페이지 쪽에서 대신 심습니다. `HttpOnly`는 흉내낼 수 없습니다.
 
 ### 배포 환경에서는 목이 동작하지 않습니다
