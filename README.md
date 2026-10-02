@@ -354,4 +354,4 @@ fix(NF-18): 수정 저장 후 재고 사라짐 문제
 
 <!-- 배포 URL을 넣어 주세요 -->
 
-[![Vercel Deployment](https://fe-iota-peach.vercel.app/)](#)
+https://fe-iota-peach.vercel.app/
