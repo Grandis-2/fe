@@ -8,7 +8,7 @@ import {
   breakpoint,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
-} from '@/shared/config/theme'
+} from '@shared/config/theme'
 
 export const productName = style([typography.title.lgSemibold])
 export const productOption = style([

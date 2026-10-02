@@ -1,7 +1,7 @@
 import { DynamicIcon, type IconName } from 'lucide-react/dynamic'
 
-import { spacing } from '@/shared/config/theme'
-import { PlanetIcon } from '@/shared/ui'
+import { spacing } from '@shared/config/theme'
+import { PlanetIcon } from '@shared/ui'
 
 import * as styles from './ResultHero.css'
 

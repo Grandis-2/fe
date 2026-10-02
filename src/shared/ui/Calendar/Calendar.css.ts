@@ -6,7 +6,7 @@ import {
   spacing,
   typography,
   shadow,
-} from '@/shared/config/theme'
+} from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',

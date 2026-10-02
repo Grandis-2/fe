@@ -3,9 +3,9 @@ import { useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
-import { parseDateOnly } from '@/shared/lib/parseDateOnly'
-import { usePopoverAnchor } from '@/shared/lib/usePopoverAnchor'
-import { Calendar } from '@/shared/ui/Calendar'
+import { parseDateOnly } from '@shared/lib/parseDateOnly'
+import { usePopoverAnchor } from '@shared/lib/usePopoverAnchor'
+import { Calendar } from '@shared/ui/Calendar'
 
 import * as styles from './DateRangeField.css'
 

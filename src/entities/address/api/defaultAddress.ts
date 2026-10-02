@@ -1,5 +1,5 @@
-import { apiClient } from '@/shared/api/client'
-import type { DefaultAddressResponse } from '@/shared/api/types'
+import { apiClient } from '@shared/api/client'
+import type { DefaultAddressResponse } from '@shared/api/types'
 
 import type { DefaultAddress } from '../model/defaultAddress'
 

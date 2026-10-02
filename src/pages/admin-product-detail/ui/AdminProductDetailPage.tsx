@@ -18,14 +18,14 @@ import {
   type AdminProductFormValue,
   type AdminProductStock,
   type AdminStockItemModel,
-} from '@/entities/admin-product'
-import { ADMIN_PRODUCTS_PATH } from '@/shared/config/routes'
-import { formatNumber, formatWon } from '@/shared/lib/formatNumber'
-import { Button, SegmentedTabs, Table, Tag } from '@/shared/ui'
-import type { TableColumn } from '@/shared/ui'
-import { AdminBreadcrumb } from '@/widgets/admin-breadcrumb'
-import { AdminDispatchWindows } from '@/widgets/admin-dispatch-windows'
-import { AdminProductForm } from '@/widgets/admin-product-form'
+} from '@entities/admin-product'
+import { ADMIN_PRODUCTS_PATH } from '@shared/config/routes'
+import { formatNumber, formatWon } from '@shared/lib/formatNumber'
+import { Button, SegmentedTabs, Table, Tag } from '@shared/ui'
+import type { TableColumn } from '@shared/ui'
+import { AdminBreadcrumb } from '@widgets/admin-breadcrumb'
+import { AdminDispatchWindows } from '@widgets/admin-dispatch-windows'
+import { AdminProductForm } from '@widgets/admin-product-form'
 
 import * as styles from './AdminProductDetailPage.css'
 

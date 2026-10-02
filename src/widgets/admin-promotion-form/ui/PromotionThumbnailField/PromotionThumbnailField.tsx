@@ -2,9 +2,9 @@ import { useRef } from 'react'
 
 import { ImagePlus } from 'lucide-react'
 
-import { useObjectUrls } from '@/shared/lib/useObjectUrls'
-import { Button } from '@/shared/ui'
-import type { UploadedImage } from '@/shared/ui'
+import { useObjectUrls } from '@shared/lib/useObjectUrls'
+import { Button } from '@shared/ui'
+import type { UploadedImage } from '@shared/ui'
 
 import * as styles from './PromotionThumbnailField.css'
 

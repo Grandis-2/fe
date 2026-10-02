@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 
-import type { ProductListQuery } from '@/shared/api/types'
+import type { ProductListQuery } from '@shared/api/types'
 
 import { getProductCards } from './getProductCards'
 

@@ -2,8 +2,8 @@ import { useEffect, useRef } from 'react'
 
 import { useNavigate, useSearchParams } from 'react-router'
 
-import { confirmPayment } from '@/entities/payment'
-import { resultPath } from '@/shared/config/routes'
+import { confirmPayment } from '@entities/payment'
+import { resultPath } from '@shared/config/routes'
 
 export function PaymentCallbackPage() {
   const [searchParams] = useSearchParams()

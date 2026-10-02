@@ -9,10 +9,10 @@ import {
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
-import { mypagePath } from '@/shared/config/routes'
-import { typography } from '@/shared/config/theme'
-import { BottomSheet } from '@/shared/ui'
-import { MobileCategoryNav } from '@/widgets/category-nav'
+import { mypagePath } from '@shared/config/routes'
+import { typography } from '@shared/config/theme'
+import { BottomSheet } from '@shared/ui'
+import { MobileCategoryNav } from '@widgets/category-nav'
 
 import * as styles from './MobileTabBar.css'
 

@@ -1,7 +1,7 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, spacing, typography, breakpoint } from '@/shared/config/theme'
-import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+import { color, spacing, typography, breakpoint } from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 // 그라데이션 중간 지점 색. 양 끝은 토큰(primary.focus / secondary.focus)을 그대로 쓰지만
 // 중간 색들은 시안에 묶인 값이라 토큰에 없다 — Banner.css의 imageEdgeColor와 같은 이유로

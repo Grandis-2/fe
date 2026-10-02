@@ -1,6 +1,6 @@
 import { globalStyle, style } from '@vanilla-extract/css'
 
-import { spacing, typography, color, breakpoint } from '@/shared/config/theme'
+import { spacing, typography, color, breakpoint } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',

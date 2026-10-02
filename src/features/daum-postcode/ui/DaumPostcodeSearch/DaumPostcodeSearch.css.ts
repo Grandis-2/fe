@@ -1,6 +1,6 @@
 import { globalStyle, style } from '@vanilla-extract/css'
 
-import { color, spacing } from '@/shared/config/theme'
+import { color, spacing } from '@shared/config/theme'
 
 export const title = style({ color: color.text.primary })
 

@@ -4,7 +4,7 @@ import {
   toProductCardData,
   type ProductCardProps,
   type ProductCardSummary,
-} from '@/entities/product'
+} from '@entities/product'
 
 // 카드 목록마다 반복되던 색상/용량 선택 상태를 한곳에 모은다.
 // productId로 맵을 들고 있어서 상품 개수가 서버 응답에 따라 달라져도 된다.

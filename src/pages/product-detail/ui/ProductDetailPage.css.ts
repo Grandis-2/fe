@@ -6,9 +6,9 @@ import {
   spacing,
   motion,
   breakpoint,
-} from '@/shared/config/theme'
-import { maxWidth } from '@/shared/config/theme/tokens/container'
-import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+} from '@shared/config/theme'
+import { maxWidth } from '@shared/config/theme/tokens/container'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 export const contentPadding = style({
   padding: `0 ${spacing[20]}`,

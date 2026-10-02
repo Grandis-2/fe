@@ -3,8 +3,8 @@ import type { RefObject } from 'react'
 import {
   QuantityPriceDisplay,
   type ProductPurchase,
-} from '@/features/product-purchase'
-import { Button, Container } from '@/shared/ui'
+} from '@features/product-purchase'
+import { Button, Container } from '@shared/ui'
 
 import * as styles from './ProductPurchaseBar.css'
 

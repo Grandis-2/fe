@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css'
 
-import { typography, spacing, breakpoint } from '@/shared/config/theme'
-import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+import { typography, spacing, breakpoint } from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 export const cardGrid = style({
   display: 'grid',

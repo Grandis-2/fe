@@ -1,12 +1,12 @@
 import { useSearchParams } from 'react-router'
 
-import { MYPAGE_TABS } from '@/shared/config/routes'
-import { Container, SegmentedTabs } from '@/shared/ui'
-import { MypageAddress } from '@/widgets/mypage-address'
-import { MypageCart } from '@/widgets/mypage-cart'
-import { MypageHistory } from '@/widgets/mypage-history'
-import { MypageMenu, type MypageMenuLink } from '@/widgets/mypage-menu'
-import { MypagePreorder } from '@/widgets/mypage-preorder'
+import { MYPAGE_TABS } from '@shared/config/routes'
+import { Container, SegmentedTabs } from '@shared/ui'
+import { MypageAddress } from '@widgets/mypage-address'
+import { MypageCart } from '@widgets/mypage-cart'
+import { MypageHistory } from '@widgets/mypage-history'
+import { MypageMenu, type MypageMenuLink } from '@widgets/mypage-menu'
+import { MypagePreorder } from '@widgets/mypage-preorder'
 
 import * as styles from './Mypage.css'
 

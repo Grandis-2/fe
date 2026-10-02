@@ -2,13 +2,13 @@ import { useEffect } from 'react'
 
 import { Outlet, useLocation, useNavigate } from 'react-router'
 
-import { useSession } from '@/entities/auth'
-import { SIGNUP_PATH } from '@/shared/config/routes'
-import { useModalStore } from '@/shared/model/modalStore'
-import { useToastStore } from '@/shared/model/toastStore'
-import { Modal, ToastViewport } from '@/shared/ui'
-import { Header } from '@/widgets/header'
-import { MobileTabBar } from '@/widgets/mobile-tab-bar'
+import { useSession } from '@entities/auth'
+import { SIGNUP_PATH } from '@shared/config/routes'
+import { useModalStore } from '@shared/model/modalStore'
+import { useToastStore } from '@shared/model/toastStore'
+import { Modal, ToastViewport } from '@shared/ui'
+import { Header } from '@widgets/header'
+import { MobileTabBar } from '@widgets/mobile-tab-bar'
 
 export function RootLayout() {
   const { isLoggedIn, profileComplete } = useSession()

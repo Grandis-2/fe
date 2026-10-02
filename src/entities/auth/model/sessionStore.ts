@@ -1,5 +1,5 @@
-import type { Session, SessionRole } from '@/shared/api/types'
-import { createStore } from '@/shared/lib/createStore'
+import type { Session, SessionRole } from '@shared/api/types'
+import { createStore } from '@shared/lib/createStore'
 
 export type SessionState = {
   displayName: string | null

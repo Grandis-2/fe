@@ -1,5 +1,5 @@
-import { Button, Input } from '@/shared/ui'
-import type { InputProps } from '@/shared/ui'
+import { Button, Input } from '@shared/ui'
+import type { InputProps } from '@shared/ui'
 
 import * as styles from './AddressFields.css'
 

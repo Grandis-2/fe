@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
-import { typography, breakpoint } from '@/shared/config/theme'
-import { BottomSheet, Modal, ModalTitle } from '@/shared/ui'
+import { typography, breakpoint } from '@shared/config/theme'
+import { BottomSheet, Modal, ModalTitle } from '@shared/ui'
 
 import {
   useDaumPostcodeEmbed,

@@ -1,6 +1,6 @@
-import { PreorderCard, type PreorderCardData } from '@/entities/preorder'
-import placeholderImage from '@/shared/assets/react.svg'
-import { Container } from '@/shared/ui'
+import { PreorderCard, type PreorderCardData } from '@entities/preorder'
+import placeholderImage from '@shared/assets/react.svg'
+import { Container } from '@shared/ui'
 
 import * as styles from './PreorderPage.css'
 

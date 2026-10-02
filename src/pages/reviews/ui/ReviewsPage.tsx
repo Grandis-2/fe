@@ -1,5 +1,5 @@
-import { mockReviews, ReviewCard } from '@/entities/review'
-import { Container, InlineAlert } from '@/shared/ui'
+import { mockReviews, ReviewCard } from '@entities/review'
+import { Container, InlineAlert } from '@shared/ui'
 
 import * as styles from './ReviewsPage.css'
 

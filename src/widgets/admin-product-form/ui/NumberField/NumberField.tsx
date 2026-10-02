@@ -1,5 +1,5 @@
-import { Input } from '@/shared/ui'
-import type { InputProps } from '@/shared/ui'
+import { Input } from '@shared/ui'
+import type { InputProps } from '@shared/ui'
 
 import { useNumberDraft } from '../../model/useNumberDraft'
 

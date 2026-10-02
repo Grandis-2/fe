@@ -1,4 +1,4 @@
-import type { AdminProductDetail, AdminStockItem } from '@/shared/api/types'
+import type { AdminProductDetail, AdminStockItem } from '@shared/api/types'
 
 /** 재고 조회 탭의 한 줄 */
 export type AdminProductStock = {

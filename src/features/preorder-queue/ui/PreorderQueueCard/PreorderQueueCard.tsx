@@ -1,5 +1,5 @@
-import { QueueCard } from '@/entities/order'
-import { formatNumber } from '@/shared/lib/formatNumber'
+import { QueueCard } from '@entities/order'
+import { formatNumber } from '@shared/lib/formatNumber'
 
 import { usePreorderQueue } from '../../model/usePreorderQueue'
 

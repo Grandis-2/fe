@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-import SimplexNoise from '@/shared/lib/simplexNoise'
+import SimplexNoise from '@shared/lib/simplexNoise'
 
 import * as styles from './SwirlBackground.css'
 

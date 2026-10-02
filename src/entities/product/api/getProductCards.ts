@@ -1,8 +1,8 @@
-import { apiClient } from '@/shared/api/client'
+import { apiClient } from '@shared/api/client'
 import type {
   ProductCardListResponse,
   ProductListQuery,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 import type { ProductCardSummary } from '../model/productCard'
 

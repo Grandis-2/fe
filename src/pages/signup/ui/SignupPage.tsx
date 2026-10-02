@@ -2,11 +2,11 @@ import { useState } from 'react'
 
 import { useLocation, useNavigate } from 'react-router'
 
-import { markProfileComplete } from '@/entities/auth'
-import { useProfile, useUpdateProfile } from '@/entities/profile'
-import { getErrorMessage } from '@/shared/api/client'
-import { useFormFields } from '@/shared/lib/useFormFields'
-import { Button, Container, InlineAlert, Input } from '@/shared/ui'
+import { markProfileComplete } from '@entities/auth'
+import { useProfile, useUpdateProfile } from '@entities/profile'
+import { getErrorMessage } from '@shared/api/client'
+import { useFormFields } from '@shared/lib/useFormFields'
+import { Button, Container, InlineAlert, Input } from '@shared/ui'
 
 import * as styles from './SignupPage.css'
 

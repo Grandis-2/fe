@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { createStore } from '@/shared/lib/createStore'
+import { createStore } from '@shared/lib/createStore'
 
 type ModalStore = {
   isOpen: boolean

@@ -1,6 +1,6 @@
 import { expect, fn } from 'storybook/test'
 
-import placeholderImage from '@/shared/assets/react.svg'
+import placeholderImage from '@shared/assets/react.svg'
 
 import { ProductPaymentCard } from './ProductPaymentCard'
 

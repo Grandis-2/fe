@@ -1,6 +1,6 @@
 import { expect, fn, userEvent, waitFor } from 'storybook/test'
 
-import { createEmptyProductFormValue } from '@/entities/admin-product'
+import { createEmptyProductFormValue } from '@entities/admin-product'
 
 import { AdminProductForm } from './AdminProductForm'
 

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { MessageSquareText, Smartphone, BookOpen } from 'lucide-react'
 import { Link } from 'react-router'
 
-import { Tag } from '@/shared/ui'
+import { Tag } from '@shared/ui'
 
 import * as styles from './Banner.css'
 

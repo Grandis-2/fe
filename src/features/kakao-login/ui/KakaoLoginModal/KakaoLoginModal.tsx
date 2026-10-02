@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-import { typography } from '@/shared/config/theme'
-import { InlineAlert, ModalTitle } from '@/shared/ui'
+import { typography } from '@shared/config/theme'
+import { InlineAlert, ModalTitle } from '@shared/ui'
 
 import { getKakaoAuthorizeUrl } from '../../lib/getKakaoAuthorizeUrl'
 

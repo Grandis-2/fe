@@ -1,5 +1,5 @@
-import { apiClient } from '@/shared/api/client'
-import type { ProductDetail } from '@/shared/api/types'
+import { apiClient } from '@shared/api/client'
+import type { ProductDetail } from '@shared/api/types'
 
 import type { Product } from '../model/product'
 

@@ -1,8 +1,8 @@
-import { apiClient } from '@/shared/api/client'
+import { apiClient } from '@shared/api/client'
 import type {
   ProductCardSearchParams,
   ProductCardSearchResponse,
-} from '@/shared/api/types'
+} from '@shared/api/types'
 
 import type { ProductCardSearchResult } from '../model/productCard'
 

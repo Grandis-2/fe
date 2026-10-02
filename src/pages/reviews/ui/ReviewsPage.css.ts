@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { typography, spacing } from '@/shared/config/theme'
+import { typography, spacing } from '@shared/config/theme'
 
 export const title = style([
   typography.title.xlSemibold,

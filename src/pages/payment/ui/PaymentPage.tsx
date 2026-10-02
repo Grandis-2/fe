@@ -3,25 +3,25 @@ import { useState } from 'react'
 import { Settings } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
-import { useDefaultAddress, type DefaultAddress } from '@/entities/address'
-import { OrderSummary } from '@/entities/order'
-import { preparePayment } from '@/entities/payment'
-import { ProductPaymentCard } from '@/entities/product'
-import { useProfile } from '@/entities/profile'
+import { useDefaultAddress, type DefaultAddress } from '@entities/address'
+import { OrderSummary } from '@entities/order'
+import { preparePayment } from '@entities/payment'
+import { ProductPaymentCard } from '@entities/product'
+import { useProfile } from '@entities/profile'
 import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
-} from '@/features/daum-postcode'
+} from '@features/daum-postcode'
 import {
   PREORDER_BENEFIT_RATE,
   type PurchaseDraft,
-} from '@/features/product-purchase'
-import { requestTossPayment } from '@/features/toss-payment'
-import { getErrorMessage } from '@/shared/api/client'
-import { mypagePath } from '@/shared/config/routes'
-import { formatWon } from '@/shared/lib/formatNumber'
-import { useFormFields } from '@/shared/lib/useFormFields'
-import { Button, Container, Input, InlineAlert } from '@/shared/ui'
+} from '@features/product-purchase'
+import { requestTossPayment } from '@features/toss-payment'
+import { getErrorMessage } from '@shared/api/client'
+import { mypagePath } from '@shared/config/routes'
+import { formatWon } from '@shared/lib/formatNumber'
+import { useFormFields } from '@shared/lib/useFormFields'
+import { Button, Container, Input, InlineAlert } from '@shared/ui'
 
 import { terms } from '../model/terms'
 

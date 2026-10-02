@@ -1,8 +1,8 @@
 import { Link } from 'react-router'
 
-import { typography } from '@/shared/config/theme'
-import { formatNumber } from '@/shared/lib/formatNumber'
-import { Slider, Tag } from '@/shared/ui'
+import { typography } from '@shared/config/theme'
+import { formatNumber } from '@shared/lib/formatNumber'
+import { Slider, Tag } from '@shared/ui'
 
 import { ProductColorSwatches } from '../ProductColorSwatches'
 import { ProductOptionSelector } from '../ProductOptionSelector'

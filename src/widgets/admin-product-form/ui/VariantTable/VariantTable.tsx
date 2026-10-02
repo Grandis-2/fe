@@ -2,10 +2,10 @@ import type {
   ProductColorOption,
   ProductOptionGroup,
   ProductVariant,
-} from '@/entities/admin-product'
-import { formatNumber } from '@/shared/lib/formatNumber'
-import { Table } from '@/shared/ui'
-import type { TableColumn } from '@/shared/ui'
+} from '@entities/admin-product'
+import { formatNumber } from '@shared/lib/formatNumber'
+import { Table } from '@shared/ui'
+import type { TableColumn } from '@shared/ui'
 
 import { NumberField } from '../NumberField'
 

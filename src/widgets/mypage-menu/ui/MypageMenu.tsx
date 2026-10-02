@@ -1,4 +1,4 @@
-import type { MypageTab } from '@/shared/config/routes'
+import type { MypageTab } from '@shared/config/routes'
 
 import * as styles from './MypageMenu.css'
 

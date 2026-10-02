@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import { color, motion, spacing, typography } from '@shared/config/theme'
 
 // 좌우 패딩은 OrderSummary의 금액 줄(16px)과 같은 값이라 세로선이 맞는다.
 export const terms = style({

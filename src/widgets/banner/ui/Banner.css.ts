@@ -7,9 +7,9 @@ import {
   sprinkles,
   typography,
   breakpoint,
-} from '@/shared/config/theme'
-import { maxWidth } from '@/shared/config/theme/tokens/container'
-import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+} from '@shared/config/theme'
+import { maxWidth } from '@shared/config/theme/tokens/container'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 // 한 슬라이드가 머무는 시간 = 진행 바가 차오르는 시간.
 const SLIDE_DURATION = '6s'

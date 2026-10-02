@@ -2,8 +2,8 @@ import { useState, type ReactNode } from 'react'
 
 import { ChevronDown } from 'lucide-react'
 
-import { typography } from '@/shared/config/theme'
-import { Button } from '@/shared/ui'
+import { typography } from '@shared/config/theme'
+import { Button } from '@shared/ui'
 
 import * as styles from './HistoryCard.css'
 

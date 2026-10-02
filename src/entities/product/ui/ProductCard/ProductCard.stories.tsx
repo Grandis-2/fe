@@ -1,7 +1,7 @@
 import { expect, fn } from 'storybook/test'
 
-import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
-import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
+import macbook1 from '@shared/assets/macbook_neo_sliver1.png'
+import macbook2 from '@shared/assets/macbook_neo_sliver2.png'
 
 import { ProductCard } from './ProductCard'
 

@@ -1,4 +1,4 @@
-import { useKakaoCallback } from '@/features/kakao-login'
+import { useKakaoCallback } from '@features/kakao-login'
 
 export function KakaoCallbackPage() {
   const { status, message } = useKakaoCallback()

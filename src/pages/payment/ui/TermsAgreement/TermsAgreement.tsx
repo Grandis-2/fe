@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { ChevronDown } from 'lucide-react'
 
-import { Checkbox } from '@/shared/ui'
+import { Checkbox } from '@shared/ui'
 
 import { terms } from '../../model/terms'
 

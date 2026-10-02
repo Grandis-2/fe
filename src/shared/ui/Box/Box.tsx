@@ -1,7 +1,7 @@
 import type { ComponentPropsWithoutRef } from 'react'
 
-import { sprinkles } from '@/shared/config/theme'
-import type { Sprinkles } from '@/shared/config/theme'
+import { sprinkles } from '@shared/config/theme'
+import type { Sprinkles } from '@shared/config/theme'
 
 // Container(shared/ui)는 "페이지 콘텐츠 폭 제약"이라는 특정 레이아웃 계약을 강제하는
 // 컴포넌트다. Box는 그거랑 다르게 sprinkles가 지원하는 아무 속성이나 prop처럼 바로 쓰게

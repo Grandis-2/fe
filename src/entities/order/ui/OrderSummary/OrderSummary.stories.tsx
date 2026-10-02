@@ -1,6 +1,6 @@
 import { expect, fn } from 'storybook/test'
 
-import { Checkbox } from '@/shared/ui'
+import { Checkbox } from '@shared/ui'
 
 import { OrderSummary } from './OrderSummary'
 

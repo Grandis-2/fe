@@ -1,7 +1,7 @@
 import { style } from '@vanilla-extract/css'
 
-import { breakpoint, color, spacing, typography } from '@/shared/config/theme'
-import { fontSize } from '@/shared/config/theme/tokens/typography/base'
+import { breakpoint, color, spacing, typography } from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 export const header = style({
   display: 'flex',

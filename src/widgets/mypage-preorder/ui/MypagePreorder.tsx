@@ -1,9 +1,9 @@
 import { Clock } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
-import { ProductPaymentCard } from '@/entities/product'
-import { useCountdown } from '@/shared/lib/useCountdown'
-import { Button } from '@/shared/ui'
+import { ProductPaymentCard } from '@entities/product'
+import { useCountdown } from '@shared/lib/useCountdown'
+import { Button } from '@shared/ui'
 
 import * as styles from './MypagePreorder.css'
 

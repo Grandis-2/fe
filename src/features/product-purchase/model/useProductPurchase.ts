@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
-import type { ProductColorSwatchItem, ProductOption } from '@/entities/product'
-import { formatWon } from '@/shared/lib/formatNumber'
+import type { ProductColorSwatchItem, ProductOption } from '@entities/product'
+import { formatWon } from '@shared/lib/formatNumber'
 
 // 스와치에서 색상 선택에 필요한 두 칸만 — 여기선 label이 항상 있어야 한다.
 export type ProductColorOption = Required<

@@ -1,6 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, spacing } from '@/shared/config/theme'
+import { color, spacing } from '@shared/config/theme'
 
 const rootBase = style({
   display: 'flex',

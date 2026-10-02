@@ -2,12 +2,12 @@ import { useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
-import { type CartItem } from '@/entities/cart'
-import { OrderSummary } from '@/entities/order'
-import { ProductPaymentCard } from '@/entities/product'
-import { typography } from '@/shared/config/theme'
-import { formatWon } from '@/shared/lib/formatNumber'
-import { Checkbox } from '@/shared/ui'
+import { type CartItem } from '@entities/cart'
+import { OrderSummary } from '@entities/order'
+import { ProductPaymentCard } from '@entities/product'
+import { typography } from '@shared/config/theme'
+import { formatWon } from '@shared/lib/formatNumber'
+import { Checkbox } from '@shared/ui'
 
 import * as styles from './MypageCart.css'
 

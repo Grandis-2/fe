@@ -4,16 +4,16 @@ import {
   useDefaultAddress,
   useSaveDefaultAddress,
   type DefaultAddress,
-} from '@/entities/address'
-import { getProfile } from '@/entities/profile'
+} from '@entities/address'
+import { getProfile } from '@entities/profile'
 import {
   AddressFields,
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
-} from '@/features/daum-postcode'
-import { getErrorMessage } from '@/shared/api/client'
-import { useFormFields } from '@/shared/lib/useFormFields'
-import { Button, InlineAlert, Modal, ModalTitle } from '@/shared/ui'
+} from '@features/daum-postcode'
+import { getErrorMessage } from '@shared/api/client'
+import { useFormFields } from '@shared/lib/useFormFields'
+import { Button, InlineAlert, Modal, ModalTitle } from '@shared/ui'
 
 import * as styles from './AddressFormModal.css'
 

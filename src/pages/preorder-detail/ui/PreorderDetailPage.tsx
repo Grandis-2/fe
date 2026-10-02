@@ -2,10 +2,10 @@ import { useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
-import { PreorderModelSummary } from '@/entities/preorder'
-import { PreorderQueueCard } from '@/features/preorder-queue'
-import { useCountdown } from '@/shared/lib/useCountdown'
-import { Container, Button, BottomSheet, Modal } from '@/shared/ui'
+import { PreorderModelSummary } from '@entities/preorder'
+import { PreorderQueueCard } from '@features/preorder-queue'
+import { useCountdown } from '@shared/lib/useCountdown'
+import { Container, Button, BottomSheet, Modal } from '@shared/ui'
 
 import * as styles from './PreorderDetailPage.css'
 

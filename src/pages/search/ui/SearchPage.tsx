@@ -3,10 +3,10 @@ import { Fragment, useState } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
-import { ProductCard, useSearchProductCards } from '@/entities/product'
-import type { ProductCardSort } from '@/entities/product'
-import { useProductCardSelection } from '@/features/product-card-select'
-import { Container, Dropdown, InlineAlert } from '@/shared/ui'
+import { ProductCard, useSearchProductCards } from '@entities/product'
+import type { ProductCardSort } from '@entities/product'
+import { useProductCardSelection } from '@features/product-card-select'
+import { Container, Dropdown, InlineAlert } from '@shared/ui'
 
 import * as styles from './SearchPage.css'
 

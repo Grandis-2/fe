@@ -6,24 +6,24 @@ import {
   ProductColorSwatches,
   ProductOptionSelector,
   useProduct,
-} from '@/entities/product'
-import { mockReviews, ReviewCard } from '@/entities/review'
+} from '@entities/product'
+import { mockReviews, ReviewCard } from '@entities/review'
 import {
   PREORDER_BENEFIT_RATE,
   QuantityControl,
   useProductPurchase,
   type PurchaseDraft,
   type PurchaseOptionGroup,
-} from '@/features/product-purchase'
-import macbook1 from '@/shared/assets/macbook_neo_sliver1.png'
-import macbook2 from '@/shared/assets/macbook_neo_sliver2.png'
-import { resultPath } from '@/shared/config/routes'
-import { color } from '@/shared/config/theme'
-import { formatWon } from '@/shared/lib/formatNumber'
-import { Container, Slider, Button } from '@/shared/ui'
-import { ProductPageTab } from '@/widgets/product-page-tab'
-import type { ProductPageTabKey } from '@/widgets/product-page-tab'
-import { ProductPurchaseBar } from '@/widgets/product-purchase-bar'
+} from '@features/product-purchase'
+import macbook1 from '@shared/assets/macbook_neo_sliver1.png'
+import macbook2 from '@shared/assets/macbook_neo_sliver2.png'
+import { resultPath } from '@shared/config/routes'
+import { color } from '@shared/config/theme'
+import { formatWon } from '@shared/lib/formatNumber'
+import { Container, Slider, Button } from '@shared/ui'
+import { ProductPageTab } from '@widgets/product-page-tab'
+import type { ProductPageTabKey } from '@widgets/product-page-tab'
+import { ProductPurchaseBar } from '@widgets/product-purchase-bar'
 
 import { useProductDetailScroll } from '../model/useProductDetailScroll'
 

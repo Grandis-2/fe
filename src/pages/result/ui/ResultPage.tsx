@@ -3,19 +3,19 @@ import { useNavigate, useSearchParams } from 'react-router'
 import {
   ProductPaymentCard,
   type ProductPaymentCardItem,
-} from '@/entities/product'
+} from '@entities/product'
 import {
   mypagePath,
   RESULT_STATUSES,
   type ResultStatus,
-} from '@/shared/config/routes'
+} from '@shared/config/routes'
 import {
   Button,
   Container,
   InlineAlert,
   PlanetIcon,
   PriceText,
-} from '@/shared/ui'
+} from '@shared/ui'
 
 import { ResultHero, type ResultHeroProps } from './ResultHero'
 import * as styles from './ResultPage.css'

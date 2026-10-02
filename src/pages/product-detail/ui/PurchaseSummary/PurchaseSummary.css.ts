@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { breakpoint, color, spacing, typography } from '@/shared/config/theme'
+import { breakpoint, color, spacing, typography } from '@shared/config/theme'
 
 // 카드 배경(background.page)이 옅어서 글자는 text.primary로 두고, 구분선은 primary.subtle을 옅게 섞는다.
 const divider = `1px solid color-mix(in srgb, ${color.primary.subtle} 40%, transparent)`

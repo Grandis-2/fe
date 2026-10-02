@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color } from '@/shared/config/theme'
+import { color } from '@shared/config/theme'
 
 export const root = style({
   display: 'inline-flex',

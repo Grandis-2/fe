@@ -1,7 +1,7 @@
 import { X } from 'lucide-react'
 import { Link } from 'react-router'
 
-import { Button, Checkbox, PriceText, QuantityStepper } from '@/shared/ui'
+import { Button, Checkbox, PriceText, QuantityStepper } from '@shared/ui'
 
 import * as styles from './ProductPaymentCard.css'
 

@@ -1,4 +1,4 @@
-import { PriceText, QuantityStepper } from '@/shared/ui'
+import { PriceText, QuantityStepper } from '@shared/ui'
 
 import * as styles from './QuantityPriceDisplay.css'
 

@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { breakpoint, spacing } from '@/shared/config/theme'
+import { breakpoint, spacing } from '@shared/config/theme'
 
 // 에러 문구가 입력 아래에 붙어도 버튼은 입력 상자 옆에 남아야 해서 위쪽 정렬이다.
 // 모바일에선 한 칸씩 쌓인다.

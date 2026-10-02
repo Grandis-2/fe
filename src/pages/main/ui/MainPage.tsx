@@ -1,11 +1,11 @@
 import AutoScroll from 'embla-carousel-auto-scroll'
 import useEmblaCarousel from 'embla-carousel-react'
 
-import { ProductCard, useProductCards } from '@/entities/product'
-import { useProductCardSelection } from '@/features/product-card-select'
-import { typography } from '@/shared/config/theme'
-import { Container, InlineAlert } from '@/shared/ui'
-import { Banner } from '@/widgets/banner'
+import { ProductCard, useProductCards } from '@entities/product'
+import { useProductCardSelection } from '@features/product-card-select'
+import { typography } from '@shared/config/theme'
+import { Container, InlineAlert } from '@shared/ui'
+import { Banner } from '@widgets/banner'
 
 import * as styles from './MainPage.css'
 

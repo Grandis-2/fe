@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router'
 
-import { sprinkles } from '@/shared/config/theme'
+import { sprinkles } from '@shared/config/theme'
 
 import * as styles from './MainLayout.css'
 

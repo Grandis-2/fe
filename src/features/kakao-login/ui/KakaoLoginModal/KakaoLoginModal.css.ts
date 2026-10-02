@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing } from '@/shared/config/theme'
+import { color, motion, spacing } from '@shared/config/theme'
 
 // 범용 chrome(테두리·배경·backdrop)은 shared/ui/Modal이 갖고 있다 — 여기선 이
 // 모달만의 크기·여백만 얹는다.

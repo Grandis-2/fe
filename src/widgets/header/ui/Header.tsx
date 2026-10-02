@@ -1,8 +1,8 @@
 import { Bell, CircleUser, ShoppingCart } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
-import { mypagePath } from '@/shared/config/routes'
-import { CategoryNav } from '@/widgets/category-nav'
+import { mypagePath } from '@shared/config/routes'
+import { CategoryNav } from '@widgets/category-nav'
 
 import { useHeaderTheme } from '../model/useHeaderTheme'
 

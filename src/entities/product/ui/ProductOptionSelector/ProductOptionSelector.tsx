@@ -1,6 +1,6 @@
-import { typography } from '@/shared/config/theme'
-import { formatWon } from '@/shared/lib/formatNumber'
-import { SelectButton } from '@/shared/ui'
+import { typography } from '@shared/config/theme'
+import { formatWon } from '@shared/lib/formatNumber'
+import { SelectButton } from '@shared/ui'
 
 import * as styles from './ProductOptionSelector.css'
 

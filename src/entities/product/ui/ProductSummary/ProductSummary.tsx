@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react'
 
-import { typography } from '@/shared/config/theme'
+import { typography } from '@shared/config/theme'
 
 import * as styles from './ProductSummary.css'
 
