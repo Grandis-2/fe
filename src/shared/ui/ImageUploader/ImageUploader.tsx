@@ -2,6 +2,8 @@ import { useId, useRef } from 'react'
 
 import { Plus, X } from 'lucide-react'
 
+import { useObjectUrls } from '@/shared/lib/useObjectUrls'
+
 import * as styles from './ImageUploader.css'
 
 export type UploadedImage = {
@@ -35,18 +37,19 @@ export function ImageUploader({
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const inputId = useId()
+  // 업로드 API가 아직 없어서 objectURL로 미리보기만 만든다.
+  // 실제 API가 붙으면 여기서 업로드하고 응답 URL을 넣는다.
+  const { create, release } = useObjectUrls()
   const isFull = value.length >= max
 
   const addFiles = (files: FileList | null) => {
     if (!files) return
-    // 업로드 API가 아직 없어서 objectURL로 미리보기만 만든다.
-    // 실제 API가 붙으면 여기서 업로드하고 응답 URL을 넣는다.
     const room = max - value.length
     const added = Array.from(files)
       .slice(0, room)
       .map((file) => ({
         id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
-        url: URL.createObjectURL(file),
+        url: create(file),
         name: file.name,
       }))
     onChange([...value, ...added])
@@ -54,7 +57,7 @@ export function ImageUploader({
 
   const removeImage = (target: UploadedImage) => {
     // 목록에서 빠지면 다시 참조할 일이 없으니 여기서 해제해야 샌다.
-    if (target.url.startsWith('blob:')) URL.revokeObjectURL(target.url)
+    release(target.url)
     onChange(value.filter((image) => image.id !== target.id))
   }
 
@@ -78,7 +81,11 @@ export function ImageUploader({
       <div className={styles.tiles}>
         {value.map((image) => (
           <div key={image.id} className={styles.tile[ratio]}>
-            <img className={styles.thumbnail} src={image.url} alt={image.name} />
+            <img
+              className={styles.thumbnail}
+              src={image.url}
+              alt={image.name}
+            />
             <button
               type="button"
               className={styles.removeButton}

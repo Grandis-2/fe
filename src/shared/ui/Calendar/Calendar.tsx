@@ -7,6 +7,11 @@ import * as styles from './Calendar.css'
 export type CalendarProps = {
   value?: Date | null
   onChange: (date: Date) => void
+  /**
+   * 구간 선택. value가 시작일이 되고 rangeEnd가 종료일이 된다.
+   * 넘기면 두 날 사이가 옅게 이어져 보인다.
+   */
+  rangeEnd?: Date | null
   className?: string
 }
 
@@ -34,7 +39,12 @@ function getMonthGrid(month: Date) {
   })
 }
 
-export function Calendar({ value, onChange, className }: CalendarProps) {
+export function Calendar({
+  value,
+  onChange,
+  rangeEnd,
+  className,
+}: CalendarProps) {
   const [month, setMonth] = useState(() =>
     value
       ? new Date(value.getFullYear(), value.getMonth(), 1)
@@ -80,13 +90,26 @@ export function Calendar({ value, onChange, className }: CalendarProps) {
 
         {days.map((date) => {
           const outside = date.getMonth() !== month.getMonth()
-          const selected = Boolean(value && isSameDay(date, value))
+          const selected = Boolean(
+            (value && isSameDay(date, value)) ||
+            (rangeEnd && isSameDay(date, rangeEnd)),
+          )
+          // 양 끝은 selected가 맡으므로 사이에 낀 날만 이어 칠한다.
+          const inRange = Boolean(
+            !selected &&
+            value &&
+            rangeEnd &&
+            date > startOfDay(value) &&
+            date < startOfDay(rangeEnd),
+          )
+
           return (
             <button
               key={date.toISOString()}
               type="button"
               className={[
                 styles.day[outside ? 'outside' : dayTone(date.getDay())],
+                inRange && styles.dayInRange,
                 selected && styles.daySelected,
                 !selected && isSameDay(date, today) && styles.dayToday,
               ]

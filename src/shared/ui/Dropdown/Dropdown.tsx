@@ -43,7 +43,10 @@ export function Dropdown({
         >
           <span className={styles.triggerLabel}>{selectedOption ?? label}</span>
           {open ? (
-            <ChevronUp className={styles.triggerIcon[size]} aria-hidden="true" />
+            <ChevronUp
+              className={styles.triggerIcon[size]}
+              aria-hidden="true"
+            />
           ) : (
             <ChevronDown
               className={styles.triggerIcon[size]}
@@ -55,8 +58,10 @@ export function Dropdown({
       {open && (
         <div className={[styles.menu, styles.menuSize[size]].join(' ')}>
           {options.map((option, index) => (
+            // 라벨이 겹칠 수 있다(이름이 같은 상품 등). 문자열을 key로 쓰면
+            // React가 항목을 건너뛰거나 겹쳐 그린다 — 위치로 구분한다.
             <button
-              key={option}
+              key={`${index}-${option}`}
               type="button"
               className={[
                 styles.option[size],

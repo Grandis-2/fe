@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@/shared/config/theme'
+import { color, spacing, typography } from '@/shared/config/theme'
 
 export const root = style({
   display: 'flex',
@@ -8,36 +8,17 @@ export const root = style({
   gap: spacing[20],
 })
 
-export const breadcrumb = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[4],
-})
-
-export const breadcrumbLink = style([
-  typography.body.subMedium,
-  {
-    color: color.text.tertiary,
-    textDecoration: 'none',
-    transition: `color ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { color: color.primary.base, textDecoration: 'underline' },
-    },
-  },
-])
-
-export const breadcrumbIcon = style({
-  width: '16px',
-  height: '16px',
-  color: color.text.tertiary,
-})
-
-export const breadcrumbCurrent = style([
-  typography.body.subMedium,
-  { color: color.text.primary },
-])
-
 export const title = style([
   typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },
+])
+
+export const error = style([
+  typography.body.sub,
+  {
+    padding: `${spacing[12]} ${spacing[16]}`,
+    borderRadius: '8px',
+    background: color.background.subtleDanger,
+    color: color.status.danger,
+  },
 ])

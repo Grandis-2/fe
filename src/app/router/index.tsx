@@ -10,6 +10,10 @@ import { AdminPlaceholderPage } from '@/pages/admin-placeholder'
 import { AdminProductDetailPage } from '@/pages/admin-product-detail'
 import { AdminProductNewPage } from '@/pages/admin-product-new'
 import { AdminProductsPage } from '@/pages/admin-products'
+import { AdminPromotionEditPage } from '@/pages/admin-promotion-edit'
+import { AdminPromotionNewPage } from '@/pages/admin-promotion-new'
+import { AdminPromotionsPage } from '@/pages/admin-promotions'
+import { AdminReservationsPage } from '@/pages/admin-reservations'
 import { KakaoCallbackPage } from '@/pages/kakao-callback'
 import { MainPage } from '@/pages/main'
 import { Mypage } from '@/pages/mypage'
@@ -23,7 +27,16 @@ import { ResultPage } from '@/pages/result'
 import { ReviewsPage } from '@/pages/reviews'
 import { SearchPage } from '@/pages/search'
 import { SignupPage } from '@/pages/signup'
-import { SIGNUP_PATH } from '@/shared/config/routes'
+import {
+  ADMIN_PRODUCTS_PATH,
+  ADMIN_PRODUCT_NEW_PATH,
+  ADMIN_PROMOTIONS_PATH,
+  ADMIN_PROMOTION_NEW_PATH,
+  ADMIN_RESERVATIONS_PATH,
+  SIGNUP_PATH,
+  adminProductPath,
+  adminPromotionPath,
+} from '@/shared/config/routes'
 
 export const router = createBrowserRouter([
   {
@@ -56,20 +69,22 @@ export const router = createBrowserRouter([
           { path: '/admin', element: <AdminHomePage /> },
           // 홈을 제외한 나머지는 아직 기능 범위가 안 정해져서 전부 placeholder —
           // 스코프가 정해지는 대로 각자 전용 페이지로 교체.
-          { path: '/admin/products', element: <AdminProductsPage /> },
-          { path: '/admin/products/new', element: <AdminProductNewPage /> },
+          { path: ADMIN_PRODUCTS_PATH, element: <AdminProductsPage /> },
+          { path: ADMIN_PRODUCT_NEW_PATH, element: <AdminProductNewPage /> },
           {
-            path: '/admin/products/:productId',
+            path: adminProductPath(':productId'),
             element: <AdminProductDetailPage />,
           },
+          { path: ADMIN_PROMOTIONS_PATH, element: <AdminPromotionsPage /> },
           {
-            path: '/admin/preorders',
-            element: <AdminPlaceholderPage title="사전 예약 관리" />,
+            path: ADMIN_PROMOTION_NEW_PATH,
+            element: <AdminPromotionNewPage />,
           },
           {
-            path: '/admin/orders',
-            element: <AdminPlaceholderPage title="예약 현황" />,
+            path: adminPromotionPath(':promotionId'),
+            element: <AdminPromotionEditPage />,
           },
+          { path: ADMIN_RESERVATIONS_PATH, element: <AdminReservationsPage /> },
           {
             path: '/admin/consistency-check',
             element: <AdminPlaceholderPage title="정합성 대조" />,
