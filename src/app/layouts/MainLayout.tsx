@@ -6,14 +6,16 @@ import * as styles from './MainLayout.css'
 
 export function MainLayout() {
   const { pathname } = useLocation()
-  const isPreorder =
-    pathname === '/preorder' || pathname.startsWith('/preorder/')
+  const isBaseBackground =
+    pathname === '/preorder' ||
+    pathname.startsWith('/preorder/') ||
+    pathname.startsWith('/products/')
 
   return (
     <div
       className={[
         styles.root,
-        isPreorder && styles.baseBackground,
+        isBaseBackground && styles.baseBackground,
         sprinkles({ marginX: 'auto' }),
       ]
         .filter(Boolean)

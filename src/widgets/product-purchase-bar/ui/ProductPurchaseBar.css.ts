@@ -1,11 +1,10 @@
-import { style, keyframes } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
 import {
   typography,
   color,
   spacing,
   motion,
-  shadow,
   breakpoint,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
@@ -69,14 +68,6 @@ export const orderBar = style({
   },
 })
 
-// 바 배경이 반투명(20%)이라 뒤의 검은 백드롭이 그대로 비쳐 보였다 —
-// 시트가 떠 있는 동안만 불투명하게 덮어써서 바가 어두워 보이지 않게 한다.
-export const orderBarOpaque = style({
-  background: color.background.base,
-  backdropFilter: 'none',
-  WebkitBackdropFilter: 'none',
-})
-
 // 모바일에서는 orderBar가 항상 보이므로 이 클래스가 할 일이 없다 — 데스크톱에서만 슬라이드 인.
 export const orderBarVisible = style({
   '@media': {
@@ -86,13 +77,13 @@ export const orderBarVisible = style({
   },
 })
 
-// 모바일: 상품명/옵션 텍스트는 바텀시트로 옮겨갔으니 버튼 줄만 전체 폭으로 보여준다.
+// 모바일: 수량/가격 줄(orderBarQuantityPrice) 아래에 버튼 줄이 전체 폭으로 놓인다.
 // 데스크톱: 기존처럼 1fr(정보) + auto(버튼) 두 칸 그리드.
 // 위/아래 선 위치도 바가 붙는 쪽(모바일 위쪽, 데스크톱 아래쪽)에 맞춰 반전.
 export const orderBarContent = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[8],
+  gap: spacing[16],
   borderTop: `1px solid ${color.border.default}`,
   '@media': {
     [breakpoint.desktop]: {
@@ -119,19 +110,33 @@ export const orderBarShipmentNotice = style([
   },
 ])
 
-// 모바일에서는 바텀시트가 이 정보를 대신 보여주므로 고정바에서는 숨긴다.
+// 모바일은 수량/가격 줄이 있어 상품명/옵션 텍스트는 고정바에서 숨긴다.
 export const orderBarInfo = style({
   display: 'none',
   '@media': {
     [breakpoint.desktop]: {
       display: 'flex',
-      alignItems: 'center',
-      gap: spacing[12],
+      flexDirection: 'column',
+      gap: spacing[2],
     },
   },
 })
 
-// 모바일은 orderBarContent의 유일한 자식이 되어 전체 폭을 차지, 데스크톱은 내용 크기로.
+// 모바일 전용 — 수량 스테퍼와 가격을 버튼 줄 위에 양 끝으로 보여준다. 데스크톱은 옵션
+// 패널(layout)에 같은 줄이 있고 가격은 결제 버튼에 들어가므로 숨긴다.
+export const orderBarQuantityPrice = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[8],
+  '@media': {
+    [breakpoint.desktop]: {
+      display: 'none',
+    },
+  },
+})
+
+// 모바일은 버튼 줄이 전체 폭을 차지, 데스크톱은 내용 크기로.
 export const orderBarButtons = style({
   display: 'flex',
   gap: spacing[8],
@@ -158,10 +163,8 @@ export const orderBarCheckoutButton = style({
   },
 })
 
-// 결제 버튼 자체를 모바일/데스크톱 두 벌 렌더링한다(ProductPurchaseBar.tsx) — 문구뿐 아니라
-// 클릭 동작도 갈리기 때문이다(모바일은 바텀시트를 먼저 열고, 데스크톱은 시트가 CSS로 항상
-// 숨어 있어 곧장 결제로 넘어가야 함). 텍스트만 다르면 span 스위치로 됐겠지만 핸들러가 다르므로
-// 버튼 단위로 나눈다.
+// 결제 버튼은 모바일/데스크톱 두 벌 렌더링한다(ProductPurchaseBar.tsx) — 문구가 다르다
+// (데스크톱만 가격이 들어간다).
 export const orderBarCheckoutButtonMobile = style({
   '@media': {
     [breakpoint.desktop]: {
@@ -177,68 +180,4 @@ export const orderBarCheckoutButtonDesktop = style({
       display: 'inline-flex',
     },
   },
-})
-
-const fadeIn = keyframes({
-  from: { opacity: 0 },
-  to: { opacity: 1 },
-})
-
-const slideUp = keyframes({
-  from: { transform: `translateY(${spacing[16]})`, opacity: 0 },
-  to: { transform: 'translateY(0)', opacity: 1 },
-})
-
-// 모바일 전용 — 결제하기를 누르면 수량/가격을 다시 볼 수 있는 바텀시트.
-// isSheetOpen일 때만 마운트되고(컴포넌트 참고), bottomBarGroup 안에서 orderBar 바로 위
-// flex 자식으로 쌓이므로 오프셋을 직접 계산하지 않아도 항상 바에 딱 붙는다 —
-// 두 번째 탭이 실제 결제로 이어진다.
-export const sheetBackdrop = style({
-  position: 'fixed',
-  inset: 0,
-  zIndex: 2,
-  // CategoryNav의 메가 메뉴 딤과 같은 방식 — 순검정 대신 다크 배경 토큰을 섞는다.
-  background: `color-mix(in srgb, ${color.backgroundDark.base} 40%, transparent)`,
-  border: 'none',
-  padding: 0,
-  cursor: 'pointer',
-  animation: `${fadeIn} ${motion.duration.fast} ${motion.easing.default}`,
-  '@media': {
-    [breakpoint.desktop]: {
-      display: 'none',
-    },
-  },
-})
-
-export const sheet = style({
-  background: color.background.base,
-  borderRadius: '20px 20px 0 0',
-  padding: `${spacing[8]} ${spacing[20]} ${spacing[24]}`,
-  // 프로젝트에서 쓰는 그림자 색(Calendar 등)과 맞춘다 — 순검정 대신 text.primary 계열.
-  boxShadow: shadow.up,
-  animation: `${slideUp} ${motion.duration.fast} ${motion.easing.default}`,
-  '@media': {
-    [breakpoint.desktop]: {
-      display: 'none',
-    },
-  },
-})
-
-export const sheetHandle = style({
-  width: '36px',
-  height: '4px',
-  borderRadius: '2px',
-  background: color.border.default,
-  margin: `0 auto ${spacing[16]}`,
-})
-
-export const sheetInfo = style({
-  marginBottom: spacing[16],
-})
-
-export const sheetRow = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: spacing[8],
 })
