@@ -1,8 +1,8 @@
 {
-  "updatedAt": "2026-09-21T01:18:00.475Z",
+  "updatedAt": "2026-10-03T13:01:20.052Z",
   "command": "update",
   "gitHead": "84a04858b46da034a8e7e44036214f661d09c14e",
-  "model": "host-agent/claude",
-  "status": "complete",
+  "model": "gpt-5.6-terra",
+  "status": "interrupted",
   "language": "ko"
 }
