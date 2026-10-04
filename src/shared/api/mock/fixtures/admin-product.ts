@@ -118,6 +118,8 @@ function buildDetail(seed: Seed): AdminProductDetail {
 
   return {
     productId: seed.productId,
+    // 시드에 모델명이 따로 없어 상품 ID를 그대로 쓴다.
+    modelNumber: seed.productId,
     name: seed.name,
     brand: seed.brand,
     thumbnailUrl: null,

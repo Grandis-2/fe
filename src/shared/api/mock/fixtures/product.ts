@@ -65,6 +65,7 @@ const image = (
 export const products: ProductDetail[] = [
   {
     productId: 'SM-G999',
+    modelNumber: 'SM-G999N',
     name: '갤럭시 G999',
     brand: 'Samsung',
     thumbnailUrl: 'https://cdn.example.test/p/sm-g999/thumb.jpg',
@@ -171,6 +172,7 @@ export const products: ProductDetail[] = [
   },
   {
     productId: 'MBP-14',
+    modelNumber: 'A3112',
     name: '맥북 프로 14',
     brand: 'Apple',
     thumbnailUrl: 'https://cdn.example.test/p/mbp-14/thumb.jpg',
@@ -243,6 +245,7 @@ export const products: ProductDetail[] = [
   },
   {
     productId: 'MBP-16',
+    modelNumber: 'A3186',
     name: '맥북 프로 16',
     brand: 'Apple',
     thumbnailUrl: 'https://cdn.example.test/p/mbp-16/thumb.jpg',
@@ -315,6 +318,7 @@ export const products: ProductDetail[] = [
   },
   {
     productId: 'MB-NEO',
+    modelNumber: 'A2992',
     name: '맥북 네오',
     brand: 'Apple',
     thumbnailUrl: 'https://cdn.example.test/p/mb-neo/thumb.jpg',

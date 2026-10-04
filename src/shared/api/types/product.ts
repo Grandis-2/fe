@@ -114,6 +114,9 @@ export type DispatchWindowVersion = {
 }
 
 export type ProductDetail = ProductSummary & {
+  // 모델명(예: A3112). 카드 API(ProductCardSummaryDto)엔 있는데 상세 스펙엔 없어 프론트에서
+  // 추가했다 — 장바구니 카드가 이 값을 쓴다. 백엔드 스펙에 반영 요청할 것.
+  modelNumber: string
   // 사전예약 여부. 상세 화면은 이 값으로 수량 고정·사전예약 버튼을 결정한다.
   saleMode: SaleMode
   categoryId: string | null
