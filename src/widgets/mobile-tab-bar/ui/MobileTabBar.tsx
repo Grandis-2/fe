@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
+import { useSession } from '@entities/auth'
+import { KakaoLoginModal } from '@features/login'
 import {
   HOME_PATH,
   MYPAGE_PATH,
@@ -17,6 +19,7 @@ import {
   SEARCH_PATH,
 } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
+import { useModalStore } from '@shared/model/modalStore'
 import { BottomSheet } from '@shared/ui'
 import { MobileCategoryNav } from '@widgets/category-nav'
 
@@ -66,6 +69,8 @@ const HIDDEN_PATH = /^\/admin/
 export function MobileTabBar() {
   const { pathname } = useLocation()
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+  const { isLoggedIn } = useSession()
+  const openModal = useModalStore((state) => state.open)
 
   if (HIDDEN_PATH.test(pathname)) return null
 
@@ -78,7 +83,14 @@ export function MobileTabBar() {
         className={styles.tab}
         aria-current={active ? 'page' : undefined}
         // 시트가 modal={false}라 바깥 클릭으로 안 닫힌다 — 탭 이동 시 직접 닫는다.
-        onClick={() => setIsCategoryOpen(false)}
+        onClick={(event) => {
+          setIsCategoryOpen(false)
+          // 비회원은 마이페이지 대신 로그인 모달을 연다(헤더 마이페이지 아이콘과 같은 규칙).
+          if (!isLoggedIn && to.startsWith(MYPAGE_PATH)) {
+            event.preventDefault()
+            openModal(<KakaoLoginModal />)
+          }
+        }}
       >
         <Icon className={styles.icon} aria-hidden="true" />
         <span className={styles.label}>{label}</span>

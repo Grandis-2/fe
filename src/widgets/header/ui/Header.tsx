@@ -3,7 +3,9 @@ import { Link, useLocation } from 'react-router'
 
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
+import { KakaoLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
+import { useModalStore } from '@shared/model/modalStore'
 import { CategoryNav } from '@widgets/category-nav'
 
 import { useHeaderTheme } from '../lib/useHeaderTheme'
@@ -24,6 +26,7 @@ export function Header({
   onNotificationClick,
   className,
 }: HeaderProps) {
+  const openModal = useModalStore((state) => state.open)
   const { pathname } = useLocation()
   const isMainPage = pathname === HOME_PATH
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
@@ -97,24 +100,42 @@ export function Header({
             <>
               {/* 모바일은 하단 탭바에 검색·마이페이지가 있어 헤더엔 알림·장바구니만 둔다. */}
               <HeaderSearch onSearchClick={onSearchClick} />
-              {notificationButton}
-              <Link
-                to={mypagePath('cart')}
-                className={[styles.iconButton, styles.badgeAnchor].join(' ')}
-                aria-label={
-                  cartCount > 0 ? `장바구니 ${cartCount}개` : '장바구니'
-                }
-              >
-                <ShoppingCart className={styles.icon} aria-hidden="true" />
-                {countBadge(cartCount)}
-              </Link>
-              <Link
-                to={mypagePath('preorder-check')}
-                className={[styles.iconButton, styles.desktopOnly].join(' ')}
-                aria-label="마이페이지"
-              >
-                <CircleUser className={styles.icon} aria-hidden="true" />
-              </Link>
+              {/* 비회원은 검색과 로그인만 — 알림·장바구니·마이페이지는 회원 전용이다. */}
+              {isMember ? (
+                <>
+                  {notificationButton}
+                  <Link
+                    to={mypagePath('cart')}
+                    className={[styles.iconButton, styles.badgeAnchor].join(
+                      ' ',
+                    )}
+                    aria-label={
+                      cartCount > 0 ? `장바구니 ${cartCount}개` : '장바구니'
+                    }
+                  >
+                    <ShoppingCart className={styles.icon} aria-hidden="true" />
+                    {countBadge(cartCount)}
+                  </Link>
+                  <Link
+                    to={mypagePath('preorder-check')}
+                    className={[styles.iconButton, styles.desktopOnly].join(
+                      ' ',
+                    )}
+                    aria-label="마이페이지"
+                  >
+                    <CircleUser className={styles.icon} aria-hidden="true" />
+                  </Link>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  className={[styles.iconButton, styles.desktopOnly].join(' ')}
+                  aria-label="로그인"
+                  onClick={() => openModal(<KakaoLoginModal />)}
+                >
+                  <CircleUser className={styles.icon} aria-hidden="true" />
+                </button>
+              )}
             </>
           )}
         </div>
