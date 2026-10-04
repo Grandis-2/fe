@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:23d55726a4e36766cc714a8a1da93de8f748037c7131ec97a255f26a1d487b18",
+  "claims": [
+    {
+      "id": "claim_d096441c62e243e9ad6af733ff781c2e",
+      "statement": "Mypage는 ?state 쿼리 파라미터로 preorder-check/cart/history/address-manage 탭을 고르고 알 수 없는 값은 기본 탭(preorder-check)으로 보며, 데스크톱은 MypageMenu, 모바일은 SegmentedTabs를 보여 준다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/mypage/Mypage.tsx#L13-L87",
+          "version": "repo-lines-v1:sha256:b831d678e7b1175c02bb1e6c4a9152309e9eab3ab3a76389334bbc553f36f35a:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIwZmZhZTMwYWQ5YjFhOTcwMzNjNzc2NDM0YTkwYzg0Y2UyOTlhMWNhOGU5NmNiMzViZDMwNWZjMzI2OTVlZmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyOGI0Mjk0YjdiM2IzNGRkMDVlOGI5Yzc2Y2ZlMDQzY2ZlNDk5ZDEwNTk2MzU3YjRjNzQxMjlkZTMwY2NmNjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/shared/config/routes.ts#L24-L33",
+          "version": "repo-lines-v1:sha256:1be3ebd8dc00cc5d36b07615b89ad7255d2cff7544b016fd74b1e9cbc1fd3995:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI1NzZlNTg5NDZmYTZjYTY0NDc0YmY5ZjliODAzZTJmNDZjZDdhZTA1MTM3OWQwMWIyNTMxYzYwNmVhODhjMDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIzZWE1ZWJkMGFlNzk3ZWYxODE4NTAwZWYyMjNkZWM3MzQ0YmNlMWI4MjkyZTBjOGJhNDYxNjlmYTU3NDlhYmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI5OTJlMDE3MzIxYmI1MjIxYTBhMGE0OTlhZjMxOGM1MWI0NTRlNjU1NTMwNDZkYTAxNjQ4M2QwOGMwYzk2OGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5ZGQxZjY4ZTAyOWI3NTk5ZTA3NzQ3M2Y2ZDYyOWZiMDhhYWYwZjExZjMxODcwM2UzMmZkYmYwYjZkODI3MWEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0abf916715b84f758ed7de46eb5d4397",
+      "statement": "MypageCart는 각 장바구니 줄마다 useProduct로 상품 상세를 불러 이름·썸네일·옵션명을 채우고, 상세가 없으면 상품 id와 옵션 코드를 대신 표시한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/widgets/mypage-cart/ui/MypageCart.tsx#L134-L167",
+          "version": "repo-lines-v1:sha256:2146ec46102c2bde52d377a20c3f8e7c205c045a0caa7b0acb4bfa38ea496e08:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NDU1OTllYjY1OTIzN2M4M2RjZGZiNmEyYjZhMjlhMjhlNDZlMzYzODI4ODVkZjE4OGU4OWUwOWQ2ZGE0Y2YiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdkNzA1NjJhOGMzYmZkODljN2QzYjBiNDBhNTgxY2Q5MTc1M2YzY2QyMzJkOGQ5MzQzNzEyNTdlNjFhYTFmYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8106a24db6f747e19afef9715fd92c6d",
+      "statement": "MypageCart는 수량 변경·삭제 mutation이 진행 중이면 추가 요청을 무시하고, 체크한 줄의 합계를 OrderSummary에 넘겨 선택이 없으면 결제 버튼을 막으며 결제하기는 /payment로 이동한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/widgets/mypage-cart/ui/MypageCart.tsx#L21-L123",
+          "version": "repo-lines-v1:sha256:337f72381c7a834b51db6c6deeb7d28371b8eea665350c7fceaee2a275fa553e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAzLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJlZGQxZjgzNDAxZmFkNmM1MzIxZDQ4ZDc5NGM0YWUyOWI2MDA5NDJhYTM0MmFlZmY1NjdhNjU2ZGU4MDU0YmMzIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJlMzY5N2ZhNzM1ODIxNjJhMTJmZTNlY2RkMzkxMGFlZmNkZTAwNWZmYWFlYzYxZTNkNDBkZGNlMTMyZmEzOGY4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiJhYzIwNTJkMzBmZDAyOTRjZTRiMDE4M2Y4NDA3NjIyZDBjMzYzNTYxMTUxY2RkYzE3YzhjNjFiNjNlYjg5NzIxIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_7c6d4653141f4e3e9b33c89bd812447b",
+      "statement": "기본 배송지 조회는 account 정책으로 서버의 { shippingAddress } 봉투를 벗겨 주소 하나(없으면 null)를 돌려주고, 저장은 다섯 칸을 통째로 PUT한 뒤 응답으로 캐시를 즉시 갱신한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/address/api/defaultAddress.ts",
+          "version": "repo-file-v1:sha256:898a7d908149dca38190c0d5db724715215bf30b0bc77eb74666bb9d98465d77"
+        },
+        {
+          "resource": "repo://src/entities/address/api/useDefaultAddress.ts#L1-L24",
+          "version": "repo-lines-v1:sha256:af1a189908eafe284fe10c1821a150fd5f9322582977f6f7c81fb8c88f6d5ba2:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NDIzNTZmYzBhMmUzZDg4ZjI1ZDU1ZjkzNGMyM2RlYWU2Nzk3NmZiNTlmZjFhZDUwMjZjMjk5NjBmNWQzNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_12c3230c89f547549786ae92b467447d",
+      "statement": "AddressFormModal은 저장 시 수령인 이름·전화번호를 폼에서 받지 않고 getProfile()로 로그인한 회원 값을 가져와 채우며, 주소를 새로 검색하면 상세 주소를 비운다.",
+      "evidence": [
+        {
+          "resource": "repo://src/widgets/mypage-address/ui/AddressFormModal/AddressFormModal.tsx#L69-L103",
+          "version": "repo-lines-v1:sha256:e352b64f39eee73e060cde9a96e3ab458b46a50680d914a225b4bdfdb1b58cd7:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU0ZTFhZTNjMzgwYjdiZGNiMWRmY2JmMjRiYjdjMGE0ODMwOGMzMmU0ZTQyZTdmNWI1ZDM1NzMyY2IzYTBjMDkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjczYWQyZmQyZWRhMDE3NGE5YjY0ZGYwZjMxZjQxMjY4MmU5MjY0MWE3ZjRkNmQ4YWE2YzFiMmU3ZmE0OGRiNGIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b4d262d1aaa54fefa18aa56802971e33",
+      "statement": "loadDaumPostcode는 다음 우편번호 스크립트를 한 번만 로드하고 같은 Promise를 재사용하며 실패 시 에러로 reject한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/address-search/lib/loadDaumPostcode.ts",
+          "version": "repo-file-v1:sha256:c72402d45eaf87e51ea1605efcc9cbb3fe9c1e6404aeac0003e3fc04c88ba326"
+        }
+      ]
+    },
+    {
+      "id": "claim_e604617b92a546679ea187d5aec7e872",
+      "statement": "구매 내역과 사전예약 확인 위젯은 API가 없어 모듈 상수 목업을 쓰며, 사전예약 결제 마감 시각은 useCountdown 타이머가 매 렌더 재설정되지 않도록 모듈 로드 시점 기준으로 만든다.",
+      "evidence": [
+        {
+          "resource": "repo://src/widgets/mypage-history/ui/MypageHistory.tsx#L21-L30",
+          "version": "repo-lines-v1:sha256:3dcccf29a0bb9bec8969dfa36bcffa4489ad6c24663931f2d59459af887ab37d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNiYzk5NDgwYWJiNTVkYTA3NjkzNDlkYTZmYzNkMWQzNTAwMDVmMzk0MTIzM2Y4NWYzMjM5N2I1NmFjOTQwNmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI0YmY3ZGY2MWJlMGMxMTg3ODVlMDA2OTFiN2Q5NzRhODk2ODc2ZjZiYjFhZTUxYTM5OWY1NDMwMTQ3MTRjMTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRhNTExMDg1OTI3ZGNmY2Y5NWFjNTNkZjJiMTE5YzJlOTUyNDQ0NzJlYjMwMjBmYzk2OTJlODcwYmE0YzE3NTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRlNDFhMzYxNjdlNTY1ZTg4YWE2NTJjN2RiNWVhN2M2MmYzMTc1OGRkMmYwOGRlYTI5ZmMyNTQyMTM1OTFhMDMifQ"
+        },
+        {
+          "resource": "repo://src/widgets/mypage-preorder/ui/MypagePreorder.tsx#L11-L37",
+          "version": "repo-lines-v1:sha256:d8bf8bbae7a6e840420895f3cc9f3d926c459974298551d9a562accb0b3ec302:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM2Y2QzODI4ZTM3NmZiNTQ3ZDAwNWZiMzQzODE2ZjM4NzRjZDllMTU3MzhlMTE4ZWM0MDU0MmM1ZGFlMzVhOWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMyNDBjYmFlZjNjZjFjMTQzODc0NTBiOTlmMjYwYTBkMGJhODc3MDA2MjE5MzIzZjljZWRhZDRlNDkzNWU2M2YiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU2ZmI0MDMzZTI0MzQ0MjBiODY3MjM2M2U0MWE3MzYxZTE5ZDE2ZGM2ZmFjZjUyZTUxMmIyMzYyZmJjNjcxODkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJhMjAyMTQwZjc4NDcwY2RjNDg5YmEyNzYzNzVjMGZlNDNlNGY5ZDQ3Y2ZjYThiMWYxY2RmM2I5NzY2ZGNiN2YifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.0",
+    "at": "2026-10-04T09:44:53.662Z"
+  }
+}

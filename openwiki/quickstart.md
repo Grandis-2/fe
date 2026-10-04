@@ -1,67 +1,104 @@
 ---
-type: quickstart
+type: guide
 title: 빠른 시작
-description: 저장소를 처음 접하는 사람이나 에이전트가 로컬에서 실행하고, 이 위키에서 어디를 봐야 할지 찾도록 안내하는 진입 페이지.
-tags: [quickstart, onboarding, getting-started]
-sources:
-  - id: openwiki-source-5b54a58d1b51cd490b0e7162
-    resource: repo://package.json
-  - id: openwiki-source-95bfccfd0c712f6e72040e0d
-    resource: repo://src/main.tsx
-generated: { by: "claude-code", at: "2026-09-21T00:58:42.533Z" }
+description: nova 프론트엔드를 로컬에서 실행하는 방법(환경 변수, MSW 목 켜고 끄기, 주요 명령)과 앱 부팅 순서, 그리고 작업 종류별로 이 위키에서 어느 페이지를 봐야 하는지 안내하는 진입 페이지.
+tags: [quickstart, onboarding, local-development]
 verified:
   - by: openwiki/0.5.0
-    at: 2026-09-21T00:58:42.533Z
+    at: 2026-10-04T09:44:53.662Z
+sources:
+  - id: openwiki-source-5f5b95b3d6a215fa02ceb945
+    resource: repo://.env.example
+  - id: openwiki-source-5b54a58d1b51cd490b0e7162
+    resource: repo://package.json
+  - id: openwiki-source-23775c3de52f3ab95a13cb8b
+    resource: repo://README.md
+  - id: openwiki-source-95bfccfd0c712f6e72040e0d
+    resource: repo://src/main.tsx
+generated: { by: 'claude-code', at: '2026-10-04T09:44:53.662Z' }
 ---
 
 ## 이 저장소는 무엇인가
 
-Vite로 스캐폴딩한 React + TypeScript 프로젝트다. 스타일링은 Vanilla Extract(zero-runtime
-CSS-in-TS) + `@vanilla-extract/sprinkles`를 사용하고, `src/` 디렉터리 구조는
-Feature-Sliced Design(FSD) 컨벤션을 따르며 eslint로 레이어 경계가 강제된다. 초기
-스캐폴딩 단계를 지나 라우팅, 디자인 토큰 시스템, 상품 카탈로그 컴포넌트 등 실제 기능
-코드가 상당히 채워진 상태다.
+전자기기 사전예약·구매 쇼핑몰 nova의 프론트엔드다. React 19 + TypeScript + Vite이고, 스타일은 Vanilla Extract,
+서버 상태는 TanStack Query, 라우팅은 react-router v7이다. `src/`는 Feature-Sliced Design 레이어로 나뉘고 레이어
+경계는 ESLint로 강제된다. 백엔드 없이도 돌도록 MSW 목 서버가 들어 있고, 고객 화면과 `/admin` 관리자 화면이 한 앱에
+있다.
 
 ## 로컬 실행
 
-`package.json`에 정의된 스크립트를 사용한다.
+README 기준 Node.js `v20.19+` 또는 `v22.12+`가 필요하다(Vite 8).
 
 ```bash
 npm install
-npm run dev              # 개발 서버 (Vite + HMR)
-npm run build            # tsc -b 타입 체크 후 프로덕션 번들 생성
-npm run preview          # 빌드 결과물 로컬 미리보기
-npm run lint             # eslint . 실행
-npm run lint:fix         # eslint . --fix
-npm run format           # prettier --check .
-npm run format:fix       # prettier --write .
-npm run storybook        # Storybook 개발 서버 (:6006)
+cp .env.example .env.local   # 키를 채운다 — *.local은 커밋되지 않는다
+npm run dev
+```
+
+`.env.example`의 변수:
+
+| 변수                              | 용도                                                           |
+| --------------------------------- | -------------------------------------------------------------- |
+| `VITE_KAKAO_OAUTH_REST_API_KEY`   | 카카오 로그인 인가 URL의 `client_id`                           |
+| `VITE_KAKAO_OAUTH_JAVASCRIPT_KEY` | 카카오 JavaScript 키                                           |
+| `VITE_TOSS_PAYMENTS_CLIENT_KEY`   | 토스페이먼츠 "API 개별 연동" 테스트 클라이언트 키(`test_ck_…`) |
+
+`VITE_` 변수는 클라이언트 번들에 그대로 들어가므로 Admin 키·시크릿 키는 넣지 않는다.
+
+**MSW 목 서버** — 개발 서버에서는 기본으로 켜져 있어, 실제 API 없이 상품·장바구니·로그인·결제 등이 목 응답으로 돈다.
+로그인도 카카오를 거치지 않고 가짜 코드로 바로 처리된다. 실제 API에 붙어 보려면 `VITE_USE_MSW=false`, 배포본에서
+목을 쓰려면 `VITE_USE_MSW=true`. 페이지 주소에 `?mock=500`을 붙이면 모든 API가 500으로 실패한다. 자세한 내용은
+[MSW 목 서버](architecture/mock-api.md).
+
+### 주요 명령
+
+```bash
+npm run dev              # Vite 개발 서버
+npm run build            # tsc -b 타입 검사 후 프로덕션 빌드
+npm run preview          # 빌드 결과 미리보기
+npm run lint             # eslint .   (lint:fix로 자동 수정)
+npm run format           # prettier --check .   (format:fix로 자동 수정)
+npm run storybook        # Storybook :6006
 npm run build-storybook  # Storybook 정적 빌드
 ```
 
-앱 진입점은 `src/main.tsx`이며, `src/app/router/index.tsx`가 만드는 `router`를
-`RouterProvider`에 넘기고 전역 스타일/디자인 토큰을 불러오는 것 외에는 로직이 없는 순수
-부트스트랩 파일이다.
+`test` 스크립트는 없다 — Storybook 스토리와 `play` 함수가 브라우저 모드 Vitest로 실행되는 구성이다. 커밋 시 husky가
+lint-staged(ESLint·Prettier)와 commitlint(`feat:`, `fix(NF-18):` 형식)를 돌린다.
+
+### 앱이 켜지는 순서
+
+`src/main.tsx`는 ① MSW 워커 시작을 기다린 뒤 ② 리프레시 쿠키로 세션 복구(`initAuth`)를 시작하고(렌더를 막지 않음)
+③ `QueryClientProvider` + `RouterProvider`를 `StrictMode`로 렌더한다.
 
 ## 이 위키에서 다음에 볼 곳
 
-- [Feature-Sliced Design 디렉터리 구조](repo://openwiki/architecture/directory-structure.md) —
-  `src/`가 FSD 레이어로 어떻게 나뉘고 각 레이어에 지금 무엇이 들어있는지.
-- [빌드 및 스타일링 도구 구성](repo://openwiki/architecture/tooling.md) — Vite,
-  TypeScript, ESLint(oxlint에서 전환), Vanilla Extract, Storybook 연결 방식.
-- [디자인 토큰과 vanilla-extract 스타일 시스템](repo://openwiki/architecture/design-system.md) —
-  색상/타이포그래피/spacing/motion 토큰과 `sprinkles` 반응형 유틸.
-- [라우팅과 레이아웃 구성](repo://openwiki/architecture/routing.md) — 라우트 테이블과
-  `RootLayout`/`MainLayout` 중첩 레이아웃.
-- [상품 카탈로그 컴포넌트 구성](repo://openwiki/features/product-catalog.md) —
-  `entities/product`의 다섯 컴포넌트가 나누는 책임과 합성 관계.
-- [메인 페이지 히어로 오토스크롤 캐러셀](repo://openwiki/features/main-page-carousel.md) —
-  `embla-carousel` 무한 루프 구현에서 실제로 겪은 비직관적 제약.
-- [사전예약 상세 페이지 알림/예약 플로우](repo://openwiki/features/preorder-detail.md) —
-  카운트다운 게이트와 `BottomSheet`(`vaul`) 기반 모델별 예약/알림 신청 UI.
+**구조와 규칙**
+
+- [Feature-Sliced Design 디렉터리 구조](architecture/directory-structure.md) — 레이어별 슬라이스, import 별칭, ESLint가 막는 의존 방향
+- [라우팅과 레이아웃 구성](architecture/routing.md) — 라우트 트리, 레이아웃·로그인 게이트, 헤더의 경로별 분기
+- [빌드 및 개발 도구 구성](architecture/tooling.md) — Vite·ESLint·Storybook·커밋 훅·CodeRabbit·GitHub Actions·Vercel
+
+**데이터와 서버 통신**
+
+- [데이터 레이어: API 클라이언트와 서버 상태](architecture/data-layer.md) — `apiClient`의 에러 정규화·401 회복, DTO→모델, Query 정책, 에러 처리
+- [MSW 목 서버](architecture/mock-api.md) — 목 켜고 끄기, 핸들러 구성, 강제 에러 스위치
+
+**UI와 디자인**
+
+- [디자인 토큰과 vanilla-extract 스타일 시스템](architecture/design-system.md) — 색·글꼴·간격·모션·그림자 토큰과 sprinkles
+- [shared/ui 컴포넌트 라이브러리](architecture/shared-ui.md) — 공용 컴포넌트, 아이콘 규칙, 전역 Modal·Toast, Storybook
+
+**기능별**
+
+- [로그인과 세션 관리](features/auth-session.md) — 카카오 OAuth, 세션 재발급, 회원가입
+- [상품 카탈로그와 탐색](features/product-catalog.md) — 상품 카드·옵션 컴포넌트, 카테고리 메뉴, 검색
+- [메인 페이지 히어로와 상품 캐러셀](features/main-page-carousel.md) — 배너, embla 무한 캐러셀의 제약
+- [상품 구매와 결제 흐름](features/product-purchase-payment.md) — 상품 상세 → 결제 → 토스 → 결과
+- [사전예약 목록·상세와 대기열](features/preorder-detail.md) — 카운트다운, 모델 선택 시트, 대기열
+- [마이페이지: 장바구니·배송지·내역](features/mypage.md) — 장바구니, 기본 배송지, 알림 배지
+- [관리자 콘솔](features/admin-console.md) — 상품 등록·재고, 예약 현황, 프로모션
 
 ## 참고
 
-Vite React+TS 템플릿이 기본 제공하는 SWC 기반 플러그인 대안, React Compiler 도입 방법은
-`README.md`에 설명되어 있다. 린터 구성(ESLint)은
-[빌드 및 스타일링 도구 구성](repo://openwiki/architecture/tooling.md) 참고.
+코드 작성 규칙(레이어 배치, 토큰 import, 컴포넌트 폴더 구조, Query 정책, 에러 처리 등)은 저장소 루트의 `CLAUDE.md`가
+기준이다. 이 위키는 코드가 지금 어떻게 동작하는지를 설명하며, 정기 갱신이라 최근 변경이 빠져 있을 수 있다.
