@@ -113,11 +113,17 @@ export const leftGroup = style({
   gap: NAV_LINK_PADDING_X,
 })
 
+// Michroma는 V와 A의 사선이 서로 벌어져 V–A 사이만 넓어 보인다 — letter-spacing은 글자 뒤에
+// 붙으므로 V에만 음수를 줘 A를 당긴다.
+export const logoV = style({ letterSpacing: '-0.13em' })
+
 export const logo = style([
   typography.logo.wordmark,
   {
     height: 'fit-content',
     fontSize: fontSize[20],
+    // wordmark 토큰(-0.04em)은 결과·404 페이지 큰 글자와 같이 쓰므로 로고에서만 벌린다.
+    letterSpacing: '0.06em',
     color: color.primary.base,
     textDecoration: 'none',
     cursor: 'pointer',

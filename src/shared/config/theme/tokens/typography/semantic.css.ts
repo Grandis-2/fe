@@ -160,7 +160,7 @@ export const body = {
 
 export const logo = {
   wordmark: style({
-    fontFamily: fontFamily.audiowide,
+    fontFamily: fontFamily.michroma,
     fontSize: fontSize[24],
     fontWeight: fontWeight.regular,
     lineHeight: 'normal',

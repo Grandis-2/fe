@@ -84,7 +84,7 @@ export function Header({
               .filter(Boolean)
               .join(' ')}
           >
-            {isAdminPage ? 'NOVA ADMIN' : 'NOVA'}
+            NO<span className={styles.logoV}>V</span>A{isAdminPage && ' ADMIN'}
           </Link>
           {!isAdminPage && (
             <CategoryNav
