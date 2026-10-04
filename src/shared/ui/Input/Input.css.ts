@@ -77,9 +77,19 @@ const labelBase = {
   transition: `all ${motion.duration.fast} ${motion.easing.default}`,
 } as const
 
+// 칸에 포커스가 가면 라벨도 테두리와 같은 포커스 색으로 바꾼다.
+const labelFocus = style({
+  selectors: {
+    [`${boxBase}:focus-within &`]: {
+      color: color.primary.base,
+    },
+  },
+})
+
 export const label = styleVariants({
   medium: [
     typography.body.defaultRegular,
+    labelFocus,
     {
       ...labelBase,
       left: spacing[16],
@@ -95,6 +105,7 @@ export const label = styleVariants({
   ],
   small: [
     typography.body.sub,
+    labelFocus,
     {
       ...labelBase,
       left: spacing[12],
@@ -110,8 +121,14 @@ export const label = styleVariants({
   ],
 })
 
+// 에러 칸은 포커스 중에도 테두리처럼 에러 색을 유지한다(labelFocus보다 뒤에 선언돼 이긴다).
 export const labelError = style({
   color: color.status.danger,
+  selectors: {
+    [`${boxBase}:focus-within &`]: {
+      color: color.status.danger,
+    },
+  },
 })
 
 export const errorRow = style({
