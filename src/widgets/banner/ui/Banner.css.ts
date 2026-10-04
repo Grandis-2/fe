@@ -22,7 +22,7 @@ const sideBySide = '(min-width: 1025px)'
 export const root = style({
   // 헤더가 투명하게 위에 겹치므로(MainPage의 bannerOverlap) 헤더 높이만큼 더 비운다.
   // 위젯끼리 import하지 않는 규칙 때문에 headerHeight 변수 대신 넉넉한 고정값을 쓴다.
-  padding: `163px 0 ${spacing[80]}`,
+  padding: `163px 0 ${spacing[120]}`,
   // 어두운 바탕 위 왼쪽 위 모서리에서 primary/secondary 빛이 번지는 느낌.
   // base 두 색은 색조·밝기가 비슷해 한 덩어리로 뭉개지므로 깊은 바탕층으로만 깔고,
   // 밝은 subtle 두 색을 서로 떨어진 자리에 얹어 빛이 둘로 구분돼 보이게 한다.
