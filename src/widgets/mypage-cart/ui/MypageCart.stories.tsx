@@ -11,22 +11,33 @@ const items: CartItem[] = [
   {
     id: 'cart-1',
     productId: 'MBP-14',
-    name: '맥북 프로 14',
-    modelNumber: 'A3112',
-    optionSummary: '512GB 스페이스 블랙',
+    optionCode: 'MBP-512-BLK',
     quantity: 1,
     price: 2390000,
   },
   {
     id: 'cart-2',
     productId: 'SM-G999',
-    name: '갤럭시 G999',
-    modelNumber: 'SM-G999N',
-    optionSummary: '256GB 블랙',
+    optionCode: 'SM-256-BLK',
     quantity: 2,
     price: 1290000,
   },
 ]
+
+const productDetails = {
+  'MBP-14': {
+    name: '맥북 프로 14',
+    modelNumber: 'A3112',
+    thumbnailUrl: null,
+    variants: [{ optionCode: 'MBP-512-BLK', name: '512GB 스페이스 블랙' }],
+  },
+  'SM-G999': {
+    name: '갤럭시 G999',
+    modelNumber: 'SM-G999N',
+    thumbnailUrl: null,
+    variants: [{ optionCode: 'SM-256-BLK', name: '256GB 블랙' }],
+  },
+}
 
 // Storybook엔 MSW가 없어 장바구니 조회가 실패한다 — 캐시를 미리 채우고 다시 묻지 않게 한다.
 const withCart = (data: CartItem[]) => {
@@ -34,6 +45,16 @@ const withCart = (data: CartItem[]) => {
     defaultOptions: { queries: { staleTime: Infinity, retry: false } },
   })
   queryClient.setQueryData(['cart', 'items'], data)
+  for (const item of data) {
+    const product =
+      productDetails[item.productId as keyof typeof productDetails]
+    if (product) {
+      queryClient.setQueryData(['products', 'detail', item.productId], {
+        ...product,
+        productId: item.productId,
+      })
+    }
+  }
   return (Story: () => React.ReactNode) => (
     <QueryClientProvider client={queryClient}>
       <Story />

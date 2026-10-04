@@ -3,12 +3,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import {
+  type CartItem,
   useCartItems,
   useRemoveCartItem,
   useUpdateCartItemQuantity,
 } from '@entities/cart'
 import { OrderSummary } from '@entities/order'
-import { ProductPaymentCard } from '@entities/product'
+import { ProductPaymentCard, useProduct } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
 import { PAYMENT_PATH } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
@@ -23,11 +24,13 @@ export function MypageCart() {
   const updateQuantity = useUpdateCartItemQuantity()
   const removeCartItem = useRemoveCartItem()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const allSelected = items.length > 0 && selectedIds.size === items.length
+  const selectedItems = items.filter((item) => selectedIds.has(item.id))
+  const allSelected = items.length > 0 && selectedItems.length === items.length
 
-  const selectedTotal = items
-    .filter((item) => selectedIds.has(item.id))
-    .reduce((total, item) => total + item.price * item.quantity, 0)
+  const selectedTotal = selectedItems.reduce(
+    (total, item) => total + item.price * item.quantity,
+    0,
+  )
 
   const toggleAll = (checked: boolean) =>
     setSelectedIds(checked ? new Set(items.map((item) => item.id)) : new Set())
@@ -92,22 +95,12 @@ export function MypageCart() {
           </InlineAlert>
         )}
         {items.map((item) => (
-          <ProductPaymentCard
+          <CartItemRow
             key={item.id}
+            item={item}
             className={styles.card}
-            variant="cart"
-            product={{
-              imageSrc: item.imageSrc,
-              productId: item.productId,
-              name: item.name,
-              modelNumber: item.modelNumber,
-              optionSummary: item.optionSummary,
-              quantityLabel: `수량 ${item.quantity}개`,
-              priceLabel: formatWon(item.price * item.quantity),
-            }}
             checked={selectedIds.has(item.id)}
             onCheckedChange={(checked) => toggleOne(item.id, checked)}
-            quantity={item.quantity}
             onQuantityChange={(quantity) => changeQuantity(item.id, quantity)}
             onRemove={() => removeItem(item.id)}
           />
@@ -116,15 +109,59 @@ export function MypageCart() {
       <OrderSummary
         className={styles.remote}
         rows={[
-          { label: '상품 수', value: `${selectedIds.size}개` },
+          { label: '상품 수', value: `${selectedItems.length}개` },
           { label: '상품 금액', value: formatWon(selectedTotal) },
           { label: '배송비', value: '무료' },
         ]}
         totalValue={formatWon(selectedTotal)}
         actionLabel="결제하기"
-        actionDisabled={selectedIds.size === 0}
+        actionDisabled={selectedItems.length === 0}
         onAction={() => navigate(PAYMENT_PATH)}
       />
     </div>
+  )
+}
+
+type CartItemRowProps = {
+  item: CartItem
+  className: string
+  checked: boolean
+  onCheckedChange: (checked: boolean) => void
+  onQuantityChange: (quantity: number) => void
+  onRemove: () => void
+}
+
+function CartItemRow({
+  item,
+  className,
+  checked,
+  onCheckedChange,
+  onQuantityChange,
+  onRemove,
+}: CartItemRowProps) {
+  const { data: product } = useProduct(item.productId)
+  const variant = product?.variants.find(
+    ({ optionCode }) => optionCode === item.optionCode,
+  )
+
+  return (
+    <ProductPaymentCard
+      className={className}
+      variant="cart"
+      product={{
+        imageSrc: product?.thumbnailUrl ?? undefined,
+        productId: item.productId,
+        name: product?.name ?? item.productId,
+        modelNumber: product?.modelNumber ?? '',
+        optionSummary: variant?.name ?? item.optionCode,
+        quantityLabel: `수량 ${item.quantity}개`,
+        priceLabel: formatWon(item.price * item.quantity),
+      }}
+      checked={checked}
+      onCheckedChange={onCheckedChange}
+      quantity={item.quantity}
+      onQuantityChange={onQuantityChange}
+      onRemove={onRemove}
+    />
   )
 }
