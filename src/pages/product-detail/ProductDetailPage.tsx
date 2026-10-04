@@ -8,6 +8,7 @@ import {
   useProduct,
 } from '@entities/product'
 import { mockReviews, ReviewCard } from '@entities/review'
+import { useRequireLogin } from '@features/login'
 import { ProductGallery } from '@features/product-gallery'
 import {
   PREORDER_BENEFIT_RATE,
@@ -103,6 +104,7 @@ const BASE_PRICE = 2390000
 
 export function ProductDetailPage() {
   const navigate = useNavigate()
+  const requireLogin = useRequireLogin()
   const { productId = '' } = useParams()
   // 사전예약 여부는 상세 API의 saleMode로 판단한다(그 외 화면 데이터는 아직 목업).
   const { data: product, isPending, isError } = useProduct(productId)
@@ -144,11 +146,14 @@ export function ProductDetailPage() {
       quantity,
       unitPrice,
     }
-    // 사전예약 완료 후 뒤로가기로 상세에 돌아와 다시 제출하는 걸 막는다(결제는 되돌아가서 수정 가능해야 하므로 그대로 둠).
-    navigate(isPreorder ? resultPath('preorder') : PAYMENT_PATH, {
-      state: purchasePayload,
-      replace: isPreorder,
-    })
+    // 결제·사전예약은 회원 전용 — 비회원이면 이동 대신 로그인 모달을 연다.
+    requireLogin(() =>
+      // 사전예약 완료 후 뒤로가기로 상세에 돌아와 다시 제출하는 걸 막는다(결제는 되돌아가서 수정 가능해야 하므로 그대로 둠).
+      navigate(isPreorder ? resultPath('preorder') : PAYMENT_PATH, {
+        state: purchasePayload,
+        replace: isPreorder,
+      }),
+    )
   }
   const {
     layoutRef,

@@ -14,8 +14,10 @@ export function useSession() {
   const displayName = useSessionStore((state) => state.displayName)
   const role = useSessionStore((state) => state.role)
   const profileComplete = useSessionStore((state) => state.profileComplete)
+  const isAuthReady = useSessionStore((state) => state.isAuthReady)
   return {
     isLoggedIn: sessionToken !== null,
+    isAuthReady,
     displayName,
     role,
     profileComplete,
@@ -30,8 +32,13 @@ export const markProfileComplete = () =>
 // (11-frontend-guide.md §4의 트리거 (b)). refreshCoordinator를 import하는 것만으로
 // shared/api/client에 인증 헤더/401 처리 훅이 등록된다.
 export async function initAuth() {
-  if (useSessionStore.getState().sessionToken) return
-  await ensureFreshSession()
+  try {
+    if (useSessionStore.getState().sessionToken) return
+    await ensureFreshSession()
+  } finally {
+    // 실패(비로그인)여도 판단은 끝났다 — 로그인 필요 화면이 기다리지 않게 한다.
+    useSessionStore.getState().markAuthReady()
+  }
 }
 
 export async function logout() {

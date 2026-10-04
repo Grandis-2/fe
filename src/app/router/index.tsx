@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router'
 
 import { AdminLayout } from '@app/layouts/AdminLayout'
 import { MainLayout } from '@app/layouts/MainLayout'
+import { RequireLogin } from '@app/layouts/RequireLogin'
 import { RootLayout } from '@app/layouts/RootLayout'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PAYMENT_CALLBACK_PATH } from '@features/payment'
@@ -69,9 +70,6 @@ export const router = createBrowserRouter([
             path: productPath(':productId'),
             element: <ProductDetailPage />,
           },
-          { path: PAYMENT_PATH, element: <PaymentPage /> },
-          { path: PAYMENT_CALLBACK_PATH, element: <PaymentCallbackPage /> },
-          { path: RESULT_PATH, element: <ResultPage /> },
           { path: REVIEWS_PATH, element: <ReviewsPage /> },
           { path: SEARCH_PATH, element: <SearchPage /> },
           { path: SIGNUP_PATH, element: <SignupPage /> },
@@ -79,7 +77,16 @@ export const router = createBrowserRouter([
             path: KAKAO_CALLBACK_PATH,
             element: <KakaoCallbackPage />,
           },
-          { path: MYPAGE_PATH, element: <Mypage /> },
+          {
+            // 사전예약·장바구니·결제는 회원 전용이다.
+            element: <RequireLogin />,
+            children: [
+              { path: MYPAGE_PATH, element: <Mypage /> },
+              { path: PAYMENT_PATH, element: <PaymentPage /> },
+              { path: PAYMENT_CALLBACK_PATH, element: <PaymentCallbackPage /> },
+              { path: RESULT_PATH, element: <ResultPage /> },
+            ],
+          },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

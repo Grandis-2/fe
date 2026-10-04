@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { PreorderModelSummary } from '@entities/preorder'
+import { useRequireLogin } from '@features/login'
 import { PreorderQueueCard } from '@features/preorder-queue'
 import { productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
@@ -17,6 +18,7 @@ const TEMP_PERIOD = '2026.09.01 ~ 2026.09.17'
 
 export function PreorderDetailPage() {
   const navigate = useNavigate()
+  const requireLogin = useRequireLogin()
   const { days, hours, minutes, seconds, isOver } = useCountdown(TEMP_OPENS_AT)
   const [bottomSheetOpen, setBottomSheetOpen] = useState(false)
   const [isAlert, setIsAlert] = useState(false)
@@ -25,8 +27,9 @@ export function PreorderDetailPage() {
     name: string
   } | null>(null)
 
+  // 사전예약·예약알림 모두 회원 전용이다.
   const handleActionClick = () => {
-    setBottomSheetOpen(true)
+    requireLogin(() => setBottomSheetOpen(true))
   }
 
   const handleNotify = () => {
