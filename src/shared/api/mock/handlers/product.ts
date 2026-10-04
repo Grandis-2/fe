@@ -114,14 +114,10 @@ export const productHandlers: RequestHandler[] = [
   // 메인페이지 카드 캐러셀 전용 — 페이지네이션/필터를 타지 않는 별도 curated 목록.
   // query가 없으면 undefined를 돌려주고, 아래 일반 목록 핸들러로 넘어간다
   // (MSW는 resolver가 undefined를 돌려주면 다음 매칭 핸들러를 이어서 시도한다).
-  // ?mock=error를 붙이면 로딩/에러 화면을 눈으로 확인할 수 있다(예: /?mock=error).
   http.get(url('/api/v1/products'), ({ request }) => {
     const params = new URL(request.url).searchParams
     const query = params.get('query')
     if (query !== 'best' && query !== 'recommend') return undefined
-    if (params.get('mock') === 'error') {
-      return fail(500, { code: 'MOCK_ERROR', message: '목업 에러 응답입니다.' })
-    }
     const items = query === 'best' ? bestProductCards : recommendedProductCards
     return ok<ProductCardListResponse>({ items })
   }),
@@ -134,9 +130,6 @@ export const productHandlers: RequestHandler[] = [
     const subCategory = params.get('subCategory')
     const brand = params.get('brand')
     const sort = params.get('sort')
-    if (params.get('mock') === 'error') {
-      return fail(500, { code: 'MOCK_ERROR', message: '목업 에러 응답입니다.' })
-    }
 
     const items = searchProductCardGroups
       .filter(
