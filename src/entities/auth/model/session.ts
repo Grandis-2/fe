@@ -15,8 +15,14 @@ export function useSession() {
   const role = useSessionStore((state) => state.role)
   const profileComplete = useSessionStore((state) => state.profileComplete)
   const isAuthReady = useSessionStore((state) => state.isAuthReady)
+  const hasSession = sessionToken !== null
   return {
-    isLoggedIn: sessionToken !== null,
+    // 회원 = 카카오 인증 + 추가 정보 입력까지 끝난 사용자. 카카오만 마친 사용자는
+    // 세션은 있어도 회원이 아니다 — 회원 화면/헤더는 이 값만 본다.
+    isLoggedIn: hasSession && profileComplete,
+    // 카카오 인증은 됐지만 추가 정보를 아직 안 낸 상태. /signup의 PUT에 세션이
+    // 필요해서 세션은 살려 두되, 이 상태로 /signup 밖에 있으면 가입 취소로 본다.
+    isSignupPending: hasSession && !profileComplete,
     isAuthReady,
     displayName,
     role,

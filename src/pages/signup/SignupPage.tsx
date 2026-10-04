@@ -1,10 +1,11 @@
 import { useState } from 'react'
 
-import { useLocation, useNavigate } from 'react-router'
+import { Navigate, useLocation, useNavigate } from 'react-router'
 
-import { markProfileComplete } from '@entities/auth'
+import { markProfileComplete, useSession } from '@entities/auth'
 import { useProfile, useUpdateProfile } from '@entities/profile'
 import { getErrorMessage } from '@shared/api/client'
+import { HOME_PATH } from '@shared/config/routes'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { Button, Container, InlineAlert, Input } from '@shared/ui'
 
@@ -18,6 +19,7 @@ const REQUIRED_KEYS = ['name', 'email', 'phoneNumber'] as const
 export function SignupPage() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { isAuthReady, isSignupPending } = useSession()
   const { data: profile } = useProfile()
   const { mutateAsync: updateProfile } = useUpdateProfile()
   const [error, setError] = useState<string | null>(null)
@@ -51,6 +53,12 @@ export function SignupPage() {
     } catch (caught) {
       setError(getErrorMessage(caught, GENERIC_ERROR))
     }
+  }
+
+  // 가입 진행 중(카카오만 마침)인 사용자만 이 화면을 쓴다 — 비회원은 PUT할 세션이
+  // 없고, 회원은 이미 가입을 마쳤다.
+  if (isAuthReady && !isSignupPending) {
+    return <Navigate to={HOME_PATH} replace />
   }
 
   return (
