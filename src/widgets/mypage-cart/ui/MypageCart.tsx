@@ -2,60 +2,26 @@ import { useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
-import { type CartItem } from '@entities/cart'
+import {
+  useCartItems,
+  useRemoveCartItem,
+  useUpdateCartItemQuantity,
+} from '@entities/cart'
 import { OrderSummary } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
+import { getErrorMessage } from '@shared/api/client'
 import { PAYMENT_PATH } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
-import { Checkbox } from '@shared/ui'
+import { Checkbox, InlineAlert } from '@shared/ui'
 
 import * as styles from './MypageCart.css'
 
-// ponytail: 아직 장바구니 API가 없어서 목업 데이터로 대체
-const products = [
-  {
-    name: '맥북 프로 14',
-    modelNumber: 'A3112',
-    optionSummary: '실버 · 512GB · AppleCare+ 포함',
-    price: 2390000,
-  },
-  {
-    name: '맥북 네오',
-    modelNumber: 'A2992',
-    optionSummary: '미드나이트 · 256GB',
-    price: 1690000,
-  },
-  {
-    name: '맥북 에어 15',
-    modelNumber: 'A3114',
-    optionSummary: '스타라이트 · 256GB',
-    price: 1890000,
-  },
-  {
-    name: '워치 노바',
-    modelNumber: 'A2986',
-    optionSummary: '블랙 · 45mm',
-    price: 590000,
-  },
-  {
-    name: '에어팟 루멘',
-    modelNumber: 'A3053',
-    optionSummary: '화이트',
-    price: 359000,
-  },
-]
-
-// 긴 목록에서 리모컨이 따라오는지 보려고 5종을 10번 돌려 50개를 만든다.
-const cartItems: CartItem[] = Array.from({ length: 50 }, (_, index) => ({
-  id: String(index + 1),
-  quantity: 1,
-  ...products[index % products.length],
-}))
-
 export function MypageCart() {
   const navigate = useNavigate()
-  const [items, setItems] = useState(cartItems)
+  const { data: items = [], isPending, isError } = useCartItems()
+  const updateQuantity = useUpdateCartItemQuantity()
+  const removeCartItem = useRemoveCartItem()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const allSelected = items.length > 0 && selectedIds.size === items.length
 
@@ -66,19 +32,32 @@ export function MypageCart() {
   const toggleAll = (checked: boolean) =>
     setSelectedIds(checked ? new Set(items.map((item) => item.id)) : new Set())
 
-  const changeQuantity = (id: string, quantity: number) =>
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item)),
-    )
+  // 요청은 바뀐 수량을 통째로 보내므로, 응답 전에 또 누르면 같은 값이 두 번 간다 — 진행 중엔 무시한다.
+  const changeQuantity = (id: string, quantity: number) => {
+    if (updateQuantity.isPending) return
+    updateQuantity.mutate({ id, quantity })
+  }
 
   const removeItem = (id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id))
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      next.delete(id)
-      return next
+    if (removeCartItem.isPending) return
+    removeCartItem.mutate(id, {
+      onSuccess: () =>
+        setSelectedIds((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        }),
     })
   }
+
+  const listMessage = isPending
+    ? '불러오는 중이에요.'
+    : isError
+      ? '장바구니를 불러오지 못했어요.'
+      : items.length === 0
+        ? '장바구니가 비어 있어요.'
+        : null
+  const actionError = updateQuantity.error ?? removeCartItem.error
 
   const toggleOne = (id: string, checked: boolean) =>
     setSelectedIds((prev) => {
@@ -102,6 +81,16 @@ export function MypageCart() {
         </label>
       </div>
       <div className={styles.list}>
+        {listMessage && (
+          <InlineAlert status={isError ? 'error' : 'info'}>
+            {listMessage}
+          </InlineAlert>
+        )}
+        {actionError && (
+          <InlineAlert status="error">
+            {getErrorMessage(actionError, '장바구니를 변경하지 못했어요.')}
+          </InlineAlert>
+        )}
         {items.map((item) => (
           <ProductPaymentCard
             key={item.id}
@@ -109,8 +98,7 @@ export function MypageCart() {
             variant="cart"
             product={{
               imageSrc: item.imageSrc,
-              // ponytail: 목업이라 장바구니 항목 id를 그대로 상품 id로 쓴다.
-              productId: item.id,
+              productId: item.productId,
               name: item.name,
               modelNumber: item.modelNumber,
               optionSummary: item.optionSummary,
