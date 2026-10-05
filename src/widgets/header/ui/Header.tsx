@@ -6,6 +6,7 @@ import { useUnreadNotificationCount } from '@entities/notification'
 import { KakaoLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
+import { Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
 
 import { useHeaderTheme } from '../lib/useHeaderTheme'
@@ -84,7 +85,7 @@ export function Header({
               .filter(Boolean)
               .join(' ')}
           >
-            NO<span className={styles.logoV}>V</span>A{isAdminPage && ' ADMIN'}
+            <Logo suffix={isAdminPage ? ' ADMIN' : undefined} />
           </Link>
           {!isAdminPage && (
             <CategoryNav
