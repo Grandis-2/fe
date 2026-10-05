@@ -39,7 +39,7 @@ export const RESULT_PATH = '/result'
 export const resultPath = (status: ResultStatus) =>
   `${RESULT_PATH}?status=${status}`
 
-// 관리자 경로 — 라우터, 헤더 로고, 사이드바, 관리자 홈 카드, breadcrumb·이동·제출 후 복귀가
+// 관리자 경로 — 라우터, 헤더 로고, 사이드바, breadcrumb·이동·제출 후 복귀가
 // 같은 문자열을 참조한다.
 export const ADMIN_HOME_PATH = '/admin'
 
