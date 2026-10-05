@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { Plus, X } from 'lucide-react'
 
 import {
-  createDispatchWindow,
+  createWaveDraft,
   formatDeliveryDate,
   formatSeqRange,
-  getDispatchWindows,
   nextFromSeq,
-  pickActiveVersion,
-  publishDispatchWindow,
+  toDispatchWindowRequest,
+  toWaveDrafts,
+  toWaves,
+  useDispatchWindow,
+  useSaveDispatchWindow,
+  waveDraftProblem,
+  type DispatchWaveDraft,
   type DispatchWaveModel,
 } from '@entities/admin-product'
-import { Button, Input, Table } from '@shared/ui'
+import { getErrorMessage } from '@shared/api/client'
+import { Button, InlineAlert, Input, Table } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
 import { DeliveryDateField } from '../DeliveryDateField'
@@ -29,97 +34,49 @@ export type AdminDispatchWindowsProps = {
   onEditingChange: (editing: boolean) => void
 }
 
-type DraftWave = DispatchWaveModel & { id: string }
-
-const toDraft = (wave: DispatchWaveModel): DraftWave => ({
-  ...wave,
-  id: `wave-${wave.wave}`,
-})
+// 끝 번호 칸이 끝없이 길어지지 않게 자릿수를 막는다(백만 단위까지).
+const SEQ_MAX_LENGTH = 7
 
 export function AdminDispatchWindows({
   productId,
   editing,
   onEditingChange,
 }: AdminDispatchWindowsProps) {
-  const [waves, setWaves] = useState<DispatchWaveModel[]>([])
-  const [undeterminedFromSeq, setUndeterminedFromSeq] = useState(1)
-  const [drafts, setDrafts] = useState<DraftWave[]>([])
-  const [draftUndetermined, setDraftUndetermined] = useState('')
-  const [error, setError] = useState<string>()
+  const dispatchWindow = useDispatchWindow(productId)
+  const save = useSaveDispatchWindow(productId)
+  const [drafts, setDrafts] = useState<DispatchWaveDraft[]>([])
 
-  useEffect(() => {
-    let cancelled = false
+  const waves = dispatchWindow.data?.waves ?? []
 
-    getDispatchWindows(productId)
-      .then(({ items }) => {
-        if (cancelled) return
-        const active = pickActiveVersion(items)
-        setWaves(active?.waves ?? [])
-        setUndeterminedFromSeq(active?.undeterminedFromSeq ?? 1)
-        setError(undefined)
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [productId])
-
-  // 편집이 켜지는 순간 화면에 보이던 값으로 초안을 채운다.
+  // 편집이 켜지는 순간 화면에 보이던 구성으로 초안을 채운다.
   const [wasEditing, setWasEditing] = useState(editing)
   if (editing !== wasEditing) {
     setWasEditing(editing)
-    if (editing) {
-      setDrafts(waves.map(toDraft))
-      setDraftUndetermined(String(undeterminedFromSeq))
-      setError(undefined)
-    }
+    if (editing) setDrafts(toWaveDrafts(waves))
   }
 
-  const patchDraft = (id: string, partial: Partial<DraftWave>) =>
+  // 시작 번호는 앞 차수 끝 번호에서 매번 계산한다 — 상태로 들고 있지 않는다.
+  const draftWaves = toWaves(drafts)
+  const problem = waveDraftProblem(drafts)
+
+  const patchDraft = (id: string, partial: Partial<DispatchWaveDraft>) =>
     setDrafts((prev) =>
       prev.map((draft) => (draft.id === id ? { ...draft, ...partial } : draft)),
     )
 
-  const addWave = () =>
-    setDrafts((prev) => {
-      const fromSeq = nextFromSeq(prev)
-      return [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          wave: prev.length + 1,
-          fromSeq,
-          toSeq: fromSeq,
-          estimatedDeliveryDate: null,
-        },
-      ]
-    })
+  const close = () => {
+    // 다음에 편집을 열었을 때 지난 저장 실패 문구가 남아 있지 않게 한다.
+    save.reset()
+    onEditingChange(false)
+  }
 
-  /** 새 버전을 초안으로 만들고 바로 게시한다 */
-  const save = () =>
-    void createDispatchWindow(productId, {
-      // 차수 번호는 화면 순서대로 다시 매긴다.
-      waves: drafts.map((draft, index) => ({
-        wave: index + 1,
-        fromSeq: draft.fromSeq,
-        toSeq: draft.toSeq,
-        estimatedDeliveryDate: draft.estimatedDeliveryDate || null,
-      })),
-      // 비워두면 0이 가서 서버가 '구간이 겹치거나 비어 있다'고만 답한다.
-      // 어느 칸이 문제인지 알 수 없으므로 마지막 차수 다음 번호를 기본값으로 쓴다.
-      undeterminedFromSeq: Number(draftUndetermined) || nextFromSeq(drafts),
+  const submit = () => {
+    if (problem || save.isPending) return
+    save.mutate(toDispatchWindowRequest(drafts), {
+      // 화면을 떠난 뒤에 응답이 오면 TanStack Query가 이 콜백을 부르지 않는다.
+      onSuccess: () => onEditingChange(false),
     })
-      .then((created) => publishDispatchWindow(productId, created.version))
-      .then((published) => {
-        setWaves(published.waves)
-        setUndeterminedFromSeq(published.undeterminedFromSeq ?? 1)
-        onEditingChange(false)
-        setError(undefined)
-      })
-      .catch((cause: Error) => setError(cause.message))
+  }
 
   const readColumns: TableColumn<DispatchWaveModel>[] = [
     {
@@ -144,7 +101,7 @@ export function AdminDispatchWindows({
     },
   ]
 
-  const editColumns: TableColumn<DraftWave>[] = [
+  const editColumns: TableColumn<DispatchWaveDraft>[] = [
     {
       key: 'wave',
       header: '차수',
@@ -156,33 +113,27 @@ export function AdminDispatchWindows({
       key: 'seq',
       header: '순번',
       align: 'center',
-      // 순번과 예상 배송일이 같은 폭을 갖도록 나눈다.
-      width: '40%',
       render: (draft) => (
         <div className={styles.seqRow}>
-          <Input
-            size="small"
-            label="시작"
-            inputMode="numeric"
-            value={String(draft.fromSeq)}
-            onChange={(event) =>
-              patchDraft(draft.id, {
-                fromSeq: Number(event.target.value.replace(/\D/g, '')) || 0,
-              })
-            }
-          />
+          <span className={styles.fromSeq}>
+            {draftWaves[drafts.indexOf(draft)].fromSeq.toLocaleString('ko-KR')}
+          </span>
           <span className={styles.tilde}>~</span>
-          <Input
-            size="small"
-            label="끝"
-            inputMode="numeric"
-            value={String(draft.toSeq)}
-            onChange={(event) =>
-              patchDraft(draft.id, {
-                toSeq: Number(event.target.value.replace(/\D/g, '')) || 0,
-              })
-            }
-          />
+          <div className={styles.toSeqField}>
+            <Input
+              size="small"
+              label="끝 번호"
+              inputMode="numeric"
+              maxLength={SEQ_MAX_LENGTH}
+              value={draft.toSeq === null ? '' : String(draft.toSeq)}
+              onChange={(event) => {
+                const digits = event.target.value.replace(/\D/g, '')
+                patchDraft(draft.id, {
+                  toSeq: digits ? Number(digits) : null,
+                })
+              }}
+            />
+          </div>
         </div>
       ),
     },
@@ -190,7 +141,7 @@ export function AdminDispatchWindows({
       key: 'date',
       header: '예상 배송일',
       align: 'center',
-      width: '40%',
+      width: '35%',
       render: (draft) => (
         <DeliveryDateField
           value={draft.estimatedDeliveryDate}
@@ -210,6 +161,7 @@ export function AdminDispatchWindows({
           type="button"
           className={styles.removeButton}
           aria-label={`${drafts.indexOf(draft) + 1}차 삭제`}
+          // 지우면 다음 차수의 시작 번호가 앞 차수 끝에 다시 이어진다.
           onClick={() =>
             setDrafts((prev) => prev.filter((item) => item.id !== draft.id))
           }
@@ -220,71 +172,74 @@ export function AdminDispatchWindows({
     },
   ]
 
+  if (editing) {
+    return (
+      <div className={styles.root}>
+        {save.isError && (
+          <InlineAlert status="error">
+            {getErrorMessage(save.error, '배송 차수를 저장하지 못했습니다.')}
+          </InlineAlert>
+        )}
+
+        <Table
+          columns={editColumns}
+          rows={drafts}
+          rowKey={(draft) => draft.id}
+          emptyMessage="차수를 추가해주세요."
+        />
+
+        <button
+          type="button"
+          className={styles.addButton}
+          onClick={() => setDrafts((prev) => [...prev, createWaveDraft()])}
+        >
+          <Plus className={styles.addIcon} aria-hidden="true" />
+          차수 추가
+        </button>
+
+        <div className={styles.editFooter}>
+          <span className={problem ? styles.problem : styles.undeterminedNote}>
+            {problem ??
+              `${nextFromSeq(draftWaves).toLocaleString('ko-KR')}번부터는 예상 배송일이 미정입니다.`}
+          </span>
+
+          <div className={styles.actions}>
+            <Button variant="outline" color="cancel" onClick={close}>
+              취소
+            </Button>
+            <Button disabled={!!problem || save.isPending} onClick={submit}>
+              {save.isPending ? '저장 중…' : '저장하기'}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.root}>
-      {error && <div className={styles.error}>{error}</div>}
+      <Table
+        columns={readColumns}
+        rows={waves}
+        rowKey={(wave) => String(wave.wave)}
+        // 조회 실패를 '차수 없음'으로 보이면 운영 판단이 정반대가 된다.
+        emptyMessage={
+          dispatchWindow.isError
+            ? getErrorMessage(
+                dispatchWindow.error,
+                '배송 차수를 불러오지 못했습니다.',
+              )
+            : dispatchWindow.isPending
+              ? '불러오는 중입니다.'
+              : '설정된 배송 차수가 없습니다.'
+        }
+      />
 
-      {editing ? (
-        <>
-          <Table
-            columns={editColumns}
-            rows={drafts}
-            rowKey={(draft) => draft.id}
-            emptyMessage="차수를 추가해주세요."
-          />
-
-          <button type="button" className={styles.addButton} onClick={addWave}>
-            <Plus className={styles.addIcon} aria-hidden="true" />
-            차수 추가
-          </button>
-
-          {/* 미정 시작 순번과 마무리 버튼을 한 줄에 마주 보게 둔다. */}
-          <div className={styles.editFooter}>
-            <div className={styles.undeterminedRow}>
-              <span className={styles.undeterminedLabel}>
-                배송일 미정 시작 순번
-              </span>
-              <div className={styles.undeterminedField}>
-                <Input
-                  size="small"
-                  label="시작 순번"
-                  inputMode="numeric"
-                  value={draftUndetermined}
-                  onChange={(event) =>
-                    setDraftUndetermined(event.target.value.replace(/\D/g, ''))
-                  }
-                />
-              </div>
-            </div>
-
-            <div className={styles.actions}>
-              <Button
-                variant="outline"
-                color="cancel"
-                onClick={() => onEditingChange(false)}
-              >
-                취소
-              </Button>
-              <Button onClick={save}>저장하기</Button>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          <Table
-            columns={readColumns}
-            rows={waves}
-            rowKey={(wave) => String(wave.wave)}
-            emptyMessage="설정된 배송 차수가 없습니다."
-          />
-
-          {waves.length > 0 && (
-            <div className={styles.undeterminedNote}>
-              {undeterminedFromSeq.toLocaleString('ko-KR')}번부터는 예상
-              배송일이 미정입니다.
-            </div>
-          )}
-        </>
+      {dispatchWindow.data && waves.length > 0 && (
+        <div className={styles.undeterminedNote}>
+          {dispatchWindow.data.undeterminedFromSeq.toLocaleString('ko-KR')}
+          번부터는 예상 배송일이 미정입니다.
+        </div>
       )}
     </div>
   )

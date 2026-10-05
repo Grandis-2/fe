@@ -14,17 +14,6 @@ export const actions = style({
   gap: spacing[8],
 })
 
-export const seqRow = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[8],
-})
-
-export const tilde = style([
-  typography.body.sub,
-  { flexShrink: 0, color: color.text.tertiary },
-])
-
 export const removeButton = style({
   display: 'inline-flex',
   alignItems: 'center',
@@ -82,32 +71,40 @@ export const editFooter = style({
   flexWrap: 'wrap',
 })
 
-export const undeterminedRow = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[12],
-})
-
-export const undeterminedLabel = style([
-  typography.body.sub,
-  { color: color.text.secondary },
-])
-
-export const undeterminedField = style({
-  width: '160px',
-})
-
 export const undeterminedNote = style([
   typography.body.sub,
   { color: color.text.tertiary },
 ])
 
-export const error = style([
+export const seqRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: spacing[8],
+})
+
+/** 계산된 시작 번호 — 입력칸이 아니라는 게 보이도록 글자로만 둔다 */
+export const fromSeq = style([
   typography.body.sub,
   {
-    padding: `${spacing[12]} ${spacing[16]}`,
-    borderRadius: '8px',
-    background: color.background.subtleDanger,
-    color: color.status.danger,
+    minWidth: '56px',
+    textAlign: 'right',
+    color: color.text.secondary,
+    fontVariantNumeric: 'tabular-nums',
   },
+])
+
+export const tilde = style([
+  typography.body.sub,
+  { flexShrink: 0, color: color.text.tertiary },
+])
+
+export const toSeqField = style({
+  width: '120px',
+})
+
+/** 저장할 수 없는 이유 — 저장 버튼 옆에서 왜 막혔는지 알려준다 */
+export const problem = style([
+  typography.body.sub,
+  { color: color.status.danger },
 ])
