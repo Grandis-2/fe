@@ -1,7 +1,7 @@
 import { Input } from '@shared/ui'
 import type { InputProps } from '@shared/ui'
 
-import { useNumberDraft } from '../../model/useNumberDraft'
+import { useNumberDraft } from '../../lib/useNumberDraft'
 
 export type NumberFieldProps = Omit<
   InputProps,

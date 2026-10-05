@@ -1,6 +1,6 @@
 import { useId } from 'react'
 
-import { useNumberDraft } from '../../model/useNumberDraft'
+import { useNumberDraft } from '../../lib/useNumberDraft'
 
 import * as styles from './ExtraPriceField.css'
 
