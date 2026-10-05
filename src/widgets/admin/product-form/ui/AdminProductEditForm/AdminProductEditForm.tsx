@@ -62,6 +62,9 @@ export function AdminProductEditForm({
       )}
 
       <AdminProductForm
+        // 폼은 defaultValue를 처음에만 읽는다. 상세 화면에 머문 채 상품만 바뀌면
+        // (뒤로/앞으로 가기 등) 이전 상품 값이 남아 새 상품에 저장될 수 있어 새로 만든다.
+        key={productId}
         mode="edit"
         defaultValue={toFormValue(product.data, stock.data)}
         submitting={update.isPending}

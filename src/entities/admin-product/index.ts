@@ -7,6 +7,7 @@ export {
 export {
   useAdminProduct,
   useAdminProductStock,
+  useCreateAdminProduct,
   useUpdateAdminProduct,
 } from './api/useAdminProduct'
 export { putProductOpenAt } from './api/adminDispatch'

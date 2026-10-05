@@ -4,7 +4,11 @@ import { queryPolicy } from '@shared/api/queryPolicy'
 
 import { toStockRequests, toUpsertRequest } from '../model/form'
 
-import { getAdminProduct, updateAdminProduct } from './adminProduct'
+import {
+  createAdminProduct,
+  getAdminProduct,
+  updateAdminProduct,
+} from './adminProduct'
 import { getAdminProductStock, putAdminProductStock } from './adminStock'
 
 import type { AdminProductFormValue } from '../model/form'
@@ -30,6 +34,17 @@ export const useAdminProductStock = (productId: string) =>
     select: (response) => response.items,
     ...queryPolicy.live,
   })
+
+/** 상품을 초안으로 등록한다. 응답을 상세 캐시에 넣어 등록 직후 상세 화면이 다시 조회하지 않게 한다 */
+export const useCreateAdminProduct = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (value: AdminProductFormValue) =>
+      createAdminProduct(toUpsertRequest(value)),
+    onSuccess: (created) =>
+      queryClient.setQueryData(adminProductKey(created.productId), created),
+  })
+}
 
 /**
  * 상품 본문과 조합별 재고를 함께 저장한다. 등록/수정 본문에는 수량 필드가 없어서

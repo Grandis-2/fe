@@ -53,8 +53,17 @@ export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
   const draftWaves = toWaves(drafts)
   const problem = waveDraftProblem(drafts)
 
+  // 초안을 고치면 지난 저장 실패 문구를 지운다 — 남아 있으면 이미 고친 구성이
+  // 여전히 잘못된 것처럼 보인다.
+  const updateDrafts = (
+    update: (prev: DispatchWaveDraft[]) => DispatchWaveDraft[],
+  ) => {
+    if (save.isError) save.reset()
+    setDrafts(update)
+  }
+
   const patchDraft = (id: string, partial: Partial<DispatchWaveDraft>) =>
-    setDrafts((prev) =>
+    updateDrafts((prev) =>
       prev.map((draft) => (draft.id === id ? { ...draft, ...partial } : draft)),
     )
 
@@ -157,7 +166,7 @@ export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
           aria-label={`${drafts.indexOf(draft) + 1}차 삭제`}
           // 지우면 다음 차수의 시작 번호가 앞 차수 끝에 다시 이어진다.
           onClick={() =>
-            setDrafts((prev) => prev.filter((item) => item.id !== draft.id))
+            updateDrafts((prev) => prev.filter((item) => item.id !== draft.id))
           }
         >
           <X className={styles.removeIcon} aria-hidden="true" />
@@ -185,7 +194,7 @@ export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
         <button
           type="button"
           className={styles.addButton}
-          onClick={() => setDrafts((prev) => [...prev, createWaveDraft()])}
+          onClick={() => updateDrafts((prev) => [...prev, createWaveDraft()])}
         >
           <Plus className={styles.addIcon} aria-hidden="true" />
           차수 추가
@@ -218,6 +227,17 @@ export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
             수정하기
           </Button>
         </div>
+      )}
+
+      {/* 다시 불러오기에 실패해도 이전 데이터는 남아 표에 그대로 보인다 — 그 사실을 따로 알린다. */}
+      {dispatchWindow.isError && dispatchWindow.data && (
+        <InlineAlert status="warning">
+          {getErrorMessage(
+            dispatchWindow.error,
+            '배송 차수를 다시 불러오지 못했습니다.',
+          )}{' '}
+          이전에 불러온 내용을 표시하고 있습니다.
+        </InlineAlert>
       )}
 
       <Table

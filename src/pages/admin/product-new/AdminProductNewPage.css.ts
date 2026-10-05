@@ -12,13 +12,3 @@ export const title = style([
   typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },
 ])
-
-export const error = style([
-  typography.body.sub,
-  {
-    padding: `${spacing[12]} ${spacing[16]}`,
-    borderRadius: '8px',
-    background: color.background.subtleDanger,
-    color: color.status.danger,
-  },
-])

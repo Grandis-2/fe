@@ -7,8 +7,10 @@ import {
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
-import { Table } from '@shared/ui'
+import { InlineAlert, Table } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
+
+import * as styles from './AdminProductStockTable.css'
 
 export type AdminProductStockTableProps = {
   productId: string
@@ -62,25 +64,35 @@ export function AdminProductStockTable({
   ]
 
   const failed = product.error ?? stock.error
+  const rows =
+    product.data && stock.data
+      ? getAdminProductStocks(product.data, stock.data)
+      : []
 
   return (
-    <Table
-      columns={columns}
-      rows={
-        product.data && stock.data
-          ? getAdminProductStocks(product.data, stock.data)
-          : []
-      }
-      rowKey={(row) => row.optionCode}
-      pageSize={10}
-      // 조회 실패를 '재고 없음'으로 보이면 운영 판단이 정반대가 된다.
-      emptyMessage={
-        failed
-          ? getErrorMessage(failed, '재고를 불러오지 못했습니다.')
-          : product.isPending || stock.isPending
-            ? '불러오는 중입니다.'
-            : '등록된 재고가 없습니다.'
-      }
-    />
+    <div className={styles.root}>
+      {/* 다시 불러오기에 실패해도 이전 데이터는 남아 표에 그대로 보인다 — 그 사실을 따로 알린다. */}
+      {failed != null && rows.length > 0 && (
+        <InlineAlert status="warning">
+          {getErrorMessage(failed, '재고를 다시 불러오지 못했습니다.')} 이전에
+          불러온 재고를 표시하고 있습니다.
+        </InlineAlert>
+      )}
+
+      <Table
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.optionCode}
+        pageSize={10}
+        // 조회 실패를 '재고 없음'으로 보이면 운영 판단이 정반대가 된다.
+        emptyMessage={
+          failed
+            ? getErrorMessage(failed, '재고를 불러오지 못했습니다.')
+            : product.isPending || stock.isPending
+              ? '불러오는 중입니다.'
+              : '등록된 재고가 없습니다.'
+        }
+      />
+    </div>
   )
 }
