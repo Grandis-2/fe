@@ -1,5 +1,7 @@
 export { Box } from './Box'
 export type { BoxProps } from './Box'
+export { Breadcrumb } from './Breadcrumb'
+export type { BreadcrumbProps, BreadcrumbItem } from './Breadcrumb'
 export { Button } from './Button'
 export type { ButtonProps } from './Button'
 export { Container } from './Container'

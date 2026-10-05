@@ -1,14 +1,16 @@
 import { http } from 'msw'
 
-import { dispatchWindowStore, versionsOf } from '../fixtures/admin-dispatch'
+import {
+  dispatchWindowOf,
+  dispatchWindowStore,
+} from '../fixtures/admin-dispatch'
 import { adminProductStore } from '../fixtures/admin-product'
 import { fail, ok } from '../response'
 import { url } from '../url'
 
 import type {
-  DispatchWindowCreateRequest,
-  DispatchWindowListResponse,
-  DispatchWindowVersion,
+  DispatchWindow,
+  DispatchWindowPutRequest,
   ProductOpenAtRequest,
 } from '../../types'
 import type { RequestHandler } from 'msw'
@@ -30,51 +32,57 @@ const alreadyOpen = () =>
 const findProduct = (productId: string) =>
   adminProductStore.find((product) => product.productId === productId)
 
-/** 구간이 비었거나 앞 차수와 겹치는지 본다. 문제가 있으면 detail 문구를 돌려준다 */
-function findWaveProblem(body: DispatchWindowCreateRequest) {
+/**
+ * 구간이 1번부터 빈틈없이 이어지는지 본다. 문제가 있으면 detail 문구를 돌려준다.
+ * 화면은 인원 수로만 입력받아 이런 구간을 만들 수 없지만, 서버는 요청을 믿지 않는다.
+ */
+function findWaveProblem(body: DispatchWindowPutRequest) {
   if (!body.waves || body.waves.length < 1) {
     return 'waves는 1개 이상이어야 합니다'
   }
 
-  const sorted = [...body.waves].sort((a, b) => a.wave - b.wave)
-  for (const [index, wave] of sorted.entries()) {
+  let expectedFrom = 1
+  for (const [index, wave] of body.waves.entries()) {
+    if (wave.wave !== index + 1) {
+      return `wave 번호는 1부터 순서대로여야 합니다(${index + 1}번째가 ${wave.wave})`
+    }
+    if (wave.fromSeq !== expectedFrom) {
+      return `wave ${wave.wave} fromSeq(${wave.fromSeq})는 ${expectedFrom}이어야 합니다`
+    }
     if (wave.fromSeq > wave.toSeq) {
       return `wave ${wave.wave} fromSeq(${wave.fromSeq}) > toSeq(${wave.toSeq})`
     }
-    const previous = sorted[index - 1]
-    if (previous && wave.fromSeq <= previous.toSeq) {
-      return `wave ${wave.wave} fromSeq(${wave.fromSeq}) <= wave ${previous.wave} toSeq(${previous.toSeq})`
-    }
+    expectedFrom = wave.toSeq + 1
   }
 
-  const last = sorted[sorted.length - 1]
-  if (body.undeterminedFromSeq < 2) {
-    return 'undeterminedFromSeq는 2 이상이어야 합니다'
-  }
-  if (body.undeterminedFromSeq <= last.toSeq) {
-    return `undeterminedFromSeq(${body.undeterminedFromSeq}) <= 마지막 wave toSeq(${last.toSeq})`
+  if (body.undeterminedFromSeq !== expectedFrom) {
+    return `undeterminedFromSeq(${body.undeterminedFromSeq})는 ${expectedFrom}이어야 합니다`
   }
   return null
 }
 
 export const adminDispatchHandlers: RequestHandler[] = [
   http.get(
-    url('/api/v1/admin/products/:productId/dispatch-windows'),
+    url('/api/v1/admin/products/:productId/dispatch-window'),
     ({ params }) => {
       const productId = String(params.productId)
       if (!findProduct(productId)) return notFound()
 
-      return ok<DispatchWindowListResponse>({ items: versionsOf(productId) })
+      return ok<DispatchWindow>(dispatchWindowOf(productId))
     },
   ),
 
-  http.post(
-    url('/api/v1/admin/products/:productId/dispatch-windows'),
+  http.put(
+    url('/api/v1/admin/products/:productId/dispatch-window'),
     async ({ request, params }) => {
       const productId = String(params.productId)
-      if (!findProduct(productId)) return notFound()
+      const product = findProduct(productId)
+      if (!product) return notFound()
 
-      const body = (await request.json()) as DispatchWindowCreateRequest
+      // 오픈 후에는 배송 기준과 기존 배정을 바꾸지 않는다.
+      if (product.saleStatus === 'OPEN') return alreadyOpen()
+
+      const body = (await request.json()) as DispatchWindowPutRequest
       const problem = findWaveProblem(body)
       if (problem) {
         return fail(400, {
@@ -85,50 +93,20 @@ export const adminDispatchHandlers: RequestHandler[] = [
         })
       }
 
-      const nextVersion =
-        Math.max(0, ...versionsOf(productId).map((item) => item.version)) + 1
-
-      const created: DispatchWindowVersion = {
+      const saved: DispatchWindow = {
         productId,
-        version: nextVersion,
-        status: 'DRAFT',
         waves: body.waves,
         undeterminedFromSeq: body.undeterminedFromSeq,
-        createdAt: new Date().toISOString(),
-        createdBy: 'admin',
-        publishedAt: null,
-        confirmedCountByWave: null,
+        updatedAt: new Date().toISOString(),
+        updatedBy: 'admin',
       }
-      dispatchWindowStore.push(created)
-
-      return ok(created, 201)
-    },
-  ),
-
-  http.post(
-    url('/api/v1/admin/products/:productId/dispatch-windows/:version/publish'),
-    ({ params }) => {
-      const productId = String(params.productId)
-      const product = findProduct(productId)
-      if (!product) return notFound()
-
-      // 오픈 후에는 배송 기준과 기존 배정을 바꾸지 않는다.
-      if (product.saleStatus === 'OPEN') return alreadyOpen()
-
-      const target = versionsOf(productId).find(
-        (item) => item.version === Number(params.version),
+      const index = dispatchWindowStore.findIndex(
+        (window) => window.productId === productId,
       )
-      if (!target) return notFound()
+      if (index === -1) dispatchWindowStore.push(saved)
+      else dispatchWindowStore[index] = saved
 
-      // 활성 버전은 하나뿐이라 나머지 게시본은 내린다.
-      for (const item of versionsOf(productId)) {
-        if (item.status === 'PUBLISHED') item.status = 'DRAFT'
-      }
-      target.status = 'PUBLISHED'
-      target.publishedAt = new Date().toISOString()
-      product.activeDispatchWindowVersion = target.version
-
-      return ok(target)
+      return ok(saved)
     },
   ),
 
