@@ -8,8 +8,8 @@ import {
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
 } from '@shared/config/routes'
-import { AdminBreadcrumb } from '@widgets/admin-breadcrumb'
-import { AdminPromotionForm } from '@widgets/admin-promotion-form'
+import { Breadcrumb } from '@shared/ui'
+import { AdminPromotionForm } from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionNewPage.css'
 
@@ -22,7 +22,7 @@ export function AdminPromotionNewPage() {
 
   return (
     <div className={styles.root}>
-      <AdminBreadcrumb
+      <Breadcrumb
         items={[
           { label: '사전 예약 관리', to: ADMIN_PROMOTIONS_PATH },
           { label: '새 프로모션' },

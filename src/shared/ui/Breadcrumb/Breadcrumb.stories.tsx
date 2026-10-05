@@ -1,13 +1,13 @@
 import { expect } from 'storybook/test'
 
-import { AdminBreadcrumb } from './AdminBreadcrumb'
+import { Breadcrumb } from './Breadcrumb'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {
-  component: AdminBreadcrumb,
+  component: Breadcrumb,
   tags: ['ai-generated'],
-} satisfies Meta<typeof AdminBreadcrumb>
+} satisfies Meta<typeof Breadcrumb>
 
 export default meta
 type Story = StoryObj<typeof meta>

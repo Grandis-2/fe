@@ -9,11 +9,10 @@ import {
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
-import { SegmentedTabs, Tag } from '@shared/ui'
-import { AdminBreadcrumb } from '@widgets/admin-breadcrumb'
-import { AdminDispatchWindows } from '@widgets/admin-dispatch-windows'
-import { AdminProductEditForm } from '@widgets/admin-product-form'
-import { AdminProductStockTable } from '@widgets/admin-product-stock'
+import { SegmentedTabs, Tag, Breadcrumb } from '@shared/ui'
+import { AdminDispatchWindows } from '@widgets/admin/dispatch-windows'
+import { AdminProductEditForm } from '@widgets/admin/product-form'
+import { AdminProductStockTable } from '@widgets/admin/product-stock'
 
 import * as styles from './AdminProductDetailPage.css'
 
@@ -49,7 +48,7 @@ export function AdminProductDetailPage() {
           {product.isError
             ? getErrorMessage(product.error, '상품을 불러오지 못했습니다.')
             : '불러오는 중입니다.'}
-          <AdminBreadcrumb
+          <Breadcrumb
             items={[{ label: '상품 관리로 돌아가기', to: ADMIN_PRODUCTS_PATH }]}
           />
         </div>
@@ -74,7 +73,7 @@ export function AdminProductDetailPage() {
 
   return (
     <div className={styles.root}>
-      <AdminBreadcrumb
+      <Breadcrumb
         items={[
           { label: '상품 관리', to: ADMIN_PRODUCTS_PATH },
           { label: name },

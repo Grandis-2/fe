@@ -3,20 +3,20 @@ import { Fragment } from 'react'
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 
-import * as styles from './AdminBreadcrumb.css'
+import * as styles from './Breadcrumb.css'
 
-export type AdminBreadcrumbItem = {
+export type BreadcrumbItem = {
   label: string
   /** 없으면 현재 위치로 그린다 — 보통 마지막 항목이다 */
   to?: string
 }
 
-export type AdminBreadcrumbProps = {
-  items: AdminBreadcrumbItem[]
+export type BreadcrumbProps = {
+  items: BreadcrumbItem[]
   className?: string
 }
 
-export function AdminBreadcrumb({ items, className }: AdminBreadcrumbProps) {
+export function Breadcrumb({ items, className }: BreadcrumbProps) {
   return (
     <nav
       className={[styles.root, className].filter(Boolean).join(' ')}

@@ -13,9 +13,8 @@ import {
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
 } from '@shared/config/routes'
-import { Tag } from '@shared/ui'
-import { AdminBreadcrumb } from '@widgets/admin-breadcrumb'
-import { AdminPromotionForm } from '@widgets/admin-promotion-form'
+import { Tag, Breadcrumb } from '@shared/ui'
+import { AdminPromotionForm } from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionEditPage.css'
 
@@ -28,7 +27,7 @@ export function AdminPromotionEditPage() {
     return (
       <div className={styles.notFound}>
         <div>프로모션을 찾을 수 없습니다.</div>
-        <AdminBreadcrumb
+        <Breadcrumb
           items={[
             { label: '사전 예약 관리로 돌아가기', to: ADMIN_PROMOTIONS_PATH },
           ]}
@@ -43,7 +42,7 @@ export function AdminPromotionEditPage() {
 
   return (
     <div className={styles.root}>
-      <AdminBreadcrumb
+      <Breadcrumb
         items={[
           { label: '사전 예약 관리', to: ADMIN_PROMOTIONS_PATH },
           { label: promotion.name },

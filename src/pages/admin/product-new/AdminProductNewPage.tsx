@@ -8,8 +8,8 @@ import {
   type AdminProductFormValue,
 } from '@entities/admin-product'
 import { ADMIN_PRODUCTS_PATH, adminProductPath } from '@shared/config/routes'
-import { AdminBreadcrumb } from '@widgets/admin-breadcrumb'
-import { AdminProductForm } from '@widgets/admin-product-form'
+import { Breadcrumb } from '@shared/ui'
+import { AdminProductForm } from '@widgets/admin/product-form'
 
 import * as styles from './AdminProductNewPage.css'
 
@@ -24,7 +24,7 @@ export function AdminProductNewPage() {
 
   return (
     <div className={styles.root}>
-      <AdminBreadcrumb
+      <Breadcrumb
         items={[
           { label: '상품 관리', to: ADMIN_PRODUCTS_PATH },
           { label: '새 상품 등록' },
