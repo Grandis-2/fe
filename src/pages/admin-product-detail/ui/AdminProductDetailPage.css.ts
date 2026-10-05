@@ -8,14 +8,6 @@ export const root = style({
   gap: spacing[20],
 })
 
-// 탭과 '수정하기' 버튼이 한 줄에 마주 본다.
-export const tabRow = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: spacing[16],
-})
-
 export const titleRow = style({
   display: 'flex',
   alignItems: 'center',
@@ -39,15 +31,5 @@ export const notFound = style([
     border: `1px solid ${color.border.subtle}`,
     background: color.background.base,
     color: color.text.tertiary,
-  },
-])
-
-export const error = style([
-  typography.body.sub,
-  {
-    padding: `${spacing[12]} ${spacing[16]}`,
-    borderRadius: '8px',
-    background: color.background.subtleDanger,
-    color: color.status.danger,
   },
 ])

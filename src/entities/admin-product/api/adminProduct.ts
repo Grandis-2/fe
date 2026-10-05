@@ -26,8 +26,8 @@ export const getAdminProducts = (params: AdminProductListParams = {}) =>
   apiClient.request<Paged<AdminProductSummary>>(`${BASE}${toQuery(params)}`)
 
 /** 전시 상태와 무관하게 상품 상세를 조회한다 */
-export const getAdminProduct = (productId: string) =>
-  apiClient.request<AdminProductDetail>(`${BASE}/${productId}`)
+export const getAdminProduct = (productId: string, signal?: AbortSignal) =>
+  apiClient.request<AdminProductDetail>(`${BASE}/${productId}`, { signal })
 
 /** 상품을 초안으로 등록한다 */
 export const createAdminProduct = (body: AdminProductUpsertRequest) =>

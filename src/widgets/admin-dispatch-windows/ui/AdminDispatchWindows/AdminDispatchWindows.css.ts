@@ -8,6 +8,11 @@ export const root = style({
   gap: spacing[16],
 })
 
+export const toolbar = style({
+  display: 'flex',
+  justifyContent: 'flex-end',
+})
+
 export const actions = style({
   display: 'flex',
   justifyContent: 'flex-end',

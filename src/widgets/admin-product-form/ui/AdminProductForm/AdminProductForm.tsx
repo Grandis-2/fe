@@ -5,13 +5,7 @@ import {
   type AdminProductFormValue,
 } from '@entities/admin-product'
 import { getProductVariants } from '@entities/admin-product'
-import {
-  Button,
-  Checkbox,
-  FormSection,
-  ImageUploader,
-  Input,
-} from '@shared/ui'
+import { Button, Checkbox, FormSection, ImageUploader, Input } from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
 import { NumberField } from '../NumberField'
@@ -29,6 +23,8 @@ export type AdminProductFormProps = {
   onSubmit: (value: AdminProductFormValue) => void
   onCancel: () => void
   onPreview: (value: AdminProductFormValue) => void
+  /** 저장 요청이 진행 중이면 제출 버튼을 막는다 — 연타하면 같은 저장이 여러 번 나간다 */
+  submitting?: boolean
 }
 
 // 라벨을 페이지가 넘기면 화면마다 문구가 어긋나기 쉬워 여기 한 곳에 둔다.
@@ -43,6 +39,7 @@ export function AdminProductForm({
   onSubmit,
   onCancel,
   onPreview,
+  submitting = false,
 }: AdminProductFormProps) {
   const [value, setValue] = useState(
     defaultValue ?? createEmptyProductFormValue(),
@@ -62,6 +59,7 @@ export function AdminProductForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (submitting) return
     onSubmit(value)
   }
 
@@ -212,7 +210,9 @@ export function AdminProductForm({
           >
             취소
           </Button>
-          <Button type="submit">{submitLabel[mode]}</Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? '저장 중…' : submitLabel[mode]}
+          </Button>
         </div>
       </div>
     </form>

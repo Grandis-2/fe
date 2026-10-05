@@ -1,12 +1,14 @@
 export {
   createAdminProduct,
-  getAdminProduct,
   getAdminProducts,
   hideAdminProduct,
   publishAdminProduct,
-  updateAdminProduct,
 } from './api/adminProduct'
-export { getAdminProductStock, putAdminProductStock } from './api/adminStock'
+export {
+  useAdminProduct,
+  useAdminProductStock,
+  useUpdateAdminProduct,
+} from './api/useAdminProduct'
 export { putProductOpenAt } from './api/adminDispatch'
 export {
   useDispatchWindow,

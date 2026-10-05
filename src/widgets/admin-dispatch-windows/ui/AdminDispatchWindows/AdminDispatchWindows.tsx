@@ -10,6 +10,7 @@ import {
   toDispatchWindowRequest,
   toWaveDrafts,
   toWaves,
+  useAdminProduct,
   useDispatchWindow,
   useSaveDispatchWindow,
   waveDraftProblem,
@@ -26,33 +27,26 @@ import * as styles from './AdminDispatchWindows.css'
 
 export type AdminDispatchWindowsProps = {
   productId: string
-  /**
-   * 편집 모드 여부. '수정하기' 버튼이 탭과 같은 줄에 있어야 해서
-   * 버튼과 상태를 페이지가 들고 이 컴포넌트는 결과만 받는다.
-   */
-  editing: boolean
-  onEditingChange: (editing: boolean) => void
 }
 
 // 끝 번호 칸이 끝없이 길어지지 않게 자릿수를 막는다(백만 단위까지).
 const SEQ_MAX_LENGTH = 7
 
-export function AdminDispatchWindows({
-  productId,
-  editing,
-  onEditingChange,
-}: AdminDispatchWindowsProps) {
+export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
+  const product = useAdminProduct(productId)
   const dispatchWindow = useDispatchWindow(productId)
   const save = useSaveDispatchWindow(productId)
+  const [editing, setEditing] = useState(false)
   const [drafts, setDrafts] = useState<DispatchWaveDraft[]>([])
 
   const waves = dispatchWindow.data?.waves ?? []
+  // 오픈 이후에는 배송 기준과 기존 배정을 바꾸지 않는다(서버도 409로 막는다).
+  const editable = !!dispatchWindow.data && product.data?.saleStatus !== 'OPEN'
 
-  // 편집이 켜지는 순간 화면에 보이던 구성으로 초안을 채운다.
-  const [wasEditing, setWasEditing] = useState(editing)
-  if (editing !== wasEditing) {
-    setWasEditing(editing)
-    if (editing) setDrafts(toWaveDrafts(waves))
+  // 편집을 여는 순간 화면에 보이던 구성으로 초안을 채운다.
+  const startEdit = () => {
+    setDrafts(toWaveDrafts(waves))
+    setEditing(true)
   }
 
   // 시작 번호는 앞 차수 끝 번호에서 매번 계산한다 — 상태로 들고 있지 않는다.
@@ -67,14 +61,14 @@ export function AdminDispatchWindows({
   const close = () => {
     // 다음에 편집을 열었을 때 지난 저장 실패 문구가 남아 있지 않게 한다.
     save.reset()
-    onEditingChange(false)
+    setEditing(false)
   }
 
   const submit = () => {
     if (problem || save.isPending) return
     save.mutate(toDispatchWindowRequest(drafts), {
       // 화면을 떠난 뒤에 응답이 오면 TanStack Query가 이 콜백을 부르지 않는다.
-      onSuccess: () => onEditingChange(false),
+      onSuccess: () => setEditing(false),
     })
   }
 
@@ -218,6 +212,14 @@ export function AdminDispatchWindows({
 
   return (
     <div className={styles.root}>
+      {editable && (
+        <div className={styles.toolbar}>
+          <Button size="small" onClick={startEdit}>
+            수정하기
+          </Button>
+        </div>
+      )}
+
       <Table
         columns={readColumns}
         rows={waves}
