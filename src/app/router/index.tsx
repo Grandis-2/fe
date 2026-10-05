@@ -19,6 +19,7 @@ import { KakaoCallbackPage } from '@pages/kakao-callback/KakaoCallbackPage'
 import { MainPage } from '@pages/main/MainPage'
 import { Mypage } from '@pages/mypage/Mypage'
 import { NotFoundPage } from '@pages/not-found/NotFoundPage'
+import { OnboardingPage } from '@pages/onboarding/OnboardingPage'
 import { PaymentPage } from '@pages/payment/PaymentPage'
 import { PaymentCallbackPage } from '@pages/payment-callback/PaymentCallbackPage'
 import { PreorderPage } from '@pages/preorder/PreorderPage'
@@ -43,6 +44,7 @@ import {
   adminPromotionPath,
   HOME_PATH,
   MYPAGE_PATH,
+  ONBOARDING_PATH,
   PAYMENT_PATH,
   PREORDER_PATH,
   preorderPath,
@@ -54,6 +56,8 @@ import {
 } from '@shared/config/routes'
 
 export const router = createBrowserRouter([
+  // 자체 로고·건너뛰기를 가진 전체 화면이라 헤더·탭바를 그리는 RootLayout 밖에 둔다.
+  { path: ONBOARDING_PATH, element: <OnboardingPage /> },
   {
     element: <RootLayout />,
     children: [
