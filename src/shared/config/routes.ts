@@ -22,6 +22,10 @@ export const SEARCH_PATH = '/search'
 // URLSearchParams가 인코딩까지 해주므로 쿼리를 손으로 붙이지 않는다.
 export const searchPath = (params: Record<string, string>) =>
   `${SEARCH_PATH}?${new URLSearchParams(params)}`
+// 검색창에서 엔터를 치면 오는 키워드 검색 결과. 위 /search는 카테고리 둘러보기다.
+export const SEARCH_RESULTS_PATH = '/search/results'
+export const searchResultsPath = (keyword: string) =>
+  `${SEARCH_RESULTS_PATH}?${new URLSearchParams({ q: keyword })}`
 
 export const MYPAGE_TABS = [
   'preorder-check',

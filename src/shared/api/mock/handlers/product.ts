@@ -108,6 +108,27 @@ function detailFromCard(productId: string): ProductDetail | undefined {
   return { ...template, productId, name, saleMode }
 }
 
+// 키워드 검색용 카드 목업 요약. 메인의 베스트·추천 카드는 이름이 겹쳐(NOVA MacBook Neo 1 …)
+// 이름이 같으면 처음 것만 남긴다. 썸네일·가격은 카드 값을 쓴다.
+const cardSummaries: ProductSummary[] = [
+  ...new Map(allProductCards.map((card) => [card.name, card])).values(),
+].flatMap((card) => {
+  const detail = detailFromCard(card.productId)
+  if (!detail) return []
+  const extraPrices = card.options.map((option) => option.extraPrice)
+  return [
+    {
+      ...toSummary(detail),
+      brand: card.brand ?? 'NOVA',
+      thumbnailUrl: card.colors[0]?.imageUrls[0] ?? null,
+      priceRange: {
+        min: card.basePrice,
+        max: card.basePrice + Math.max(0, ...extraPrices),
+      },
+    },
+  ]
+})
+
 export const productHandlers: RequestHandler[] = [
   http.get(url('/api/v1/categories'), () => ok({ items: categories })),
 
@@ -207,6 +228,17 @@ export const productHandlers: RequestHandler[] = [
         return true
       })
       .map(toSummary)
+
+    // ponytail: 카드 목업은 카테고리가 없어 키워드 검색에만 섞는다 — 상세 목업을 상품마다 만들면 제거.
+    if (keyword && !allowedCategories) {
+      matched.push(
+        ...cardSummaries.filter(
+          (card) =>
+            `${card.name} ${card.brand}`.toLowerCase().includes(keyword) &&
+            (!brand || card.brand.toLowerCase() === brand),
+        ),
+      )
+    }
 
     const comparator = comparators[sort]
     if (comparator) matched.sort(comparator)

@@ -27,7 +27,7 @@ import { PreorderDetailPage } from '@pages/preorder-detail/PreorderDetailPage'
 import { ProductDetailPage } from '@pages/product-detail/ProductDetailPage'
 import { ResultPage } from '@pages/result/ResultPage'
 import { ReviewsPage } from '@pages/reviews/ReviewsPage'
-import { SearchPage } from '@pages/search/SearchPage'
+import { SearchResultsPage } from '@pages/search-results/SearchResultsPage'
 import { SignupPage } from '@pages/signup/SignupPage'
 import {
   ADMIN_CONSISTENCY_CHECK_PATH,
@@ -52,6 +52,7 @@ import {
   RESULT_PATH,
   REVIEWS_PATH,
   SEARCH_PATH,
+  SEARCH_RESULTS_PATH,
   SIGNUP_PATH,
 } from '@shared/config/routes'
 
@@ -75,7 +76,9 @@ export const router = createBrowserRouter([
             element: <ProductDetailPage />,
           },
           { path: REVIEWS_PATH, element: <ReviewsPage /> },
-          { path: SEARCH_PATH, element: <SearchPage /> },
+          // 카테고리 둘러보기(/search)와 키워드 검색(/search/results)은 같은 검색 화면이다.
+          { path: SEARCH_PATH, element: <SearchResultsPage /> },
+          { path: SEARCH_RESULTS_PATH, element: <SearchResultsPage /> },
           { path: SIGNUP_PATH, element: <SignupPage /> },
           {
             path: KAKAO_CALLBACK_PATH,

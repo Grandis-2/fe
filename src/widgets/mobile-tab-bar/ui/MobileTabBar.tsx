@@ -16,12 +16,13 @@ import {
   MYPAGE_PATH,
   mypagePath,
   PREORDER_PATH,
+  SEARCH_PATH,
 } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { useModalStore } from '@shared/model/modalStore'
 import { BottomSheet } from '@shared/ui'
 import { MobileCategoryNav } from '@widgets/category-nav'
-import { SearchOverlay } from '@widgets/search-overlay'
+import { SearchOverlay } from '@widgets/search'
 
 import * as styles from './MobileTabBar.css'
 
@@ -101,6 +102,12 @@ export function MobileTabBar() {
           type="button"
           className={styles.tab}
           aria-haspopup="dialog"
+          // 카테고리 둘러보기·검색 결과(/search…) 화면에선 검색 탭이 켜져 있다.
+          aria-current={
+            !isCategoryOpen && pathname.startsWith(SEARCH_PATH)
+              ? 'page'
+              : undefined
+          }
           onClick={() => {
             setIsCategoryOpen(false)
             setIsSearchOpen(true)

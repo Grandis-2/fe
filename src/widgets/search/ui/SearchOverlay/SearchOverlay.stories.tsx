@@ -30,7 +30,7 @@ const withCache = (keywords: Record<string, typeof products>) => {
   queryClient.setQueryData(['products', 'cards', 'best'], bestProductCards)
   for (const [keyword, items] of Object.entries(keywords)) {
     queryClient.setQueryData(
-      ['products', 'keyword', keyword],
+      ['products', 'keyword', keyword, {}],
       keywordPage(items),
     )
   }

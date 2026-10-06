@@ -1,10 +1,10 @@
 import { ChevronRight } from 'lucide-react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 
+import { brandMenus } from '@entities/product'
 import { SEARCH_PATH, searchPath } from '@shared/config/routes'
 
 import {
-  brandMenus,
   categoryThumbnails,
   links,
   linkPaths,

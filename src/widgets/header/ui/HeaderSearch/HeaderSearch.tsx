@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { Search } from 'lucide-react'
 
-import { SearchOverlay } from '@widgets/search-overlay'
+import { SearchOverlay } from '@widgets/search'
 
 import * as headerStyles from '../Header.css'
 
