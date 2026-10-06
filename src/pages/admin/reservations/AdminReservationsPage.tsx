@@ -1,29 +1,29 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { RefreshCw } from 'lucide-react'
 
-import { getAdminProducts, type AdminProduct } from '@entities/admin-product'
+import { useAdminProducts } from '@entities/admin-product'
 import {
   countByStage,
   failureLabelOf,
-  getAdminMembers,
-  getAdminReservations,
   isReprocessable,
   paymentDueLabel,
   paymentStatusColor,
   paymentStatusLabel,
   paymentStatusLabels,
-  reprocessAdminReservation,
   reservationNo,
   reservationStageLabel,
   reservationStages,
   reservationStatusColor,
   reservationStatusLabel,
   reservationStatusLabels,
-  type AdminMemberModel,
+  useAdminMembers,
+  useAdminReservations,
+  useReprocessReservation,
   type AdminReservation,
   type AdminReservationStatus,
 } from '@entities/admin-reservation'
+import { getErrorMessage } from '@shared/api/client'
 import { useModalStore } from '@shared/model/modalStore'
 import {
   Button,
@@ -40,7 +40,6 @@ import type { TableColumn } from '@shared/ui'
 import * as styles from './AdminReservationsPage.css'
 
 const ALL_PRODUCTS = '전체 상품'
-const REFRESH_INTERVAL_MS = 10_000
 
 const statusFilters = [
   { value: 'all', label: '전체' },
@@ -69,22 +68,9 @@ export function AdminReservationsPage() {
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const [productId, setProductId] = useState<string>()
 
-  const [products, setProducts] = useState<AdminProduct[]>([])
-  const [members, setMembers] = useState<AdminMemberModel[]>([])
-  // 아직 한 번도 못 받았으면 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
-  const [reservations, setReservations] = useState<AdminReservation[]>()
-  const [refreshedAt, setRefreshedAt] = useState<Date>()
-  const [error, setError] = useState<string>()
-
+  const { data: products = [] } = useAdminProducts({ size: 100 })
   // 회원 이름은 예약 응답에 없어서 따로 받아 memberId ↔ 이름을 이어준다.
-  useEffect(() => {
-    void Promise.all([getAdminProducts({ size: 100 }), getAdminMembers()])
-      .then(([paged, memberList]) => {
-        setProducts(paged.items)
-        setMembers(memberList.items)
-      })
-      .catch((cause: Error) => setError(cause.message))
-  }, [])
+  const { data: members = [] } = useAdminMembers()
 
   const selectedProductName = products.find(
     (product) => product.productId === productId,
@@ -97,22 +83,16 @@ export function AdminReservationsPage() {
   // 서버에서 거르지 않고 상품 기준으로만 받아, 탭은 아래에서 화면이 거른다.
   // ponytail: 결제 상태별 건수를 주는 집계 API가 없어서 목록(최대 100건)으로 센다.
   // 100건을 넘으면 카드가 덜 세진다 — 집계 API가 생기면 카드는 그쪽으로 옮긴다.
-  const load = useCallback(() => {
-    getAdminReservations({ productId, size: 100 })
-      .then((paged) => {
-        setReservations(paged.items)
-        setRefreshedAt(new Date())
-        setError(undefined)
-      })
-      .catch((cause: Error) => setError(cause.message))
-  }, [productId])
+  const {
+    // 아직 한 번도 못 받았으면 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
+    data: reservations,
+    isError,
+    error,
+    dataUpdatedAt,
+    refetch,
+  } = useAdminReservations({ productId, size: 100 })
 
-  // 접수는 계속 들어오므로 주기적으로 다시 받는다.
-  useEffect(() => {
-    load()
-    const timer = setInterval(load, REFRESH_INTERVAL_MS)
-    return () => clearInterval(timer)
-  }, [load])
+  const reprocess = useReprocessReservation()
 
   const memberName = (memberId: string) =>
     members.find((member) => member.memberId === memberId)?.name ?? memberId
@@ -127,9 +107,7 @@ export function AdminReservationsPage() {
         onCancel={closeModal}
         onConfirm={() => {
           closeModal()
-          void reprocessAdminReservation(reservation.reservationId)
-            .then(load)
-            .catch((cause: Error) => setError(cause.message))
+          reprocess.mutate(reservation.reservationId)
         }}
       />,
     )
@@ -283,9 +261,14 @@ export function AdminReservationsPage() {
       </div>
 
       <div className={styles.refreshRow}>
-        <button type="button" className={styles.refreshButton} onClick={load}>
+        <button
+          type="button"
+          className={styles.refreshButton}
+          onClick={() => void refetch()}
+        >
           <RefreshCw className={styles.refreshIcon} aria-hidden="true" />
-          마지막 갱신 {refreshedAt ? timeFormatter.format(refreshedAt) : '—'}
+          마지막 갱신{' '}
+          {dataUpdatedAt ? timeFormatter.format(dataUpdatedAt) : '—'}
         </button>
         <span>10초마다 자동 갱신</span>
       </div>
@@ -331,7 +314,11 @@ export function AdminReservationsPage() {
         rows={visibleReservations}
         rowKey={(reservation) => reservation.reservationId}
         pageSize={10}
-        emptyMessage={error ?? '조건에 맞는 예약이 없습니다.'}
+        emptyMessage={
+          isError
+            ? getErrorMessage(error, '예약을 불러오지 못했습니다.')
+            : '조건에 맞는 예약이 없습니다.'
+        }
       />
     </div>
   )

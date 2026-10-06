@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
 import {
-  getAdminProducts,
   isPreorder,
   productTypeLabel,
   productTypeLabels,
   saleStatusColor,
   saleStatusLabel,
   saleStatusLabels,
+  useAdminProducts,
   type AdminProduct,
   type AdminSaleStatus,
 } from '@entities/admin-product'
+import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCT_NEW_PATH, adminProductPath } from '@shared/config/routes'
 import { Button, Dropdown, Input, SegmentedTabs, Table, Tag } from '@shared/ui'
 import type { TableColumn, TagProps } from '@shared/ui'
@@ -57,36 +58,20 @@ export function AdminProductsPage() {
   const [sortOpen, setSortOpen] = useState(false)
   const [sort, setSort] = useState<string>()
 
-  const [products, setProducts] = useState<AdminProduct[]>([])
-  const [error, setError] = useState<string>()
-
   // 검색어와 판매 상태는 서버가 걸러준다.
   const saleStatus = status ? saleStatusByLabel[status] : undefined
   const trimmedKeyword = keyword.trim()
 
-  useEffect(() => {
-    let cancelled = false
-
-    getAdminProducts({
-      saleStatus,
-      q: trimmedKeyword || undefined,
-      // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
-      size: 100,
-    })
-      .then((paged) => {
-        if (!cancelled) {
-          setProducts(paged.items)
-          setError(undefined)
-        }
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [saleStatus, trimmedKeyword])
+  const {
+    data: products = [],
+    isError,
+    error,
+  } = useAdminProducts({
+    saleStatus,
+    q: trimmedKeyword || undefined,
+    // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
+    size: 100,
+  })
 
   const openDetail = (product: AdminProduct) =>
     navigate(adminProductPath(product.productId))
@@ -245,7 +230,11 @@ export function AdminProductsPage() {
             `${product.name} ${productTypeLabel(product)} 상세 보기`,
           onClick: openDetail,
         }}
-        emptyMessage={error ?? '조건에 맞는 상품이 없습니다.'}
+        emptyMessage={
+          isError
+            ? getErrorMessage(error, '상품을 불러오지 못했습니다.')
+            : '조건에 맞는 상품이 없습니다.'
+        }
       />
     </div>
   )

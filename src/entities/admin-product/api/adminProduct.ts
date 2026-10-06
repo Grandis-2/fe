@@ -22,8 +22,13 @@ const toQuery = (params: AdminProductListParams) => {
 }
 
 /** 전시 상태와 무관하게 상품 목록을 조회한다 */
-export const getAdminProducts = (params: AdminProductListParams = {}) =>
-  apiClient.request<Paged<AdminProductSummary>>(`${BASE}${toQuery(params)}`)
+export const getAdminProducts = (
+  params: AdminProductListParams = {},
+  signal?: AbortSignal,
+) =>
+  apiClient.request<Paged<AdminProductSummary>>(`${BASE}${toQuery(params)}`, {
+    signal,
+  })
 
 /** 전시 상태와 무관하게 상품 상세를 조회한다 */
 export const getAdminProduct = (productId: string, signal?: AbortSignal) =>

@@ -10,6 +10,7 @@ export {
   useCreateAdminProduct,
   useUpdateAdminProduct,
 } from './api/useAdminProduct'
+export { useAdminProducts } from './api/useAdminProducts'
 export { putProductOpenAt } from './api/adminDispatch'
 export {
   useDispatchWindow,

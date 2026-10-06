@@ -5,6 +5,11 @@ export {
   reprocessAdminReservation,
 } from './api/adminReservation'
 export {
+  useAdminMembers,
+  useAdminReservations,
+  useReprocessReservation,
+} from './api/useAdminReservations'
+export {
   countByStage,
   failureCodeLabel,
   failureLabelOf,

@@ -19,12 +19,18 @@ const toQuery = (params: AdminReservationListParams) => {
   return serialized ? `?${serialized}` : ''
 }
 
-export const getAdminReservations = (params: AdminReservationListParams = {}) =>
-  apiClient.request<Paged<ReservationSummary>>(`${BASE}${toQuery(params)}`)
+export const getAdminReservations = (
+  params: AdminReservationListParams = {},
+  signal?: AbortSignal,
+) =>
+  apiClient.request<Paged<ReservationSummary>>(`${BASE}${toQuery(params)}`, {
+    signal,
+  })
 
-export const getAdminStats = (runId?: string) =>
+export const getAdminStats = (runId?: string, signal?: AbortSignal) =>
   apiClient.request<AdminStatsResponse>(
     `/api/v1/admin/stats${runId ? `?runId=${runId}` : ''}`,
+    { signal },
   )
 
 // ponytail: 재처리 엔드포인트는 명세에 없다(shared/api/mock/handlers/
@@ -35,7 +41,8 @@ export const reprocessAdminReservation = (reservationId: string) =>
     method: 'POST',
   })
 
-export const getAdminMembers = (keyword?: string) =>
+export const getAdminMembers = (keyword?: string, signal?: AbortSignal) =>
   apiClient.request<AdminMemberListResponse>(
     `/api/v1/admin/members${keyword ? `?q=${encodeURIComponent(keyword)}` : ''}`,
+    { signal },
   )
