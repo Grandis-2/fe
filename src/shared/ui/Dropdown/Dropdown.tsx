@@ -34,6 +34,12 @@ export type DropdownProps<TValue> = {
   className?: string
 }
 
+/**
+ * 열림 상태를 두 가지로 쓸 수 있다.
+ * - `open`을 안 주면 컴포넌트가 직접 들고 여닫는다(바깥 클릭·Esc 포함).
+ * - `open`을 주면 그 상태는 호출부 것이다. 닫아야 할 때 `onToggle`로 알리기만 하고
+ *   여기서 바꾸지 않는다 — 양쪽이 같이 바꾸면 두 번 닫힌다.
+ */
 export function Dropdown<TValue>({
   label,
   options,

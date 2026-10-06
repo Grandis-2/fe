@@ -28,8 +28,10 @@ export const useAdminReservations = (params: AdminReservationListParams = {}) =>
     refetchInterval: pollingInterval(POLL_INTERVAL_MS),
   })
 
-// 회원 이름은 예약 응답에 없어서 따로 받아 memberId ↔ 이름을 이어준다.
-// 이름은 예약만큼 자주 바뀌지 않아 폴링하지 않는다.
+/**
+ * 회원 이름은 예약 응답에 없어서 따로 받아 memberId ↔ 이름을 이어준다.
+ * 이름은 예약만큼 자주 바뀌지 않아 폴링하지 않는다.
+ */
 export const useAdminMembers = () =>
   useQuery({
     queryKey: ['admin', 'members'] as const,
