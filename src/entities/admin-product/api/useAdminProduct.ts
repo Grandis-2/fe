@@ -1,20 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
+import type { AdminProductDetail } from '@shared/api/types'
 
 import { toStockRequests, toUpsertRequest } from '../model/form'
 
 import {
   createAdminProduct,
   getAdminProduct,
+  hideAdminProduct,
+  publishAdminProduct,
   updateAdminProduct,
 } from './adminProduct'
 import { getAdminProductStock, putAdminProductStock } from './adminStock'
 
 import type { AdminProductFormValue } from '../model/form'
 
+const ADMIN_PRODUCTS_KEY = ['admin', 'products'] as const
 const adminProductKey = (productId: string) =>
-  ['admin', 'products', productId] as const
+  [...ADMIN_PRODUCTS_KEY, productId] as const
 const adminProductStockKey = (productId: string) =>
   ['admin', 'products', productId, 'stock'] as const
 
@@ -83,3 +87,31 @@ export const useUpdateAdminProduct = (productId: string) => {
     },
   })
 }
+
+/**
+ * 전시 상태를 바꾼다(게시 ↔ 숨김). 상세 캐시는 응답으로 바로 갱신하고, 목록은
+ * 무효화해 다시 받는다 — 목록 행에도 전시 상태가 보여서 같이 바뀌어야 한다.
+ */
+const useDisplayStatusMutation = <TVariables>(
+  mutationFn: (variables: TVariables) => Promise<AdminProductDetail>,
+) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(adminProductKey(updated.productId), updated)
+      return queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY })
+    },
+  })
+}
+
+export const usePublishAdminProduct = () =>
+  useDisplayStatusMutation((productId: string) =>
+    publishAdminProduct(productId),
+  )
+
+export const useHideAdminProduct = () =>
+  useDisplayStatusMutation(
+    ({ productId, reason }: { productId: string; reason: string }) =>
+      hideAdminProduct(productId, { reason }),
+  )

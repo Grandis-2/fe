@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import {
+  AdminProductDisplayTag,
   isPreorder,
   productTypeLabel,
   productTypeLabels,
@@ -79,8 +80,12 @@ export function AdminProductsPage() {
     size: 100,
   })
 
+  // 행 클릭·'관리'는 상세 보기라 기본 탭으로, '수정' 버튼은 이름 그대로 수정 탭으로 보낸다.
   const openDetail = (product: AdminProduct) =>
     navigate(adminProductPath(product.productId))
+
+  const openEdit = (product: AdminProduct) =>
+    navigate(adminProductPath(product.productId, 'edit'))
 
   // 유형과 정렬은 목록 응답에 해당 파라미터가 없어 화면에서 처리한다.
   const visibleProducts = products
@@ -142,7 +147,11 @@ export function AdminProductsPage() {
           size="small"
           variant="outline"
           color="cancel"
-          onClick={() => openDetail(product)}
+          // 행 클릭(onRowClick)이 같이 돌면 기본 탭으로 덮어쓴다 — 여기서 끊는다.
+          onClick={(event) => {
+            event.stopPropagation()
+            openEdit(product)
+          }}
         >
           수정
         </Button>
@@ -162,6 +171,16 @@ export function AdminProductsPage() {
         >
           {saleStatusLabel[product.saleStatus]}
         </Tag>
+      ),
+    },
+    {
+      key: 'display',
+      header: '전시',
+      align: 'center',
+      // 상태만 보여준다 — 바꾸는 건 상세 화면에서 한다. 되돌리기 어려운 조치라
+      // 목록의 다른 동작 버튼('수정') 옆에 나란히 두면 잘못 누르기 쉽다.
+      render: (product) => (
+        <AdminProductDisplayTag status={product.displayStatus} />
       ),
     },
   ]

@@ -34,6 +34,35 @@ export const displayStatusLabel: Record<DisplayStatus, string> = {
   HIDDEN: '숨김',
 }
 
+/**
+ * 전시 상태는 브랜드 색으로 말하고, 노출 여부는 채움으로 가른다.
+ * 판매 상태 열(초록·파랑·회색)과 나란히 서는 자리라, 전시까지 의미색을 쓰면
+ * 두 열이 한 덩어리로 읽힌다.
+ *
+ * - 게시중: secondary + subtle(채움) — 지금 구매자에게 보이는 중
+ * - 숨김:   secondary + outline(테두리) — 냈다가 내림
+ * - 초안:   gray + outline — 아직 한 번도 낸 적 없어 브랜드 색을 줄 자리가 아니다
+ */
+export const displayStatusColor: Record<DisplayStatus, 'gray' | 'secondary'> = {
+  DRAFT: 'gray',
+  PUBLISHED: 'secondary',
+  HIDDEN: 'secondary',
+}
+
+export const displayStatusVariant: Record<DisplayStatus, 'subtle' | 'outline'> =
+  {
+    DRAFT: 'outline',
+    PUBLISHED: 'subtle',
+    HIDDEN: 'outline',
+  }
+
+// 표의 전시 열 너비를 가장 긴 문구에 맞출 때 쓴다(Tag의 widthOptions).
+export const displayStatusLabels = Object.values(displayStatusLabel)
+
+/** 숨길 때 사유는 서버가 5~500자를 요구한다 */
+export const HIDE_REASON_MIN_LENGTH = 5
+export const HIDE_REASON_MAX_LENGTH = 500
+
 /** 사전 예약 상품인지 — 별도 필드가 없어 badges로 판단한다 */
 export const isPreorder = (product: { badges: ProductBadge[] }) =>
   product.badges.includes('PREORDER')

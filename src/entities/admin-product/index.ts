@@ -5,6 +5,8 @@ export {
   useAdminProduct,
   useAdminProductStock,
   useCreateAdminProduct,
+  useHideAdminProduct,
+  usePublishAdminProduct,
   useUpdateAdminProduct,
 } from './api/useAdminProduct'
 export { useAdminProducts } from './api/useAdminProducts'
@@ -24,6 +26,8 @@ export {
 } from './model/dispatch'
 export type { DispatchWaveDraft, DispatchWaveModel } from './model/dispatch'
 export {
+  HIDE_REASON_MAX_LENGTH,
+  HIDE_REASON_MIN_LENGTH,
   isPreorder,
   productTypeLabel,
   productTypeLabels,
@@ -32,6 +36,7 @@ export {
   saleStatusLabels,
 } from './model/types'
 export type {
+  AdminDisplayStatus,
   AdminProduct,
   AdminProductDetailModel,
   AdminSaleStatus,
@@ -51,5 +56,7 @@ export type {
   ProductOptionValue,
   ProductVariant,
 } from './model/form'
+export { AdminProductDisplayTag } from './ui/AdminProductDisplayTag'
+export type { AdminProductDisplayTagProps } from './ui/AdminProductDisplayTag'
 export { getAdminProductStocks } from './model/stock'
 export type { AdminProductStock } from './model/stock'

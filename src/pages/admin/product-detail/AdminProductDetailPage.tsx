@@ -9,22 +9,25 @@ import {
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
-import { SegmentedTabs, Tag, Breadcrumb } from '@shared/ui'
+import type { AdminProductTab } from '@shared/config/routes'
+import { Breadcrumb, InlineAlert, SegmentedTabs, Tag } from '@shared/ui'
 import { AdminDispatchWindows } from '@widgets/admin/dispatch-windows'
 import { AdminProductEditForm } from '@widgets/admin/product-form'
 import { AdminProductStockTable } from '@widgets/admin/product-stock'
+import {
+  AdminProductVisibility,
+  useProductVisibility,
+} from '@widgets/admin/product-visibility'
 
 import * as styles from './AdminProductDetailPage.css'
 
-const tabs = [
+const tabs: { value: AdminProductTab; label: string }[] = [
   { value: 'edit', label: '수정' },
   { value: 'stock', label: '재고 조회' },
   { value: 'shipping', label: '배송 구간 설정' },
-] as const
+]
 
-type TabValue = (typeof tabs)[number]['value']
-
-const DEFAULT_TAB: TabValue = 'stock'
+const DEFAULT_TAB: AdminProductTab = 'stock'
 
 // 배송 차수는 사전 예약에만 있다 — 일반 판매는 순번도 차수도 없다.
 const tabsOf = (product: AdminProductDetailModel) =>
@@ -37,6 +40,7 @@ const tabsOf = (product: AdminProductDetailModel) =>
  */
 export function AdminProductDetailPage() {
   const navigate = useNavigate()
+  const visibility = useProductVisibility()
   const { productId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const product = useAdminProduct(productId)
@@ -62,14 +66,14 @@ export function AdminProductDetailPage() {
     visibleTabs.find((item) => item.value === searchParams.get('tab'))?.value ??
     DEFAULT_TAB
 
-  const setTab = (next: TabValue) => {
+  const setTab = (next: AdminProductTab) => {
     const params = new URLSearchParams(searchParams)
     params.set('tab', next)
     // 탭 전환마다 히스토리가 쌓이면 뒤로 가기로 목록에 못 돌아간다.
     setSearchParams(params, { replace: true })
   }
 
-  const { name, saleStatus } = product.data
+  const { name, saleStatus, displayStatus } = product.data
 
   return (
     <div className={styles.root}>
@@ -90,7 +94,22 @@ export function AdminProductDetailPage() {
         >
           {saleStatusLabel[saleStatus]}
         </Tag>
+        {/* 전시 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 —
+            어느 탭에 있든 같은 자리에서 누를 수 있고, 저장 버튼과 섞이지 않는다. */}
+        <AdminProductVisibility
+          className={styles.visibility}
+          product={{ productId, name, displayStatus }}
+          pending={visibility.isPending}
+          onPublish={visibility.confirmPublish}
+          onHide={visibility.confirmHide}
+        />
       </div>
+
+      {visibility.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(visibility.error, '전시 상태를 바꾸지 못했습니다.')}
+        </InlineAlert>
+      )}
 
       <SegmentedTabs items={visibleTabs} value={tab} onChange={setTab} />
 
