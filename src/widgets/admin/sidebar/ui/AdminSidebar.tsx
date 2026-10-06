@@ -24,12 +24,12 @@ const navGroups = [
       { path: ADMIN_PRODUCTS_PATH, label: '상품 관리' },
       { path: ADMIN_PROMOTIONS_PATH, label: '사전 예약 관리' },
       { path: ADMIN_RESERVATIONS_PATH, label: '예약 현황' },
+      { path: ADMIN_CONSISTENCY_CHECK_PATH, label: '정합성 대조' },
     ],
   },
   {
     label: '개발자 기능',
     items: [
-      { path: ADMIN_CONSISTENCY_CHECK_PATH, label: '정합성 대조' },
       { path: ADMIN_LOAD_TEST_PATH, label: '부하 검증' },
       { path: ADMIN_NOTIFICATIONS_PATH, label: '관리자 알림' },
       { path: ADMIN_MOCK_SETTINGS_PATH, label: 'Mock 설정' },

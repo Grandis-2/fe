@@ -57,8 +57,8 @@ FSD 위에 얹는 규칙이다 — `domain/`, `data/`, `usecases/` 같은 별도
 - API 실패는 `apiClient`에서 전부 `ApiRequestError`(`error.code`/`error.message`/`status`)로 정규화된다 — 타임아웃·네트워크는 `status: 0`, JSON이 아닌 응답은 `INVALID_RESPONSE`, 취소는 실패가 아니라 그대로 던진다. 호출부에서 axios 에러를 따로 다루지 않는다.
 - `catch`로 받은 값은 `unknown`이다. `.catch((cause: Error) => ...)`처럼 타입을 단언하지 말고, 화면 문구는 `getErrorMessage(caught, '기본 문구')`로 꺼낸다. 분기가 필요하면 `instanceof ApiRequestError`로 좁힌 뒤 `error.code`/`status`를 본다.
 - 할 일이 있는 곳에서만 잡는다 — 문구 표시, 롤백, 다른 화면으로 이동. 할 일이 없으면 잡지 말고 위로 던지게 두고, `console.log`만 하고 삼키지 않는다.
-- 서버 데이터 조회는 `useEffect` + `.then/.catch` + `useState`로 직접 하지 않고 TanStack Query 훅을 쓴다 — 취소(`signal`), 재시도(`queryPolicy`, 4xx는 재시도 안 함), `isError`가 따라온다. 관리자 페이지(`pages/admin/*`)는 아직 이전 방식이다.
-- mutation(변경)은 자동 재시도하지 않는다(같은 요청이 두 번 반영될 수 있음). 진행 중엔 `isPending`으로 버튼을 막아 중복 제출을 막는다.
+- 서버 데이터 **조회**는 `useEffect` + `.then/.catch` + `useState`로 직접 하지 않고 TanStack Query 훅을 쓴다 — 취소(`signal`), 재시도(`queryPolicy`, 4xx는 재시도 안 함), `isError`가 따라온다. 관리자 페이지도 이관을 마쳤다. 예외는 `PaymentCallbackPage` 하나다 — 결제 승인은 조회가 아니라 페이지 진입 시 한 번 보내는 명령이고, `signal`로 중간에 끊기면 돈은 빠졌는데 승인 결과를 모르게 된다.
+- mutation(변경)은 자동 재시도하지 않는다(같은 요청이 두 번 반영될 수 있음). 진행 중엔 `isPending`으로 버튼을 막아 중복 제출을 막는다. 화면 반영은 기본이 **서버 확인**(`onSuccess`에서 응답으로 캐시 갱신)이고, 틀려도 되돌리면 그만인 값(장바구니 수량·토글)만 낙관적(`onMutate`)으로 한다 — 기준은 `queryPolicy.ts` 아래쪽 주석에 적어 뒀다.
 - "0건"과 "조회 실패"를 구분한다 — 실패를 빈 배열로 대체하지 말고 `undefined`/`isError`로 남겨 실패 문구를 보여준다(`AdminReservationsPage`의 `reservations` 참고).
 - 실패 화면은 MSW 핸들러에서 `fail(status, { code, message })`(`@shared/api/mock/response`)로 재현해 확인한다 — 5xx(재시도 후 실패), 4xx(즉시 실패), 지연(타임아웃)을 각각 본다.
 

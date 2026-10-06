@@ -1,30 +1,23 @@
 import { apiClient } from '@shared/api/client'
+import { toQueryString } from '@shared/api/queryString'
 import type {
   AdminMemberListResponse,
   AdminReservationListParams,
-  AdminStatsResponse,
   Paged,
   ReservationSummary,
 } from '@shared/api/types'
 
 const BASE = '/api/v1/admin/reservations'
 
-const toQuery = (params: AdminReservationListParams) => {
-  const query = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === '') continue
-    query.set(key, String(value))
-  }
-  const serialized = query.toString()
-  return serialized ? `?${serialized}` : ''
-}
-
-export const getAdminReservations = (params: AdminReservationListParams = {}) =>
-  apiClient.request<Paged<ReservationSummary>>(`${BASE}${toQuery(params)}`)
-
-export const getAdminStats = (runId?: string) =>
-  apiClient.request<AdminStatsResponse>(
-    `/api/v1/admin/stats${runId ? `?runId=${runId}` : ''}`,
+export const getAdminReservations = (
+  params: AdminReservationListParams = {},
+  signal?: AbortSignal,
+) =>
+  apiClient.request<Paged<ReservationSummary>>(
+    `${BASE}${toQueryString(params)}`,
+    {
+      signal,
+    },
   )
 
 // ponytail: 재처리 엔드포인트는 명세에 없다(shared/api/mock/handlers/
@@ -35,7 +28,8 @@ export const reprocessAdminReservation = (reservationId: string) =>
     method: 'POST',
   })
 
-export const getAdminMembers = (keyword?: string) =>
+export const getAdminMembers = (keyword?: string, signal?: AbortSignal) =>
   apiClient.request<AdminMemberListResponse>(
     `/api/v1/admin/members${keyword ? `?q=${encodeURIComponent(keyword)}` : ''}`,
+    { signal },
   )

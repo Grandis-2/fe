@@ -1,21 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
 import {
-  getAdminProducts,
   isPreorder,
   productTypeLabel,
   productTypeLabels,
   saleStatusColor,
   saleStatusLabel,
   saleStatusLabels,
+  useAdminProducts,
   type AdminProduct,
   type AdminSaleStatus,
 } from '@entities/admin-product'
+import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCT_NEW_PATH, adminProductPath } from '@shared/config/routes'
 import { Button, Dropdown, Input, SegmentedTabs, Table, Tag } from '@shared/ui'
-import type { TableColumn, TagProps } from '@shared/ui'
+import type { DropdownOption, TableColumn, TagProps } from '@shared/ui'
 
 import * as styles from './AdminProductsPage.css'
 
@@ -35,13 +36,21 @@ const typeFilters = [
 
 type TypeFilter = (typeof typeFilters)[number]['value']
 
-// 드롭다운은 문자열만 다루므로 라벨 ↔ 서버 enum을 여기서 이어준다.
-const statusOptions = ['전체', ...Object.values(saleStatusLabel)]
-const saleStatusByLabel = Object.fromEntries(
-  Object.entries(saleStatusLabel).map(([status, label]) => [label, status]),
-) as Record<string, AdminSaleStatus>
+// 값이 undefined면 '전체' — 서버에 판매 상태를 안 보낸다.
+const statusOptions: DropdownOption<AdminSaleStatus | undefined>[] = [
+  { label: '전체', value: undefined },
+  ...Object.entries(saleStatusLabel).map(([value, label]) => ({
+    label,
+    value: value as AdminSaleStatus,
+  })),
+]
 
-const sortOptions = ['오픈 시각순', '상품명순']
+type ProductSort = 'openAt' | 'name'
+
+const sortOptions: DropdownOption<ProductSort>[] = [
+  { label: '오픈 시각순', value: 'openAt' },
+  { label: '상품명순', value: 'name' },
+]
 
 const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
   dateStyle: 'long',
@@ -52,41 +61,23 @@ export function AdminProductsPage() {
   const navigate = useNavigate()
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [keyword, setKeyword] = useState('')
-  const [statusOpen, setStatusOpen] = useState(false)
-  const [status, setStatus] = useState<string>()
-  const [sortOpen, setSortOpen] = useState(false)
-  const [sort, setSort] = useState<string>()
-
-  const [products, setProducts] = useState<AdminProduct[]>([])
-  const [error, setError] = useState<string>()
+  const [saleStatus, setSaleStatus] = useState<AdminSaleStatus>()
+  const [sort, setSort] = useState<ProductSort>('openAt')
 
   // 검색어와 판매 상태는 서버가 걸러준다.
-  const saleStatus = status ? saleStatusByLabel[status] : undefined
   const trimmedKeyword = keyword.trim()
 
-  useEffect(() => {
-    let cancelled = false
-
-    getAdminProducts({
-      saleStatus,
-      q: trimmedKeyword || undefined,
-      // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
-      size: 100,
-    })
-      .then((paged) => {
-        if (!cancelled) {
-          setProducts(paged.items)
-          setError(undefined)
-        }
-      })
-      .catch((cause: Error) => {
-        if (!cancelled) setError(cause.message)
-      })
-
-    return () => {
-      cancelled = true
-    }
-  }, [saleStatus, trimmedKeyword])
+  const {
+    data: products = [],
+    isPending,
+    isError,
+    error,
+  } = useAdminProducts({
+    saleStatus,
+    q: trimmedKeyword || undefined,
+    // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
+    size: 100,
+  })
 
   const openDetail = (product: AdminProduct) =>
     navigate(adminProductPath(product.productId))
@@ -99,7 +90,7 @@ export function AdminProductsPage() {
         isPreorder(product) === (typeFilter === 'preorder'),
     )
     .toSorted((a, b) =>
-      sort === '상품명순'
+      sort === 'name'
         ? a.name.localeCompare(b.name)
         : a.openAt.localeCompare(b.openAt),
     )
@@ -209,26 +200,16 @@ export function AdminProductsPage() {
             size="medium"
             width="120px"
             options={statusOptions}
-            open={statusOpen}
-            selectedOption={status}
-            onToggle={() => setStatusOpen((prev) => !prev)}
-            onSelect={(option) => {
-              setStatus(option === '전체' ? undefined : option)
-              setStatusOpen(false)
-            }}
+            value={saleStatus}
+            onSelect={setSaleStatus}
           />
           <Dropdown
             label="오픈 시각순"
             size="medium"
             width="140px"
             options={sortOptions}
-            open={sortOpen}
-            selectedOption={sort}
-            onToggle={() => setSortOpen((prev) => !prev)}
-            onSelect={(option) => {
-              setSort(option)
-              setSortOpen(false)
-            }}
+            value={sort}
+            onSelect={setSort}
           />
         </div>
       </div>
@@ -245,7 +226,13 @@ export function AdminProductsPage() {
             `${product.name} ${productTypeLabel(product)} 상세 보기`,
           onClick: openDetail,
         }}
-        emptyMessage={error ?? '조건에 맞는 상품이 없습니다.'}
+        emptyMessage={
+          isError
+            ? getErrorMessage(error, '상품을 불러오지 못했습니다.')
+            : isPending
+              ? '불러오는 중입니다.'
+              : '조건에 맞는 상품이 없습니다.'
+        }
       />
     </div>
   )

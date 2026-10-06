@@ -24,7 +24,3 @@ export type DispatchWindowPutRequest = Pick<
   DispatchWindow,
   'waves' | 'undeterminedFromSeq'
 >
-
-export type ProductOpenAtRequest = {
-  openAt: string
-}

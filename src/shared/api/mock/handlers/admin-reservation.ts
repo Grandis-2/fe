@@ -8,14 +8,7 @@ import {
 import { fail, ok } from '../response'
 import { url } from '../url'
 
-import type {
-  AdminStatsResponse,
-  Paged,
-  ReservationDetail,
-  ReservationFailureCode,
-  ReservationStatus,
-  ReservationSummary,
-} from '../../types'
+import type { Paged, ReservationDetail, ReservationSummary } from '../../types'
 import type { RequestHandler } from 'msw'
 
 const notFound = () =>
@@ -57,99 +50,7 @@ function toSummary(detail: ReservationDetail, now: number): ReservationSummary {
   }
 }
 
-const hasPendingCleanup = (detail: ReservationDetail) =>
-  Object.values(detail.cleanup).some((state) => state !== 'NOT_REQUIRED')
-
-const countByStatus = (status: ReservationStatus) =>
-  reservationStore.filter((item) => item.status === status).length
-
-function buildStats(): AdminStatsResponse {
-  const now = Date.now()
-  const accepted = reservationStore.filter((item) => item.status === 'ACCEPTED')
-
-  const failedByReason: Partial<Record<ReservationFailureCode, number>> = {}
-  for (const item of reservationStore) {
-    if (!item.failure) continue
-    failedByReason[item.failure.code] =
-      (failedByReason[item.failure.code] ?? 0) + 1
-  }
-
-  const oldestAcceptedAgeSeconds = accepted.reduce((oldest, item) => {
-    const age = Math.floor((now - Date.parse(item.acceptedAt)) / 1000)
-    return Math.max(oldest, age)
-  }, 0)
-
-  const emptyKind = {
-    pendingCount: 0,
-    inProgressCount: 0,
-    retryingCount: 0,
-    deadCount: 0,
-  }
-
-  return {
-    asOf: new Date(now).toISOString(),
-    runId: null,
-    queryFailed: false,
-    accept: {
-      httpRequestCount: reservationStore.length + 120,
-      uniqueAcceptedCount: reservationStore.length,
-      idempotentReplayCount: 96,
-      rejectedByReason: { ACTIVE_RESERVATION_EXISTS: 20, SALE_NOT_OPEN: 4 },
-    },
-    registration: {
-      acceptedBacklogCount: accepted.length,
-      oldestAcceptedAgeSeconds,
-      overdueAcceptedCount: accepted.filter(
-        (item) => Date.parse(item.deadlineAt) < now,
-      ).length,
-      confirmedCount: countByStatus('CONFIRMED'),
-      failedByReason,
-    },
-    commands: {
-      byKind: {
-        // 기한을 넘긴 접수는 자동 재시도가 돌고 있는 중이고(retrying),
-        // 재시도가 소진된 건이 DLQ로 떨어져(dead) 관리자 재처리를 기다린다.
-        REGISTER: {
-          ...emptyKind,
-          inProgressCount: accepted.filter(
-            (item) => Date.parse(item.deadlineAt) >= now,
-          ).length,
-          retryingCount: accepted.filter(
-            (item) => Date.parse(item.deadlineAt) < now,
-          ).length,
-          deadCount: countByStatus('FAILED'),
-        },
-        CANCEL_COMPENSATION: emptyKind,
-        REFUND: emptyKind,
-        NOTIFY: emptyKind,
-      },
-      leaseReclaimCount: 1,
-      pendingCompensationCount:
-        reservationStore.filter(hasPendingCleanup).length,
-    },
-    reconciliation: {
-      lastSuccessfulRunAt: new Date(now - 5000).toISOString(),
-      lastRunStatus: 'COMPLETED',
-      lastTypeCounts: {
-        TYPE1_CONFIRMED_MISMATCH: 0,
-        TYPE2_GHOST: 0,
-        TYPE3_DUPLICATE: 0,
-        TYPE4_OVERDUE: 0,
-      },
-    },
-    convergence: {
-      acceptedBacklogZero: accepted.length === 0,
-      pendingCompensationZero: !reservationStore.some(hasPendingCleanup),
-      lastReconciliationClean: true,
-      notificationDeadZero: true,
-      allChecksPassed: false,
-    },
-  }
-}
-
 export const adminReservationHandlers: RequestHandler[] = [
-  http.get(url('/api/v1/admin/stats'), () => ok(buildStats())),
-
   http.get(url('/api/v1/admin/reservations'), ({ request }) => {
     const query = new URL(request.url).searchParams
     const now = Date.now()
