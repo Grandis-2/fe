@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react'
 
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -53,29 +59,34 @@ export function Dropdown<TValue>({
     else if (next !== open) onToggle?.()
   }
 
+  // setOpen은 매 렌더 새로 만들어진다 — Effect Event로 감싸야 이펙트가 [isOpen]에만
+  // 반응한다. 안 그러면 메뉴가 열려 있는 동안 리렌더마다 리스너를 떼었다 붙인다.
+  const handlePointerDown = useEffectEvent((event: PointerEvent) => {
+    if (rootRef.current?.contains(event.target as Node)) return
+    setOpen(false)
+  })
+  const handleEscape = useEffectEvent((event: globalThis.KeyboardEvent) => {
+    if (event.key !== 'Escape') return
+    setOpen(false)
+    // 닫고 나면 포커스가 사라진 메뉴에 남는다 — 트리거로 되돌린다.
+    triggerRef.current?.focus()
+  })
+
   // 열려 있는 동안만 문서를 듣는다. 메뉴 밖을 누르거나 Esc를 누르면 닫는다 —
   // 둘 다 없으면 메뉴를 열어둔 채 다른 곳을 눌러도 계속 떠 있다.
   useEffect(() => {
     if (!isOpen) return
 
-    const handlePointerDown = (event: PointerEvent) => {
-      if (rootRef.current?.contains(event.target as Node)) return
-      setOpen(false)
-    }
-    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setOpen(false)
-      // 닫고 나면 포커스가 사라진 메뉴에 남는다 — 트리거로 되돌린다.
-      triggerRef.current?.focus()
-    }
+    const onPointerDown = (event: PointerEvent) => handlePointerDown(event)
+    const onKeyDown = (event: globalThis.KeyboardEvent) => handleEscape(event)
 
-    document.addEventListener('pointerdown', handlePointerDown)
-    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
     return () => {
-      document.removeEventListener('pointerdown', handlePointerDown)
-      document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
     }
-  })
+  }, [isOpen])
 
   /**
    * 위/아래 키로 항목 사이를 옮긴다. 트리거와 항목을 다 감싸는 루트에서 받아야

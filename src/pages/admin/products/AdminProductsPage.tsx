@@ -69,6 +69,7 @@ export function AdminProductsPage() {
 
   const {
     data: products = [],
+    isPending,
     isError,
     error,
   } = useAdminProducts({
@@ -228,7 +229,9 @@ export function AdminProductsPage() {
         emptyMessage={
           isError
             ? getErrorMessage(error, '상품을 불러오지 못했습니다.')
-            : '조건에 맞는 상품이 없습니다.'
+            : isPending
+              ? '불러오는 중입니다.'
+              : '조건에 맞는 상품이 없습니다.'
         }
       />
     </div>

@@ -91,6 +91,7 @@ export function AdminReservationsPage() {
   const {
     // 아직 한 번도 못 받았으면 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
     data: reservations,
+    isPending,
     isError,
     error,
     dataUpdatedAt,
@@ -272,7 +273,8 @@ export function AdminReservationsPage() {
 
       <div className={styles.cards}>
         {cards.map(({ label, value }) => {
-          // 조회에 실패했으면 0건으로 보여주지 않는다 — 운영 판단이 정반대다.
+          // 셋을 구분해야 한다 — 0건, 아직 못 받음, 조회 실패. 실패를 0건으로 보여주면
+          // 운영 판단이 정반대가 되고, 로딩을 실패로 보여주면 멀쩡한데 놀라게 한다.
           const unknown = value === undefined
           return (
             <StatCard
@@ -280,7 +282,11 @@ export function AdminReservationsPage() {
               label={label}
               muted={unknown}
               value={
-                unknown ? '조회 실패' : `${value.toLocaleString('ko-KR')}건`
+                value !== undefined
+                  ? `${value.toLocaleString('ko-KR')}건`
+                  : isPending
+                    ? '불러오는 중'
+                    : '조회 실패'
               }
             />
           )
@@ -314,7 +320,9 @@ export function AdminReservationsPage() {
         emptyMessage={
           isError
             ? getErrorMessage(error, '예약을 불러오지 못했습니다.')
-            : '조건에 맞는 예약이 없습니다.'
+            : isPending
+              ? '불러오는 중입니다.'
+              : '조건에 맞는 예약이 없습니다.'
         }
       />
     </div>
