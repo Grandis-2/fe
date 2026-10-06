@@ -8,11 +8,7 @@ import { adminProductStore } from '../fixtures/admin-product'
 import { fail, ok } from '../response'
 import { url } from '../url'
 
-import type {
-  DispatchWindow,
-  DispatchWindowPutRequest,
-  ProductOpenAtRequest,
-} from '../../types'
+import type { DispatchWindow, DispatchWindowPutRequest } from '../../types'
 import type { RequestHandler } from 'msw'
 
 const notFound = () =>
@@ -107,31 +103,6 @@ export const adminDispatchHandlers: RequestHandler[] = [
       else dispatchWindowStore[index] = saved
 
       return ok(saved)
-    },
-  ),
-
-  http.put(
-    url('/api/v1/admin/products/:productId/open-at'),
-    async ({ request, params }) => {
-      const product = findProduct(String(params.productId))
-      if (!product) return notFound()
-      if (product.saleStatus === 'OPEN') return alreadyOpen()
-
-      const body = (await request.json()) as ProductOpenAtRequest
-      if (!body.openAt || Number.isNaN(new Date(body.openAt).getTime())) {
-        return fail(400, {
-          code: 'VALIDATION_FAILED',
-          message: '입력값을 확인해 주세요.',
-          retryable: false,
-          violations: [{ field: 'openAt', message: '올바른 일시가 아닙니다.' }],
-        })
-      }
-
-      product.openAt = body.openAt
-      product.sale = { ...product.sale, openAt: body.openAt }
-      product.updatedAt = new Date().toISOString()
-
-      return ok(product)
     },
   ),
 ]
