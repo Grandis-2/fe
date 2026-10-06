@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css'
+import { keyframes, style } from '@vanilla-extract/css'
 
 import {
   color,
@@ -11,6 +11,12 @@ import {
   TAB_BAR_OFFSET,
 } from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
+
+// 가로 스크롤 0 → 끝(320px - 화면 폭)에 맞춰 왼쪽으로 민다. 화면이 320px 이상이면
+// 가로 스크롤이 없어 타임라인이 비활성이고 아무 효과가 없다. 미지원 브라우저는 제자리에 있는다.
+const followScrollX = keyframes({
+  to: { transform: 'translateX(calc(100vw - 320px))' },
+})
 
 export const root = style({
   position: 'fixed',
@@ -25,6 +31,13 @@ export const root = style({
   pointerEvents: 'auto',
   // 좌우 16px 여백만 남기고 화면 폭을 채운다(디자인: width 100%) — 탭은 같은 폭으로 나눈다.
   boxSizing: 'border-box',
+  // fixed라 body의 min-width(320px, app/styles/index.css)를 안 따르고 화면 폭으로 줄어든다 —
+  // 320px 화면에서의 폭 아래로는 줄지 않게 막고, 페이지가 가로로 스크롤되면 같이 움직인다.
+  minWidth: `calc(320px - ${spacing[16]} * 2)`,
+  animationName: followScrollX,
+  animationTimingFunction: 'linear',
+  animationFillMode: 'both',
+  animationTimeline: 'scroll(root inline)',
   display: 'flex',
   alignItems: 'center',
   gap: spacing[2],
