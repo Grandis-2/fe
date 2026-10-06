@@ -39,7 +39,7 @@ function buildCards(
   }))
 }
 
-export const bestProductCards = buildCards('best', 4, 1290000)
+export const bestProductCards = buildCards('best', 10, 1290000)
 export const recommendedProductCards = buildCards('recommend', 8, 1690000)
 
 // 헤더 메가 메뉴(CategoryNav)의 카테고리 > 하위 카테고리와 이름을 맞춘다.
