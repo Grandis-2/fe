@@ -25,3 +25,11 @@ export const root = style({
 export const baseBackground = style({
   background: color.background.base,
 })
+
+export const darkBackground = style({
+  background: color.backgroundDark.base,
+})
+
+export const transparentBackground = style({
+  background: 'transparent',
+})

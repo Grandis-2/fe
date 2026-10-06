@@ -1,105 +1,88 @@
-import { Rocket } from 'lucide-react'
+import { useState } from 'react'
 
-import { typography } from '@shared/config/theme'
+import { Timer } from 'lucide-react'
 
 import * as styles from './QueueCard.css'
 
 export type QueueCardProps = {
-  headline: string
-  headlineAccent: string
-  productName: string
-  myOrderLabel?: string
   myOrderNumber: string
+  waitTime: string
   progressPercent: number
-  noticeText?: string
-  totalWaitingLabel?: string
   totalWaitingCount: string
+  // '나가기'를 한 번 더 확인한 뒤에만 호출된다.
+  onLeave: () => void
   className?: string
 }
 
 export function QueueCard({
-  headline,
-  headlineAccent,
-  productName,
-  myOrderLabel = '나의 대기 순서',
   myOrderNumber,
+  waitTime,
   progressPercent,
-  noticeText,
-  totalWaitingLabel = '전체 대기인원',
   totalWaitingCount,
+  onLeave,
   className,
 }: QueueCardProps) {
+  const [confirmingLeave, setConfirmingLeave] = useState(false)
   const clampedPercent = Math.max(0, Math.min(100, progressPercent))
 
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      <div className={styles.headline}>
+      <div className={styles.orderGroup}>
+        <span className={styles.label}>나의 대기 순서</span>
+        <div className={styles.orderRow}>
+          <span className={styles.orderNumber}>{myOrderNumber}</span>
+          <span className={styles.orderUnit}>번</span>
+        </div>
+        <span className={styles.label}>
+          예상 대기 시간 <span className={styles.strong}>{waitTime}</span>
+        </span>
+      </div>
+
+      <div className={styles.progressTrack}>
         <div
-          className={[typography.title.lgSemibold, styles.headlineText].join(
-            ' ',
-          )}
+          className={styles.progressFill}
+          style={{ width: `${clampedPercent}%` }}
+        />
+      </div>
+      <div className={styles.totalRow}>
+        전체 대기인원 <span className={styles.strong}>{totalWaitingCount}</span>
+        명
+      </div>
+
+      <div className={styles.notice}>
+        <Timer size={14} aria-hidden="true" className={styles.noticeIcon} />
+        모달창을 닫으면 5분 동안 순번이 유지됩니다.
+      </div>
+
+      {confirmingLeave ? (
+        <div className={styles.confirm}>
+          <div className={styles.confirmText}>나가면 현재 순번이 사라져요.</div>
+          <div className={styles.confirmActions}>
+            <button
+              type="button"
+              className={styles.stayButton}
+              onClick={() => setConfirmingLeave(false)}
+            >
+              계속 대기
+            </button>
+            <button
+              type="button"
+              className={styles.leaveConfirmButton}
+              onClick={onLeave}
+            >
+              나가기
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className={styles.leaveButton}
+          onClick={() => setConfirmingLeave(true)}
         >
-          {headline}
-          <br />
-          <span className={styles.headlineAccent}>{headlineAccent}</span>
-        </div>
-      </div>
-      <div
-        className={[typography.body.defaultMedium, styles.productName].join(
-          ' ',
-        )}
-      >
-        {productName}
-      </div>
-      <div className={styles.panel}>
-        <div className={styles.orderGroup}>
-          <div
-            className={[typography.body.caption, styles.orderLabel].join(' ')}
-          >
-            {myOrderLabel}
-          </div>
-          <div
-            className={[typography.title.xlSemibold, styles.orderNumber].join(
-              ' ',
-            )}
-          >
-            {myOrderNumber}
-          </div>
-        </div>
-        <div className={styles.progressGroup}>
-          <div className={styles.progressTrack}>
-            <div
-              className={styles.progressFill}
-              style={{ width: `${clampedPercent}%` }}
-            />
-            <Rocket
-              className={styles.progressMark}
-              style={{ left: `calc(${clampedPercent}% - 13px)` }}
-              aria-hidden="true"
-            />
-          </div>
-          <div
-            className={[typography.body.caption, styles.noticeText].join(' ')}
-          >
-            {noticeText ?? '모달창을 닫으면 5분 동안 순번이 유지됩니다.'}
-          </div>
-        </div>
-        <div className={styles.divider} />
-        <div className={styles.totalRow}>
-          <div
-            className={[typography.body.caption, styles.totalLabel].join(' ')}
-          >
-            {totalWaitingLabel}
-          </div>
-          <div
-            className={[typography.body.subSemibold, styles.totalValue].join(
-              ' ',
-            )}
-          >
-            {totalWaitingCount}
-          </div>
-        </div>
-      </div>
+          대기열 나가기
+        </button>
+      )}
     </div>
   )
 }
