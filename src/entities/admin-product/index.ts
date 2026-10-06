@@ -1,9 +1,6 @@
-export {
-  createAdminProduct,
-  getAdminProducts,
-  hideAdminProduct,
-  publishAdminProduct,
-} from './api/adminProduct'
+// 밖에서는 TanStack Query 훅으로만 들어온다 — 생 API 함수(getAdminProducts 등)를
+// 내보내면 signal 취소·재시도 정책을 건너뛰는 길이 열린다. 폼 값을 DTO로 바꾸는
+// 매퍼(toUpsertRequest 등)도 훅 안에서만 쓴다 — 화면이 DTO를 직접 만들면 안 된다.
 export {
   useAdminProduct,
   useAdminProductStock,
@@ -11,7 +8,6 @@ export {
   useUpdateAdminProduct,
 } from './api/useAdminProduct'
 export { useAdminProducts } from './api/useAdminProducts'
-export { putProductOpenAt } from './api/adminDispatch'
 export {
   useDispatchWindow,
   useSaveDispatchWindow,
@@ -28,7 +24,6 @@ export {
 } from './model/dispatch'
 export type { DispatchWaveDraft, DispatchWaveModel } from './model/dispatch'
 export {
-  displayStatusLabel,
   isPreorder,
   productTypeLabel,
   productTypeLabels,
@@ -39,20 +34,15 @@ export {
 export type {
   AdminProduct,
   AdminProductDetailModel,
-  AdminStockItemModel,
-  AdminDisplayStatus,
   AdminSaleStatus,
 } from './model/types'
 export {
-  buildVariantKey,
   createColorOption,
   createEmptyProductFormValue,
   createOptionGroup,
   createOptionValue,
   getProductVariants,
   toFormValue,
-  toStockRequests,
-  toUpsertRequest,
 } from './model/form'
 export type {
   AdminProductFormValue,
