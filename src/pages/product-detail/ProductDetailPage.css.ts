@@ -1,110 +1,100 @@
 import { style } from '@vanilla-extract/css'
 
 import {
-  typography,
-  color,
-  spacing,
-  motion,
   breakpoint,
+  color,
+  motion,
+  spacing,
+  typography,
 } from '@shared/config/theme'
 import { maxWidth } from '@shared/config/theme/tokens/container'
-import { fontSize } from '@shared/config/theme/tokens/typography/base'
+import {
+  fontSize,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
+import { headerHeight } from '@widgets/header'
 
-export const contentPadding = style({
-  padding: `0 ${spacing[20]}`,
-  '@media': {
-    // 위 50px는 Container의 위 여백(50px)에 더해져, 헤더 밑에서 콘텐츠까지 웹에서는 100px가 된다.
-    [breakpoint.desktop]: { padding: `${spacing[60]} ${spacing[30]} 0` },
-  },
+// 위에서 내려오는 주문바(Container, 1200px · 좌우 50px)와 글 시작선을 맞춘다.
+const sidePadding = `clamp(20px, 4vw, ${spacing[50]})`
+
+// 어두운 페이지 — 헤더 높이만큼 끌어올려 헤더 뒤까지 바탕을 깐다(data-header-theme="dark").
+export const root = style({
+  boxSizing: 'border-box',
+  minHeight: '100vh',
+  marginTop: `calc(-1 * ${headerHeight})`,
+  paddingTop: headerHeight,
+  background: color.backgroundDark.base,
+  color: color.text.primary,
 })
 
-// 옵션과 같은 컬럼(optionColumn) 안, 색상 위에 놓인다 — 간격은 컬럼의 gap이 준다.
-export const title = style([
-  typography.title.xlSemibold,
-  {
-    '@media': {
-      // 글자 크기 토큰에 28px가 없어 웹에서만 값으로 덮는다.
-      [breakpoint.desktop]: { fontSize: '28px' },
-      [breakpoint.mobile]: { fontSize: fontSize[20] },
+export const content = style({
+  boxSizing: 'border-box',
+  maxWidth: maxWidth.content,
+  margin: '0 auto',
+  padding: `${spacing[40]} ${sidePadding} 72px`,
+  '@media': {
+    [breakpoint.mobile]: {
+      padding: `${spacing[20]} ${spacing[16]} ${spacing[40]}`,
     },
   },
-])
-
-// 상품명 바로 밑에 모델명을 붙인다 — 컬럼의 gap(24px)이 아니라 4px로 가깝게.
-export const titleGroup = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[4],
 })
-
-export const modelNumber = style([
-  typography.body.defaultRegular,
-  { color: color.text.tertiary },
-])
 
 export const layout = style({
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr)',
-  gap: spacing[20],
-  marginBottom: spacing[100],
+  gap: spacing[24],
   '@media': {
     [breakpoint.desktop]: {
-      gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)',
-      // 슬라이더와 옵션 패널 사이만 30px — 모바일은 세로로 쌓여 20px 그대로.
-      columnGap: spacing[30],
+      // 옵션 패널을 고정 폭(420px)으로 두지 않고 이미지와 같은 비율로 같이 줄인다.
+      gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)',
+      gap: spacing[40],
+    },
+  },
+})
+
+// 옵션이 많아 오른쪽 컬럼이 더 길다 — 데스크톱에선 이미지가 헤더 밑에 멈춰 있고 옵션만 스크롤된다.
+// align-self: start가 없으면 칸이 행 높이만큼 늘어나 sticky가 움직일 여유가 없다.
+export const imageColumn = style({
+  '@media': {
+    [breakpoint.desktop]: {
+      position: 'sticky',
+      top: '96px',
+      alignSelf: 'start',
     },
   },
 })
 
 export const optionPanel = style({
   display: 'flex',
-  height: '100%',
   flexDirection: 'column',
-  justifyContent: 'space-between',
-  // 옵션이 많아 컬럼이 길어지면 space-between이 줄 틈이 없어 마지막 옵션과 구매 영역이 붙는다.
   gap: spacing[40],
 })
 
-export const optionColumn = style({
+export const titleGroup = style({
   display: 'flex',
   flexDirection: 'column',
-  // 옵션 섹션(크기/색상/RAM…) 사이를 넉넉히 띄워 한 섹션씩 읽히게 한다.
-  gap: spacing[60],
-  paddingTop: spacing[16],
-  '@media': {
-    // 모바일은 세로 공간이 귀해서 줄인다 — 옵션 그룹(medium)의 위아래 패딩 12px씩이 더해져 눈으로는 54px.
-    [breakpoint.mobile]: { gap: spacing[30] },
-  },
+  gap: spacing[6],
 })
 
-// 모바일: 하단 고정 주문바(widgets/product-purchase-bar)가 겹칠 일이 없어 top은 항상 0.
-// 데스크톱: top이 CSS 변수(--order-bar-offset)로 바뀐다(0 또는 주문바 높이) —
-// 주문바가 나타나면 그만큼 아래로 밀려서 겹치지 않는다. 변수는 JSX에서 인라인으로 채운다.
-export const tabBarWrapper = style({
-  position: 'sticky',
-  width: '100%',
-  maxWidth: maxWidth.content,
-  top: 0,
-  zIndex: 1,
-  '@media': {
-    [breakpoint.desktop]: {
-      top: 'var(--order-bar-offset, 0px)',
-      transition: `top ${motion.duration.fast} ${motion.easing.default}`,
+export const title = style([
+  typography.title.xlSemibold,
+  {
+    margin: 0,
+    fontWeight: fontWeight.bold,
+    '@media': {
+      // 글자 크기 토큰에 30px가 없어 웹에서만 값으로 덮는다.
+      [breakpoint.desktop]: { fontSize: '30px' },
+      [breakpoint.mobile]: { fontSize: fontSize[20] },
     },
   },
-})
+])
 
-// 모바일 하단 고정 바에 마지막 탭 패널이 가리지 않도록 그만큼 여백을 띄운다.
-export const orderBarSpacer = style({
-  '@media': {
-    [breakpoint.desktop]: {
-      display: 'none',
-    },
-  },
-})
+export const modelNumber = style([
+  typography.body.defaultRegular,
+  { color: color.text.tertiary },
+])
 
-// 웹 전용 — 옵션 컬럼 끝에서 "수량" 제목(왼쪽)과 스테퍼(오른쪽)를 한 줄에 놓는다.
-// 모바일은 하단 고정바(widgets/product-purchase-bar)에 수량이 있어 숨긴다.
+// 웹 전용 — "수량" 제목(왼쪽)과 스테퍼(오른쪽)를 한 줄에 둔다. 모바일은 하단 구매 바에 수량이 있다.
 export const quantityOption = style({
   display: 'none',
   '@media': {
@@ -117,49 +107,93 @@ export const quantityOption = style({
   },
 })
 
-// 다른 옵션 제목(ProductOptionSelector의 label)과 같은 크기/색.
-export const quantityLabel = style([
-  typography.title.lgSemibold,
-  { color: color.text.primary },
-])
+// 다른 옵션 제목(ProductOptionSelector medium)과 같은 크기.
+export const quantityLabel = typography.title.mdSemibold
 
-// 구매 요약 카드 안의 버튼들 — 장바구니(윗줄)와 결제하기(아랫줄)를 세로로 쌓는다.
-// 카드 자체가 웹 전용이라 모바일 처리는 따로 필요 없다.
+// 장바구니(좁게) + 결제하기(넓게) 한 줄.
 export const actions = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[8],
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.6fr)',
+  gap: spacing[10],
+  marginTop: spacing[12],
 })
 
-// 옵션이 많아 오른쪽 컬럼이 이미지보다 길어지므로, 데스크톱에서는 이미지가 고정되고 옵션만
-// 스크롤된다. 슬라이더 위로 화면 맨 위와 110px을 남긴 채 멈춘다 — 스크롤해도 이 여백이
-// 더 줄어들지 않는다. 스페이싱 토큰에 110px이 없어 값으로 둔다.
-// align-self: start가 없으면 칸이 행 높이만큼 늘어나 sticky가 움직일 여유가 없다.
-export const imageColumn = style({
+// 사전예약은 장바구니가 없어 결제 버튼이 한 줄을 다 쓴다.
+export const checkoutFull = style({ gridColumn: '1 / -1' })
+
+// 모바일: 하단 고정 주문바가 겹칠 일이 없어 top은 항상 0.
+// 데스크톱: 위에서 내려오는 주문바가 보이면 그 높이(--order-bar-offset)만큼 밀려 겹치지 않는다.
+export const tabBarWrapper = style({
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
   '@media': {
     [breakpoint.desktop]: {
-      position: 'sticky',
-      top: '110px',
-      alignSelf: 'start',
+      top: 'var(--order-bar-offset, 0px)',
+      transition: `top ${motion.duration.fast} ${motion.easing.default}`,
     },
   },
 })
+
+export const sections = style({
+  boxSizing: 'border-box',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '80px',
+  maxWidth: maxWidth.content,
+  margin: '0 auto',
+  padding: `56px ${sidePadding} 160px`,
+  '@media': {
+    [breakpoint.mobile]: {
+      gap: spacing[50],
+      padding: `${spacing[32]} ${spacing[16]} ${spacing[40]}`,
+    },
+  },
+})
+
+export const section = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[20],
+  // 위에 고정되는 주문바(72px) + 탭(56px)에 가리지 않게 띄운다.
+  scrollMarginTop: '140px',
+  '@media': {
+    // 모바일은 주문바가 하단이라 탭(44px)만 위에 고정된다.
+    [breakpoint.mobile]: { scrollMarginTop: '60px' },
+  },
+})
+
+export const sectionTitle = style([
+  typography.title.xlSemibold,
+  {
+    margin: 0,
+    fontWeight: fontWeight.bold,
+    '@media': { [breakpoint.mobile]: { fontSize: fontSize[20] } },
+  },
+])
+
+// ponytail: 탭 콘텐츠 API 전까지 자리표시자 — 상세 이미지가 오면 교체.
+export const placeholder = style([
+  typography.body.defaultRegular,
+  {
+    display: 'grid',
+    placeItems: 'center',
+    height: '520px',
+    borderRadius: '20px',
+    background: color.background.base,
+    border: `1px solid ${color.border.subtle}`,
+    color: color.text.tertiary,
+    '@media': { [breakpoint.mobile]: { height: '320px' } },
+  },
+])
 
 export const reviewList = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[20],
-  padding: `${spacing[40]} 0`,
 })
 
-export const tabPanel = style({
-  width: '100%',
-  height: '1000px',
-  // stickyHeader(주문 요약 바 + ProductPageTab, 총 135px)가 top에 고정돼있어
-  // scrollIntoView로 top 0에 붙이면 그 밑에 가려지므로, 그만큼 여유를 둔다.
-  scrollMarginTop: '135px',
-  '@media': {
-    // 모바일은 주문 요약 바가 하단에 있어 위에는 ProductPageTab(44px)만 고정된다.
-    [breakpoint.mobile]: { scrollMarginTop: '44px' },
-  },
+// 모바일 하단 고정 바에 마지막 섹션이 가리지 않도록 그만큼 여백을 띄운다.
+export const orderBarSpacer = style({
+  '@media': { [breakpoint.desktop]: { display: 'none' } },
 })

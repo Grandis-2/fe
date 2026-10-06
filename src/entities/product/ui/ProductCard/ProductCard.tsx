@@ -60,7 +60,10 @@ export function ProductCard({
   const totalPrice = basePrice + (selectedOption?.extraPrice ?? 0)
   const isPreorder = saleMode === 'PREORDER'
   return (
-    <div className={[styles.root, className].filter(Boolean).join(' ')}>
+    <div
+      data-theme="dark"
+      className={[styles.root, className].filter(Boolean).join(' ')}
+    >
       <div className={styles.media}>
         {isPreorder && (
           <Tag color="primary" size="small" className={styles.badge}>

@@ -21,9 +21,8 @@ import {
 import macbook1 from '@shared/assets/macbook_neo_sliver1.png'
 import macbook2 from '@shared/assets/macbook_neo_sliver2.png'
 import { PAYMENT_PATH, resultPath } from '@shared/config/routes'
-import { color } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
-import { Container, Button } from '@shared/ui'
+import { ActionButton } from '@shared/ui'
 import { ProductPageTab } from '@widgets/product-page-tab'
 import type { ProductPageTabKey } from '@widgets/product-page-tab'
 import { ProductPurchaseBar } from '@widgets/product-purchase-bar'
@@ -37,8 +36,8 @@ const colorSwatches = [
   { hex: '#E3E4E6', label: '실버' },
   { hex: '#7D7E80', label: '스페이스 그레이' },
 ]
-// 색상 외의 옵션 그룹. 패널에는 크기 → 색상 → RAM → 용량 → 칩 순으로 보인다 —
-// 색상(스와치)은 COLOR_POSITION 자리에 끼워 넣는다. extraPrice는 고르면 기본가에 더해지는 금액이다.
+// 색상 외의 옵션 그룹. 패널에는 색상(스와치)이 맨 위, 그 아래 이 순서대로 보인다.
+// extraPrice는 고르면 기본가에 더해지는 금액이다.
 const optionGroups: PurchaseOptionGroup[] = [
   {
     label: '크기',
@@ -69,7 +68,6 @@ const optionGroups: PurchaseOptionGroup[] = [
     ],
   },
 ]
-const COLOR_POSITION = 1
 
 // 페이지 곳곳(제목/alt/라벨은 영문, 본문/요약 텍스트는 국문)에 흩어져 있던 상품명 리터럴을 한 곳으로 모은다.
 const PRODUCT_TITLE = 'MacBook Pro 14'
@@ -78,15 +76,11 @@ const PRODUCT_IMAGES = [macbook1, macbook2]
 // ponytail: 상세 응답에 모델명 필드가 아직 없어서 하드코딩 — 결제 화면 목업(PaymentPage)과 같은 값.
 const PRODUCT_MODEL_NUMBER = 'A3112'
 
-// ponytail: 실제 탭 콘텐츠 API 전까지 자리표시자 배경색으로 대체
-const tabPanelContent: Record<
-  ProductPageTabKey,
-  { label: string; background: string }
-> = {
-  benefits: { label: '구매 혜택', background: '#f5f5f5' },
-  info: { label: '모델 정보', background: '#c1c1c1' },
-  notice: { label: '유의 사항', background: '#6a6a6a' },
-  review: { label: '구매 후기', background: color.background.base },
+const SECTION_LABELS: Record<ProductPageTabKey, string> = {
+  benefits: '구매 혜택',
+  info: '모델 정보',
+  notice: '유의 사항',
+  review: '구매 후기',
 }
 
 // 상세에서는 이 상품(맥북 프로 14) 후기만 보여준다.
@@ -131,10 +125,9 @@ export function ProductDetailPage() {
     optionLabel,
     unitPrice,
     totalPrice,
+    benefitAmount,
+    payAmount,
   } = purchase
-
-  // 결제 화면(PaymentPage)과 같은 비율로 할인해서 두 화면의 합계가 맞는다.
-  const benefitAmount = Math.round(totalPrice * PREORDER_BENEFIT_RATE)
 
   // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
   const handleCheckout = () => {
@@ -181,8 +174,8 @@ export function ProductDetailPage() {
   )
 
   return (
-    <Container desktopPaddingX={0} mobilePaddingX={0}>
-      <div className={styles.contentPadding}>
+    <div className={styles.root} data-theme="dark" data-header-theme="dark">
+      <div className={styles.content}>
         <div className={styles.layout} ref={layoutRef}>
           <div className={styles.imageColumn}>
             <ProductGallery
@@ -191,58 +184,67 @@ export function ProductDetailPage() {
             />
           </div>
           <div className={styles.optionPanel}>
-            <div className={styles.optionColumn}>
-              <div className={styles.titleGroup}>
-                <div className={styles.title}>{PRODUCT_TITLE}</div>
-                <div className={styles.modelNumber}>{PRODUCT_MODEL_NUMBER}</div>
-              </div>
-              {optionGroups.slice(0, COLOR_POSITION).map(renderOptionGroup)}
-              <ProductColorSwatches
-                colorName="색상"
-                size="medium"
-                colors={colorSwatches.map((swatch, index) => ({
-                  ...swatch,
-                  selected: index === selectedColor,
-                }))}
-                onSelect={setSelectedColor}
+            <div className={styles.titleGroup}>
+              <h1 className={styles.title}>{PRODUCT_NAME}</h1>
+              <div className={styles.modelNumber}>{PRODUCT_MODEL_NUMBER}</div>
+            </div>
+            <ProductColorSwatches
+              colorName="색상"
+              size="medium"
+              colors={colorSwatches.map((swatch, index) => ({
+                ...swatch,
+                selected: index === selectedColor,
+              }))}
+              onSelect={setSelectedColor}
+            />
+            {optionGroups.map(renderOptionGroup)}
+            {/* 웹에서는 수량도 옵션처럼 제목과 스테퍼를 한 줄에 놓는다(모바일은 하단 구매 바에 있다). */}
+            <div className={styles.quantityOption}>
+              <div className={styles.quantityLabel}>수량</div>
+              <QuantityControl
+                isPreorder={isPreorder}
+                quantity={quantity}
+                onQuantityChange={setQuantity}
+                stepperLabel={PRODUCT_TITLE}
+                stepperSize="medium"
               />
-              {optionGroups
-                .slice(COLOR_POSITION)
-                .map((group, i) =>
-                  renderOptionGroup(group, i + COLOR_POSITION),
-                )}
-              {/* 웹에서는 수량도 옵션처럼 제목과 스테퍼를 한 줄에 놓는다(모바일은 하단 구매 바에 있다). */}
-              <div className={styles.quantityOption}>
-                <div className={styles.quantityLabel}>수량</div>
-                <QuantityControl
-                  isPreorder={isPreorder}
-                  quantity={quantity}
-                  onQuantityChange={setQuantity}
-                  stepperLabel={PRODUCT_TITLE}
-                />
-              </div>
             </div>
             <PurchaseSummary
-              title={`옵션 : ${colorLabel} · ${optionLabel}`}
+              options={[
+                { label: colorLabel, hex: colorSwatches[selectedColor]?.hex },
+                ...optionGroups.map((group, i) => ({
+                  label: group.values[selectedOptions[i]].label,
+                })),
+              ]}
               rows={[
                 { label: '상품 금액', value: formatWon(totalPrice) },
                 { label: '수량', value: `${quantity}개` },
                 {
                   label: `사전예약 혜택 (${PREORDER_BENEFIT_RATE * 100}%)`,
                   value: `-${formatWon(benefitAmount)}`,
+                  accent: true,
                 },
               ]}
               total={{
                 label: '총 결제 금액',
-                value: formatWon(totalPrice - benefitAmount),
+                value: formatWon(payAmount),
               }}
               note={isPreorder ? shipmentLabel : undefined}
             >
               <div className={styles.actions}>
-                {!isPreorder && <Button variant="outline">장바구니</Button>}
-                <Button onClick={handleCheckout} disabled={!isCheckoutReady}>
+                {!isPreorder && (
+                  <ActionButton variant="cart" fullWidth>
+                    장바구니
+                  </ActionButton>
+                )}
+                <ActionButton
+                  fullWidth
+                  className={isPreorder ? styles.checkoutFull : undefined}
+                  onClick={handleCheckout}
+                  disabled={!isCheckoutReady}
+                >
                   {isPreorder ? '사전예약하기' : '결제하기'}
-                </Button>
+                </ActionButton>
               </div>
             </PurchaseSummary>
           </div>
@@ -273,30 +275,32 @@ export function ProductDetailPage() {
           excludeTabs={isPreorder ? ['review'] : undefined}
         />
       </div>
-      {Object.entries(tabPanelContent)
-        .filter(([tab]) => !isPreorder || tab !== 'review')
-        .map(([tab, { label, background }]) => (
-          <div
-            key={tab}
-            ref={registerPanelRef(tab as ProductPageTabKey)}
-            className={styles.tabPanel}
-            style={{ background }}
-          >
-            {tab === 'review' ? (
-              <div className={styles.reviewList}>
-                {reviews.map(({ id, ...review }) => (
-                  <ReviewCard key={id} {...review} />
-                ))}
-              </div>
-            ) : (
-              label
-            )}
-          </div>
-        ))}
+      <div className={styles.sections}>
+        {Object.entries(SECTION_LABELS)
+          .filter(([tab]) => !isPreorder || tab !== 'review')
+          .map(([tab, label]) => (
+            <section
+              key={tab}
+              ref={registerPanelRef(tab as ProductPageTabKey)}
+              className={styles.section}
+            >
+              <h2 className={styles.sectionTitle}>{label}</h2>
+              {tab === 'review' ? (
+                <div className={styles.reviewList}>
+                  {reviews.map(({ id, ...review }) => (
+                    <ReviewCard key={id} {...review} />
+                  ))}
+                </div>
+              ) : (
+                <div className={styles.placeholder}>{label} 상세 이미지</div>
+              )}
+            </section>
+          ))}
+      </div>
       <div
         className={styles.orderBarSpacer}
         style={{ height: orderBarHeight }}
       />
-    </Container>
+    </div>
   )
 }

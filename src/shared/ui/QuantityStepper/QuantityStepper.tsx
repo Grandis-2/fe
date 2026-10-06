@@ -9,6 +9,8 @@ export type QuantityStepperProps = {
   max?: number
   /** 어떤 상품의 수량인지 스크린리더가 알 수 있게 상품명을 넘긴다. */
   label?: string
+  // small: 카드·결제 화면 / medium: 상품 상세 옵션 패널
+  size?: 'small' | 'medium'
   className?: string
 }
 
@@ -18,13 +20,16 @@ export function QuantityStepper({
   min = 1,
   max = 99,
   label,
+  size = 'small',
   className,
 }: QuantityStepperProps) {
   const suffix = label ? ` (${label})` : ''
 
   return (
     <div
-      className={[styles.root, className].filter(Boolean).join(' ')}
+      className={[styles.root, size === 'medium' && styles.medium, className]
+        .filter(Boolean)
+        .join(' ')}
       role="group"
       aria-label={`수량${suffix}`}
     >

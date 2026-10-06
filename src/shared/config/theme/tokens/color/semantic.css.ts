@@ -60,13 +60,13 @@ export const color = createGlobalTheme(':root', {
 })
 
 // 다크모드 — 같은 변수에 값만 바꿔 꽂으므로 컴포넌트는 color.* 그대로 쓰면 된다.
-// <html data-theme="dark">일 때만 켜진다(전환 UI는 아직 없음).
+// <html data-theme="dark">일 때 켜지고, 요소에 data-theme="dark"를 달면 그 안쪽만 어두운 값을 쓴다(ProductCard).
 // - 배경: backgroundDark.base(#0F1215)를 페이지 바탕으로, 위로 뜰수록(카드·입력칸) 밝아진다.
 // - primary/secondary.base: 흰 글자를 얹는 버튼 바탕이 우선이라 흰 글자 대비 4.5:1 이상으로 맞췄다
 //   (글자로 쓰면 페이지 바탕 위 3.5:1 — 두 쪽 다 4.5:1인 색은 없다). 강조 글자는 subtle을 쓴다.
 // - subtler/surface: 밝은 틴트 배경 → 어두운 틴트 배경으로 뒤집는다.
 // - text.inverse, backgroundDark: 배너처럼 테마와 상관없이 늘 어두운 구간용이라 그대로 둔다.
-createGlobalTheme(':root[data-theme="dark"]', color, {
+createGlobalTheme(':root[data-theme="dark"], [data-theme="dark"]', color, {
   primary: {
     base: '#5A64B8',
     focus: '#4A53A0',

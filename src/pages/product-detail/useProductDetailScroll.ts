@@ -5,9 +5,7 @@ import type { ProductPageTabKey } from '@widgets/product-page-tab'
 // 스티키 주문바/탭바가 스크롤 위치에 따라 나타나고, 탭 패널의 스크롤 위치로
 // 활성 탭을 동기화하는 로직을 모아둔 훅. ProductDetailPage 전용이라 여기 colocate.
 export function useProductDetailScroll(productId: string) {
-  const panelRefs = useRef<Partial<Record<ProductPageTabKey, HTMLDivElement>>>(
-    {},
-  )
+  const panelRefs = useRef<Partial<Record<ProductPageTabKey, HTMLElement>>>({})
   const layoutRef = useRef<HTMLDivElement>(null)
   const [isLayoutVisible, setIsLayoutVisible] = useState(true)
   const orderBarRef = useRef<HTMLDivElement>(null)
@@ -65,7 +63,7 @@ export function useProductDetailScroll(productId: string) {
   }
 
   const registerPanelRef =
-    (tab: ProductPageTabKey) => (el: HTMLDivElement | null) => {
+    (tab: ProductPageTabKey) => (el: HTMLElement | null) => {
       panelRefs.current[tab] = el ?? undefined
     }
 

@@ -1,4 +1,5 @@
 import { PriceText, QuantityStepper } from '@shared/ui'
+import type { QuantityStepperProps } from '@shared/ui'
 
 import * as styles from './QuantityPriceDisplay.css'
 
@@ -7,19 +8,16 @@ export type QuantityControlProps = {
   quantity: number
   onQuantityChange: (value: number) => void
   stepperLabel: string
+  stepperSize?: QuantityStepperProps['size']
 }
 
-export type QuantityPriceDisplayProps = QuantityControlProps & {
-  priceLabel: string
-}
-
-// 수량 스테퍼. 옵션 패널에서는 "수량" 제목 옆에 따로 놓이고, 모바일 구매 바에서는 가격과 한 줄로 놓여서
-// 수량/가격을 따로도 쓸 수 있게 나눴다.
+// 수량 스테퍼. 옵션 패널에서는 "수량" 제목 옆에 따로 놓이고, 모바일 구매 바에서는 가격과 한 줄로 놓인다.
 export function QuantityControl({
   isPreorder,
   quantity,
   onQuantityChange,
   stepperLabel,
+  stepperSize,
 }: QuantityControlProps) {
   // 사전예약은 1인 1개라 수량을 고를 수 없다.
   return isPreorder ? (
@@ -29,29 +27,16 @@ export function QuantityControl({
       value={quantity}
       onChange={onQuantityChange}
       label={stepperLabel}
+      size={stepperSize}
     />
   )
 }
 
-export function PriceDisplay({
-  priceLabel,
-}: Pick<QuantityPriceDisplayProps, 'priceLabel'>) {
+// 선택한 옵션·수량으로 확정된 금액이라 "~"(…부터)를 붙이지 않는다.
+export function PriceDisplay({ priceLabel }: { priceLabel: string }) {
   return (
     <span className={styles.price}>
-      <PriceText value={priceLabel} />
+      <PriceText value={priceLabel} from={false} />
     </span>
-  )
-}
-
-// 모바일 구매 바의 수량/가격 줄이 완전히 같은 마크업이라 둘을 묶어 공용으로 둔다.
-export function QuantityPriceDisplay({
-  priceLabel,
-  ...quantityProps
-}: QuantityPriceDisplayProps) {
-  return (
-    <>
-      <QuantityControl {...quantityProps} />
-      <PriceDisplay priceLabel={priceLabel} />
-    </>
   )
 }

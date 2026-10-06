@@ -1,10 +1,15 @@
-import type { RefObject } from 'react'
+import { useId, useState, type RefObject } from 'react'
+
+import { ChevronDown, ChevronUp } from 'lucide-react'
 
 import {
-  QuantityPriceDisplay,
+  PREORDER_BENEFIT_RATE,
+  PriceDisplay,
+  QuantityControl,
   type ProductPurchase,
 } from '@features/product-purchase'
-import { Button, Container } from '@shared/ui'
+import { formatWon } from '@shared/lib/formatNumber'
+import { ActionButton, Container } from '@shared/ui'
 
 import * as styles from './ProductPurchaseBar.css'
 
@@ -18,7 +23,14 @@ export type ProductPurchaseBarProps = {
   // 낱개 prop으로 풀어 넘기면 5개가 늘어나서, 이미 한 덩어리인 값을 그대로 전달한다.
   purchase: Pick<
     ProductPurchase,
-    'colorLabel' | 'optionLabel' | 'quantity' | 'setQuantity' | 'priceLabel'
+    | 'colorLabel'
+    | 'optionLabel'
+    | 'quantity'
+    | 'setQuantity'
+    | 'priceLabel'
+    | 'basePrice'
+    | 'selectedValues'
+    | 'benefitAmount'
   >
   shipmentLabel: string
   onCheckout: () => void
@@ -37,11 +49,25 @@ export function ProductPurchaseBar({
   orderBarRef,
   productName,
   stepperLabel,
-  purchase: { colorLabel, optionLabel, quantity, setQuantity, priceLabel },
+  purchase: {
+    colorLabel,
+    optionLabel,
+    quantity,
+    setQuantity,
+    priceLabel,
+    basePrice,
+    selectedValues,
+    benefitAmount,
+  },
   shipmentLabel,
   onCheckout,
   checkoutDisabled,
 }: ProductPurchaseBarProps) {
+  const [isBreakdownOpen, setIsBreakdownOpen] = useState(false)
+  const breakdownId = useId()
+  // 추가금액이 붙는 옵션만 — 0원 옵션은 가격에 영향이 없다.
+  const extras = selectedValues.filter((value) => (value.extraPrice ?? 0) > 0)
+
   return (
     <>
       <div
@@ -62,7 +88,7 @@ export function ProductPurchaseBar({
             .join(' ')}
         >
           <Container
-            desktopPaddingX={20}
+            desktopPaddingX={50}
             desktopPaddingY={16}
             mobilePaddingX={20}
             mobilePaddingY={16}
@@ -80,43 +106,85 @@ export function ProductPurchaseBar({
                 {colorLabel} · {optionLabel}
               </div>
             </div>
+            {isBreakdownOpen && (
+              <dl id={breakdownId} className={styles.breakdown}>
+                <div className={styles.breakdownRow}>
+                  <dt>기본가</dt>
+                  <dd>{formatWon(basePrice)}</dd>
+                </div>
+                {extras.map((value) => (
+                  <div key={value.label} className={styles.breakdownRow}>
+                    <dt>{value.label}</dt>
+                    <dd>+{formatWon(value.extraPrice ?? 0)}</dd>
+                  </div>
+                ))}
+                <div className={styles.breakdownRow}>
+                  <dt>수량</dt>
+                  <dd>{quantity}개</dd>
+                </div>
+                <div className={styles.breakdownRow}>
+                  <dt>사전예약 혜택 ({PREORDER_BENEFIT_RATE * 100}%)</dt>
+                  <dd className={styles.discount}>
+                    -{formatWon(benefitAmount)}
+                  </dd>
+                </div>
+                <div className={styles.breakdownTotal}>
+                  <dt>합계</dt>
+                  <dd>{priceLabel}</dd>
+                </div>
+              </dl>
+            )}
             <div className={styles.orderBarQuantityPrice}>
-              <QuantityPriceDisplay
+              <QuantityControl
                 isPreorder={isPreorder}
                 quantity={quantity}
                 onQuantityChange={setQuantity}
-                priceLabel={priceLabel}
                 stepperLabel={stepperLabel}
               />
+              <div className={styles.priceGroup}>
+                <PriceDisplay priceLabel={priceLabel} />
+                <button
+                  type="button"
+                  className={styles.breakdownToggle}
+                  aria-expanded={isBreakdownOpen}
+                  aria-controls={breakdownId}
+                  aria-label={
+                    isBreakdownOpen ? '가격 내역 닫기' : '가격 내역 보기'
+                  }
+                  onClick={() => setIsBreakdownOpen((open) => !open)}
+                >
+                  {isBreakdownOpen ? (
+                    <ChevronUp aria-hidden="true" />
+                  ) : (
+                    <ChevronDown aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </div>
             <div className={styles.orderBarButtons}>
               {!isPreorder && (
-                <Button
-                  variant="outline"
-                  icon="handbag"
-                  className={styles.orderBarIconButton}
+                <ActionButton
+                  variant="cart"
+                  size="md"
+                  iconOnly
+                  aria-label="장바구니"
                 />
               )}
-              <Button
-                className={[
-                  styles.orderBarCheckoutButton,
-                  styles.orderBarCheckoutButtonMobile,
-                ].join(' ')}
+              <ActionButton
+                size="md"
+                className={styles.orderBarCheckoutButton}
                 onClick={onCheckout}
                 disabled={checkoutDisabled}
               >
-                {isPreorder ? '사전예약하기' : '결제하기'}
-              </Button>
-              <Button
-                className={[
-                  styles.orderBarCheckoutButton,
-                  styles.orderBarCheckoutButtonDesktop,
-                ].join(' ')}
-                onClick={onCheckout}
-                disabled={checkoutDisabled}
-              >
-                {isPreorder ? '사전예약하기' : `${priceLabel} 결제하기`}
-              </Button>
+                {isPreorder ? (
+                  '사전예약하기'
+                ) : (
+                  <>
+                    <span className={styles.desktopPrice}>{priceLabel}</span>
+                    결제하기
+                  </>
+                )}
+              </ActionButton>
             </div>
           </Container>
         </div>

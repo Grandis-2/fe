@@ -3,6 +3,8 @@ import { useState } from 'react'
 import type { ProductColorSwatchItem, ProductOption } from '@entities/product'
 import { formatWon } from '@shared/lib/formatNumber'
 
+import { PREORDER_BENEFIT_RATE } from '../model/benefit'
+
 // 스와치에서 색상 선택에 필요한 두 칸만 — 여기선 label이 항상 있어야 한다.
 export type ProductColorOption = Required<
   Pick<ProductColorSwatchItem, 'hex' | 'label'>
@@ -69,7 +71,11 @@ export function useProductPurchase({
   const unitPrice =
     basePrice + selectedValues.reduce((sum, v) => sum + (v.extraPrice ?? 0), 0)
   const totalPrice = unitPrice * quantity
-  const priceLabel = formatWon(totalPrice)
+  // 결제 화면(PaymentPage)과 같은 비율로 할인해서 두 화면의 합계가 맞는다.
+  const benefitAmount = Math.round(totalPrice * PREORDER_BENEFIT_RATE)
+  // 할인까지 뺀, 실제로 결제할 금액.
+  const payAmount = totalPrice - benefitAmount
+  const priceLabel = formatWon(payAmount)
 
   return {
     selectedColor,
@@ -80,8 +86,13 @@ export function useProductPurchase({
     setQuantity: setStepperQuantity,
     colorLabel,
     optionLabel,
+    // 가격이 어떻게 나왔는지(기본가 + 옵션 추가금액 × 수량) 보여 줄 때 쓴다.
+    basePrice,
+    selectedValues,
     unitPrice,
     totalPrice,
+    benefitAmount,
+    payAmount,
     priceLabel,
   }
 }
