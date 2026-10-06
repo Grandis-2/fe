@@ -1,48 +1,78 @@
+import { useState } from 'react'
+
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 import * as styles from './Dropdown.css'
 
-export type DropdownProps = {
+/**
+ * 화면에 찍을 글자와 호출부가 실제로 다루는 값을 함께 들고 다닌다.
+ * 글자만 받으면 호출부가 문자열이나 인덱스로 값을 되짚어야 해서, 라벨을 바꾸는
+ * 순간 조용히 깨진다.
+ */
+export type DropdownOption<TValue> = {
   label: string
-  options: string[]
-  open?: boolean
+  value: TValue
+}
+
+export type DropdownProps<TValue> = {
+  /** 고른 게 없을 때 트리거에 보이는 문구 */
+  label: string
+  options: readonly DropdownOption<TValue>[]
+  value?: TValue
   size?: 'medium' | 'small'
-  selectedOption?: string
   width?: string
+  /** 열림 상태를 밖에서 쥘 때만 준다. 안 주면 컴포넌트가 직접 들고 여닫는다 */
+  open?: boolean
   onToggle?: () => void
-  onSelect?: (option: string, index: number) => void
+  onSelect?: (value: TValue) => void
   className?: string
 }
 
-export function Dropdown({
+export function Dropdown<TValue>({
   label,
   options,
-  open = false,
+  value,
   size = 'medium',
-  selectedOption,
   width,
+  open,
   onToggle,
   onSelect,
   className,
-}: DropdownProps) {
+}: DropdownProps<TValue>) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const isOpen = open ?? uncontrolledOpen
+
+  const toggle = () => {
+    if (onToggle) onToggle()
+    if (open === undefined) setUncontrolledOpen((prev) => !prev)
+  }
+
+  const select = (option: DropdownOption<TValue>) => {
+    onSelect?.(option.value)
+    // 밖에서 쥐고 있으면 닫는 것도 그쪽 몫이다 — 여기서 닫으면 두 번 닫힌다.
+    if (open === undefined) setUncontrolledOpen(false)
+  }
+
+  const selectedLabel = options.find((option) => option.value === value)?.label
+
   return (
     <div
       className={[styles.root, className].filter(Boolean).join(' ')}
       style={width ? { width } : undefined}
     >
       <div
-        className={[styles.box, styles.size[size], open && styles.boxOpen]
+        className={[styles.box, styles.size[size], isOpen && styles.boxOpen]
           .filter(Boolean)
           .join(' ')}
       >
         <button
           type="button"
           className={styles.trigger[size]}
-          onClick={onToggle}
-          aria-expanded={open}
+          onClick={toggle}
+          aria-expanded={isOpen}
         >
-          <span className={styles.triggerLabel}>{selectedOption ?? label}</span>
-          {open ? (
+          <span className={styles.triggerLabel}>{selectedLabel ?? label}</span>
+          {isOpen ? (
             <ChevronUp
               className={styles.triggerIcon[size]}
               aria-hidden="true"
@@ -55,23 +85,24 @@ export function Dropdown({
           )}
         </button>
       </div>
-      {open && (
+      {isOpen && (
         <div className={[styles.menu, styles.menuSize[size]].join(' ')}>
           {options.map((option, index) => (
             // 라벨이 겹칠 수 있다(이름이 같은 상품 등). 문자열을 key로 쓰면
             // React가 항목을 건너뛰거나 겹쳐 그린다 — 위치로 구분한다.
             <button
-              key={`${index}-${option}`}
+              key={`${index}-${option.label}`}
               type="button"
               className={[
                 styles.option[size],
-                option === selectedOption && styles.optionSelected,
+                // 값으로 비교한다 — 라벨로 비교하면 이름이 같은 항목이 같이 켜진다.
+                option.value === value && styles.optionSelected,
               ]
                 .filter(Boolean)
                 .join(' ')}
-              onClick={() => onSelect?.(option, index)}
+              onClick={() => select(option)}
             >
-              {option}
+              {option.label}
             </button>
           ))}
         </div>

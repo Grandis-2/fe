@@ -35,7 +35,7 @@ import {
   Table,
   Tag,
 } from '@shared/ui'
-import type { TableColumn } from '@shared/ui'
+import type { DropdownOption, TableColumn } from '@shared/ui'
 
 import * as styles from './AdminReservationsPage.css'
 
@@ -64,7 +64,6 @@ export function AdminReservationsPage() {
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [keyword, setKeyword] = useState('')
-  const [productOpen, setProductOpen] = useState(false)
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const [productId, setProductId] = useState<string>()
 
@@ -72,9 +71,14 @@ export function AdminReservationsPage() {
   // 회원 이름은 예약 응답에 없어서 따로 받아 memberId ↔ 이름을 이어준다.
   const { data: members = [] } = useAdminMembers()
 
-  const selectedProductName = products.find(
-    (product) => product.productId === productId,
-  )?.name
+  // 값이 undefined인 첫 항목이 '전체 상품' — 서버에 productId를 안 보낸다.
+  const productOptions: DropdownOption<string | undefined>[] = [
+    { label: ALL_PRODUCTS, value: undefined },
+    ...products.map((product) => ({
+      label: product.name,
+      value: product.productId,
+    })),
+  ]
 
   const status: AdminReservationStatus | undefined =
     statusFilter === 'all' ? undefined : statusFilter
@@ -246,17 +250,9 @@ export function AdminReservationsPage() {
           label="현재 선택된 상품"
           size="medium"
           width="200px"
-          options={[ALL_PRODUCTS, ...products.map((product) => product.name)]}
-          open={productOpen}
-          selectedOption={selectedProductName ?? ALL_PRODUCTS}
-          onToggle={() => setProductOpen((prev) => !prev)}
-          // 첫 항목이 '전체 상품'이라 상품 배열보다 하나씩 밀려 있다.
-          onSelect={(_, index) => {
-            setProductId(
-              index === 0 ? undefined : products[index - 1].productId,
-            )
-            setProductOpen(false)
-          }}
+          options={productOptions}
+          value={productId}
+          onSelect={setProductId}
         />
       </div>
 
