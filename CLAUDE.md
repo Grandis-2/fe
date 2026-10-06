@@ -33,6 +33,7 @@ npm run format:fix        # prettier --write .
 - **Segment**: hook(`useXxx`)은 `model/`에 두지 않는다 — `model/`은 타입·상수·스토어만, hook은 `lib/`에 둔다. TanStack Query 훅은 `entities/*/api/`에 둔다.
 - **Feature 이름**: 기능 단위로 짓고 기술명을 쓰지 않는다(`login`, `payment`, `address-search` — `kakao-login`, `toss-payment` X). 슬라이스 안 파일명은 실제 구현을 드러내도 된다(`KakaoLoginModal`).
 - **Reuse before adding**: 새 컴포넌트/타입/색상을 만들기 전에 `shared/ui`, 관련 `entities/*` 슬라이스, `shared/config/theme`(특히 `color.*` 토큰)에 이미 있는지부터 확인한다. 실제로 겪은 사례 — 거의 동일한 타입을 두 군데(`ProductColorSwatch`/`ProductColorSwatchItem`)에 따로 선언, 이미 있는 `color.background.surface` 대신 생 hex 값을 하드코딩. 구조가 겹치는 타입(필드 일부만 빠짐/전부 optional/키로 매핑 등)은 새로 손으로 적지 말고 `Pick`/`Omit`/`Partial`/`Record` 같은 유틸리티 타입으로 기존 타입에서 파생시킨다 — 단, 호출부가 하나뿐인데 제네릭을 억지로 붙이는 건 과한 설계다.
+- **도메인 객체 props**: `product`/`preorder` 같은 엔티티 모델의 필드를 props로 하나씩 펼쳐 넘기지 않는다 — 객체째 넘기고, 쓰는 필드만 `Pick<Preorder, 'models' | 'opensAt'>`으로 좁혀 받는다(`PreorderModelSheet` 참고). 단, 현재 시각 등으로 계산한 값(`status`)은 받는 쪽에서 다시 구하면 부모와 어긋나므로 따로 넘긴다.
 - **컴포넌트 폴더 구조**: `entities/*/ui/`(다른 레이어도 컴포넌트가 여러 개면 동일하게 적용) 안에서 컴포넌트를 `ui/ComponentName.tsx`처럼 평평하게 두지 않는다. 컴포넌트마다 `ui/ComponentName/` 폴더를 만들고 그 안에 `ComponentName.tsx`, `ComponentName.css.ts`, `ComponentName.stories.tsx`와 `export * from './ComponentName'`만 있는 `index.ts`를 넣는다. `index.ts` 덕분에 엔티티 배럴(`entities/*/index.ts`)의 `from './ui/ComponentName'` import는 그대로 유지된다 — 새 컴포넌트를 추가할 때도 처음부터 이 구조로 만든다.
 
 ## Error handling
