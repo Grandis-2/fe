@@ -86,12 +86,17 @@ export const ClosesByBackdrop: Story = {
 }
 
 /**
- * Escape처럼 브라우저가 직접 닫는 경로. 실제 Escape 키는 테스트 환경(iframe) 안에서
- * <dialog>의 기본 동작을 일으키지 못해 close()로 대신한다 — 어차피 우리가 책임지는 건
- * 키 처리가 아니라 "네이티브로 닫혔을 때 React 상태가 따라오는가"다.
+ * Escape처럼 브라우저가 직접 닫는 경로.
  *
- * 상태가 안 따라오면 open이 true로 남아, 다시 열기를 눌러도 setOpen(true)가 변화를
- * 만들지 못해 effect가 안 돌고 모달이 영영 안 열린다.
+ * 실제 Escape 키는 여기서 검증할 수 없다 — Vitest browser mode(iframe) 안에서는
+ * userEvent.keyboard('{Escape}')를 보내도 <dialog>의 UA 기본 동작이 걸리지 않는다.
+ * dialog 안(닫기 버튼)으로 포커스를 옮기고 보내도 dialog.open이 true로 남는 걸
+ * 확인했다. Modal.tsx에는 Escape를 막는 코드가 없으므로 실제 브라우저에서는 동작한다.
+ *
+ * 그래서 키 입력 대신 close()로 같은 상황을 만들고, 우리가 책임지는 부분만 검증한다 —
+ * 네이티브로 닫혔을 때 React 상태가 따라오는가. 상태가 안 따라오면 open이 true로 남아,
+ * 다시 열기를 눌러도 setOpen(true)가 변화를 만들지 못해 effect가 안 돌고 모달이
+ * 영영 안 열린다.
  */
 export const SyncsWithNativeClose: Story = {
   args: { open: false, onClose: fn(), children: null },
