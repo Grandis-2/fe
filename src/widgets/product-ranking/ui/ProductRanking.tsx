@@ -1,19 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-
-import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { useProductCards } from '@entities/product'
 import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
-import { InlineAlert, PriceText } from '@shared/ui'
+import { useScrollArrows } from '@shared/lib/useScrollArrows'
+import { InlineAlert, PriceText, ScrollArrows } from '@shared/ui'
 
 import * as styles from './ProductRanking.css'
 
 const RANK_LIMIT = 10
-// 화살표 한 번에 보이는 폭의 85%만 넘겨, 직전 카드 끝이 살짝 남아 이어지는 줄임을 알 수 있게 한다.
-const PAGE_RATIO = 0.85
 
 const cardClass = (rank: number) =>
   [styles.card, styles.cardSize[rank < 10 ? 'single' : 'double']].join(' ')
@@ -23,31 +19,9 @@ export function ProductRanking() {
   const { data, isPending, isError } = useProductCards('best')
   const ranked = data?.slice(0, RANK_LIMIT)
 
-  const rowRef = useRef<HTMLDivElement>(null)
-  const [canPrev, setCanPrev] = useState(false)
-  const [canNext, setCanNext] = useState(false)
-
-  // 끝에 닿으면 그쪽 화살표를 끈다. 스크롤·줄 폭 변화·목록이 채워질 때마다 다시 잰다.
-  const syncArrows = useCallback(() => {
-    const el = rowRef.current
-    if (!el) return
-    setCanPrev(el.scrollLeft > 4)
-    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4)
-  }, [])
-  const rankedCount = ranked?.length
-  useEffect(() => {
-    const el = rowRef.current
-    if (!el) return
-    // 줄 자체의 폭은 그대로라 목록이 채워져도 ResizeObserver가 안 불린다 — 개수가 바뀌면 한 번 더 잰다.
-    const observer = new ResizeObserver(syncArrows)
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [syncArrows, rankedCount])
-
-  const page = (dir: 1 | -1) => {
-    const el = rowRef.current
-    el?.scrollBy({ left: dir * el.clientWidth * PAGE_RATIO })
-  }
+  const { rowRef, onScroll, canPrev, canNext, page } = useScrollArrows(
+    ranked?.length,
+  )
 
   const message = isError
     ? '많이 찾는 상품을 불러오지 못했어요.'
@@ -64,26 +38,7 @@ export function ProductRanking() {
         >
           많이 찾는 상품 TOP {RANK_LIMIT}
         </h3>
-        <div className={styles.arrows}>
-          <button
-            type="button"
-            className={styles.arrow}
-            aria-label="이전 상품"
-            disabled={!canPrev}
-            onClick={() => page(-1)}
-          >
-            <ChevronLeft size={18} aria-hidden />
-          </button>
-          <button
-            type="button"
-            className={styles.arrow}
-            aria-label="다음 상품"
-            disabled={!canNext}
-            onClick={() => page(1)}
-          >
-            <ChevronRight size={18} aria-hidden />
-          </button>
-        </div>
+        <ScrollArrows canPrev={canPrev} canNext={canNext} onPage={page} />
       </div>
 
       {message ? (
@@ -93,7 +48,7 @@ export function ProductRanking() {
           ref={rowRef}
           className={styles.row}
           aria-busy={isPending}
-          onScroll={syncArrows}
+          onScroll={onScroll}
         >
           {isPending ? (
             <>

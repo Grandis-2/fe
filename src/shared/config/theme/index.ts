@@ -10,6 +10,7 @@ export * as motion from './tokens/motion'
 export { sprinkles } from './sprinkles.css'
 export type { Sprinkles } from './sprinkles.css'
 export {
+  bleedScrollRow,
   glowBackground,
   lineClamp,
   onDark,

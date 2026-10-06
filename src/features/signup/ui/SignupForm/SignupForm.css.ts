@@ -4,8 +4,6 @@ import {
   color,
   motion,
   onDark,
-  primaryGlow,
-  primaryGradient,
   spacing,
   typography,
 } from '@shared/config/theme'
@@ -123,23 +121,4 @@ export const error = style([
   { padding: `${spacing[10]} ${spacing[4]} 0`, color: danger },
 ])
 
-export const submit = style([
-  typography.button.mdBold,
-  {
-    marginTop: spacing[24],
-    height: '54px',
-    border: 'none',
-    borderRadius: '14px',
-    background: primaryGradient,
-    color: color.text.inverse,
-    textDecoration: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    cursor: 'pointer',
-    boxShadow: primaryGlow,
-    selectors: {
-      '&:disabled': { opacity: 0.6, cursor: 'default' },
-    },
-  },
-])
+export const submit = style({ marginTop: spacing[24] })

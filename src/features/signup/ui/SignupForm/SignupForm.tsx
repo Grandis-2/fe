@@ -4,6 +4,7 @@ import { markProfileComplete } from '@entities/auth'
 import { useProfile, useUpdateProfile } from '@entities/profile'
 import { ApiRequestError } from '@shared/api/client'
 import { useFormFields } from '@shared/lib/useFormFields'
+import { ActionButton } from '@shared/ui'
 
 import * as styles from './SignupForm.css'
 
@@ -224,9 +225,14 @@ export function SignupForm({ onComplete, onFail }: SignupFormProps) {
         </div>
       )}
 
-      <button type="submit" className={styles.submit} disabled={isPending}>
+      <ActionButton
+        type="submit"
+        fullWidth
+        className={styles.submit}
+        disabled={isPending}
+      >
         가입 완료
-      </button>
+      </ActionButton>
     </form>
   )
 }
