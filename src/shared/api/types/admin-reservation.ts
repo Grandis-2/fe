@@ -157,51 +157,6 @@ export type AdminReservationListParams = {
   size?: number
 }
 
-export type AdminStatsResponse = {
-  asOf: string
-  runId: string | null
-  /** true면 지표를 0으로 보여주면 안 된다 — 0건과 조회 실패는 다른 상황이다 */
-  queryFailed: boolean
-  accept: {
-    httpRequestCount: number
-    uniqueAcceptedCount: number
-    idempotentReplayCount: number
-    rejectedByReason: Record<string, number>
-  }
-  registration: {
-    acceptedBacklogCount: number
-    oldestAcceptedAgeSeconds: number
-    overdueAcceptedCount: number
-    confirmedCount: number
-    failedByReason: Partial<Record<ReservationFailureCode, number>>
-  }
-  commands: {
-    byKind: Record<
-      CommandKind,
-      {
-        pendingCount: number
-        inProgressCount: number
-        retryingCount: number
-        deadCount: number
-      }
-    >
-    leaseReclaimCount: number
-    pendingCompensationCount: number
-  }
-  reconciliation: {
-    lastSuccessfulRunAt: string | null
-    lastRunStatus: string
-    lastTypeCounts: Record<string, number>
-  }
-  convergence: {
-    acceptedBacklogZero: boolean
-    pendingCompensationZero: boolean
-    lastReconciliationClean: boolean
-    notificationDeadZero: boolean
-    allChecksPassed: boolean
-  }
-}
-
 // ponytail: 재처리 엔드포인트는 명세에 없다. 와이어프레임의 '재처리 시도'를
 // 만들려면 필요해서 같은 작명 규칙으로 임시 정의했다(handlers/admin-reservation.ts
 // 의 같은 주석 참고). 백엔드 계약이 나오면 함께 고친다.

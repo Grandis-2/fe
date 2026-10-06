@@ -2,7 +2,6 @@ import { apiClient } from '@shared/api/client'
 import type {
   AdminMemberListResponse,
   AdminReservationListParams,
-  AdminStatsResponse,
   Paged,
   ReservationSummary,
 } from '@shared/api/types'
@@ -26,12 +25,6 @@ export const getAdminReservations = (
   apiClient.request<Paged<ReservationSummary>>(`${BASE}${toQuery(params)}`, {
     signal,
   })
-
-export const getAdminStats = (runId?: string, signal?: AbortSignal) =>
-  apiClient.request<AdminStatsResponse>(
-    `/api/v1/admin/stats${runId ? `?runId=${runId}` : ''}`,
-    { signal },
-  )
 
 // ponytail: 재처리 엔드포인트는 명세에 없다(shared/api/mock/handlers/
 // admin-reservation.ts의 같은 주석 참고). 계약이 나오면 함께 고친다.

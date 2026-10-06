@@ -1,9 +1,7 @@
 import { apiClient } from '@shared/api/client'
 import type {
-  AdminProductDetail,
   DispatchWindow,
   DispatchWindowPutRequest,
-  ProductOpenAtRequest,
 } from '@shared/api/types'
 
 const dispatchPath = (productId: string) =>
@@ -25,13 +23,3 @@ export const putDispatchWindow = (
     method: 'PUT',
     body,
   })
-
-/** 오픈 시각을 설정한다. 오픈 이후면 409 PRODUCT_ALREADY_OPEN */
-export const putProductOpenAt = (
-  productId: string,
-  body: ProductOpenAtRequest,
-) =>
-  apiClient.request<AdminProductDetail>(
-    `/api/v1/admin/products/${productId}/open-at`,
-    { method: 'PUT', body },
-  )
