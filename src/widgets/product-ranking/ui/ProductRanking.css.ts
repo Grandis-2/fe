@@ -1,10 +1,6 @@
 import { keyframes, style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing } from '@shared/config/theme'
-
-// 어두운 구간에 놓이는 위젯이라 테마와 상관없이 밝은 글자를 쓴다. 바탕은 놓이는 자리가 정한다.
-const onDark = (percent: number) =>
-  `color-mix(in srgb, ${color.text.inverse} ${percent}%, transparent)`
+import { color, motion, onDark, spacing } from '@shared/config/theme'
 
 // 순위 숫자 칸 폭 — 두 자리(10위)는 숫자가 넓어 칸도 넓힌다. 이미지 타일(204px)은 같다.
 const RANK_WIDTH = { single: 96, double: 168 }
@@ -12,7 +8,10 @@ const TILE_WIDTH = 204
 // 숫자 칸이 이미지 밑으로 파고드는 깊이.
 const RANK_OVERLAP = 20
 
+// 어두운 구간에 놓이는 위젯이라 테마와 상관없이 밝은 글자(onDark)를 쓴다. 바탕은 놓이는 자리가 정한다.
 export const root = style({
+  // 줄(row)의 BLEED가 이 폭을 cqw로 잰다.
+  containerType: 'inline-size',
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[20],
@@ -53,12 +52,29 @@ export const arrow = style({
   },
 })
 
+// 줄을 화면 양 끝까지 넓히고 늘린 만큼 안쪽 패딩으로 되돌린다 — 첫 카드는 타이틀 밑에 맞고,
+// 카드는 컨테이너 경계가 아니라 화면 끝에서 잘려 "더 있다"로 읽힌다.
+// %가 아니라 cqw(= root 폭)로 잰다 — scroll-padding의 %는 부모가 아니라 스크롤 영역 자기 폭 기준이라
+// 0이 되고, 스냅이 첫 카드를 화면 끝으로 당긴다.
+// 50vw는 세로 스크롤바 폭까지 포함해 그 절반만큼 가로로 넘치므로, 놓이는 자리가 overflow를 잘라야 한다.
+const BLEED = 'calc(50vw - 50cqw)'
+// 1위 숫자 칸은 오른쪽 정렬이라 좁은 "1" 글자 왼쪽이 이만큼 빈다 — 시작 패딩에서 빼서
+// 칸이 아니라 "1"의 획이 타이틀 시작선에 맞게 한다. 숫자 폰트·크기가 바뀌면 다시 잰다.
+const FIRST_RANK_GAP = 40
+const BLEED_START = `calc(${BLEED} - ${FIRST_RANK_GAP}px)`
+
 export const row = style({
   // 스크린리더용 숨김 글자(srOnly, absolute)의 기준 — 없으면 가로로 밀린 카드 위치 그대로
   // 문서 밖으로 튀어나가 페이지에 가로 스크롤이 생긴다.
   position: 'relative',
   display: 'flex',
   gap: spacing[12],
+  marginInline: `calc(-1 * ${BLEED})`,
+  paddingInlineStart: BLEED_START,
+  paddingInlineEnd: BLEED,
+  // 스냅 기준점도 패딩만큼 안으로 — 없으면 카드가 화면 왼쪽 끝에 붙어 멈춘다.
+  scrollPaddingInlineStart: BLEED_START,
+  scrollPaddingInlineEnd: BLEED,
   overflowX: 'auto',
   scrollSnapType: 'x mandatory',
   scrollBehavior: 'smooth',
@@ -134,7 +150,6 @@ export const tile = style([
   tileBase,
   {
     overflow: 'hidden',
-    padding: '14px',
     background: color.backgroundDark.surface,
   },
 ])
@@ -144,6 +159,9 @@ export const image = style({
   width: '100%',
   height: '100%',
   objectFit: 'contain',
+  // ponytail: 상품 PNG에 투명 여백이 좌우 20%씩 있어 키워서 여백을 타일 밖으로 잘라낸다 —
+  // 여백 없이 꽉 찬 이미지가 들어오면 가장자리가 잘리니 그때는 scale을 뺀다.
+  transform: 'scale(1.5)',
 })
 
 export const info = style({
