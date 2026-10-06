@@ -217,7 +217,17 @@ export const countBadge = style([
     fontSize: '11px',
     lineHeight: 1,
     '@media': {
-      [breakpoint.mobile]: { marginTop: '-17px', marginLeft: '2px' },
+      // 모바일 아이콘(20px)이 작아진 만큼 배지도 줄인다.
+      [breakpoint.mobile]: {
+        marginTop: '-14px',
+        marginLeft: '1px',
+        minWidth: '14px',
+        height: '14px',
+        padding: `0 3px`,
+        borderRadius: '7px',
+        fontSize: '9px',
+        fontWeight: 700,
+      },
       ...webOnly({
         marginTop: '-16px',
         marginLeft: '1px',
