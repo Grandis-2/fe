@@ -48,12 +48,12 @@ export function usePreorderQueue(onComplete: () => void) {
     return () => clearTimeout(id)
   }, [queue, status, hasLeft])
 
-  // 내 차례가 와도 모달을 보고 있을 때만 넘어간다 — 닫혀 있으면 QueuePill이 알려 준다.
+  // 내 차례가 오면 모달이 닫혀 있어도 넘어간다 — 그 사이 QueuePill이 '내 차례예요'를 잠깐 보여 준다.
   useEffect(() => {
-    if (status !== 'mine' || !isOpen) return
+    if (status !== 'mine') return
     const id = setTimeout(() => handleComplete(), COMPLETE_DELAY_MS)
     return () => clearTimeout(id)
-  }, [status, isOpen])
+  }, [status])
 
   // 순번 유지 시간은 모달이 닫혀 있는 동안만 흐른다.
   useEffect(() => {

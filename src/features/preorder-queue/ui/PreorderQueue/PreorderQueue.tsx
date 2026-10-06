@@ -6,7 +6,7 @@ import { QueuePill } from '../QueuePill'
 
 export type PreorderQueueProps = {
   productName: string
-  // 모달을 보고 있을 때 내 차례가 오면 호출된다.
+  // 내 차례가 오면(모달이 닫혀 있어도) 호출된다.
   onComplete: () => void
 }
 

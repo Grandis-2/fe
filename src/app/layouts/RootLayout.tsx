@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 
-import { Outlet, useLocation } from 'react-router'
+import { Outlet, useLocation, useNavigate } from 'react-router'
 
 import { logout, useSession } from '@entities/auth'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
+import { PreorderQueue, usePreorderQueueStore } from '@features/preorder-queue'
 import { SIGNUP_PATH } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
 import { useToastStore } from '@shared/model/toastStore'
@@ -18,7 +19,10 @@ export function RootLayout() {
   const closeModal = useModalStore((state) => state.close)
   const toasts = useToastStore((state) => state.toasts)
   const dismissToast = useToastStore((state) => state.dismiss)
+  const queueTicket = usePreorderQueueStore((state) => state.ticket)
+  const clearQueue = usePreorderQueueStore((state) => state.clear)
   const location = useLocation()
+  const navigate = useNavigate()
 
   // react-router는 페이지 이동 시 스크롤 위치를 유지한다 — 목록 스크롤 후 상세로
   // 들어가면 새 페이지가 그 위치에서 시작해 버리므로 경로가 바뀔 때마다 맨 위로 올린다.
@@ -51,6 +55,16 @@ export function RootLayout() {
         {modalContent}
       </Modal>
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+      {queueTicket && (
+        <PreorderQueue
+          key={queueTicket.joinedAt}
+          productName={queueTicket.productName}
+          onComplete={() => {
+            clearQueue()
+            navigate(queueTicket.to)
+          }}
+        />
+      )}
     </>
   )
 }

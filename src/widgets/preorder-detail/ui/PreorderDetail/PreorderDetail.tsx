@@ -11,7 +11,7 @@ import {
   type PreorderStatus,
 } from '@entities/preorder'
 import { useRequireLogin } from '@features/login'
-import { PreorderQueue } from '@features/preorder-queue'
+import { joinPreorderQueue } from '@features/preorder-queue'
 import { PREORDER_PATH, productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
 import { Button } from '@shared/ui'
@@ -56,11 +56,6 @@ export function PreorderDetail({ preorder }: PreorderDetailProps) {
   const [subscribedIds, setSubscribedIds] = useState<ReadonlySet<string>>(
     () => new Set(),
   )
-  // 예약할 때마다 joinedAt이 바뀌어 PreorderQueue가 다시 마운트된다 — 새로 줄을 선다.
-  const [queue, setQueue] = useState<{
-    model: PreorderModel
-    joinedAt: number
-  } | null>(null)
 
   // 매 렌더 새 Date면 useCountdown의 interval이 매초 다시 걸린다 — 날짜가 바뀔 때만 만든다.
   const openAt = useMemo(
@@ -205,19 +200,14 @@ export function PreorderDetail({ preorder }: PreorderDetailProps) {
         subscribedIds={subscribedIds}
         onReserve={(model) => {
           setIsSheetOpen(false)
-          setQueue({ model, joinedAt: Date.now() })
+          joinPreorderQueue({
+            productName: model.name,
+            to: productPath(model.productId),
+          })
         }}
         onToggleNotify={toggleNotify}
         onPurchase={(model) => navigate(productPath(model.productId))}
       />
-
-      {queue && (
-        <PreorderQueue
-          key={queue.joinedAt}
-          productName={queue.model.name}
-          onComplete={() => navigate(productPath(queue.model.productId))}
-        />
-      )}
     </div>
   )
 }
