@@ -11,6 +11,8 @@ export { useProduct } from './api/useProduct'
 export type { Product } from './model/product'
 export { searchProductCards } from './api/searchProductCards'
 export { useSearchProductCards } from './api/useSearchProductCards'
+export { searchProducts } from './api/searchProducts'
+export { useProductSearch } from './api/useProductSearch'
 export type {
   ProductCardSummary,
   ProductCardSort,
