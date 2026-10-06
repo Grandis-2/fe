@@ -64,6 +64,26 @@ export const Uncontrolled: Story = {
     await userEvent.click(busanOption)
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     await expect(trigger).toHaveTextContent('부산광역시')
+
+    // 위/아래 키로 열고 항목 사이를 옮긴다.
+    trigger.focus()
+    await userEvent.keyboard('{ArrowDown}')
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.keyboard('{ArrowDown}')
+    await expect(
+      canvas.getByRole('button', { name: '서울특별시' }),
+    ).toHaveFocus()
+
+    // Esc로 닫히고 포커스가 트리거로 돌아온다.
+    await userEvent.keyboard('{Escape}')
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    await expect(trigger).toHaveFocus()
+
+    // 메뉴 밖을 누르면 닫힌다.
+    await userEvent.click(trigger)
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    await userEvent.click(document.body)
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
   },
 }
 

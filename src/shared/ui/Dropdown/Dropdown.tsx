@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -40,25 +40,83 @@ export function Dropdown<TValue>({
   className,
 }: DropdownProps<TValue>) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const rootRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  const isControlled = open !== undefined
   const isOpen = open ?? uncontrolledOpen
 
-  const toggle = () => {
-    if (onToggle) onToggle()
-    if (open === undefined) setUncontrolledOpen((prev) => !prev)
+  // 밖에서 쥐고 있으면 상태는 그쪽 것이다 — 바꿔 달라고 알리기만 한다.
+  const setOpen = (next: boolean) => {
+    if (!isControlled) setUncontrolledOpen(next)
+    else if (next !== open) onToggle?.()
+  }
+
+  // 열려 있는 동안만 문서를 듣는다. 메뉴 밖을 누르거나 Esc를 누르면 닫는다 —
+  // 둘 다 없으면 메뉴를 열어둔 채 다른 곳을 눌러도 계속 떠 있다.
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (rootRef.current?.contains(event.target as Node)) return
+      setOpen(false)
+    }
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      // 닫고 나면 포커스가 사라진 메뉴에 남는다 — 트리거로 되돌린다.
+      triggerRef.current?.focus()
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  })
+
+  /**
+   * 위/아래 키로 항목 사이를 옮긴다. 트리거와 항목을 다 감싸는 루트에서 받아야
+   * 닫힌 상태(포커스가 트리거)에서도 같은 키로 열 수 있다.
+   */
+  const handleArrowKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    event.preventDefault()
+
+    if (!isOpen) {
+      setOpen(true)
+      return
+    }
+
+    const items = [...(menuRef.current?.querySelectorAll('button') ?? [])]
+    if (items.length === 0) return
+
+    // 트리거에 포커스가 있으면 -1이라, 아래 키는 첫 항목부터 시작한다.
+    const current = items.indexOf(document.activeElement as HTMLButtonElement)
+    const next =
+      event.key === 'ArrowDown'
+        ? (current + 1) % items.length
+        : current <= 0
+          ? items.length - 1
+          : current - 1
+    items[next].focus()
   }
 
   const select = (option: DropdownOption<TValue>) => {
     onSelect?.(option.value)
-    // 밖에서 쥐고 있으면 닫는 것도 그쪽 몫이다 — 여기서 닫으면 두 번 닫힌다.
-    if (open === undefined) setUncontrolledOpen(false)
+    setOpen(false)
   }
 
   const selectedLabel = options.find((option) => option.value === value)?.label
 
   return (
     <div
+      ref={rootRef}
       className={[styles.root, className].filter(Boolean).join(' ')}
       style={width ? { width } : undefined}
+      onKeyDown={handleArrowKey}
     >
       <div
         className={[styles.box, styles.size[size], isOpen && styles.boxOpen]
@@ -66,9 +124,10 @@ export function Dropdown<TValue>({
           .join(' ')}
       >
         <button
+          ref={triggerRef}
           type="button"
           className={styles.trigger[size]}
-          onClick={toggle}
+          onClick={() => setOpen(!isOpen)}
           aria-expanded={isOpen}
         >
           <span className={styles.triggerLabel}>{selectedLabel ?? label}</span>
@@ -86,7 +145,10 @@ export function Dropdown<TValue>({
         </button>
       </div>
       {isOpen && (
-        <div className={[styles.menu, styles.menuSize[size]].join(' ')}>
+        <div
+          ref={menuRef}
+          className={[styles.menu, styles.menuSize[size]].join(' ')}
+        >
           {options.map((option, index) => (
             // 라벨이 겹칠 수 있다(이름이 같은 상품 등). 문자열을 key로 쓰면
             // React가 항목을 건너뛰거나 겹쳐 그린다 — 위치로 구분한다.
