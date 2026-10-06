@@ -1,6 +1,16 @@
 import { globalStyle, style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import {
+  color,
+  motion,
+  onDark,
+  spacing,
+  typography,
+} from '@shared/config/theme'
+import {
+  fontSize,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
   display: 'flex',
@@ -13,10 +23,10 @@ export const root = style({
 })
 
 // 간격을 gap이 아니라 링크 안쪽 여백으로 준다 — 링크 사이에 커서가 빠지는 빈 틈이
-// 없어야 hover 영역이 끊기지 않는다. 양쪽 15px씩이라 인접 링크 사이는 기존 gap과
-// 같은 30px로 유지된다. 토큰에 없는 값이라(15px) 여기 둔다.
+// 없어야 hover 영역이 끊기지 않는다. 양쪽 14px씩이라 인접 링크 사이는 시안(Web Header)의
+// 28px이 된다.
 // 헤더도 로고~첫 링크 간격을 맞추려면 이 값을 알아야 해서 내보낸다.
-export const NAV_LINK_PADDING_X = '15px'
+export const NAV_LINK_PADDING_X = spacing[14]
 
 // 메가 메뉴가 열려 있는 상태를 가리키는 선택자. 메뉴는 JS 상태 없이 hover/focus로만
 // 열리므로(아래 menu 스타일), 헤더도 이 선택자를 :has()로 보고 배경을 맞춘다.
@@ -27,17 +37,16 @@ export const MEGA_MENU_OPEN = '[data-mega-menu]:is(:hover, :focus-within)'
 export const linksTone = styleVariants({
   default: { color: color.text.secondary },
   onDark: {
-    color: color.text.inverse,
-    selectors: {
-      // 메뉴가 열리면 헤더가 불투명한 흰색이 되므로 평소 색으로 되돌린다.
-      [`${root}:has(${MEGA_MENU_OPEN}) &`]: { color: color.text.secondary },
-    },
+    // 시안(Web Header): 평소 #A3A3A3, 현재·hover는 흰색.
+    color: onDark(64),
   },
 })
 
 export const links = style([
   typography.body.defaultRegular,
   {
+    // 시안(Web Header) 크기 — 토큰에 15px이 없어 여기 둔다.
+    fontSize: '15px',
     display: 'flex',
     alignItems: 'center',
     // brand가 헤더 높이를 채우려면 그 부모인 이 그룹도 같이 늘어나야 한다.
@@ -46,13 +55,35 @@ export const links = style([
 ])
 
 export const divider = style({
-  padding: `0 ${NAV_LINK_PADDING_X}`,
-  fontSize: '10px',
-  color: color.border.default,
+  flexShrink: 0,
+  width: '1px',
+  height: '14px',
+  margin: `0 ${NAV_LINK_PADDING_X}`,
+  background: onDark(18),
 })
 
+// 브랜드 링크 + 메가 메뉴 묶음. 헤더 높이만큼 늘려 링크와 메뉴 사이에 빈 틈이 없게 한다
+// (메뉴가 이 요소의 자식이므로 메뉴 위에 있는 동안에도 :hover가 유지된다).
+export const brand = style({
+  display: 'flex',
+  alignItems: 'stretch',
+  alignSelf: 'stretch',
+})
+
+// 메뉴가 열린 브랜드 링크 — 흰 글자에 아래 2px 선(시안).
+const linkOpen = {
+  color: color.text.inverse,
+  borderBottomColor: color.primary.subtle,
+} as const
+
 export const link = style({
+  display: 'flex',
+  alignItems: 'center',
+  boxSizing: 'border-box',
   border: 'none',
+  // 열린 메뉴 표시선 자리. 위에도 같은 두께를 줘서 글자가 세로 가운데에 남는다.
+  borderTop: '2px solid transparent',
+  borderBottom: '2px solid transparent',
   background: 'transparent',
   padding: `0 ${NAV_LINK_PADDING_X}`,
   font: 'inherit',
@@ -68,8 +99,10 @@ export const link = style({
   transition: [
     `color ${motion.duration.fast} ${motion.easing.default}`,
     `-webkit-text-stroke-color ${motion.duration.fast} ${motion.easing.default}`,
+    `border-color ${motion.duration.fast} ${motion.easing.default}`,
   ].join(', '),
   selectors: {
+    [`${brand}:focus-within &`]: linkOpen,
     '&:hover': {
       color: color.primary.base,
       WebkitTextStrokeColor: 'currentColor',
@@ -79,25 +112,18 @@ export const link = style({
       color: color.text.inverse,
       WebkitTextStrokeColor: 'currentColor',
     },
-    // onDark의 hover 색은 흰색이라, 불투명해진 흰 헤더에선 글자가 사라진다.
-    [`${root}:has(${MEGA_MENU_OPEN}) &:hover`]: {
-      color: color.primary.base,
-      WebkitTextStrokeColor: 'currentColor',
-    },
+  },
+  '@media': {
+    '(hover: hover)': { selectors: { [`${brand}:hover &`]: linkOpen } },
   },
 })
 
-export const linkActive = style([
-  typography.body.defaultMedium,
-  { color: color.primary.base },
-])
-
-// 브랜드 링크 + 메가 메뉴 묶음. 헤더 높이만큼 늘려 링크와 메뉴 사이에 빈 틈이 없게 한다
-// (메뉴가 이 요소의 자식이므로 메뉴 위에 있는 동안에도 :hover가 유지된다).
-export const brand = style({
-  display: 'flex',
-  alignItems: 'center',
-  alignSelf: 'stretch',
+export const linkActive = style({
+  fontWeight: fontWeight.semibold,
+  color: color.primary.base,
+  selectors: {
+    [`${linksTone.onDark} &`]: { color: color.text.inverse },
+  },
 })
 
 const menuOpen = {
@@ -123,9 +149,11 @@ export const menu = style({
   right: 0,
   // 헤더가 sticky가 아닌 페이지(상품 상세)의 sticky 바(z-index 2)보다 위에 오도록.
   zIndex: 20,
-  padding: `${spacing[30]} 0`,
-  background: color.background.base,
-  borderBottom: `1px solid ${color.border.default}`,
+  // 시안(Web Header)의 어두운 패널. 바탕은 Header.css의 열린 헤더와 같은 색이다.
+  padding: '36px 0 44px',
+  background: `color-mix(in srgb, ${color.backgroundDark.base} 94%, transparent)`,
+  borderBottom: `1px solid ${onDark(10)}`,
+  boxShadow: '0 24px 48px rgba(0, 0, 0, 0.5)',
   opacity: 0,
   visibility: 'hidden',
   transform: 'translateY(-4px)',
@@ -197,8 +225,8 @@ globalStyle(`body:has(${brand}:hover)::after`, {
 export const menuInner = style({
   display: 'flex',
   alignItems: 'stretch',
-  gap: spacing[40],
-  padding: `0 ${spacing[40]}`,
+  gap: '48px',
+  padding: '0 48px',
 })
 
 // 카테고리 / 브랜드 두 묶음을 세로로 쌓는다. 남은 폭을 차지해야 타일이 오른쪽
@@ -206,7 +234,7 @@ export const menuInner = style({
 export const menuGroups = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[24],
+  gap: spacing[32],
   flex: 1,
   minWidth: 0,
   // menuInner가 stretch라 두면 aside 높이만큼 늘어난다.
@@ -216,20 +244,54 @@ export const menuGroups = style({
 export const menuGroup = style({
   display: 'flex',
   flexDirection: 'column',
+  gap: spacing[14],
+})
+
+// 타일은 폭 180px 고정이고, 넘치면 다음 줄로 넘어간다. 높이는 타일(megaTile)이 정한다.
+export const menuTileGrid = style({
+  display: 'flex',
+  flexWrap: 'wrap',
   gap: spacing[12],
 })
 
-// 타일은 폭 180px 고정이고, 넘치면 다음 줄로 넘어간다. 높이도 모든 타일이 같아야
-// 해서 행 높이를 썸네일 타일 내용 높이(패딩 12×2 + 썸네일 64 + gap 8 + 글자 한 줄
-// ≈ 114.2px)보다 조금 큰 116px로 맞춘다 — 카테고리/브랜드가 서로 다른 그리드라 1fr로는
-// 둘을 맞출 수 없고, 딱 114px면 내용 높이와 0.2px씩 어긋난다.
-// (menuTile은 모바일 바텀시트도 써서 폭/높이는 타일이 아니라 이 그리드에서 정한다.)
-export const menuTileGrid = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fill, 180px)',
-  gridAutoRows: 'minmax(116px, auto)',
-  gap: spacing[16],
+// 데스크톱 메가 메뉴 타일(시안). 모바일 바텀시트는 아래 menuTile을 그대로 쓴다.
+export const megaTile = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  boxSizing: 'border-box',
+  width: '180px',
+  height: '64px',
+  borderRadius: '14px',
+  border: `1px solid ${onDark(10)}`,
+  background: color.backgroundDark.surface,
+  color: onDark(90),
+  fontSize: fontSize[16],
+  fontWeight: fontWeight.semibold,
+  textDecoration: 'none',
+  whiteSpace: 'nowrap',
+  transition: ['border-color', 'background', 'color']
+    .map((p) => `${p} ${motion.duration.fast} ${motion.easing.default}`)
+    .join(', '),
+  selectors: {
+    // aria-current: 지금 보고 있는 하위 카테고리(CategoryNav.tsx가 URL로 판단).
+    '&:hover, &[aria-current="page"]': {
+      borderColor: color.primary.base,
+      background: `color-mix(in srgb, ${color.primary.base} 8%, ${color.backgroundDark.surface})`,
+      color: color.text.inverse,
+    },
+  },
 })
+
+export const megaTileWithThumbnail = style([
+  megaTile,
+  {
+    flexDirection: 'column',
+    gap: spacing[14],
+    height: '148px',
+    fontSize: '15px',
+  },
+])
 
 export const menuTile = style([
   typography.body.subMedium,
@@ -257,33 +319,24 @@ export const menuTile = style([
   },
 ])
 
-export const menuTileWithThumbnail = style([
-  menuTile,
-  {
-    flexDirection: 'column',
-    gap: spacing[8],
-    padding: spacing[12],
-  },
-])
-
 export const menuTileThumbnail = style({
-  width: '64px',
-  aspectRatio: '1 / 1',
+  width: '88px',
+  height: '64px',
   objectFit: 'contain',
 })
 
 export const menuAside = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[12],
+  gap: spacing[6],
   // 카테고리 타일은 왼쪽, "더 알아보기"는 콘텐츠 박스 오른쪽 끝으로 민다.
   marginLeft: 'auto',
   boxSizing: 'border-box',
-  width: '200px',
+  width: '260px',
   // 타일 쪽이 줄어들며 줄바꿈하지, 이 칸이 같이 줄어들면 안 된다.
   flexShrink: 0,
-  paddingLeft: spacing[30],
-  borderLeft: `1px solid ${color.border.subtle}`,
+  paddingLeft: spacing[32],
+  borderLeft: `1px solid ${onDark(10)}`,
 })
 
 // --- MobileCategoryNav (바텀시트 안) ---
@@ -388,20 +441,31 @@ export const mobileEventBanner = style([
 ])
 
 // 메가 메뉴의 소제목 — 카테고리/브랜드 묶음과 "더 알아보기"가 같이 쓴다.
-export const menuSectionTitle = style([
-  typography.body.subMedium,
-  { color: color.text.tertiary },
-])
+export const menuSectionTitle = style({
+  fontSize: '13px',
+  fontWeight: fontWeight.semibold,
+  letterSpacing: '0.02em',
+  color: onDark(55),
+  selectors: { [`${menuAside} > &`]: { marginBottom: spacing[8] } },
+})
 
-export const menuAsideLink = style([
-  typography.body.sub,
-  {
-    color: color.text.secondary,
-    textDecoration: 'none',
-    whiteSpace: 'nowrap',
-    transition: `color ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { color: color.primary.base },
-    },
+export const menuAsideLink = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  height: '40px',
+  fontSize: '15px',
+  color: onDark(90),
+  textDecoration: 'none',
+  whiteSpace: 'nowrap',
+  transition: `color ${motion.duration.fast} ${motion.easing.default}`,
+  selectors: {
+    '&:hover': { color: color.primary.subtle },
   },
-])
+})
+
+export const menuAsideArrow = style({
+  width: '16px',
+  height: '16px',
+  color: onDark(55),
+})

@@ -37,7 +37,7 @@ export const root = style({
   ].join(', '),
   color: color.text.inverse,
   '@media': {
-    [breakpoint.mobile]: { padding: `100px 0 ${spacing[50]}` },
+    [breakpoint.mobile]: { padding: `100px 0 ${spacing[80]}` },
   },
 })
 

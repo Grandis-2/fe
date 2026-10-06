@@ -6,7 +6,7 @@ import { useUnreadNotificationCount } from '@entities/notification'
 import { KakaoLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
-import { Logo } from '@shared/ui'
+import { Button, Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
 
 import { useHeaderTheme } from '../lib/useHeaderTheme'
@@ -35,6 +35,8 @@ export function Header({
   // 메인페이지에서만 헤더가 sticky다(그 외엔 root의 기본 position: relative를 그대로
   // 쓴다). 추후 다른 페이지도 sticky가 필요해지면 이 조건에 OR로 추가한다.
   const isStickyPage = isMainPage
+  // 어드민을 뺀 헤더는 늘 어두운 디자인이다. 뒤가 어두운 구간이면 바탕만 투명하게 둔다.
+  const isDark = !isAdminPage
   const { headerRef, isOnDark } = useHeaderTheme(pathname)
   // 개수 배지는 회원 쇼핑 화면에서만 — 어드민 종 아이콘은 관리자 알림이라 대상이 다르다.
   const showCounts = isMember && !isAdminPage
@@ -69,9 +71,9 @@ export function Header({
       ref={headerRef}
       className={[
         styles.root,
-        styles.border[isMainPage ? 'hidden' : 'visible'],
+        isDark ? styles.onDark : styles.admin,
+        isDark && !isOnDark && styles.solid,
         isStickyPage && styles.sticky,
-        isOnDark && styles.onDark,
         className,
       ]
         .filter(Boolean)
@@ -81,17 +83,14 @@ export function Header({
         <div className={styles.leftGroup}>
           <Link
             to={isAdminPage ? ADMIN_HOME_PATH : HOME_PATH}
-            className={[styles.logo, isMember && styles.logoMember]
+            className={[styles.logo, isMember && !isDark && styles.logoMember]
               .filter(Boolean)
               .join(' ')}
           >
             <Logo suffix={isAdminPage ? ' ADMIN' : undefined} />
           </Link>
           {!isAdminPage && (
-            <CategoryNav
-              tone={isOnDark ? 'onDark' : 'default'}
-              className={styles.desktopOnly}
-            />
+            <CategoryNav tone="onDark" className={styles.desktopOnly} />
           )}
         </div>
         <div className={styles.actions}>
@@ -128,14 +127,16 @@ export function Header({
                   </Link>
                 </>
               ) : (
-                <button
-                  type="button"
-                  className={[styles.iconButton, styles.desktopOnly].join(' ')}
-                  aria-label="로그인"
+                // 흰 바탕이라 메인 배너(어두운 구간) 위에서도 그대로 보인다.
+                <Button
+                  variant="outline"
+                  size="small"
+                  rounded
+                  className={styles.desktopOnly}
                   onClick={() => openModal(<KakaoLoginModal />)}
                 >
-                  <CircleUser className={styles.icon} aria-hidden="true" />
-                </button>
+                  로그인
+                </Button>
               )}
             </>
           )}
