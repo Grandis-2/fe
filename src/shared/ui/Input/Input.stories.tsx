@@ -34,7 +34,7 @@ export const Filled: Story = {
   play: async ({ canvas }) => {
     const field = canvas.getByRole('textbox')
     await expect(field).toHaveValue('주현')
-    await expect(field).toHaveStyle({ color: 'rgb(27, 32, 84)' }) // primary.focus
+    await expect(field).toHaveStyle({ color: 'rgb(40, 47, 100)' }) // primary.focus
 
     const label = canvas.getByText('이름')
     await expect(label).toHaveStyle({ fontSize: '12px' })
