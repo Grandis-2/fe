@@ -96,7 +96,7 @@ export const subText = style([
 
 export const dueText = style([
   typography.body.caption,
-  { color: color.status.warning },
+  { color: color.primary.base },
 ])
 
 export const attemptText = style([
