@@ -221,14 +221,6 @@ export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
 
   return (
     <div className={styles.root}>
-      {editable && (
-        <div className={styles.toolbar}>
-          <Button size="small" onClick={startEdit}>
-            수정하기
-          </Button>
-        </div>
-      )}
-
       {/* 다시 불러오기에 실패해도 이전 데이터는 남아 표에 그대로 보인다 — 그 사실을 따로 알린다. */}
       {dispatchWindow.isError && dispatchWindow.data && (
         <InlineAlert status="warning">
@@ -261,6 +253,14 @@ export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
         <div className={styles.undeterminedNote}>
           {dispatchWindow.data.undeterminedFromSeq.toLocaleString('ko-KR')}
           번부터는 예상 배송일이 미정입니다.
+        </div>
+      )}
+
+      {editable && (
+        <div className={styles.toolbar}>
+          <Button size="small" onClick={startEdit}>
+            수정하기
+          </Button>
         </div>
       )}
     </div>
