@@ -27,14 +27,18 @@ export const queryPolicy = {
 } as const
 
 /**
- * 폴링 간격. 실패가 이어지면 간격을 두 배씩 늘려(최대 maxMs) 이미 힘든 서버를
- * 더 두드리지 않는다. 성공하면 fetchFailureCount가 0으로 돌아가 원래 간격이 된다.
+ * 폴링 간격. 마지막 조회가 끝내 실패했으면 간격을 늘려, 이미 힘든 서버를 원래 주기로
+ * 계속 두드리지 않는다. 다음 조회가 성공하면 바로 원래 간격으로 돌아온다.
+ *
+ * 실패 횟수에 따라 두 배씩 늘리는 방식은 쓰지 않는다 — TanStack Query는 새 fetch를
+ * 시작할 때 fetchFailureCount를 0으로 되돌려서(query-core의 fetchState), 그 값으로는
+ * '연속 몇 주기째 실패인지'를 셀 수 없다. 한 주기 안의 재시도 횟수만 들어 있다.
  */
 export const pollingInterval =
-  (baseMs: number, maxMs = baseMs * 8) =>
+  (baseMs: number, failedMs = baseMs * 4) =>
   // Query 제네릭과 엮이지 않게 필요한 필드만 받는다.
-  (query: { state: { fetchFailureCount: number } }) =>
-    Math.min(baseMs * 2 ** query.state.fetchFailureCount, maxMs)
+  (query: { state: { status: 'pending' | 'error' | 'success' } }) =>
+    query.state.status === 'error' ? failedMs : baseMs
 
 // QueryClient 기본값 — 정책을 고르지 않은 쿼리도 4xx를 헛되이 재시도하지 않게 한다.
 // 변경(mutation)은 같은 요청이 두 번 반영될 수 있어 자동 재시도하지 않는다.

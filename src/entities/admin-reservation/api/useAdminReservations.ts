@@ -16,8 +16,8 @@ const adminReservationsKey = (params: AdminReservationListParams) =>
   [...RESERVATIONS_KEY, 'list', params] as const
 
 /**
- * 접수는 계속 들어오므로 주기적으로 다시 받는다. 실패가 이어지면 pollingInterval이
- * 간격을 늘려(최대 80초) 이미 힘든 서버를 10초마다 두드리지 않는다.
+ * 접수는 계속 들어오므로 주기적으로 다시 받는다. 조회가 실패하면 pollingInterval이
+ * 간격을 40초로 늘려, 이미 힘든 서버를 10초마다 두드리지 않는다.
  */
 export const useAdminReservations = (params: AdminReservationListParams = {}) =>
   useQuery({
