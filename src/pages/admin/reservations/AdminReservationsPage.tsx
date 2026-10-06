@@ -30,6 +30,7 @@ import {
   Button,
   ConfirmDialog,
   Dropdown,
+  InlineAlert,
   Input,
   SegmentedTabs,
   StatCard,
@@ -113,6 +114,8 @@ export function AdminReservationsPage() {
         onCancel={closeModal}
         onConfirm={() => {
           closeModal()
+          // 지난 실패 문구가 남아 있으면 이번 시도의 결과처럼 보인다.
+          reprocess.reset()
           reprocess.mutate(reservation.reservationId)
         }}
       />,
@@ -292,6 +295,12 @@ export function AdminReservationsPage() {
           )
         })}
       </div>
+
+      {reprocess.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(reprocess.error, '재처리에 실패했습니다.')}
+        </InlineAlert>
+      )}
 
       <div className={styles.toolbar}>
         <SegmentedTabs
