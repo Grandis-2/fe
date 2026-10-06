@@ -61,15 +61,36 @@ export const paymentStatusLabel: Record<PaymentStatus, string> = {
   REFUNDED: '환불 완료',
 }
 
+/**
+ * 결제 열은 브랜드 색만 쓰고, 두 축을 겹쳐 네 상태를 가른다. 옆의 상태 열이 의미별
+ * 색(파랑·초록·빨강·회색)을 쓰고 있어서, 결제까지 색으로 말하면 두 열이 한 덩어리로
+ * 읽힌다.
+ *
+ * - 색: 예약이 살아 있으면 primary, 끝났으면 secondary
+ * - 변형: 돈이 들어온 적 있으면 subtle(채움), 없으면 outline(테두리만)
+ *
+ *            돈 안 들어옴(outline)   돈 들어옴(subtle)
+ *   살아있음   결제 대기               결제 완료      (primary)
+ *   끝남       기한 만료               환불 완료      (secondary)
+ */
 export const paymentStatusColor: Record<
   PaymentStatus,
-  'yellow' | 'green' | 'red' | 'gray'
+  'primary' | 'secondary'
 > = {
-  // 결제 대기는 '아직 안 됨'이지 오류가 아니라서 노랑이다 — 기한이 지나면 빨강으로 간다.
-  PENDING: 'yellow',
-  PAID: 'green',
-  EXPIRED: 'red',
-  REFUNDED: 'gray',
+  PENDING: 'primary',
+  PAID: 'primary',
+  EXPIRED: 'secondary',
+  REFUNDED: 'secondary',
+}
+
+export const paymentStatusVariant: Record<
+  PaymentStatus,
+  'solid' | 'subtle' | 'outline'
+> = {
+  PENDING: 'outline',
+  PAID: 'subtle',
+  EXPIRED: 'outline',
+  REFUNDED: 'subtle',
 }
 
 export const paymentStatusLabels = Object.values(paymentStatusLabel)

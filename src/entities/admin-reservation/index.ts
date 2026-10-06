@@ -13,6 +13,7 @@ export {
   paymentStatusColor,
   paymentStatusLabel,
   paymentStatusLabels,
+  paymentStatusVariant,
   reservationNo,
   reservationStageLabel,
   reservationStages,
