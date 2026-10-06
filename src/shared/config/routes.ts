@@ -45,8 +45,13 @@ export const ADMIN_HOME_PATH = '/admin'
 
 export const ADMIN_PRODUCTS_PATH = '/admin/products'
 export const ADMIN_PRODUCT_NEW_PATH = '/admin/products/new'
-export const adminProductPath = (productId: string) =>
-  `${ADMIN_PRODUCTS_PATH}/${productId}`
+// 상세 화면의 탭. 어느 탭으로 보낼지 정하는 쪽(목록)과 읽는 쪽(상세)이 떨어져 있어
+// 값은 여기 두고 양쪽이 같은 것을 쓴다 — 라벨은 상세 화면이 들고 있다.
+export const ADMIN_PRODUCT_TABS = ['edit', 'stock', 'shipping'] as const
+export type AdminProductTab = (typeof ADMIN_PRODUCT_TABS)[number]
+
+export const adminProductPath = (productId: string, tab?: AdminProductTab) =>
+  `${ADMIN_PRODUCTS_PATH}/${productId}${tab ? `?tab=${tab}` : ''}`
 
 export const ADMIN_PROMOTIONS_PATH = '/admin/preorders'
 export const ADMIN_PROMOTION_NEW_PATH = '/admin/preorders/new'
