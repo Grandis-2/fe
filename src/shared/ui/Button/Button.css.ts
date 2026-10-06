@@ -98,6 +98,16 @@ export const solid = styleVariants({
       },
     },
   },
+  close: {
+    background: color.close.base,
+    borderColor: 'transparent',
+    color: color.close.text,
+    selectors: {
+      '&:hover:not(:disabled)': {
+        background: color.close.hover,
+      },
+    },
+  },
 })
 
 export const subtle = styleVariants({
@@ -134,6 +144,16 @@ export const subtle = styleVariants({
       },
     },
   },
+  close: {
+    background: 'transparent',
+    borderColor: 'transparent',
+    color: color.close.text,
+    selectors: {
+      '&:hover:not(:disabled)': {
+        background: color.close.base,
+      },
+    },
+  },
 })
 
 export const outline = styleVariants({
@@ -164,6 +184,16 @@ export const outline = styleVariants({
     selectors: {
       '&:hover:not(:disabled)': {
         background: color.background.subSurface,
+      },
+    },
+  },
+  close: {
+    background: 'transparent',
+    borderColor: color.close.hover,
+    color: color.close.text,
+    selectors: {
+      '&:hover:not(:disabled)': {
+        background: color.close.base,
       },
     },
   },

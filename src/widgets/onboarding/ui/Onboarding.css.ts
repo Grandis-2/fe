@@ -1,5 +1,6 @@
 import { keyframes, style } from '@vanilla-extract/css'
 
+import { motion } from '@shared/config/theme'
 import { fontFamily } from '@shared/config/theme/tokens/typography/base'
 
 import { palette } from '../model/palette'
@@ -125,7 +126,7 @@ export const skip = style({
   fontFamily: fontFamily.pretendard,
   fontSize: '15px',
   cursor: 'pointer',
-  transition: 'transform .5s cubic-bezier(.3,1.8,.5,1), opacity .3s',
+  transition: `transform ${motion.duration.slow} ${motion.easing.spring}, opacity .3s`,
   selectors: { '&:active': { transform: 'scale(.9)' } },
 })
 

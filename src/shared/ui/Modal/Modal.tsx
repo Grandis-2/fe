@@ -47,7 +47,7 @@ export function Modal({ open, onClose, children, padding }: ModalProps) {
         aria-label="닫기"
         onClick={onClose}
       >
-        <X aria-hidden="true" size={20} />
+        <X aria-hidden="true" size={18} />
       </button>
       {/* 여백/레이아웃은 내용 쪽이 자기 래퍼에 들고 온다 — dialog 자신에 컨슈머
           스타일(예: display:flex)이 붙으면 [open] 여부와 무관하게 항상 적용돼

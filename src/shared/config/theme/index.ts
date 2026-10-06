@@ -9,4 +9,11 @@ export * as typography from './tokens/typography/semantic.css'
 export * as motion from './tokens/motion'
 export { sprinkles } from './sprinkles.css'
 export type { Sprinkles } from './sprinkles.css'
-export { lineClamp } from './mixins'
+export {
+  glowBackground,
+  lineClamp,
+  onDark,
+  primaryGlow,
+  primaryGradient,
+  statusOnDark,
+} from './mixins'

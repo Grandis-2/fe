@@ -51,6 +51,12 @@ export const color = createGlobalTheme(':root', {
     base: '#0F1215',
     surface: '#17191D',
   },
+  // 어두운 시트·오버레이 위 닫기 버튼 — 테마와 상관없이 늘 어두운 바탕용이라 두 테마 값이 같다.
+  close: {
+    base: 'rgba(255, 255, 255, 0.1)',
+    hover: 'rgba(255, 255, 255, 0.16)',
+    text: 'rgba(255, 255, 255, 0.9)',
+  },
 })
 
 // 다크모드 — 같은 변수에 값만 바꿔 꽂으므로 컴포넌트는 color.* 그대로 쓰면 된다.
@@ -110,6 +116,11 @@ createGlobalTheme(':root[data-theme="dark"]', color, {
   backgroundDark: {
     base: '#0F1215',
     surface: '#17191D',
+  },
+  close: {
+    base: 'rgba(255, 255, 255, 0.1)',
+    hover: 'rgba(255, 255, 255, 0.16)',
+    text: 'rgba(255, 255, 255, 0.9)',
   },
 })
 
