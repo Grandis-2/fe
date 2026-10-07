@@ -92,9 +92,16 @@ export const Uncontrolled: Story = {
     await userEvent.keyboard('{ArrowUp}')
     await waitFor(() => expect(option('부산광역시')).toHaveFocus())
 
-    // 키보드로 고르면 사라지는 항목 버튼에 포커스를 남기지 않고 트리거로 돌아온다.
+    // 한 칸 더 올려 지금 고른 값과 다른 항목으로 옮긴다 — 같은 항목에 Enter를
+    // 누르면 선택이 반영되지 않아도 문구가 그대로라 통과해 버린다.
+    await userEvent.keyboard('{ArrowUp}')
+    await expect(option('경기도')).toHaveFocus()
+
+    // 키보드로 고른 값이 실제로 반영되고, 사라지는 항목 버튼에 포커스를 남기지
+    // 않고 트리거로 돌아온다.
     await userEvent.keyboard('{Enter}')
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    await expect(trigger).toHaveTextContent('경기도')
     await expect(trigger).toHaveFocus()
 
     // 메뉴 밖을 누르면 닫힌다.
