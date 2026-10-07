@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router'
 
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
+import { MOCK_ORDERS } from '@entities/order'
 import { KakaoLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
@@ -42,11 +43,23 @@ export function Header({
   const showCounts = isMember && !isAdminPage
   const { data: cartCount = 0 } = useCartCount(showCounts)
   const { data: notificationCount = 0 } = useUnreadNotificationCount(showCounts)
+  // ponytail: 주문 API가 없어 목업에서 센다 — API가 붙으면 장바구니 개수처럼 조회 훅으로 바꾼다.
+  const pendingPurchaseCount = showCounts
+    ? MOCK_ORDERS.filter((order) => order.status === 'confirm').length
+    : 0
 
   // 아이콘 오른쪽 위 숫자. 0이면 안 그린다(개수는 aria-label에 따로 담는다).
-  const countBadge = (count: number) =>
+  const countBadge = (count: number, tone?: 'warning') =>
     count > 0 && (
-      <span className={styles.countBadge} aria-hidden="true">
+      <span
+        className={[
+          styles.countBadge,
+          tone === 'warning' && styles.countBadgeWarning,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        aria-hidden="true"
+      >
         {count > 99 ? '99+' : count}
       </span>
     )
@@ -118,12 +131,20 @@ export function Header({
                   </Link>
                   <Link
                     to={mypagePath('preorder-check')}
-                    className={[styles.iconButton, styles.desktopOnly].join(
-                      ' ',
-                    )}
-                    aria-label="마이페이지"
+                    className={[
+                      styles.iconButton,
+                      styles.badgeAnchor,
+                      styles.desktopOnly,
+                    ].join(' ')}
+                    aria-label={
+                      pendingPurchaseCount > 0
+                        ? `마이페이지, 구매 확정 대기 ${pendingPurchaseCount}건`
+                        : '마이페이지'
+                    }
                   >
                     <CircleUser className={styles.icon} aria-hidden="true" />
+                    {/* 해야 할 일(구매 확정)이라 개수 배지와 달리 경고색이다. */}
+                    {countBadge(pendingPurchaseCount, 'warning')}
                   </Link>
                 </>
               ) : (

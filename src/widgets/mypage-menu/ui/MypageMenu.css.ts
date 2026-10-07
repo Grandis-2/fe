@@ -1,87 +1,114 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import {
+  breakpoint,
+  color,
+  motion,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
+import { headerHeight } from '@widgets/header'
 
+const brandTint = (percent: number) =>
+  `color-mix(in srgb, ${color.primary.subtle} ${percent}%, transparent)`
+
+// 넓은 화면에선 220px 세로 메뉴가 스크롤을 따라온다.
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[30],
-  width: '202px',
-  padding: spacing[20],
-  borderRadius: '12px',
-  background: color.background.base,
-  border: `1px solid ${color.border.default}`,
+  gap: spacing[24],
+  minWidth: 0,
+  '@media': {
+    [breakpoint.desktop]: {
+      flex: '0 0 220px',
+      position: 'sticky',
+      top: `calc(${headerHeight} + ${spacing[24]})`,
+    },
+  },
 })
 
-export const heading = style({
+export const profile = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[14],
+})
+
+export const avatar = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  width: '48px',
+  height: '48px',
+  borderRadius: '50%',
+  background: brandTint(16),
+  color: color.primary.subtle,
+})
+
+export const profileTexts = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[4],
-  alignItems: 'flex-start',
+  gap: '3px',
+  minWidth: 0,
 })
 
-export const headingLabel = style([
-  typography.body.subMedium,
-  { color: color.text.tertiary },
-])
 export const userName = style([
-  typography.title.lgSemibold,
-  { color: color.text.primary },
+  typography.body.defaultMedium,
+  { fontSize: '17px', fontWeight: fontWeight.bold },
 ])
 
-export const sections = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[20],
-  width: '100%',
-})
-
-export const section = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[8],
-  width: '100%',
-})
-
-export const sectionTitle = styleVariants({
-  active: [
-    typography.body.subMedium,
-    { color: color.primary.focus, textAlign: 'left' },
-  ],
-  inactive: [
-    typography.body.subMedium,
-    { color: color.text.tertiary, textAlign: 'left' },
-  ],
-})
-
-export const linkList = style({
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  gap: spacing[6],
-})
-
-export const link = style([
+export const email = style([
   typography.body.sub,
   {
-    boxSizing: 'border-box',
-    height: '24px',
-    padding: `${spacing[2]} 0`,
-    color: color.text.secondary,
-    background: 'transparent',
-    border: 'none',
-    borderBottom: '1.5px solid transparent',
-    cursor: 'pointer',
-    transition: [
-      `color ${motion.duration.fast} ${motion.easing.default}`,
-      `border-bottom-color ${motion.duration.fast} ${motion.easing.default}`,
-    ].join(', '),
+    overflow: 'hidden',
+    color: color.text.tertiary,
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
 ])
 
-export const linkActive = style({
-  fontWeight: fontWeight.semibold,
-  color: color.primary.base,
-  borderBottomColor: color.primary.base,
+// 좁은 화면에선 가로 탭 — 넘치면 옆으로 스크롤한다.
+export const nav = style({
+  display: 'flex',
+  gap: spacing[4],
+  overflowX: 'auto',
+  scrollbarWidth: 'none',
+  '@media': {
+    [breakpoint.desktop]: { flexDirection: 'column', overflowX: 'visible' },
+  },
 })
+
+export const link = style([
+  typography.body.defaultRegular,
+  {
+    display: 'flex',
+    alignItems: 'center',
+    flexShrink: 0,
+    height: '44px',
+    padding: `0 ${spacing[14]}`,
+    border: 'none',
+    borderRadius: '10px',
+    background: 'transparent',
+    color: color.text.tertiary,
+    textAlign: 'left',
+    whiteSpace: 'nowrap',
+    cursor: 'pointer',
+    transition: [
+      `background-color ${motion.duration.fast} ${motion.easing.default}`,
+      `color ${motion.duration.fast} ${motion.easing.default}`,
+    ].join(', '),
+    selectors: {
+      '&:hover': {
+        background: color.background.surface,
+        color: color.text.primary,
+      },
+      // 지금 보고 있는 탭 — 굵기는 transition하지 않는다(폭이 흔들림).
+      '&[aria-current="page"], &[aria-current="page"]:hover': {
+        background: brandTint(16),
+        color: color.text.primary,
+        fontWeight: fontWeight.bold,
+      },
+    },
+  },
+])

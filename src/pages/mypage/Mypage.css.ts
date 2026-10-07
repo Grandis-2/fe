@@ -1,16 +1,36 @@
-import { globalStyle, style } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
-import { spacing, typography, color, breakpoint } from '@shared/config/theme'
+import {
+  breakpoint,
+  color,
+  glowBackground,
+  spacing,
+} from '@shared/config/theme'
+import { headerHeight } from '@widgets/header'
 
+// 어두운 페이지 — 헤더 높이만큼 끌어올려 헤더 뒤까지 빛이 이어지게 한다(data-header-theme="dark").
 export const root = style({
+  boxSizing: 'border-box',
+  minHeight: '100vh',
+  marginTop: `calc(-1 * ${headerHeight})`,
+  paddingTop: headerHeight,
+  background: glowBackground.desktop,
+  color: color.text.primary,
+  '@media': {
+    [breakpoint.mobile]: { background: glowBackground.mobile },
+  },
+})
+
+// 넓은 화면은 왼쪽 메뉴 + 오른쪽 내용, 좁은 화면은 위에서 아래로 쌓인다.
+export const layout = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[20],
+  gap: spacing[24],
   '@media': {
     [breakpoint.desktop]: {
-      gap: spacing[40],
       flexDirection: 'row',
       alignItems: 'flex-start',
+      gap: spacing[40],
     },
   },
 })
@@ -18,49 +38,4 @@ export const root = style({
 export const content = style({
   flex: 1,
   minWidth: 0,
-})
-
-export const title = style([
-  typography.title.xlSemibold,
-  {
-    marginBottom: spacing[40],
-    padding: '12px 0px 12px 4px',
-    borderBottom: `2px solid ${color.primary.focus}`,
-    '@media': {
-      // 모바일은 위 탭이 현재 위치를 이미 보여준다.
-      [breakpoint.mobile]: { display: 'none' },
-    },
-  },
-])
-
-export const desktopOnly = style({
-  '@media': {
-    [breakpoint.mobile]: { display: 'none' },
-  },
-})
-
-export const mobileHeader = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[12],
-  '@media': {
-    [breakpoint.desktop]: { display: 'none' },
-  },
-})
-
-export const mobileUserName = style([
-  typography.title.lgSemibold,
-  { color: color.text.primary },
-])
-
-// SegmentedTabs 기본값(fit-content)을 덮어 화면 폭을 4칸이 똑같이 나눠 갖게 한다.
-export const mobileTabs = style({
-  boxSizing: 'border-box',
-  width: '100%',
-})
-
-// 기본 좌우 패딩(14px)이면 320px 폭에서 4칸이 넘쳐 페이지가 가로로 밀린다.
-globalStyle(`${mobileTabs} > button`, {
-  flex: 1,
-  paddingInline: spacing[4],
 })

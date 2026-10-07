@@ -241,6 +241,12 @@ export const countBadge = style([
   },
 ])
 
+// 구매 확정 대기 — 해야 할 일이라 노란 경고색. 밝은 바탕이라 글자는 어둡게.
+export const countBadgeWarning = style({
+  background: color.status.warning,
+  color: color.backgroundDark.base,
+})
+
 export const icon = style({
   width: '24px',
   height: '24px',
