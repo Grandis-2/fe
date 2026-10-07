@@ -30,6 +30,7 @@ export const useAdminProduct = (productId: string) =>
     ...queryPolicy.live,
   })
 
+/** 조합별 재고 수량. 옵션 이름·가격은 상품 상세에 있어 둘을 합쳐 써야 한다 */
 export const useAdminProductStock = (productId: string) =>
   useQuery({
     queryKey: adminProductStockKey(productId),
@@ -104,11 +105,13 @@ const useDisplayStatusMutation = <TVariables>(
   })
 }
 
+/** 초안·숨김 → 게시중. 사유를 받지 않는다 */
 export const usePublishAdminProduct = () =>
   useDisplayStatusMutation((productId: string) =>
     publishAdminProduct(productId),
   )
 
+/** 게시중 → 숨김. 서버가 5자 이상의 사유를 요구한다 */
 export const useHideAdminProduct = () =>
   useDisplayStatusMutation(
     ({ productId, reason }: { productId: string; reason: string }) =>

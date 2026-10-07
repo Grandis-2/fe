@@ -16,6 +16,10 @@ export type BreadcrumbProps = {
   className?: string
 }
 
+/**
+ * 현재 위치를 상위 경로와 함께 보여준다. 마지막 항목은 `to`를 비워 현재 위치로
+ * 그린다 — 지금 보고 있는 화면으로 가는 링크는 누를 데가 없다.
+ */
 export function Breadcrumb({ items, className }: BreadcrumbProps) {
   return (
     <nav

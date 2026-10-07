@@ -50,11 +50,13 @@ export const ADMIN_PRODUCT_NEW_PATH = '/admin/products/new'
 export const ADMIN_PRODUCT_TABS = ['edit', 'stock', 'shipping'] as const
 export type AdminProductTab = (typeof ADMIN_PRODUCT_TABS)[number]
 
+/** 상품 상세. tab을 주면 그 탭으로 바로 연다(안 주면 상세의 기본 탭) */
 export const adminProductPath = (productId: string, tab?: AdminProductTab) =>
   `${ADMIN_PRODUCTS_PATH}/${productId}${tab ? `?tab=${tab}` : ''}`
 
 export const ADMIN_PROMOTIONS_PATH = '/admin/preorders'
 export const ADMIN_PROMOTION_NEW_PATH = '/admin/preorders/new'
+/** 프로모션 상세(수정) */
 export const adminPromotionPath = (promotionId: string) =>
   `${ADMIN_PROMOTIONS_PATH}/${promotionId}`
 

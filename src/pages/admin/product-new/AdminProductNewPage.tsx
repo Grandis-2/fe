@@ -8,6 +8,10 @@ import { AdminProductForm } from '@widgets/admin/product-form'
 
 import * as styles from './AdminProductNewPage.css'
 
+/**
+ * 새 상품 등록. 등록은 항상 초안으로 들어가고, 공개는 상세 화면에서 따로 누른다 —
+ * 옵션·가격을 다 채우기 전에 구매자에게 노출되지 않게 한다.
+ */
 export function AdminProductNewPage() {
   const navigate = useNavigate()
   const create = useCreateAdminProduct()

@@ -8,11 +8,14 @@ import type { AdminProductListParams } from '@shared/api/types'
  */
 export const ADMIN_PRODUCTS_KEY = ['admin', 'products'] as const
 
+/** 목록. 검색어·상태가 바뀌면 키가 바뀌어 이전 요청이 취소된다 */
 export const adminProductsKey = (params: AdminProductListParams) =>
   [...ADMIN_PRODUCTS_KEY, 'list', params] as const
 
+/** 상세. 헤더·탭·재고 표·수정 폼이 같은 키를 써서 요청은 한 번만 나간다 */
 export const adminProductKey = (productId: string) =>
   [...ADMIN_PRODUCTS_KEY, productId] as const
 
+/** 조합별 재고. 상세 아래에 두어 상세를 무효화하면 재고도 같이 받는다 */
 export const adminProductStockKey = (productId: string) =>
   [...adminProductKey(productId), 'stock'] as const

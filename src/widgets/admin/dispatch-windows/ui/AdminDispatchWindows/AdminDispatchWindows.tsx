@@ -32,6 +32,13 @@ export type AdminDispatchWindowsProps = {
 // 끝 번호 칸이 끝없이 길어지지 않게 자릿수를 막는다(백만 단위까지).
 const SEQ_MAX_LENGTH = 7
 
+/**
+ * 사전 예약 상품의 배송 차수 설정. 차수마다 끝 번호와 예상 배송일을 받고, 시작
+ * 번호는 앞 차수에서 이어 계산한다(toWaves).
+ *
+ * 저장은 전체 덮어쓰기다. 오픈 이후에는 잠긴다 — 이미 배정된 순번의 배송 약속을
+ * 뒤에서 바꾸면 안 되고, 서버도 409로 막는다.
+ */
 export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
   const product = useAdminProduct(productId)
   const dispatchWindow = useDispatchWindow(productId)
