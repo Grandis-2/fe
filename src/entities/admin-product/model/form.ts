@@ -8,6 +8,8 @@ import type {
 } from '@shared/api/types'
 import type { UploadedImage } from '@shared/ui'
 
+import { COLOR_GROUP_CODE } from './types'
+
 /* ------------------------------------------------------------------ *
  * 폼이 편집하는 모양 — 서버 DTO와 형태가 달라서 별도로 둔다.
  * (색상/옵션을 편집 중에는 코드가 없고, 조합 수량은 맵으로 들고 있다)
@@ -41,6 +43,8 @@ export type AdminProductFormValue = {
   name: string
   /** 서버의 productId로 저장되는 모델 코드 */
   modelName: string
+  /** PRODUCT_BRANDS 중 하나. 아직 고르지 않았으면 빈 문자열 */
+  brand: string
   isPreorder: boolean
   /** datetime-local 형식 문자열 */
   openAt: string
@@ -78,10 +82,12 @@ export function createOptionGroup(): ProductOptionGroup {
   return { id: crypto.randomUUID(), name: '', values: [createOptionValue()] }
 }
 
+/** 새 상품 등록 폼의 초기값 */
 export function createEmptyProductFormValue(): AdminProductFormValue {
   return {
     name: '',
     modelName: '',
+    brand: '',
     isPreorder: false,
     openAt: '',
     closeAt: '',
@@ -180,8 +186,6 @@ export function getProductVariants(
 /* ------------------------------------------------------------------ *
  * 폼 값 ↔ 서버 DTO
  * ------------------------------------------------------------------ */
-
-const COLOR_GROUP_CODE = 'color'
 
 // datetime-local('2026-09-20T09:00')을 서버가 쓰는 ISO 문자열로 바꾼다.
 const toIso = (local: string) =>
@@ -356,6 +360,8 @@ export function toUpsertRequest(
   return {
     productId: value.modelName || null,
     name: value.name,
+    // 안 골랐으면 키를 아예 빼서 수정 때 기존 브랜드를 빈 값으로 덮지 않는다.
+    brand: value.brand || undefined,
     optionGroups,
     variants,
     images: value.detailImages.map((image, index) => ({
@@ -370,7 +376,6 @@ export function toUpsertRequest(
   }
 }
 
-/** 상세 응답을 폼이 편집할 수 있는 모양으로 되돌린다 */
 /**
  * 옵션 값 하나의 추가금을 variant 가격에서 되돌린다.
  *
@@ -394,6 +399,7 @@ function extraPriceOf(
   return Math.min(...prices) - detail.priceRange.min
 }
 
+/** 상세 응답을 폼이 편집할 수 있는 모양으로 되돌린다 */
 export function toFormValue(
   detail: AdminProductDetail,
   stockItems: AdminStockItem[] = [],
@@ -409,6 +415,7 @@ export function toFormValue(
     ...createEmptyProductFormValue(),
     name: detail.name,
     modelName: detail.productId,
+    brand: detail.brand,
     isPreorder: detail.badges.includes('PREORDER'),
     openAt: toLocalInput(detail.sale.openAt),
     closeAt: toLocalInput(detail.sale.closeAt),

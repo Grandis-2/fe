@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react'
+import { Fragment } from 'react'
 
 import { ChevronRight } from 'lucide-react'
 import { useSearchParams } from 'react-router'
@@ -7,10 +7,11 @@ import { ProductCard, useSearchProductCards } from '@entities/product'
 import type { ProductCardSort } from '@entities/product'
 import { useProductCardSelection } from '@features/product-card-select'
 import { Container, Dropdown, InlineAlert } from '@shared/ui'
+import type { DropdownOption } from '@shared/ui'
 
 import * as styles from './SearchPage.css'
 
-const SORT_OPTIONS: { label: string; value: ProductCardSort }[] = [
+const SORT_OPTIONS: DropdownOption<ProductCardSort>[] = [
   { label: '낮은 가격순', value: 'PRICE_ASC' },
   { label: '높은 가격순', value: 'PRICE_DESC' },
 ]
@@ -23,13 +24,12 @@ export function SearchPage() {
   const brand = searchParams.get('brand') ?? undefined
   const sort = SORT_OPTIONS.find(
     ({ value }) => value === searchParams.get('sort'),
-  )
-  const [isSortOpen, setIsSortOpen] = useState(false)
+  )?.value
   const { data, isPending, isError } = useSearchProductCards({
     category,
     subCategory,
     brand,
-    sort: sort?.value,
+    sort,
   })
   const { getCardProps } = useProductCardSelection()
   const message = isPending
@@ -41,13 +41,11 @@ export function SearchPage() {
         : null
 
   // 정렬도 URL에 남겨서 새로고침·공유해도 유지되게 한다.
-  const handleSortSelect = (_: string, index: number) => {
+  const handleSortSelect = (value: ProductCardSort) =>
     setSearchParams((prev) => {
-      prev.set('sort', SORT_OPTIONS[index].value)
+      prev.set('sort', value)
       return prev
     })
-    setIsSortOpen(false)
-  }
 
   const breadcrumb = [category ?? '전체', brand, subCategory].filter(
     (label) => label !== undefined,
@@ -73,10 +71,8 @@ export function SearchPage() {
           size="small"
           width="120px"
           label="가격순"
-          options={SORT_OPTIONS.map(({ label }) => label)}
-          open={isSortOpen}
-          selectedOption={sort?.label}
-          onToggle={() => setIsSortOpen((open) => !open)}
+          options={SORT_OPTIONS}
+          value={sort}
           onSelect={handleSortSelect}
         />
       </div>
