@@ -1,10 +1,11 @@
-import { type AdminDisplayStatus } from '@entities/admin-product'
+import { type AdminProduct } from '@entities/admin-product'
 import { Button } from '@shared/ui'
 
 import type { VisibilityTarget } from '../../lib/useProductVisibility'
 
 export type AdminProductVisibilityProps = {
-  product: VisibilityTarget & { displayStatus: AdminDisplayStatus }
+  /** 모양을 정하는 데 필요한 세 필드만 받는다 — 목록 요약과 상세 둘 다 넘길 수 있다 */
+  product: Pick<AdminProduct, 'productId' | 'name' | 'displayStatus'>
   onPublish: (product: VisibilityTarget) => void
   onHide: (product: VisibilityTarget) => void
   /** 전환 요청이 도는 중 — 같은 전환을 두 번 보내지 않게 버튼을 막는다 */

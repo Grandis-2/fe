@@ -23,3 +23,7 @@ export const adminProductKey = (productId: string) =>
 /** 조합별 재고. 상세 아래에 두어 상세를 무효화하면 재고도 같이 받는다 */
 export const adminProductStockKey = (productId: string) =>
   [...adminProductKey(productId), 'stock'] as const
+
+/** 배송 차수 구성. 상세 아래에 두어 상품을 무효화하면 차수도 같이 받는다 */
+export const adminDispatchWindowKey = (productId: string) =>
+  [...adminProductKey(productId), 'dispatch-window'] as const
