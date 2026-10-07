@@ -49,6 +49,11 @@ const brandOptions: DropdownOption<string>[] = PRODUCT_BRANDS.map((brand) => ({
   value: brand,
 }))
 
+/**
+ * 상품 등록·수정 폼. 등록과 수정이 같은 본문을 쓰므로 제출 문구만 mode로 가른다.
+ * 조합(색상 × 옵션)은 상태로 두지 않고 매번 파생시켜, 옵션을 고쳐도 입력한
+ * 수량이 살아남는다.
+ */
 export function AdminProductForm({
   mode,
   defaultValue,

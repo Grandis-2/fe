@@ -57,6 +57,10 @@ const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
   timeStyle: 'short',
 })
 
+/**
+ * 상품 목록. 검색어·판매 상태는 서버가 걸러주고, 유형과 정렬은 응답에 해당
+ * 파라미터가 없어 화면에서 처리한다.
+ */
 export function AdminProductsPage() {
   const navigate = useNavigate()
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')

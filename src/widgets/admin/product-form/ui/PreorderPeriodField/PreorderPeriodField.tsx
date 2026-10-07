@@ -33,6 +33,7 @@ const parseDate = (value: string) => {
 const formatKorean = (date: Date, time: string) =>
   `${date.getFullYear()}년 ${date.getMonth() + 1}월 ${date.getDate()}일 (${WEEKDAYS[date.getDay()]}) ${time}`
 
+/** 사전 예약 오픈 일시 선택. 마감은 항상 오픈 당일 23:59로 함께 계산한다 */
 export function PreorderPeriodField({
   openAt,
   onChange,

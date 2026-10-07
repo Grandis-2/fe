@@ -15,6 +15,10 @@ export type ColorOptionEditorProps = {
   onChange: (colors: ProductColorOption[]) => void
 }
 
+/**
+ * 색상 옵션 편집. '색상 없음'은 칸 하나가 아니라 상품 전체의 성격이라 모든 칸에
+ * 함께 걸린다 — 한쪽만 켜지면 조합 계산과 화면이 어긋난다.
+ */
 export function ColorOptionEditor({
   colors,
   onChange,

@@ -82,6 +82,7 @@ export function createOptionGroup(): ProductOptionGroup {
   return { id: crypto.randomUUID(), name: '', values: [createOptionValue()] }
 }
 
+/** 새 상품 등록 폼의 초기값 */
 export function createEmptyProductFormValue(): AdminProductFormValue {
   return {
     name: '',
@@ -375,7 +376,6 @@ export function toUpsertRequest(
   }
 }
 
-/** 상세 응답을 폼이 편집할 수 있는 모양으로 되돌린다 */
 /**
  * 옵션 값 하나의 추가금을 variant 가격에서 되돌린다.
  *
@@ -399,6 +399,7 @@ function extraPriceOf(
   return Math.min(...prices) - detail.priceRange.min
 }
 
+/** 상세 응답을 폼이 편집할 수 있는 모양으로 되돌린다 */
 export function toFormValue(
   detail: AdminProductDetail,
   stockItems: AdminStockItem[] = [],

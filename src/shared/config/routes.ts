@@ -36,6 +36,7 @@ export const RESULT_STATUSES = ['preorder', 'paid', 'failed'] as const
 export type ResultStatus = (typeof RESULT_STATUSES)[number]
 
 export const RESULT_PATH = '/result'
+/** 결제·예약 결과 화면. 어떤 결과를 보여줄지는 쿼리로 넘긴다 */
 export const resultPath = (status: ResultStatus) =>
   `${RESULT_PATH}?status=${status}`
 

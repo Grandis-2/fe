@@ -13,6 +13,7 @@ import { AdminPromotionForm } from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionNewPage.css'
 
+/** 새 사전예약 프로모션 등록. ponytail: API가 없어 저장은 목록 복귀까지만 한다 */
 export function AdminPromotionNewPage() {
   const navigate = useNavigate()
 

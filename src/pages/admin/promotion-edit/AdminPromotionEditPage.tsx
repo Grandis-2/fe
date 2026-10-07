@@ -18,6 +18,7 @@ import { AdminPromotionForm } from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionEditPage.css'
 
+/** 사전예약 프로모션 수정. ponytail: API가 없어 목 데이터로 화면만 맞춰 둔다 */
 export function AdminPromotionEditPage() {
   const navigate = useNavigate()
   const { promotionId = '' } = useParams()
