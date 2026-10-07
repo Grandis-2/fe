@@ -37,7 +37,7 @@ export function ProductColorSwatches({
   return (
     <div className={[styles.root[size], className].filter(Boolean).join(' ')}>
       {size === 'medium' && (
-        <div className={[typography.title.lgSemibold, styles.label].join(' ')}>
+        <div className={[typography.title.mdSemibold, styles.label].join(' ')}>
           색상
         </div>
       )}
@@ -74,14 +74,21 @@ export function ProductColorSwatches({
                 .join(' ')}
               style={{
                 background: item.hex,
-                ...(item.selected
+                // small(카드)은 선택 테두리를 그 색으로 — medium은 swatchSelected의 강조색 링.
+                ...(item.selected && size === 'small'
                   ? { outline: `1.5px solid ${item.hex}` }
                   : {}),
               }}
             />
             {size === 'medium' && item.label && (
               <span
-                className={[typography.body.sub, styles.swatchLabel].join(' ')}
+                className={[
+                  typography.body.sub,
+                  styles.swatchLabel,
+                  item.selected && styles.swatchLabelSelected,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
               >
                 {item.label}
               </span>

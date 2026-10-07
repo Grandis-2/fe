@@ -1,60 +1,118 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:889010b952f6a1e7abbd363b0d17c6c4b13030b5555851e1f6e54cbc426d6273",
+  "pageVersion": "sha256:bba66c0c301441d1e35bb962097ae20c27c841285aa6e7760246835938dcad62",
   "claims": [
     {
       "id": "claim_eeb939c4a72d4369b16eca204a2245fe",
-      "statement": "main.tsx는 router/index.tsx가 만드는 router를 RouterProvider에 넘기는 순수 부트스트랩 파일이다.",
+      "statement": "main.tsx는 router/index.tsx가 만드는 router를 QueryClientProvider 안의 RouterProvider에 넘겨 렌더한다.",
       "evidence": [
         {
           "resource": "repo://src/main.tsx",
-          "version": "repo-file-v1:sha256:8af84349bfd07d17ac380386fbd6e44501dbf7f40fd5dc4b7239cec9ee29191f"
+          "version": "repo-file-v1:sha256:8219e1a563c7b4e027a02b749fe4ff346e41a84b03f1251d343843e078533f58"
         }
       ]
     },
     {
       "id": "claim_b9b5964f58a44eec9da337495def75f9",
-      "statement": "라우트 트리는 RootLayout 아래 MainLayout을 중첩한 구조이며, MainLayout 자식으로 /, /preorder, /preorder/:preorderId, /products/:productId, /result, /mypage, *(NotFoundPage) 7개 라우트가 등록된다.",
+      "statement": "라우트 트리는 RootLayout 아래 MainLayout(고객 화면)과 AdminLayout(관리자 화면)을 형제로 두고, MainLayout 안에서 /mypage·/payment·/payment/callback·/result를 RequireLogin 레이아웃 라우트로 감싸며, * NotFound 라우트는 MainLayout 안에만 있다.",
       "evidence": [
         {
-          "resource": "repo://src/app/router/index.tsx#L13-L33",
-          "version": "repo-lines-v1:sha256:40dd189aab984684ab2afa72f77c76589c171b196b4a26dac64f6690e5dc5adc:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzYzk5NWQ0OWJiM2JhNmRjNTVlMTA3MjAxMWNiOTA0MTU2YThiYWE5NmMwYmJjZWI5ZDEzNzQyN2QzYjg2ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2M2FhZTM5YWQ1OWZhZjMyZDNhMDQ1OGI4OTM0NmU4ZTg4ZTkxZmRkNDA0NTQwM2E4OGEwNjdlYjU2Mjk5NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxZjNmYTA5ZGYxODM4NDBkMGFmMmZjZGFmZTYxZTE2NjYxM2M1OGQ4MDI2ODk1MTMwMzZjYTkwNjE4MmYyODAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/app/router/index.tsx#L56-L135",
+          "version": "repo-lines-v1:sha256:dcce54d33eb200b1d83ca08261cc35dae8a61b7bdddc69e3f8b0e737e53e3249:eyJzZWxlY3RlZExpbmVDb3VudCI6ODAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzYzk5NWQ0OWJiM2JhNmRjNTVlMTA3MjAxMWNiOTA0MTU2YThiYWE5NmMwYmJjZWI5ZDEzNzQyN2QzYjg2ODciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2M2FhZTM5YWQ1OWZhZjMyZDNhMDQ1OGI4OTM0NmU4ZTg4ZTkxZmRkNDA0NTQwM2E4OGEwNjdlYjU2Mjk5NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVkNDA5MGZkM2ZiODNlZTU3NTlmMTQ2MzY5MmM2NDJlYWQ1Y2E5MmMwNmYyNTc3M2ZiMTBkZTNkMGM3MzljM2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_e2487d93b19747c19b8f58ea630fdd3b",
-      "statement": "RootLayout은 <Header />와 <Outlet />만 렌더링해서 이 트리 아래 모든 라우트가 예외 없이 Header를 갖게 한다.",
+      "statement": "RootLayout은 Header, Outlet, MobileTabBar, modalStore 기반 전역 Modal, toastStore 기반 ToastViewport를 렌더하고, pathname이 바뀔 때마다 스크롤을 맨 위로 올린다.",
       "evidence": [
         {
-          "resource": "repo://src/app/layouts/RootLayout.tsx#L1-L12",
-          "version": "repo-lines-v1:sha256:8ce3650ef1ae59b269af347f507899a37d4231a525adf3b8027d1f0af8fdc7e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjYTdjNDllM2Q4YjIyYjY1ZTgyYmU0OGFjN2Y4YTYzODVlMDNhMmRlNmY4YTMwYWQ3MTY4M2QxMTllZTczNzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/app/layouts/RootLayout.tsx#L13-L59",
+          "version": "repo-lines-v1:sha256:e9a26a8d2a283f17fdd80f1cddadff8f7e292c9937b6ec8ab214a0a61173ced8:eyJzZWxlY3RlZExpbmVDb3VudCI6NDcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU2ZmMwMjg0ZjI1MjUxOTgxMWRlNDEzMzc1YTFjOTc0MjU3NGE4Nzc3Yjk5MjAzZWI0MmFlNDcyOWNmZDZjOGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI3MzcwMjcxNjIyMGUzZmQwNzY5ZGJhNGE4M2NhZGMzNzNkYjU4ZmY0MTU4YjZhMTkzNmM3M2U4OGI0OThmYzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_f1db5ffc7bd64ddaaa2c8e1bab8fb87e",
-      "statement": "MainLayout은 useLocation()으로 현재 경로가 '/'인지 판별해 CategoryNav의 showBorder를 !isMainPage로 넘기고, sprinkles({ marginX: 'auto' })를 적용한 div 안에 Outlet을 렌더링한다.",
+      "statement": "MainLayout은 pathname이 /preorder, /preorder/*, /products/*일 때 baseBackground 클래스를 더하고 sprinkles({ marginX: 'auto' })를 적용한 div 안에 Outlet을 렌더한다.",
       "evidence": [
         {
-          "resource": "repo://src/app/layouts/MainLayout.tsx#L1-L18",
-          "version": "repo-lines-v1:sha256:1116051aaa0caf635ab5d28b4163afcf486b5cadba7d9f86b3eb333d75443540:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFhYmZhOGVmZTBjYTA0MDI4ODg0YzczNDNkOTk3NDk2OWY3MzI2OTlhODFlODIyZWJmOGQ4NjU5NWZjN2M4NjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://src/app/layouts/MainLayout.tsx#L8-L28",
+          "version": "repo-lines-v1:sha256:a0b35bae5cff58765700199b674368f84e2b7705407d45c07c1daa69aef28014:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU0NmYwMDU4ZGFlYjI4MTlkM2E0OTFmZTQ4Y2VkN2JkNGZiN2VjZTA3ODhhZTg1MGQzMjZlNDk1ODhhODIyYTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkOWRlMjFhOWUxMzEwZjc0N2JkNGJjZjUwNDQ5NDE2MTg0NjVjNTMxZjE4ZDY0YzdlOGFjNTNhMGY3NjFlNjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
-      "id": "claim_aaecb7ec9fe24bdcb11942f14661533c",
-      "statement": "router/index.tsx의 주석은 admin 라우트가 생기면 MainLayout 밖 RootLayout 자식으로 둘 의도를 명시하며(Header는 적용되고 CategoryNav는 제외), 구매후기와 브랜드별 상품 목록 페이지도 아직 미구현이라고 적혀있다.",
+      "id": "claim_a48753ea548f46eebca8157de5883df3",
+      "statement": "RootLayout은 로그인 상태에서 profileComplete가 false이고 현재 위치가 /signup이 아니면 원래 경로를 state.from에 담아 /signup으로 replace 이동시키며, stale location을 피하려고 window.location을 읽는다.",
       "evidence": [
         {
-          "resource": "repo://src/app/router/index.tsx#L26-L30",
-          "version": "repo-lines-v1:sha256:29d325d22f461083310638115fe9076d784420fcaa1b004b64ff16a413bb2a04:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzhjZWRjZGJlNmQ5MjRiZDExOTMzM2Y5YjE1OTNjYTU3MzkyNWI3ZjIzZmU2YTY4MmE1OTljYTk4NjVlNjYxOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGJiNWU4YTVmYTUxNDZiOWJkNzdhMmY5ZDUyYjdhOTI1MjcxMmUxZTRmYzVkZDM1NjNmMDg5MmY0YjYyYzM0MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTRlNjU2ODFlYmFhZDgzYTBkZDgyN2EzMTNkZmExNzY3N2I1ZmY4NjU4YTkyNDZkOWY4Y2M5NGUzMGE4OTEzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTBiZTJhNjZkZjNjY2MxODc5YmIyM2QwNjhjOGQ2MDE3ZTQ4NTgxMTQ2NWYyYTc0OTc0NzZmNjUyYzU3YWY0NiJ9"
+          "resource": "repo://src/app/layouts/RootLayout.tsx#L29-L46",
+          "version": "repo-lines-v1:sha256:1303038d27c5abfab3065a24bdcfdba980adaafa7ea4a95535e391879411e26d:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFlYjJiMDQwZjJlN2EzZWFiZTRiNTUzZjQ3NGExNTdjODkyNWExZTE0MDFjODk3ZjViYWFjZjE1NTQ2NWRiNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyYmYxMzJiNjVkNTJhNjk1MDFiOWYzMGNlYWUxMGVmNmVkMTRiODhiOGRiODdhODEzM2I2ZjYxNzM2MGM3MjQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiYTg0YjMwMDhmMjVkMGUzNDdhMTI5ZmE1Njg3MWY3OWMxY2NhNTI3ZjAwZjE0ZjMyZWM0MDYyYjkwYzFhMTYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhZThjOTQwZDIyZGUzZjZkMmFhZmRlZWE4YWY0NjlhZDM4NTBjZWNhYThiMTdkZmI5ZTExNzZkZTlmNDMzMzkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cb14d966e6584b18a564478b60c8fd76",
+      "statement": "RequireLogin은 세션 복구 전이거나 비회원이면 아무것도 렌더하지 않고, 복구가 끝났는데 비회원이면 원래 경로를 returnTo로 담은 KakaoLoginModal을 열고 홈으로 replace 이동한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/layouts/RequireLogin.tsx#L12-L28",
+          "version": "repo-lines-v1:sha256:46e89096b1cbd5acb596f797a5febef66fc64549af7369757c8f1f07d5f8bb80:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1NzdmNWY3Nzg2NGU5MGY5NzA1MzJkYTI5NTc5YWNjOTg2NzdhYzkxMzg1NWFmZWE1YTA2YmIzYzlmYzAzMGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyMTNiNjk2ZDA0ZmE1NmVhODA5NWY0MThkMTc3MjI4ZTNlZDY4ZWMxNzIwNmQ3ZmI0YmQ1ZjE4Zjc1ZTg0YTAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_83ad181c853346b1b3aedc1d37fad154",
+      "statement": "경로 문자열은 shared/config/routes.ts에 상수와 생성 함수(productPath, searchPath, mypagePath, resultPath, adminProductPath 등)로 모여 있고, 카카오·토스 콜백 경로는 각 feature가 소유한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/router/index.tsx#L7-L8",
+          "version": "repo-lines-v1:sha256:742a8ba8ec4762a4ae6fb2687376489e564c9d0fcf69e32e49e0032b37e66e6c:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjRmZmIwZjU3ZTNiNTExMzg1NTgxZDdjMjQwZTg2NTUyM2QyYzVkNjNjNTA2NGM2ZTQxZTA1M2I2NzBjYjkwYSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYmVhYzFlMzNhZDJiNThlZjIyYmU0MGIxMmRiZWFmZmY1NTQ1YWE2Yzk0OWE4NGFmMmZmOTVlNmRkOWMzMWZlYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTI2MDAyMzIxZTRiNmY0NDVmYzMwYzMxNmFhNjBkYWVjM2UxMjY3NTgwMTgzN2M4MjY4M2M1ZWQ2MjE1MGRiZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiY2Q1NGQyN2FiMDRlZTIwYTYxZDRjZmMyNTBhYzUyMWM2NmFkYjk2MGY0OTUyYTI1YzdjZWVkODRkMzY1Y2YxYyJ9"
+        },
+        {
+          "resource": "repo://src/shared/config/routes.ts#L1-L63",
+          "version": "repo-lines-v1:sha256:ad6c7dde87ce498617a83ef30401cf5d882bee5028338936975fb46dc758937f:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZjIwNTAyMDVmMzk0NGY5YmY5N2QxYTk1YWFhYmU0ZWNjZjg5NWVlNTMwNmFjZDg5Nzc4MzEyOTNjNjcxOTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjllNmVjNTBjOGEzZmE2M2MyOTUzMDkzNzQ4OGQ0OGFjZjY4MWRiYjE4ZTAyZTQyZTlhYzU4NDcwMWRmZGNiYWQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2a24ee87f85d492a9f1f8ea8664a24c6",
+      "statement": "Header는 pathname으로 분기해 메인('/')에서만 sticky·테두리 숨김을 적용하고, /admin*에서는 로고를 NOVA ADMIN(링크 /admin)으로 바꾸고 CategoryNav 등을 숨긴 채 알림 버튼만 남기며, 장바구니·알림 개수 쿼리는 회원의 고객 화면에서만 켠다.",
+      "evidence": [
+        {
+          "resource": "repo://src/widgets/header/ui/Header.tsx#L29-L140",
+          "version": "repo-lines-v1:sha256:dc8397ec310472a0e36cffb1d3efdd6f6e1425bb49c1fad9c9938fdc389a289a:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEyLCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJkMjVkODcxZDMyODI2MDBmNjIyYjgyZGE5ODNhYzQyYTAwNWIyNmIyOWNiYjFhZTBmMzliNjY1ZjA0NjhjMDAwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIwODgzZTgzYTYzNjcxZTI4Yzk1ZmZlZmYwNjUwNzgxNzM1NTM5NzkwZTU1ODE1NWE5NWRmYmMyZWIwNGU0NjU5IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiIxMDZhYTNhMzRiMjNhNGU3YzYzZWI0MTYyMDI2N2E1NzM1YWRhMjczOGFiODEyMmQwNmFjZTc4MWRmN2M2MzY4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI1MjdjMmY1ODQxNzc5MDc3YjRkYmQ1ZjlhMGI5YjRjYjAzMTQzOTNhYjcxODAwNDBlYWVlOGE2ZGFhZGY0NDIxIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_dad7c620528147a9977b4b7ce8227113",
+      "statement": "useHeaderTheme는 스크롤·리사이즈마다 헤더 세로 중앙 높이에 걸친 [data-header-theme] 구간 중 가장 안쪽 구간이 dark인지 판단해 헤더 글자색을 반전하며, MainPage의 배너·히어로가 이 속성을 단다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/main/MainPage.tsx#L49-L54",
+          "version": "repo-lines-v1:sha256:6d1720689559fabb1d60a6f795c848dc3d40613ccbf6ffe5a8410a6c46886b2b:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZmM3NzllYjEyOTc0Njc5MzQyYTEwYjViZWVkNGIzOWQ1NDJmMWFkYTk0OTE4Zjk5YmJlZTExMjkwNWNhNmI3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDVkNjBmMzFhZDdkODBiZDU5OTA1NzIwMWM2NjkyMWVlMGM3Zjc5OTQzOTI5MGU3ZjcyYmFhYTE5MjM5MjVlNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMGFlOGM5NDBkMjJkZTNmNmQyYWFmZGVlYThhZjQ2OWFkMzg1MGNlY2FhOGIxN2RmYjllMTE3NmRlOWY0MzMzOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOWM4ZTUwY2YzMzgzOGIyNTc1OTgxMWI1NzcxYjgwODEyMDlmNTllYzRmNjUxOTAyYzA1MTg4YmQ1M2YzZjVhMCJ9"
+        },
+        {
+          "resource": "repo://src/widgets/header/lib/useHeaderTheme.ts#L1-L37",
+          "version": "repo-lines-v1:sha256:cbe39de7396e5bc1d7d5193620fa1a855cbbcbc65c1c154df547b14eddece41d:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY3YzA3MDRlZjFiZDljMjM3MmJmNDk2NDkzMzM1NWE3ZTMxNGRiZGQ4YTdkM2EzOWY2ZDFlNjRiMTE3OGI1MGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_04da0f96eac24247aceb2d21d1e3d4ff",
+      "statement": "MobileTabBar는 /admin 경로에서 렌더하지 않고, 비회원이 마이페이지 탭을 누르면 이동 대신 로그인 모달을 띄운다.",
+      "evidence": [
+        {
+          "resource": "repo://src/widgets/mobile-tab-bar/ui/MobileTabBar.tsx#L64-L95",
+          "version": "repo-lines-v1:sha256:22efeb13d52be2d76cd161d867d1f5bebb27414c992e44d449c7fcdb00fe44bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRjMzJiZjgzMjNmZTE4ZjU2MTdhMjU5NGViOGE5NjE0MzgxM2UyN2VhNjI3YTE3NjM3ZGU5OTRkODVhY2Q0ZGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhlMmFlMDZlYWU4NWY4ODgxMjU2MWVhNGQxM2ViYmY2YjI3NzNhODhiYzRmYWY0ZGIxZWRjMmE1Mzg2ZTg0ZmEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyODQzMmU2MTgzMjZmMThiMWE5MTZmNTgyMjRkOWNhZDIyNDFmNTMzNjkyNjAxZTNkMDJhYzBmMjAyZTE3ZTIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzODRjMjgxYzFlZDc4OWVhODIwNmQ4OTZmZTRmOTAzYzVjNGJkNzQ4MjI3MjJhMjM0NzE3NGZkY2MwYmMwNjUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-19T17:13:03.359Z"
+    "at": "2026-10-04T09:44:53.662Z"
   }
 }

@@ -28,18 +28,20 @@ export function ProductPageTab({
 
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      {visibleTabs.map(({ key, label }) => (
-        <button
-          key={key}
-          type="button"
-          className={[styles.tab, key === activeTab && styles.tabActive]
-            .filter(Boolean)
-            .join(' ')}
-          onClick={() => onTabChange?.(key)}
-        >
-          {label}
-        </button>
-      ))}
+      <div className={styles.tabs}>
+        {visibleTabs.map(({ key, label }) => (
+          <button
+            key={key}
+            type="button"
+            className={[styles.tab, key === activeTab && styles.tabActive]
+              .filter(Boolean)
+              .join(' ')}
+            onClick={() => onTabChange?.(key)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }

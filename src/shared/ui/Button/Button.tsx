@@ -6,7 +6,7 @@ import { spacing } from '@shared/config/theme'
 
 import * as styles from './Button.css'
 
-type ButtonColor = 'primary' | 'secondary' | 'cancel'
+type ButtonColor = 'primary' | 'secondary' | 'cancel' | 'close'
 type ButtonVariant = 'solid' | 'outline' | 'subtle'
 type ButtonSize = 'large' | 'medium' | 'small'
 

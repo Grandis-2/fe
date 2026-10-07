@@ -7,6 +7,8 @@ export const root = style({
   alignItems: 'stretch',
   height: 'calc(100vh - 70px)',
   overflow: 'hidden',
+  // 표·사이드바가 있는 데스크톱 도구라 이보다 좁으면 줄이지 않고 가로 스크롤한다.
+  minWidth: '1024px',
   background: color.background.surface,
 })
 

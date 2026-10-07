@@ -1,13 +1,9 @@
-import {
-  createVar,
-  globalStyle,
-  style,
-  styleVariants,
-} from '@vanilla-extract/css'
+import { createVar, globalStyle, style } from '@vanilla-extract/css'
 
 import {
   color,
   motion,
+  onDark as onDarkMix,
   spacing,
   typography,
   breakpoint,
@@ -17,20 +13,24 @@ import { fontSize } from '@shared/config/theme/tokens/typography/base'
 // 한 곳(CategoryNav.css)의 값을 그대로 쓴다.
 import { MEGA_MENU_OPEN, NAV_LINK_PADDING_X } from '@widgets/category-nav'
 
+import type { StyleRule } from '@vanilla-extract/css'
+
 // 헤더 높이는 breakpoint마다 달라서 숫자 상수 대신 :root의 CSS 변수로 둔다 —
 // 헤더 밖(MainPage 배너 끌어올리기, MainLayout minHeight)에서도 같은 값을 읽어야 해서
 // 헤더 요소가 아니라 :root에 건다. calc() 안에서 그대로 쓰면 된다.
 export const headerHeight = createVar()
 
+// 시안의 어두운 헤더·메가 메뉴 바탕(rgba(10,11,13,.94)).
+const darkSurface = `color-mix(in srgb, ${color.backgroundDark.base} 94%, transparent)`
+
 globalStyle(':root', {
-  vars: { [headerHeight]: '63px' },
+  vars: { [headerHeight]: '68px' },
   '@media': {
     [breakpoint.mobile]: { vars: { [headerHeight]: '52px' } },
   },
 })
 
-// 헤더는 항상 배경이 투명하고 뒤를 blur한다. 글자색은 뒤 섹션이 어두우면 흰색
-// (onDark), 밝으면 기본색이다 — Header.tsx가 판단해 onDark를 붙인다.
+// 헤더는 뒤를 blur한다. 어드민은 투명 바탕에 기본색 글자, 그 외는 어두운 헤더(onDark)다.
 export const root = style({
   width: '100%',
   boxSizing: 'border-box',
@@ -45,22 +45,37 @@ export const root = style({
   // 먼저 투명해지면 아직 떠 있는 흰 패널이 헤더에서 떨어져 나온 것처럼 보인다.
   transitionDelay: motion.duration.fast,
   selectors: {
-    // 메뉴가 열리면 흰 패널이 헤더 바로 밑에 붙는다 — 이때만 불투명한 흰 헤더로
-    // 바꿔 패널과 한 덩어리로 보이게 한다.
+    // 메뉴가 열리면 패널(CategoryNav.css의 menu)이 헤더 바로 밑에 붙는다 — 패널과 같은
+    // 바탕으로 바꿔 한 덩어리로 보이게 한다.
     [`&:has(${MEGA_MENU_OPEN})`]: {
       // sticky가 아닌 페이지는 z-index가 없어서 메뉴의 딤(body::after, z-index 5)이
       // 헤더 위에 얹힌다.
       zIndex: 10,
-      background: color.background.base,
-      backdropFilter: 'none',
-      WebkitBackdropFilter: 'none',
+      background: darkSurface,
       transitionDelay: '0s',
     },
   },
 })
 
-// 헤더 뒤가 어두운 섹션일 때 붙는 표시. 자식 요소들이 이 클래스를 보고 흰색으로 바뀐다.
-export const onDark = style({})
+// 어드민을 뺀 모든 헤더(시안 Web Header). 자식 요소들이 이 클래스를 보고 흰색으로 바뀐다.
+// 아래 선은 border가 아니라 inset 그림자 — 두께가 없어 헤더가 정확히 headerHeight라
+// 메인처럼 배너를 헤더 밑으로 끌어올리는 페이지도 1px 틈이 안 생긴다.
+export const onDark = style({
+  boxShadow: `inset 0 -1px 0 ${onDarkMix(8)}`,
+})
+
+// 뒤가 밝은 구간이면 흰 글자가 묻히므로 어두운 반투명 바탕을 깐다(blur는 root 그대로).
+// 어두운 구간(data-header-theme="dark") 위에선 투명하게 둔다 — Header.tsx가 판단한다.
+export const solid = style({ background: darkSurface })
+
+// 어드민 헤더 — 시안 이전 디자인을 그대로 둔다. 자식 요소들이 이 클래스를 보고 크기를 되돌린다.
+export const admin = style({
+  borderBottom: `1px solid ${color.border.default}`,
+})
+// 시안(Web Header)의 크기는 데스크톱 일반 헤더에만 — 모바일과 어드민은 원래 크기 그대로다.
+const webOnly = (rules: StyleRule) => ({
+  [breakpoint.desktop]: { selectors: { [`${onDark} &`]: rules } },
+})
 
 // 바(root)와 콘텐츠(로고/nav/액션) 모두 뷰포트 전체 너비를 쓴다 — 넓은 화면에서도
 // 로고는 왼쪽 끝, 액션은 오른쪽 끝에 붙는다.
@@ -75,6 +90,13 @@ export const content = style({
   padding: `0 ${spacing[40]}`,
   '@media': {
     [breakpoint.mobile]: { padding: `0 ${spacing[12]}` },
+    [breakpoint.desktop]: {
+      selectors: {
+        [`${onDark} &`]: { padding: '0 48px' },
+        // headerHeight(68px)는 시안 기준이라 어드민만 원래 높이로 되돌린다.
+        [`${admin} &`]: { height: '63px' },
+      },
+    },
   },
 })
 
@@ -85,13 +107,6 @@ export const desktopOnly = style({
   '@media': {
     [breakpoint.mobile]: { selectors: { '&&': { display: 'none' } } },
   },
-})
-
-// 페이지마다 고정이라 토글되지 않는다. hidden은 두께도 없애 헤더를 정확히
-// headerHeight로 맞춘다 — 메인은 그만큼 배너를 끌어올려 헤더 밑에 겹친다(MainPage.css).
-export const border = styleVariants({
-  visible: { borderBottom: `1px solid ${color.border.default}` },
-  hidden: { borderBottom: 'none' },
 })
 
 // 메인페이지에서만 헤더가 sticky다(Header.tsx의 isStickyPage). 그 외 페이지는
@@ -108,15 +123,17 @@ export const leftGroup = style({
   alignItems: 'center',
   // CategoryNav의 메가 메뉴가 헤더 바닥 기준으로 열릴 수 있도록 헤더 높이를 그대로 넘겨준다.
   alignSelf: 'stretch',
-  // nav 링크가 자체 좌우 padding 15px를 갖고 있어, 여기에 15를 더해야 로고~첫 링크가
-  // 링크 사이 간격(30px)과 같아진다.
-  gap: NAV_LINK_PADDING_X,
+  // nav 링크가 자체 좌우 padding을 갖고 있어 그만큼 빼야 로고~첫 글자가 시안의 40px이 된다.
+  gap: `calc(40px - ${NAV_LINK_PADDING_X})`,
 })
 
 export const logo = style([
   typography.logo.wordmark,
   {
     height: 'fit-content',
+    // Michroma는 줄 상자 위쪽 여백이 커서 글자가 아래로 처진다 — 대문자 높이만 남기고 잘라
+    // 헤더의 세로 가운데 정렬이 글자 기준이 되게 한다(미지원 브라우저는 기존 그대로).
+    textBox: 'trim-both cap alphabetic',
     fontSize: fontSize[20],
     color: color.primary.base,
     textDecoration: 'none',
@@ -124,11 +141,10 @@ export const logo = style([
     transition: `color ${motion.duration.fast} ${motion.easing.default}`,
     '@media': {
       [breakpoint.mobile]: { fontSize: fontSize[18] },
+      ...webOnly({ fontSize: '22px' }),
     },
     selectors: {
       [`${onDark} &`]: { color: color.text.inverse },
-      // 메뉴가 열리면 헤더가 흰색이 되므로 어두운 섹션 위라도 기본색으로 돌아간다.
-      [`${root}:has(${MEGA_MENU_OPEN}) &`]: { color: color.primary.base },
     },
   },
 ])
@@ -148,6 +164,7 @@ export const actions = style({
   gap: spacing[20],
   '@media': {
     [breakpoint.mobile]: { gap: spacing[12] },
+    ...webOnly({ gap: spacing[4] }),
   },
 })
 
@@ -155,6 +172,7 @@ export const iconButton = style({
   display: 'inline-flex',
   // 버튼이 헤더 높이를 꽉 채우고, 아이콘은 그 안에서 가운데 정렬된다.
   height: '100%',
+  justifyContent: 'center',
   alignItems: 'center',
   border: 'none',
   background: 'transparent',
@@ -169,9 +187,9 @@ export const iconButton = style({
     '&:hover': { color: color.primary.base },
     [`${onDark} &`]: { color: color.text.inverse },
     [`${onDark} &:hover`]: { color: color.text.inverse },
-    [`${root}:has(${MEGA_MENU_OPEN}) &`]: { color: color.text.secondary },
-    [`${root}:has(${MEGA_MENU_OPEN}) &:hover`]: { color: color.primary.base },
   },
+  // 시안: 40px 칸 가운데에 아이콘. 칸끼리는 actions의 gap(4px)만 띄운다.
+  '@media': webOnly({ minWidth: '40px' }),
 })
 
 // 배지를 아이콘 오른쪽 위에 겹쳐 띄우는 기준 박스.
@@ -199,10 +217,35 @@ export const countBadge = style([
     fontSize: '11px',
     lineHeight: 1,
     '@media': {
-      [breakpoint.mobile]: { marginTop: '-17px', marginLeft: '2px' },
+      // 모바일 아이콘(20px)이 작아진 만큼 배지도 줄인다.
+      [breakpoint.mobile]: {
+        marginTop: '-14px',
+        marginLeft: '1px',
+        minWidth: '14px',
+        height: '14px',
+        padding: `0 3px`,
+        borderRadius: '7px',
+        fontSize: '9px',
+        fontWeight: 700,
+      },
+      ...webOnly({
+        marginTop: '-16px',
+        marginLeft: '1px',
+        minWidth: '16px',
+        height: '16px',
+        borderRadius: '8px',
+        fontSize: '10px',
+        fontWeight: 700,
+      }),
     },
   },
 ])
+
+// 구매 확정 대기 — 해야 할 일이라 노란 경고색. 밝은 바탕이라 글자는 어둡게.
+export const countBadgeWarning = style({
+  background: color.status.warning,
+  color: color.backgroundDark.base,
+})
 
 export const icon = style({
   width: '24px',
@@ -216,5 +259,11 @@ export const icon = style({
   },
   '@media': {
     [breakpoint.mobile]: { width: '20px', height: '20px' },
+    [breakpoint.desktop]: {
+      selectors: {
+        [`${onDark} &`]: { width: '22px', height: '22px', strokeWidth: 1.8 },
+        [`${onDark} ${iconButton}:hover &`]: { strokeWidth: 2.3 },
+      },
+    },
   },
 })

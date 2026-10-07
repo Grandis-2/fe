@@ -1,87 +1,138 @@
 import { useState } from 'react'
 
-import type { ProductColorSwatchItem, ProductOption } from '@entities/product'
+import type { Product, ProductOption } from '@entities/product'
 import { formatWon } from '@shared/lib/formatNumber'
 
-// 스와치에서 색상 선택에 필요한 두 칸만 — 여기선 label이 항상 있어야 한다.
-export type ProductColorOption = Required<
-  Pick<ProductColorSwatchItem, 'hex' | 'label'>
+import { PREORDER_BENEFIT_RATE } from '../model/benefit'
+
+// 고르는 데 필요한 상세 응답 칸만 받는다.
+export type PurchaseProduct = Pick<
+  Product,
+  'productId' | 'status' | 'saleMode' | 'basePrice' | 'optionAxes' | 'variants'
 >
 
-// 옵션 값 하나 — 라벨과 고르면 기본가에 더해지는 추가금액(없으면 0원). 선택 여부는 훅이 들고 있다.
+// 옵션 값 하나 — 라벨과 고르면 기본가에 더해지는 추가금액. 가격 내역(구매 바)에 쓴다.
 export type PurchaseOptionValue = Omit<ProductOption, 'selected'>
 
-// 색상 외의 옵션 그룹(크기·RAM·용량·칩 등) 하나 — 라벨과 고를 수 있는 값들.
-export type PurchaseOptionGroup = {
-  label: string
-  values: PurchaseOptionValue[]
+// 색상 축의 키. 이 축은 색상칩으로, 나머지 축은 옵션 버튼으로 그린다.
+const COLOR_AXIS_KEY = 'color'
+
+type Variant = PurchaseProduct['variants'][number]
+// 축 키 → 고른 값의 normalizedValue. 옵션(variant)의 selections와 같은 모양이라 그대로 비교한다.
+type Selections = Variant['selections']
+
+// 판매 중이고, 일반 상품이면 재고가 남은 옵션. 사전예약은 재고 제한이 없다(availableQuantity null).
+const isBuyable = (variant: Variant, isPreorder: boolean) =>
+  variant.status === 'ACTIVE' &&
+  (isPreorder || (variant.availableQuantity ?? 0) > 0)
+
+// 처음 고를 조합 — 살 수 있는 첫 옵션, 없으면 축마다 첫 값.
+function initialSelections(product: PurchaseProduct | undefined): Selections {
+  if (!product) return {}
+  const isPreorder = product.saleMode === 'PREORDER'
+  const buyable = product.variants.find((variant) =>
+    isBuyable(variant, isPreorder),
+  )
+  return (
+    buyable?.selections ??
+    Object.fromEntries(
+      product.optionAxes.map((axis) => [
+        axis.key,
+        axis.values[0]?.normalizedValue ?? '',
+      ]),
+    )
+  )
 }
 
-// 색상/옵션 그룹들/수량 선택 + 파생되는 가격 텍스트를 한곳에 모은다. 상세 페이지의 옵션 패널과
+// 축마다 값을 고르면 그 조합의 옵션(variant)을 찾아 가격·구매 가능 여부를 정한다. 상세 페이지의 옵션 패널과
 // 모바일 구매 바(하단바+바텀시트)가 이 상태를 그대로 공유해서 써야 해서 별도로 뺐다.
-export function useProductPurchase({
-  productId,
-  colorSwatches,
-  optionGroups,
-  basePrice,
-  isPreorder,
-}: {
-  // 같은 /products/:productId 경로 안에서 다른 상품으로 옮겨가도 라우트 컴포넌트는
-  // 그대로 유지되므로, 상품이 바뀌면 이전 상품에서 고르던 색상/옵션/수량이 넘어오지
-  // 않도록 초기화 기준으로 쓴다.
-  productId: string
-  colorSwatches: ProductColorOption[]
-  optionGroups: PurchaseOptionGroup[]
-  // 옵션 추가금액을 더하기 전의 기본가.
-  basePrice: number
-  isPreorder: boolean
-}) {
-  const [selectedColor, setSelectedColor] = useState(0)
-  // 옵션 그룹마다 고른 값의 인덱스 — optionGroups와 같은 순서다.
-  const [selectedOptions, setSelectedOptions] = useState(() =>
-    optionGroups.map(() => 0),
-  )
+// product는 상세 조회가 끝나기 전엔 undefined다 — 그동안은 빈 선택으로 두고, 결제는 페이지가 막는다.
+export function useProductPurchase(product: PurchaseProduct | undefined) {
+  const isPreorder = product?.saleMode === 'PREORDER'
+  const axes = product?.optionAxes ?? []
+  const [selections, setSelections] = useState(() => initialSelections(product))
   const [stepperQuantity, setStepperQuantity] = useState(1)
 
+  // 응답이 처음 오거나 같은 경로 안에서 다른 상품으로 옮겨가면 선택을 새로 잡는다.
   // 렌더링 중 바로 초기화한다 — 이펙트에서 setState하면 리렌더가 한 번 더 발생해
   // react-hooks/set-state-in-effect에 걸린다(useProductDetailScroll의 같은 패턴 참고).
-  const [prevProductId, setPrevProductId] = useState(productId)
-  if (productId !== prevProductId) {
-    setPrevProductId(productId)
-    setSelectedColor(0)
-    setSelectedOptions(optionGroups.map(() => 0))
+  const [prevProductId, setPrevProductId] = useState(product?.productId)
+  if (product?.productId !== prevProductId) {
+    setPrevProductId(product?.productId)
+    setSelections(initialSelections(product))
     setStepperQuantity(1)
   }
   // 사전예약은 1인 1개 — 응답이 오기 전에 스테퍼를 눌렀더라도 주문 수량은 1로 고정한다.
   const quantity = isPreorder ? 1 : stepperQuantity
-  // 색상이 없는 상품(colorSwatches가 빈 배열)이면 빈 라벨로 둔다.
-  const colorLabel = colorSwatches[selectedColor]?.label ?? ''
-  const selectOption = (groupIndex: number, valueIndex: number) =>
-    setSelectedOptions((prev) =>
-      prev.map((selected, i) => (i === groupIndex ? valueIndex : selected)),
-    )
-  // 고른 값들을 그룹 순서대로 이어 붙인다 — 주문 요약에는 이 한 줄로 넘어간다.
-  const selectedValues = optionGroups.map(
-    (group, i) => group.values[selectedOptions[i]],
+
+  const select = (axisKey: string, normalizedValue: string) =>
+    setSelections((prev) => ({ ...prev, [axisKey]: normalizedValue }))
+
+  const colorAxis = axes.find((axis) => axis.key === COLOR_AXIS_KEY)
+  const optionAxes = axes.filter((axis) => axis.key !== COLOR_AXIS_KEY)
+  const selectedValueOf = (axis: (typeof axes)[number]) =>
+    axis.values.find((value) => value.normalizedValue === selections[axis.key])
+
+  // 고른 조합과 축 값이 전부 같은 옵션. 없으면 판매하지 않는 조합이다.
+  const variant = product?.variants.find((it) =>
+    axes.every((axis) => it.selections[axis.key] === selections[axis.key]),
   )
-  const optionLabel = selectedValues.map((value) => value.label).join(' · ')
-  // 선택한 옵션의 추가금액을 기본가에 더한 단가 — 결제 화면에도 이 값이 넘어간다.
+  // 결제를 막아야 하는 이유. null이면 살 수 있다.
+  const unavailableReason = !product
+    ? null
+    : product.status === 'PAUSED'
+      ? '판매가 중지된 상품이에요.'
+      : !variant
+        ? '선택한 조합은 판매하지 않아요.'
+        : variant.status === 'PAUSED'
+          ? '선택한 옵션은 판매가 중지됐어요.'
+          : !isBuyable(variant, isPreorder)
+            ? '선택한 옵션은 품절이에요.'
+            : null
+
+  // 색상을 포함한 축 순서대로의 선택값 — 가격 내역에 추가금액을 보여 줄 때 쓴다.
+  const selectedValues: PurchaseOptionValue[] = axes.flatMap((axis) => {
+    const value = selectedValueOf(axis)
+    return value ? [{ label: value.value, extraPrice: value.surcharge }] : []
+  })
+  const colorLabel = (colorAxis && selectedValueOf(colorAxis)?.value) ?? ''
+  // 색상 외 축의 선택값을 이어 붙인다 — 주문 요약에는 이 한 줄로 넘어간다.
+  const optionLabel = optionAxes
+    .map((axis) => selectedValueOf(axis)?.value)
+    .filter(Boolean)
+    .join(' · ')
+
+  const basePrice = product?.basePrice ?? 0
+  // 옵션 가격이 최종가다(기본가 + 값별 추가금). 판매하지 않는 조합이면 계산값으로 보여만 준다.
   const unitPrice =
-    basePrice + selectedValues.reduce((sum, v) => sum + (v.extraPrice ?? 0), 0)
+    variant?.price ??
+    basePrice +
+      selectedValues.reduce((sum, value) => sum + (value.extraPrice ?? 0), 0)
   const totalPrice = unitPrice * quantity
-  const priceLabel = formatWon(totalPrice)
+  // 결제 화면(PaymentPage)과 같은 비율로 할인해서 두 화면의 합계가 맞는다.
+  const benefitAmount = Math.round(totalPrice * PREORDER_BENEFIT_RATE)
+  // 할인까지 뺀, 실제로 결제할 금액.
+  const payAmount = totalPrice - benefitAmount
+  const priceLabel = formatWon(payAmount)
 
   return {
-    selectedColor,
-    setSelectedColor,
-    selectedOptions,
-    selectOption,
+    selections,
+    select,
+    colorAxis,
+    optionAxes,
+    variant,
+    unavailableReason,
     quantity,
     setQuantity: setStepperQuantity,
     colorLabel,
     optionLabel,
+    // 가격이 어떻게 나왔는지(기본가 + 옵션 추가금액 × 수량) 보여 줄 때 쓴다.
+    basePrice,
+    selectedValues,
     unitPrice,
     totalPrice,
+    benefitAmount,
+    payAmount,
     priceLabel,
   }
 }

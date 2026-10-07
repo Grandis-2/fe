@@ -2,150 +2,168 @@ import { useState, type ReactNode } from 'react'
 
 import { ChevronDown } from 'lucide-react'
 
-import { typography } from '@shared/config/theme'
-import { Button } from '@shared/ui'
+import { useCountdown } from '@shared/lib/useCountdown'
+import { Tag, type TagProps } from '@shared/ui'
+
+import { orderStatusLabel, type OrderStatus } from '../../model/orderStatus'
 
 import * as styles from './HistoryCard.css'
 
-export type HistoryCardStatus =
-  | 'delivered-before-review'
-  | 'delivered-after-review'
-  | 'shipping'
-  | 'preparing'
-  | 'cancelled'
+// 상품이 많으면 다음 주문이 한참 아래로 밀리므로 처음엔 이만큼만 보여 준다.
+const COLLAPSED_COUNT = 2
+
+const tagColor: Record<OrderStatus, TagProps['color']> = {
+  confirm: 'yellow',
+  ready: 'primary',
+  preship: 'primary',
+  shipping: 'blue',
+  delivered: 'gray',
+  cancelled: 'gray',
+}
 
 // HistoryCard는 아이템을 renderItem으로 넘기기만 하고 필드는 읽지 않는다 —
 // 아이템 모양을 여기서 따로 선언하지 않고 제네릭 T로 호출부 타입을 그대로 받는다.
 export type HistoryCardProps<T> = {
-  status: HistoryCardStatus
+  status: OrderStatus
+  /** 상태 태그 대신 보일 태그(내 리뷰의 '리뷰 작성 가능' 등) */
+  badge?: { label: string; color: TagProps['color'] }
+  /** 사전예약 주문이면 상태 옆에 '사전예약' 태그가 붙는다. */
+  preorder?: boolean
   orderDate: string
   orderNumber: string
+  numberLabel?: string
+  /** 구매 확정 마감 — 있으면 머리 아래에 남은 시간 띠가 붙는다. 렌더마다 새 Date를 넘기지 않는다. */
+  purchaseDueAt?: Date
   items: T[]
   renderItem: (item: T, index: number) => ReactNode
-  onWriteReview?: () => void
-  onViewReview?: () => void
-  onCancelOrder?: () => void
+  /** 상품 목록 아래 본문(예약 정보 등) */
+  children?: ReactNode
+  /** 한 단계 어두운 바닥 칸 — 결제 금액, 취소·확정 버튼 */
+  footer?: ReactNode
   className?: string
-}
-
-const badgeByStatus: Record<
-  HistoryCardStatus,
-  { label: string; variant: keyof typeof styles.badge }
-> = {
-  'delivered-before-review': { label: '배송 완료', variant: 'delivered' },
-  'delivered-after-review': { label: '배송 완료', variant: 'delivered' },
-  shipping: { label: '배송중', variant: 'shipping' },
-  preparing: { label: '상품 준비 중', variant: 'preparing' },
-  cancelled: { label: '취소 완료', variant: 'cancelled' },
 }
 
 export function HistoryCard<T>({
   status,
+  badge,
+  preorder,
   orderDate,
   orderNumber,
+  numberLabel = '주문번호',
+  purchaseDueAt,
   items,
   renderItem,
-  onWriteReview,
-  onViewReview,
-  onCancelOrder,
+  children,
+  footer,
   className,
 }: HistoryCardProps<T>) {
   const [expanded, setExpanded] = useState(false)
-  const badge = badgeByStatus[status]
-  const [firstItem, ...restItems] = items
-  const visibleItems = expanded ? items : firstItem ? [firstItem] : []
+  const hiddenCount = items.length - COLLAPSED_COUNT
+  const visibleItems = expanded ? items : items.slice(0, COLLAPSED_COUNT)
 
   return (
-    <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      <div className={styles.header}>
-        <div className={styles.headerMeta}>
-          <div
-            className={[typography.body.subMedium, styles.orderDate].join(' ')}
-          >
-            {orderDate} 주문
-          </div>
-          <div
-            className={[typography.body.caption, styles.orderNumber].join(' ')}
-          >
-            {orderNumber}
-          </div>
-        </div>
-        <span
-          className={[
-            typography.body.caption,
-            styles.badge[badge.variant],
-          ].join(' ')}
+    <article
+      className={[
+        styles.root,
+        status === 'confirm' && styles.rootWarning,
+        className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
+      <header className={styles.header}>
+        <span className={styles.orderDate}>{orderDate}</span>
+        <Tag
+          color={badge?.color ?? tagColor[status]}
+          variant="subtle"
+          rounded={false}
+          className={styles.tag}
         >
-          {badge.label}
+          {badge?.label ?? orderStatusLabel[status]}
+        </Tag>
+        {preorder && (
+          <Tag
+            color="secondary"
+            variant="subtle"
+            rounded={false}
+            className={styles.tag}
+          >
+            사전예약
+          </Tag>
+        )}
+        <span className={styles.orderNumber}>
+          {numberLabel} {orderNumber}
         </span>
+      </header>
+
+      {purchaseDueAt && <PurchaseDueNotice dueAt={purchaseDueAt} />}
+
+      <div className={styles.items}>
+        {visibleItems.map((item, index) => (
+          <div
+            key={index}
+            className={[
+              styles.item,
+              index >= COLLAPSED_COUNT && styles.itemEnter,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            style={
+              index >= COLLAPSED_COUNT
+                ? { animationDelay: `${(index - COLLAPSED_COUNT) * 50}ms` }
+                : undefined
+            }
+          >
+            {renderItem(item, index)}
+          </div>
+        ))}
       </div>
 
-      {visibleItems.map((item, index) => (
-        <div
-          key={index}
-          className={index > 0 ? styles.itemEnter : undefined}
-          style={
-            index > 0 ? { animationDelay: `${(index - 1) * 50}ms` } : undefined
-          }
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          className={styles.expandRow}
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
         >
-          {index > 0 && <div className={styles.divider} />}
-          <div className={styles.itemRow}>{renderItem(item, index)}</div>
-        </div>
-      ))}
-
-      {status === 'delivered-before-review' && (
-        <div className={styles.actionRow}>
-          <Button
-            size="small"
-            className={styles.action}
-            onClick={onWriteReview}
-          >
-            리뷰 쓰기
-          </Button>
-        </div>
-      )}
-      {status === 'delivered-after-review' && (
-        <div className={styles.actionRow}>
-          <Button
-            size="small"
-            variant="subtle"
-            className={styles.action}
-            onClick={onViewReview}
-          >
-            내가 쓴 리뷰 보기
-          </Button>
-        </div>
-      )}
-      {status === 'preparing' && (
-        <div className={styles.actionRow}>
-          <Button
-            size="small"
-            color="cancel"
-            className={styles.action}
-            onClick={onCancelOrder}
-          >
-            주문 취소
-          </Button>
-        </div>
+          {expanded ? '접기' : `상품 ${hiddenCount}개 더보기`}
+          <ChevronDown
+            aria-hidden="true"
+            className={[styles.expandIcon, expanded && styles.expandIconOpen]
+              .filter(Boolean)
+              .join(' ')}
+          />
+        </button>
       )}
 
-      {restItems.length > 0 && (
-        <>
-          <div className={styles.divider} />
-          <button
-            type="button"
-            className={[typography.body.sub, styles.expandRow].join(' ')}
-            onClick={() => setExpanded((value) => !value)}
-          >
-            {expanded ? '접기' : `${restItems.length}개 더 보기`}
-            <ChevronDown
-              aria-hidden="true"
-              className={[styles.expandIcon, expanded && styles.expandIconOpen]
-                .filter(Boolean)
-                .join(' ')}
-            />
-          </button>
-        </>
+      {children}
+
+      {footer && <footer className={styles.footer}>{footer}</footer>}
+    </article>
+  )
+}
+
+const pad = (value: number) => String(value).padStart(2, '0')
+
+// 카운트다운은 1초마다 다시 그려진다 — 카드 전체가 아니라 이 띠만 다시 그리도록 따로 둔다.
+function PurchaseDueNotice({ dueAt }: { dueAt: Date }) {
+  const { days, hours, minutes, seconds, isOver } = useCountdown(dueAt)
+
+  return (
+    <div className={styles.notice}>
+      <div className={styles.noticeTexts}>
+        <span className={styles.noticeTitle}>
+          {isOver ? '구매 확정 기한이 지났어요' : '구매 확정 마감까지'}
+        </span>
+        <span className={styles.noticeDescription}>
+          기한 안에 확정하지 않으면 예약이 자동 취소돼요.
+        </span>
+      </div>
+      {/* 마감이 정확히 24시간이면 훅이 days=1, hours=0으로 쪼개므로 시간 단위로 합친다. */}
+      {!isOver && (
+        <span className={styles.countdown}>
+          {pad(days * 24 + hours)}:{minutes}:{seconds}
+        </span>
       )}
     </div>
   )

@@ -7,6 +7,9 @@ import * as styles from './Input.css'
 export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   label: string
   size?: 'medium' | 'small'
+  // floating: 라벨이 칸 안에 있다가 입력하면 위로 뜬다. stacked: 라벨이 칸 위에 따로 있고
+  // placeholder가 보인다(Checkout.dc.html — 어두운 카드 안의 움푹 들어간 칸).
+  variant?: 'floating' | 'stacked'
   required?: boolean
   invalid?: boolean
 }
@@ -14,6 +17,7 @@ export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
 export function Input({
   label,
   size = 'medium',
+  variant = 'floating',
   required,
   invalid,
   className,
@@ -27,32 +31,54 @@ export function Input({
   const inputId = id ?? generatedId
   const showError = Boolean(required && invalid)
   const errorMessage = showError ? `${label}을(를) 필수로 작성해주세요` : null
+  const stacked = variant === 'stacked'
+  const labelText = (
+    <>
+      {label}
+      {required && ' *'}
+    </>
+  )
 
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
+      {stacked && (
+        <label htmlFor={inputId} className={styles.stackedLabel}>
+          {labelText}
+        </label>
+      )}
       <div
-        className={[styles.box[size], showError && styles.boxError]
+        className={[
+          styles.box[size],
+          stacked && styles.stackedBox,
+          showError && styles.boxError,
+        ]
           .filter(Boolean)
           .join(' ')}
       >
         <input
           id={inputId}
-          className={[styles.field[size], showError && styles.fieldError]
+          className={[
+            styles.field[size],
+            stacked && styles.stackedField,
+            showError && styles.fieldError,
+          ]
             .filter(Boolean)
             .join(' ')}
-          placeholder={placeholder ?? ' '}
+          // floating 라벨은 :placeholder-shown으로 비었는지 보므로 빈 칸이라도 한 칸을 깐다.
+          placeholder={stacked ? placeholder : (placeholder ?? ' ')}
           required={required}
           {...rest}
         />
-        <label
-          htmlFor={inputId}
-          className={[styles.label[size], showError && styles.labelError]
-            .filter(Boolean)
-            .join(' ')}
-        >
-          {label}
-          {required && ' *'}
-        </label>
+        {!stacked && (
+          <label
+            htmlFor={inputId}
+            className={[styles.label[size], showError && styles.labelError]
+              .filter(Boolean)
+              .join(' ')}
+          >
+            {labelText}
+          </label>
+        )}
       </div>
       {errorMessage && (
         <div className={styles.errorRow}>

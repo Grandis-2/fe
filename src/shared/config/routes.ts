@@ -5,6 +5,8 @@ export const HOME_PATH = '/'
 export const SIGNUP_PATH = '/signup'
 export const PAYMENT_PATH = '/payment'
 export const REVIEWS_PATH = '/reviews'
+// 헤더·탭바 없이 전체 화면으로 뜨는 사전예약 안내(RootLayout 밖).
+export const ONBOARDING_PATH = '/onboarding'
 // ponytail: 이벤트 페이지가 아직 없어 NotFound로 간다 — 페이지가 생기면 라우터에 등록.
 export const EVENTS_PATH = '/events'
 
@@ -13,26 +15,37 @@ export const preorderPath = (preorderId: string | number) =>
   `${PREORDER_PATH}/${preorderId}`
 
 export const PRODUCTS_PATH = '/products'
-export const productPath = (productId: string) =>
+export const productPath = (productId: string | number) =>
   `${PRODUCTS_PATH}/${productId}`
 
 export const SEARCH_PATH = '/search'
 // URLSearchParams가 인코딩까지 해주므로 쿼리를 손으로 붙이지 않는다.
 export const searchPath = (params: Record<string, string>) =>
   `${SEARCH_PATH}?${new URLSearchParams(params)}`
+// 검색창에서 엔터를 치면 오는 키워드 검색 결과. 위 /search는 카테고리 둘러보기다.
+export const SEARCH_RESULTS_PATH = '/search/results'
+export const searchResultsPath = (keyword: string) =>
+  `${SEARCH_RESULTS_PATH}?${new URLSearchParams({ q: keyword })}`
 
 export const MYPAGE_TABS = [
   'preorder-check',
   'cart',
   'history',
   'address-manage',
+  'reviews',
 ] as const
 export type MypageTab = (typeof MYPAGE_TABS)[number]
 
 export const MYPAGE_PATH = '/mypage'
 export const mypagePath = (tab: MypageTab) => `${MYPAGE_PATH}?state=${tab}`
 
-export const RESULT_STATUSES = ['preorder', 'paid', 'failed'] as const
+// preorder: 예약만 접수(결제 전) / preorder-paid: 사전예약 결제 완료 / paid: 일반 구매 완료 / failed: 결제 실패
+export const RESULT_STATUSES = [
+  'preorder',
+  'preorder-paid',
+  'paid',
+  'failed',
+] as const
 export type ResultStatus = (typeof RESULT_STATUSES)[number]
 
 export const RESULT_PATH = '/result'

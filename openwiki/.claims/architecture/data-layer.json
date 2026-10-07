@@ -1,0 +1,190 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:4843689bb761cf54e337ad0412c55a8a86eda643f495cc912aba614b6f890de8",
+  "claims": [
+    {
+      "id": "claim_4d216ff920414793b8f726e322ed436a",
+      "statement": "apiClient.request는 요청을 보내고, 401이면 recoverFromUnauthorized가 true일 때만 같은 요청을 딱 한 번 다시 보낸 뒤, unwrap으로 봉투를 벗겨 data만 돌려준다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/client.ts#L156-L171",
+          "version": "repo-lines-v1:sha256:cc6212fec9c53bb1553c8b842452575687c19cca6d577266c7fc5eb6412f5d00:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkyZGUxY2Y3OWJkYTkwZDExYzQ3MDdhMDQ0MjAzYjM2MmI0ZjFkYzk0NzRhNjRhMWE3ZTJmNDA1NWEzODZiNmUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyNGQ1NjgwNDI2NGMzN2FkOWVhOGIzNWQ4MTkyOThkZjE3MTU1NWYxYmVhYjUzMWQ4NmE1MjFiNzQ5Nzg1YjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkZTY5OTc1OTAyZmJkZDkzOTRlM2MyZGQwMTIxZDk1ODlkZDNmOGQxYTViMTRiYzJlOWQ5MzJjMzYwZDZhY2MiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9903982dd01c4fa7884747fa3cd6e744",
+      "statement": "axios 인스턴스는 validateStatus: () => true로 비2xx에도 reject하지 않으며, 성공 여부는 서버 봉투의 success 필드로 판단하고 실패 시 ApiRequestError(error, status)를 던진다. 본문이 JSON 객체가 아니면 INVALID_RESPONSE로 감싼다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/client.ts#L114-L134",
+          "version": "repo-lines-v1:sha256:0070e701ea810443f7b320e5e6bf217e44212b042d2439a31d24a5981abc0edd:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImZjMmZlYmEyYWI5ZTA0YzE3ODc3NTZlMDlmYTIwNGI4NmVkYjM2ZTU2YzZiNDIyYTc2MmYwNzRhMDFlM2NkMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZiNTgwZTk2NGY4M2E0NzNmNDNkNDQzODQ2Mjk0OWQ2OGI1NjAwZmRhNzg3ZjE2Mzc0NWQwMGRlODljYmYzNmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdhNjg0OTdiNTA3ZmZmYjRlNjVmNDY0ZGFmMWI3ZTRlYjU0OGViNGY4MGQ4YzUwOWFjNmY5MjhmMzQ1NDQyNjMifQ"
+        },
+        {
+          "resource": "repo://src/shared/api/client.ts#L56-L62",
+          "version": "repo-lines-v1:sha256:40d0bc775dab8d5f3a5134c9d1a9901e84e6017c85cf7257bee4277c116278cb:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2FhMDU1NTNiMjBkYjQ3YTk4NWRjNjMzOGNlMjVjMWRjOGQxMzYwYjE2ZDcxZjA1YTA1N2M2YTljZTEwZTQ5NyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODU4MGI3NjUxOGRhZTk3OWZhZWJkMDIzNjdhMjkyOTJhNTBkOTc2MDkyMjUxYTM4YTZjZTMwODgwYmE0MjgyNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYjA4ZGQ1ZDU2NTMwYmE1NzhhYjA4MDYwM2I3MDZiNTQ1OGFjNjhhMTI1ZDI1NzgwZWVlYzVjZTA1MzY1MzBiMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGUxOGQ4NTcxZGUyNTM4ZDMzMjY2NWM3ZTMyYzBiYWZlNDg5ZjgzNjVlOTJjOGY0MjU3NTgxZGRlOThmY2M3MSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_35ea5cd5ce0748c98eb24a614073a9e1",
+      "statement": "응답을 받지 못한 axios 에러는 타임아웃이면 TIMEOUT, 그 밖은 NETWORK_ERROR 코드의 status 0 ApiRequestError로 바뀌고, 취소 에러는 변환 없이 그대로 던져진다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/client.ts#L70-L91",
+          "version": "repo-lines-v1:sha256:7951cb9eb553505077a6ef110bf0ef7b3b64f0fdf34c06abbd762b6fb35158a8:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU1NzBiYzdmNmIyYWQwZmQ4ZWFlOWNhNzMzOTUwY2Q3ZTFjNjQ4NzllMmIwNzI1YWRjMzdmMzcwMGIzOTY0NjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk5ZThmN2QxYjEwMjI5YTNjODNmNWJkOGU4YmNiNDY2Nzk3ZDYzMjFiNzhhNmViNGYyZjQ3ZGUyOTU0MzA1MzMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_c401fdbdbf6e49b7b6f5bcc7cb54d801",
+      "statement": "요청 타임아웃은 10초이고, axios 인스턴스는 withCredentials: true로 쿠키를 함께 보내며 요청마다 X-Request-Id 헤더와 호출부의 AbortSignal을 전달한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/client.ts#L53-L67",
+          "version": "repo-lines-v1:sha256:ecde62995010f1ae19952d0235f5400af6c74ba1a74df386730a6b0e9ea8b7bf:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI4ZmZhNDU0YmNmMWRiZDQ0M2M1YmU5NmNjZGEzZjVhNzg2MWU1ODMyZDIzOWJhNjU0ZTA1Njk3OWFlYTQyMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ0NDQzM2UxYmYwZDczZTgzNzk2ZGIzYmM0NWFiOTkzYjRiYmFhN2NkMDZjZTAwYmY2N2YzMDNhY2QzYjY1ZTIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjAzMzRlYWE5OWUwZGM1MDAyMjBkMzgxZDI5Y2IyNjZmOGU1MDdhNjhhNzk5NTdlYzJmY2Q0ODA4YzI4MjI2YmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBjNTkyMWYxNGZhMDQ2MjQ3OGEwMzE3ZTg3ZDZkOTViODk4NzI3ZGZmMmRhMWIwZWI5MGM5ZTI5Mjk2MDE5MmQifQ"
+        },
+        {
+          "resource": "repo://src/shared/api/client.ts#L93-L112",
+          "version": "repo-lines-v1:sha256:eeb64747c79bbaa2408a3a4ba3408787ef9247e52d5a1872f88c6ee948768a07:eyJzZWxlY3RlZExpbmVDb3VudCI6MjAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0ZTIwNjE5OTQ2ZGU0OGNiMGU4ZGFjN2YxZjVhNGM4YTg3OGM1ODAzNmU2ZjYzZTQ5ZDg5NmQyMGZlMWZmNzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM0MGM1ZDNkYzNhNzczMDc5M2M4OTI3OTQ4YjU1OTY2NDIwN2Y3OWJhODc3NzNjMjE1MDA0NDMxOTYyZmQ0ODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjA5ZjllMTk4YWZmNzY5Y2UxZTA1YTk0YWE5NDkxMWJiMTExZTQxYTE5YjRiNTEzNmFjMzMxOWYyZjNkNTVmMWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d9095d2e73364ec2814b9e23a7009dae",
+      "statement": "shared/api/client는 인증 헤더와 401 처리기를 configureApiAuth로 주입받으며, entities/auth의 refreshCoordinator가 모듈 로드 시 세션 토큰 Bearer 헤더와 ensureFreshSession을 등록한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/auth/model/refreshCoordinator.ts#L99-L108",
+          "version": "repo-lines-v1:sha256:97bf6b893e1c171fd84064bfba9e7baf691bf03a09395bfaed8c666b58b2f612:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0MzNiNjBhNmJiNDlkNTVhOGE5MTkxZTgzZWM5MTc0MzUzZDc4YThkZjJjMGNiMzdhOWQ3ODIzYjU3OGU0ZWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODBiNzY1MThkYWU5NzlmYWViZDAyMzY3YTI5MjkyYTUwZDk3NjA5MjI1MWEzOGE2Y2UzMDg4MGJhNDI4MjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRjZjk1ZjJhMmZmNDU0NDJlMTM1ZDA0ZjY2ZmIyNTRiYTcwMTBlZTMyYmU4YjNhY2EwMDI3M2UxNzdkMDlmMjMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/shared/api/client.ts#L5-L18",
+          "version": "repo-lines-v1:sha256:cd7ab999b764532ea975586a3d67ecee29042005a29453f0ece2c25a28bdc068:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMDc3MTZhOGM3NzVmY2VlZjU1NDFmOTYxZDc2NWQwMDk1MDczOTU3MDJkZDRhMWJjYzUxY2EzNzNjNDM0YzMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1ODQwMWFhNDhjMjc4NDU2YzdhMTI3OGI0MjQxZGU5OWVjMWE5MTk5MjFiMTY1NmRiY2Y3ODBmNDA3ZTQyYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjRhYmFkYjIzOGUyZjY3YTJjZDMwZjZjZjliZWFkZmI1MjU2MjYwMWI1ZDA2MjlhYjFhNmJhOTA1MGNkN2FjNDIifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8ef7418cd3cc448882533473dcf0cfc1",
+      "statement": "401 응답의 error.details.retryable이 참이면 재발급 대신 2초 뒤 같은 요청을 한 번 더 보내고, skipAuthRefresh를 준 인증 흐름 호출(카카오 콜백, 세션 재발급·조회·삭제, 관리자 세션)은 재발급을 트리거하지 않는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/auth/api/auth.ts#L9-L37",
+          "version": "repo-lines-v1:sha256:2d7e30af76366538c94466797d4c8f7ea9ceaa30e327a82b0877b76110b6be1e:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ZjA4MGRjNmUyMWVjYWVhNDlkNDNhOWYzNWJjZGEwNDJmNzU5ZTY5Y2JjMDEzMGZjYzhlNjY4NWRhMTFhMGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzUyNTg5YzM0ZDNjNjA2ODU5MzFiNmVjYzRkNTA5OTFhN2M1NmM4ZmJhMjg5NDExNDY1NzY5MDI3MmNhYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI0MDFmNTBmMzVlNjNiM2Y1ODhlYzJiNjcxYTc2M2ZmNTBlNjczNzRhM2I5Nzg4MDc2MWNlMmFlMzIzMGNmNTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/shared/api/client.ts#L136-L154",
+          "version": "repo-lines-v1:sha256:2d3275f60f5082df466750a0f791c44ec8ebb9b5b3777640f3bbb33ddafa610f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY4MmQzZTY5MTljNjg3NzM0ODVhNGU5MWQ1Yjg0ZDY5NGZhNTgyMDY1ZjJiZTVhNGI1ZTI0NWQ5ZWJhOTk5MTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjExZDBjZWU4ZTQ2OTM2NGYwY2QzZmYwZThkYmE3MzVjNTZlNjg5NTU1YTdmZDdhODc5MTk4ZDJjOTZjNWI3NGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU4NWM0ODI0MzBmM2JiY2M0OTViODlhOTdkMjE2NDk3YjQ5MTQ3ZmU0YjAxZDQ5ZGI4ZWEwYmVjMmY1NWIwMDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_94851870f39c4a05a769c2bbcf0b29e2",
+      "statement": "getErrorMessage는 잡힌 값이 ApiRequestError면 서버 메시지를, 아니면 호출부의 기본 문구를 돌려주며 결제·회원가입 화면 등이 이를 사용한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/payment/PaymentPage.tsx#L154-L154",
+          "version": "repo-lines-v1:sha256:1950b850a3f6060c73596737ae495b62b25e81717d2034c8d10249a6efa3a9f1:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTk1MGI4NTBhM2Y2MDYwYzczNTk2NzM3YWU0OTViNjJiMjVlODE3MTdkMjAzNGM4ZDEwMjQ5YTZlZmEzYTlmMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTk1MGI4NTBhM2Y2MDYwYzczNTk2NzM3YWU0OTViNjJiMjVlODE3MTdkMjAzNGM4ZDEwMjQ5YTZlZmEzYTlmMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjlhOTA3MDU2YWYxMmRlODY1MWY2YjAyMDY2NDJiYjIwOWY2YTgwNTk3YjZiN2I0ODMwODQxMDliYWE0MGI3NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTdkODYzMmU1NGU5Mjk4YWJiOTU4NzI3ZTJkNTE0MDhhYmFmMTM2NjAzNTM3OTEwMTQwYWJmNjViMzBhYjYxMyJ9"
+        },
+        {
+          "resource": "repo://src/pages/signup/SignupPage.tsx#L52-L52",
+          "version": "repo-lines-v1:sha256:7114f3439b9165ed905f491b02ad66cda01f984049e6dd8b5c7f1b98b02f1c19:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzExNGYzNDM5YjkxNjVlZDkwNWY0OTFiMDJhZDY2Y2RhMDFmOTg0MDQ5ZTZkZDhiNWM3ZjFiOThiMDJmMWMxOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzExNGYzNDM5YjkxNjVlZDkwNWY0OTFiMDJhZDY2Y2RhMDFmOTg0MDQ5ZTZkZDhiNWM3ZjFiOThiMDJmMWMxOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNmVjN2YxZWY1MTM0MTM5YzZjMzFiOWM4NGEwYzIwNDVjYWQwMTFhYzMwNmNjMWFkNzFjZDVjYTgxOTdiY2I5OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTdkODYzMmU1NGU5Mjk4YWJiOTU4NzI3ZTJkNTE0MDhhYmFmMTM2NjAzNTM3OTEwMTQwYWJmNjViMzBhYjYxMyJ9"
+        },
+        {
+          "resource": "repo://src/shared/api/client.ts#L32-L35",
+          "version": "repo-lines-v1:sha256:b003b216e649fd7ebc9d57f48ecc40dc7a9c4de53b6692c9890aa23c8b6e10c9:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWRhN2IwMTNkMDkyZTkwMzU1ZjY1MDdkNDZmMTZjM2I0MzRkNWU1OTE5ZjE1OTIzZmNhYWQ4YTY1ZWMzYjU2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTdiN2I4MGVmNDVlYzNjYTgyNzc2YzlhMGE5YWMyM2FmMmQwOTUwNzMxYWU2OGYzY2QyMjgwYTRlNzNkNzIwMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmI1ODBlOTY0ZjgzYTQ3M2Y0M2Q0NDM4NDYyOTQ5ZDY4YjU2MDBmZGE3ODdmMTYzNzQ1ZDAwZGU4OWNiZjM2YSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYzM1N2MyYjMxMWVmNjhjZTQzNzFhZDAwYWYzMjNmY2E1MzY2NGMzM2NkMGQzNWJmYjk3MTU3M2U2NjAzODU3YSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_692282344e3f4f2d9566b1161a44ebab",
+      "statement": "DTO와 모델 모양이 같으면 모델은 재노출만 하고(Product = ProductDetail), 다르면 entities/*/api가 매퍼로 필드를 바꾼다(장바구니의 cartItemId→id, unitPrice→price).",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/cart/api/cart.ts#L21-L32",
+          "version": "repo-lines-v1:sha256:e3c518cceab9e566fa0521438f37849efa6087275378137f0248ec6c0bd553a8:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0OGZmZWFjMjdmOGY3M2EyYjMwYmFmMzM0ODFmYTg1MTIyOGVmZjFhMzVmNjdmNzg4MGNlNDBhYWIxNTcxOTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNkYzU4NDU1MTAzMjhjNzAxZWNmNTQyMDQ2MzEyNjNlMjBjYjk5ODM3NjlhZWQzNGUyMGRmMjE2YzMwYjJhYjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBiOWIxODJjZDVjY2NjMzFiYmY2MmUxNjQ0MWUwNTVmMzkyNTM3MzJmYTNiZjUxZjk2MjNhYzQ2MGE0NDA5NDIifQ"
+        },
+        {
+          "resource": "repo://src/entities/product/model/product.ts#L1-L3",
+          "version": "repo-lines-v1:sha256:8038e5078febbbed1e152da9b86e07c4ab68416b6461bebb4276f6cfd44a60af:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDRlNDUyMTQ1NzU3OGIxM2Y2NTJhZjcyMDExOGM5ODc4NTdlMDRjNTk4ZDIyZjllZWE1NDUxZDBiNjE3MzRiNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNzVlY2U2NzYzZmE0MDZiZTU4MTgyZDNmZWI2ODlhMDk3M2JmNTYzMjhkZDdjNGFjNjM1ZGRmZWM0YWRhOGYzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_b83bcf22e59d4a61b0f0ba9fec17fa0f",
+      "statement": "queryPolicy는 catalog(5분, 재시도 2회), account(5분, 1회), live(staleTime 0, 1회) 프리셋을 제공하며, isRetryableError는 ApiRequestError가 아니거나 status 0 또는 5xx일 때만 재시도를 허용해 4xx는 즉시 실패한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/queryPolicy.ts#L1-L31",
+          "version": "repo-lines-v1:sha256:b1c7f7e990a365a172be5ac946c381e4e6ef5b070afe6be5822266404c3a3e83:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE1ZWM2YmJlZDg4OTc2YzFkZjVmZDI1OGY5NDZkNjQ4ZmE1OGQ5MGVhMWRiZmU5YzI0ZDllMmI4MTEzYjI3MjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI4YWFiZDk3NDgzMWUwODJjYjVhNGY1MDlkNzFjMzAzZDBmZTYwZDg1NjMwMWVlOTE2MjJlZTNjODc2NGIyYWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjI4OTk2MWIwYWI4YjZmM2NlMTUxMjZmZTE4ODY2MDIzOWMyYTYyMTNmYmRlYmFhODk2ZjM4MTBkNDVkZGM3ZmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_640a2f8eeea04425a6cde0a35bfae232",
+      "statement": "QueryClient 기본값은 쿼리 재시도 1회(4xx 제외)와 mutation 자동 재시도 끔이다.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/queryClient.ts#L1-L7",
+          "version": "repo-lines-v1:sha256:c39cbcb92770d1030fd905f8b896e038eee01d81cab1bfd3323bd7e1f6a044ba:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzQ0Y2QxN2VjZTMxODc3NzM0MWY1NDE1YmJhZDNhZGY1MmQ5YjM5OGVkZDc0YTNjZTU0ZGY5NTIzMGJjYjE1YyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODU4MGI3NjUxOGRhZTk3OWZhZWJkMDIzNjdhMjkyOTJhNTBkOTc2MDkyMjUxYTM4YTZjZTMwODgwYmE0MjgyNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://src/shared/api/queryPolicy.ts#L39-L44",
+          "version": "repo-lines-v1:sha256:1d761cdf90fd3909ea3f561d3f370e4eead451d1d2a42f213c6772abdcbba17d:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYjVlMjU2MjM3YjFhZGQ3MjE3NzdkZTBlODc0NDAyNTJjNTJhYjFhNWE2Mjg1MTY5MDI3ZjI1M2UxNDVjYTcyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc1ZWQ5NTI0MTk5Y2ZjZGMyMjIzZjg1NzM3ZDY2Y2FiYTI0YzY5ZThjZTc5YTAxNjU1YTZmNWRiZDVkOWU2NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTlhYTQ0NWQxOTIwMzI2ODg3MGExNjhjMTNkZTNhYmI0YTNhYTc3MmRlYTc3YjcyNDg3YzljZGZhNzRiZTZiNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_5e5a1cb9cf784507b67ce2df62355825",
+      "statement": "pollingInterval은 실패 횟수에 따라 폴링 간격을 두 배씩 늘려 기본 최대 8배까지 키우며, 헤더 알림 미읽음 개수가 60초 기본 간격으로 이를 사용한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/notification/api/useUnreadNotificationCount.ts#L7-L19",
+          "version": "repo-lines-v1:sha256:375e998a6a806c77a72f8bd067db0df5c0de862d4aa8734265b05b870bea8a62:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJjM2NiMDlkMjg5OWZlMmU2N2E1OTg3MGE5MTU0Yzc4ODI5ODdiMmQ0ODFkNjJlMDU4ZDYwYjkwMDM4M2FkNzciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzUyNTg5YzM0ZDNjNjA2ODU5MzFiNmVjYzRkNTA5OTFhN2M1NmM4ZmJhMjg5NDExNDY1NzY5MDI3MmNhYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMyNGU3NjhiOWY3NWQyZmFjNjQ4NGZiZTk1MTk2ZTI4NTRjNzk5YmE2NjlkZmEwOTdmYzE3MWQxOWY1ZDdkYjIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/shared/api/queryPolicy.ts#L29-L38",
+          "version": "repo-lines-v1:sha256:3f38eafa2f51a586ecbe1c04f0eb080036248fe658d443424b2481c3797629a5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjBjYzNlNGY4MjcxN2E4NTNhODhiM2ZjNjAxYjU5NGEyM2Y5NTdjMzhkYmQ0NDJhODBlZTZmNzlhODZmZTI3NzIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJlNGM5YmNlNzIxYjhhMTU3NDBiZTY4YzZmZTM2OTYwNGRmNDllNmExMzRmZWNjZTEzZDMxYTFmNjc1ZTRjZDMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a91fc91cc3204a8a8fcae57cf15200b1",
+      "statement": "장바구니 수량 변경·삭제 mutation은 응답으로 캐시를 직접 고치고, 삭제 시에는 헤더 배지용 cart count 쿼리만 invalidate한다. 장바구니 개수 쿼리는 enabled 인자로 비회원 요청을 막는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/cart/api/useCart.ts#L14-L61",
+          "version": "repo-lines-v1:sha256:fb9013b7156822b843f0c1402c66c213fe531280e89123b54ffd53e9767b6e0e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2N2FlYzE2N2VmMmE5ZjU1OWU1MmM2YTYzN2VjNDMzNTNmMGRlMDhkODRjMjc0NzY5ZjY4Y2VmMjFkNjYyMTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImY0MzU3NTY0M2U1NWYxNGNiNjk1NGYyNWU3MTRhNzZhMWU2Y2M5ZTA4OTFhODJkNDgzNDM1M2I1NTI2YWVkYWMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2240f23754634fbe9b2c2bbb3f576e18",
+      "statement": "MainPage는 베스트·추천 섹션마다 로딩·에러·빈 결과를 구분한 문구를 고르고 InlineAlert의 status를 isError에 따라 error/info로 바꾼다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/main/MainPage.tsx#L25-L38",
+          "version": "repo-lines-v1:sha256:1111bf7b53f7db0fe1a1a7551c015c2c13b682f8423114961f9c34dd819fbf79:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxNGQ0OWUzN2I1MDA0YWNmYTU0MjY3OWU0YjJkOTAzNjRkNmM1ZDVjZDg1NWFjMzllYjFhMzJmZmExMTM5YmMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRiY2U2NjYxMzBhNzBiZGQwZWM3YjY3Y2QyOTNiYjQ5NmMzMDNhNjU4YzQwNWUzNzQwZWY3YWY2MWVhOGMxYmUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjU0YzcyZGRmOTRhOGRjZGJhN2Q5OTkyYzk2YmQxNjM5ZWVkYWIyMWM1YmU4ODZjY2MzODRmYmZkMjNiZmJlYmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjhjZWVjYjI1YzIxZTRlYTE0YzEwOGM1ODk2ZWYyMmU0OWRhYjc0MTJmNjZlM2U5Njg3MGM3YzRjYTY0OWVlYTQifQ"
+        },
+        {
+          "resource": "repo://src/pages/main/MainPage.tsx#L59-L59",
+          "version": "repo-lines-v1:sha256:3f9b841b674fe57436415ef3636daaddb2c7b59f55140ba0ffff90eb0b6bb11b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiM2Y5Yjg0MWI2NzRmZTU3NDM2NDE1ZWYzNjM2ZGFhZGRiMmM3YjU5ZjU1MTQwYmEwZmZmZjkwZWIwYjZiYjExYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiM2Y5Yjg0MWI2NzRmZTU3NDM2NDE1ZWYzNjM2ZGFhZGRiMmM3YjU5ZjU1MTQwYmEwZmZmZjkwZWIwYjZiYjExYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOWZjMjg4NGE5NmM1MjA4N2YxMTY1NmY2NWU2ZjZmN2U5OWVlMTFkMWIwZDY4YjhmMTA4OGNmNmI2MjZlZGI3NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMWQ3ZjhiZTllZTc0MDI2NGY3NDQyOWNmNzUzNjEwMzM3MzUxMzFjNWNlNDBlY2IzNjVlMmM4OGQ5Yzg1ZGUxYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_a9945d126a1045dca4ca1a80f4acce9d",
+      "statement": "관리자 페이지는 TanStack Query 대신 useEffect에서 API 함수를 직접 호출하고 .catch로 에러 메시지를 상태에 담는 이전 방식을 쓴다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/admin-reservations/ui/AdminReservationsPage.tsx#L80-L87",
+          "version": "repo-lines-v1:sha256:2e95ed04e32a5ec0da04fa987ba03231060e028ec4f645979ff324b475c1b642:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTk2NmZiZmE4ODk5OGRhNzQ2NTZjNTAxOTQ5NTZjMjVmMDg0OTQ1NzY2MGMwMDlmZTYzZDFlOWZhOWRjOTMxYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTQ4OWVhODYwZmFiODVhZjM4M2Y0MTgzNDMyNDRmMTc4MzBlMjZmMGY5NjU3NWU3MTBiN2MxOWI2ODM3ZDA0NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYzhlNDVkNWRmZWYxM2U2NzNlMjY3ZTMxOTA5MDNlNzJkNTE1OGIwYmY5NzM3NWRlY2E4MmI4MzljNDM1ZTRjYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjM3OTJhODJlM2YxNWFlNTJhYzU4ZTY3YTkzODZmMGY2ZjQ4MmMxOGU3OWExNzJlNWVmY2Q0YjNjZDQ5NDEwMyJ9"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.0",
+    "at": "2026-10-04T09:44:53.662Z"
+  }
+}

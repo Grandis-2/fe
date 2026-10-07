@@ -3,9 +3,11 @@ import { Link, useLocation } from 'react-router'
 
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
+import { MOCK_ORDERS } from '@entities/order'
 import { KakaoLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
+import { Button, Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
 
 import { useHeaderTheme } from '../lib/useHeaderTheme'
@@ -34,16 +36,30 @@ export function Header({
   // 메인페이지에서만 헤더가 sticky다(그 외엔 root의 기본 position: relative를 그대로
   // 쓴다). 추후 다른 페이지도 sticky가 필요해지면 이 조건에 OR로 추가한다.
   const isStickyPage = isMainPage
+  // 어드민을 뺀 헤더는 늘 어두운 디자인이다. 뒤가 어두운 구간이면 바탕만 투명하게 둔다.
+  const isDark = !isAdminPage
   const { headerRef, isOnDark } = useHeaderTheme(pathname)
   // 개수 배지는 회원 쇼핑 화면에서만 — 어드민 종 아이콘은 관리자 알림이라 대상이 다르다.
   const showCounts = isMember && !isAdminPage
   const { data: cartCount = 0 } = useCartCount(showCounts)
   const { data: notificationCount = 0 } = useUnreadNotificationCount(showCounts)
+  // ponytail: 주문 API가 없어 목업에서 센다 — API가 붙으면 장바구니 개수처럼 조회 훅으로 바꾼다.
+  const pendingPurchaseCount = showCounts
+    ? MOCK_ORDERS.filter((order) => order.status === 'confirm').length
+    : 0
 
   // 아이콘 오른쪽 위 숫자. 0이면 안 그린다(개수는 aria-label에 따로 담는다).
-  const countBadge = (count: number) =>
+  const countBadge = (count: number, tone?: 'warning') =>
     count > 0 && (
-      <span className={styles.countBadge} aria-hidden="true">
+      <span
+        className={[
+          styles.countBadge,
+          tone === 'warning' && styles.countBadgeWarning,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        aria-hidden="true"
+      >
         {count > 99 ? '99+' : count}
       </span>
     )
@@ -68,9 +84,9 @@ export function Header({
       ref={headerRef}
       className={[
         styles.root,
-        styles.border[isMainPage ? 'hidden' : 'visible'],
+        isDark ? styles.onDark : styles.admin,
+        isDark && !isOnDark && styles.solid,
         isStickyPage && styles.sticky,
-        isOnDark && styles.onDark,
         className,
       ]
         .filter(Boolean)
@@ -80,17 +96,14 @@ export function Header({
         <div className={styles.leftGroup}>
           <Link
             to={isAdminPage ? ADMIN_HOME_PATH : HOME_PATH}
-            className={[styles.logo, isMember && styles.logoMember]
+            className={[styles.logo, isMember && !isDark && styles.logoMember]
               .filter(Boolean)
               .join(' ')}
           >
-            {isAdminPage ? 'NOVA ADMIN' : 'NOVA'}
+            <Logo suffix={isAdminPage ? ' ADMIN' : undefined} />
           </Link>
           {!isAdminPage && (
-            <CategoryNav
-              tone={isOnDark ? 'onDark' : 'default'}
-              className={styles.desktopOnly}
-            />
+            <CategoryNav tone="onDark" className={styles.desktopOnly} />
           )}
         </div>
         <div className={styles.actions}>
@@ -118,23 +131,33 @@ export function Header({
                   </Link>
                   <Link
                     to={mypagePath('preorder-check')}
-                    className={[styles.iconButton, styles.desktopOnly].join(
-                      ' ',
-                    )}
-                    aria-label="마이페이지"
+                    className={[
+                      styles.iconButton,
+                      styles.badgeAnchor,
+                      styles.desktopOnly,
+                    ].join(' ')}
+                    aria-label={
+                      pendingPurchaseCount > 0
+                        ? `마이페이지, 구매 확정 대기 ${pendingPurchaseCount}건`
+                        : '마이페이지'
+                    }
                   >
                     <CircleUser className={styles.icon} aria-hidden="true" />
+                    {/* 해야 할 일(구매 확정)이라 개수 배지와 달리 경고색이다. */}
+                    {countBadge(pendingPurchaseCount, 'warning')}
                   </Link>
                 </>
               ) : (
-                <button
-                  type="button"
-                  className={[styles.iconButton, styles.desktopOnly].join(' ')}
-                  aria-label="로그인"
+                // 흰 바탕이라 메인 배너(어두운 구간) 위에서도 그대로 보인다.
+                <Button
+                  variant="outline"
+                  size="small"
+                  rounded
+                  className={styles.desktopOnly}
                   onClick={() => openModal(<KakaoLoginModal />)}
                 >
-                  <CircleUser className={styles.icon} aria-hidden="true" />
-                </button>
+                  로그인
+                </Button>
               )}
             </>
           )}

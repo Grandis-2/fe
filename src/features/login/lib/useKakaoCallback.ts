@@ -56,10 +56,8 @@ export function useKakaoCallback() {
         // code는 1회용이라 새로고침으로 같은 code를 다시 보내면 반드시 실패한다 —
         // history.replaceState 대신 react-router의 replace 내비게이션으로 URL을 정리한다.
         //
-        // profileComplete가 false면 여기서 바로 /signup으로 보낸다 — RootLayout에도
-        // 같은 걸 보는 게이트가 있지만(새로고침으로 재발급을 탄 경우를 잡으려면 거기서도
-        // 봐야 한다), 이 시점엔 이미 방금 받은 session이 있어 굳이 한 프레임 더 돌아
-        // /products/1 같은 목적지에 잠깐 갔다가 다시 튕길 이유가 없다.
+        // profileComplete가 false면 /signup으로 보낸다 — 카카오만 마친 사용자는 아직
+        // 회원이 아니다. /signup 밖으로 나가면 RootLayout이 가입 취소로 보고 세션을 지운다.
         navigate(profileComplete ? destination.current : SIGNUP_PATH, {
           replace: true,
           state: profileComplete ? undefined : { from: destination.current },

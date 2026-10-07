@@ -106,7 +106,12 @@ export function PreorderPeriodField({
           <div className={styles.timePanel}>
             <div className={styles.timeTitle}>오픈 시각</div>
             <div className={styles.timeLists}>
-              <div className={styles.timeList} ref={hourListRef} role="listbox" aria-label="시">
+              <div
+                className={styles.timeList}
+                ref={hourListRef}
+                role="listbox"
+                aria-label="시"
+              >
                 {HOURS.map((value) => (
                   <button
                     key={value}
@@ -124,7 +129,12 @@ export function PreorderPeriodField({
                   </button>
                 ))}
               </div>
-              <div className={styles.timeList} ref={minuteListRef} role="listbox" aria-label="분">
+              <div
+                className={styles.timeList}
+                ref={minuteListRef}
+                role="listbox"
+                aria-label="분"
+              >
                 {MINUTES.map((value) => (
                   <button
                     key={value}

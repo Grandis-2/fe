@@ -3,18 +3,25 @@ import * as styles from './PriceText.css'
 export type PriceTextProps = {
   /** "2,278,100원"처럼 단위가 붙은 문자열 */
   value: string
+  /** 단위 뒤에 "~"(…부터)를 붙인다. 옵션에 따라 오르는 시작가(상품 목록 등)에만 켠다. */
+  from?: boolean
 }
 
 // 감싸는 요소를 만들지 않는다 — 쓰는 쪽이 이미 자기 타이포/색 클래스를 가진 요소를
 // 두고 있어서, 여기서 요소를 하나 더 만들면 그 스타일을 못 받는다.
-export function PriceText({ value }: PriceTextProps) {
+export function PriceText({ value, from = false }: PriceTextProps) {
   const unit = value.endsWith('원') ? '원' : null
   const amount = unit ? value.slice(0, -1) : value
 
   return (
     <>
       {amount}
-      {unit && <span className={styles.unit}>{unit}</span>}
+      {unit && (
+        <span className={styles.unit}>
+          {unit}
+          {from && ' ~'}
+        </span>
+      )}
     </>
   )
 }

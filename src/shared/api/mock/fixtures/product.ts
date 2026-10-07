@@ -1,394 +1,225 @@
 import type {
-  Category,
-  DispatchWindowVersion,
-  ProductDetail,
+  CategoryNode,
+  ShipmentBatch,
+  ProductDetailVariant,
+  ProductDetailView,
+  ProductOptionAxis,
+  SaleMode,
 } from '../../types'
 
-export const categories: Category[] = [
+// ponytail: 백엔드 카테고리 행은 이름이 프론트와 확정되면 넣는다고 비워 둔 상태다(be V202610052320 주석).
+// 그때까지 목업은 헤더 메뉴(brandMenus)의 상위 이름 + 브랜드 하위로 트리를 만든다 — 확정되면 이름을 맞춘다.
+const TREE: [code: string, name: string, brands: string[]][] = [
+  ['mobile', '모바일', ['Apple', 'Samsung']],
+  ['pc', 'PC/주변기기', ['Apple', 'Samsung', 'LG']],
+  ['wearable', '웨어러블', ['Apple', 'Samsung']],
+]
+
+export const categories: CategoryNode[] = TREE.map(
+  ([code, name, brands], i) => {
+    const categoryId = i + 1
+    return {
+      categoryId,
+      code,
+      name,
+      parentId: null,
+      children: brands.map((brand, j) => ({
+        categoryId: categoryId * 10 + j + 1,
+        code: `${code}-${brand.toLowerCase()}`,
+        name: brand,
+        parentId: categoryId,
+        children: [],
+      })),
+    }
+  },
+)
+
+// 색상별 촬영본(1~4)이 public/images에 이미 있다.
+// ponytail: 상품 이미지는 아직 맥북 촬영본뿐이라 모든 상품이 같은 이미지를 쓴다.
+export const COLORS = [
+  { slug: 'sliver', label: '실버', hex: '#D9D9DE' },
+  { slug: 'blush', label: '블러쉬', hex: '#E8B4B8' },
+  { slug: 'citrus', label: '시트러스', hex: '#D9F523' },
+  { slug: 'indigo', label: '인디고', hex: '#3B3A6E' },
+]
+const STORAGES = [
+  { label: '256GB', surcharge: 0 },
+  { label: '512GB', surcharge: 130000 },
+]
+
+const optionAxes: ProductOptionAxis[] = [
   {
-    categoryId: 'smartphone',
-    name: '스마트폰',
-    parentId: null,
-    sortOrder: 0,
-    children: [
-      {
-        categoryId: 'smartphone-samsung',
-        name: '삼성',
-        parentId: 'smartphone',
-        sortOrder: 0,
-        children: [],
-      },
-      {
-        categoryId: 'smartphone-apple',
-        name: '애플',
-        parentId: 'smartphone',
-        sortOrder: 1,
-        children: [],
-      },
-    ],
+    key: 'color',
+    label: '색상',
+    values: COLORS.map(({ label, hex }) => ({
+      value: label,
+      normalizedValue: label,
+      surcharge: 0,
+      colorHex: hex,
+    })),
   },
   {
-    categoryId: 'laptop',
-    name: '노트북',
-    parentId: null,
-    sortOrder: 1,
-    children: [
-      {
-        categoryId: 'laptop-apple',
-        name: '맥북',
-        parentId: 'laptop',
-        sortOrder: 0,
-        children: [],
-      },
-    ],
-  },
-  {
-    categoryId: 'accessory',
-    name: '악세사리',
-    parentId: null,
-    sortOrder: 2,
-    children: [],
+    key: 'storage',
+    label: '저장 용량',
+    values: STORAGES.map(({ label, surcharge }) => ({
+      value: label,
+      normalizedValue: label,
+      surcharge,
+    })),
   },
 ]
 
-const image = (
-  imageUrl: string,
-  sortOrder: number,
-  optionValueCode = null,
-) => ({
-  imageUrl,
-  alt: null,
-  sortOrder,
-  optionValueCode,
-})
-
-export const products: ProductDetail[] = [
-  {
-    productId: 'SM-G999',
-    modelNumber: 'SM-G999N',
-    name: '갤럭시 G999',
-    brand: 'Samsung',
-    thumbnailUrl: 'https://cdn.example.test/p/sm-g999/thumb.jpg',
-    priceRange: { min: 1290000, max: 1590000 },
-    openAt: '2026-09-03T10:00:00.000Z',
-    saleStatus: 'OPEN',
-    stockPolicy: 'UNLIMITED',
-    ratingSummary: { averageRating: 4.6, reviewCount: 128 },
-    badges: ['PREORDER', 'NEW'],
-    saleMode: 'PREORDER',
-    categoryId: 'smartphone-samsung',
-    categoryPath: ['smartphone', 'smartphone-samsung'],
-    summary: '더 밝아진 디스플레이와 새로워진 카메라',
-    descriptionHtml: '<h2>갤럭시 G999</h2><p>상세 설명이 들어갑니다.</p>',
-    images: [
-      image('https://cdn.example.test/p/sm-g999/1.jpg', 0),
-      image('https://cdn.example.test/p/sm-g999/2.jpg', 1),
-    ],
-    specs: [
-      {
-        name: '디스플레이',
-        items: [
-          { label: '크기', value: '6.8인치' },
-          { label: '주사율', value: '120Hz' },
-        ],
-      },
-      { name: '배터리', items: [{ label: '용량', value: '5000mAh' }] },
-    ],
-    optionGroups: [
-      {
-        groupCode: 'color',
-        name: '색상',
-        sortOrder: 0,
-        values: [
-          {
-            valueCode: 'BLK',
-            name: '블랙',
-            colorHex: '#111111',
-            imageUrl: null,
-            sortOrder: 0,
-          },
-          {
-            valueCode: 'SLV',
-            name: '실버',
-            colorHex: '#D9D9DE',
-            imageUrl: null,
-            sortOrder: 1,
-          },
-        ],
-      },
-      {
-        groupCode: 'storage',
-        name: '저장 용량',
-        sortOrder: 1,
-        values: [
-          {
-            valueCode: '256',
-            name: '256GB',
-            colorHex: null,
-            imageUrl: null,
-            sortOrder: 0,
-          },
-          {
-            valueCode: '512',
-            name: '512GB',
-            colorHex: null,
-            imageUrl: null,
-            sortOrder: 1,
-          },
-        ],
-      },
-    ],
-    variants: [
-      {
-        optionCode: '256-BLK',
-        name: '256GB 블랙',
-        optionValues: { color: 'BLK', storage: '256' },
-        price: 1290000,
-        listPrice: 1390000,
-        available: true,
-        sortOrder: 0,
-        images: [image('https://cdn.example.test/p/sm-g999/blk.jpg', 0, null)],
-      },
-      {
-        optionCode: '512-SLV',
-        name: '512GB 실버',
-        optionValues: { color: 'SLV', storage: '512' },
-        price: 1590000,
-        listPrice: null,
-        available: false,
-        sortOrder: 1,
-        images: [image('https://cdn.example.test/p/sm-g999/slv.jpg', 0, null)],
-      },
-    ],
-    sale: {
-      openAt: '2026-09-03T10:00:00.000Z',
-      closeAt: null,
-      serverTimeAt: '2026-09-22T03:00:00.000Z',
-      saleStatus: 'OPEN',
-      stockPolicy: 'UNLIMITED',
-    },
-    dispatchPreview: null,
-    my: null,
-  },
-  {
-    productId: 'MBP-14',
-    modelNumber: 'A3112',
-    name: '맥북 프로 14',
-    brand: 'Apple',
-    thumbnailUrl: 'https://cdn.example.test/p/mbp-14/thumb.jpg',
-    priceRange: { min: 2390000, max: 3190000 },
-    openAt: '2026-10-01T01:00:00.000Z',
-    saleStatus: 'BEFORE_OPEN',
-    stockPolicy: 'UNLIMITED',
-    ratingSummary: { averageRating: null, reviewCount: 0 },
-    badges: ['PREORDER'],
-    saleMode: 'PREORDER',
-    categoryId: 'laptop-apple',
-    categoryPath: ['laptop', 'laptop-apple'],
-    summary: '사전예약 한정 혜택',
-    descriptionHtml: '<h2>맥북 프로 14</h2><p>상세 설명이 들어갑니다.</p>',
-    images: [image('https://cdn.example.test/p/mbp-14/1.jpg', 0)],
-    specs: [
-      { name: '디스플레이', items: [{ label: '크기', value: '14.2인치' }] },
-    ],
-    optionGroups: [
-      {
-        groupCode: 'color',
-        name: '색상',
-        sortOrder: 0,
-        values: [
-          {
-            valueCode: 'SPB',
-            name: '스페이스 블랙',
-            colorHex: '#2E2E32',
-            imageUrl: null,
-            sortOrder: 0,
-          },
-        ],
-      },
-      {
-        groupCode: 'storage',
-        name: '저장 용량',
-        sortOrder: 1,
-        values: [
-          {
-            valueCode: '512',
-            name: '512GB',
-            colorHex: null,
-            imageUrl: null,
-            sortOrder: 0,
-          },
-        ],
-      },
-    ],
-    variants: [
-      {
-        optionCode: '512-SPB',
-        name: '512GB 스페이스 블랙',
-        optionValues: { color: 'SPB', storage: '512' },
-        price: 2390000,
-        listPrice: null,
-        available: true,
-        sortOrder: 0,
-        images: [],
-      },
-    ],
-    sale: {
-      openAt: '2026-10-01T01:00:00.000Z',
-      closeAt: null,
-      serverTimeAt: '2026-09-22T03:00:00.000Z',
-      saleStatus: 'BEFORE_OPEN',
-      stockPolicy: 'UNLIMITED',
-    },
-    dispatchPreview: null,
-    my: null,
-  },
-  {
-    productId: 'MBP-16',
-    modelNumber: 'A3186',
-    name: '맥북 프로 16',
-    brand: 'Apple',
-    thumbnailUrl: 'https://cdn.example.test/p/mbp-16/thumb.jpg',
-    priceRange: { min: 3490000, max: 4290000 },
-    openAt: '2026-10-01T01:00:00.000Z',
-    saleStatus: 'BEFORE_OPEN',
-    stockPolicy: 'UNLIMITED',
-    ratingSummary: { averageRating: null, reviewCount: 0 },
-    badges: ['PREORDER'],
-    saleMode: 'PREORDER',
-    categoryId: 'laptop-apple',
-    categoryPath: ['laptop', 'laptop-apple'],
-    summary: '사전예약 한정 혜택',
-    descriptionHtml: '<h2>맥북 프로 16</h2><p>상세 설명이 들어갑니다.</p>',
-    images: [image('https://cdn.example.test/p/mbp-16/1.jpg', 0)],
-    specs: [
-      { name: '디스플레이', items: [{ label: '크기', value: '16.2인치' }] },
-    ],
-    optionGroups: [
-      {
-        groupCode: 'color',
-        name: '색상',
-        sortOrder: 0,
-        values: [
-          {
-            valueCode: 'SPB',
-            name: '스페이스 블랙',
-            colorHex: '#2E2E32',
-            imageUrl: null,
-            sortOrder: 0,
-          },
-        ],
-      },
-      {
-        groupCode: 'storage',
-        name: '저장 용량',
-        sortOrder: 1,
-        values: [
-          {
-            valueCode: '512',
-            name: '512GB',
-            colorHex: null,
-            imageUrl: null,
-            sortOrder: 0,
-          },
-        ],
-      },
-    ],
-    variants: [
-      {
-        optionCode: '512-SPB',
-        name: '512GB 스페이스 블랙',
-        optionValues: { color: 'SPB', storage: '512' },
-        price: 3490000,
-        listPrice: null,
-        available: true,
-        sortOrder: 0,
-        images: [],
-      },
-    ],
-    sale: {
-      openAt: '2026-10-01T01:00:00.000Z',
-      closeAt: null,
-      serverTimeAt: '2026-09-22T03:00:00.000Z',
-      saleStatus: 'BEFORE_OPEN',
-      stockPolicy: 'UNLIMITED',
-    },
-    dispatchPreview: null,
-    my: null,
-  },
-  {
-    productId: 'MB-NEO',
-    modelNumber: 'A2992',
-    name: '맥북 네오',
-    brand: 'Apple',
-    thumbnailUrl: 'https://cdn.example.test/p/mb-neo/thumb.jpg',
-    priceRange: { min: 1690000, max: 1690000 },
-    openAt: '2026-08-20T01:00:00.000Z',
-    saleStatus: 'CLOSED',
-    stockPolicy: 'UNLIMITED',
-    ratingSummary: { averageRating: 4.2, reviewCount: 41 },
-    badges: [],
-    saleMode: 'IN_STOCK',
-    categoryId: 'laptop-apple',
-    categoryPath: ['laptop', 'laptop-apple'],
-    summary: null,
-    descriptionHtml: null,
-    images: [],
-    specs: [],
-    optionGroups: [],
-    variants: [
-      {
-        optionCode: '256-MID',
-        name: '256GB 미드나이트',
-        optionValues: { color: 'MID', storage: '256' },
-        price: 1690000,
-        listPrice: null,
-        available: false,
-        sortOrder: 0,
-        images: [],
-      },
-    ],
-    sale: {
-      openAt: '2026-08-20T01:00:00.000Z',
-      closeAt: '2026-09-01T01:00:00.000Z',
-      serverTimeAt: '2026-09-22T03:00:00.000Z',
-      saleStatus: 'CLOSED',
-      stockPolicy: 'UNLIMITED',
-    },
-    dispatchPreview: null,
-    my: null,
-  },
-]
-
-export const dispatchWindows: Record<string, DispatchWindowVersion> = {
-  'SM-G999': {
-    waves: [
-      {
-        wave: 1,
-        fromSeq: 1,
-        toSeq: 500,
-        estimatedDeliveryDate: '2026-09-10',
-      },
-      { wave: 2, fromSeq: 501, toSeq: 1200, estimatedDeliveryDate: null },
-    ],
-    undeterminedFromSeq: 1201,
-    productId: 'SM-G999',
-    version: 3,
-    status: 'PUBLISHED',
-    createdAt: '2026-09-01T02:00:00.000Z',
-    createdBy: 'admin@nova.test',
-    publishedAt: '2026-09-02T02:00:00.000Z',
-    confirmedCountByWave: { '1': 500, '2': 318 },
-  },
-  'MBP-14': {
-    waves: [{ wave: 1, fromSeq: 1, toSeq: 1, estimatedDeliveryDate: null }],
-    undeterminedFromSeq: 2,
-    productId: 'MBP-14',
-    version: 1,
-    status: 'DRAFT',
-    createdAt: '2026-09-12T03:00:00.000Z',
-    createdBy: 'admin@nova.test',
-    publishedAt: null,
-    confirmedCountByWave: null,
-  },
+type Seed = {
+  title: string
+  categoryId: number
+  basePrice: number
+  saleMode?: SaleMode
+  // 일반 상품의 재고. 0이면 품절.
+  stock?: number
+  // 옵션을 전부 판매 중지로 둔다 — 목록에서 "판매 중지"로 보인다.
+  paused?: boolean
 }
+
+function buildProduct(
+  productId: number,
+  {
+    title,
+    categoryId,
+    basePrice,
+    saleMode = 'IN_STOCK',
+    stock = 10,
+    paused,
+  }: Seed,
+): ProductDetailView {
+  const isPreorder = saleMode === 'PREORDER'
+  const variants: ProductDetailVariant[] = COLORS.flatMap((color) =>
+    STORAGES.map((storage) => {
+      const selections = { color: color.label, storage: storage.label }
+      return {
+        variantId:
+          productId * 100 +
+          COLORS.indexOf(color) * 10 +
+          STORAGES.indexOf(storage),
+        sku: `${productId}-${color.slug}-${storage.label}`,
+        title: `${color.label} ${storage.label}`,
+        price: basePrice + storage.surcharge,
+        filterAttributes: selections,
+        displayAttributes: selections,
+        selections,
+        status: paused ? 'PAUSED' : 'ACTIVE',
+        availableQuantity: isPreorder ? null : stock,
+      }
+    }),
+  )
+  const gallery = COLORS.map(({ slug, label }) => ({
+    bundleKey: label,
+    items: [1, 2, 3, 4].map((n) => ({
+      url: `/images/macbook_neo_${slug}${n}.png`,
+      position: n,
+      primary: n === 1,
+    })),
+  }))
+  const sellable = variants.some((variant) => variant.status === 'ACTIVE')
+  return {
+    productId,
+    categoryId,
+    saleMode,
+    title,
+    modelNumber: `NV-${productId}`,
+    description: null,
+    imageUrl: gallery[0].items[0].url,
+    status: 'ACTIVE',
+    visible: true,
+    basePrice,
+    warranty: { offered: false, surcharge: 0 },
+    sellable,
+    soldOut: !isPreorder && sellable && stock <= 0,
+    campaign: isPreorder
+      ? {
+          opensAt: '2026-10-01T01:00:00.000Z',
+          closesAt: '2026-12-31T14:59:59.000Z',
+          status: 'OPEN',
+        }
+      : null,
+    optionAxes,
+    variants,
+    images: { gallery, detail: [] },
+  }
+}
+
+const brandId = (code: string, brand: string) =>
+  categories
+    .find((node) => node.code === code)
+    ?.children.find((child) => child.name === brand)?.categoryId ?? 0
+
+// 상위 카테고리별 [하위 상품군, 개수, 시작가, 판매 방식]. 브랜드는 하위 카테고리를 번갈아 쓴다.
+const LINES: [
+  code: string,
+  line: string,
+  count: number,
+  price: number,
+  mode?: SaleMode,
+][] = [
+  ['mobile', '스마트폰', 8, 1250000],
+  ['mobile', '태블릿', 5, 890000],
+  ['mobile', '폴더블', 3, 2190000, 'PREORDER'],
+  ['pc', '노트북', 6, 1290000],
+  ['pc', '모니터', 4, 450000],
+  ['pc', '키보드', 4, 89000],
+  ['wearable', '스마트워치', 5, 390000],
+  ['wearable', '무선이어폰', 6, 259000],
+]
+
+// 1번은 사전예약 목업(entities/preorder)이 상세로 보내는 상품이라 손으로 둔다.
+const seeds: Seed[] = [
+  {
+    title: '맥북 프로 14',
+    categoryId: brandId('pc', 'Apple'),
+    basePrice: 2390000,
+    saleMode: 'PREORDER',
+  },
+  ...LINES.flatMap(([code, line, count, price, saleMode]) => {
+    const brands = TREE.find(([treeCode]) => treeCode === code)?.[2] ?? []
+    return Array.from({ length: count }, (_, i) => ({
+      title: `NOVA ${line} ${i + 1}`,
+      categoryId: brandId(code, brands[i % brands.length]),
+      basePrice: price + i * 50000,
+      saleMode,
+    }))
+  }),
+  // 목록의 품절 · 판매 중지 표시를 확인하는 용도.
+  {
+    title: 'NOVA 스마트밴드 (품절)',
+    categoryId: brandId('wearable', 'Samsung'),
+    basePrice: 79000,
+    stock: 0,
+  },
+  {
+    title: 'NOVA 마우스 (판매 중지)',
+    categoryId: brandId('pc', 'LG'),
+    basePrice: 59000,
+    paused: true,
+  },
+]
+
+export const products: ProductDetailView[] = seeds.map((seed, i) =>
+  buildProduct(i + 1, seed),
+)
+
+// 사전예약 상품의 배송 차수 — 1~500번은 1차, 그 뒤는 2차(상한 없음).
+export const shipmentBatches: ShipmentBatch[] = [
+  {
+    batchNumber: 1,
+    positionFrom: 1,
+    positionTo: 500,
+    estimatedShipStart: '2026-10-15',
+    estimatedShipEnd: '2026-10-17',
+  },
+  {
+    batchNumber: 2,
+    positionFrom: 501,
+    positionTo: null,
+    estimatedShipStart: '2026-10-22',
+    estimatedShipEnd: '2026-10-24',
+  },
+]

@@ -1,7 +1,8 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, redirect } from 'react-router'
 
 import { AdminLayout } from '@app/layouts/AdminLayout'
 import { MainLayout } from '@app/layouts/MainLayout'
+import { RequireLogin } from '@app/layouts/RequireLogin'
 import { RootLayout } from '@app/layouts/RootLayout'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PAYMENT_CALLBACK_PATH } from '@features/payment'
@@ -18,6 +19,7 @@ import { KakaoCallbackPage } from '@pages/kakao-callback/KakaoCallbackPage'
 import { MainPage } from '@pages/main/MainPage'
 import { Mypage } from '@pages/mypage/Mypage'
 import { NotFoundPage } from '@pages/not-found/NotFoundPage'
+import { OnboardingPage } from '@pages/onboarding/OnboardingPage'
 import { PaymentPage } from '@pages/payment/PaymentPage'
 import { PaymentCallbackPage } from '@pages/payment-callback/PaymentCallbackPage'
 import { PreorderPage } from '@pages/preorder/PreorderPage'
@@ -25,7 +27,7 @@ import { PreorderDetailPage } from '@pages/preorder-detail/PreorderDetailPage'
 import { ProductDetailPage } from '@pages/product-detail/ProductDetailPage'
 import { ResultPage } from '@pages/result/ResultPage'
 import { ReviewsPage } from '@pages/reviews/ReviewsPage'
-import { SearchPage } from '@pages/search/SearchPage'
+import { SearchResultsPage } from '@pages/search-results/SearchResultsPage'
 import { SignupPage } from '@pages/signup/SignupPage'
 import {
   ADMIN_CONSISTENCY_CHECK_PATH,
@@ -42,6 +44,7 @@ import {
   adminPromotionPath,
   HOME_PATH,
   MYPAGE_PATH,
+  ONBOARDING_PATH,
   PAYMENT_PATH,
   PREORDER_PATH,
   preorderPath,
@@ -49,17 +52,27 @@ import {
   RESULT_PATH,
   REVIEWS_PATH,
   SEARCH_PATH,
+  SEARCH_RESULTS_PATH,
   SIGNUP_PATH,
 } from '@shared/config/routes'
+import { hasSeenOnboarding } from '@widgets/onboarding'
 
 export const router = createBrowserRouter([
+  // 자체 로고·건너뛰기를 가진 전체 화면이라 헤더·탭바를 그리는 RootLayout 밖에 둔다.
+  { path: ONBOARDING_PATH, element: <OnboardingPage /> },
   {
     element: <RootLayout />,
     children: [
       {
         element: <MainLayout />,
         children: [
-          { path: HOME_PATH, element: <MainPage /> },
+          {
+            path: HOME_PATH,
+            element: <MainPage />,
+            // 처음 온 사용자는 홈 대신 온보딩부터 본다. 상품 링크 등 다른 주소로 바로 들어오면 막지 않는다.
+            loader: () =>
+              hasSeenOnboarding() ? null : redirect(ONBOARDING_PATH),
+          },
           { path: PREORDER_PATH, element: <PreorderPage /> },
           {
             path: preorderPath(':preorderId'),
@@ -69,17 +82,25 @@ export const router = createBrowserRouter([
             path: productPath(':productId'),
             element: <ProductDetailPage />,
           },
-          { path: PAYMENT_PATH, element: <PaymentPage /> },
-          { path: PAYMENT_CALLBACK_PATH, element: <PaymentCallbackPage /> },
-          { path: RESULT_PATH, element: <ResultPage /> },
           { path: REVIEWS_PATH, element: <ReviewsPage /> },
-          { path: SEARCH_PATH, element: <SearchPage /> },
+          // 카테고리 둘러보기(/search)와 키워드 검색(/search/results)은 같은 검색 화면이다.
+          { path: SEARCH_PATH, element: <SearchResultsPage /> },
+          { path: SEARCH_RESULTS_PATH, element: <SearchResultsPage /> },
           { path: SIGNUP_PATH, element: <SignupPage /> },
           {
             path: KAKAO_CALLBACK_PATH,
             element: <KakaoCallbackPage />,
           },
-          { path: MYPAGE_PATH, element: <Mypage /> },
+          {
+            // 사전예약·장바구니·결제는 회원 전용이다.
+            element: <RequireLogin />,
+            children: [
+              { path: MYPAGE_PATH, element: <Mypage /> },
+              { path: PAYMENT_PATH, element: <PaymentPage /> },
+              { path: PAYMENT_CALLBACK_PATH, element: <PaymentCallbackPage /> },
+              { path: RESULT_PATH, element: <ResultPage /> },
+            ],
+          },
           { path: '*', element: <NotFoundPage /> },
         ],
       },

@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:6d6b0253d0385d632b348f51e1008acda1df35ab1f9d1a573cde2dca0eefb8db",
+  "claims": [
+    {
+      "id": "claim_a6073aacb7994c35acc910fb39624514",
+      "statement": "ProductDetailPage는 상세 API에서 saleMode만 사용하고 색상·옵션·기본가·이미지 등은 목업 상수를 쓰며, 상품 조회가 끝나지 않았거나 실패하면 isCheckoutReady가 false가 되어 결제·사전예약 진행을 막는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/product-detail/ProductDetailPage.tsx#L34-L122",
+          "version": "repo-lines-v1:sha256:dee7c62edd12bdb2170e9a0fca3903ec93b424792b69f4c96831ae26b194d35d:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2NDU5Zjk1MjVmMzgwZjZmZjcxMmY1N2QzNzFkYTFjMzFmYjI4MTI2NGMzMzU5MjBlMWNiY2IzZGExNmY1YWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzUyNTg5YzM0ZDNjNjA2ODU5MzFiNmVjYzRkNTA5OTFhN2M1NmM4ZmJhMjg5NDExNDY1NzY5MDI3MmNhYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY4MDJiMGFmYjk4ZGYyZWE2YWU4YjI1OGIwNjkwNjQyODFhNDgzYTdmOGM0MjQyMDA3NTYxMjM3ZDNkYjRiMzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdjYjlhMDljODUwYTcxZWJjYTY4ZDcxMmI3M2YxNDg5MGNhNWE3YjYyNGExMTg0YmRkYTdlNzg5N2ExMjBmYmYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2d9221a365fb4de7a819ccf36c674542",
+      "statement": "결제하기는 useRequireLogin으로 감싸 비회원이면 로그인 모달을 열고, 회원이면 PurchaseDraft를 navigation state로 넘겨 사전예약은 /result?status=preorder로 replace 이동, 일반 상품은 /payment로 이동한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/product-purchase/model/purchaseDraft.ts",
+          "version": "repo-file-v1:sha256:7f9eaa7169c3382b24bbfca172e763301ba629a4b5acaf61fbf89e5ca2ec30d3"
+        },
+        {
+          "resource": "repo://src/pages/product-detail/ProductDetailPage.tsx#L136-L157",
+          "version": "repo-lines-v1:sha256:b9cf15ec5a11f6b3ea9deb8ef75070ee5cd3e80a93c4bd7b135c2d52b0cd24e7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1OGM0ZTFjYzk4MTI1MDgxMGRlYmVhMjNjOTc1ODQyMGI1NmMxYmVmNWM1NmMwODg0YmI3NjVjYTE3OTk2OTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk0MDFmZjViNzNmYmMxMTY2NjhlZDJmMTZmZDVlMTQxNTYwMDU1OGFiYzQzMzIyOTIxNWZhOThiZjdiOTdjOGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImI1YWU2MGQ4MzMzNzZlZDMyNDMzOTg2MGUxMjk5ZjdhODdmZmFiOGRiOTljZDE1ZmJhOGRmMDk5ZGFlZmJkODUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6cb565d13c3746c4bca21b0c12cb3869",
+      "statement": "useProductPurchase는 색상·옵션 선택과 수량을 들고 옵션 라벨·단가(기본가+추가금)·총액을 파생하며, 상품이 바뀌면 렌더 중에 선택을 초기화하고 사전예약이면 주문 수량을 1로 고정한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/product-purchase/lib/useProductPurchase.ts#L20-L91",
+          "version": "repo-lines-v1:sha256:91f5c2d5e95805fee077003d27a4f92a82004377efa6397096a84d0f66ad9031:eyJzZWxlY3RlZExpbmVDb3VudCI6NzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmZjNiNDU1ZDA4NjliZWQ2MTNmYzE2NjA0MjdiZTI4YWJiNWRhYTExMmU5Y2Y5ZGVkNjY2NDQ0YWMwMzI1YzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhNTM2OTI2Y2NhZmQ4ZjRkNWZmMTBmNjNjNTc3MDMzNGZmZDkxOGI3NjliYWFmODA2Yjg2ZjJlNjViYjJjMzIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjRmYzMzZjBlZTIzZDYxZWUxMjc2NmJkNGJmMWQ5OTM0ZjBkZDgzYWFlMzM1MGU4ZDg2YTlmZjUzY2ZmN2FkZjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d42563aa64c546468199446ae0ccf17f",
+      "statement": "사전예약 혜택은 고정 금액이 아니라 비율(PREORDER_BENEFIT_RATE = 0.1)이며 상세 구매 요약과 결제 화면이 같은 상수를 쓴다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/product-purchase/model/benefit.ts",
+          "version": "repo-file-v1:sha256:0aa725c7ef73a21502dcd81b3fb2f95bd6e8525fcaa648ba22bd55af9bc08063"
+        },
+        {
+          "resource": "repo://src/pages/payment/PaymentPage.tsx#L98-L100",
+          "version": "repo-lines-v1:sha256:a8e81b32e2b7babd816f7b715f28b20f3ee7af0823af6c9085a85ca532825e65:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzJiNDBlY2Y1YWIzYzU5ZDZhN2JiNjFiMDYxYmEyYjk3NzYxNGI1NTNkYzFkYzc4ZjMwYjU1Mjk1NDRhMGM1ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYzliMzg1NTM2YTBmMDZlNjQ4ZDk0NjU0MmJlNTNhMjY1N2IzZWFiNmExZTg2Zjg4ZDQ5OTA0ZWQ1ZDY2OWExYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZDdhNGM1NGUzYTA1Mzc5MWExZmQyMmQ4NjdiOTEwYjYxMzEzNGE2MWU0MzBiOWU3MTM3ZWViNDk5MTZiNmY3NyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjI5NTdiY2Y2MzQ5NmMwYzk2N2VlYzBiYzU5MjhlZGEyOTRjYmU1ODhmMzBmYTU2MTdkMjRkZDJkMzBlMGE3OSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_662a995a695e4ad79c9e4d248049423d",
+      "statement": "PaymentPage는 location.state의 PurchaseDraft(없으면 목업 초안)를 쓰고, 프로필과 기본 배송지(없으면 목업 주소)를 useFormFields 기본값으로 깔며 사용자가 고친 칸이 항상 우선한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/payment/PaymentPage.tsx#L32-L96",
+          "version": "repo-lines-v1:sha256:a0af7f7c41d1cfe4fca852542aafa325987f9f5c397acf0e97ee7fe8b4b98cfc:eyJzZWxlY3RlZExpbmVDb3VudCI6NjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY0MGQzMzA0OTkzZTA5ZGEwMTE5OWZkZTJlZGUwYmIzZjJhNmYyODNhNjZkNjJkNTllYTlkYzMwMGU5MTgzZTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MTQ1MmE3YTk1MzY2YWI5YWJjYjA2YjI4MzhkNGM5MTFjMTZhYWJkNGFkNGU5YzZmZjk4NDZmYmRiYjQ4ZDQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVjYzMxYmM1MDViNTc0OTQ5ODY3NmI1OWUwNzk3YTUzODk0YWMwZmYwOGFhNTY1YTQ3ZGI1ODg0YmJjMWRhNWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc3MTU1NjVhODA3YWY4NjAyZmJhZGFlOWMwMTYxMjM0MTMzZmVkNWUwYTQ1ZWJiOTI3ZmI0ZmRmNjBkYzM5YWQifQ"
+        },
+        {
+          "resource": "repo://src/shared/lib/useFormFields.ts#L1-L43",
+          "version": "repo-lines-v1:sha256:28f5c8b980ceeedb40a23e0fd8ee3e820ab2f1bd764ecbcc9516ad4bcd0e93e8:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0ZDU0MzAyZmY5YTcxMTI1ZWUzNjE4MjA5OGVjM2QzMzFlODRjNmIyYTI0MzU4MjViMWJhZDMxOTFiYWZjMzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e9b621f2246e44138a08e857fab0fd82",
+      "statement": "결제 버튼은 필수 약관을 모두 동의해야 활성화되고, 결제는 preparePayment로 주문 ID·금액을 확정한 뒤 requestTossPayment를 호출하며 그 사이 오류는 getErrorMessage로 문구를 만들어 표시한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/payment/PaymentPage.tsx#L109-L156",
+          "version": "repo-lines-v1:sha256:9d935b26d6508d2ead4e71b7e05cfd838a3f325f65e9ddcf1f9822404fcfb009:eyJzZWxlY3RlZExpbmVDb3VudCI6NDgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNjYmVjZTVmNjI0MGFjNThjMzgwOTgwNTY4MmEyMzgzYmNmMGI1NWY3MmJiZmQ2ZGMzN2IxNGMzZmRmMGI5ZDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhiMmJkNmM4OWFiM2JjZTc0NTZlYjA5Mjk2ZTY5OWI0NmNiYjE5ZjVlYzVlODNhOWU0NjFjZTcwZmQyMWNmMGIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ4YTU3YmUxMzI0MzU2NWViOTMyNTM1Yzk4YTA1OTk1ODhjYTI3YzI1MzdiOWYxYjU5Mzk1YThlY2E0OGIwOWYifQ"
+        },
+        {
+          "resource": "repo://src/pages/payment/PaymentPage.tsx#L219-L240",
+          "version": "repo-lines-v1:sha256:b5fdb4ebdbec88c0db78639a5f8320c125fa422c4c0c4f423452931156357ea1:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVlMmFlM2EyMjNkMjllNzA2NTI3NzhlZWM5NmRiNjk0YjhjMjdmYTNiMzk4ZTJjMGVlZTA5ZTlkM2RiMDcyOWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ0YWQ2MzQ0NDUwYjhlZmFlMTc2MTJjMTY3ODQ5MzUzYmY0ZTcxYjg4MmE1NzI5MmQ2YjFkYTQ0MjcyOGQ3NWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ5YmU4ZTg4ZGU2NzA3MWM2YTFjYjVmZDgyMjM0MzUwZjgwNDA3NGQzYjNiZDIwY2NiZjY0OWFmMDZjMzFjOTEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3OWU2ZWJiMjQxNWI5ZDA3OWY4NzI3ZjhmNDA3Y2I0OTc3NzM2MWM1ZDMyNGJlMzhlMWY0N2U1MGEwZGU4ZGMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_3d9dc6e5b69b4c0c9ab9c8d543f874b9",
+      "statement": "requestTossPayment는 한 번만 로드한 토스 SDK로 customerKey ANONYMOUS의 카드 결제창을 열고 successUrl·failUrl을 모두 /payment/callback으로 두며, 사용자가 창을 닫은 USER_CANCEL은 오류로 던지지 않는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/payment/lib/requestTossPayment.ts",
+          "version": "repo-file-v1:sha256:306ef3b2dbf50001fe7303fe9c77a4201b1ffc2608e92fe4fb065a539c62cdd1"
+        },
+        {
+          "resource": "repo://src/features/payment/lib/tossClient.ts",
+          "version": "repo-file-v1:sha256:8e8a0af2d6718a6ceae79f191d31a46468d0bbddd6c3347d5c4e7618420d9833"
+        }
+      ]
+    },
+    {
+      "id": "claim_37c71410e61247ef829bb9736da1df88",
+      "statement": "결제 준비 API는 결제창 전에 주문 ID·금액을 서버에 확정하고, 승인 API는 토스가 돌려준 값을 넘겨 서버가 저장 금액과 대조한 뒤 승인하게 한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/payment/api/payment.ts",
+          "version": "repo-file-v1:sha256:edbf63d021ec520436c42739b0d68be26f6b8b3b41d55e50bca92b70458a567f"
+        }
+      ]
+    },
+    {
+      "id": "claim_46e2311860924d60abf052231ec3855b",
+      "statement": "PaymentCallbackPage는 useRef로 승인 중복 요청을 막고, paymentKey·orderId·amount가 없으면 바로, 승인 실패 시에도 /result?status=failed로, 성공 시 /result?status=paid로 replace 이동한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/payment-callback/PaymentCallbackPage.tsx",
+          "version": "repo-file-v1:sha256:6a58974134dc0810ef9d4fc72fa328054b965d04d1a8fbb79125dbe47e12dacc"
+        }
+      ]
+    },
+    {
+      "id": "claim_d4bd06e0a2df4cc38530ba1aa2672255",
+      "statement": "ResultPage는 status 쿼리(preorder/paid/failed, 알 수 없으면 paid)에 따라 ResultHero 배너를 고르고, failed는 행성 일러스트·워드마크 문구·홈 버튼만, 나머지는 목업 주문 정보와 내역 이동 버튼을 보여 준다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/result/ResultPage.tsx#L24-L158",
+          "version": "repo-lines-v1:sha256:6476a6dee551cac4941aeb71f21e21084b9b1bfe555260a67a6fdf6b864f8863:eyJzZWxlY3RlZExpbmVDb3VudCI6MTM1LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiJmYTgwMGIxYjZjMmI4NWNlNzMzMDBkZjAzZWFkOWRmZDIzODljODIyN2Y5ZjY3NDFkNDc3MzMxMDRkYzM5MjIwIiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiI0MTJjYTM0NWNjZjc1YmY5YzA4MDZiY2U2OTViZThkZTgwOGI3OTk4NDI1MWE3YTU0ZDIwMmNmNjEwMWRkNDUxIiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiJiNTNjNDk5MjQzMGQ5ZTZiOWFmNmIyYzAxNTA2ODcwODM2MTJlN2NmYTUxYWJlNmQ1YTQ1Zjk2YzEzNGU3NjY4IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MCwiZm9sbG93aW5nQ29udGV4dEhhc2giOiJlM2IwYzQ0Mjk4ZmMxYzE0OWFmYmY0Yzg5OTZmYjkyNDI3YWU0MWU0NjQ5YjkzNGNhNDk1OTkxYjc4NTJiODU1In0"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.0",
+    "at": "2026-10-04T09:44:53.662Z"
+  }
+}

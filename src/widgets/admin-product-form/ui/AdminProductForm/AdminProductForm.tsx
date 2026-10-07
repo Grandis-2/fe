@@ -5,13 +5,7 @@ import {
   type AdminProductFormValue,
 } from '@entities/admin-product'
 import { getProductVariants } from '@entities/admin-product'
-import {
-  Button,
-  Checkbox,
-  FormSection,
-  ImageUploader,
-  Input,
-} from '@shared/ui'
+import { Button, Checkbox, FormSection, ImageUploader, Input } from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
 import { NumberField } from '../NumberField'

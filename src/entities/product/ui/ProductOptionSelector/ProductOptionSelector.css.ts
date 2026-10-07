@@ -11,11 +11,11 @@ const rootBase = style({
 })
 
 // small: 카드 안에서 쓴다 — 카드 자체가 이미 바깥 여백/간격을 관리하므로 padding 없이
-// 라벨-옵션 간격만 좁게(6px) 붙인다.
-// medium: 상세 페이지 옵션 패널에서 쓰던 기존 값 그대로.
+// 라벨-옵션 간격만 좁게(8px) 붙인다.
+// medium: 상세 페이지 옵션 패널 — 그룹 사이 간격은 패널의 gap이 준다.
 export const root = styleVariants({
-  small: [rootBase, { gap: spacing[6] }],
-  medium: [rootBase, { gap: spacing[16], padding: `${spacing[12]} 0` }],
+  small: [rootBase, { gap: spacing[8] }],
+  medium: [rootBase, { gap: spacing[12] }],
 })
 
 export const label = style({ color: color.text.primary })
@@ -35,7 +35,7 @@ export const optionRow = styleVariants({
     {
       flexDirection: 'column',
       alignItems: 'stretch',
-      gap: spacing[14],
+      gap: spacing[12],
       '@media': { [breakpoint.mobile]: { gap: spacing[8] } },
     },
   ],

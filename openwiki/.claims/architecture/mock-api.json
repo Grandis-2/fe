@@ -1,0 +1,134 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:609447edca814a44abdad6fc86d5d1c1156fd5c8e99bd8bf9aa0b41b7dd9075e",
+  "claims": [
+    {
+      "id": "claim_54548f1bed55406e905694fd03028ed5",
+      "statement": "MSW는 개발 서버에서는 VITE_USE_MSW가 'false'가 아니면 켜지고, 빌드 결과물에서는 VITE_USE_MSW가 'true'일 때만 켜지며, 꺼져 있으면 워커 모듈을 동적 import하지 않고 켜져 있으면 onUnhandledRequest: 'bypass'로 시작한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/mock/index.ts#L1-L12",
+          "version": "repo-lines-v1:sha256:0ee35adc5bffb7f8d82109b823a14ac3478f08bc2c9669232bad0ff01fd30c46:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImU1OGM4OWY3MDA0MTVkMDBmY2VmMzAxZDg5OTNmOTFlOGY0ODFhZjgyOWZmZWZjNGVmNGMyNTU0NmIwNTgwY2UiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_181312ec92f245e39ee480da048752d6",
+      "statement": "main.tsx는 startMockWorker()가 끝난 뒤에 렌더를 시작해 워커 등록 전에 첫 요청이 나가지 않게 한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/main.tsx",
+          "version": "repo-file-v1:sha256:8219e1a563c7b4e027a02b749fe4ff346e41a84b03f1251d343843e078533f58"
+        }
+      ]
+    },
+    {
+      "id": "claim_f3f48a5d2f0342d7b6f188237733cb66",
+      "statement": "response.ts의 ok/fail 헬퍼가 success/data/error/timestamp/traceId 서버 봉투를 조립하며, fail은 violations·retryable을 평평하게 받아 error.details 아래로 넣는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/mock/response.ts",
+          "version": "repo-file-v1:sha256:e8a01f369044cc3572fe4f1514ccaf6a763ce211745509144f8810a093fa2e53"
+        }
+      ]
+    },
+    {
+      "id": "claim_5d593a5082b54898b42bc1e889226899",
+      "statement": "목 핸들러 경로는 url(path) = '*' + path로 origin을 와일드카드 처리해 상대경로·절대 URL 요청을 모두 잡는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/mock/url.ts",
+          "version": "repo-file-v1:sha256:407832de64f823328ab5577dcccde0c8fffad21d60e51e00211573754f570f4d"
+        }
+      ]
+    },
+    {
+      "id": "claim_4d7e6be7d57645ad8237470d5f6fcfb1",
+      "statement": "브라우저가 서비스 워커 응답의 Set-Cookie를 반영하지 않아, 인증 목은 리프레시 쿠키를 X-Mock-Set-Cookie 헤더로 내려보내고 browser.ts가 response:mocked 이벤트에서 document.cookie로 심으며, 재발급 핸들러는 페이지 컨텍스트의 document.cookie에서 리프레시 토큰을 읽는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/mock/browser.ts",
+          "version": "repo-file-v1:sha256:cb096cffb9a362a3e5064b65a6e34f016e84e0381728c8fa8f727c644917feb2"
+        },
+        {
+          "resource": "repo://src/shared/api/mock/handlers/auth.ts#L150-L160",
+          "version": "repo-lines-v1:sha256:c84a34cce4f806b9eb6c6ee0ea5c51cc8b648de2566d2532541c8a4da4249246:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4MmQzMWY4NDE1ZmI4NDU1YjAxYWRmMTJhZDlmYzBiOGI4ZTdjNmNkYmQ3MGNiNmVhOTllZmQ3ZmRjOTU4OWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZmOWRmNTk0NWI5NmJlY2U3OTA1NzYyNjRjMGZkZmNjYzQxMTRlMjYwOGI1NTJlYTVlNTNmNDE2YzUzZWZkNDUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE5NDBkYTdlNWIwMzY3YjM0MDAxMTMzYmE5ZTIzYWVkY2NhNDBjOTNiYTc3ZDQ0M2Q5YTM0NTk4M2U2OTg3ODUifQ"
+        },
+        {
+          "resource": "repo://src/shared/api/mock/handlers/auth.ts#L202-L210",
+          "version": "repo-lines-v1:sha256:fd1352e48b9c61cff770ddc1185216c97e09490b43c4094bed75dc7e8044ddf5:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTRiODJkYzI0YTFiZWQ1ODBhMzEzMzBmODBkMGM2YTk2MGUwMjE1N2FlZTU0ODU4NThmZTkwZThhODk1YThjOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjQ0NzI3ZGZhYzAzODU1NjM4ZTgzZDhlYjQxZjk2ZmU2ZGY5OGU2MTJhNmE1MTRlODEyNDA5ZmRkNGM1NmQzMSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjc4OTRlYjg2YjI1YWIwOGFlNDk3YWE5OTQzODM0MjA0YWI2YjdjZGI4ZDg2NGFmMTk2YmZlZTU2NzlmYTRhMiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmUyN2YzMTg1OTM4NWVlYzdhMzA2YTU4OTBiZTNhNjc0ZTJiMjUxMWUyNjQ4Mzg3N2ZhZTEzZjMyMzRmNDE1ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_cc5796cc107b43e8839b78c3cbcd3a31",
+      "statement": "인증 목과 결제 목은 메모리 상태를 sessionStorage(nova-auth-mock-db, nova-payment-mock-db)에 저장해 새로고침에도 유지하고, 장바구니 목은 메모리에만 두어 새로고침하면 시드로 돌아간다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/mock/handlers/auth.ts#L18-L60",
+          "version": "repo-lines-v1:sha256:d2a7e92330effa4a5a7dc03f01a669e0de3b992926e188d3995d60fce313e0be:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEzYjFhY2Y4ZTQ0MDA5ZWE1ZjY0MDkxN2U0ZDUxOWE3MzA0MjBjNjNlZDAyNDlhOWJiYzYzOTI1MjU0NTQwMzIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjVjN2ZiZTcwNzRkNDFiMTgxZTEzOWJkYmRmYjRlNGU5NzYxMTJkNTVmZTNmNmI4OTUyY2I2MGUzZjkwMzVhNzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjMzOTcwMTc4OThmYjg1MTNiNjAwYTIzNWMyZjU0Yzg3NTk0ODIwOTcxZjk2OTNhOGFkODhjMzRiZjdiMzZhZDMifQ"
+        },
+        {
+          "resource": "repo://src/shared/api/mock/handlers/cart.ts#L11-L13",
+          "version": "repo-lines-v1:sha256:3b532ddba1d788ab17bb847dfc9fdae2e44ccf59041dafa119bee0162df9606c:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMGU0NDU1NWY3ZjhiYjI1ZDM2NjA0YzM3MmMwMDk0MzVlOGI2Mjg5ZWU4YzkxNGE3NDljN2M3OGZhMmJjYjUwMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTY4NWJlNzJiM2JkNmEwN2Q4YzZiNDMwNmIzZjcxYTIxZDFiZDJkZTdiZDhiZWIxZjQzZmVlYzUzYTg0NjJhNCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTlhMmFlZDJkODYzYWViZDU3MzBkZDQ3YTRmNDVmNWJkYzg1MTQzN2NhNTIzNWMwYzM2NmRlM2I2OTYzYjAxMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTg1ZjhmYTJjNWZkZmQxZGUzZTc0MTcyYmZlYWMwMzY5YWJjMTEwYzA5MDU3MjU3YmZkNTAxNDFkNzkzOTg0NSJ9"
+        },
+        {
+          "resource": "repo://src/shared/api/mock/handlers/payment.ts#L19-L32",
+          "version": "repo-lines-v1:sha256:d3aaa3be2530de5251f4b06f094d623a59a8e6fdecff695cf6ea23aa9b833804:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNiOTNlZTg1YjJhMTg5ZTkxYjMyMWMyMzM5MTMzYTE5NDFjOTRhNzEwYWIwMzc2ZjZhMWZkMDZmY2E0OTEwMzQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZhMGI3OGUxYWI3YzQ0YjcxYTJmOWViODNmOTYzMjhiZjVlNzJjOTIxYzA3MmYwNGM3NTg4Yzc4NmMwYmEwZDUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyODNkOTE0MDM4ODhlMjk4ODNmZmRkZjBmZGI1MmJkNzgzNTY1NDI3YmNkZDZjMjU4ZmQzZGYzZmFlY2U4MmQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ1NTMxOGFlODU4MWMyMDBmZjhhZjFkZWQ4YzcwOGRlNWFmMWNjMDQ3Y2VlMmNhNDA4MDU5NTk2NzQ2YzcyZWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_614da0096bfb405893a5a4cd604d39f7",
+      "statement": "MSW가 켜져 있으면 getKakaoAuthorizeUrl은 카카오 인가 페이지 대신 mock- 접두사 가짜 code와 state를 담은 콜백 경로를 직접 돌려주고, 인증 목은 이미 쓴 code를 400으로 거절한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/login/lib/getKakaoAuthorizeUrl.ts#L15-L25",
+          "version": "repo-lines-v1:sha256:358567589d8ce9278469dfbd0c0d2e1046df6968b894eb6559ba67cb43f34b2f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0NzQyNTc1NGIxOGQ1NDNjYjdiYjkxYzhjY2I4OWE3ZGY5N2M5ZGYzZjA4ZWIxNzM5MWFlOTJkOWYwNjRlNWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4MzgwMmMzOGVkZTljMmYwMGIwNzcwN2U0MWQwYmRhODBkM2VkZjRiNjM3NWJiZTA4Y2Y5ZmNkZjExNDU4ODMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJiZjhmODk0ZWY2ZmE4N2Q5YTEyZDEzOGVhYzhkMTJhZDA0ZGViOTNjMjgzMjY4MzMyMzUwMmMxMjkxOTRlMTQifQ"
+        },
+        {
+          "resource": "repo://src/shared/api/mock/handlers/auth.ts#L178-L186",
+          "version": "repo-lines-v1:sha256:10dc256276a414b9f486bfafa4d5bd6cbca64782af62a46c38c2cc8e97e456e1:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDg5M2Y0MGUzNzgxZWI4OTZjODJkMDQ2YTA4MDY3YTExZTM1Y2RmMmYxZGZhZjI2ZmVhOTBiOGRiNjY3NjQxMyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTQ4ZDBjZWI0NzY3MTgzMDdkNjBmMDJhMjU4NzJlNzUxYTI2M2U2NzZhYTU1YWRjY2RjNjc4MmYwM2E2NWU4MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGQxMmEwZDJhOTAzNDBkZjJhNzk2NmI1NzdhY2U0N2UwOWU0NzRhZmE1MzBkM2Q1YTNlYTBmZmExMzI2Mzg1ZCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiODU0ZGY4ZDRhMjI1ZDE3MTYzZGFjMzkxMzBhNjhkNTBlNWM5MGZhMjAxMjY1OTVlZjY1MTM2MmMwOTMxODc3MyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_1f79e4a772e74512b51849296c063509",
+      "statement": "결제 승인 목은 준비 단계에서 저장한 주문 금액과 요청 금액이 다르면 AMOUNT_MISMATCH, 없는 주문이면 INVALID_ORDER로 400을 돌려준다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/mock/handlers/payment.ts#L58-L80",
+          "version": "repo-lines-v1:sha256:0700170b512a51ec7c17fa49ac45948647eb277d62174d19dfc90311c8a99c94:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ3YzJlNzY1MTYyMTZmNDdkMjk5YTQ2MjZlMDEwMjZjY2U1MjJjOWI5YzA3NTc2ZDI5NDM4NzM3OTQ3YjI4NDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NDE2ZTA5Zjc4YmEzMTZjMDMyNTY4MjEzYjg1NWVlNzU2ZTQxNTY1ZDkxOGYwOTUxOWM4MWZkNjIwZjQwNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjYxZTk4NWJkZmJlMWJjMDgwYzc2NmE4MzIyNGFlMGE4NGIyYWIxMmIzYTVlOTZiMDk5MWViZjVhY2ZiMWJmNDYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_dc43112098a043d48c23de2c71d17a78",
+      "statement": "forceErrorHandler는 핸들러 목록 맨 앞에 등록되어, 페이지 주소의 ?mock 값이 400~599 상태 코드(또는 error=500)이면 모든 /api/* 요청에 MOCK_ERROR 실패 응답을 돌려주고, 아니면 undefined로 다음 핸들러에 넘긴다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/mock/handlers/forceError.ts",
+          "version": "repo-file-v1:sha256:6a0f0457f15b0267ade0f73df1de8a934a468dc69facb09ed0492793c3f93360"
+        },
+        {
+          "resource": "repo://src/shared/api/mock/handlers/index.ts#L15-L28",
+          "version": "repo-lines-v1:sha256:1a1ca118c59aa1bb5592e0390613bde2ed9181fcea294f79959ba0edce580c00:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjNzk2ZTRiZjg3MjBhYjA0MzM3NzU3YTc5ZGQ2OWIyMjgzNmEyNTg2ODQ2ZTZjYThkZWU1NGVkNmM2OTc0OGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY5NDE2ZTA5Zjc4YmEzMTZjMDMyNTY4MjEzYjg1NWVlNzU2ZTQxNTY1ZDkxOGYwOTUxOWM4MWZkNjIwZjQwNjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVhNTgwYThhMzJkMzYyOTdmZGFlZTAwZDc1MzY2Y2E0YzkzMzY0MjdkODdjMTc2NWE0YmJmMGM1N2JkMmY5MWEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fbd74220f33d42dd9a8b6964058f90ac",
+      "statement": "장바구니 목은 수량을 1~99 정수로 검증해 위반 시 400 VALIDATION_FAILED와 violations를, 없는 항목·옵션은 404를 돌려준다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/api/mock/handlers/cart.ts#L15-L53",
+          "version": "repo-lines-v1:sha256:597d705536007c2706ba049ae586a71ca6e929a74f28cf9bcf8c953ccb4b61fa:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAzODU2NWVkMjYwMTYyZmM0MTIyMTY1NzEwNTk3M2EyNDQ5M2NmNGE0Y2Q4YjQ1ZGJlNGQ0NzlkZWI3YThkYjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzUyNTg5YzM0ZDNjNjA2ODU5MzFiNmVjYzRkNTA5OTFhN2M1NmM4ZmJhMjg5NDExNDY1NzY5MDI3MmNhYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1ZTE4NzA0ZjcxNTA2MDY4NDk0Y2JkYmM0NWRhN2YyOTY0Mzg3NTZmOTMyZDMxODZhNzdkODlkZDg1YmM3ZmEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5MTBjYjdkYzY3MGVjNjg5YjVlYzEyODdmMzQ1YTg5MWI3NjcyZGE4MzE1MDAzNTQ5Yzg3ZGZmYzU2YzM1N2UifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.0",
+    "at": "2026-10-04T09:44:53.662Z"
+  }
+}

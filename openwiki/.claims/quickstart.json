@@ -1,30 +1,50 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:1c5e3293a69922749533316b5bc84d91137240de52627a2f075f52b52dd95dc4",
+  "pageVersion": "sha256:f8d6b6ca0fce26ec412c7c83156ffcd10d3af5a4bac53eef882ea64874711643",
   "claims": [
     {
       "id": "claim_cb9bc4bc5b3a4d23b9b4776746c4f267",
-      "statement": "package.json의 dev/build/preview/lint/lint:fix/format/format:fix/storybook/build-storybook 스크립트는 각각 vite 개발 서버, tsc -b && vite build, vite preview, eslint ., eslint . --fix, prettier --check ., prettier --write ., storybook dev -p 6006, storybook build를 실행한다.",
+      "statement": "package.json의 dev/build/preview/lint/lint:fix/format/format:fix/storybook/build-storybook 스크립트는 각각 vite, tsc -b && vite build, vite preview, eslint ., eslint . --fix, prettier --check ., prettier --write ., storybook dev -p 6006, storybook build를 실행하며 test 스크립트는 없다.",
       "evidence": [
         {
-          "resource": "repo://package.json",
-          "version": "repo-file-v1:sha256:cbffc958e62d4cf9cbf922b1f8cc70c7186c98be70b3ec4fc20f0349743da94c"
+          "resource": "repo://package.json#L6-L17",
+          "version": "repo-lines-v1:sha256:785d36bca462462e834ab4fd3200fa75f8fd6807ea3153cfb00a9f16e5e7c8d6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjMTgwZDg5Y2VhMmRkZWQ3ZWMwYWJiZTA3NDRjYTVkNjc4ZGZjNjdmNzRjYzg2OWVmYTRmMzI1MzVjNWNhZWYifQ"
         }
       ]
     },
     {
       "id": "claim_5a9e265ee3b4449c990379ea49729416",
-      "statement": "src/main.tsx는 src/app/router/index.tsx가 만드는 router를 RouterProvider에 넘기고 전역 스타일/디자인 토큰을 불러오는 것 외에는 로직이 없는 순수 부트스트랩 파일이다.",
+      "statement": "src/main.tsx는 MSW 워커 시작을 기다린 뒤 initAuth로 세션 복구를 시작하고, QueryClientProvider와 RouterProvider를 StrictMode로 렌더한다.",
       "evidence": [
         {
           "resource": "repo://src/main.tsx",
-          "version": "repo-file-v1:sha256:8af84349bfd07d17ac380386fbd6e44501dbf7f40fd5dc4b7239cec9ee29191f"
+          "version": "repo-file-v1:sha256:8219e1a563c7b4e027a02b749fe4ff346e41a84b03f1251d343843e078533f58"
+        }
+      ]
+    },
+    {
+      "id": "claim_ff432169a3624d25b3eda124e3d1026e",
+      "statement": ".env.example은 카카오 REST API·JavaScript 키와 토스페이먼츠 클라이언트 키 변수를 정의하고, 실제 값은 커밋되지 않는 .env.local에 넣으며 VITE_ 변수가 번들에 노출되므로 Admin·시크릿 키는 넣지 않는다고 안내한다.",
+      "evidence": [
+        {
+          "resource": "repo://.env.example",
+          "version": "repo-file-v1:sha256:9ee00e2cac005b0835c941e8e1017b950cb89824fd3f6d9056c47fd840354888"
+        }
+      ]
+    },
+    {
+      "id": "claim_f68a4f486e414e8192a83c88ff02286d",
+      "statement": "README는 Vite 8 구동을 위해 Node.js v20.19.0 또는 v22.12.0 이상을 요구한다.",
+      "evidence": [
+        {
+          "resource": "repo://README.md#L104-L110",
+          "version": "repo-lines-v1:sha256:1b7888f89b26bb01ee79482293844725d9f15f92944a44f499a8876b7601473b:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzVjOGYwMTI5MjljMGIxYjdlMzNmODdmZjRhNjM3YmZhY2I0ZmU3MDIwMjA1MTU0Mzc2N2M1MTViNDQwMjIxMCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2JlMzkwOTY4MmFlZTliYzUxZWE2N2NmODc3ODc5OThjYTQ0MWExYTY3NDU0ZmQzZTM3OTY3Y2U5ODQzMjBiNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZjJmZWE5ZGVhNGUzZGQwMmYzZTBlNGQ0NTkzOTYzZWFiZjhkYTQyYzJkYmIyZGQ5N2JiNmMxM2M1NDlkZWUyMyJ9"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-21T00:58:42.533Z"
+    "at": "2026-10-04T09:44:53.662Z"
   }
 }

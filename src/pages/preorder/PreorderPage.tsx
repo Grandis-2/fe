@@ -1,47 +1,17 @@
-import { PreorderCard, type PreorderCardData } from '@entities/preorder'
-import placeholderImage from '@shared/assets/react.svg'
+import { MOCK_PREORDERS } from '@entities/preorder'
 import { Container } from '@shared/ui'
+import { PreorderList } from '@widgets/preorder-list'
 
 import * as styles from './PreorderPage.css'
 
-// ponytail: 아직 사전예약 목록 API가 없어서 목업 데이터로 대체
-const PREORDERS: PreorderCardData[] = [
-  {
-    id: '1',
-    imageSrc: placeholderImage,
-    imageAlt: 'Image description',
-    title:
-      '맥북 프로 14, 맥북 프로 16, 맥북 에어 사전예약 프로모션 맥북 프로 14, 맥북 프로 16, 맥북 에어 사전예약 프로모션 맥북 프로 14, 맥북 프로 16, 맥북 에어 사전예약 프로모션',
-    opensAt: '2026.09.01',
-    closesAt: '2026.09.17',
-  },
-  {
-    id: '2',
-    imageSrc: placeholderImage,
-    imageAlt: 'Image description',
-    title: 'Preorder Title',
-    opensAt: '2026.09.01',
-    closesAt: '2026.09.17',
-  },
-  ...Array.from({ length: 14 }, (_, i) => ({
-    id: String(i + 3),
-    imageSrc: placeholderImage,
-    imageAlt: 'Image description',
-    title: 'Preorder Title',
-    opensAt: 'Preorder Opens At',
-    closesAt: 'Preorder Closes At',
-  })),
-]
-
+// 헤더는 투명이라, 배경을 헤더 높이만큼 끌어올려 헤더 뒤까지 빛이 이어지게 한다.
+// data-header-theme="dark"로 헤더 글자는 흰색이 된다(useHeaderTheme).
 export function PreorderPage() {
   return (
-    <Container>
-      <div className={styles.title}>사전예약</div>
-      <div className={styles.cardGrid}>
-        {PREORDERS.map((data) => (
-          <PreorderCard key={data.id} data={data} />
-        ))}
-      </div>
-    </Container>
+    <div className={styles.root} data-header-theme="dark">
+      <Container>
+        <PreorderList preorders={MOCK_PREORDERS} />
+      </Container>
+    </div>
   )
 }

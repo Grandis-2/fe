@@ -1,14 +1,14 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:e8af161d8aa18729565f64f11b1d7bd33062d7a04e41d890084ac5657b0fbf51",
+  "pageVersion": "sha256:46494f5fba702b0bee1fc133bfc02af774ff91765239ecc1349f24660532ca48",
   "claims": [
     {
       "id": "claim_b1221eca1c884cd480be757b64b3b479",
-      "statement": "package.json의 lint/lint:fix 스크립트는 oxlint가 아니라 eslint .와 eslint . --fix를 호출하며, oxlint는 devDependency와 .oxlintrc.json으로만 남아있고 더 이상 활성 린터가 아니다.",
+      "statement": "package.json 스크립트는 dev/build(tsc -b && vite build)/lint(eslint .)/lint:fix/format/format:fix/preview/storybook/build-storybook/prepare(husky)로 구성되며 test 스크립트는 없다.",
       "evidence": [
         {
-          "resource": "repo://package.json#L6-L13",
-          "version": "repo-lines-v1:sha256:d40a70292357d047fd6484ad449b9e76d13551a72f87e622e32685c35012e724:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg5YzQyYzRiMmQyYzZmNWE4ODdjOWViOWRkY2EwMjAwNGI0ZGYyZDJhYTU4MjE0MWVmMTA4ODQ4MzE4MGI0MTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjNmMDA1NzI4OWM4MTAyZTJkNzI0MWYxNGM2MWIwYmE0ZDBjZDFiMTFlOWZmYmQyYzEzODM1N2NjOGIwNGE1NTYifQ"
+          "resource": "repo://package.json#L6-L17",
+          "version": "repo-lines-v1:sha256:785d36bca462462e834ab4fd3200fa75f8fd6807ea3153cfb00a9f16e5e7c8d6:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM0ODMzZDU5NDljMDNhNDBjYTk1MjQ5MTYxMGE2NjU5NjQ0YjNhYTQ2NjM2MmY3OTkwMjBkYmYxOTgxNTQ3ZGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdhNjNiZjA5NGY1M2E4OTEyMzI3OTI0ZTI5ZTExOTMyM2IyYzk1OWFjYzAxMzJmYWZhMjcxNTJiNWJkOWY4NjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFjMTgwZDg5Y2VhMmRkZWQ3ZWMwYWJiZTA3NDRjYTVkNjc4ZGZjNjdmNzRjYzg2OWVmYTRmMzI1MzVjNWNhZWYifQ"
         }
       ]
     },
@@ -24,79 +24,153 @@
     },
     {
       "id": "claim_101bbafe64e6471ea9feeb38e819fc51",
-      "statement": "vite.config.ts는 @vitejs/plugin-react와 vanillaExtractPlugin()을 등록하고, @/* 경로 별칭을 정의하며, @storybook/addon-vitest의 storybookTest()를 test.projects에 연결해 스토리를 @vitest/browser-playwright(Chromium) 브라우저 모드 Vitest로도 실행한다.",
+      "statement": "vite.config.ts는 @vitejs/plugin-react와 vanillaExtractPlugin()을 등록하고 레이어 별칭(@app~@shared)을 resolve.alias로 정의하며, @storybook/addon-vitest의 storybookTest()를 test.projects에 연결해 스토리를 @vitest/browser-playwright(headless Chromium) 브라우저 모드 Vitest로 실행한다.",
       "evidence": [
         {
-          "resource": "repo://vite.config.ts#L14-L48",
-          "version": "repo-lines-v1:sha256:600460a7b5a19087c4cdc88a7b09847c60ba913d9dead8a61fdde68c84c74458:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyY2VjYjE0NGE0NmY1ZGNmMTJhNjE2OWZjZWVkNzY5NWU4Mjk0YjA5MGRlNzZmMzY2MWNkZDAyNDkzMDAxNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODBiNzY1MThkYWU5NzlmYWViZDAyMzY3YTI5MjkyYTUwZDk3NjA5MjI1MWEzOGE2Y2UzMDg4MGJhNDI4MjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY2YzUyYWQyZWY5YWRkYzY0Yjg4NGVlMDg4YjljYTMzNzhmYzY1NmQzY2E0NjAyZTExOGU2YzlhZGUzZGIwYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://vite.config.ts#L14-L54",
+          "version": "repo-lines-v1:sha256:40adce83f4d1f1a278caac3e5fc873aed8dfb31cd82245d0721d751a0de64612:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyY2VjYjE0NGE0NmY1ZGNmMTJhNjE2OWZjZWVkNzY5NWU4Mjk0YjA5MGRlNzZmMzY2MWNkZDAyNDkzMDAxNDciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODBiNzY1MThkYWU5NzlmYWViZDAyMzY3YTI5MjkyYTUwZDk3NjA5MjI1MWEzOGE2Y2UzMDg4MGJhNDI4MjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY2YzUyYWQyZWY5YWRkYzY0Yjg4NGVlMDg4YjljYTMzNzhmYzY1NmQzY2E0NjAyZTExOGU2YzlhZGUzZGIwYjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_bc334bfa8b8341c6810dd8f01b7f7f0d",
-      "statement": "전역 스타일(리셋 등)은 Vanilla Extract가 아닌 순수 .css 파일(src/app/styles/index.css)로 유지되고, 컴포넌트 스코프 스타일은 *.css.ts로 역할이 나눠져 있다.",
+      "statement": "전역 스타일(리셋)은 Vanilla Extract가 아닌 순수 .css 파일(src/app/styles/index.css)로 유지되고, 컴포넌트 스코프 스타일은 *.css.ts로 나눠져 있다.",
       "evidence": [
         {
           "resource": "repo://src/app/styles/index.css",
-          "version": "repo-file-v1:sha256:613ec945a479027bd0c72615d63665fd411b9adafc8d79a7caaa5233377a776e"
+          "version": "repo-file-v1:sha256:0836d3c09e6346ed24bb3a4bce4d19f03047ea4076b3aeed3855a75c5238ad53"
         }
       ]
     },
     {
       "id": "claim_e67b133423d4479a992db0674f61cea9",
-      "statement": "tsconfig.json은 자체 파일을 포함하지 않고 tsconfig.app.json과 tsconfig.node.json을 project reference로만 묶는다.",
+      "statement": "tsconfig.json은 자체 파일을 포함하지 않고 tsconfig.app.json(src용, bundler 모듈 해석·noEmit·레이어 paths)과 tsconfig.node.json(vite.config.ts 전용)을 project reference로 묶는다.",
       "evidence": [
         {
-          "resource": "repo://tsconfig.app.json#L1-L29",
-          "version": "repo-lines-v1:sha256:42e2ac780ef3012109b9321e883ef4dbd7e90242435d873ae1a0a9e4e0814e6b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://tsconfig.app.json#L1-L31",
+          "version": "repo-lines-v1:sha256:21c3a2341c42b12ee2190589b4234af5463d2e96182f4102970a90ea3bf06324:eyJzZWxlY3RlZExpbmVDb3VudCI6MzEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2ZmIwOGZkYTFhY2I5NTdiNjExNmJkMzc4MTFhMWZlNDFhMDE2MTFjMDYzMWVkYmY3ODZkNjg4OWEyN2E1NWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI2NDg1YjMyNjIwYTk4M2U2OGU0MDg5NDM1NDg5ZjlhMTgwNGNhNWEwMjQzYWY0ZmI1NzE1ZjhmOTc3MmJhYjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3YzhhNDdjMzU1MDI4ZjJjZmMyMDYyMzlkYzNmNDFhOTJiMGU5YmZlOTBkZjI3YjY5OTYyOTZlNDZlMTZlZTEifQ"
         },
         {
           "resource": "repo://tsconfig.json",
           "version": "repo-file-v1:sha256:770b4140bbb581e2dfd9ea9946ffc9c75a1d86ba7d2db5f77c83e37cbdf9d808"
+        },
+        {
+          "resource": "repo://tsconfig.node.json",
+          "version": "repo-file-v1:sha256:d366cc0827139db39c61815f22491bbfda56c654354a42ad7795143d314e45e8"
         }
       ]
     },
     {
       "id": "claim_bfad969549944f60a7688c58740cfedd",
-      "statement": ".storybook/main.ts는 src 하위 *.stories.tsx/*.mdx를 수집하고 @storybook/addon-vitest, addon-a11y, addon-docs, addon-mcp, chromatic-com/storybook 애드온과 @storybook/react-vite 프레임워크를 쓴다. preview.tsx는 전역 스타일과 디자인 토큰을 로드하고 a11y 검사를 test:'todo'로 설정해 위반이 CI를 실패시키지 않는다.",
+      "statement": ".storybook/main.ts는 src 하위 *.stories.*/*.mdx를 수집하고 addon-vitest, addon-a11y, addon-docs, addon-mcp, chromatic-com/storybook 애드온과 @storybook/react-vite 프레임워크를 쓰며, preview.tsx는 전역 스타일과 디자인 토큰을 로드하고 a11y 검사를 test: 'todo'로 둔다.",
       "evidence": [
         {
           "resource": "repo://.storybook/main.ts",
           "version": "repo-file-v1:sha256:0b854a8d4d2132e5035364c3f3e8032fe136d9687405ae075085c606d9b0b4c3"
         },
         {
-          "resource": "repo://.storybook/preview.tsx",
-          "version": "repo-file-v1:sha256:c86e2804075409cc1c1ecdc03ac632af516068e477a1f8f58b491c750a38876b"
+          "resource": "repo://.storybook/preview.tsx#L1-L46",
+          "version": "repo-lines-v1:sha256:9bc689e520f6d65d9611ec246abf902ed0805a15380f3058d4a655cc42ef306c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxZjk0YTE0YmE1OTYxMzllYTUwMjU5OGQyMzFhZWFmYjEyYmRiOWYyNDdiZTI4NDNiOThhYmRhODQ4Zjk0NmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzZTIyNTEwNjRkMzgxNTMyOWVmODVlZWE1ZWNlNjJiM2I0NWUzMzY1MWIzNzg1NWNhYTBlY2YyOTFjNGFlNzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_1d17d719971840c981fe985e67cda15e",
-      "statement": "oxlint는 devDependency와 .oxlintrc.json 설정 파일 모두 저장소에서 완전히 제거되었고, 린터는 eslint.config.js 기반 ESLint 하나뿐이다.",
+      "statement": "oxlint는 devDependency와 설정 파일 모두 없고, 린터는 eslint.config.js 기반 ESLint 하나뿐이다.",
       "evidence": [
         {
-          "resource": "repo://package.json#L28-L58",
-          "version": "repo-lines-v1:sha256:f2baa5ec8c020312486f78b9ab3f32f3b04d4fdc31c8d886a26f56260905bd51:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlkYzRkZTdlZDM1YTIzMzY0NTM5ODY0ZGFkYjkzOGI4NzIzMzM3OTE3OWQ2MjkyYjlmZjVmNjE5YTZjMTMxNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhmMWQ3NWM1ZDFlOWNmZWE1MjQxZTRkMTY5OTQyYTVhZjY0MzhmOGNiODhjZmQ4M2YwZmM0ZWNjZmFkMWVjYjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+          "resource": "repo://eslint.config.js#L110-L184",
+          "version": "repo-lines-v1:sha256:08253dad9fbb8bc7167ac0675ebd4029b4a15a5b63faf36a2860d4c4295e89fb:eyJzZWxlY3RlZExpbmVDb3VudCI6NzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjNhNDhhN2E3OTYyN2E2ZTA1NjlkMjBiNmRhYzEyZTU3NDk5NjliMGVlMmE2ZTE0NWQ3NjFjMTdlMmZiNDFmMDAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE2M2FhZTM5YWQ1OWZhZjMyZDNhMDQ1OGI4OTM0NmU4ZTg4ZTkxZmRkNDA0NTQwM2E4OGEwNjdlYjU2Mjk5NjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjEyMDRjNGUyNzA0YjI5MTExMjBiYTc3MTQwMzM0ZTg5YmE5MGVkYzI1MDI5YWIxZmEwZGM2ZjdkODM1OTViNzciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://package.json#L36-L72",
+          "version": "repo-lines-v1:sha256:582e8b5d067e78286ac6328b6e9aae860539e1fbc2524abba2e17eaf48643637:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjdlNzM0ZDg1MTM4MzY4YTZmNDlkM2I1Mjc4ZWFhZjA5ZjY5NzVlYmRkOWYxMDZiYzcwODY1ZGYzZjM5M2ZkZDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjE5NDhiNTJiODBhNWRlMThiMDc5NGRiZWQ2ZjQ5ODYzZTgyM2I5ZjlmMmNjMzA0ZWUzNzQ1Y2JmYjQyNWUxMjUifQ"
         }
       ]
     },
     {
       "id": "claim_6469bbcd24fe40f083ce8702bb1517be",
-      "statement": "Prettier가 포맷터로 도입되어 있으며 format/format:fix 스크립트로 실행되고, .prettierrc는 singleQuote:true, semi:false만 지정하며 eslint-config-prettier로 ESLint와 규칙 충돌을 방지한다.",
+      "statement": "Prettier는 format/format:fix 스크립트로 실행되고 .prettierrc는 singleQuote: true, semi: false만 지정하며, eslint-config-prettier가 ESLint 설정 끝에서 스타일 규칙 충돌을 끄다.",
       "evidence": [
         {
           "resource": "repo://.prettierrc",
           "version": "repo-file-v1:sha256:63bb4e4bdb4fd024c9d53bc8ba5822586efa2257791907cf91caf3da7a07b7af"
         },
         {
-          "resource": "repo://package.json",
-          "version": "repo-file-v1:sha256:cbffc958e62d4cf9cbf922b1f8cc70c7186c98be70b3ec4fc20f0349743da94c"
+          "resource": "repo://eslint.config.js#L181-L183",
+          "version": "repo-lines-v1:sha256:e028054f9f7bd9d624dcf96f770842a20ed2fafe6d3763e23f4e06759bf08bb6:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYTgwMmNjMGFlMDRhZDY2Mjg5OGYxMTVmOGRkNTJhNzZjYThiZDAxMjI5NTliMGU1YjU0MTYwZGU1ODU1MmFlOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODhmMTRmYjc5NmNhNDQzNDg3YTdlZTU0Y2Q0ZjljOTJiYTkzNzEwZTExMTczZTU5NDJkYzNlMDVkNWJjMzViZSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMzRmODFhMWMxYTU3YTM2N2ZkNzAzMGRkYTdkYjM3MzFhMzAwYTVmOTAwMmU2ZmRlNDkyMmM0ODU3OWUxNjhkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjEsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTYzYWFlMzlhZDU5ZmFmMzJkM2EwNDU4Yjg5MzQ2ZThlODhlOTFmZGQ0MDQ1NDAzYTg4YTA2N2ViNTYyOTk2MyJ9"
+        },
+        {
+          "resource": "repo://package.json#L11-L12",
+          "version": "repo-lines-v1:sha256:4222cf79944a7253cae9e0fcbb5aecd86b7df2a3d105e212698632b4e3fbd459:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjAzZjQ1ZDNhMmY4YTg0YjIxY2NhMTkzYTFiMGU0ODRjMWZjY2EzMDY4NTNmYWNlOTM2NzNhYjM4M2FmY2ZjNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNTdjYmFjNDFkMDVjMTU4MzFjY2U0MWE2OTZkZGY4NzJlMDVjOGE0NGRlNzBiMGUzMGRiNDdjNTMzYzE0M2EyOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2RkNDgzNjE2OWQ4OWE5MjRmYjgyZDgwYjM2Nzg2NDMzZDY0MzE2YzJlNDNiMDU3NzVkOTBiNDNkNjY4ZDUxYiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzE1OTkzMjk5ZGNkYTViZjcxNzI1ZmEyODk1ZTUxOTQ4MmNmNmUwN2ZiYzZlNjA3MTQzMTFhNjY2MGNhMDA0ZCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_0a00a3df28da4f5eadd47f96276ce9ba",
+      "statement": "husky pre-commit 훅은 lint-staged로 스테이징된 JS/TS 파일에 eslint --fix와 prettier를, JSON/MD/YAML/CSS에 prettier를 적용하고, commit-msg 훅은 commitlint를 실행한다.",
+      "evidence": [
+        {
+          "resource": "repo://.husky/commit-msg",
+          "version": "repo-file-v1:sha256:28a616e5cb4c46b5b3119b320c4aae6a4de9c8cc634e712fedbff6aa752aa148"
+        },
+        {
+          "resource": "repo://.husky/pre-commit",
+          "version": "repo-file-v1:sha256:e2b7c9733375d7182af2033bda9a7d2a05d0db5eef5be53d26eb7b5f3df8fbc3"
+        },
+        {
+          "resource": "repo://package.json#L78-L87",
+          "version": "repo-lines-v1:sha256:7155e1634fbed20f4968a9aa0be5afcf5d97bbbffbc7481828bd465181395415:eyJzZWxlY3RlZExpbmVDb3VudCI6MTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3YWRkZWE3MTZmZGM0MDRmZjdhYmUyYzE3ZTAyYjg2YmRlZDg4MjVhOGY3NjFiYmVkMTlmZGExZDk0ZThmMGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwMjNjNDUzODMzN2I1ZDcwNmNmZWU0M2RlYTBlZTJlYWU5Zjk2NDBjNjg0MDExNTliMWJlOTFmN2E2ZjYwZDAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4bb2663bd51f4f3f9ce3f733ca133a1e",
+      "statement": "commitlint는 config-conventional을 기반으로 type을 feat/fix/refactor/style/docs/design/chore/test로 제한하고, 한글 커밋이라 subject-case 규칙을 끄며 scope는 선택이다.",
+      "evidence": [
+        {
+          "resource": "repo://commitlint.config.js",
+          "version": "repo-file-v1:sha256:560fdaec420a70849209a48aff8c5445dae3b6aa0f637e697eec0401810929a7"
+        }
+      ]
+    },
+    {
+      "id": "claim_3b25495d04fe4f9a8593ad5b36671a73",
+      "statement": "CodeRabbit은 main/develop 대상 PR을 한국어·assertive 프로필로 자동 리뷰하고(draft와 [WIP]/[skip review] 제목 제외), 지적이 남으면 Request changes로 머지를 막으며, 레이어·파일 종류별 path_instructions를 둔다.",
+      "evidence": [
+        {
+          "resource": "repo://.coderabbit.yaml#L18-L60",
+          "version": "repo-lines-v1:sha256:97fa680bcc6f4904352671330bb139af997357237ebc6378322d94c81d6cb37d:eyJzZWxlY3RlZExpbmVDb3VudCI6NDMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ZjhlNDBjYWE5NjgzM2E3YTE4MTM0MTZkZjk4NmFkN2MxMmYyOGI2OWU3ZTZkOGQ0ZTM4NDdiMTFlMDU1NDkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQzYmY0NjlkZTZiYTE0ODVhZTkzYmFmMDRkMGY3YzRkNmI3Y2RjZWY1YzUzZTBlOGExZTg2NzA3ODdlNmU4OTciLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjNiYTA2MTE5YmU3YjVhYjdjOTFlOTAzYjhkNWI2Njc1MTcwMGRiMTgyMzM4MTBiYThiOGZlOWMxZGVmZGFlMmMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJjMTAyNzY5MDliNDIzMDdmMDI0NWJhYjlmZTllMjA0ZjdiZDc3N2FjYjAwNzQ5MDk2ZTBhYWJhY2Q1MzIyYzcifQ"
+        },
+        {
+          "resource": "repo://.coderabbit.yaml#L73-L270",
+          "version": "repo-lines-v1:sha256:f818b69433be1a7de8d5787a355fbb28a0432166a2729f6d225781a2c66be658:eyJzZWxlY3RlZExpbmVDb3VudCI6MTk4LCJmaXJzdFNlbGVjdGVkTGluZUhhc2giOiIzMWVmOGRjZWQyZTRhNmZhZmM0ZDY0MjU2OTNhY2Y1MmMxOGExNWE3MmM1Y2M1YjEyY2RlODcxYzEzOGU5M2Y2IiwibGFzdFNlbGVjdGVkTGluZUhhc2giOiIzMDZmOGMwZDhlZmQ2NjBmZjUxOWZkM2RlNWYzMDAwODY0ZjBiZGFkZTc4MGNmNGU0OTZhZDYzYTM3NzNjNTM2IiwicHJlY2VkaW5nQ29udGV4dExpbmVDb3VudCI6MywicHJlY2VkaW5nQ29udGV4dEhhc2giOiI1NGM5MjkyMDU4NjNjYWZkYzgwMDI4MThiZWYzNGY1ZGM3MWI2MWI5YjBiNjg2ZDRlYjBmYmNlODJmNGEyYzU1IiwiZm9sbG93aW5nQ29udGV4dExpbmVDb3VudCI6MywiZm9sbG93aW5nQ29udGV4dEhhc2giOiI1NGIxZTNiZTQyZTcwYjA0YTA5NzZkMTcyMTQxMzdiZTA3OGZlNWFjNDUyZTVhNDQ1ZWUwOGM0NDM4MGVhMjkxIn0"
+        }
+      ]
+    },
+    {
+      "id": "claim_5a30b2194f8a4b338678e409fc6da45d",
+      "statement": "OpenWiki GitHub Actions 워크플로는 매일 08:00 UTC와 수동 실행 시 openwiki code --update를 돌려 결과를 openwiki/update 브랜치 PR로 올리며 OPENAI_API_KEY 시크릿을 쓴다.",
+      "evidence": [
+        {
+          "resource": "repo://.github/workflows/openwiki-update.yml",
+          "version": "repo-file-v1:sha256:7f963edba4faad888af116919e1930dab12ef23308899330d284ecad2bf46565"
+        }
+      ]
+    },
+    {
+      "id": "claim_4ee72824f1e54e6ab68b5d6e2752396f",
+      "statement": "vercel.json은 모든 경로를 /index.html로 rewrite하는 SPA 설정만 갖는다.",
+      "evidence": [
+        {
+          "resource": "repo://vercel.json",
+          "version": "repo-file-v1:sha256:0faf96401e6d774a6277f4df8a4883e33c9e5468b685f5ecad85221e01fa79a0"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-21T00:58:42.533Z"
+    "at": "2026-10-04T09:44:53.662Z"
   }
 }

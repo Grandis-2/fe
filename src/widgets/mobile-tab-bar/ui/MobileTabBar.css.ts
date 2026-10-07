@@ -1,9 +1,9 @@
-import { style } from '@vanilla-extract/css'
+import { keyframes, style } from '@vanilla-extract/css'
 
 import {
   color,
   motion,
-  shadow,
+  onDark,
   spacing,
   typography,
   breakpoint,
@@ -11,6 +11,12 @@ import {
   TAB_BAR_OFFSET,
 } from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
+
+// 가로 스크롤 0 → 끝(320px - 화면 폭)에 맞춰 왼쪽으로 민다. 화면이 320px 이상이면
+// 가로 스크롤이 없어 타임라인이 비활성이고 아무 효과가 없다. 미지원 브라우저는 제자리에 있는다.
+const followScrollX = keyframes({
+  to: { transform: 'translateX(calc(100vw - 320px))' },
+})
 
 export const root = style({
   position: 'fixed',
@@ -23,34 +29,40 @@ export const root = style({
   // vaul(1.1.2)은 modal={false}여도 Radix Dialog를 modal로 열어 body에 pointer-events:none을
   // 건다 — 탭바는 body 아래라 이걸 상속해 클릭이 막히므로 직접 되살린다.
   pointerEvents: 'auto',
-  // 탭 크기만큼만 차지하고(fit-content) left/right + margin auto로 가운데 정렬한다 —
-  // 폭을 늘려 탭을 flex로 벌리면 아이콘 사이가 휑해진다.
-  width: 'fit-content',
-  margin: '0 auto',
+  // 좌우 16px 여백만 남기고 화면 폭을 채운다(디자인: width 100%) — 탭은 같은 폭으로 나눈다.
   boxSizing: 'border-box',
+  // fixed라 body의 min-width(320px, app/styles/index.css)를 안 따르고 화면 폭으로 줄어든다 —
+  // 320px 화면에서의 폭 아래로는 줄지 않게 막고, 페이지가 가로로 스크롤되면 같이 움직인다.
+  minWidth: `calc(320px - ${spacing[16]} * 2)`,
+  animationName: followScrollX,
+  animationTimingFunction: 'linear',
+  animationFillMode: 'both',
+  animationTimeline: 'scroll(root inline)',
   display: 'flex',
   alignItems: 'center',
-  gap: spacing[4],
+  gap: spacing[2],
   height: TAB_BAR_HEIGHT,
-  padding: spacing[4],
+  padding: spacing[6],
   borderRadius: '999px',
-  // 반투명 + 뒤 blur(유리 느낌). 바탕이 거의 투명해 경계가 흐려지므로 그림자로 띄운다.
-  background: `color-mix(in srgb, ${color.background.base} 50%, transparent)`,
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
-  boxShadow: shadow.md,
-  border: `1px solid color-mix(in srgb, ${color.text.inverse} 12%, transparent)`,
+  // 어두운 반투명 유리 — 어떤 페이지 위에서도 같은 색이다(사용자 페이지는 어두운 방향).
+  background: `color-mix(in srgb, ${color.backgroundDark.surface} 78%, transparent)`,
+  backdropFilter: 'blur(20px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(140%)',
+  border: `1px solid ${onDark(8)}`,
+  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.55)',
   '@media': {
     [breakpoint.desktop]: { display: 'none' },
   },
 })
 
+const ACTIVE = '[aria-current="page"], [aria-expanded="true"]'
+
 export const tab = style({
-  // 가장 긴 라벨("마이페이지", 12px)이 한 줄에 들어가는 폭.
-  width: '60px',
+  flex: 1,
+  minWidth: 0,
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[2],
+  gap: spacing[6],
   alignItems: 'center',
   justifyContent: 'center',
   height: '100%',
@@ -60,36 +72,29 @@ export const tab = style({
   background: 'transparent',
   textDecoration: 'none',
   // 아이콘은 currentColor로 이 색을 상속한다(CLAUDE.md의 lucide-react 참고).
-  color: color.primary.base,
+  color: onDark(55),
   cursor: 'pointer',
   transition: [
     `background ${motion.duration.fast} ${motion.easing.default}`,
     `color ${motion.duration.fast} ${motion.easing.default}`,
   ].join(', '),
   selectors: {
-    // 선택된 탭은 반투명 회색 알약으로 표시한다 — 아이콘 색(남색)은 그대로 둔다.
-    '&[aria-current="page"], &[aria-expanded="true"]': {
-      background: `color-mix(in srgb, ${color.background.base} 30%, transparent)`,
+    // 선택된 탭은 흰 글자 + 옅은 흰 유리 알약(안쪽 1px 테두리).
+    [`&:is(${ACTIVE})`]: {
+      background: onDark(12),
+      boxShadow: `inset 0 0 0 1px ${onDark(8)}`,
+      color: color.text.inverse,
     },
   },
 })
 
-const ACTIVE = '[aria-current="page"], [aria-expanded="true"]'
-
 export const icon = style({
-  width: '22px',
-  height: '23px',
-  transition: [
-    `fill-opacity ${motion.duration.fast} ${motion.easing.default}`,
-    `stroke-width ${motion.duration.fast} ${motion.easing.default}`,
-  ].join(', '),
-  // lucide엔 채워진(filled) 아이콘이 없다. fill을 100%로 채우면 돋보기 알·집 문·
-  // 달력 체크처럼 안쪽 선이 같은 색에 묻혀 사라지므로, 옅게 채우고 선을 굵혀
-  // "채워진 느낌"만 낸다. fill 색은 선과 같은 currentColor.
-  fill: 'currentColor',
-  fillOpacity: 0,
+  width: '20px',
+  height: '20px',
+  strokeWidth: 1.8,
+  transition: `stroke-width ${motion.duration.fast} ${motion.easing.default}`,
   selectors: {
-    [`:is(${ACTIVE}) > &`]: { fillOpacity: 0.2, strokeWidth: 2.5 },
+    [`:is(${ACTIVE}) > &`]: { strokeWidth: 2.2 },
   },
 })
 
@@ -99,7 +104,8 @@ export const label = style([
   {
     whiteSpace: 'nowrap',
     fontSize: '10px',
-    marginTop: '2px',
+    lineHeight: 1,
+    fontWeight: fontWeight.medium,
     selectors: {
       [`:is(${ACTIVE}) > &`]: { fontWeight: fontWeight.semibold },
     },

@@ -1,29 +1,39 @@
 import { QueueCard } from '@entities/order'
 import { formatNumber } from '@shared/lib/formatNumber'
+import { ModalTitle } from '@shared/ui'
 
-import { usePreorderQueue } from '../../lib/usePreorderQueue'
+import * as styles from './PreorderQueueCard.css'
+
+import type { PreorderQueueState } from '../../lib/usePreorderQueue'
 
 export type PreorderQueueCardProps = {
   productName: string
-  // 앞 대기 인원이 0이 되면 호출된다.
-  onComplete: () => void
+  queue: Pick<
+    PreorderQueueState,
+    'myOrder' | 'waitTime' | 'totalWaiting' | 'progressPercent' | 'leave'
+  >
 }
 
+// 대기열 모달의 내용 — Modal 안에 넣어 쓴다(제목이 dialog의 이름이 된다).
 export function PreorderQueueCard({
   productName,
-  onComplete,
+  queue,
 }: PreorderQueueCardProps) {
-  const { myOrder, totalWaiting, progressPercent } =
-    usePreorderQueue(onComplete)
-
   return (
-    <QueueCard
-      headline="조금만 기다려주세요,"
-      headlineAccent="곧 예약 페이지로 이동합니다."
-      productName={productName}
-      myOrderNumber={formatNumber(myOrder)}
-      progressPercent={progressPercent}
-      totalWaitingCount={formatNumber(totalWaiting)}
-    />
+    <div className={styles.root}>
+      <ModalTitle className={styles.title}>
+        조금만 기다려주세요,
+        <br />곧 예약 페이지로 이동합니다.
+      </ModalTitle>
+      <div className={styles.productName}>{productName}</div>
+      <QueueCard
+        className={styles.card}
+        myOrderNumber={formatNumber(queue.myOrder)}
+        waitTime={queue.waitTime}
+        progressPercent={queue.progressPercent}
+        totalWaitingCount={formatNumber(queue.totalWaiting)}
+        onLeave={queue.leave}
+      />
+    </div>
   )
 }
