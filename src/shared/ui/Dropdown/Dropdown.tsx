@@ -59,6 +59,14 @@ export function Dropdown<TValue>({
   const isControlled = open !== undefined
   const isOpen = open ?? uncontrolledOpen
 
+  const optionButtons = () => [
+    ...(menuRef.current?.querySelectorAll('button') ?? []),
+  ]
+
+  // 방향키로 열면 메뉴는 다음 렌더에 그려진다 — 지금 focus()를 불러도 닿을 요소가
+  // 없어서, 어느 끝으로 갈지만 적어 두고 아래 이펙트에서 옮긴다.
+  const pendingFocus = useRef<'first' | 'last' | null>(null)
+
   // 밖에서 쥐고 있으면 상태는 그쪽 것이다 — 바꿔 달라고 알리기만 한다.
   const setOpen = (next: boolean) => {
     if (!isControlled) setUncontrolledOpen(next)
@@ -94,6 +102,16 @@ export function Dropdown<TValue>({
     }
   }, [isOpen])
 
+  // 방향키로 열었으면 그 끝 항목으로 포커스를 옮긴다. 트리거에 남겨 두면 이어서
+  // 누른 Enter가 항목을 고르지 않고 메뉴만 닫는다.
+  useEffect(() => {
+    if (!isOpen || !pendingFocus.current) return
+    const items = optionButtons()
+    const target = pendingFocus.current === 'first' ? items[0] : items.at(-1)
+    pendingFocus.current = null
+    target?.focus()
+  }, [isOpen])
+
   /**
    * 위/아래 키로 항목 사이를 옮긴다. 트리거와 항목을 다 감싸는 루트에서 받아야
    * 닫힌 상태(포커스가 트리거)에서도 같은 키로 열 수 있다.
@@ -103,11 +121,12 @@ export function Dropdown<TValue>({
     event.preventDefault()
 
     if (!isOpen) {
+      pendingFocus.current = event.key === 'ArrowDown' ? 'first' : 'last'
       setOpen(true)
       return
     }
 
-    const items = [...(menuRef.current?.querySelectorAll('button') ?? [])]
+    const items = optionButtons()
     if (items.length === 0) return
 
     // 트리거에 포커스가 있으면 -1이라, 아래 키는 첫 항목부터 시작한다.
@@ -124,6 +143,9 @@ export function Dropdown<TValue>({
   const select = (option: DropdownOption<TValue>) => {
     onSelect?.(option.value)
     setOpen(false)
+    // 고른 항목 버튼은 메뉴가 닫히면서 사라진다 — 포커스가 갈 곳을 잃지 않게
+    // 트리거로 되돌린다(Esc로 닫을 때와 같은 자리).
+    triggerRef.current?.focus()
   }
 
   const selectedLabel = options.find((option) => option.value === value)?.label

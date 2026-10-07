@@ -31,6 +31,10 @@ export type ImageUploaderProps = {
   className?: string
 }
 
+/**
+ * 이미지 여러 장을 담는 업로더. 업로드 API가 아직 없어 objectURL로 미리보기만
+ * 만들고, 목록에서 빠질 때 해제한다.
+ */
 export function ImageUploader({
   value,
   onChange,

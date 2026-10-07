@@ -60,6 +60,10 @@ const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
   hour12: false,
 })
 
+/**
+ * 예약 접수 현황. 10초마다 자동 갱신하고, 등록이 끝내 실패한 예약은 재처리를
+ * 걸 수 있다. 카드와 표는 같은 목록에서 나와야 숫자가 어긋나지 않는다.
+ */
 export function AdminReservationsPage() {
   const openModal = useModalStore((state) => state.open)
   const closeModal = useModalStore((state) => state.close)
@@ -273,6 +277,16 @@ export function AdminReservationsPage() {
         </button>
         <span>10초마다 자동 갱신</span>
       </div>
+
+      {/* 폴링이 실패해도 이미 받은 데이터는 남아 카드와 표에 그대로 보인다 —
+          멈춘 숫자를 최신으로 읽으면 '실패를 0건으로 보여주기'와 똑같이 위험하다.
+          그래서 숫자보다 먼저 읽히는 자리에 둔다. */}
+      {isError && reservations !== undefined && (
+        <InlineAlert status="warning">
+          {getErrorMessage(error, '예약을 다시 불러오지 못했습니다.')} 아래
+          숫자와 목록은 마지막으로 받은 값입니다.
+        </InlineAlert>
+      )}
 
       <div className={styles.cards}>
         {cards.map(({ label, value }) => {

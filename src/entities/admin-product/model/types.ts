@@ -73,6 +73,7 @@ export const HIDE_REASON_MAX_LENGTH = 500
 export const isPreorder = (product: { badges: ProductBadge[] }) =>
   product.badges.includes('PREORDER')
 
+/** 표와 뱃지에 찍는 판매 유형 문구 */
 export const productTypeLabel = (product: { badges: ProductBadge[] }) =>
   isPreorder(product) ? '사전 예약' : '일반 판매'
 

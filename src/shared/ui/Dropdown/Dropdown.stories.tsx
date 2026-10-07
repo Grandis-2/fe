@@ -65,17 +65,35 @@ export const Uncontrolled: Story = {
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     await expect(trigger).toHaveTextContent('부산광역시')
 
-    // 위/아래 키로 열고 항목 사이를 옮긴다.
+    // 트리거도 고른 값을 문구로 달고 있어 항목과 이름이 겹친다 —
+    // aria-expanded가 없는 쪽이 메뉴 항목이다.
+    const option = (name: string) =>
+      canvas
+        .getAllByRole('button', { name })
+        .filter((button) => button.getAttribute('aria-expanded') === null)[0]
+
+    // 아래 키로 열면 첫 항목에 바로 포커스가 간다 — 트리거에 남겨 두면 이어서
+    // 누른 Enter가 항목을 고르지 않고 메뉴만 닫는다.
     trigger.focus()
     await userEvent.keyboard('{ArrowDown}')
     await expect(trigger).toHaveAttribute('aria-expanded', 'true')
+    await waitFor(() => expect(option('서울특별시')).toHaveFocus())
+
+    // 이어지는 아래 키는 다음 항목으로 옮긴다.
     await userEvent.keyboard('{ArrowDown}')
-    await expect(
-      canvas.getByRole('button', { name: '서울특별시' }),
-    ).toHaveFocus()
+    await expect(option('경기도')).toHaveFocus()
 
     // Esc로 닫히고 포커스가 트리거로 돌아온다.
     await userEvent.keyboard('{Escape}')
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+    await expect(trigger).toHaveFocus()
+
+    // 위 키로 열면 반대쪽 끝(마지막 항목)에서 시작한다.
+    await userEvent.keyboard('{ArrowUp}')
+    await waitFor(() => expect(option('부산광역시')).toHaveFocus())
+
+    // 키보드로 고르면 사라지는 항목 버튼에 포커스를 남기지 않고 트리거로 돌아온다.
+    await userEvent.keyboard('{Enter}')
     await expect(trigger).toHaveAttribute('aria-expanded', 'false')
     await expect(trigger).toHaveFocus()
 

@@ -4,14 +4,12 @@ import { queryPolicy } from '@shared/api/queryPolicy'
 import type { DispatchWindowPutRequest } from '@shared/api/types'
 
 import { getDispatchWindow, putDispatchWindow } from './adminDispatch'
-
-const dispatchWindowKey = (productId: string) =>
-  ['admin', 'products', productId, 'dispatch-window'] as const
+import { adminDispatchWindowKey } from './keys'
 
 // 다른 관리자가 바꿀 수 있는 값이라 다시 볼 때마다 새로 묻는다.
 export const useDispatchWindow = (productId: string) =>
   useQuery({
-    queryKey: dispatchWindowKey(productId),
+    queryKey: adminDispatchWindowKey(productId),
     queryFn: ({ signal }) => getDispatchWindow(productId, signal),
     ...queryPolicy.live,
   })
@@ -23,6 +21,6 @@ export const useSaveDispatchWindow = (productId: string) => {
     mutationFn: (body: DispatchWindowPutRequest) =>
       putDispatchWindow(productId, body),
     onSuccess: (saved) =>
-      queryClient.setQueryData(dispatchWindowKey(productId), saved),
+      queryClient.setQueryData(adminDispatchWindowKey(productId), saved),
   })
 }
