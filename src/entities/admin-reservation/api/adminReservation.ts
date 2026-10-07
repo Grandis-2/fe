@@ -9,6 +9,7 @@ import type {
 
 const BASE = '/api/v1/admin/reservations'
 
+/** 예약 접수 목록. 상태·검색어로 걸러 받는다 */
 export const getAdminReservations = (
   params: AdminReservationListParams = {},
   signal?: AbortSignal,
@@ -28,6 +29,7 @@ export const reprocessAdminReservation = (reservationId: string) =>
     method: 'POST',
   })
 
+/** 회원 목록. 예약 응답에 이름이 없어서 memberId를 이름으로 잇는 데 쓴다 */
 export const getAdminMembers = (keyword?: string, signal?: AbortSignal) =>
   apiClient.request<AdminMemberListResponse>(
     `/api/v1/admin/members${keyword ? `?q=${encodeURIComponent(keyword)}` : ''}`,

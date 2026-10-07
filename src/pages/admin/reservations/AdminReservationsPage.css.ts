@@ -21,7 +21,7 @@ export const title = style([
 ])
 
 export const refreshRow = style([
-  typography.body.caption,
+  typography.body.sub,
   {
     display: 'flex',
     alignItems: 'center',

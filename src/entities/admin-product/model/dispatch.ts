@@ -42,6 +42,7 @@ export type DispatchWaveDraft = {
   estimatedDeliveryDate: string | null
 }
 
+/** 서버가 준 차수를 폼이 편집할 초안으로 바꾼다 — 행 식별용 id를 새로 붙인다 */
 export const toWaveDrafts = (waves: DispatchWave[]): DispatchWaveDraft[] =>
   waves.map((wave) => ({
     id: crypto.randomUUID(),
@@ -49,6 +50,7 @@ export const toWaveDrafts = (waves: DispatchWave[]): DispatchWaveDraft[] =>
     estimatedDeliveryDate: wave.estimatedDeliveryDate,
   }))
 
+/** 빈 차수 한 줄. 끝 번호와 배송일은 아직 안 고른 상태(null)로 시작한다 */
 export const createWaveDraft = (): DispatchWaveDraft => ({
   id: crypto.randomUUID(),
   toSeq: null,
@@ -90,6 +92,10 @@ export function waveDraftProblem(drafts: DispatchWaveDraft[]) {
   return null
 }
 
+/**
+ * 초안을 저장 요청으로 바꾼다. 차수는 덮어쓰기 저장이라 전체를 함께 보낸다 —
+ * 보내기 전에 waveDraftProblem으로 막는다.
+ */
 export function toDispatchWindowRequest(
   drafts: DispatchWaveDraft[],
 ): DispatchWindowPutRequest {

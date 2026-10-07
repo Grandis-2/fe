@@ -5,6 +5,8 @@ export {
   useAdminProduct,
   useAdminProductStock,
   useCreateAdminProduct,
+  useHideAdminProduct,
+  usePublishAdminProduct,
   useUpdateAdminProduct,
 } from './api/useAdminProduct'
 export { useAdminProducts } from './api/useAdminProducts'
@@ -24,14 +26,16 @@ export {
 } from './model/dispatch'
 export type { DispatchWaveDraft, DispatchWaveModel } from './model/dispatch'
 export {
+  HIDE_REASON_MAX_LENGTH,
+  HIDE_REASON_MIN_LENGTH,
   isPreorder,
+  PRODUCT_BRANDS,
   productTypeLabel,
   productTypeLabels,
-  saleStatusColor,
   saleStatusLabel,
-  saleStatusLabels,
 } from './model/types'
 export type {
+  AdminDisplayStatus,
   AdminProduct,
   AdminProductDetailModel,
   AdminSaleStatus,
@@ -51,5 +55,11 @@ export type {
   ProductOptionValue,
   ProductVariant,
 } from './model/form'
-export { getAdminProductStocks } from './model/stock'
+export { AdminProductDisplayTag } from './ui/AdminProductDisplayTag'
+export type { AdminProductDisplayTagProps } from './ui/AdminProductDisplayTag'
+export { AdminProductSaleTag } from './ui/AdminProductSaleTag'
+export type { AdminProductSaleTagProps } from './ui/AdminProductSaleTag'
+export { OPTION_PRESETS, withPresetOptionGroups } from './model/optionPreset'
+export type { ProductOptionPreset } from './model/optionPreset'
+export { getAdminProductStocks, getStockOptionGroups } from './model/stock'
 export type { AdminProductStock } from './model/stock'

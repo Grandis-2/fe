@@ -1,25 +1,29 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
+import type { AdminProductDetail } from '@shared/api/types'
 
 import { toStockRequests, toUpsertRequest } from '../model/form'
 
 import {
   createAdminProduct,
   getAdminProduct,
+  hideAdminProduct,
+  publishAdminProduct,
   updateAdminProduct,
 } from './adminProduct'
 import { getAdminProductStock, putAdminProductStock } from './adminStock'
+import {
+  ADMIN_PRODUCTS_KEY,
+  adminProductKey,
+  adminProductStockKey,
+} from './keys'
 
 import type { AdminProductFormValue } from '../model/form'
 
-const adminProductKey = (productId: string) =>
-  ['admin', 'products', productId] as const
-const adminProductStockKey = (productId: string) =>
-  ['admin', 'products', productId, 'stock'] as const
-
 // 상세 화면의 헤더·탭·재고 표·수정 폼이 같은 상품을 각자 부른다 — 키가 같아서
-// 요청은 한 번만 나가고 나머지는 캐시를 함께 쓴다.
+// 함께 떠 있는 동안은 요청이 하나로 합쳐지고 캐시를 함께 쓴다. 대신 staleTime이
+// 0이라 탭을 옮겨 재마운트되면 그때 다시 받는다(운영 화면이라 그게 맞다).
 export const useAdminProduct = (productId: string) =>
   useQuery({
     queryKey: adminProductKey(productId),
@@ -27,6 +31,7 @@ export const useAdminProduct = (productId: string) =>
     ...queryPolicy.live,
   })
 
+/** 조합별 재고 수량. 옵션 이름·가격은 상품 상세에 있어 둘을 합쳐 써야 한다 */
 export const useAdminProductStock = (productId: string) =>
   useQuery({
     queryKey: adminProductStockKey(productId),
@@ -83,3 +88,33 @@ export const useUpdateAdminProduct = (productId: string) => {
     },
   })
 }
+
+/**
+ * 전시 상태를 바꾼다(게시 ↔ 숨김). 상세 캐시는 응답으로 바로 갱신하고, 목록은
+ * 무효화해 다시 받는다 — 목록 행에도 전시 상태가 보여서 같이 바뀌어야 한다.
+ */
+const useDisplayStatusMutation = <TVariables>(
+  mutationFn: (variables: TVariables) => Promise<AdminProductDetail>,
+) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn,
+    onSuccess: (updated) => {
+      queryClient.setQueryData(adminProductKey(updated.productId), updated)
+      return queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY })
+    },
+  })
+}
+
+/** 초안·숨김 → 게시중. 사유를 받지 않는다 */
+export const usePublishAdminProduct = () =>
+  useDisplayStatusMutation((productId: string) =>
+    publishAdminProduct(productId),
+  )
+
+/** 게시중 → 숨김. 서버가 5자 이상의 사유를 요구한다 */
+export const useHideAdminProduct = () =>
+  useDisplayStatusMutation(
+    ({ productId, reason }: { productId: string; reason: string }) =>
+      hideAdminProduct(productId, { reason }),
+  )

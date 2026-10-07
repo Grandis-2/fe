@@ -23,6 +23,11 @@ export type ImageUploaderProps = {
   label?: string
   /** 라벨 줄 오른쪽에 `4 / 10` 카운터를 보여줄지 */
   showCount?: boolean
+  /**
+   * 추가·삭제를 모두 막는다. 흐리게만 처리하면(opacity·pointerEvents) Tab으로
+   * 버튼에 닿아 키보드로는 그대로 조작된다 — 막아야 할 땐 이걸 쓴다.
+   */
+  disabled?: boolean
   className?: string
 }
 
@@ -33,6 +38,7 @@ export function ImageUploader({
   ratio = 'square',
   label,
   showCount = true,
+  disabled = false,
   className,
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -90,6 +96,7 @@ export function ImageUploader({
               type="button"
               className={styles.removeButton}
               aria-label={`${image.name} 삭제`}
+              disabled={disabled}
               onClick={() => removeImage(image)}
             >
               <X className={styles.removeIcon} aria-hidden="true" />
@@ -102,6 +109,7 @@ export function ImageUploader({
             type="button"
             className={styles.addTile[ratio]}
             aria-label="이미지 추가"
+            disabled={disabled}
             onClick={() => inputRef.current?.click()}
           >
             <Plus className={styles.addIcon} aria-hidden="true" />
@@ -115,6 +123,7 @@ export function ImageUploader({
           type="file"
           accept="image/*"
           multiple
+          disabled={disabled}
           onChange={(event) => {
             addFiles(event.target.files)
             // 같은 파일을 연속으로 고를 수 있도록 비운다.

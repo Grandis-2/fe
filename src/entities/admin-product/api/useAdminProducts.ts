@@ -4,9 +4,7 @@ import { queryPolicy } from '@shared/api/queryPolicy'
 import type { AdminProductListParams } from '@shared/api/types'
 
 import { getAdminProducts } from './adminProduct'
-
-const adminProductsKey = (params: AdminProductListParams) =>
-  ['admin', 'products', 'list', params] as const
+import { adminProductsKey } from './keys'
 
 /**
  * 관리자 상품 목록. 검색어·판매 상태가 바뀌면 키가 바뀌어 이전 요청이 취소된다 —

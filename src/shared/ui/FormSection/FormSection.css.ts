@@ -5,7 +5,7 @@ import { color, spacing, typography } from '@shared/config/theme'
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[8],
+  gap: spacing[16],
 })
 
 export const title = style([

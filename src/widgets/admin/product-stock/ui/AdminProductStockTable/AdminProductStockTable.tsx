@@ -1,5 +1,6 @@
 import {
   getAdminProductStocks,
+  getStockOptionGroups,
   isPreorder,
   useAdminProduct,
   useAdminProductStock,
@@ -16,12 +17,16 @@ export type AdminProductStockTableProps = {
   productId: string
 }
 
-/** 옵션(색상 × 용량)별 재고 현황 — 재고 수량에 상품 상세의 옵션 이름·가격을 붙여 보여준다 */
+/** 옵션 조합별 재고 현황 — 재고 수량에 상품 상세의 옵션 이름·가격을 붙여 보여준다 */
 export function AdminProductStockTable({
   productId,
 }: AdminProductStockTableProps) {
   const product = useAdminProduct(productId)
   const stock = useAdminProductStock(productId)
+
+  // 열은 상품이 실제로 가진 옵션 그룹에서 만든다 — 상품마다 옵션 수가 달라서
+  // (스마트폰은 용량 하나, 노트북은 크기·RAM·용량·칩) 고정할 수 없다.
+  const optionGroups = product.data ? getStockOptionGroups(product.data) : []
 
   const columns: TableColumn<AdminProductStock>[] = [
     {
@@ -30,12 +35,12 @@ export function AdminProductStockTable({
       align: 'center',
       render: (row) => row.color,
     },
-    {
-      key: 'capacity',
-      header: '용량',
-      align: 'center',
-      render: (row) => row.capacity,
-    },
+    ...optionGroups.map((group, index) => ({
+      key: group.groupCode,
+      header: group.name,
+      align: 'center' as const,
+      render: (row: AdminProductStock) => row.optionNames[index] ?? '-',
+    })),
     {
       key: 'totalCount',
       header: '총수량',

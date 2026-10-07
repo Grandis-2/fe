@@ -22,6 +22,12 @@ export function ColorOptionEditor({
   // '색상 없음'인 상품은 색상을 더 만들 수 없다.
   const hasNoColor = colors.some((colorOption) => colorOption.noColor)
 
+  // 색상이 없다는 건 칸 하나가 아니라 상품 전체의 성격이다 — 하나를 켜면 이미 만들어
+  // 둔 칸까지 모두 켜고, 풀면 모두 푼다. 한쪽만 켜져 있으면 조합 계산(getProductVariants)은
+  // 색상을 빼는데 화면은 색상이 살아 있는 것처럼 보여서 어긋난다.
+  const toggleNoColor = (noColor: boolean) =>
+    onChange(colors.map((colorOption) => ({ ...colorOption, noColor })))
+
   const patchColor = (id: string, partial: Partial<ProductColorOption>) =>
     onChange(
       colors.map((colorOption) =>
@@ -31,7 +37,7 @@ export function ColorOptionEditor({
 
   return (
     <div className={styles.root}>
-      {colors.map((colorOption) => (
+      {colors.map((colorOption, index) => (
         <div key={colorOption.id} className={styles.colorBlock}>
           {/* 제목과 삭제 버튼을 한 줄에 둔다. */}
           <div className={styles.blockHeader}>
@@ -39,7 +45,7 @@ export function ColorOptionEditor({
             <button
               type="button"
               className={styles.removeButton}
-              aria-label={`색상 ${colors.indexOf(colorOption) + 1} 삭제`}
+              aria-label={`색상 ${index + 1} 삭제`}
               onClick={() =>
                 onChange(colors.filter((item) => item.id !== colorOption.id))
               }
@@ -50,7 +56,12 @@ export function ColorOptionEditor({
 
           <div className={styles.colorRow}>
             <label
-              className={colorOption.hex ? styles.swatch : styles.swatchEmpty}
+              className={[
+                colorOption.hex ? styles.swatch : styles.swatchEmpty,
+                hasNoColor && styles.mutedArea,
+              ]
+                .filter(Boolean)
+                .join(' ')}
               style={
                 colorOption.hex ? { background: colorOption.hex } : undefined
               }
@@ -61,6 +72,7 @@ export function ColorOptionEditor({
                 className={styles.swatchInput}
                 // input[type=color]는 빈 값을 못 받아서 미선택일 때 검정을 넘긴다.
                 value={colorOption.hex || '#000000'}
+                disabled={hasNoColor}
                 onChange={(event) =>
                   patchColor(colorOption.id, {
                     hex: event.target.value.toUpperCase(),
@@ -69,31 +81,34 @@ export function ColorOptionEditor({
               />
             </label>
             <Input
-              className={fields.fixedField}
+              className={[fields.fixedField, hasNoColor && styles.mutedArea]
+                .filter(Boolean)
+                .join(' ')}
               size="small"
               label="색상 입력"
               value={colorOption.name}
-              disabled={colorOption.noColor}
+              disabled={hasNoColor}
               onChange={(event) =>
                 patchColor(colorOption.id, { name: event.target.value })
               }
             />
             <label className={styles.noColorLabel}>
               <Checkbox
-                checked={colorOption.noColor}
-                onChange={(event) =>
-                  patchColor(colorOption.id, { noColor: event.target.checked })
-                }
+                checked={hasNoColor}
+                onChange={(event) => toggleNoColor(event.target.checked)}
               />
               색상 없음
             </label>
           </div>
 
-          <ImageUploader
-            label="이미지"
-            value={colorOption.images}
-            onChange={(images) => patchColor(colorOption.id, { images })}
-          />
+          <div className={hasNoColor ? styles.mutedArea : undefined}>
+            <ImageUploader
+              label="이미지"
+              disabled={hasNoColor}
+              value={colorOption.images}
+              onChange={(images) => patchColor(colorOption.id, { images })}
+            />
+          </div>
         </div>
       ))}
 

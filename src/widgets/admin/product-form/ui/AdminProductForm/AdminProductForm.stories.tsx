@@ -22,10 +22,18 @@ export const Create: Story = {
 
     await userEvent.type(canvas.getByLabelText(/상품명/), '아이폰 18 Pro')
     await userEvent.type(canvas.getByLabelText(/모델명/), 'A23948')
+
+    await userEvent.click(canvas.getByRole('button', { name: '브랜드 선택' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Apple' }))
+
     await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
 
     await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ name: '아이폰 18 Pro', modelName: 'A23948' }),
+      expect.objectContaining({
+        name: '아이폰 18 Pro',
+        modelName: 'A23948',
+        brand: 'Apple',
+      }),
     )
   },
 }
@@ -155,6 +163,84 @@ export const PreorderPeriod: Story = {
         openAt: `${year}-${String(month).padStart(2, '0')}-20T09:00`,
         closeAt: `${year}-${String(month).padStart(2, '0')}-20T23:59`,
       }),
+    )
+  },
+}
+
+/**
+ * 제품 종류를 고르면 그 종류의 옵션으로 갈아 끼운다.
+ * 값을 적어 둔 옵션은 종류를 바꿔도 남는다 — 쓰는 중인 걸 지우면 안 된다.
+ */
+export const OptionPreset: Story = {
+  args: { mode: 'create' },
+  play: async ({ canvas }) => {
+    // 한 번 고르고 나면 트리거 문구가 고른 값으로 바뀐다 — 열 때 쓸 이름을 같이 받는다.
+    const pickType = async (trigger: string, option: string) => {
+      await userEvent.click(canvas.getByRole('button', { name: trigger }))
+      await userEvent.click(canvas.getByRole('button', { name: option }))
+    }
+
+    await pickType('제품 카테고리 선택', 'PC/주변기기 · 노트북')
+    await waitFor(async () =>
+      expect(canvas.getAllByLabelText('옵션 이름')).toHaveLength(4),
+    )
+
+    // RAM에만 값을 적어 둔다 — 이건 종류를 바꿔도 남아야 한다.
+    await userEvent.type(canvas.getByLabelText('RAM 값'), '16GB')
+
+    await pickType('PC/주변기기 · 노트북', '모바일 · 스마트폰')
+    await waitFor(async () => {
+      const names = canvas
+        .getAllByLabelText('옵션 이름')
+        .map((field) => (field as HTMLInputElement).value)
+      // 쓰지 않은 크기·용량·칩은 사라지고, 값을 적은 RAM과 스마트폰의 용량만 남는다.
+      expect(names).toEqual(['RAM', '용량'])
+    })
+  },
+}
+
+/**
+ * '색상 없음'은 칸 하나가 아니라 상품 전체의 성격이다 — 하나를 켜면 이미 만들어 둔
+ * 색상 칸까지 모두 켜지고, 입력이 막힌다.
+ */
+export const NoColorAppliesToEveryBlock: Story = {
+  args: { mode: 'create' },
+  play: async ({ canvas }) => {
+    await userEvent.type(canvas.getByLabelText('색상 입력'), '딥 블루')
+    await userEvent.click(canvas.getByRole('button', { name: '색상 추가' }))
+    await waitFor(async () =>
+      expect(canvas.getAllByLabelText('색상 입력')).toHaveLength(2),
+    )
+
+    // 두 번째 칸에서 켜도 첫 번째까지 같이 켜진다.
+    await userEvent.click(canvas.getAllByLabelText('색상 없음')[1])
+
+    await waitFor(async () => {
+      const boxes = canvas.getAllByLabelText('색상 없음')
+      expect(boxes[0]).toBeChecked()
+      expect(boxes[1]).toBeChecked()
+    })
+    for (const field of canvas.getAllByLabelText('색상 입력')) {
+      await expect(field).toBeDisabled()
+    }
+
+    // 흐리게만 두면(opacity·pointerEvents) Tab으로 닿아 키보드로는 그대로 조작된다.
+    // 색 선택과 이미지 업로드까지 실제로 disabled여야 한다.
+    for (const swatch of canvas.getAllByLabelText('색상 선택')) {
+      await expect(swatch).toBeDisabled()
+    }
+    // '이미지' 라벨이 붙은 건 색상 블록의 업로더뿐이다 — 상세·사양·유의사항
+    // 업로더는 라벨이 없고 색상과 무관해서 잠기지 않아야 한다.
+    const colorUploads = canvas.getAllByLabelText('이미지')
+    await expect(colorUploads).toHaveLength(2)
+    for (const upload of colorUploads) {
+      await expect(upload).toBeDisabled()
+    }
+
+    // 풀면 적어 둔 값이 그대로 돌아온다 — 지우지 않고 가려만 뒀기 때문이다.
+    await userEvent.click(canvas.getAllByLabelText('색상 없음')[0])
+    await waitFor(async () =>
+      expect(canvas.getAllByLabelText('색상 입력')[0]).toHaveValue('딥 블루'),
     )
   },
 }

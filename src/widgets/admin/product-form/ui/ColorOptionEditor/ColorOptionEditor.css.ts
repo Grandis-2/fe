@@ -30,6 +30,18 @@ export const colorBlock = style({
   },
 })
 
+/**
+ * '색상 없음'일 때 색상 칸을 가라앉힌다. 지우지 않고 남겨 두는 이유는, 체크를 풀면
+ * 적어 둔 색과 이미지가 그대로 돌아와야 해서다.
+ *
+ * 여기서는 보이기만 바꾼다 — 못 누르게 하는 건 각 요소의 disabled가 맡는다.
+ * 전에는 pointerEvents: 'none'으로 때웠는데, 그건 포인터만 막아서 Tab으로 들어가면
+ * 키보드로는 색을 고치고 이미지를 추가·삭제할 수 있었다.
+ */
+export const mutedArea = style({
+  opacity: 0.45,
+})
+
 export const colorRow = style({
   display: 'flex',
   alignItems: 'center',

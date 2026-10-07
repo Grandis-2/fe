@@ -2,14 +2,25 @@ import { useState, type FormEvent } from 'react'
 
 import {
   createEmptyProductFormValue,
+  getProductVariants,
+  PRODUCT_BRANDS,
+  withPresetOptionGroups,
   type AdminProductFormValue,
 } from '@entities/admin-product'
-import { getProductVariants } from '@entities/admin-product'
-import { Button, Checkbox, FormSection, ImageUploader, Input } from '@shared/ui'
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  FormSection,
+  ImageUploader,
+  Input,
+} from '@shared/ui'
+import type { DropdownOption } from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
 import { NumberField } from '../NumberField'
 import { OptionGroupEditor } from '../OptionGroupEditor'
+import { OptionPresetField } from '../OptionPresetField'
 import { PreorderPeriodField } from '../PreorderPeriodField'
 import { VariantTable } from '../VariantTable'
 
@@ -32,6 +43,11 @@ const submitLabel: Record<AdminProductFormMode, string> = {
   create: '등록하기',
   edit: '수정하기',
 }
+
+const brandOptions: DropdownOption<string>[] = PRODUCT_BRANDS.map((brand) => ({
+  label: brand,
+  value: brand,
+}))
 
 export function AdminProductForm({
   mode,
@@ -80,6 +96,17 @@ export function AdminProductForm({
         />
       </FormSection>
 
+      <FormSection title="브랜드 정보">
+        <Dropdown
+          label="브랜드 선택"
+          size="medium"
+          width="220px"
+          options={brandOptions}
+          value={value.brand || undefined}
+          onSelect={(brand) => patch({ brand })}
+        />
+      </FormSection>
+
       <FormSection title="판매 방식">
         <div className={styles.card}>
           <label className={styles.checkboxRow}>
@@ -112,6 +139,14 @@ export function AdminProductForm({
         description={`고객이 옵션을 고르면 해당 이미지가 표시됩니다.
 옵션당 최대 10장, 첫 장이 대표 이미지입니다.`}
       >
+        {/* 색상은 별도 축이라 프리셋이 손대지 않는다 — 이미 올린 이미지가 날아간다. */}
+        <OptionPresetField
+          onSelect={(preset) =>
+            patch({
+              optionGroups: withPresetOptionGroups(value.optionGroups, preset),
+            })
+          }
+        />
         <div className={styles.card}>
           <ColorOptionEditor
             colors={value.colors}
