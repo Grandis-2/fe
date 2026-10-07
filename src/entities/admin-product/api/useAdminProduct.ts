@@ -13,14 +13,13 @@ import {
   updateAdminProduct,
 } from './adminProduct'
 import { getAdminProductStock, putAdminProductStock } from './adminStock'
+import {
+  ADMIN_PRODUCTS_KEY,
+  adminProductKey,
+  adminProductStockKey,
+} from './keys'
 
 import type { AdminProductFormValue } from '../model/form'
-
-const ADMIN_PRODUCTS_KEY = ['admin', 'products'] as const
-const adminProductKey = (productId: string) =>
-  [...ADMIN_PRODUCTS_KEY, productId] as const
-const adminProductStockKey = (productId: string) =>
-  ['admin', 'products', productId, 'stock'] as const
 
 // 상세 화면의 헤더·탭·재고 표·수정 폼이 같은 상품을 각자 부른다 — 키가 같아서
 // 요청은 한 번만 나가고 나머지는 캐시를 함께 쓴다.
