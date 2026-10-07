@@ -32,10 +32,11 @@ async function readBody(request: Request): Promise<Body> {
   return body !== null && typeof body === 'object' ? (body as Body) : {}
 }
 
+// ponytail: 장바구니는 백엔드에 없는 프론트 제안 API라 optionCode를 상품 옵션의 sku로 맞춰 둔다 — 장바구니 계약이 정해지면 교체.
 const findVariant = (productId: string, optionCode: string) =>
   products
-    .find((product) => product.productId === productId)
-    ?.variants.find((variant) => variant.optionCode === optionCode)
+    .find((product) => String(product.productId) === productId)
+    ?.variants.find((variant) => variant.sku === optionCode)
 
 const validationFailed = (message: string, violations: ApiViolation[]) =>
   fail(400, { code: 'VALIDATION_FAILED', message, violations })

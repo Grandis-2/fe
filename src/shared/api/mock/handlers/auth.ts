@@ -17,13 +17,13 @@ import type { RequestHandler } from 'msw'
 
 // ponytail: 실제 인증 서버가 없어 메모리로 흉내낸다. 핸들러는 SW가 아니라 페이지
 // 컨텍스트에서 실행되므로(MSW v2 구조) 새로고침하면 이 파일의 모듈도 다시 평가된다 —
-// 그래서 DB를 sessionStorage에 함께 태워 새로고침에도 살아남게 한다(cart.ts와 같은 패턴).
-// 탭을 닫으면 사라진다. 실제 서버 저장소를 대체하지 않는다.
+// 그래서 DB를 localStorage에 태워 새로고침에도 살아남게 한다.
+// localStorage인 이유: 이건 앱이 저장하는 값이 아니라 서버 DB 흉내다. 실제 서버의
+// 리프레시 토큰 기록은 모든 탭이 공유하므로, sessionStorage(탭별)에 두면 쿠키는 있는데
+// 새 탭에서 재발급이 401이 난다. 앱 쪽 저장 규칙(state는 sessionStorage, 토큰은 메모리)과는 별개.
 //
-// ponytail: 스키마 버전이 없다 — 이 커밋 이전에 저장된 sessionStorage 기록엔
-// profileComplete가 없어 undefined(falsy)로 읽힌다. 이 브랜치 받은 뒤 한 번
-// 로그아웃(또는 sessionStorage 지우기)하고 새로 로그인. 반복적으로 문제되면
-// 버전 필드 추가.
+// ponytail: 스키마 버전이 없다 — 예전 형식의 기록이 남아 있으면 로그아웃(또는
+// localStorage의 nova-auth-mock-db 지우기)하고 새로 로그인. 반복적으로 문제되면 버전 필드 추가.
 type SessionRecord = {
   displayName: string
   role: Session['role']
@@ -40,7 +40,7 @@ const DB_KEY = 'nova-auth-mock-db'
 
 function loadDB(): DB {
   try {
-    const raw = sessionStorage.getItem(DB_KEY)
+    const raw = localStorage.getItem(DB_KEY)
     if (raw) return JSON.parse(raw) as DB
   } catch {
     // 파싱 실패 시 빈 DB로 시작한다.
@@ -53,10 +53,9 @@ function loadDB(): DB {
   }
 }
 
-const initial = loadDB()
-const sessions = new Map<string, SessionRecord>(initial.sessions)
-const refreshTokens = new Map<string, SessionRecord>(initial.refreshTokens)
-const usedCodes = new Set<string>(initial.usedCodes)
+let sessions = new Map<string, SessionRecord>()
+let refreshTokens = new Map<string, SessionRecord>()
+let usedCodes = new Set<string>()
 
 const MOCK_USER: SessionRecord = {
   displayName: '기매진',
@@ -79,7 +78,22 @@ type ProfileRecord = {
   email: string | null
   phoneNumber: string | null
 }
-let profile: ProfileRecord = initial.profile
+let profile: ProfileRecord
+
+function syncDB() {
+  const db = loadDB()
+  sessions = new Map(db.sessions)
+  refreshTokens = new Map(db.refreshTokens)
+  usedCodes = new Set(db.usedCodes)
+  profile = db.profile
+}
+syncDB()
+// 다른 탭이 로그인·재발급으로 DB를 바꾸면 이 탭 메모리도 맞춘다 — 안 그러면 이 탭이
+// 다음에 저장할 때 옛 메모리로 덮어써 다른 탭의 세션을 지운다. (storage 이벤트는 다른 탭에서만 온다.)
+// ponytail: 두 탭이 같은 순간에 쓰면 나중 것이 이긴다 — 목업이라 감수.
+addEventListener('storage', (event) => {
+  if (event.key === DB_KEY) syncDB()
+})
 
 function saveDB() {
   const db: DB = {
@@ -88,7 +102,7 @@ function saveDB() {
     usedCodes: [...usedCodes],
     profile,
   }
-  sessionStorage.setItem(DB_KEY, JSON.stringify(db))
+  localStorage.setItem(DB_KEY, JSON.stringify(db))
 }
 
 const PROFILE_LIMITS: Record<keyof UpdateProfileRequest, number> = {
@@ -187,7 +201,7 @@ export const authHandlers: RequestHandler[] = [
     saveDB()
 
     // 이미 가입(프로필 입력)을 마친 회원은 다시 로그인해도 profileComplete: true다 —
-    // MOCK_USER는 새로고침마다 false로 다시 만들어지는데 프로필은 sessionStorage DB에 남아 있어서,
+    // MOCK_USER는 새로고침마다 false로 다시 만들어지는데 프로필은 localStorage DB에 남아 있어서,
     // 그대로 쓰면 가입을 마친 뒤 재로그인할 때마다 /signup으로 되돌려진다.
     const record: SessionRecord = {
       ...MOCK_USER,
@@ -308,9 +322,12 @@ export const authHandlers: RequestHandler[] = [
       email: body!.email!,
       phoneNumber: body!.phoneNumber!,
     }
-    // 세 칸이 다 채워졌으니 이 회원은 이제 profileComplete: true다 — 같은 참조를
-    // 공유하는 sessions/refreshTokens 맵의 기존 항목에도 그대로 반영된다.
-    record.profileComplete = true
+    // 세 칸이 다 채워졌으니 이 회원은 이제 profileComplete: true다. 저장소에서 다시 읽은
+    // 두 맵은 같은 객체를 공유하지 않으므로 양쪽을 다 고친다 — 안 그러면 새 탭의 재발급이
+    // false를 돌려줘 가입 화면으로 되돌아간다. 프로필이 전역 하나라 USER 기록은 모두 같은 회원이다.
+    for (const r of [...sessions.values(), ...refreshTokens.values()]) {
+      if (r.role === 'USER') r.profileComplete = true
+    }
     saveDB()
 
     return ok<ProfileInfo>({ displayName: record.displayName, ...profile })

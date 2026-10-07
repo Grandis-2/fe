@@ -3,34 +3,25 @@ import { useState } from 'react'
 import {
   toProductCardData,
   type ProductCardProps,
-  type ProductCardSummary,
+  type ProductListItem,
 } from '@entities/product'
 
-// 카드 목록마다 반복되던 색상/용량 선택 상태를 한곳에 모은다.
+// 카드 목록마다 반복되던 색상 선택 상태를 한곳에 모은다.
 // productId로 맵을 들고 있어서 상품 개수가 서버 응답에 따라 달라져도 된다.
 export function useProductCardSelection() {
   const [colorSelections, setColorSelections] = useState<
     Record<string, number>
   >({})
-  const [optionSelections, setOptionSelections] = useState<
-    Record<string, number>
-  >({})
 
   // <ProductCard {...getCardProps(product)} />로 바로 펼쳐 쓴다.
   const getCardProps = (
-    product: ProductCardSummary,
-  ): Pick<ProductCardProps, 'product' | 'onColorSelect' | 'onOptionSelect'> => {
+    product: ProductListItem,
+  ): Pick<ProductCardProps, 'product' | 'onColorSelect'> => {
     const { productId } = product
     return {
-      product: toProductCardData(
-        product,
-        colorSelections[productId] ?? 0,
-        optionSelections[productId] ?? 0,
-      ),
+      product: toProductCardData(product, colorSelections[productId] ?? 0),
       onColorSelect: (index) =>
         setColorSelections((prev) => ({ ...prev, [productId]: index })),
-      onOptionSelect: (index) =>
-        setOptionSelections((prev) => ({ ...prev, [productId]: index })),
     }
   }
 

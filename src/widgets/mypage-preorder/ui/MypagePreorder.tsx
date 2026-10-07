@@ -1,95 +1,221 @@
-import { Clock } from 'lucide-react'
+import { useState } from 'react'
+
 import { useNavigate } from 'react-router'
 
-import { ProductPaymentCard } from '@entities/product'
+import { HistoryCard, MOCK_ORDERS } from '@entities/order'
+import {
+  ProductPaymentCard,
+  type ProductPaymentCardItem,
+} from '@entities/product'
 import { PAYMENT_PATH } from '@shared/config/routes'
-import { useCountdown } from '@shared/lib/useCountdown'
-import { Button } from '@shared/ui'
+import { ActionButton, Button, SelectButton, Tag } from '@shared/ui'
 
 import * as styles from './MypagePreorder.css'
 
-const HOUR = 60 * 60 * 1000
+type MockReservation = {
+  orderDate: string
+  orderNumber: string
+  items: ProductPaymentCardItem[]
+}
 
-// ponytail: 아직 사전예약 API가 없어서 목업 데이터로 대체. 결제 마감 시각도 응답에 없어
-// 지금 기준으로 만든다. 모듈 스코프라 렌더마다 새 Date가 생기지 않는다 —
-// 매번 새 Date를 넘기면 useCountdown의 타이머가 계속 새로 걸린다.
-const preorderItems = [
+// 구매 확정을 기다리는 예약 — 주문 내역·헤더 배지와 같은 목업을 본다.
+const pendingReservations = MOCK_ORDERS.filter(
+  (order) => order.status === 'confirm',
+)
+
+// ponytail: 아직 사전예약 API가 없어서 목업 데이터로 대체.
+const confirmedReservations: (MockReservation & {
+  facts: { label: string; value: string }[]
+})[] = [
   {
-    id: '1',
-    name: '맥북 프로 14',
-    modelNumber: 'A3112',
-    optionSummary: '스페이스 블랙 · 512GB · AppleCare+ 포함',
-    quantityLabel: '수량 1개',
-    priceLabel: '2,390,000원',
-    paymentDueAt: new Date(Date.now() + 24 * HOUR),
-  },
-  {
-    id: '2',
-    name: '맥북 에어 15',
-    modelNumber: 'A3114',
-    optionSummary: '스타라이트 · 256GB',
-    quantityLabel: '수량 1개',
-    priceLabel: '1,890,000원',
-    paymentDueAt: new Date(Date.now() + 11 * HOUR),
+    orderDate: '2026.10.05',
+    orderNumber: 'NV26100531',
+    facts: [
+      { label: '예약 순번', value: '312번째' },
+      { label: '출시일', value: '10.24 (금)' },
+      { label: '발송 시작', value: '10.24부터' },
+    ],
+    items: [
+      {
+        name: '맥북 프로 14',
+        modelNumber: 'A3112',
+        optionSummary: '스페이스 블랙 · 16GB · 512GB · M5',
+        quantityLabel: '수량 1개',
+        priceLabel: '2,390,000원',
+      },
+      {
+        name: '에어팟 프로 3',
+        modelNumber: 'A3184',
+        optionSummary: '화이트',
+        quantityLabel: '수량 1개',
+        priceLabel: '369,000원',
+      },
+    ],
   },
 ]
 
-type PreorderItem = (typeof preorderItems)[number]
+// 예약은 끝났고 출시·발송을 기다리는 중이다.
+const steps = [
+  { label: '예약 완료', done: true },
+  { label: '출시', done: false },
+  { label: '발송', done: false },
+]
 
-const pad = (value: number) => String(value).padStart(2, '0')
+const openAlerts = [
+  {
+    id: 1,
+    title: '아이폰 18 Pro, Pro Max',
+    opensAt: '10.10 (금) 오전 10:00',
+    dDay: 'D-3',
+  },
+  {
+    id: 2,
+    title: '아이폰 Duo',
+    opensAt: '10.21 (화) 오전 10:00',
+    dDay: 'D-14',
+  },
+  {
+    id: 3,
+    title: '애플 비전 프로 2',
+    opensAt: '11.04 (화) 오전 10:00',
+    dDay: 'D-28',
+  },
+]
 
-// 예약 건마다 마감이 달라 카운트다운도 건별로 돌아야 한다.
-// 훅은 반복문 안에서 못 쓰므로 한 건을 담당하는 컴포넌트로 분리한다.
-function PaymentDueCard({ item }: { item: PreorderItem }) {
-  const navigate = useNavigate()
-  const { days, hours, minutes, seconds, isOver } = useCountdown(
-    item.paymentDueAt,
-  )
-  // 마감이 정확히 24시간이면 훅이 days=1, hours=0으로 쪼개므로 시간 단위로 합친다.
-  const totalHours = days * 24 + hours
+// D-day 태그 폭을 가장 긴 값에 맞춰 제목 줄이 세로로 가지런하다.
+const alertDDays = openAlerts.map((alert) => alert.dDay)
 
-  return (
-    <div className={styles.card}>
-      <div
-        className={[
-          styles.header,
-          styles.headerTone[isOver ? 'over' : 'active'],
-        ].join(' ')}
-      >
-        <div className={styles.deadline}>
-          <Clock size={16} aria-hidden="true" />
-          {isOver ? (
-            '결제 기한이 지났습니다.'
-          ) : (
-            <span>
-              결제 마감까지{' '}
-              <span className={styles.countdown}>
-                {pad(totalHours)}시간 {minutes}분 {seconds}초
-              </span>{' '}
-              남았습니다.
-            </span>
-          )}
-        </div>
-        <Button
-          size="small"
-          className={styles.headerAction}
-          disabled={isOver}
-          onClick={() => navigate(PAYMENT_PATH)}
-        >
-          결제하기
-        </Button>
-      </div>
-      <ProductPaymentCard product={item} />
-    </div>
-  )
-}
+const renderItem = (product: ProductPaymentCardItem) => (
+  <ProductPaymentCard product={product} />
+)
 
 export function MypagePreorder() {
+  const navigate = useNavigate()
+  // ponytail: 알림 신청 API가 없어 화면 안에서만 켜고 끈다.
+  const [alertOffIds, setAlertOffIds] = useState<Set<number>>(new Set())
+
+  const toggleAlert = (id: number) =>
+    setAlertOffIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
   return (
     <div className={styles.root}>
-      {preorderItems.map((item) => (
-        <PaymentDueCard key={item.id} item={item} />
-      ))}
+      <h1 className={styles.title}>예약 내역</h1>
+
+      {pendingReservations.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>구매 확정이 필요해요</h2>
+          {pendingReservations.map((reservation) => (
+            <HistoryCard
+              key={reservation.orderNumber}
+              status="confirm"
+              preorder
+              orderDate={reservation.orderDate.replaceAll('-', '.')}
+              orderNumber={reservation.orderNumber}
+              numberLabel="예약번호"
+              purchaseDueAt={reservation.purchaseDueAt}
+              items={reservation.items}
+              renderItem={renderItem}
+              footer={
+                <div className={styles.actions}>
+                  {/* ponytail: 예약 취소 API가 아직 없어 버튼만 둔다. */}
+                  <Button variant="subtle" color="cancel">
+                    예약 취소
+                  </Button>
+                  <ActionButton
+                    size="md"
+                    onClick={() => navigate(PAYMENT_PATH)}
+                  >
+                    구매 확정하기
+                  </ActionButton>
+                </div>
+              }
+            />
+          ))}
+        </section>
+      )}
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>
+          진행 중인 예약{' '}
+          <span className={styles.count}>{confirmedReservations.length}</span>
+        </h2>
+        {confirmedReservations.map((reservation) => (
+          <HistoryCard
+            key={reservation.orderNumber}
+            status="preship"
+            preorder
+            orderDate={reservation.orderDate}
+            orderNumber={reservation.orderNumber}
+            numberLabel="예약번호"
+            items={reservation.items}
+            renderItem={renderItem}
+            footer={
+              <Button variant="subtle" color="cancel">
+                예약 취소
+              </Button>
+            }
+          >
+            <dl className={styles.facts}>
+              {reservation.facts.map((fact) => (
+                <div key={fact.label} className={styles.fact}>
+                  <dt className={styles.factLabel}>{fact.label}</dt>
+                  <dd className={styles.factValue}>{fact.value}</dd>
+                </div>
+              ))}
+            </dl>
+            <ol className={styles.steps}>
+              {steps.map((step) => (
+                <li key={step.label} className={styles.step}>
+                  <div className={styles.bar[step.done ? 'done' : 'todo']} />
+                  <span
+                    className={styles.stepLabel[step.done ? 'done' : 'todo']}
+                  >
+                    {step.label}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </HistoryCard>
+        ))}
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>알림 신청한 사전예약</h2>
+        <ul className={styles.alerts}>
+          {openAlerts.map((alert) => {
+            const on = !alertOffIds.has(alert.id)
+            return (
+              <li key={alert.id} className={styles.alert}>
+                <Tag
+                  color="primary"
+                  variant="subtle"
+                  size="medium"
+                  rounded={false}
+                  widthOptions={alertDDays}
+                >
+                  {alert.dDay}
+                </Tag>
+                <div className={styles.alertTexts}>
+                  <span className={styles.alertTitle}>{alert.title}</span>
+                  <span className={styles.alertDate}>{alert.opensAt} 오픈</span>
+                </div>
+                <SelectButton
+                  className={styles.alertToggle}
+                  selected={on}
+                  onClick={() => toggleAlert(alert.id)}
+                >
+                  {on ? '알림 받는 중' : '알림 받기'}
+                </SelectButton>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
     </div>
   )
 }

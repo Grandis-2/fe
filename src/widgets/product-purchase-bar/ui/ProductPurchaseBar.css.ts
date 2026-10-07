@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css'
+import { globalStyle, style } from '@vanilla-extract/css'
 
 import {
   typography,
@@ -12,7 +12,7 @@ import {
 
 // 모바일은 화면 위쪽에 상품명이 이미 있어 바에서는 옵션 줄만 남긴다.
 export const productName = style([
-  typography.title.lgSemibold,
+  typography.title.mdSemibold,
   { '@media': { [breakpoint.mobile]: { display: 'none' } } },
 ])
 export const productOption = style([
@@ -62,17 +62,24 @@ export const bottomBarGroupVisible = style({
 // isLayoutVisible이 false가 되면서 transform만 바뀌어 위에서 아래로 슬라이드된다 — 데스크톱 전용.
 // ProductPageTab(tabBarWrapper)과는 분리 — 탭은 항상 떠 있어야 하고, 이 바만 나타났다 사라진다.
 export const orderBar = style({
-  background: `color-mix(in srgb, ${color.background.base} 80%, transparent)`,
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
+  background: `color-mix(in srgb, ${color.background.base} 42%, transparent)`,
+  backdropFilter: 'blur(24px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
   '@media': {
     // 모바일 탭바가 바 아래쪽에 떠 있으므로 그만큼 바 배경을 늘려 버튼이 가리지 않게 한다.
     [breakpoint.mobile]: {
       paddingBottom: `calc(${TAB_BAR_HEIGHT} + ${TAB_BAR_OFFSET})`,
     },
     [breakpoint.desktop]: {
+      borderBottom: `1px solid ${color.border.subtle}`,
       transform: 'translateY(-100%)',
-      transition: `transform ${motion.duration.fast} ${motion.easing.default}`,
+      // 숨어 있어도 결제 버튼 그림자(primaryGlow)가 바 아래로 번져 헤더에 비친다 —
+      // 올라가는 슬라이드가 끝난 뒤 visibility로 감춘다.
+      visibility: 'hidden',
+      transition: [
+        `transform ${motion.duration.fast} ${motion.easing.default}`,
+        `visibility 0s linear ${motion.duration.fast}`,
+      ].join(', '),
     },
   },
 })
@@ -82,6 +89,8 @@ export const orderBarVisible = style({
   '@media': {
     [breakpoint.desktop]: {
       transform: 'translateY(0)',
+      visibility: 'visible',
+      transition: `transform ${motion.duration.fast} ${motion.easing.default}`,
     },
   },
 })
@@ -93,14 +102,14 @@ export const orderBarContent = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[16],
-  borderTop: `1px solid ${color.border.default}`,
+  borderTop: `1px solid ${color.border.subtle}`,
   '@media': {
     [breakpoint.desktop]: {
       display: 'grid',
       gridTemplateColumns: '1fr auto',
-      gap: 0,
+      alignItems: 'center',
+      gap: spacing[16],
       borderTop: 'none',
-      borderBottom: `1px solid ${color.border.default}`,
     },
   },
 })
@@ -140,6 +149,69 @@ export const orderBarQuantityPrice = style({
   },
 })
 
+export const priceGroup = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[4],
+})
+
+export const breakdownToggle = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '32px',
+  height: '32px',
+  padding: 0,
+  border: 'none',
+  borderRadius: '50%',
+  background: 'transparent',
+  color: color.text.tertiary,
+  cursor: 'pointer',
+  transition: `background ${motion.duration.fast} ${motion.easing.default}`,
+  selectors: {
+    '&:hover': { background: color.background.surface },
+  },
+})
+
+// 모바일 전용 — 수량/가격 줄 위에 가격이 어떻게 나왔는지(기본가 + 옵션 × 수량) 펼친다.
+// 바가 화면 아래에 붙어 있어 위로 자란다.
+export const breakdown = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[8],
+  margin: 0,
+  padding: `${spacing[12]} ${spacing[14]}`,
+  borderRadius: '12px',
+  background: color.background.surface,
+  '@media': { [breakpoint.desktop]: { display: 'none' } },
+})
+
+export const breakdownRow = style([
+  typography.body.sub,
+  {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: spacing[12],
+    color: color.text.secondary,
+  },
+])
+
+globalStyle(`${breakdownRow} dd`, { margin: 0, color: color.text.primary })
+
+// 상세 구매 요약(PurchaseSummary)의 혜택 줄과 같은 강조색.
+export const discount = style({})
+globalStyle(`${breakdownRow} dd${discount}`, { color: color.primary.subtle })
+
+export const breakdownTotal = style([
+  breakdownRow,
+  typography.body.subSemibold,
+  {
+    paddingTop: spacing[8],
+    borderTop: `1px solid ${color.border.subtle}`,
+    color: color.text.primary,
+  },
+])
+
 // 모바일은 버튼 줄이 전체 폭을 차지, 데스크톱은 내용 크기로.
 export const orderBarButtons = style({
   display: 'flex',
@@ -152,36 +224,14 @@ export const orderBarButtons = style({
   },
 })
 
-export const orderBarIconButton = style({
-  width: '46px',
-})
-
-// 모바일은 장바구니 버튼(46px)을 뺀 나머지 가로를 전부 차지. 데스크톱은 기존처럼 내용 크기.
+// 모바일은 장바구니 버튼을 뺀 나머지 가로를 전부 차지. 데스크톱은 내용 크기.
 export const orderBarCheckoutButton = style({
   flex: 1,
-  padding: `0 ${spacing[24]}`,
-  '@media': {
-    [breakpoint.desktop]: {
-      flex: 'initial',
-    },
-  },
+  '@media': { [breakpoint.desktop]: { flex: 'initial' } },
 })
 
-// 결제 버튼은 모바일/데스크톱 두 벌 렌더링한다(ProductPurchaseBar.tsx) — 문구가 다르다
-// (데스크톱만 가격이 들어간다).
-export const orderBarCheckoutButtonMobile = style({
-  '@media': {
-    [breakpoint.desktop]: {
-      display: 'none',
-    },
-  },
-})
-
-export const orderBarCheckoutButtonDesktop = style({
+// 결제 버튼 하나로 — 모바일은 "결제하기"만, 데스크톱은 앞에 금액을 붙인다.
+export const desktopPrice = style({
   display: 'none',
-  '@media': {
-    [breakpoint.desktop]: {
-      display: 'inline-flex',
-    },
-  },
+  '@media': { [breakpoint.desktop]: { display: 'inline' } },
 })

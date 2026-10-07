@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:c77c4bfef233fe3208d104f75f28ab3d3ff1f3d2cea0eee6ecca9b38ca3bfc5c",
+  "claims": [
+    {
+      "id": "claim_f8bca21f4e014c7bac62b8c12403e75a",
+      "statement": "세션 스토어는 sessionToken을 메모리에만 두고 displayName·role·profileComplete·isAuthReady를 함께 들며, 로그아웃 상태의 profileComplete는 true로 둔다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/auth/model/sessionStore.ts#L1-L44",
+          "version": "repo-lines-v1:sha256:f258570f43cdba0d63646ff91d8eddf9527add5480ee61dcd7db764c3de1c3b9:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0ZWM3N2JiM2FhNjVlZjFjY2RkZDQ0YzAwNzk5NjRmNTNiODA0MzBmN2NiMjA4MjQ5OTVjMjRmNzBhNGQ1MzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMmQ3YjBlNmZjNGYwYzI5YjhkZjgzMmIzM2Y1NjJmZmEwMzg1MzQ4ODYzNWEzNDNhZTNhMjQ2NDcxNzRhMjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8860167df3644abe9cba60de2f947517",
+      "statement": "getKakaoAuthorizeUrl은 UUID 두 개를 잇은 state와 returnTo를 sessionStorage에 저장하고 카카오 인가 URL(client_id, redirect_uri, state)을 만들며, 저장소를 쓸 수 없으면 로그인 시작을 막는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/login/lib/getKakaoAuthorizeUrl.ts#L12-L33",
+          "version": "repo-lines-v1:sha256:c668fe496d62c5b42b7588976c61752434c2ea878853cb9047f02f18107067ea:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY4ZGE4YTkxMWQyM2JiZDZhMDQ2NWE3OWNkMDU2NDA1MWQxODM0YmIxNTVmODgzZDE3Y2MzMzI2M2MzNDlkZmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5NGE0YzNjOGQ5MWYxMDY3MTI2MDhlY2NmMzNhMzI3NjUxOGJkNDRhZmMwZmIzODFlMTVmN2Y1Y2JjYzE0ZTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/features/login/lib/kakaoState.ts#L9-L24",
+          "version": "repo-lines-v1:sha256:cbfe731accf3b79f084731c245490b273fcbfe33f188ded7ae1bb2f56467afee:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJlY2Q4MzQxMGIwZmEzNDI1ZTNlMWNjMTgwMjJhMzJjNzYyNDM2NDYxYTM3YWM1MTFkNmRmYjQ4MGJjNmU4NTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjhkZGE1NDk1NTU5YmM4MzAyNTk2NjRmZmM4Njc0ZWIyNzgzODhkNGU1NmY2NGQzOGI2NjA4ODBhMjY0NDgwYTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3YzAxZDQwMWNlN2Q2NTgxOTgxYmE5MjllM2U4MGE5MjY0OWUyMGQ0MGU4NGY2MmY4ZDc2NTM5MWYyMTE2YTEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_8782f671787549049ea3f1fbd789ca85",
+      "statement": "콜백에서 state와 returnTo는 성공·실패와 무관하게 한 번만 꺼내 지우며, returnTo는 '/'로 시작하고 '//'로 시작하지 않을 때만 쓰고 아니면 홈으로 대체해 오픈 리다이렉트를 막는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/login/lib/kakaoState.ts#L26-L58",
+          "version": "repo-lines-v1:sha256:36876a238ecc2f10291019d7cf40640022b8482b1fb4c774201f74795181bbdf:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMwYzY4MGNmZDljYTAzZTIxZjMwNjU2MTQ2MjkzZTYwN2RiM2NkNGE3ZDZjNTQzYmFhYTYyZThiNzkwZjkzMTMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImE1NzQ3OGUzMDI3NWQwNWNkYjk4MWU1Y2U2YjRkMDg0YTk0YjI5OGRiZTJkMTZiNGEwZTA5NWQzMDc4OTIwMjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_d836391990924bf9997292c4e1b2ae9d",
+      "statement": "useKakaoCallback은 useRef로 1회용 code의 중복 전송을 막고, 로그인 성공 시 profileComplete에 따라 returnTo 또는 /signup(state.from)으로 replace 이동하며, 실패 시 원인별 문구를 보여 주고 2초 뒤 로그인을 시작한 화면으로 돌아간다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/login/lib/useKakaoCallback.ts#L18-L91",
+          "version": "repo-lines-v1:sha256:708d986711e5294a845a8d1bd472b2c16566d4d618e504c7e5cea53dbc702d44:eyJzZWxlY3RlZExpbmVDb3VudCI6NzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA0NjIxZjJiZWFhZTRlNThlNDU4NmJjZmIwZDBhZDI3NjRiNzNjNTg2ZDczNjE5MDY5ZGJiZGRmNjBkOWQ3ZjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI3MTM2NWQ2NDkzYjcyYzkxYjQwNGMxOWUzOGVkNWM0NDNjODUwZWVlYmI2Y2I0NWIwNmIwNGEyOThjZGJiNDgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a9d0638684784016a126f6c232b36d88",
+      "statement": "ensureFreshSession은 진행 중인 재발급 Promise를 공유하는 single-flight로 동작하고, navigator.locks로 탭 간에도 한 번에 하나만 재발급하며, 락 대기 중 다른 탭이 5초 안에 갱신했으면 네트워크를 타지 않는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/auth/model/refreshCoordinator.ts#L66-L97",
+          "version": "repo-lines-v1:sha256:8e143176be8c25cc4a72c972c4f0105201ced71bc6629957e90c509e8eb0cdae:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE0OGMzNDRlOTBjZDlmYTQwNDEyNWE2OTY3MmY5NTk0MGFjMTZhMWYyY2JjOGU5NTQ2NjYzMzE5ZGZiYjA4NzEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFhODFiNjY3OTQxYzI1MDQxMzU1ZDE2ZTI5MDMwOWY0ZmRkMjgyNDkzYzdkZTIyYmE1MzVjMDU2YWIzNTI0N2IifQ"
+        },
+        {
+          "resource": "repo://src/entities/auth/model/refreshCoordinator.ts#L7-L13",
+          "version": "repo-lines-v1:sha256:68fc58e3051458f6f425532ee5f118f0703922dd52ca4ee364a0f3aae76647fa:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDFiYTQ3MTljODBiNmZlOTExYjA5MWE3YzA1MTI0YjY0ZWVlY2U5NjRlMDljMDU4ZWY4Zjk4MDVkYWNhNTQ2YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjliZjY0NWVlNDNjMDI5MGUwNGY0M2RjZTBjNWRhMzQ5NDJkNThlZGNmYzNlMTMxZTAwNzNjNDA0MzBiZWI2ZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOGUzY2JmNzFmOTM2NmQzMTQyMzE4NDM0N2I2MmIxYWRhODExYzllMzQzMTRhZjk3MWQ5ODc1ODhhMzZkYzA1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmQyZmFjYWJiYjQ5MDVmM2FhMzJmZTU2M2MzMjMzMDJmN2YxZjdlYmE4OGY4YTUzNGFkMDlhNGE3MGIzOGUwMCJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_b44669f7aab24697bf6a2346027b5cc1",
+      "statement": "재발급 결과는 BroadcastChannel('nova-auth')의 session-updated/session-cleared 메시지로 다른 탭에 공유되며, 재발급이 401일 때만 세션을 지우고 네트워크 오류 같은 일시 실패로는 세션을 끊지 않는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/auth/model/refreshCoordinator.ts#L15-L64",
+          "version": "repo-lines-v1:sha256:34a3fafd4851d147c721207912886f504b1c3192c09ff5b8048013c28e72375a:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQwZjE3ZTc4N2Y2ZDRiYmM3MWMwNTY5YTc3MjU4YmE4MDcyOWIwZTdmZDZhM2JhMTc2NTM1Mjk5MjNhN2QwOGYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ4OTNmNDBlMzc4MWViODk2YzgyZDA0NmEwODA2N2ExMWUzNWNkZjJmMWRmYWYyNmZlYTkwYjhkYjY2NzY0MTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk3ODFjNmIxNjJhMGMwZTQ3YjQwMmQwMzkwY2I2ODgwOGYyMmM1MTE2MGI2NzRmZjIwYzM3NTA2OTYyYjYwNmUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM1YTQxNzc3YjhkN2Y1YmM5ZWFkZDY0N2FmZDNhNjVjY2VkZGUwYzAwNWZhMjlkOTllYmM2ZTBmNmZmODg5ZGUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f7330ef5570f4db19cf8fc148c8cbe95",
+      "statement": "initAuth는 메모리에 토큰이 없으면 리프레시 쿠키 재발급을 시도하고 성공·실패와 무관하게 isAuthReady를 켜며, logout은 서버 응답과 무관하게 로컬 세션을 지우고 다른 탭에 알린다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/auth/model/session.ts#L31-L53",
+          "version": "repo-lines-v1:sha256:7370f20195e45fd503d938cc0f9ae5eb9c0df8a4069dade0f53dfc3882255c74:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhYjhhN2ZjMTU5YzllYjExYTlmOGNhMTFiOTI0Njk0OGE0MDdjYmVjNGYyZTQzZjUyNzBjYmZlYjdjYTY2MzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQyZjk5YWZmOTY5NTIwNGYzNTEzNTAxYzM1NWQ5NzQ1MThkZjVlYjEyMDNkZThhYjdiMTZmYjBkYWFjOTRiM2YiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY3ZjNiNjY1M2RmM2NkZTZlNzZlOTQxOTk2ZDBjMTMwOWIxYTNmMGUwN2JjZmU1NWZlMzg2MmJkZDA1YjM0OTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_53ba9a2f893946e38418587bc95d5c08",
+      "statement": "useRequireLogin은 회원이면 넘긴 행동을 실행하고 비회원이면 로그인 모달을 여는 행동 단위 게이트다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/login/lib/useRequireLogin.tsx#L1-L16",
+          "version": "repo-lines-v1:sha256:612a52635dce4df372415274682a3c223b1a2be1246c96f3dc2b74cd21cfe43f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQzYzIyZDE1OGM0MzA0ZmI3OGY4ZjY0MTU5NWU5ZjNiMjg0OTU1ZjVkYjcxZDY5MGQxZjdkNzJiY2UxYzYxYjIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_00b4c7795c204bd0b775f3d12f9be800",
+      "statement": "SignupPage는 기존 프로필로 폼을 채우고 이름·이메일·휴대폰을 통째로 저장한 뒤, 응답의 세 값이 모두 채워졌을 때만 markProfileComplete로 로컬에 반영하고 state.from(없으면 홈)으로 돌아간다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/signup/SignupPage.tsx#L18-L54",
+          "version": "repo-lines-v1:sha256:9e7c579663c500333bd3b0905c66fff9422371ab78e29d7667d7ceda1ad7c12a:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFkMjcwYmUzZTNhZmRjOGU0ODg2OGY1NDc5M2RmYmI0MWFjOTgxYzZkMjUwZmJjNTFjN2E1MDYzM2Q5NGE0YTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5ZGMyMDA0MGE0OTgyYmY5ZDNlOTIyMWY1OGE0NjRlM2M5MjdiYjAwNTY4Y2M0NTY4MWY2YTQ3MDlmNDcyNDciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImQ4YTU3YmUxMzI0MzU2NWViOTMyNTM1Yzk4YTA1OTk1ODhjYTI3YzI1MzdiOWYxYjU5Mzk1YThlY2E0OGIwOWYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_b8c3ec8e7bf7429293692e03914d648c",
+      "statement": "프로필 조회는 account 정책을 쓰고, 프로필 저장 mutation은 응답으로 프로필 캐시를 즉시 갱신하며, 프로필 API는 skipAuthRefresh 없이 401이면 재발급 후 재시도되는 일반 보호 엔드포인트다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/profile/api/profile.ts#L1-L12",
+          "version": "repo-lines-v1:sha256:84547d5724296a92c78e24287540cbcaff91e47979a9041057962fca6f169792:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjYzNjZmNTE2YzYzOGRiNzgxOWU1Y2Y1MTFlYjc2NmU0YmEwODBiNTc1MzkwMGFjM2MwMGU5ZmQ5NDVkZTkzNTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjIzMWY2MDIyZTQyYjJiMjA3ODZlYzZjZThiYTNkNTU3NmMwNzYwZWI5YTdlMThlNGVlYTdjMGZmYmFjZjllOWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJmNWQ3MWFiNTlhZTdhMTVlN2U0YTc3NWQ2MTQwMzQ0YWVmNTJmYmM4ZGIyZWQzNGE3N2UzZjNkODVlMjc2NDgifQ"
+        },
+        {
+          "resource": "repo://src/entities/profile/api/useProfile.ts#L1-L24",
+          "version": "repo-lines-v1:sha256:9995e68d32dac8f4251bea8a9bb7acbd33108b4ac542c75aca2b7bddc1fb1b15:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg4NDIzNTZmYzBhMmUzZDg4ZjI1ZDU1ZjkzNGMyM2RlYWU2Nzk3NmZiNTlmZjFhZDUwMjZjMjk5NjBmNWQzNWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.0",
+    "at": "2026-10-04T09:44:53.662Z"
+  }
+}

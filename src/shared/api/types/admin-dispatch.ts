@@ -1,4 +1,11 @@
-import type { DispatchWave } from './product'
+// 관리자 배송 차수 화면만 쓰는 타입이라 product.ts가 아니라 여기 둔다.
+export type DispatchWave = {
+  wave: number
+  fromSeq: number
+  toSeq: number
+  /** 예상 배송일. null이면 미정 */
+  estimatedDeliveryDate: string | null
+}
 
 /*
  * ponytail: 배송 차수를 버전(초안 → 게시)으로 쌓지 않고 통째로 덮어쓰기로 했다.

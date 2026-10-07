@@ -20,6 +20,7 @@ export function SelectButton({
   return (
     <button
       type="button"
+      aria-pressed={selected}
       className={[styles.size[size], selected && styles.selected, className]
         .filter(Boolean)
         .join(' ')}

@@ -1,78 +1,116 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:b36901f70180659f729b5744dd39dff97d11f5ff8255f19b18725172db30b099",
+  "pageVersion": "sha256:5637dff5108a67eb6a107f38be22bee3355a7851f333e0a4cf1acaadb80f1598",
   "claims": [
     {
       "id": "claim_d2fb2ca87d474df69505572e13f6ba40",
-      "statement": "useCountdown은 target Date까지 남은 시간을 1초 간격 setInterval로 갱신하며, remainingMs가 0이 되면 isOver: true로 고정되고 더 이상 갱신되지 않는다.",
+      "statement": "useCountdown은 target까지 남은 시간을 1초 간격 setInterval로 다시 계산해 days/hours와 두 자리 문자열 minutes/seconds, 남은 시간이 0이면 true인 isOver를 돌려주며, target이 바뀌면 타이머를 새로 건다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/lib/useCountdown.ts",
-          "version": "repo-file-v1:sha256:d0da86b156492e99ca9a24ff3a3360d5e90691a8994d90aeae632debdd371bea"
+          "resource": "repo://src/shared/lib/useCountdown.ts#L1-L22",
+          "version": "repo-lines-v1:sha256:d0da86b156492e99ca9a24ff3a3360d5e90691a8994d90aeae632debdd371bea:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2MTE1YjVjMzEwZmQ5OGFhMzQwMmFhNjg4ZDU3MjI4YmIzN2ViZGU2MWUxNTNlN2QzODkwZjMwZTA3MTgyNGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_123570a48ac6410e9721bc81c2810009",
-      "statement": "PreorderDetailPage의 CTA 버튼은 isOver 값과 무관하게 handleActionClick이 항상 setBottomSheetOpen(true)만 호출해 BottomSheet를 열고, isOver에 따른 문구/동작 분기는 시트 안의 타이틀/설명/PreorderModelSummary CTA에서만 일어난다.",
+      "statement": "PreorderDetailPage의 CTA 버튼은 isOver와 무관하게 useRequireLogin으로 감싼 setBottomSheetOpen(true)를 호출해 비회원이면 로그인 모달을, 회원이면 BottomSheet를 열며, isOver는 카운트다운·버튼·시트 문구와 모델 CTA 동작만 바꾼다.",
       "evidence": [
         {
-          "resource": "repo://src/pages/preorder-detail/ui/PreorderDetailPage.tsx#L21-L23",
-          "version": "repo-lines-v1:sha256:16754529fc89d19c5119ab8d32cba79b993df41d297e61ebfa24b4905b072c6d:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZjIxZmMxNzVhNmNjZDA5YmVkZjQ2ZjFjMzYyNjg1NDU4MjYyNzNiYjZjMTIzOWVjNjI3YjUzMGYxOGNjYmY2ZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNGVlMmRiNGYzYWU3YWUyMzc2OTkzNWI2NGFjY2Y5ODA4ODYzMTc2NjA3ZWEyNWMxMzJmY2UzN2UzYmIzNWFkOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYmJhMWI2NzllODgxMGU2YzlkMTNlZjA4ZjMxZTE5NzgwNTI5OTQzNGRkMWJiZWExMGExMTFiNDVlNzBmMDQ3NyJ9"
+          "resource": "repo://src/pages/preorder-detail/PreorderDetailPage.tsx#L19-L33",
+          "version": "repo-lines-v1:sha256:d1d55f5288049ad6fed960887307cd1dc95ed1a62c0fd41a1d5e11ee23abdc59:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA2MTYyZGMyYzNiYzRkZDljYjg5MDU5MjJmZmMyOWEwNDAwNWFlNjc5YmQ3MTcxNWE2ZDNjMTFjMWIwZDI2MTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjMwNWU3Yjk5MzE4ZTVhMzVkZWQxOGNkZGY5NGEwMzA5ZDE2YzgwNjA3M2I3MzEzYTMxNmRkZjcyZmEzYTc1ZGEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImJiYTFiNjc5ZTg4MTBlNmM5ZDEzZWYwOGYzMWUxOTc4MDUyOTk0MzRkZDFiYmVhMTBhMTExYjQ1ZTcwZjA0NzcifQ"
         },
         {
-          "resource": "repo://src/pages/preorder-detail/ui/PreorderDetailPage.tsx#L62-L68",
-          "version": "repo-lines-v1:sha256:b7a2f94324aa594898a0fadb75b761c6292627c06440ddd02f68f1ceb778ce63:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzc3NTkzODBjOTY0MjA5ODljODY2M2YxOTViOWNkYmNiZmE2OWI0NGRmMWU1M2E4NWRmNWZhY2I3ZGFmM2NiNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNmUzYWFhNGM0NTg0Mjg2NmZlOWI5MmQyMDk1MTU5ZTM0Mjk0M2NhMDBiZWFiMzgzOGIxM2NmNjVkYjhiNTM4MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODZlZGJlZjA1ZTk0ODI5OWUyZDJlMjdjYjgzYmEwY2UwYTQ3MjdiNzcxMjEwNzA5ZTBkNzI4NzUwZmY2ZGUwYyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTU0NDgyOGU4ODAyYjIzOTVmN2E1YjFmNmViZjkwMThlZGU5ZTg1YjAxN2ZjMGViZjdkYzY0ZjZlYjhiODMyYiJ9"
+          "resource": "repo://src/pages/preorder-detail/PreorderDetailPage.tsx#L91-L118",
+          "version": "repo-lines-v1:sha256:443b7dfd6de4ee21691f6e01e326623d6c5c8edd08a9aae2cb6e9b152a7bd83c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkxZDBhOTg2YTFjMzU3MTM5MTc0ZjcxODNiNmQ2ZjIxM2Y5YzllYzZjMmFlZGMyNWI5MWM5YTJhY2QzNjY3MTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxZjIyMDJjNWYxM2ExYjliNTg5Mzc2OTczNTQxMzAwNjk2NjI5ODdhNzZlYzhkMTBjNTM5ZTAwODNiNDg5YjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImM1MzUwMDZkNmJkMTI2YTIwZjEzMDNmNGNhNDNiZWVhODAyNTQ2ZjI3OTAwYTQ3MzFiMDYxY2NjNjVlM2YyZjAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc0MGZlMWQwNTNkM2EyYWZkZmRmNjk3ZTIzZjk5NjA1MDJjOTJjZDA0NDQwZGIyYzMzOWZkMGZiZTBiNjU4ZGUifQ"
         }
       ]
     },
     {
       "id": "claim_52bfcf52a3f6475c983e96a2d449f611",
-      "statement": "BottomSheet의 Content는 vaul Drawer의 Overlay/Content를 스타일만 교체해 그대로 쓰며, 배경 스크롤 잠금이나 오버레이 클릭 동작을 위한 커스텀 로직은 없고 vaul 기본 동작에 그대로 의존한다.",
+      "statement": "BottomSheet.Root는 기본 modal=false로 배경 스크롤을 잠그지 않고, vaul이 오버레이를 그리지 않으므로 Content가 닫기 버튼 역할의 오버레이를 직접 렌더한다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/ui/BottomSheet/BottomSheet.tsx",
-          "version": "repo-file-v1:sha256:3b47ab1bec0db17572cb38ad9157f866171e1978bb33ecdc918f1a65b334321f"
+          "resource": "repo://src/shared/ui/BottomSheet/BottomSheet.tsx#L12-L50",
+          "version": "repo-lines-v1:sha256:5527582cccf153e7a83f2bd6fbf4dc1315df19232d84e70741e60a9b21f48afb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkMjVmZDZkMDEyMDVhMjkyY2MxOGVjOWVjZTkyYmZkNjUwMmQwMWE0ZDNlYjliMDUwMTEzZjJlNDY0YzNhMTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE2OTYwMmZmNDJjN2RiN2MxODM2OGQ1OWUzNjQzZDU4ZDY1ZjQ2ZWRiYThmOTdkZjYxYzJhYjk5ZDdlZTVkNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljMmJmMzAwN2NkOGE0NjdlMDU3ZTYxODk0MjZhMWMzN2IxODZmNzJjY2Y5NDNmYzliMTVhNWEyOGUyZjJlYjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2MDdkMTRiOTllZTFmMDJiYzUyYzZkMDVhOWY1OWZlZDM1Yjc2OGMxZTcyNGM5MDFkZTdiZWI4MmQ5MDQzYjAifQ"
         }
       ]
     },
     {
       "id": "claim_ab0191318dd24bdc98c13ad8fdaf0819",
-      "statement": "PreorderModelSummary는 isOver/isAlert 조합으로 ctaLabel(예약 하기/알림 신청/신청 완료)과 disabled 상태를 내부에서 계산하지만, 실제 클릭 시 실행되는 동작(navigate 등)은 호출부가 넘겨주는 onReserve/onNotify 콜백으로 위임한다.",
+      "statement": "PreorderModelSummary는 isOver/isAlert 조합으로 CTA 라벨(예약 하기/알림 신청/신청 완료)과 비활성화를 내부에서 계산하고, 클릭 동작은 호출부가 넘긴 onReserve/onNotify 콜백으로 위임한다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/preorder/ui/PreorderModelSummary/PreorderModelSummary.tsx#L31-L57",
-          "version": "repo-lines-v1:sha256:2c0451936ad78f6668346bcc4b1977ae4e75e48acfa0a97b4563e9be0bb8d33a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBjNTI5MDBhOTQwZDI0MDcwYzIzY2ZhMTc5MGFlYzRlOGI4ZDY2Y2Q5ZGFhOGQ1MjI5MzkwODUxNThhN2EyMTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1ZTAzYzljMzhjYjAzZThlZmI5NTgyMmU4ZDE4ZDg2ZjRhYWExNDcyMDZmZDllOTAzYThmYTU4MzQwMDUzODMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZmYmIwM2IzN2Q3MGNmMTU5OWQ4NThkYzlhNzhkOGQwZWQ4MTMyODMxMzBkYTNiYzkwYzY1MzY0YjNlZjhlODQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVhM2IyMjQyZWI5M2NkYWI3M2FmNzMzMTY0NjE3ZWViNTZiZDM0MjFmYWVhY2U0ZmEzYzE4ODVkYjhkZDdmYzgifQ"
+          "resource": "repo://src/entities/preorder/ui/PreorderModelSummary/PreorderModelSummary.tsx#L20-L60",
+          "version": "repo-lines-v1:sha256:835b614164a88d46c032508e462d17cdf26c268c6f81c5d17365d7424aeae710:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJlYTBlZmNmYTA3ZGQ2NTI4ODAzY2VmNTg3ZGFmNDRmNGMzNDkxNjQyOWQzZGU0ZmRiN2E5N2Q0MDZmMmJkNzgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmM2Q2NTUwYmIwZjEwZWJkNDQzZWRiYzY1NDY0Y2MyOTY5N2Q0ZDcwY2YzOGUxMzcwYjMxZDg1ZmI0ZWI2NmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_3f1292d947214c448306e1f2e1232675",
-      "statement": "PreorderDetailPage는 PreorderModelSummary를 두 모델(IPhone 18 Pro, IPhone 18 Pro Max)에 대해 느 단일 isAlert state를 공유해서 렌더링하여, 한 족의 알림 신청이 완료되면 두 모델의 CTA가 동시에 '신청 완료'로 바뀌고, handleNotify의 완료 안내 문구도 클릭한 모델과 무관하게 항상 'IPhone 18 Pro'를 가리킨다.",
+      "statement": "PreorderDetailPage는 두 모델(MacBook Pro 14/16)의 PreorderModelSummary가 단일 isAlert 상태를 공유해 한쪽 알림 신청 시 두 모델 모두 '신청 완료'가 되고, handleNotify의 alert 문구는 누른 모델과 무관하게 항상 'MacBook Pro 14'를 가리킨다.",
       "evidence": [
         {
-          "resource": "repo://src/pages/preorder-detail/ui/PreorderDetailPage.tsx#L25-L29",
-          "version": "repo-lines-v1:sha256:408ba83c0f88e0cfe023d828d05a2bfe6a07d5c2afc531f9806178a3fa714e9d:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWEyYjhmYzRjZGUyZjIzODgzZTVmOTBhMWQwYmY0ZWQ2NWU0Nzg4ZDI2ZTliMThmZjdlZTAwZTAwZWQ1ZTJiMSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODFjZjAyMDg0ZjA4NzlhMDlkYzk5ZGVmNGY0ZjE2ZWYwNTRmOTVkNjIxN2VmYzdkNzY4NDRiYzMxYjk4ZDBlNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzkwM2NjZmQ2ZTZkNjQyOTBlNjcxYzZjYmZkYWNjMTRlZmVjMDRmZmMzZGFjYWM5Y2RlMDU2YjU2MjZlY2NhNiJ9"
+          "resource": "repo://src/pages/preorder-detail/PreorderDetailPage.tsx#L119-L137",
+          "version": "repo-lines-v1:sha256:f6d3dada68f6af3668fbfd00a1b8aaedea442d85181e4e626976a234bbfb8bc5:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1Mjc4YWZkMzUxZmUyYjViMTRjMDg5MzA3NDY2YWQ2ZjY3OGQ1NGFhNGFjYmM4MDJhYmVkYmFjYjEyOWFkNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlMDA2Mzk5NzZmYTc2MzFhNWRiZDI3ZTNlNGNjMjI3YmI0YzM3MWM3NTVlNjVlNzlkNDlkZDMwMGVkOGY0M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2OGNkZDc2NTJkZDY4YzM3YzQxNzJjNTQzMWFiYWVkZTQyNWZjN2ZiYjljMDMyMWZhZjJkYmMxZGEyMDFiNzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3NzJmODdhMDI1OTIxYWEwM2MyNmJiZTY5ZTZhYTQ3M2U3ZDE4ZTA5YmE1NDVhZGM0ZmI4NzBhYzQ2M2UxYWYifQ"
         },
         {
-          "resource": "repo://src/pages/preorder-detail/ui/PreorderDetailPage.tsx#L84-L102",
-          "version": "repo-lines-v1:sha256:e209b01981e96d3196129f04b16595e3c80a5dd5633a341eb6930a0f432c3828:eyJzZWxlY3RlZExpbmVDb3VudCI6MTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ1Mjc4YWZkMzUxZmUyYjViMTRjMDg5MzA3NDY2YWQ2ZjY3OGQ1NGFhNGFjYmM4MDJhYmVkYmFjYjEyOWFkNmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlMDA2Mzk5NzZmYTc2MzFhNWRiZDI3ZTNlNGNjMjI3YmI0YzM3MWM3NTVlNjVlNzlkNDlkZDMwMGVkOGY0M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk2OGNkZDc2NTJkZDY4YzM3YzQxNzJjNTQzMWFiYWVkZTQyNWZjN2ZiYjljMDMyMWZhZjJkYmMxZGEyMDFiNzAiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ3NzJmODdhMDI1OTIxYWEwM2MyNmJiZTY5ZTZhYTQ3M2U3ZDE4ZTA5YmE1NDVhZGM0ZmI4NzBhYzQ2M2UxYWYifQ"
+          "resource": "repo://src/pages/preorder-detail/PreorderDetailPage.tsx#L24-L39",
+          "version": "repo-lines-v1:sha256:7b9a8e71efef61c764fb7b3535269adb8ee0ce4c41a9b7810ccb9d539eddc5f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmNTcyYmY0NjcxMDNmNWY2ZGNlZjk0NTUyMTc5ZGQ3MWU3NTZjNTI2ZjIyYThmMmYwZjAyNDE5OTFkNGJjYTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI3ZTU3ODhkNWQ5ZDczZDI0YTgxZGJjMGE1YTc0YmZhODJjOWMzYjNhZjk5ZTUyYWY3OTZlOTBiNDY4YThhM2QiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0NzhiYzg4ZjY4NGE1OGMzMDhiN2E3YTM5ODA3ODAzYzE5NTQxOTRlMDU4NjU5ODlhOGZkM2YxNGQxYzViNGYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM5MDNjY2ZkNmU2ZDY0MjkwZTY3MWM2Y2JmZGFjYzE0ZWZlYzA0ZmZjM2RhY2FjOWNkZTA1NmI1NjI2ZWNjYTYifQ"
         }
       ]
     },
     {
       "id": "claim_8408cb80811145b88822ca2399a26e00",
-      "statement": "BottomSheet.css.ts의 content 스타일은 shared/config/theme/tokens/container의 maxWidth.content(1200px) 토큰과 boxSizing: 'border-box'를 써서 Container/Header 등과 같은 페이지 콘텐츠 폭 계약을 따른다.",
+      "statement": "BottomSheet.css.ts의 content 스타일은 maxWidth.content(1200px) 토큰과 boxSizing: 'border-box', 최대 높이 90vh를 써 페이지 콘텐츠 폭 계약을 따른다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/ui/BottomSheet/BottomSheet.css.ts",
-          "version": "repo-file-v1:sha256:4f5d0d01aa39db521c0cbb75c23ece2e2ddb2da2a8f172ce97999a63b599bc01"
+          "resource": "repo://src/shared/ui/BottomSheet/BottomSheet.css.ts#L28-L40",
+          "version": "repo-lines-v1:sha256:fe2b75f71e41ff533934eba6ac1b2b8dcba0189e0bbc6ae71962f6b94b65f8e4:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk2OTQ5ZmRiNjlkZTZiNmU4NTJlZTRlZWI0NzBiMTljNjMxZjQ1OWM1N2QxNWQxNzMyOWU1Zjg3ZDQzYTBhMTIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZmNDRjZjg3MWExZmI3YjVjMDEwODgzZWE3NDNmZTZiOGZjZTRhOWMyYWU1YThjYWM5MmY2MjQ2MzRiYjkxNDMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjcxNGY4MDdmNDIxM2NhMDE4MzhlMjBlYjcwMDgzY2YzZTI4MzE0NDY5NTU5ODRmOTBmOThjOGMyZGE1OWY3M2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmYTdkNTE0MDEwNDZmNTU5ODQ5ZTNmY2JjMWQ3MTNmMmI2YWFjZjU3NjkwYmVlMDY4MjAzZGY2MzcwODBkNTYifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_cab99ac49f544f6a9e1c49cfa2a7ac02",
+      "statement": "사전예약 모델을 고르면 시트를 닫고 페이지 소유 Modal에 PreorderQueueCard를 띄우며, 대기열이 끝나면 선택한 모델 id의 상품 상세(productPath)로 이동한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/preorder-detail/PreorderDetailPage.tsx#L149-L156",
+          "version": "repo-lines-v1:sha256:4311654dd824921c3d49127547c8c20356b190ebc510d6eb8d75ab0f45c0ac64:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWVmNzhjZGViYzgwYWVmZTViOGZjNWFlNmY3M2VjMWU1YTYyZDcwNjZmNDYzMGNlMmI2ODRmMDNlN2YyZjM3YSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDJlYmU2NDhhMDg2YTEwZjgzMTkxMjVkNWEyMDMwNDZlMmIzMGJmMmRhODg2MDFjMWE4MjJjZWE3NWJmOWEwNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiY2RkOTcwZGY0MjVjZDY5ODg0OTQyZGY1OTllMjA4ZGI2MmNiZjEzMmJjYzQ1NWNhZTgyY2I1Nzg2YjNjNjRjZSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzJjYTFmNjA2MmZkZWE4MWFmM2IyNGY4YWZlY2IxYTM4OWI2OWY0ODhkYjQ4MzVmNDU2MDBjZTVmZmVjODYzZiJ9"
+        },
+        {
+          "resource": "repo://src/pages/preorder-detail/PreorderDetailPage.tsx#L46-L49",
+          "version": "repo-lines-v1:sha256:d46e989f6463b810daf7eab3cff20884b0779e809254d6e42f7a54a5b8a1bbf5:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYmMxZGM3OGZkMDg0ZmQxMGVkOWQ2YTFjOWU4YzQ0NGUxNmY1NWQ2Y2ViNzFmNzY0NDJkYjU4Njk3ZTU3Yjc4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdlNTc4OGQ1ZDlkNzNkMjRhODFkYmMwYTVhNzRiZmE4MmM5YzNiM2FmOTllNTJhZjc5NmU5MGI0NjhhOGEzZCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZWRlZjc1ZTY4OTc1MTk4YzQwM2NkOWUxYTQ2MWRmMmY4NWMzYmNmZDk5NmQyNDU0ZDAwMWE5Y2EzYzhkZTU1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNTBhNjg3OTIzODc3MzNmY2NhMmE0ZWY2MWQyMDhmOGMxODRkNzg0YzExODU2YzI5ZWUyYjIwZjM3YzQzOTg5MyJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ccc9711cd75c4cf69251ac10506c0e5b",
+      "statement": "usePreorderQueue는 API 없이 무작위 시작 순번(80~300)과 뒤 대기(100~400)로 1초마다 순번을 줄이는 가짜 진행이며, 순번 1에서 0.8초 후 onComplete를 부르고 onComplete는 useEffectEvent로 감싸 타이머 리셋을 막는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/features/preorder-queue/lib/usePreorderQueue.ts#L1-L39",
+          "version": "repo-lines-v1:sha256:40f21d47dfa6263367cf7805cd42ea2085e60e3f236e463463168f00bb3c7b91:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3MjAzYzJlOTE1OTg1NjlmMTZkNDQ1NzFjOTg0NzZmMTczMjM1ZjQ1OTlkMGQ1NGVjYjZmMjAxNWUwOWNmNzUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4c391ea4da6c4eb58fe094e53f4c50ec",
+      "statement": "사전예약 목록 페이지는 목업 배열을 PreorderCard 그리드로 그리고, PreorderCard는 preorderPath(id)로 가는 링크다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/preorder/ui/PreorderCard/PreorderCard.tsx#L1-L35",
+          "version": "repo-lines-v1:sha256:8c4fc0a8929e49ac9361e546508f74c401463d08cf1cf871031df13bc4ddf338:eyJzZWxlY3RlZExpbmVDb3VudCI6MzUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyNzVmNWJiMTE3NDExOWVlMTQ1MTFhZGIyOTFmZTRhZWY1YTExZmNiZTQyNDRhOGY2NWQwM2NhMDBlMDI5ZGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNmOWViMDgwZmQzZTc0MGFhMGEzODg5MGEzMjkxMjc0M2NjODhiMjRkNGM3OTE5NTE2NDViMzhkOWFiZjRmYzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmMTMxNTBkMjFjNmM2NjU0Yjc5NWFkNjIwZmY3ZmRiZDQ1YTQ1OTVjMjI4NzMyYWY0Yjc3Y2YwMDU1NjQ2MGEifQ"
+        },
+        {
+          "resource": "repo://src/pages/preorder/PreorderPage.tsx#L7-L47",
+          "version": "repo-lines-v1:sha256:275d8c5309e829e9f520bf530dd86635263ba60075a3b9a826d5785fce583160:eyJzZWxlY3RlZExpbmVDb3VudCI6NDEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVlNDNkYWRhMDVhNWE3OTliMDBlMjk1ZTZjZjg1NGMxZmExNTgzMGZiN2Y1NTllODlhNDU4YmM2Nzc5OWE0NTciLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg4Yzk4NmU4Mzk0NTIxMGIzZTZmMGNlM2FjNWFlNWUxYTFmZTk2YzQwNjFiOGVjYjJkYjhjYzc2MGQyYTExZWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-21T00:58:42.533Z"
+    "at": "2026-10-04T09:44:53.662Z"
   }
 }

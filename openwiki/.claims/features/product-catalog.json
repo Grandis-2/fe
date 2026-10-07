@@ -1,90 +1,150 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:69a909581cc7ede08b32a6bdf054ea2e84e662a6f0537d0c562ad86609dbc05e",
+  "pageVersion": "sha256:97b918eb0c5167beba26e1603f27069d528ddc039545819ccf5bcd2dfeca1e72",
   "claims": [
     {
       "id": "claim_d60cc1b2fd9543fe9b19079e8aee7fc1",
-      "statement": "entities/product/index.ts는 ProductCard, ProductColorSwatches, ProductOptionSelector, ProductSummary, ProductPaymentCard 다섯 컴포넌트와 관련 타입을 모두 공개 API로 재수출한다.",
+      "statement": "entities/product/index.ts는 ProductCard(+toProductCardData), ProductColorSwatches, ProductOptionSelector, ProductSummary, ProductPaymentCard 컴포넌트와 상품·카드 조회 함수/훅, 모델 타입을 공개 API로 내보낸다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/product/index.ts",
-          "version": "repo-file-v1:sha256:577525265346a03bdd79c8474cf4c01cd37657f0f1b5582327fcb6f6f77fbafb"
+          "resource": "repo://src/entities/product/index.ts#L1-L38",
+          "version": "repo-lines-v1:sha256:08f475404ad0db9483354f09eda9fa6f8cc03041cb2476bdb8a8166f87d0098c:eyJzZWxlY3RlZExpbmVDb3VudCI6MzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkNjVlYzA3OGM1ZjMwNDZlNmQyOGQyZGYyMjlkNDQ3ZGFkMTdjNjg4MDczNmU2MzVhMzM0YTNhNTVmYWZiZWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5NWVmN2NkNWY5ZTUwMDVkMjdjNWNiYzM5ZDM4ODc2ZjU3YTcxOTczMjliNmFmNzllZjY3Y2NjZTRhNTZlMTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_3b1c16805db34c87ab71f20f31addb9a",
-      "statement": "ProductCardProps는 데이터 필드를 product: ProductCardData 객체 하나로 묶고 onColorSelect/onStorageSelect/className만 얷은 레벨 props로 받으며, ProductCardData.colorSwatches는 ProductColorSwatches가 export하는 ProductColorSwatchItem 타입을 그대로 재사용한다.",
+      "statement": "ProductCardProps는 데이터 필드를 product: ProductCardData 객체 하나로 묶고 onColorSelect/onOptionSelect/className만 최상위 props로 받으며, ProductCardData.colorSwatches는 ProductColorSwatchItem을, options는 ProductOption을 재사용한다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/product/ui/ProductCard/ProductCard.tsx",
-          "version": "repo-file-v1:sha256:303ee6c8c74310b69e7a77eeae05e92d012d54148da3fea25ed374243947a13e"
+          "resource": "repo://src/entities/product/ui/ProductCard/ProductCard.tsx#L13-L38",
+          "version": "repo-lines-v1:sha256:4d40d0b36efc40a96625b4a2a58898d1e3764713691b6323f09d01a7acd26f9c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImY1YmQ5ODk1NTg1ZDBlNjRlZThjMTBlMTk0ZjMzOTk5NWRiMTExYjU0NmNiZTc5NjM3Yjk2NDU0NGFjOTUwYzkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjViMzkzMmZmZThmZThkMzc5MzFiN2IzNmY1ODJhZmY5OGExMTE1Njc1ZWJhZjk2M2QxYzE0NTJkMTBhMDc4M2UiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFmYTFmM2IxM2JjYmMxYzg5ODA1YWQ5MGYwM2YzMDZlMmFjZTA0YWFiYTgxOWY4MmFiMjFjN2I3MDg5YTk0YzgifQ"
         }
       ]
     },
     {
       "id": "claim_92b044a392a743aaba74b2770d761b75",
-      "statement": "ProductCard는 색상 선택 UI를 직접 그리지 않고 <ProductColorSwatches colorName={colorName} size='small' colors={colorSwatches} onSelect={onColorSelect} />로 위임하며, 용량 선택은 shared/ui의 SelectButton을 직접 매핑해서 쓴다.",
+      "statement": "ProductCard는 색상 선택을 ProductColorSwatches(small)에, 용량 선택을 ProductOptionSelector(label '용량', small)에 위임하고, 기본가에 선택 옵션의 extraPrice를 더해 가격을 계산하며, PREORDER 상품에 '사전예약' 태그를 붙이고 이미지 목록에 key를 묶어 색상 변경 시에만 Slider를 리셋한다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/product/ui/ProductCard/ProductCard.tsx",
-          "version": "repo-file-v1:sha256:303ee6c8c74310b69e7a77eeae05e92d012d54148da3fea25ed374243947a13e"
+          "resource": "repo://src/entities/product/ui/ProductCard/ProductCard.tsx#L40-L128",
+          "version": "repo-lines-v1:sha256:8d35026b6067a6f59307b5504771e829a99add6f41d26449de9bf0833f51d55f:eyJzZWxlY3RlZExpbmVDb3VudCI6ODksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjUxNmUwNzc5ZGI3NDVkMmY0ZjFjZDYwZmRkODRhMjQ0MDdjODZiNDYxYzdlN2Y5MjA0NzQ3Y2I5YzBiMzI1YjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmM2Q2NTUwYmIwZjEwZWJkNDQzZWRiYzY1NDY0Y2MyOTY5N2Q0ZDcwY2YzOGUxMzcwYjMxZDg1ZmI0ZWI2NmYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_7ab21451c6aa4b7aa90aec0ea683b3e3",
-      "statement": "ProductColorSwatches.tsx 상단 주석은 shared/ui의 Button이 CTA용이라 색상 스와치(선택 상태) 대신 재사용하지 않고 별도 컴포넌트로 분리했다고 명시하며, 실제로 선택 여부를 aria-pressed로 표현하고 onSelect가 없으면 disabled인 표시 전용 모드로 동작한다.",
+      "statement": "ProductColorSwatches는 shared/ui Button이 CTA용이라 재사용하지 않고 선택 여부를 aria-pressed로 표현하며, onSelect가 없으면 버튼이 disabled인 표시 전용 모드로 동작한다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/product/ui/ProductColorSwatches/ProductColorSwatches.tsx",
-          "version": "repo-file-v1:sha256:135208bdc086130488d89b5614511243fbebd47469524deb8d194ace3d9278c6"
+          "resource": "repo://src/entities/product/ui/ProductColorSwatches/ProductColorSwatches.tsx#L5-L70",
+          "version": "repo-lines-v1:sha256:14e29a7c90e90b5ca9cc6ad62207d212da9acca3beff2fdf575fd20ad20e6c21:eyJzZWxlY3RlZExpbmVDb3VudCI6NjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFiNmE1MjgyNTQyOGE4YTM4OTAyOTY3ZGEwOTNjNTE4MzY2YjU0ZWFiNjBkMDIzZTBiYTU4YmJkNzI1ZmQxOWUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQzNTEzNGViNGViNGJmOGQ5MjI0MTY5Y2IxNzliM2QzNTlmNzg4ZWQ1NzY4MDIxMzQ3OWRiNWU4YmFhOTJiODEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA4MmMzNzhiZTZhMmEyMjljNzViOGE2ZmQ0MjQyN2ZjMTY0NWFlOTBkNjQwYjNjYzVmYjNkNjQwOWY1NTBiNWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjFkYjAyMTEzZGNjZTNhM2E5OWI4MzE4YTUyZGMzYzEyYWZjZTU4MDFkMjhiYjk5ZDk2YjgwZDI5NjBlMGIyYzgifQ"
         }
       ]
     },
     {
       "id": "claim_239a98c8ecc84503b8e945f68a0446ad",
-      "statement": "ProductOptionSelector는 label과 ProductOption[]을 받아 shared/ui의 SelectButton을 medium 크기로 나열하는 범용 선택 컴포넌트로, ProductCard와 달리 도메인 데이터 객체 없이 엇은 props를 그대로 받는다.",
+      "statement": "ProductOptionSelector는 label과 ProductOption[]을 받아 shared/ui SelectButton을 나열하는 범용 선택 컴포넌트로, size(small/medium)에 따라 라벨 타이포그래피가 다르고 medium일 때만 추가금을 버튼에 표시한다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/product/ui/ProductOptionSelector/ProductOptionSelector.tsx",
-          "version": "repo-file-v1:sha256:46b1bc3e0b5d64c16e60bb4b79fdbcaca996062d4522419f177bf57c4261e24c"
+          "resource": "repo://src/entities/product/ui/ProductOptionSelector/ProductOptionSelector.tsx#L7-L60",
+          "version": "repo-lines-v1:sha256:b89ab966a3010af166cf925d800a120943882a8502e4dfffd32aa96f07ffa35b:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM2ZjAxNGYxZGFlYjJmMjhjZmZlMWM2Njc1ZmVmZjQ2MmQ2M2I3ODAzOTFhZWZiNGZmYjgzYWQ5YTRjNTRjNjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkzY2RjMmQ2MTk5Y2M1MDk3YTYzNTM4OWM0MTkyZWJmM2I3NmQ3NmU4MzNhZjk0MWRhZDJkMTgxMzM0NjVkNTQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI2OGQ4NzlhNzViNzdhZmRmMjc5OTVlZDIwNzZhNzZjMzU1YjllOWM2YzhjNWM2N2Y3ZDM2YjM0NzFhYTlhZjEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ5NDczMGYwYjMxNmRmMGM1MGE4NjkwYzY5ZmEyYmZjZTdiNzQ3OGQwYjMyZmMyZjFjMzQ4OTAyNWE5MWY2NWMifQ"
         }
       ]
     },
     {
       "id": "claim_d7a0d46afcc449aeb5a5df053ed39ab9",
-      "statement": "ProductPaymentCard는 variant('default'|'preorder-pending'|'checkout'|'cart') 하나로 네 가지 맥락을 한 컴포넌트에서 처리하며, variant==='cart'일 때만 shared/ui의 Checkbox가, preorder-pending/checkout일 때만 액션 버튼이 서로 다른 스타일로 나타난다.",
+      "statement": "ProductPaymentCard는 variant('default'|'preorder-pending'|'checkout'|'cart') 하나로 네 맥락을 처리하며, cart일 때 체크박스·수량 조절기·삭제 버튼을, preorder-pending/checkout일 때 액션 버튼을 보여 주고 productId가 있으면 상품명을 상세 링크로 만든다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/product/ui/ProductPaymentCard/ProductPaymentCard.tsx",
-          "version": "repo-file-v1:sha256:5f1694b1a4aaccff3d43385bfc05f42573b772c7988297e65c390f4d67c4510e"
+          "resource": "repo://src/entities/product/ui/ProductPaymentCard/ProductPaymentCard.tsx#L9-L64",
+          "version": "repo-lines-v1:sha256:29482f7a91cdd5be4278bea9d0156e58af217b7093b0eaaa4f2a453976e57beb:eyJzZWxlY3RlZExpbmVDb3VudCI6NTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5YTY0MTNiNTNmOTNiOGVlOGUwN2I3M2QwNjAyZGQ3MGQxYzJjYzFiZjhhYTdkM2RhNzZiYWIwYzIwYjNiYjgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFjZTYwMDIyOGYwNjA2OGVlODhmZWQ1NTM4MjIzZjUyMWVjMTEyODYyNDBkZTc4NDYxNTk0ZGJiZjhjOGFkZWIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjZjNjM0YTU3N2RkYTdkM2ZkNWRmN2QxZWM1NTNmODJiNDVkZGU2OWZhNGY2ZmIzZTJmNjlkODNjOGJkYzczOTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImRiNjg5YmQ1MWI1Y2FjZTVkOTYwNzZiZWJkZmQ4ODkyODdiY2FhNDE0Yjk2ZjA2MGI0N2E1NTUxMzQ2NjFkM2IifQ"
         }
       ]
     },
     {
       "id": "claim_c5de70ff04674a5bbbc33d2175800806",
-      "statement": "ProductSummary는 name/optionSummary/ctaLabel/onCtaClick만 갖는 가장 단순한 컴포넌트로 색상/이미지/가격을 다루지 않는다.",
+      "statement": "ProductSummary는 name/optionSummary/ctaLabel/onCtaClick만 갖는 단순 컴포넌트로 색상·이미지·가격을 다루지 않는다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/product/ui/ProductSummary/ProductSummary.tsx",
-          "version": "repo-file-v1:sha256:008ec50f793eb5870e2d93899c121959fa25692d8d44e313ab31b6c1b7a1ab07"
+          "resource": "repo://src/entities/product/ui/ProductSummary/ProductSummary.tsx#L7-L40",
+          "version": "repo-lines-v1:sha256:d6fd971ef349a2d560bf8de82e2d8c8dc04689831a5e49f227a15cf6f8a05fdd:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE0NTdhNWIwNmEwNjhjYzAyNjJiZDA2ZjM0NjA5ZjU4ZmIwODNjMGNkNTFhNDMzZTZkODVmY2YyN2Y0ZjQxNjEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2MjY3OTM1ZmM2MzM0NjVkODQ4YjQwYTRlZDY5NjdlN2I3YTMyM2Y4MWNkNTNjMTEwYWUyMTAyOTY4N2FhMTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM3ODNiN2Q5YWUyOTk2YTY0YjkwYTFhMjAxNzg1Mzk2ODZkMmIwZjRjZmZkYjBkNjc3NmIyYmI5N2U3YWNmOWUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoxLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEifQ"
         }
       ]
     },
     {
       "id": "claim_9befb3aa9e9c45fb86cdec635bbf13eb",
-      "statement": "다섯 컴포넌트 모두 .css.ts에서 타이포그래피 프리셋을 조합하지 않고 .tsx에서 typography 배럴을 className으로 직접 합성하며, ProductColorSwatches는 size별로 다른 프리셋을 colorNameTypography 매핑 객체로 처리한다.",
+      "statement": "상품 UI 컴포넌트는 typography 프리셋을 .tsx에서 className으로 합성하며, 크기별 프리셋은 colorNameTypography/labelTypography 매핑 객체로 고른다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/product/ui/ProductColorSwatches/ProductColorSwatches.tsx",
-          "version": "repo-file-v1:sha256:135208bdc086130488d89b5614511243fbebd47469524deb8d194ace3d9278c6"
+          "resource": "repo://src/entities/product/ui/ProductColorSwatches/ProductColorSwatches.tsx#L9-L12",
+          "version": "repo-lines-v1:sha256:5fd585cec4ec81e4fdd71336e074121c74ca93a305234cfae6e2bb25f59e3a22:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzVhOTY0MjkxY2IwOWE0MmVlYzM3ODQ2MTRmZDg5MDZhYzMxZWE5YmVjOTllM2ZlYmZhMThlMzM4NTM0ZjE5ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNjM4NDAzNmJhNmJhMmYyMTIwYmQ3MDA3MDBhODMyNDBjMGFkNTk5OTkzYTI1MzY0OGNlNzYzMmY0MDQ2ZTcwOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYTY0N2M3ODA1ODE3MDNkMTcwMmQ3ODNiMGZhZjNkNDExOWJlZWE3Nzc1MDVkMTFmNWU4MTllZThmNDc5MzdlNSJ9"
+        },
+        {
+          "resource": "repo://src/entities/product/ui/ProductOptionSelector/ProductOptionSelector.tsx#L7-L12",
+          "version": "repo-lines-v1:sha256:f75c3802938e66995621f7059d7ca18304472666cda3f480e238de6831009bc5:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzZmMDE0ZjFkYWViMmYyOGNmZmUxYzY2NzVmZWZmNDYyZDYzYjc4MDM5MWFlZmI0ZmZiODNhZDlhNGM1NGM2MSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjY4ZDg3OWE3NWI3N2FmZGYyNzk5NWVkMjA3NmE3NmMzNTViOWU5YzZjOGM1YzY3ZjdkMzZiMzQ3MWFhOWFmMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2RkMzIxODBkZjRkNzZiMDRjODkzNzUwMmNhODRmZDU4ODBjYzYwM2EyZjk3NzgzOTRmNjlkNTViOGE5NDBiZSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_ae7969b4289343a7abac28e575e5d2f3",
+      "statement": "toProductCardData는 목록 응답과 선택한 색상·옵션 인덱스로 선택 색의 imageUrls와 이름을 쓰고 스와치·옵션에 selected를 채운 ProductCardData를 만들며, useProductCardSelection이 상품 id별 선택 인덱스 맵과 getCardProps를 제공한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/product/ui/ProductCard/toProductCardData.ts#L1-L29",
+          "version": "repo-lines-v1:sha256:0468ecedd4fcbc9e0de83924e3a0dbb1d034e81ef3ea3b6ccf63c1e5cefcfd5a:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYyZGYzYWE2NzMxOTk2NmIzNDlmYTNhYjRiYTA4MDA1NGNjYmY3N2EzNzg0Mzc4N2MwNmMyNjcyMzFkMDE3OGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/features/product-card-select/lib/useProductCardSelection.ts#L9-L38",
+          "version": "repo-lines-v1:sha256:1efb90423b6886842e1a8f82bd7b34fd6f7d854cd254ca2dd16e7ecd48b55a7e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwN2RhNTU2YmQwNzU3MDM4YjdiNWRkMDZjMTI5NjI1MjcwNWVjYWZiMGJmOGRkZTA4OTgxNzMyYzA4Zjg0ODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3MWZiYWZhYmEyYmI1MGZlYjMyMTg1YzA1MTliYzFiOWViZjliMjNiZTI3MjhiZmE3ODQ2ZTZhZjJmODBkNDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_1a77da0f41b24a45b5f1f554a2bfde64",
+      "statement": "searchProductCards는 값이 없는 파라미터를 쿼리에서 빼고 /api/v1/products/search를 호출하며, useSearchProductCards는 파라미터를 쿼리 키에 넣어 필터 변경 시 이전 요청을 signal로 취소한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/product/api/searchProductCards.ts",
+          "version": "repo-file-v1:sha256:e7dd15e8cc35da869e8ea350875f5ea4b923eb15b36a55221262ec4d725ac0ec"
+        },
+        {
+          "resource": "repo://src/entities/product/api/useSearchProductCards.ts",
+          "version": "repo-file-v1:sha256:93b74bc1db838f779fdd3f87e7ccb6c78c70cfd3be0a5ec66b46bf5145ffffae"
+        }
+      ]
+    },
+    {
+      "id": "claim_ac8276a298dd400fa2bd88545e560bc9",
+      "statement": "SearchPage는 category/subCategory/brand/sort 쿼리 파라미터로 카드 검색을 하고 정렬도 URL에 남겨 유지하며, 로딩·에러·빈 결과를 InlineAlert 문구로 대신한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/search/SearchPage.tsx#L13-L90",
+          "version": "repo-lines-v1:sha256:76d6b80a84214d4add8ae140138b5f945c94b7fc956ece68b12e9e0d669fbbd5:eyJzZWxlY3RlZExpbmVDb3VudCI6NzgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImNkYzE2MGJmYzU4MjM1YzNmNDEzMDZlYzcyZDhiMTAyOTA3ZWFjMDUxMTEwOWQzYTQ5MjE0ZmEyZjU1MWVkOGIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImFmMjE1ZmQwM2NmYzJiZWViZjgwNGExN2FjNWU5NDc5NTFmN2NkMmRjMDU2MDUyMjQ5OWM2MDZmZGJjZDcxODUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImI3NGNhMDFkMWVkMzY3MzBlNGQ5MWMzZWJjMDY4NjNmZWFiMzlmZWY5OTY0ZDIzMTlkZjRlZDQ5ZjUyNGQyY2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjgyNDNkMGVlZjUwYTFjMzViNGQ5NDIyMDRiZTZhYTg4ZmNlNmVjMDViYzNlOTcwNGU5YWE0YWJiMjhhNmQ2YWUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_310926fac3ee47c09e840e90f9b143af",
+      "statement": "카테고리 메뉴 데이터는 widgets/category-nav/model/menu.ts의 상수이고, 데스크톱 메가 메뉴는 JS 상태 없이 [data-mega-menu]의 :hover/:focus-within으로만 열리며 링크는 searchPath로 /search 쿼리를 만든다.",
+      "evidence": [
+        {
+          "resource": "repo://src/widgets/category-nav/model/menu.ts#L1-L63",
+          "version": "repo-lines-v1:sha256:d3eae16f687f6221fc8be57ed5f364de911af10f4a805403262b1425ff4114f2:eyJzZWxlY3RlZExpbmVDb3VudCI6NjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjY2OGJhMTI5NjIwNGQ1YWNjYzBiZTI2OWIxNWE3MzBlNTRkODYxNTFmOTNjMDZhMmZlYzUzOTI2ZDZmZGMyMWIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/widgets/category-nav/ui/CategoryNav.css.ts#L21-L24",
+          "version": "repo-lines-v1:sha256:d185769c66e0d305dac6586802995e78cecf62b1f02f7512c921645369bd5711:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMjdkYTRhM2QyMTNjMGE5YThiOTk4NjhjMWFiN2U3YzQ4Zjc3NDRhNjYxZDlkYmNhZWZhOGFhMzc1Mzg2MGY2NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTcwYjc1MzFlYmVjYWJlMzg3YTBkMzY2MTkwMDI5NjEzYWM3YTU3MGM3NTViNTJkM2Q2MDVlZjhiZDgzNzY2OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTIxNmRjZjlhZDJmZDQ1NGRiMGFhZDIyMDE3ZGI0MmYzNzdiODk4NGJkYzMyYzIzNzVlODRkYzI2ZGQ2MDAzNSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNjEyMjU2MmNiNzU1Y2I0NDk5ODRiYWYyZDc5YWZiYTAwNWEyMzMxZDMyNmI5YzAyNDkxZjhkZGYwMDlkNjdkYyJ9"
+        },
+        {
+          "resource": "repo://src/widgets/category-nav/ui/CategoryNav.tsx#L58-L90",
+          "version": "repo-lines-v1:sha256:8f52d1c91bf2aa82376ce86ab9fb6bc8d64a9ee09d39c9cd19ca29f08929b824:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQyZTg4MzM1MDkxYjgyZWMwM2FjMTIwNTNkODA5MTI1NjI0ZDVjOWU2NDI1Y2Q0ZGM5NWIzM2RiYzgxMzViNWYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc0MjA1ZGI3MDcyNjJhNjJmY2FjZmUwMTk0NjIwYjIwYjkxYzE5ZTRmNmM2NzY4NzY2YTVlMzIxODg3NzcyYmMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImNhZTk1OGVlMDNiYWM2NjQyZDA2MzE1ZjBjMmQ1ZmFiM2NlN2EzNzJmMDFhN2VhOTIxZmU0MDY3ZGNiMTQ1MjgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImFjZDYwOGI0MTE5ZGRhOWVmMjNkNzQ0NGFhMzNhMzNkZTNmNWM2YTFkZjhhNjllZDc4ODEzOGE4Mjg5YTNlNzkifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-20T09:53:37.867Z"
+    "at": "2026-10-04T09:44:53.662Z"
   }
 }

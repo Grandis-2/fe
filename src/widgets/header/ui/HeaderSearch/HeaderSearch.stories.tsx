@@ -12,16 +12,14 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// 아이콘을 누르면 입력창으로 바뀌고, 입력 없이 Esc를 누르면 다시 아이콘으로 접힌다.
+// 아이콘을 누르면 전체 화면 검색창이 열리고, 취소를 누르면 닫힌다.
 export const Default: Story = {
   args: { onSearchClick: fn() },
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: '검색' }))
     await expect(args.onSearchClick).toHaveBeenCalledOnce()
     await expect(canvas.getByRole('searchbox')).toHaveFocus()
-    await userEvent.keyboard('{Escape}')
-    await expect(
-      canvas.getByRole('button', { name: '검색' }),
-    ).toBeInTheDocument()
+    await userEvent.click(canvas.getByRole('button', { name: '취소' }))
+    await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument()
   },
 }

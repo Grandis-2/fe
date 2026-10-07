@@ -16,7 +16,7 @@ export const getDefaultAddress = async (
   return shippingAddress
 }
 
-// 다섯 칸을 항상 통째로 보낸다 — 부분 수정 없음.
+// 모든 칸을 항상 통째로 보낸다 — 부분 수정 없음.
 export const putDefaultAddress = async (
   body: DefaultAddress,
 ): Promise<DefaultAddress | null> => {

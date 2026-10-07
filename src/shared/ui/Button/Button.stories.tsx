@@ -102,3 +102,8 @@ export const CssCheck: Story = {
     )
   },
 }
+
+export const Close: Story = {
+  args: { children: '닫기', color: 'close', variant: 'solid', size: 'medium' },
+  parameters: { backgrounds: { default: 'dark' } },
+}

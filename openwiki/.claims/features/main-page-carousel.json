@@ -1,24 +1,32 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:5e25aa6dda84199f82828c6ad5a69510c1d79cf6d39e1e8b041281f2806e23be",
+  "pageVersion": "sha256:86f2ef364b4b5263dedf318405bed5fb105bc42427ffb7be5dbfca1eef685038",
   "claims": [
     {
       "id": "claim_fc8c9900dc76466287af2778f2b1b79b",
-      "statement": "SwirlBackground는 useRef로 얻은 컴테이너 안에 순수 DOM API로 <canvas> 요소를 직접 생성해 파티클 애니메이션을 그리며, 리사이즈 시 container.clientWidth/clientHeight를 읽어 캔버스 크기를 맞추므로 부모 컴테이너 크기가 곷 애니메이션 영역이 된다.",
+      "statement": "SwirlBackground는 useRef로 얻은 컨테이너 안에 DOM API로 캤버스 요소를 직접 만들어 파티클 애니메이션을 그리고, 리사이즈 시 컨테이너의 clientWidth/clientHeight를 읽어 캤버스 크기를 맞춘다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/ui/SwirlBackground/SwirlBackground.tsx",
-          "version": "repo-file-v1:sha256:50556b923c5dac2ae97c0660c4248b487770a97995b004766c029bec36d920bc"
+          "resource": "repo://src/shared/ui/SwirlBackground/SwirlBackground.tsx#L141-L202",
+          "version": "repo-lines-v1:sha256:4973529cc44067ad6c4163b19bfb9ddfa4e120327520405553f279487d516dca:eyJzZWxlY3RlZExpbmVDb3VudCI6NjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwNjliZGIxNmZlYTg4MTJjODAxZDQ5MWM5YjBlYTYxNTM2YzY5ZThhZWU0ZTljNGMzNDRkZDViMTRkY2MzMWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmODEzY2ZiZGQzOGI4NGRmMzU5Zjk4OWJkYWUyNWMwMTJmNGQ2NjgzNjA2NmU3YTMyYWJkNDMzYTE4MTY2NzAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA0YjlhMGIxNmI5OTEwYmFhNWQwYTRkY2FmZjhhNjBjNDI5NjMzYmYyYWUzY2JhY2M4MjAyOTA3NTgwZDEwY2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjliMzQzNWY4ZmZiOGY2YjhjODEwY2E5YWI2ZDZmMTdlOTZkZTIxZjk5NGE5NzdiYzc3YzhjYmZhY2FjMGNjM2QifQ"
+        },
+        {
+          "resource": "repo://src/shared/ui/SwirlBackground/SwirlBackground.tsx#L37-L50",
+          "version": "repo-lines-v1:sha256:be9e0764395ebbcd0a58ef264e90dd5b293054b123f8b4c612fee53d7834168e:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEwNzRlYzk4YzE0NWRlYTEwZGNhMTY1YmI5NDI4MmEyZTExZTgzM2NhNjc4MTc5MWQ1NWYyMDEwYjBiNGMzODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjJhMTE0ZmJlNWY0YjhjNGFkZTgyZGYzZjQ0N2Q1ZDFiNDlhMDU1OWE5MzU2M2M1NmFmNGEwNDlhYmEwZjNmNjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ4Y2QyZjA1ZDM3NjBiNmUyYmE5MGQxZGMzNmY4ZjBkNWFiZjc1ZTE4NmJmNjVmNDVlMDEwOTcyODZlZWI3YjQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY2YTE2Y2UzMWVmOWVjOTU1ZWIwYTIzZDUxOGNiNTFjY2I4OTI0OTYzMjk3YmQ1NWFiZmVmYWQ4ZTIwZWRhYWUifQ"
         }
       ]
     },
     {
       "id": "claim_148b78c699f34e90bd4540c722cc14b5",
-      "statement": "SwirlBackground.css.ts의 root는 position:absolute; inset:0으로 부모 요소 전체를 채우며, MainPage.tsx에서는 height:770px인 hero div가 그 부모여서 뷰포트 전체가 아니라 hero의 크기에 맞춰 리사이즈된다.",
+      "statement": "SwirlBackground의 root는 position:absolute; inset:0; z-index:-1로 부모를 채우며, MainPage의 히어로(height 770px)는 position:relative; z-index:0으로 스택킹 컨텍스트를 연다. 현재 MainPage에서 SwirlBackground 사용은 주석 처리돼 있다.",
       "evidence": [
         {
-          "resource": "repo://src/pages/main/ui/MainPage.css.ts",
-          "version": "repo-file-v1:sha256:8c2dc91e5451144d740143410bd71860855f0df8e1e1baf111f29c4421849fa5"
+          "resource": "repo://src/pages/main/MainPage.css.ts#L12-L26",
+          "version": "repo-lines-v1:sha256:367aa5a5e4807ba4ca9f1688897630869a517f46ea1d75b5efde0f32e56f27ed:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ5ZjZkMTY5MzEwNWIzZGU0OGM5NzExNzQ0ZWNiOWYzY2NlOWY4ZWNiNzhiN2JmODU3MDdlMDMzNWU2ZDdhNzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODBiNzY1MThkYWU5NzlmYWViZDAyMzY3YTI5MjkyYTUwZDk3NjA5MjI1MWEzOGE2Y2UzMDg4MGJhNDI4MjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjI3YWJjM2I4NDdiMThjZGJhN2UxMjZiODgwYTIzMWM2NzA4Yzc2NDliMTEzNTEzZTZjNmE3OGZkYjE4ZDY2MDIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjM4NTlmMzNhYjFjMzU1ZjFiODA5ZjZhMjYxMDViN2VjMzI3NjhkMWJlYmUyOTQxZDVmMjYzNTlmMDA4NWRjMDgifQ"
+        },
+        {
+          "resource": "repo://src/pages/main/MainPage.tsx#L54-L56",
+          "version": "repo-lines-v1:sha256:700299bde5c5e5bd6d6aa905ea91e9f8bea1834f3c1949f6b343b6b43c93850d:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDVkNjBmMzFhZDdkODBiZDU5OTA1NzIwMWM2NjkyMWVlMGM3Zjc5OTQzOTI5MGU3ZjcyYmFhYTE5MjM5MjVlNCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZWQ1OTkwYzkyYTVkMWRlOTU5NjQ1MDRmMGY1MGY1MDFjMDE4MGFkM2Y2ODNkMzRlOTZiYmFmNzM2ZTU1ODNiYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMjFkMzAwZjBkNDQxMWNlM2EwZDM5MWJlMGI2ZDdiYWU1MTllY2RlOGRkNzdkMjBmZDgyZDdlMzM3NGJkNmVlNCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZWQ4N2U4NmEzOGRjMGE0YzBjMGVhZWVmNTU3ZTZhNjQ3NmQwNGU2ZTZhNjQ5YTYzMDFjNmVlMDQ5NGYyYmMzZiJ9"
         },
         {
           "resource": "repo://src/shared/ui/SwirlBackground/SwirlBackground.css.ts",
@@ -28,51 +36,83 @@
     },
     {
       "id": "claim_27070806219e47de9b9a30fab195c5c8",
-      "statement": "MainPage.tsx는 useEmblaCarousel({ loop: true, dragFree: true, align: 'start' }, [AutoScroll({ speed: 1, stopOnInteraction: false })])로 히어로 캐러셀을 구성한다.",
+      "statement": "MainPage는 useEmblaCarousel({ loop: true, dragFree: true, align: 'start' }, [AutoScroll({ speed: 1, stopOnInteraction: false })])로 베스트 상품 캐러셀을 구성하고, loop 이음매 점프를 피하려 상품 배열을 4번 반복해 슬라이드를 만든다.",
       "evidence": [
         {
-          "resource": "repo://src/pages/main/ui/MainPage.tsx",
-          "version": "repo-file-v1:sha256:26a5d9fd619453b5c115a94f02617d72bbfd9a4904b5e3f037bcd02e34194f6c"
+          "resource": "repo://src/pages/main/MainPage.tsx#L12-L45",
+          "version": "repo-lines-v1:sha256:5ff79ba6001fd91acb927bfe9e57101c66394a884c21582d81f5f99e17c36b8f:eyJzZWxlY3RlZExpbmVDb3VudCI6MzQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjhjNDJmZDRmZDdhY2RmODQ5ZmE3YmQ4YjIxMmRhZDdmOWI1MTQ0Njc0ZGNjZGQxOGE4NzVkODI2MTUzOTIxYzYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU2MjY3OTM1ZmM2MzM0NjVkODQ4YjQwYTRlZDY5NjdlN2I3YTMyM2Y4MWNkNTNjMTEwYWUyMTAyOTY4N2FhMTMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUyODVlNDhjY2U2NDVkNzY4OWE1MTQzNzZmNTc0MTMwNzE2OThjYTBkYjEyODdjZjIyNmUzMGExYmQ3NjE4YWYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjBhZThjOTQwZDIyZGUzZjZkMmFhZmRlZWE4YWY0NjlhZDM4NTBjZWNhYThiMTdkZmI5ZTExNzZkZTlmNDMzMzkifQ"
+        },
+        {
+          "resource": "repo://src/pages/main/MainPage.tsx#L63-L84",
+          "version": "repo-lines-v1:sha256:298e800c27fb0e623112c9eec740c164ef00a50a381117a1616eb215ebf8859c:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImE3ZjNmMTc0OGUzN2ZlNmJlY2JiYzdhOWIwMDA2NmQzNzJiMzNjNDg2Nzk0NWNjODQ0ZGFhN2EzZDY2YzFhZWEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjBlMDA2Mzk5NzZmYTc2MzFhNWRiZDI3ZTNlNGNjMjI3YmI0YzM3MWM3NTVlNjVlNzlkNDlkZDMwMGVkOGY0M2IiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkN2Y4YmU5ZWU3NDAyNjRmNzQ0MjljZjc1MzYxMDMzNzM1MTMxYzVjZTQwZWNiMzY1ZTJjODhkOWM4NWRlMWIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIwZGY0ZmZmNjcyNjQwZmIxMjYzYjVmNzgzODBmZWNlNTJhZWE4OTBiMjBiOTEyMzgwY2RlOWI2MTg4MmRjODgifQ"
         }
       ]
     },
     {
       "id": "claim_d1844de1c0f14f5cbb0ec1dbdd7ae02d",
-      "statement": "carouselContainer 스타일은 width를 명시하지 않는다 — 코드 주석에 따르면 Embla의 canLoop() 판정이 이 요소 자신의 박스 폭이 전체 슬라이드 합계 폭보다 충분히 작아야(=런포트 정도) 통과하기 때문이며, width:'max-content'를 주면 canLoop()가 항상 실패해 loop가 loop:false로 조용히 폴백된다.",
+      "statement": "carouselContainer 스타일은 width를 명시하지 않는다 — Embla의 canLoop() 판정이 컨테이너 박스 폭이 슬라이드 합계 폭보다 충분히 작아야 통과하며, max-content를 주면 loop가 통째로 꺼진다.",
       "evidence": [
         {
-          "resource": "repo://src/pages/main/ui/MainPage.css.ts",
-          "version": "repo-file-v1:sha256:8c2dc91e5451144d740143410bd71860855f0df8e1e1baf111f29c4421849fa5"
+          "resource": "repo://src/pages/main/MainPage.css.ts#L40-L47",
+          "version": "repo-lines-v1:sha256:ba0d8ad126194fe753301f3af804f5d4e2afcfe2ed5a89ed495170a03d3ccafd:eyJzZWxlY3RlZExpbmVDb3VudCI6OCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWZhZmJmNjlmN2E0ZjA4YmVmOWNjOWJmMTFiNmVlYjUwODI0YWQ3N2E5OTQ1OTUwYWE1NWM0OTg3NWFmYjY4NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODU4MGI3NjUxOGRhZTk3OWZhZWJkMDIzNjdhMjkyOTJhNTBkOTc2MDkyMjUxYTM4YTZjZTMwODgwYmE0MjgyNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZjdhMjBhOTEwNmY4Mjk0OTBjOWEzMGY5NTMyMzI5NmQ1MWU0Mjg2NTUzNGZhODI5YWM5ZDA2MmU5MWJlODBiMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTI2Njc2MmI4NTUyMzVjYTI2ZmJlYzE3ZDUzMzAxYzkzNTM0MjlmYjU3ZWZiZGYwOWIzNjQ3OWYxOGNhMDhjNyJ9"
         }
       ]
     },
     {
       "id": "claim_f3c3bfce014249398cc15c11f3977961",
-      "statement": "carouselSlide 스타일은 &:last-child에 gap과 같은 크기의 marginRight를 추가해 flex gap이 마지막↔첫 슬라이드 사이에는 적용되지 않는다는 CSS 제약을 보정한다.",
+      "statement": "carouselSlide 스타일은 &:last-child에 gap과 같은 크기의 marginRight를 추가해 flex gap이 마지막↔첫 슬라이드 사이에는 적용되지 않는 제약을 보정하고, 모바일에서는 슬라이드 폭을 230px로 직접 준다.",
       "evidence": [
         {
-          "resource": "repo://src/pages/main/ui/MainPage.css.ts",
-          "version": "repo-file-v1:sha256:8c2dc91e5451144d740143410bd71860855f0df8e1e1baf111f29c4421849fa5"
+          "resource": "repo://src/pages/main/MainPage.css.ts#L49-L64",
+          "version": "repo-lines-v1:sha256:fafeed8b182edada80b20ac4f62964955f515d3d65f3b199c0a085543d76185f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM1OTUwMDA5MTAzNzJjMjEzMDZiMDEwYThlNmI1MTg3M2E3NDIzMWY2MGU2Yjg4ZmIzMTMyMTBlMTMyYzdhYmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODBiNzY1MThkYWU5NzlmYWViZDAyMzY3YTI5MjkyYTUwZDk3NjA5MjI1MWEzOGE2Y2UzMDg4MGJhNDI4MjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImMwNGIwMDE0ZDY3MzRjMDE0NmYzNzRiNDdiMTgxMzk5YWFhYmUxYWEyN2JmMzk3MzZiNzU4OTVmODEzY2U0YTMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjEwZjhmZjFmZjQzYTQzYTVlNThiNDFlMjBlOWQ2OTAwZGUxNTFkODg1NzViODNlMTA3NWU3Njc5NmZiMTllNmUifQ"
         }
       ]
     },
     {
       "id": "claim_586cf67d22524a078437f3c6ae9fb8d9",
-      "statement": "추천 상품 섬션은 인라인 sprinkles 호출 대신 shared/ui의 Container로 감싸고, 제목은 typography.title.xlSemibold와 styles.recommendedTitle을 className 레벨에서 합성해서 쓴다. 히어로 타이틀 스타일은 title이 아니라 bestTitle로 export된다.",
+      "statement": "추천 상품 섹션은 shared/ui의 Container로 감싸고, 제목은 typography.title.xlSemibold와 styles.recommendedTitle을 className 레벨에서 합성하며, 히어로 제목 스타일은 bestTitle로 export된다.",
       "evidence": [
         {
-          "resource": "repo://src/pages/main/ui/MainPage.css.ts",
-          "version": "repo-file-v1:sha256:8c2dc91e5451144d740143410bd71860855f0df8e1e1baf111f29c4421849fa5"
+          "resource": "repo://src/pages/main/MainPage.css.ts#L69-L105",
+          "version": "repo-lines-v1:sha256:ddf881ec19b51c3ab54580ccb798fe7bb9ab42ea6a9106755842c8f4894b79ac:eyJzZWxlY3RlZExpbmVDb3VudCI6MzcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjFmZDI0NDkzZDQ3OGY0ZTViMGExMGI2NWYyYTQ0ODdkNzM2ZGRkMWM0N2JjNDJkNDAzNWY3MzQ2MmE4MDBjYWQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRkNWNkMmZiNGYzZGY4ODQ1MTUyNTViMzk1MjNmMmY4YjU0NzJiZWVhOWY1NjZmZmNhMjA0ZGI4MDI1NjEwNDEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImQyNTY0N2UxYTdkNDJkOGUzMWM3Yzg2ZGI2MzgxMTFmMTAzMjlkZDhlMTgwODQ3OTNhMjc4MzUzZjYxNzNiZDQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjlmMjY4NzkyZjhiMDU5NGZiMjU2M2Y0MTNkYjdmNmY1N2FlYTdmYjgwNzdlOGNkNmM5NTY1MWM4ZjhmZWEzY2YifQ"
         },
         {
-          "resource": "repo://src/pages/main/ui/MainPage.tsx",
-          "version": "repo-file-v1:sha256:26a5d9fd619453b5c115a94f02617d72bbfd9a4904b5e3f037bcd02e34194f6c"
+          "resource": "repo://src/pages/main/MainPage.tsx#L88-L108",
+          "version": "repo-lines-v1:sha256:f831db2f349c10680bbc9090bfa45018a3cc4e616c8635fe1c319df7a35b999f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjljYTk3MTQ3ZTVkZTlkNTRhNmNlYjI3ZmRhZDBmNTBkZDJlNzI5MjJhNDhmZjhlMmM2YjUwZGVhYWZhZjIwMmEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU1ZWI4Njk1MTkwNDQ1NzE5YjdhN2FjODEzYzQyNjk1NzY2MjMzMDdiZGM0ZGI1OWMyMGE0NTU2Y2MwNmIzNmQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImIwZGY0ZmZmNjcyNjQwZmIxMjYzYjVmNzgzODBmZWNlNTJhZWE4OTBiMjBiOTEyMzgwY2RlOWI2MTg4MmRjODgiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUzZDI0Yjc0YWNmYjBkNzAxNjc0NTU5NTIzMzVkMDY0ZTQ1MjM5MjI5ZTY5NGE5YmUwZDg3YTk4MTk0YWYyNzcifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4ba4754ab4a049108b378ef54a0ba414",
+      "statement": "베스트·추천 목록은 useProductCards('best'/'recommend')(catalog 정책)로 조회되고, 카드 색상·옵션 선택 상태는 useProductCardSelection이 상품 id별 맵으로 들고 getCardProps로 ProductCard에 펼친다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/product/api/useProductCards.ts#L1-L13",
+          "version": "repo-lines-v1:sha256:b6c1d44ccce9e0daa7bbad6f6b07b50d92cb061f852f94b2adea373421c18507:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRjYjI4MWQ5NzA0Y2ZiYWMwZjJlNTBhZTQ5OWE0YmZmZGVlNjlmMjQ3NjdlYWM3NzM1NjAwN2EyZWZjZjA2ZTEiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzUyNTg5YzM0ZDNjNjA2ODU5MzFiNmVjYzRkNTA5OTFhN2M1NmM4ZmJhMjg5NDExNDY1NzY5MDI3MmNhYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/features/product-card-select/lib/useProductCardSelection.ts#L9-L38",
+          "version": "repo-lines-v1:sha256:1efb90423b6886842e1a8f82bd7b34fd6f7d854cd254ca2dd16e7ecd48b55a7e:eyJzZWxlY3RlZExpbmVDb3VudCI6MzAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAwN2RhNTU2YmQwNzU3MDM4YjdiNWRkMDZjMTI5NjI1MjcwNWVjYWZiMGJmOGRkZTA4OTgxNzMyYzA4Zjg0ODkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ3MWZiYWZhYmEyYmI1MGZlYjMyMTg1YzA1MTliYzFiOWViZjliMjNiZTI3MjhiZmE3ODQ2ZTZhZjJmODBkNDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_2c24360a049c44129f3b958c284a8f7b",
+      "statement": "배너는 슬라이드 3장을 상수로 두고 별도 타이머 없이 진행 바 애니메이션이 끝나는 순간 다음 슬라이드로 넘기며, MainPage는 headerHeight만큼 음수 marginTop으로 배너를 헤더 뒤로 끌어올린다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/main/MainPage.css.ts#L6-L10",
+          "version": "repo-lines-v1:sha256:72f4be12df6c5b7db8af5abb36d8b5c3c54431a4a04bcb3d5f7dda8fc1413f1a:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzAxNTI0OGJmNGE1NmVlY2ZlY2JiMDI5MmYyMzZhMTgxYTMyMWM2MGQzNWYyNTVkYmI1NzE2NzQ1ZTNmYTk1ZSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODU4MGI3NjUxOGRhZTk3OWZhZWJkMDIzNjdhMjkyOTJhNTBkOTc2MDkyMjUxYTM4YTZjZTMwODgwYmE0MjgyNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTg4ZjUxNWIwYTNiMTJkMGJjOTBmNmEzNWY0Yjc0MGQyYzI5YjkwODAxZGM0ZTkxZmMzYTlmMWEzZjZlYzNhYSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMmZhM2M1YzU5Nzc1YWEzMjk5OWY2MGU2YTllMTY5Y2YzMWUyNGJkOWFmNGQ5M2Q2MTRhNTA4OTMxNmFjODZiZSJ9"
+        },
+        {
+          "resource": "repo://src/widgets/banner/ui/Banner.tsx#L24-L72",
+          "version": "repo-lines-v1:sha256:dcba8fe2a995d985359a4f893806ac668eca328f590d520983b092256f7a9b62:eyJzZWxlY3RlZExpbmVDb3VudCI6NDksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjlhMWE4ZjcxMDFiOTM5MjllNjBjMzVkNzUxYWYwOGFhMjFkNWVlMTQwZjIxOTk5ODIzNDRmODdmNDkxZDBkOTkiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjI1Mjc5ODVlZWVmZTRjNTAyOWFlM2Y2ZWQ5N2Q0NDMyOWM3NjlmNjRlZTdmOWUxNjcwN2YzYTI4ZWZkMDM0MjAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjY1MmNmNTJiN2M4NDgzNWI3NTkyZjg5ZjU3MGQxMzcxMjM5ZTAyMjJmMTVhZWYwMWRlYjI3M2ZhNWRjYmU3OTQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImU1YmViNmY0MmU1Mjk4ZWRiYzA4MGM5ZjI2YTYzMTlhZGUzODM3N2ViOTQyYTc2MDBjYTM5NWVkYjFhMzA5NDcifQ"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-21T01:15:36.692Z"
+    "at": "2026-10-04T09:44:53.662Z"
   }
 }

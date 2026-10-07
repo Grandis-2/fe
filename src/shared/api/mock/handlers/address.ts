@@ -22,6 +22,7 @@ const LIMITS: Record<keyof DefaultAddress, number> = {
   postalCode: 10,
   line1: 200,
   line2: 200,
+  label: 50,
 }
 
 function validate(body: Partial<PutDefaultAddressRequest> | null) {
@@ -41,6 +42,9 @@ function validate(body: Partial<PutDefaultAddressRequest> | null) {
   }
   if (body?.line2 && codePointLength(body.line2) > LIMITS.line2) {
     violations.push({ field: 'line2', message: '200자 이하로 입력해 주세요.' })
+  }
+  if (body?.label && codePointLength(body.label) > LIMITS.label) {
+    violations.push({ field: 'label', message: '50자 이하로 입력해 주세요.' })
   }
   return violations
 }
@@ -71,6 +75,7 @@ export const addressHandlers: RequestHandler[] = [
       postalCode: body!.postalCode!,
       line1: body!.line1!,
       line2: body!.line2 || null,
+      label: body!.label || null,
     }
     return ok<DefaultAddressResponse>({ shippingAddress: defaultAddress })
   }),

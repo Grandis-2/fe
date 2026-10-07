@@ -3,24 +3,24 @@ import type { CartItem } from '../../types'
 export const cartItems: CartItem[] = [
   {
     cartItemId: 'cart-1',
-    productId: 'MBP-14',
-    optionCode: '512-SPB',
+    productId: '1',
+    optionCode: '1-sliver-512GB',
     quantity: 1,
-    unitPrice: 2390000,
+    unitPrice: 2520000,
   },
   {
     cartItemId: 'cart-2',
-    productId: 'SM-G999',
-    optionCode: '256-BLK',
+    productId: '2',
+    optionCode: '2-indigo-256GB',
     quantity: 2,
-    unitPrice: 1290000,
+    unitPrice: 1250000,
   },
   {
-    // 판매 종료 상품 — "구매 전에 안내" 정책을 화면에서 확인하는 용도.
+    // 판매 중지 상품 — "구매 전에 안내" 정책을 화면에서 확인하는 용도.
     cartItemId: 'cart-3',
-    productId: 'MB-NEO',
-    optionCode: '256-MID',
+    productId: '44',
+    optionCode: '44-sliver-256GB',
     quantity: 1,
-    unitPrice: 1690000,
+    unitPrice: 59000,
   },
 ]

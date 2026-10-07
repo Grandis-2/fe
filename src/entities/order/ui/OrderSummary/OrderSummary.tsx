@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { typography } from '@shared/config/theme'
-import { Button, PriceText } from '@shared/ui'
+import { ActionButton, Button, PriceText } from '@shared/ui'
 
 import * as styles from './OrderSummary.css'
 
@@ -20,6 +20,8 @@ export type OrderSummaryProps = {
   actionLabel: string
   onAction?: () => void
   actionDisabled?: boolean
+  /** 어두운 화면(결제 페이지)의 그라데이션 버튼(ActionButton)으로 바꾼다. 장바구니는 아직 밝은 화면이라 기본 Button. */
+  darkAction?: boolean
   /** 결제 페이지의 약관 동의가 들어가는 자리. 장바구니에서는 넘기지 않는다. */
   children?: ReactNode
   className?: string
@@ -33,6 +35,7 @@ export function OrderSummary({
   actionLabel,
   onAction,
   actionDisabled,
+  darkAction,
   children,
   className,
 }: OrderSummaryProps) {
@@ -72,13 +75,19 @@ export function OrderSummary({
       {children}
 
       <div className={styles.actionRow}>
-        <Button
-          className={styles.action}
-          disabled={actionDisabled}
-          onClick={onAction}
-        >
-          {actionLabel}
-        </Button>
+        {darkAction ? (
+          <ActionButton fullWidth disabled={actionDisabled} onClick={onAction}>
+            {actionLabel}
+          </ActionButton>
+        ) : (
+          <Button
+            className={styles.action}
+            disabled={actionDisabled}
+            onClick={onAction}
+          >
+            {actionLabel}
+          </Button>
+        )}
       </div>
     </div>
   )

@@ -35,7 +35,16 @@ export const row = style({
 
 export const rowLabel = style({ color: color.text.secondary })
 export const rowValue = style({ color: color.text.primary })
-export const rowValueHighlight = style({ color: color.primary.base })
+// 어두운 화면에서 primary.base는 버튼 바탕용이라 글자로는 흐리다 — 강조 글자는 subtle을 쓴다
+// (semantic.css.ts 다크 토큰 주석). 장바구니는 아직 밝은 화면이라 다크일 때만 바꾼다.
+const darkHighlight = {
+  selectors: { '[data-theme="dark"] &': { color: color.primary.subtle } },
+}
+
+export const rowValueHighlight = style({
+  color: color.primary.base,
+  ...darkHighlight,
+})
 
 export const totalRow = style([
   row,
@@ -44,6 +53,13 @@ export const totalRow = style([
 
     background: color.primary.surface,
     color: color.primary.base,
+    selectors: {
+      // 다크의 primary.surface는 카드 바탕과 거의 같아 묻힌다 — 반투명 남색을 얹어 띄운다(Checkout.dc.html).
+      '[data-theme="dark"] &': {
+        background: `color-mix(in srgb, ${color.primary.subtle} 12%, transparent)`,
+        color: color.primary.subtle,
+      },
+    },
   },
 ])
 

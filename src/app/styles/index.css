@@ -120,3 +120,8 @@ a {
   text-decoration: none;
   color: inherit;
 }
+
+/* 가장 좁은 폰(iPhone SE 1세대 등) 기준. 이보다 좁으면 줄이지 않고 가로 스크롤한다. */
+body {
+  min-width: 320px;
+}

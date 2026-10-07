@@ -7,11 +7,17 @@ export type DefaultAddress = {
   line1: string
   /** 없으면 빈 문자열이 아니라 null로 온다. */
   line2: string | null
+  /**
+   * 배송지명(집, 회사 등).
+   * ponytail: 백엔드 계약(11-frontend-guide.md §7)에 아직 없는 프론트 제안 필드 — 서버가 안 보내면
+   * 비어 있고 화면은 '기본 배송지'로 보인다. 계약에 들어오면 optional을 뗀다.
+   */
+  label?: string | null
 }
 
 export type DefaultAddressResponse = {
   shippingAddress: DefaultAddress | null
 }
 
-// 다섯 칸을 항상 통째로 보낸다 — 부분 수정 없음(11-frontend-guide.md §7).
+// 모든 칸을 항상 통째로 보낸다 — 부분 수정 없음(11-frontend-guide.md §7).
 export type PutDefaultAddressRequest = DefaultAddress

@@ -1,5 +1,7 @@
 import { expect, waitFor } from 'storybook/test'
 
+import { color } from '@shared/config/theme'
+
 import { Input } from './Input'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
@@ -73,5 +75,28 @@ export const InvalidWithoutRequired: Story = {
     await expect(
       canvas.queryByText(/필수로 작성해주세요/),
     ).not.toBeInTheDocument()
+  },
+}
+
+export const Stacked: Story = {
+  args: {
+    label: '상세 주소',
+    variant: 'stacked',
+    placeholder: '동, 호수',
+    required: true,
+  },
+  decorators: [
+    (Story) => (
+      <div
+        data-theme="dark"
+        style={{ padding: 24, background: color.background.base }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('상세 주소 *')).toBeVisible()
+    await expect(canvas.getByPlaceholderText('동, 호수')).toBeVisible()
   },
 }

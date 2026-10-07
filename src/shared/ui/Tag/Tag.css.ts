@@ -96,16 +96,20 @@ export const solid = styleVariants({
   },
 })
 
+// 어두운 화면에서 primary/secondary.base는 버튼 바탕용이라 글자로는 흐리다 — 강조 글자는 subtle을 쓴다
+// (semantic.css.ts 다크 토큰 주석, OrderSummary와 같은 방식).
 export const subtle = styleVariants({
   primary: {
     background: color.primary.subtler,
     borderColor: color.primary.subtler,
     color: color.primary.base,
+    selectors: { '[data-theme="dark"] &': { color: color.primary.subtle } },
   },
   secondary: {
     background: color.secondary.subtler,
     borderColor: color.secondary.subtler,
     color: color.secondary.base,
+    selectors: { '[data-theme="dark"] &': { color: color.secondary.subtle } },
   },
   blue: {
     background: color.background.subtleInfo,

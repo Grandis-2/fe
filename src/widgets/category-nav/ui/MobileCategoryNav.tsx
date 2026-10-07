@@ -1,9 +1,10 @@
 import { ChevronRight } from 'lucide-react'
 import { Link } from 'react-router'
 
+import { brandMenus } from '@entities/product'
 import { searchPath } from '@shared/config/routes'
 
-import { brandMenus, categoryThumbnails, linkPaths } from '../model/menu'
+import { categoryThumbnails, linkPaths } from '../model/menu'
 
 import * as styles from './CategoryNav.css'
 

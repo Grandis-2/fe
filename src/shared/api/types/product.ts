@@ -1,184 +1,136 @@
-export type SaleStatus = 'BEFORE_OPEN' | 'OPEN' | 'CLOSED'
+import type { Paged } from './common'
 
-// 스펙에 UNLIMITED만 등장한다. 다른 값이 생기면 여기에 추가한다.
-export type StockPolicy = 'UNLIMITED'
+// 구매자용 상품 조회 API(be catalog ProductController · CategoryController) 응답 모양.
+// 이름은 백엔드 레코드(ProductListItem · ProductDetailView · CategoryNode)를 그대로 따른다.
+// id는 Long이라 숫자로, 금액은 BigDecimal이라 숫자로, 시각은 Instant라 ISO 문자열로 온다.
 
-export type ProductBadge = 'PREORDER' | 'NEW'
+export type SaleMode = 'PREORDER' | 'IN_STOCK'
 
-export type ProductSort =
-  | 'RECOMMENDED'
-  | 'OPEN_AT_ASC'
-  | 'PRICE_ASC'
-  | 'PRICE_DESC'
-  | 'RATING_DESC'
-  | 'REVIEW_COUNT_DESC'
-  | 'NEWEST'
+// 상품·옵션의 판매 상태. 공개 여부와 별개다 — 상품 PAUSED는 목록에서 빠지고 상세엔 판매 중지로 보인다.
+export type ProductSaleStatus = 'ACTIVE' | 'PAUSED'
 
-export type Category = {
-  categoryId: string
+// 사전예약의 접수 단계. 회차 시각과 서버 시각으로 계산된다. 일반 상품은 null.
+export type PreorderSaleStatus = 'BEFORE_OPEN' | 'OPEN' | 'CLOSED'
+
+// 2단계 트리 — 상위(parentId null) 아래 하위가 id 순으로 온다.
+export type CategoryNode = {
+  categoryId: number
+  code: string
   name: string
-  parentId: string | null
-  sortOrder: number
-  children: Category[]
-}
-
-export type PriceRange = {
-  min: number
-  max: number
-}
-
-export type RatingSummary = {
-  averageRating: number | null
-  reviewCount: number
-}
-
-export type ProductSummary = {
-  productId: string
-  name: string
-  brand: string
-  thumbnailUrl: string | null
-  priceRange: PriceRange
-  openAt: string
-  saleStatus: SaleStatus
-  stockPolicy: StockPolicy
-  ratingSummary: RatingSummary
-  badges: ProductBadge[]
-}
-
-export type ProductImage = {
-  imageUrl: string
-  alt: string | null
-  sortOrder: number
-  optionValueCode: string | null
-}
-
-export type ProductSpecGroup = {
-  name: string
-  items: { label: string; value: string }[]
-}
-
-export type ProductOptionValue = {
-  valueCode: string
-  name: string
-  colorHex: string | null
-  imageUrl: string | null
-  sortOrder: number
-}
-
-export type ProductOptionGroup = {
-  groupCode: string
-  name: string
-  sortOrder: number
-  values: ProductOptionValue[]
-}
-
-export type ProductVariant = {
-  optionCode: string
-  name: string
-  // groupCode -> valueCode (예: { color: 'BLK', storage: '256' })
-  optionValues: Record<string, string>
-  price: number
-  listPrice: number | null
-  available: boolean
-  sortOrder: number
-  images: ProductImage[]
-}
-
-export type ProductSale = {
-  openAt: string
-  closeAt: string | null
-  serverTimeAt: string
-  saleStatus: SaleStatus
-  stockPolicy: StockPolicy
-}
-
-export type DispatchWave = {
-  wave: number
-  fromSeq: number
-  toSeq: number
-  /** 예상 배송일. null이면 미정 */
-  estimatedDeliveryDate: string | null
-}
-
-export type DispatchWindowVersion = {
-  waves: DispatchWave[]
-  undeterminedFromSeq: number | null
-  productId: string
-  version: number
-  // publishedAt이 별도로 있는 걸로 보아 발행 상태가 존재한다. 확인되면 정정할 것.
-  status: 'DRAFT' | 'PUBLISHED'
-  createdAt: string
-  createdBy: string
-  publishedAt: string | null
-  confirmedCountByWave: Record<string, number> | null
-}
-
-export type ProductDetail = ProductSummary & {
-  // 사전예약 여부. 상세 화면은 이 값으로 수량 고정·사전예약 버튼을 결정한다.
-  saleMode: SaleMode
-  categoryId: string | null
-  categoryPath: string[]
-  summary: string | null
-  descriptionHtml: string | null
-  images: ProductImage[]
-  specs: ProductSpecGroup[]
-  optionGroups: ProductOptionGroup[]
-  variants: ProductVariant[]
-  sale: ProductSale
-  // 스펙 예시가 둘 다 null이라 형태를 알 수 없다. 응답 샘플 받으면 타입을 채운다.
-  dispatchPreview: unknown
-  my: unknown
+  parentId: number | null
+  children: CategoryNode[]
 }
 
 export type CategoryTreeResponse = {
-  items: Category[]
+  items: CategoryNode[]
 }
 
-// 메인페이지 카드 캐러셀 전용 — ProductDetail/ProductSummary는 목록 페이지·상세
-// 페이지가 필요로 하는 정보(카테고리, 평점, variants 등)까지 다 실어서 카드 하나
-// 그리는 데는 과하다. 카드가 실제로 쓰는 모양만 딱 맞춘 별도 DTO.
-export type ProductListQuery = 'best' | 'recommend'
-
-export type ProductCardColorDto = {
-  hex: string
-  label: string
-  imageUrls: string[]
+// GET /api/v1/products 쿼리. 정렬은 없다(productId 내림차순 고정).
+// color·storage는 같은 이름을 반복해 여러 값을 보낸다(?color=블랙&color=화이트).
+export type ProductListParams = {
+  q?: string
+  categoryId?: number
+  saleMode?: SaleMode
+  color?: string[]
+  storage?: string[]
+  // 0부터 센다. size는 1~100(기본 20).
+  page?: number
+  size?: number
 }
 
-export type ProductCardOptionDto = {
-  label: string
-  extraPrice: number
-}
+// 상품 목록 봉투는 totalPages 없이 page·size·total·hasNext·items만 온다.
+export type ProductPage<TItem> = Omit<Paged<TItem>, 'totalPages'>
 
-// 카드 목록 전용 판매 상태. ProductSummary의 saleStatus(BEFORE_OPEN/OPEN/CLOSED)와는
-// 별개로, 카드 API가 사전예약 여부만 이 값으로 내려준다.
-export type SaleMode = 'PREORDER' | 'IN_STOCK'
-
-export type ProductCardSummaryDto = {
-  productId: string
-  name: string
-  modelNumber: string
-  brand?: string
-  basePrice: number
+export type ProductListItem = {
+  productId: number
   saleMode: SaleMode
-  colors: ProductCardColorDto[]
-  options: ProductCardOptionDto[]
+  title: string
+  // 대표 사진. 없으면 null(화면이 대체 이미지).
+  imageUrl: string | null
+  status: ProductSaleStatus
+  // 판매 중 옵션의 최저가. 판매 중 옵션이 없으면 null.
+  minPrice: number | null
+  // false면 옵션이 없거나 전부 판매 중지 — "판매 중지"로 그린다.
+  sellable: boolean
+  // 일반 상품의 판매 중 옵션 재고가 전부 0. 사전예약은 항상 false.
+  soldOut: boolean
+  preorderStatus: PreorderSaleStatus | null
+  opensAt: string | null
+  closesAt: string | null
+  // 아래 둘은 상품 카드(모델명·색상칩)용으로 백엔드에 추가 요청한 칸이다 — 아직 안 와서 optional.
+  // 오면 optional을 떼고 모양을 응답에 맞춘다.
+  modelNumber?: string
+  colors?: { hex: string; label: string; imageUrls: string[] }[]
 }
 
-export type ProductCardListResponse = {
-  items: ProductCardSummaryDto[]
+export type ProductOptionAxis = {
+  // 축 키(color·storage 또는 관리자가 정한 키).
+  key: string
+  label: string
+  values: {
+    value: string
+    normalizedValue: string
+    surcharge: number
+    // 색상 축 값의 색상칩 색. 백엔드에 추가 요청한 칸이라 아직 optional.
+    colorHex?: string
+  }[]
 }
 
-// 카테고리 검색 화면은 가격 정렬만 노출한다.
-export type ProductCardSort = Extract<ProductSort, 'PRICE_ASC' | 'PRICE_DESC'>
-
-export type ProductCardSearchParams = {
-  category?: string
-  subCategory?: string
-  brand?: string
-  sort?: ProductCardSort
+export type ProductDetailVariant = {
+  variantId: number
+  sku: string
+  title: string
+  price: number
+  filterAttributes: Record<string, string>
+  displayAttributes: Record<string, string>
+  // 축 키 → 고른 값의 normalizedValue. 선택기가 조합을 찾는 키다.
+  selections: Record<string, string>
+  status: ProductSaleStatus
+  // 일반 상품의 가용 수량. 사전예약은 null(무제한 접수).
+  availableQuantity: number | null
 }
 
-export type ProductCardSearchResponse = ProductCardListResponse & {
-  total: number
+type ProductImageBundle = {
+  // 색상 묶음 키. 기본 묶음은 ''.
+  bundleKey: string
+  items: { url: string; position: number; primary: boolean }[]
+}
+
+// 배송 차수는 여기 없다 — GET /api/v1/products/{id}/shipment-batches(preorder)를 따로 부른다.
+export type ProductDetailView = Omit<
+  ProductListItem,
+  'minPrice' | 'preorderStatus' | 'opensAt' | 'closesAt' | 'colors'
+> & {
+  categoryId: number | null
+  description: string | null
+  visible: boolean
+  basePrice: number
+  warranty: { offered: boolean; surcharge: number }
+  // 사전예약 회차. 일반 상품은 null.
+  campaign: {
+    opensAt: string
+    closesAt: string
+    status: PreorderSaleStatus
+  } | null
+  optionAxes: ProductOptionAxis[]
+  // 판매 중지 옵션도 상태 그대로 온다 — 화면이 선택을 막는다.
+  variants: ProductDetailVariant[]
+  images: {
+    gallery: ProductImageBundle[]
+    detail: ProductImageBundle[]
+  }
+}
+
+// GET /api/v1/products/{id}/shipment-batches(preorder) 한 줄. 날짜는 LocalDate라 'YYYY-MM-DD'로 온다.
+export type ShipmentBatch = {
+  batchNumber: number
+  positionFrom: number
+  // null이면 상한 없는 마지막 차수.
+  positionTo: number | null
+  estimatedShipStart: string
+  estimatedShipEnd: string
+}
+
+export type ShipmentBatchListResponse = {
+  items: ShipmentBatch[]
 }
