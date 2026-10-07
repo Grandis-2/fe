@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, redirect } from 'react-router'
 
 import { AdminLayout } from '@app/layouts/AdminLayout'
 import { MainLayout } from '@app/layouts/MainLayout'
@@ -55,6 +55,7 @@ import {
   SEARCH_RESULTS_PATH,
   SIGNUP_PATH,
 } from '@shared/config/routes'
+import { hasSeenOnboarding } from '@widgets/onboarding'
 
 export const router = createBrowserRouter([
   // 자체 로고·건너뛰기를 가진 전체 화면이라 헤더·탭바를 그리는 RootLayout 밖에 둔다.
@@ -65,7 +66,13 @@ export const router = createBrowserRouter([
       {
         element: <MainLayout />,
         children: [
-          { path: HOME_PATH, element: <MainPage /> },
+          {
+            path: HOME_PATH,
+            element: <MainPage />,
+            // 처음 온 사용자는 홈 대신 온보딩부터 본다. 상품 링크 등 다른 주소로 바로 들어오면 막지 않는다.
+            loader: () =>
+              hasSeenOnboarding() ? null : redirect(ONBOARDING_PATH),
+          },
           { path: PREORDER_PATH, element: <PreorderPage /> },
           {
             path: preorderPath(':preorderId'),
