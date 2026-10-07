@@ -32,13 +32,20 @@ export const MYPAGE_TABS = [
   'cart',
   'history',
   'address-manage',
+  'reviews',
 ] as const
 export type MypageTab = (typeof MYPAGE_TABS)[number]
 
 export const MYPAGE_PATH = '/mypage'
 export const mypagePath = (tab: MypageTab) => `${MYPAGE_PATH}?state=${tab}`
 
-export const RESULT_STATUSES = ['preorder', 'paid', 'failed'] as const
+// preorder: 예약만 접수(결제 전) / preorder-paid: 사전예약 결제 완료 / paid: 일반 구매 완료 / failed: 결제 실패
+export const RESULT_STATUSES = [
+  'preorder',
+  'preorder-paid',
+  'paid',
+  'failed',
+] as const
 export type ResultStatus = (typeof RESULT_STATUSES)[number]
 
 export const RESULT_PATH = '/result'
