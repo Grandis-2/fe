@@ -54,14 +54,17 @@ export const iconOnly = style({ aspectRatio: '1', padding: 0 })
 const cartGradient = (from: number, to: number) =>
   `linear-gradient(135deg, color-mix(in srgb, white ${from}%, ${color.backgroundDark.base}), color-mix(in srgb, white ${to}%, ${color.backgroundDark.base}))`
 
+const neutral = {
+  background: cartGradient(8, 15),
+  boxShadow: `0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 ${onDark(10)}`,
+  fontSize: '15px',
+  fontWeight: fontWeight.semibold,
+}
+
 export const variant = styleVariants({
   primary: { background: primaryGradient, boxShadow: primaryGlow },
-  cart: {
-    background: cartGradient(8, 15),
-    boxShadow: `0 8px 24px rgba(0, 0, 0, 0.45), inset 0 1px 0 ${onDark(10)}`,
-    fontSize: '15px',
-    fontWeight: fontWeight.semibold,
-  },
+  cart: neutral,
+  neutral,
 })
 
 // 장바구니에 담은 뒤 — 초록 유리.

@@ -40,6 +40,26 @@ export const box = styleVariants({
   ],
 })
 
+// stacked — 카드(background.base) 안에 한 단계 어둡게 파인 칸. box 다음, boxError 앞에 선언해야
+// 높이·테두리는 덮고 에러 테두리에는 진다. 읽기 전용 바탕은 boxBase의 :has() 규칙이 특이도로 이긴다.
+export const stackedBox = style({
+  height: '52px',
+  borderWidth: '1.5px',
+  borderColor: color.border.default,
+  background: color.background.page,
+  transition: [
+    `border-color ${motion.duration.fast} ${motion.easing.default}`,
+    `box-shadow ${motion.duration.fast} ${motion.easing.default}`,
+  ].join(', '),
+  selectors: {
+    '&:focus-within': {
+      borderColor: color.primary.subtle,
+      boxShadow: `0 0 0 3px color-mix(in srgb, ${color.primary.subtle} 18%, transparent)`,
+    },
+    '&:has(input:read-only)': { borderColor: color.border.subtle },
+  },
+})
+
 export const boxError = style({
   borderColor: color.status.danger,
   background: color.background.subtleDanger,
@@ -63,6 +83,21 @@ export const field = styleVariants({
   medium: [typography.body.defaultRegular, fieldBase],
   small: [typography.body.sub, fieldBase],
 })
+
+export const stackedField = style({
+  paddingTop: 0,
+  color: color.text.primary,
+  selectors: {
+    '&::placeholder': { color: color.text.disabled },
+    '&:read-only': { color: color.text.secondary },
+  },
+})
+
+// 칸의 둥근 모서리(12px)보다 안쪽에서 시작해야 칸 테두리와 같은 선에 붙어 보이지 않는다.
+export const stackedLabel = style([
+  typography.body.sub,
+  { paddingLeft: spacing[4], color: color.text.tertiary },
+])
 
 export const fieldError = style({
   color: color.status.danger,
