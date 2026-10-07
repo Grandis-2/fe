@@ -3,6 +3,8 @@ import { useEffect, useEffectEvent, useState } from 'react'
 const TICK_MS = 1000
 // 순번 1이 된 뒤 바로 넘기지 않고 100%를 잠깐 보여준 다음 이동한다.
 const COMPLETE_DELAY_MS = 800
+// 모달을 닫아 둔 사람은 진행률을 못 보고 있어서, 이만큼 세며 알린 뒤 이동한다 — 화면이 갑자기 바뀌지 않게.
+const MOVE_NOTICE_SECONDS = 5
 // 모달을 닫아도 이 시간 동안은 순번이 유지된다.
 const HOLD_SECONDS = 5 * 60
 
@@ -23,6 +25,7 @@ export function usePreorderQueue(onComplete: () => void) {
   const [isOpen, setIsOpen] = useState(true)
   const [hasLeft, setHasLeft] = useState(false)
   const [holdSeconds, setHoldSeconds] = useState(HOLD_SECONDS)
+  const [moveIn, setMoveIn] = useState(MOVE_NOTICE_SECONDS)
   // 호출부가 매 렌더 새 함수를 넘겨도 타이머가 리셋되지 않도록 Effect Event로 감싼다 —
   // 항상 최신 onComplete를 부르되 이펙트의 의존성에는 들어가지 않는다.
   const handleComplete = useEffectEvent(onComplete)
@@ -48,12 +51,21 @@ export function usePreorderQueue(onComplete: () => void) {
     return () => clearTimeout(id)
   }, [queue, status, hasLeft])
 
-  // 내 차례가 오면 모달이 닫혀 있어도 넘어간다 — 그 사이 QueuePill이 '내 차례예요'를 잠깐 보여 준다.
+  // 내 차례가 오면 모달이 닫혀 있어도 넘어간다. 모달이 열려 있으면 100%를 잠깐 보여 주고,
+  // 닫혀 있으면 QueuePill이 moveIn초를 센 뒤 넘어간다(그 사이 누르면 모달이 열려 바로 넘어간다).
   useEffect(() => {
     if (status !== 'mine') return
-    const id = setTimeout(() => handleComplete(), COMPLETE_DELAY_MS)
+    if (isOpen) {
+      const id = setTimeout(() => handleComplete(), COMPLETE_DELAY_MS)
+      return () => clearTimeout(id)
+    }
+    if (moveIn === 0) {
+      handleComplete()
+      return
+    }
+    const id = setTimeout(() => setMoveIn((s) => s - 1), TICK_MS)
     return () => clearTimeout(id)
-  }, [status])
+  }, [status, isOpen, moveIn])
 
   // 순번 유지 시간은 모달이 닫혀 있는 동안만 흐른다.
   useEffect(() => {
@@ -71,6 +83,7 @@ export function usePreorderQueue(onComplete: () => void) {
     isOpen,
     hasLeft,
     holdSeconds,
+    moveIn,
     myOrder,
     ahead: myOrder - 1,
     waitTime:
