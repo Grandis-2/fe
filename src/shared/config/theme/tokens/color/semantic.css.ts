@@ -65,6 +65,7 @@ export const color = createGlobalTheme(':root', {
 // - primary/secondary.base: 흰 글자를 얹는 버튼 바탕이 우선이라 흰 글자 대비 4.5:1 이상으로 맞췄다
 //   (글자로 쓰면 페이지 바탕 위 3.5:1 — 두 쪽 다 4.5:1인 색은 없다). 강조 글자는 subtle을 쓴다.
 // - subtler/surface: 밝은 틴트 배경 → 어두운 틴트 배경으로 뒤집는다.
+// - text.primary: 순백에 가까우면 어두운 바탕에서 대비가 너무 세서 번져 보여 한 단계 낮춘 흰색(#D4D4D8)을 쓴다.
 // - text.inverse, backgroundDark: 배너처럼 테마와 상관없이 늘 어두운 구간용이라 그대로 둔다.
 createGlobalTheme(':root[data-theme="dark"], [data-theme="dark"]', color, {
   primary: {
@@ -90,7 +91,7 @@ createGlobalTheme(':root[data-theme="dark"], [data-theme="dark"]', color, {
     focus: '#6E7380',
   },
   text: {
-    primary: '#F2F2F4',
+    primary: '#D4D4D8',
     secondary: '#C2C2C8',
     tertiary: '#8E8E96',
     disabled: '#4B4B50',

@@ -31,7 +31,8 @@ export const content = style({
   boxSizing: 'border-box',
   maxWidth: maxWidth.content,
   margin: '0 auto',
-  padding: `${spacing[40]} ${sidePadding} 72px`,
+  // 헤더 바로 밑에 붙으면 시선이 화면 맨 위로 올라가야 해서 위를 넉넉히 비운다.
+  padding: `${spacing[80]} ${sidePadding} 72px`,
   '@media': {
     [breakpoint.mobile]: {
       padding: `${spacing[20]} ${spacing[16]} ${spacing[40]}`,
