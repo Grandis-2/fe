@@ -58,5 +58,7 @@ export type {
 } from './model/form'
 export { AdminProductDisplayTag } from './ui/AdminProductDisplayTag'
 export type { AdminProductDisplayTagProps } from './ui/AdminProductDisplayTag'
+export { OPTION_PRESETS, withPresetOptionGroups } from './model/optionPreset'
+export type { ProductOptionPreset } from './model/optionPreset'
 export { getAdminProductStocks } from './model/stock'
 export type { AdminProductStock } from './model/stock'

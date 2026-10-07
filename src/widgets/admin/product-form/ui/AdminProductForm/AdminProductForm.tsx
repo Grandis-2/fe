@@ -2,14 +2,16 @@ import { useState, type FormEvent } from 'react'
 
 import {
   createEmptyProductFormValue,
+  getProductVariants,
+  withPresetOptionGroups,
   type AdminProductFormValue,
 } from '@entities/admin-product'
-import { getProductVariants } from '@entities/admin-product'
 import { Button, Checkbox, FormSection, ImageUploader, Input } from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
 import { NumberField } from '../NumberField'
 import { OptionGroupEditor } from '../OptionGroupEditor'
+import { OptionPresetField } from '../OptionPresetField'
 import { PreorderPeriodField } from '../PreorderPeriodField'
 import { VariantTable } from '../VariantTable'
 
@@ -112,6 +114,14 @@ export function AdminProductForm({
         description={`고객이 옵션을 고르면 해당 이미지가 표시됩니다.
 옵션당 최대 10장, 첫 장이 대표 이미지입니다.`}
       >
+        {/* 색상은 별도 축이라 프리셋이 손대지 않는다 — 이미 올린 이미지가 날아간다. */}
+        <OptionPresetField
+          onSelect={(preset) =>
+            patch({
+              optionGroups: withPresetOptionGroups(value.optionGroups, preset),
+            })
+          }
+        />
         <div className={styles.card}>
           <ColorOptionEditor
             colors={value.colors}

@@ -158,3 +158,35 @@ export const PreorderPeriod: Story = {
     )
   },
 }
+
+/**
+ * 제품 종류를 고르면 그 종류의 옵션으로 갈아 끼운다.
+ * 값을 적어 둔 옵션은 종류를 바꿔도 남는다 — 쓰는 중인 걸 지우면 안 된다.
+ */
+export const OptionPreset: Story = {
+  args: { mode: 'create' },
+  play: async ({ canvas }) => {
+    // 한 번 고르고 나면 트리거 문구가 고른 값으로 바뀐다 — 열 때 쓸 이름을 같이 받는다.
+    const pickType = async (trigger: string, option: string) => {
+      await userEvent.click(canvas.getByRole('button', { name: trigger }))
+      await userEvent.click(canvas.getByRole('button', { name: option }))
+    }
+
+    await pickType('제품 종류 선택', 'PC/주변기기 · 노트북')
+    await waitFor(async () =>
+      expect(canvas.getAllByLabelText('옵션 이름')).toHaveLength(4),
+    )
+
+    // RAM에만 값을 적어 둔다 — 이건 종류를 바꿔도 남아야 한다.
+    await userEvent.type(canvas.getByLabelText('RAM 값'), '16GB')
+
+    await pickType('PC/주변기기 · 노트북', '모바일 · 스마트폰')
+    await waitFor(async () => {
+      const names = canvas
+        .getAllByLabelText('옵션 이름')
+        .map((field) => (field as HTMLInputElement).value)
+      // 쓰지 않은 크기·용량·칩은 사라지고, 값을 적은 RAM과 스마트폰의 용량만 남는다.
+      expect(names).toEqual(['RAM', '용량'])
+    })
+  },
+}
