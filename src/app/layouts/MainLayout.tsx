@@ -8,7 +8,6 @@ import {
   SEARCH_RESULTS_PATH,
   SIGNUP_PATH,
 } from '@shared/config/routes'
-import { sprinkles } from '@shared/config/theme'
 
 import * as styles from './MainLayout.css'
 
@@ -36,7 +35,6 @@ export function MainLayout() {
         isBaseBackground && styles.baseBackground,
         isDarkBackground && styles.darkBackground,
         isTransparentBackground && styles.transparentBackground,
-        sprinkles({ marginX: 'auto' }),
       ]
         .filter(Boolean)
         .join(' ')}
