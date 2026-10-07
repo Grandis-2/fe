@@ -22,7 +22,8 @@ import {
 import type { AdminProductFormValue } from '../model/form'
 
 // 상세 화면의 헤더·탭·재고 표·수정 폼이 같은 상품을 각자 부른다 — 키가 같아서
-// 요청은 한 번만 나가고 나머지는 캐시를 함께 쓴다.
+// 함께 떠 있는 동안은 요청이 하나로 합쳐지고 캐시를 함께 쓴다. 대신 staleTime이
+// 0이라 탭을 옮겨 재마운트되면 그때 다시 받는다(운영 화면이라 그게 맞다).
 export const useAdminProduct = (productId: string) =>
   useQuery({
     queryKey: adminProductKey(productId),

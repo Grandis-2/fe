@@ -12,7 +12,11 @@ export const ADMIN_PRODUCTS_KEY = ['admin', 'products'] as const
 export const adminProductsKey = (params: AdminProductListParams) =>
   [...ADMIN_PRODUCTS_KEY, 'list', params] as const
 
-/** 상세. 헤더·탭·재고 표·수정 폼이 같은 키를 써서 요청은 한 번만 나간다 */
+/**
+ * 상세. 헤더·탭·재고 표·수정 폼이 같은 상품을 각자 부르는데, 키가 같아서 함께 떠
+ * 있는 동안은 요청이 하나로 합쳐지고 같은 캐시를 본다. 다시 받는 건 막지 않는다 —
+ * staleTime이 0이라(queryPolicy.live) 탭을 다시 열어 재마운트되면 새로 조회한다.
+ */
 export const adminProductKey = (productId: string) =>
   [...ADMIN_PRODUCTS_KEY, productId] as const
 
