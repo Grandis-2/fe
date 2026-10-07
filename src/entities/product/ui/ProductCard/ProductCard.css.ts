@@ -8,13 +8,16 @@ import {
   spacing,
   typography,
 } from '@shared/config/theme'
-import { fontSize } from '@shared/config/theme/tokens/typography/base'
+import {
+  fontSize,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
 
 // 모바일은 검색 페이지처럼 2열로 놓이는 작은 카드라서(폭 ≈ 170px) 모서리·여백·글자를 줄인다.
 // 데스크톱 값은 그대로 두고 아래 '@media'의 mobile 블록에서만 덮어쓴다.
 
 // 메인 카테고리 캐러셀 디자인(Home.dc.html)의 어두운 카드. 카드 root에 data-theme="dark"를 달아
-// 안쪽의 color.* 토큰(색상칩·용량 버튼 포함)이 전부 다크 값으로 바뀐다.
+// 안쪽의 color.* 토큰(색상칩 포함)이 전부 다크 값으로 바뀐다. 주요 글자는 text.primary, 보조 글자는 text.tertiary.
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
@@ -96,6 +99,8 @@ export const nameGroup = style({
 export const name = style([
   typography.title.mdSemibold,
   {
+    // 같은 색의 가격(600)과 굵기로 구분한다.
+    fontWeight: fontWeight.medium,
     color: color.text.primary,
     textDecoration: 'none',
     cursor: 'pointer',
@@ -128,14 +133,15 @@ export const priceRow = style({
 
 export const priceAmount = style({
   color: 'inherit',
+  fontWeight: fontWeight.semibold,
   '@media': {
-    [breakpoint.mobile]: { fontSize: fontSize[18] },
+    [breakpoint.mobile]: { fontSize: fontSize[16] },
   },
 })
 export const priceUnit = style({
-  color: 'inherit',
+  color: color.text.tertiary,
   marginLeft: spacing[2],
   '@media': {
-    [breakpoint.mobile]: { fontSize: fontSize[14] },
+    [breakpoint.mobile]: { fontSize: fontSize[12] },
   },
 })
