@@ -1,78 +1,105 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, breakpoint } from '@shared/config/theme'
+import { breakpoint, color, spacing, typography } from '@shared/config/theme'
+import { fontSize } from '@shared/config/theme/tokens/typography/base'
+import { headerHeight } from '@widgets/header'
 
-// 데스크톱에선 2열 그리드 — 전체 선택 줄은 1행(왼쪽 칸)만 차지하고, 상품 목록과 리모컨이
-// 나란히 2행에서 시작한다. 그래서 리모컨 윗변이 전체 선택 아래 구분선과 맞는다.
+const divider = `1px solid ${color.border.subtle}`
+const card = {
+  borderRadius: '20px',
+  border: divider,
+  background: color.background.base,
+}
+
+// 나란히 설지는 화면이 아니라 이 탭의 폭으로 정한다 — 왼쪽 메뉴가 붙는 폭에선 화면이 넓어도 좁다.
 export const root = style({
-  display: 'grid',
-  rowGap: spacing[24],
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[24],
   width: '100%',
-  '@media': {
-    [breakpoint.desktop]: {
-      gridTemplateColumns: '1fr 270px',
-      columnGap: spacing[24],
+  containerType: 'inline-size',
+})
+
+const sideBySide = '(min-width: 744px)'
+
+// 마이페이지 탭 제목 — 모바일은 한 단계 줄인다(결제 페이지 제목과 같은 크기).
+export const title = style([
+  typography.title.xxlSemibold,
+  {
+    margin: 0,
+    '@media': { [breakpoint.mobile]: { fontSize: fontSize[24] } },
+  },
+])
+
+export const toolbar = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[12],
+})
+
+// 클릭 영역(label)은 내용(체크박스+글자)만큼만 차지한다.
+export const selectAll = style([
+  typography.body.subSemibold,
+  {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacing[10],
+    color: color.text.primary,
+    cursor: 'pointer',
+    userSelect: 'none',
+  },
+])
+
+export const selectAllCount = style({ color: color.text.tertiary })
+
+// 상품 목록과 결제 정보(320px)가 나란히 설 폭이 안 되면 결제 정보가 아래로 내려간다.
+export const layout = style({
+  display: 'grid',
+  gap: spacing[24],
+  '@container': {
+    [sideBySide]: {
+      gridTemplateColumns: 'minmax(0, 1fr) 320px',
       alignItems: 'start',
     },
   },
 })
 
-export const list = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[24],
-  minWidth: 0,
-  '@media': {
-    [breakpoint.desktop]: {
-      gridColumn: 1,
-      gridRow: 2,
-    },
+export const list = style([
+  card,
+  {
+    minWidth: 0,
+    paddingInline: spacing[24],
+    paddingBlock: spacing[4],
+    '@media': { [breakpoint.mobile]: { paddingInline: spacing[20] } },
   },
+])
+
+export const item = style({
+  paddingBlock: '18px',
+  selectors: { '& + &': { borderTop: divider } },
 })
 
-// 데스크톱에서만 스크롤을 따라다닌다 — 모바일은 목록 아래에 그냥 붙는다.
-export const remote = style({
-  marginTop: spacing[12],
-  '@media': {
-    [breakpoint.desktop]: {
-      gridColumn: 2,
-      gridRow: 2,
+// 나란히 설 땐 스크롤해도 결제 버튼이 보이게 헤더 밑에 붙는다.
+export const summary = style({
+  '@container': {
+    [sideBySide]: {
       position: 'sticky',
-      top: spacing[24],
-      marginTop: 0,
+      top: `calc(${headerHeight} + ${spacing[24]})`,
     },
   },
 })
 
-// 카드 사이 구분선 — 위쪽 gap(24px)과 같은 값으로 패딩을 줘서 선이 가운데 놓인다.
-export const card = style({
-  selectors: {
-    '&:not(:first-child)': {
-      paddingTop: spacing[24],
-      borderTop: `1px solid ${color.border.subtle}`,
-    },
+export const empty = style([
+  card,
+  typography.body.defaultRegular,
+  {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacing[16],
+    padding: `64px ${spacing[24]}`,
+    color: color.text.tertiary,
+    textAlign: 'center',
   },
-})
-
-// 구분선은 카드 목록과 폭을 맞춰야 해서(리모컨 위까지 가로지름) 줄 전체를 차지하지만,
-// 클릭 영역(label)까지 늘어나면 안 되므로 선은 이 바깥 줄에, label은 안에서 내용만큼만.
-export const selectAllRow = style({
-  paddingBottom: spacing[12],
-  borderBottom: `1px solid ${color.border.subtle}`,
-  '@media': {
-    [breakpoint.desktop]: {
-      gridColumn: '1 / -1',
-      gridRow: 1,
-    },
-  },
-})
-
-// 카드의 체크박스와 같은 x축에 오도록 좌측 여백 없이 두고, 내용(체크박스+글자)만큼만 차지한다.
-export const selectAll = style({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: spacing[12],
-  color: color.text.primary,
-  cursor: 'pointer',
-  userSelect: 'none',
-})
+])

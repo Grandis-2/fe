@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect } from 'storybook/test'
 
 import { type CartItem } from '@entities/cart'
+import { color } from '@shared/config/theme'
 
 import { MypageCart } from './MypageCart'
 
@@ -55,7 +56,12 @@ const withCart = (data: CartItem[]) => {
   }
   return (Story: () => React.ReactNode) => (
     <QueryClientProvider client={queryClient}>
-      <Story />
+      <div
+        data-theme="dark"
+        style={{ padding: 28, background: color.background.page }}
+      >
+        <Story />
+      </div>
     </QueryClientProvider>
   )
 }
@@ -106,6 +112,8 @@ export const SelectAll: Story = {
 export const Empty: Story = {
   decorators: [withCart([])],
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('장바구니가 비어 있어요.')).toBeVisible()
+    await expect(
+      canvas.getByText('장바구니에 담긴 상품이 없어요.'),
+    ).toBeVisible()
   },
 }

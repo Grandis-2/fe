@@ -36,7 +36,7 @@ export function QuantityControl({
 export function PriceDisplay({ priceLabel }: { priceLabel: string }) {
   return (
     <span className={styles.price}>
-      <PriceText value={priceLabel} from={false} />
+      <PriceText value={priceLabel} />
     </span>
   )
 }

@@ -32,7 +32,8 @@ export type ProductPurchaseBarProps = {
     | 'selectedValues'
     | 'benefitAmount'
   >
-  shipmentLabel: string
+  // 사전예약 출고 안내. 배송 차수를 아직 못 받았으면 비워 둔다.
+  shipmentLabel?: string
   onCheckout: () => void
   // 상품 조회가 안 끝났거나 실패한 동안 결제/사전예약을 막는다(ProductDetailPage의
   // isCheckoutReady 참고). 장바구니 버튼은 결제로 이어지지 않으니 그대로 둔다.
@@ -94,7 +95,7 @@ export function ProductPurchaseBar({
             mobilePaddingY={16}
             className={styles.orderBarContent}
           >
-            {isPreorder && (
+            {isPreorder && shipmentLabel && (
               <div className={styles.orderBarShipmentNotice}>
                 {shipmentLabel}
               </div>
