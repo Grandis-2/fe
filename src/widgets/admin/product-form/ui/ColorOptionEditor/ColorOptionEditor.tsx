@@ -22,6 +22,12 @@ export function ColorOptionEditor({
   // '색상 없음'인 상품은 색상을 더 만들 수 없다.
   const hasNoColor = colors.some((colorOption) => colorOption.noColor)
 
+  // 색상이 없다는 건 칸 하나가 아니라 상품 전체의 성격이다 — 하나를 켜면 이미 만들어
+  // 둔 칸까지 모두 켜고, 풀면 모두 푼다. 한쪽만 켜져 있으면 조합 계산(getProductVariants)은
+  // 색상을 빼는데 화면은 색상이 살아 있는 것처럼 보여서 어긋난다.
+  const toggleNoColor = (noColor: boolean) =>
+    onChange(colors.map((colorOption) => ({ ...colorOption, noColor })))
+
   const patchColor = (id: string, partial: Partial<ProductColorOption>) =>
     onChange(
       colors.map((colorOption) =>
@@ -50,7 +56,12 @@ export function ColorOptionEditor({
 
           <div className={styles.colorRow}>
             <label
-              className={colorOption.hex ? styles.swatch : styles.swatchEmpty}
+              className={[
+                colorOption.hex ? styles.swatch : styles.swatchEmpty,
+                hasNoColor && styles.mutedArea,
+              ]
+                .filter(Boolean)
+                .join(' ')}
               style={
                 colorOption.hex ? { background: colorOption.hex } : undefined
               }
@@ -69,31 +80,33 @@ export function ColorOptionEditor({
               />
             </label>
             <Input
-              className={fields.fixedField}
+              className={[fields.fixedField, hasNoColor && styles.mutedArea]
+                .filter(Boolean)
+                .join(' ')}
               size="small"
               label="색상 입력"
               value={colorOption.name}
-              disabled={colorOption.noColor}
+              disabled={hasNoColor}
               onChange={(event) =>
                 patchColor(colorOption.id, { name: event.target.value })
               }
             />
             <label className={styles.noColorLabel}>
               <Checkbox
-                checked={colorOption.noColor}
-                onChange={(event) =>
-                  patchColor(colorOption.id, { noColor: event.target.checked })
-                }
+                checked={hasNoColor}
+                onChange={(event) => toggleNoColor(event.target.checked)}
               />
               색상 없음
             </label>
           </div>
 
-          <ImageUploader
-            label="이미지"
-            value={colorOption.images}
-            onChange={(images) => patchColor(colorOption.id, { images })}
-          />
+          <div className={hasNoColor ? styles.mutedArea : undefined}>
+            <ImageUploader
+              label="이미지"
+              value={colorOption.images}
+              onChange={(images) => patchColor(colorOption.id, { images })}
+            />
+          </div>
         </div>
       ))}
 

@@ -30,6 +30,16 @@ export const colorBlock = style({
   },
 })
 
+/**
+ * '색상 없음'일 때 색상 칸 전체를 가라앉힌다 — 체크박스만 살려 두고 나머지는 눌리지
+ * 않게 한다. 지우지 않고 남겨 두는 이유는, 체크를 풀면 적어 둔 색과 이미지가 그대로
+ * 돌아와야 해서다.
+ */
+export const mutedArea = style({
+  opacity: 0.45,
+  pointerEvents: 'none',
+})
+
 export const colorRow = style({
   display: 'flex',
   alignItems: 'center',

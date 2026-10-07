@@ -172,7 +172,7 @@ export const OptionPreset: Story = {
       await userEvent.click(canvas.getByRole('button', { name: option }))
     }
 
-    await pickType('제품 종류 선택', 'PC/주변기기 · 노트북')
+    await pickType('제품 카테고리 선택', 'PC/주변기기 · 노트북')
     await waitFor(async () =>
       expect(canvas.getAllByLabelText('옵션 이름')).toHaveLength(4),
     )
@@ -188,5 +188,38 @@ export const OptionPreset: Story = {
       // 쓰지 않은 크기·용량·칩은 사라지고, 값을 적은 RAM과 스마트폰의 용량만 남는다.
       expect(names).toEqual(['RAM', '용량'])
     })
+  },
+}
+
+/**
+ * '색상 없음'은 칸 하나가 아니라 상품 전체의 성격이다 — 하나를 켜면 이미 만들어 둔
+ * 색상 칸까지 모두 켜지고, 입력이 막힌다.
+ */
+export const NoColorAppliesToEveryBlock: Story = {
+  args: { mode: 'create' },
+  play: async ({ canvas }) => {
+    await userEvent.type(canvas.getByLabelText('색상 입력'), '딥 블루')
+    await userEvent.click(canvas.getByRole('button', { name: '색상 추가' }))
+    await waitFor(async () =>
+      expect(canvas.getAllByLabelText('색상 입력')).toHaveLength(2),
+    )
+
+    // 두 번째 칸에서 켜도 첫 번째까지 같이 켜진다.
+    await userEvent.click(canvas.getAllByLabelText('색상 없음')[1])
+
+    await waitFor(async () => {
+      const boxes = canvas.getAllByLabelText('색상 없음')
+      expect(boxes[0]).toBeChecked()
+      expect(boxes[1]).toBeChecked()
+    })
+    for (const field of canvas.getAllByLabelText('색상 입력')) {
+      await expect(field).toBeDisabled()
+    }
+
+    // 풀면 적어 둔 값이 그대로 돌아온다 — 지우지 않고 가려만 뒀기 때문이다.
+    await userEvent.click(canvas.getAllByLabelText('색상 없음')[0])
+    await waitFor(async () =>
+      expect(canvas.getAllByLabelText('색상 입력')[0]).toHaveValue('딥 블루'),
+    )
   },
 }
