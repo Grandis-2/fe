@@ -46,7 +46,7 @@ export function ProductTile({
       </span>
       {price !== null && (
         <span className={typography.body.defaultMedium}>
-          <PriceText value={formatWon(price)} />
+          <PriceText value={formatWon(price)} from />
         </span>
       )}
     </Link>

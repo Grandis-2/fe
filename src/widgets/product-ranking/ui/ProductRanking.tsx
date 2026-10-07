@@ -107,7 +107,7 @@ export function ProductRanking() {
                     </span>
                     {product.minPrice !== null && (
                       <span className={typography.body.subSemibold}>
-                        <PriceText value={formatWon(product.minPrice)} />
+                        <PriceText value={formatWon(product.minPrice)} from />
                       </span>
                     )}
                   </div>
