@@ -34,8 +34,7 @@ export const Default: Story = {
   },
 }
 
-// PreorderCard.css.ts의 image 스타일(width 100% / aspectRatio 1:1 / objectFit cover)과
-// 동일한 크기로 맞춰서, 실제 사용처와 같은 비율로 이미지 슬라이드를 확인할 수 있게 한다.
+// 정사각 이미지(1:1, cover)로 이미지 슬라이드를 확인한다.
 const imageStyle = {
   width: '100%',
   aspectRatio: '1 / 1',

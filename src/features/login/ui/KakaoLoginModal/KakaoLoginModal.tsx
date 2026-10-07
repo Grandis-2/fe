@@ -11,7 +11,12 @@ const FALLBACK_ERROR = '로그인을 시작할 수 없습니다. 다시 시도�
 
 // 모달 껍데기(backdrop·X·애니메이션)는 shared/ui/Modal이 갖고 있다 —
 // 여기선 내용만 만들고, 여는 쪽이 useModalStore.open(<KakaoLoginModal />)로 띄운다.
-export function KakaoLoginModal() {
+export type KakaoLoginModalProps = {
+  /** 로그인 후 돌아갈 경로. 없으면 모달을 연 지금 화면으로 돌아온다. */
+  returnTo?: string
+}
+
+export function KakaoLoginModal({ returnTo }: KakaoLoginModalProps) {
   const [error, setError] = useState<string | null>(null)
 
   return (
@@ -30,7 +35,7 @@ export function KakaoLoginModal() {
         className={[typography.button.mdBold, styles.kakaoButton].join(' ')}
         onClick={() => {
           try {
-            window.location.href = getKakaoAuthorizeUrl()
+            window.location.href = getKakaoAuthorizeUrl(returnTo)
           } catch (caught) {
             setError(caught instanceof Error ? caught.message : FALLBACK_ERROR)
           }

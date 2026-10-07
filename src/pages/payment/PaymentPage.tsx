@@ -6,7 +6,6 @@ import { Link, useLocation } from 'react-router'
 import { useDefaultAddress, type DefaultAddress } from '@entities/address'
 import { OrderSummary } from '@entities/order'
 import { preparePayment } from '@entities/payment'
-import { ProductPaymentCard } from '@entities/product'
 import { useProfile } from '@entities/profile'
 import {
   DaumPostcodeSearch,
@@ -14,6 +13,7 @@ import {
 } from '@features/address-search'
 import { requestTossPayment } from '@features/payment'
 import {
+  OrderItemList,
   PREORDER_BENEFIT_RATE,
   type PurchaseDraft,
 } from '@features/product-purchase'
@@ -22,22 +22,24 @@ import { getErrorMessage } from '@shared/api/client'
 import { mypagePath } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { useFormFields } from '@shared/lib/useFormFields'
-import { Button, Container, Input, InlineAlert } from '@shared/ui'
+import { ActionButton, Container, Input, InlineAlert } from '@shared/ui'
 
 import * as styles from './PaymentPage.css'
 
 const GENERIC_PAYMENT_ERROR =
   '결제 요청 중 문제가 발생했습니다. 다시 시도해 주세요.'
 
-// 직접 /payment로 들어오면(딥링크 등) 상품 상세가 넘기는 주문 초안이 없어 아래 목업으로 대체한다.
+// 직접 /payment로 들어오면(딥링크 등) 상품 상세·장바구니가 넘기는 주문 상품이 없어 아래 목업으로 대체한다.
 // ponytail: 아직 주문서 API가 없어서 목업 데이터로 대체.
-const fallbackDraft: PurchaseDraft = {
-  productName: '맥북 프로 14',
-  colorLabel: '실버',
-  optionLabel: '512GB',
-  quantity: 1,
-  unitPrice: 2390000,
-}
+const fallbackDrafts: PurchaseDraft[] = [
+  {
+    variantId: 101,
+    productName: '맥북 프로 14',
+    optionSummary: '실버 · 512GB',
+    quantity: 1,
+    unitPrice: 2390000,
+  },
+]
 
 // 저장된 기본 배송지가 없을 때의 처리(배송지 등록 유도 등)가 정해지기 전까지는 배송지가
 // 있다고 가정하고 이 값으로 채운다.
@@ -62,7 +64,11 @@ const REQUIRED_KEYS = [
 
 export function PaymentPage() {
   const location = useLocation()
-  const draft = (location.state as PurchaseDraft | null) ?? fallbackDraft
+  // 예전 형식(객체 하나)이 남은 history state나 빈 목록이면 목업으로 대체한다.
+  const drafts =
+    Array.isArray(location.state) && location.state.length > 0
+      ? (location.state as PurchaseDraft[])
+      : fallbackDrafts
   const { data: profile } = useProfile()
   const { data: savedAddress } = useDefaultAddress()
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
@@ -78,7 +84,7 @@ export function PaymentPage() {
       name: profile?.name || address.name,
       phone: profile?.phoneNumber ?? '',
       email: profile?.email ?? '',
-      addressLabel: '기본 배송지',
+      addressLabel: address.label || '기본 배송지',
       postcode: address.postalCode,
       address: address.line1,
       addressDetail: address.line2 ?? '',
@@ -95,16 +101,18 @@ export function PaymentPage() {
     .filter(Boolean)
     .join(' ')
 
-  const orderAmount = draft.unitPrice * draft.quantity
+  const totalQuantity = drafts.reduce((sum, item) => sum + item.quantity, 0)
+  const orderAmount = drafts.reduce(
+    (sum, item) => sum + item.unitPrice * item.quantity,
+    0,
+  )
   const preorderBenefit = Math.round(orderAmount * PREORDER_BENEFIT_RATE)
   const totalAmount = orderAmount - preorderBenefit
-  const orderProduct = {
-    name: draft.productName,
-    modelNumber: 'A3112',
-    optionSummary: `${draft.colorLabel} · ${draft.optionLabel} · Apple care+`,
-    quantityLabel: `${draft.quantity}개`,
-    priceLabel: formatWon(orderAmount),
-  }
+  // 결제창에 뜨는 주문명 — 여러 건이면 "맥북 프로 14 외 2건".
+  const orderName =
+    drafts.length > 1
+      ? `${drafts[0].productName} 외 ${drafts.length - 1}건`
+      : drafts[0].productName
 
   const requiredAgreed = terms.every(
     (term) => !term.required || agreedIds.has(term.id),
@@ -140,13 +148,13 @@ export function PaymentPage() {
 
     try {
       const { orderId, amount } = await preparePayment({
-        orderName: draft.productName,
+        orderName,
         amount: totalAmount,
       })
       await requestTossPayment({
         orderId,
         amount,
-        orderName: draft.productName,
+        orderName,
         customerName: form.values.name,
         customerEmail: form.values.email || undefined,
       })
@@ -156,95 +164,117 @@ export function PaymentPage() {
   }
 
   return (
-    <Container>
-      <div className={styles.title}>주문 / 결제</div>
+    <div className={styles.root} data-theme="dark" data-header-theme="dark">
+      <Container>
+        <div className={styles.title}>주문 / 결제</div>
 
-      {paymentError && <InlineAlert status="error">{paymentError}</InlineAlert>}
+        {paymentError && (
+          <InlineAlert status="error">{paymentError}</InlineAlert>
+        )}
 
-      <div className={styles.layout}>
-        <div className={styles.form}>
-          <section className={styles.section}>
-            <div className={styles.sectionTitle}>주문 상품</div>
-            <ProductPaymentCard product={orderProduct} />
-          </section>
+        <div className={styles.layout}>
+          <div className={styles.form}>
+            <section className={styles.section}>
+              <OrderItemList items={drafts} />
+            </section>
 
-          <section className={styles.section}>
-            <div className={styles.sectionTitle}>수령인</div>
-            <div className={styles.fieldRow}>
-              <Input {...field('name', '이름')} />
+            <section className={styles.section}>
+              <div className={styles.sectionTitle}>수령인</div>
+              <div className={styles.fieldRow}>
+                <Input
+                  {...field('name', '이름')}
+                  variant="stacked"
+                  placeholder="이름"
+                />
+                <Input
+                  {...field('phone', "휴대폰 ('-'을 제외한 숫자만)")}
+                  variant="stacked"
+                  placeholder="01012345678"
+                  inputMode="numeric"
+                />
+              </div>
               <Input
-                {...field('phone', "휴대폰 ('-'을 제외한 숫자만)")}
-                inputMode="numeric"
+                {...field('email', '이메일')}
+                variant="stacked"
+                placeholder="email@example.com"
+                inputMode="email"
               />
-            </div>
-            <Input {...field('email', '이메일')} inputMode="email" />
-          </section>
+            </section>
 
-          <section className={styles.section}>
-            <div className={styles.sectionIntro}>
-              <div className={styles.sectionHeader}>
-                <div className={styles.sectionTitle}>배송지</div>
-                <Link
-                  to={mypagePath('address-manage')}
-                  className={styles.addressManageLink}
+            <section className={styles.section}>
+              <div className={styles.sectionIntro}>
+                <div className={styles.sectionHeader}>
+                  <div className={styles.sectionTitle}>배송지</div>
+                  <Link
+                    to={mypagePath('address-manage')}
+                    className={styles.addressManageLink}
+                  >
+                    <Settings size={16} aria-hidden="true" />
+                    배송지 관리
+                  </Link>
+                </div>
+                <div className={styles.note}>
+                  ※ 기본 배송지로 자동 설정되었습니다. 주문 전 주소를 확인해
+                  주세요.
+                </div>
+              </div>
+
+              <Input {...field('addressLabel', '배송지명')} variant="stacked" />
+              <div className={styles.addressRow}>
+                <Input
+                  {...field('address', '기본 주소')}
+                  variant="stacked"
+                  value={addressDisplay}
+                  readOnly
+                />
+                <ActionButton
+                  variant="neutral"
+                  className={styles.addressAction}
+                  onClick={() => setAddressSearchOpen(true)}
                 >
-                  <Settings size={20} />
-                  배송지 관리
-                </Link>
+                  주소 찾기
+                </ActionButton>
               </div>
-              <div className={styles.note}>
-                ※ 기본 배송지로 자동 설정되었습니다. 주문 전 주소를 확인해
-                주세요.
-              </div>
-            </div>
-
-            <Input {...field('addressLabel', '배송지명')} />
-            <div className={styles.addressRow}>
               <Input
-                {...field('address', '기본 주소')}
-                value={addressDisplay}
-                readOnly
+                {...field('addressDetail', '상세 주소')}
+                variant="stacked"
+                placeholder="동, 호수"
               />
-              <Button
-                className={styles.addressAction}
-                onClick={() => setAddressSearchOpen(true)}
-              >
-                주소 찾기
-              </Button>
-            </div>
-            <Input {...field('addressDetail', '상세 주소')} />
-          </section>
+            </section>
+          </div>
+
+          <OrderSummary
+            className={styles.summary}
+            rows={[
+              { label: '상품 수', value: `${totalQuantity}개` },
+              { label: '주문 금액', value: formatWon(orderAmount) },
+              {
+                label: '사전예약 혜택',
+                value: `-${formatWon(preorderBenefit)}`,
+                highlight: true,
+              },
+            ]}
+            totalLabel="결제 예정 금액"
+            totalValue={formatWon(totalAmount)}
+            actionLabel={`${formatWon(totalAmount)} 결제하기`}
+            actionDisabled={!requiredAgreed}
+            darkAction
+            onAction={() => void handlePayment()}
+          >
+            <TermsAgreement
+              agreedIds={agreedIds}
+              onToggle={toggleAgree}
+              onToggleAll={toggleAllAgree}
+            />
+          </OrderSummary>
         </div>
 
-        <OrderSummary
-          rows={[
-            { label: '상품 수', value: `${draft.quantity}개` },
-            { label: '주문 금액', value: formatWon(orderAmount) },
-            {
-              label: '사전예약 혜택',
-              value: `-${formatWon(preorderBenefit)}`,
-              highlight: true,
-            },
-          ]}
-          totalLabel="결제 예정 금액"
-          totalValue={formatWon(totalAmount)}
-          actionLabel={`${formatWon(totalAmount)} 결제하기`}
-          actionDisabled={!requiredAgreed}
-          onAction={() => void handlePayment()}
-        >
-          <TermsAgreement
-            agreedIds={agreedIds}
-            onToggle={toggleAgree}
-            onToggleAll={toggleAllAgree}
-          />
-        </OrderSummary>
-      </div>
-
-      <DaumPostcodeSearch
-        open={addressSearchOpen}
-        onOpenChange={setAddressSearchOpen}
-        onComplete={handleAddressComplete}
-      />
-    </Container>
+        <DaumPostcodeSearch
+          open={addressSearchOpen}
+          onOpenChange={setAddressSearchOpen}
+          onComplete={handleAddressComplete}
+        />
+      </Container>
+    </div>
   )
 }

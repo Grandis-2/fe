@@ -1,15 +1,25 @@
 import { style } from '@vanilla-extract/css'
 
 import { breakpoint, color, motion, typography } from '@shared/config/theme'
-import { fontSize } from '@shared/config/theme/tokens/typography/base'
+import { maxWidth } from '@shared/config/theme/tokens/container'
+import {
+  fontSize,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
 
+// 반투명 유리 바탕은 화면 끝까지, 탭은 본문 폭(1184px) 안에서 4등분한다.
 export const root = style({
+  background: `color-mix(in srgb, ${color.background.base} 42%, transparent)`,
+  backdropFilter: 'blur(24px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+  borderBottom: `1px solid ${color.border.subtle}`,
+})
+
+export const tabs = style({
   display: 'flex',
   alignItems: 'center',
-  width: '100%',
-  background: `color-mix(in srgb, ${color.background.base} 80%, transparent)`,
-  backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
+  maxWidth: maxWidth.content,
+  margin: '0 auto',
 })
 
 export const tab = style([
@@ -30,18 +40,19 @@ export const tab = style([
       `color ${motion.duration.fast} ${motion.easing.default}`,
       `border-bottom-color ${motion.duration.fast} ${motion.easing.default}`,
     ].join(', '),
+    selectors: { '&:hover': { color: color.text.primary } },
     '@media': {
       // 20px 글자 4개가 좁은 폭에서 붙어 보여 모바일만 줄인다. 미디어 규칙이 뒤에 출력돼
       // tabActive의 20px도 함께 덮인다. 높이를 바꾸면 ProductDetailPage의 tabPanel scrollMarginTop도 맞출 것.
       [breakpoint.mobile]: { height: '44px', fontSize: fontSize[16] },
+      [breakpoint.desktop]: { fontSize: fontSize[18] },
     },
   },
 ])
 
-export const tabActive = style([
-  typography.button.lgSemibold,
-  {
-    borderBottomColor: color.primary.base,
-    color: color.primary.base,
-  },
-])
+// 글자 크기는 tab 그대로 두고 굵기만 올린다.
+export const tabActive = style({
+  fontWeight: fontWeight.semibold,
+  borderBottomColor: color.primary.subtle,
+  color: color.text.primary,
+})

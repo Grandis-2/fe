@@ -2,7 +2,9 @@ import { useEffect } from 'react'
 
 import { Outlet, useLocation, useNavigate } from 'react-router'
 
-import { useSession } from '@entities/auth'
+import { logout, useSession } from '@entities/auth'
+import { KAKAO_CALLBACK_PATH } from '@features/login'
+import { PreorderQueue, usePreorderQueueStore } from '@features/preorder-queue'
 import { SIGNUP_PATH } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
 import { useToastStore } from '@shared/model/toastStore'
@@ -11,12 +13,14 @@ import { Header } from '@widgets/header'
 import { MobileTabBar } from '@widgets/mobile-tab-bar'
 
 export function RootLayout() {
-  const { isLoggedIn, profileComplete } = useSession()
+  const { isLoggedIn, isSignupPending } = useSession()
   const isModalOpen = useModalStore((state) => state.isOpen)
   const modalContent = useModalStore((state) => state.content)
   const closeModal = useModalStore((state) => state.close)
   const toasts = useToastStore((state) => state.toasts)
   const dismissToast = useToastStore((state) => state.dismiss)
+  const queueTicket = usePreorderQueueStore((state) => state.ticket)
+  const clearQueue = usePreorderQueueStore((state) => state.clear)
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -26,24 +30,21 @@ export function RootLayout() {
     window.scrollTo(0, 0)
   }, [location.pathname])
 
-  // profileComplete는 로그인/재발급/세션조회 세 경로 어디로 채워지든 여기 한 곳에서만
-  // 본다 — 경로별로 나눠 검사하면 새로고침(재발급) 경로로 돌아온 사용자가 이 검사를
-  // 건너뛴다. role 체크는 따로 안 한다 — ADMIN의 profileComplete는 계약상 항상 true다.
+  // 가입 진행 중(카카오만 마침)인 사용자가 /signup을 벗어나면 가입 취소로 보고 세션을
+  // 지운다 — 링크 이동이든 주소창 이동(새로고침 → 재발급으로 세션이 되살아남)이든 여기
+  // 한 곳에서 잡는다. 다시 로그인하면 카카오 콜백이 /signup으로 보낸다.
+  // role 체크는 따로 안 한다 — ADMIN의 profileComplete는 계약상 항상 true다.
   //
-  // location(useLocation의 값)이 아니라 window.location을 읽는다 — 세션 스토어 갱신과
-  // 카카오 콜백 페이지 자신의 navigate가 같은 틱에 연달아 일어나면 이 effect가 그 사이의
-  // 스냅샷(아직 콜백 경로인 location)으로 한 번 더 예약될 수 있다. 그 stale한 예약이
-  // 나중에 실행되더라도 그때 브라우저의 실제 위치는 이미 최종 목적지로 옮겨져 있으므로,
-  // window.location을 그 시점에 다시 읽으면 잘못된 from으로 덮어쓰는 일이 없다.
+  // location(useLocation의 값)이 아니라 window.location을 읽는다 — 카카오 콜백 페이지가
+  // 세션을 넣고 /signup으로 navigate하는 사이에 이 effect가 콜백 경로 스냅샷으로 예약될
+  // 수 있다. 실행 시점의 실제 위치를 다시 읽고, 콜백 경로도 제외해 그 틈에 갓 받은
+  // 세션을 지우지 않게 한다.
   useEffect(() => {
-    if (!isLoggedIn || profileComplete) return
-    const { pathname, search } = window.location
-    if (pathname === SIGNUP_PATH) return
-    navigate(SIGNUP_PATH, {
-      replace: true,
-      state: { from: `${pathname}${search}` },
-    })
-  }, [isLoggedIn, profileComplete, location, navigate])
+    if (!isSignupPending) return
+    const { pathname } = window.location
+    if (pathname === SIGNUP_PATH || pathname === KAKAO_CALLBACK_PATH) return
+    void logout()
+  }, [isSignupPending, location])
 
   return (
     <>
@@ -54,6 +55,16 @@ export function RootLayout() {
         {modalContent}
       </Modal>
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+      {queueTicket && (
+        <PreorderQueue
+          key={queueTicket.joinedAt}
+          productName={queueTicket.productName}
+          onComplete={() => {
+            clearQueue()
+            navigate(queueTicket.to)
+          }}
+        />
+      )}
     </>
   )
 }

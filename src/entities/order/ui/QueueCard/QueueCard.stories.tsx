@@ -1,3 +1,5 @@
+import { fn } from 'storybook/test'
+
 import { QueueCard } from './QueueCard'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
@@ -12,15 +14,19 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    headline: '조금만 기다려주세요,',
-    headlineAccent: '곧 결제 페이지로 이동합니다.',
-    productName: 'NOVA Phone 256GB · 미드나이트',
-    myOrderNumber: '128',
-    progressPercent: 45,
-    totalWaitingCount: '284',
+    myOrderNumber: '131',
+    waitTime: '약 4분',
+    progressPercent: 65,
+    totalWaitingCount: '373',
+    onLeave: fn(),
   },
 }
 
 export const Complete: Story = {
-  args: { ...Default.args, progressPercent: 100, myOrderNumber: '1' },
+  args: {
+    ...Default.args,
+    myOrderNumber: '1',
+    waitTime: '1분 미만',
+    progressPercent: 100,
+  },
 }

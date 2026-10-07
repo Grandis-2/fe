@@ -29,44 +29,19 @@ export const Default: Story = {
       modelNumber: 'NV-2026',
       colorName: '미드나이트',
       colorSwatches,
-      options: [
-        { label: '256GB', selected: true },
-        { label: '512GB', extraPrice: 130000 },
-      ],
       basePrice: 1290000,
       saleMode: 'IN_STOCK',
     },
-    onOptionSelect: fn(),
+    onColorSelect: fn(),
   },
   play: async ({ args, canvas }) => {
-    await canvas.getByRole('button', { name: '512GB' }).click()
-    await expect(args.onOptionSelect).toHaveBeenCalledWith(1)
+    await canvas.getByRole('button', { name: '스타라이트' }).click()
+    await expect(args.onColorSelect).toHaveBeenCalledWith(1)
   },
 }
 
 export const Preorder: Story = {
   args: {
     product: { ...Default.args.product, saleMode: 'PREORDER' },
-  },
-}
-
-export const NoOptionSelected: Story = {
-  args: {
-    product: {
-      ...Default.args.product,
-      options: [{ label: '256GB' }, { label: '512GB' }],
-    },
-  },
-}
-
-export const ExtraPriceOptionSelected: Story = {
-  args: {
-    product: {
-      ...Default.args.product,
-      options: [
-        { label: '256GB' },
-        { label: '512GB', selected: true, extraPrice: 130000 },
-      ],
-    },
   },
 }

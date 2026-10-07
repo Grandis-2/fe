@@ -2,6 +2,8 @@ import type { ReactNode } from 'react'
 
 import { spacing, sprinkles } from '@shared/config/theme'
 
+import * as styles from './Container.css'
+
 export type ContainerProps = {
   children: ReactNode
   className?: string
@@ -31,8 +33,8 @@ export function Container({
           maxWidth: { mobile: 'full', desktop: 'content' },
           paddingX: { mobile: mobilePaddingX, desktop: desktopPaddingX },
           paddingY: { mobile: mobilePaddingY, desktop: desktopPaddingY },
-          marginX: { mobile: 'auto', desktop: 'auto' },
         }),
+        styles.root,
         className,
       ]
         .filter(Boolean)

@@ -1,60 +1,45 @@
-import { typography } from '@shared/config/theme'
-import { Button } from '@shared/ui'
+import type { ReactNode } from 'react'
+
+import { formatNumber } from '@shared/lib/formatNumber'
 
 import * as styles from './PreorderModelSummary.css'
 
+import type { PreorderModel } from '../../model/preorder'
+
 export type PreorderModelSummaryProps = {
-  imageSrc?: string
+  model: Pick<PreorderModel, 'name' | 'imageSrc' | 'price'>
   imageAlt?: string
-  name: string
-  opensAtLabel: string
-  // 예약 시작 전/후, 그리고 시작 전이라면 알림 신청을 이미 했는지 — CTA 라벨/동작이 이 두
-  // 상태 조합으로 갈린다 (예약 하기 / 알림 신청 / 신청 완료).
-  isOver: boolean
-  isAlert: boolean
-  onReserve?: () => void
-  onNotify?: () => void
+  /** 이름 아래 한 줄 — 출시일·예약 오픈일·도착 안내처럼 상태마다 다르다. */
+  caption: string
+  /** 오른쪽 버튼 자리 — 예약하기·알림 받기·구매하기는 쓰는 쪽이 정한다. */
+  action: ReactNode
   className?: string
 }
 
+// 바텀시트 안 모델 한 줄(어두운 시트 전용). 사진 · 이름/안내/가격 · 버튼.
 export function PreorderModelSummary({
-  imageSrc,
+  model: { name, imageSrc, price },
   imageAlt = '',
-  name,
-  opensAtLabel,
-  isOver,
-  isAlert,
-  onReserve,
-  onNotify,
+  caption,
+  action,
   className,
 }: PreorderModelSummaryProps) {
-  const ctaLabel = isOver ? '예약 하기' : isAlert ? '신청 완료' : '알림 신청'
-  const ctaDisabled = !isOver && isAlert
-
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      {imageSrc ? (
-        <img src={imageSrc} alt={imageAlt} className={styles.thumbnail} />
-      ) : (
-        <div className={styles.thumbnailPlaceholder} />
-      )}
-      <div>
-        <div className={[typography.title.smMedium, styles.name].join(' ')}>
-          {name}
-        </div>
-        <div className={[typography.body.sub, styles.opensAt].join(' ')}>
-          {opensAtLabel}
-        </div>
+      <div className={styles.thumbnail}>
+        {imageSrc && (
+          <img src={imageSrc} alt={imageAlt} className={styles.image} />
+        )}
       </div>
-      <Button
-        onClick={isOver ? onReserve : onNotify}
-        disabled={ctaDisabled}
-        size="small"
-
-        rounded
-      >
-        {ctaLabel}
-      </Button>
+      <div className={styles.body}>
+        <span className={styles.name}>{name}</span>
+        <span className={styles.caption}>{caption}</span>
+        <span className={styles.price}>
+          {formatNumber(price)}
+          <span className={styles.priceUnit}> 원부터</span>
+        </span>
+      </div>
+      {action}
     </div>
   )
 }

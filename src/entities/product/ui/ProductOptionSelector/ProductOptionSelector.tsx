@@ -7,8 +7,8 @@ import * as styles from './ProductOptionSelector.css'
 // ProductColorSwatches와 같은 이유로 size에 따라 제목 크기가 갈린다 — 카드(작게)와
 // 상세 페이지 옵션 패널(크게)이 같은 컴포넌트를 쓰되 맥락에 맞는 크기를 쓴다.
 const labelTypography = {
-  small: typography.body.subMedium,
-  medium: typography.title.lgSemibold,
+  small: typography.body.subSemibold,
+  medium: typography.title.mdSemibold,
 }
 
 export type ProductOption = {

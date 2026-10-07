@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "pageVersion": "sha256:08bb3b7b10ce0326ef4669e71ae09e451fc304042118197c93ef47acb1dcfff3",
+  "pageVersion": "sha256:a3c864f717156446c911958adf7e05f2e926269b8f68e62ee809cd6a7e356496",
   "claims": [
     {
       "id": "claim_7bcc696a887543898197d5029ea6949a",
       "statement": "semantic.css.ts는 globalStyle('body', { color: color.text.primary })로 바디 기본 텍스트 색을 전역 지정한다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/config/theme/tokens/color/semantic.css.ts#L51-L52",
+          "resource": "repo://src/shared/config/theme/tokens/color/semantic.css.ts#L56-L57",
           "version": "repo-lines-v1:sha256:0a92d3a56b4d81859323e91a89cdf55698319c0e1312e5602b10e2c1aded09f2:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWM2MTY0MzdmODAwYjdhMWIxNTY5ZGE0ZDhhZTRkMTNlNjU4OWEwY2M3NjQ1MTA2MzA2YWY4MWNhY2NmZWQzNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMGE4NTc3ODM5ZjNjMjg5YmYzYTg4ZjRkZDQ3MDBkYmJkN2NlMjAyZTc1OWIyNGI0ZjE4N2ViZTgwOTQ2YTZkOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDNmMDQxYTM5MTAxNTczNTExNmYzNmEwOWJjODRjZWZiYjI0NTk3MGZhMjZlZDQ4YWRlZDg2ZDEwN2FkYTU0OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
@@ -24,11 +24,19 @@
     },
     {
       "id": "claim_8c9be1f8c6bc4250bc17c8f5c52715ad",
-      "statement": "motion 토큰은 duration.fast('150ms')와 easing.default('ease') 두 값만 정의하는 최소 구성이다.",
+      "statement": "motion 토큰은 duration.fast(150ms)·duration.normal(220ms)과 easing.default(ease)·easing.out(cubic-bezier(0.23, 1, 0.32, 1))을 정의하며, 모달·토스트 등장 애니메이션이 normal+out 조합을 쓴다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/config/theme/tokens/motion.ts#L1-L7",
-          "version": "repo-lines-v1:sha256:86c495891ecc7d9e931ed030e0139c0d99f4e9f7a609872be9e68dfd1b430707:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTg1YzM4OWE2YjM5OTA5Y2QzNDA1YjA1YWNlNjczOWZmNDMxMzcyNzllYTAxN2M0YzRkYzI0NzkzNjc4NjA0MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc1ZWQ5NTI0MTk5Y2ZjZGMyMjIzZjg1NzM3ZDY2Y2FiYTI0YzY5ZThjZTc5YTAxNjU1YTZmNWRiZDVkOWU2NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+          "resource": "repo://src/shared/config/theme/tokens/motion.ts#L1-L9",
+          "version": "repo-lines-v1:sha256:0b4514476637020d56045a7ef4a890c0cabe5673b06637c0b170c04246a603e2:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTg1YzM4OWE2YjM5OTA5Y2QzNDA1YjA1YWNlNjczOWZmNDMxMzcyNzllYTAxN2M0YzRkYzI0NzkzNjc4NjA0MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc1ZWQ5NTI0MTk5Y2ZjZGMyMjIzZjg1NzM3ZDY2Y2FiYTI0YzY5ZThjZTc5YTAxNjU1YTZmNWRiZDVkOWU2NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://src/shared/ui/Modal/Modal.css.ts#L20-L20",
+          "version": "repo-lines-v1:sha256:003b0b3f56740e02d6ea1fd93b3a2f3ad7b3da0519d23578af2bc8c317ea5358:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDAzYjBiM2Y1Njc0MGUwMmQ2ZWExZmQ5M2IzYTJmM2FkN2IzZGEwNTE5ZDIzNTc4YWYyYmM4YzMxN2VhNTM1OCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDAzYjBiM2Y1Njc0MGUwMmQ2ZWExZmQ5M2IzYTJmM2FkN2IzZGEwNTE5ZDIzNTc4YWYyYmM4YzMxN2VhNTM1OCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZmEwZmUwZGJlNTRkMDE3ZDM2NDZiNTM1NTE5YzczMGY0NzU1NjFiYTA2ZWVkYjZmMmRmMzU1YTJiZGNkNjIxOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiYjIwMTA4YWQ5ZmFkOTQ1NDg5OTZiNzBhODI1OTBmMGZjZmE1NmM3MmViZGJmMTFjN2Q4M2JkNzVhYmY4NTEzMSJ9"
+        },
+        {
+          "resource": "repo://src/shared/ui/Toast/Toast.css.ts#L63-L63",
+          "version": "repo-lines-v1:sha256:cffa6e92c9da04527819c08ad8489f87604e25ce660723a0ec27baf9d17646e9:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiY2ZmYTZlOTJjOWRhMDQ1Mjc4MTljMDhhZDg0ODlmODc2MDRlMjVjZTY2MDcyM2EwZWMyN2JhZjlkMTc2NDZlOSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiY2ZmYTZlOTJjOWRhMDQ1Mjc4MTljMDhhZDg0ODlmODc2MDRlMjVjZTY2MDcyM2EwZWMyN2JhZjlkMTc2NDZlOSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNWQ2OGM2MTZjOGI3Mjc0NTBkZTg5OTRlODA3ZTE3NjA2ODZjYjM0OWQxYjgzNzE2MjI5NWUzZmJiZWUzYzAxMyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNmI0ZWJkNjExNTQwY2RlOWZlMjBhZDM2NDEyZTRhYjQyNmRkNzA0ZTZhYmJkOTVhMjU0ODI2YzkyODgxMzVjMCJ9"
         }
       ]
     },
@@ -44,45 +52,57 @@
     },
     {
       "id": "claim_d90ca9cc9ddb4818b056459e61ac7464",
-      "statement": "shared/config/theme/index.ts는 color, spacing, typography, motion, sprinkles(+Sprinkles 타입), lineClamp를 공개 배럴로 내보내며 breakpoint/container/typography-base는 이 배럴에 없다.",
+      "statement": "shared/config/theme/index.ts 배럴은 color, spacing, breakpoint, TAB_BAR_HEIGHT/TAB_BAR_OFFSET, shadow, typography, motion, sprinkles(+Sprinkles 타입), lineClamp를 내보내고, typography base 스케일과 container의 maxWidth는 내보내지 않는다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/config/theme/index.ts",
-          "version": "repo-file-v1:sha256:746200cab6bebb6ebbf725a415c2bad3655a4841749ce09dae17d401e2d56f34"
+          "resource": "repo://src/shared/config/theme/index.ts#L1-L12",
+          "version": "repo-lines-v1:sha256:83886ca58040e75ba3bad89925022943bbe596532853e956422f888bbec1f80f:eyJzZWxlY3RlZExpbmVDb3VudCI6MTIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwMzUyZjQyODRiZWNkN2JjMTdhMzVhNjE0M2NmN2Q1MzkzZDY0YTUyZDhjYmRhODVmMmU3MGNlOThhYWIzMDYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQ3ZTBmOWJmOGM5ZmQzOTUwYjVkYWI0ZGFlZGU1MGU1MzEwMjFhZjVhYTRjOGNlYjRjYTgyZWI1ODU1Zjc2MWYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_a13949a46bfd4c0694afb2dd3cef7222",
-      "statement": "color 토큰은 base.ts 없이 tokens/color/semantic.css.ts 하나에 hex가 직접 들어있는 단일 파일로 합쳐졌다. backgroundDark(base/surface 두 값)는 이 병합 이후에도 색상 객체 안에 그대로 남아 있지만 앱 코드 어디에서도 참조되지 않아, 다크모드는 아직 구현되어 있지 않다.",
+      "statement": "color 토큰은 tokens/color/semantic.css.ts 한 파일에서 createGlobalTheme(':root')로 hex를 직접 담아 정의되며, backgroundDark(base/surface)는 다크 모드가 아니라 토스트·헤더 검색 패널 배경, 모달·카테고리 메뉴 딘, 메인/배너의 어두운 배경처럼 어두운 면이 필요한 곳에 쓰인다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/config/theme/tokens/color/semantic.css.ts",
-          "version": "repo-file-v1:sha256:34463eba4b45c4bdf89de99edd1218d2b7b810452de84fe8b179a1e1ac90e265"
+          "resource": "repo://src/shared/config/theme/tokens/color/semantic.css.ts#L1-L54",
+          "version": "repo-lines-v1:sha256:336ac8349ee59572268db4c26fdbd40f3e68400d94b5c048de7f4640bfbb6e13:eyJzZWxlY3RlZExpbmVDb3VudCI6NTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkOGVkMDdmNDExNzkwZTQzOWZiNmJlYzQ0MmQ5NzRkZmFiNzVkNzBkMTBhZDcyM2UxODg3MTIyMTM2NmE5M2QiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijg1ODBiNzY1MThkYWU5NzlmYWViZDAyMzY3YTI5MjkyYTUwZDk3NjA5MjI1MWEzOGE2Y2UzMDg4MGJhNDI4MjUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVlYjY3NzQ3Y2RhZWZhN2FiNzI3YWJjMWZmZWVlZGVmZjIzNDgzNmM4MTU1N2NmMzZlMGVlYTFjMmYyZjk5YjYifQ"
+        },
+        {
+          "resource": "repo://src/shared/ui/Modal/Modal.css.ts#L35-L35",
+          "version": "repo-lines-v1:sha256:e3c06762fd750c24497034e7b60d129322c67a01a98e4719951031565b6b9c4b:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNjMDY3NjJmZDc1MGMyNDQ5NzAzNGU3YjYwZDEyOTMyMmM2N2EwMWE5OGU0NzE5OTUxMDMxNTY1YjZiOWM0YiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTNjMDY3NjJmZDc1MGMyNDQ5NzAzNGU3YjYwZDEyOTMyMmM2N2EwMWE5OGU0NzE5OTUxMDMxNTY1YjZiOWM0YiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMTE0NGMxYzYxNzlhNjMwNTA5ZjNhNzgxNTJmZmFkZjYzNzM5NDdmMjg0NTg0MzlhZmM5MjI1OWQxNmE0M2E5NCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTQzZTNlYzc5NDlkZWI4M2EwNTg3MmE3MTkyYjdkOWRlYjI5YmQ2MjYyNGI2NmM4Yzc0OThmNDk1YjZiYjczOSJ9"
+        },
+        {
+          "resource": "repo://src/shared/ui/Toast/Toast.css.ts#L57-L57",
+          "version": "repo-lines-v1:sha256:4244c9240f19221a08fefb929d000cc9b3bd63249f757aecee7c6873ec92b0e2:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNDI0NGM5MjQwZjE5MjIxYTA4ZmVmYjkyOWQwMDBjYzliM2JkNjMyNDlmNzU3YWVjZWU3YzY4NzNlYzkyYjBlMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDI0NGM5MjQwZjE5MjIxYTA4ZmVmYjkyOWQwMDBjYzliM2JkNjMyNDlmNzU3YWVjZWU3YzY4NzNlYzkyYjBlMiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYTkxYWJmNGQwODU0MzUxNTk1MWFhMmJkZjViMWQzN2I2YzZlOTkyZTllMGFhZmVlYzIwNDUyN2QwYjliNDUzMSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMGRmOWNiYzliN2ZiZmZjNzMzZWFhN2Y1ODYyOGVmZGFkMGFiZWQzYWEzM2EyMTI5NDkyOTg0MzUyOTkzMDJlMSJ9"
+        },
+        {
+          "resource": "repo://src/widgets/banner/ui/Banner.css.ts#L36-L36",
+          "version": "repo-lines-v1:sha256:e14b29bbe8849ea121e79d13a4f7d9ce09a9a65f62758d9882840b2ea9f0c144:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZTE0YjI5YmJlODg0OWVhMTIxZTc5ZDEzYTRmN2Q5Y2UwOWE5YTY1ZjYyNzU4ZDk4ODI4NDBiMmVhOWYwYzE0NCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTE0YjI5YmJlODg0OWVhMTIxZTc5ZDEzYTRmN2Q5Y2UwOWE5YTY1ZjYyNzU4ZDk4ODI4NDBiMmVhOWYwYzE0NCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTMyNGE1ZjU2ODdjNmMyMjZiYjQyODZlODc1MDRjMTIyYzE5NGExYzZiMDYxY2YzZjEyOTc2NjIzMTNjNjBmOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNWNlYjgwMjIxYTBkNTgwZWRhNzc2ODBlZGZhNzA5ZDBjZmM3YWVmM2JjODFhOGJmNDUzZDk1ODA3OTQ5OWM4NyJ9"
         }
       ]
     },
     {
       "id": "claim_3d88a74cf3a8412691a6fa3909a5d614",
-      "statement": "spacing 스케일은 0부터 100px까지 고정된 스텝(0,2,4,6,8,10,12,14,16,20,24,30,32,40,50,60,70,80,90,100)만 제공한다.",
+      "statement": "spacing 스케일은 0, 2, 4, 6, 8, 10, 12, 14, 16, 20, 22, 24, 30, 32, 40, 50, 60, 70, 80, 90, 100px 고정 스텝을 제공한다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/config/theme/tokens/spacing.ts",
-          "version": "repo-file-v1:sha256:2f2ee03cdd4f8cfc8d55d5688f3f73491c285261234d56af7885233d9c749c65"
+          "resource": "repo://src/shared/config/theme/tokens/spacing.ts#L1-L23",
+          "version": "repo-lines-v1:sha256:c1acdcf8582854b099957006919c61849a516952cd4faa4ed71328ca1207739d:eyJzZWxlY3RlZExpbmVDb3VudCI6MjMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdkMDA4N2UyN2U0ZDM3Y2ViZDY0MDQyYTAxMWM5OWI2ZTc0ODUwZGU4ZTZjNTIzOWUyODJiZDUwN2Y0ODY1ODIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM3NWVkOTUyNDE5OWNmY2RjMjIyM2Y4NTczN2Q2NmNhYmEyNGM2OWU4Y2U3OWEwMTY1NWE2ZjVkYmQ1ZDllNjYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
     {
       "id": "claim_feb44251a55843efa68d6e423de50854",
-      "statement": "container 토큰은 maxWidth.none/content(1200px)/full(100%) 세 값을, breakpoint 토큰은 mobile(max-width:743px)/desktop(min-width:744px) 두 값을 제공한다.",
+      "statement": "container 토큰은 maxWidth(none/content 1200px/full 100%)와 모바일 하단 탭바용 TAB_BAR_HEIGHT(60px)·TAB_BAR_OFFSET(12px + safe-area)을, breakpoint 토큰은 mobile(max-width:743px)/desktop(min-width:744px)을 제공한다.",
       "evidence": [
         {
-          "resource": "repo://src/shared/config/theme/tokens/breakpoint.ts",
-          "version": "repo-file-v1:sha256:40fead93b8474581f50a011c9f5db56d764919fd239ebb5dbea7ff682c1200e2"
+          "resource": "repo://src/shared/config/theme/tokens/breakpoint.ts#L1-L4",
+          "version": "repo-lines-v1:sha256:40fead93b8474581f50a011c9f5db56d764919fd239ebb5dbea7ff682c1200e2:eyJzZWxlY3RlZExpbmVDb3VudCI6NCwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNWY4ZDU4NGE5YjRkMzc2ZmQ3MjAyNzYzODBlMmJhMzA0YzVjMWQyZmU3MmY4ZjNiOWM5MjhhNDMwNTM1ZTM1ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc1ZWQ5NTI0MTk5Y2ZjZGMyMjIzZjg1NzM3ZDY2Y2FiYTI0YzY5ZThjZTc5YTAxNjU1YTZmNWRiZDVkOWU2NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         },
         {
-          "resource": "repo://src/shared/config/theme/tokens/container.ts",
-          "version": "repo-file-v1:sha256:9a4b7426d6361fa270a8e2c7d6c0c6fb9d6203f8b7d28b05026e9c4787d8b3c6"
+          "resource": "repo://src/shared/config/theme/tokens/container.ts#L1-L13",
+          "version": "repo-lines-v1:sha256:26a9fd36a56537e4f73fc6a2f5c1db231fc9dded94b73e325af1eb445aa033eb:eyJzZWxlY3RlZExpbmVDb3VudCI6MTMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjgyZmFiZTQ1YWQ0ODMzNzQ2ODBiZjBmMTgyYTBiMGMzYzZhYTMwMzgzNThmMTc3ZWRjZDU3YTJhZWQ2ZDlhMTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE4YTUxMTRiMzQyZjI4MmEzNzY1Yzc3MjMxMzQ3ZTBjMDQ5MDc0YmVjNjczMzg2ZTgwM2FlYWEzMDk3NWRmMTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
         }
       ]
     },
@@ -98,39 +118,59 @@
     },
     {
       "id": "claim_2496249074f94c3d91134e61eb5c2401",
-      "statement": "mixins.ts는 lineClamp(lines) 헬퍼 하나만 내보내며, -webkit-line-clamp 기반 말줄임 스타일 객체를 반환한다. 고정값 토큰이 아니라 인자를 받는 스타일 조각이라 tokens/가 아닌 별도 파일에 있다.",
+      "statement": "mixins.ts는 -webkit-line-clamp 기반 말줄임 스타일 객체를 돌려주는 lineClamp(lines) 헬퍼 하나만 내보내며, PreorderCard 제목이 lineClamp(2)를 쓴다.",
       "evidence": [
         {
-          "resource": "repo://src/entities/preorder/ui/PreorderCard/PreorderCard.css.ts#L34-L38",
-          "version": "repo-lines-v1:sha256:1ce595a4e63210bd9a8ab75674cb54dfc0a15ade884d2410cb49b9fbbc012f51:eyJzZWxlY3RlZExpbmVDb3VudCI6NSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzNhNjdlZWFmYzAxMTQyYTcwMzUwMWI1NzZkZjRlODk1OWM4ZWJiYTNkZGNkYWRhZTNjNjdkMzJjMTkzOGU0ZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNGQ1Y2QyZmI0ZjNkZjg4NDUxNTI1NWIzOTUyM2YyZjhiNTQ3MmJlZWE5ZjU2NmZmY2EyMDRkYjgwMjU2MTA0MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiM2FjMjNlMWIzMTU0MjU5NDM5YjlhZGI1M2E2YzAxOWJiNzBjZThlNWU1NTNjY2RmZmE4ZDAwN2Q4MmI1ODFmNiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiM2RlN2FiMTcyNjBjYWNlOTM5ZWU5YjM1N2QxNzJhZWE0OWY1YmFlNjQwZDQwYjU1ZjdkODEwYmFhNmViZDEyMCJ9"
+          "resource": "repo://src/entities/preorder/ui/PreorderCard/PreorderCard.css.ts#L50-L56",
+          "version": "repo-lines-v1:sha256:937e86e6dd8704fc2ede8a7910a54e8b8b9e9ea19832fa9c45ba7b56793ac363:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWI4YmFhNThiMzlhNTI4MTk2MTVmMTYyNGU3NjE5MzExZjkxM2FlZjQxMWJhMGMwNTQ3YjgyYzc1YzQzZmU4MyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODYzODdjNGRkMjFjMTBjMjkxNGFiZWI5ZWZjYTljMzVmMzZlZjE0YjJkM2U1NTEwOWI1NTAyYzJjY2NjNDJmYiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDNmMDQxYTM5MTAxNTczNTExNmYzNmEwOWJjODRjZWZiYjI0NTk3MGZhMjZlZDQ4YWRlZDg2ZDEwN2FkYTU0OCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTQ0MWU2Zjg4NTc2NWYzYzBmYTNjMjU0MTBkNWI0ODc5ODQ5MTM0NDcwZTBmYTE3MDcwNTExZmMxZmE4NGFjNiJ9"
         },
         {
-          "resource": "repo://src/shared/config/theme/mixins.ts",
-          "version": "repo-file-v1:sha256:4491a143fe4cdd36784132f59ac80f093c0d3b6de5505bbba314596c4b585131"
+          "resource": "repo://src/shared/config/theme/mixins.ts#L1-L7",
+          "version": "repo-lines-v1:sha256:fe856accbc71d896ee94c426f34b17df75ff85a4c70803bd4e9180f922062692:eyJzZWxlY3RlZExpbmVDb3VudCI6NywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYWQ0MjU3YjcwOTk1NGM0YmZiNDc2ZGMzYjU3MGUzYzBiOTliNzE0YzE4YzMzMjM5ZjVlMDcxMWE2MmRhNGFjZiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYWU3MTQ4ZTRlYmRjZTkyMGQ1ZmExZTBlMzkxYjE0N2U3MzY5OWU4MjFjZWExYjZlMWMxNTU1YjM3MDlkZGEzYSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         }
       ]
     },
     {
-      "id": "claim_4529cbcf2d384394991e10a3820e3b8b",
-      "statement": "eslint.config.js의 import-x/order는 pathGroups에서 '@/**'를 external 다음, parent/sibling(상대경로) 앞에 오는 별도 internal 그룹으로 분리한다 — 이 때문에 shared/config/theme 밖의 토큰을 참조하는 .css.ts/.tsx 파일은 상대경로가 아니라 '@/shared/config/theme/...' 액리어스를 쓴다.",
+      "id": "claim_cb81beaf19b84d08a4cfca77cd096047",
+      "statement": "shadow 토큰은 sm(살짝 뜬 요소), md(떠 있는 패널·팝오버·플로팅 바), up(아래에서 올라오는 시트) 세 값이며 text.primary 색을 반투명하게 쓴다.",
       "evidence": [
         {
-          "resource": "repo://eslint.config.js#L14-L41",
-          "version": "repo-lines-v1:sha256:e567dceb249c74a81789f88802cfebc96c95fa8b75e76a17c601cf57e13f747f:eyJzZWxlY3RlZExpbmVDb3VudCI6MjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0NmQyZjJkMTM4YmZjYWRhOTA0Yjc3MzFmOGRhY2JlOGY0NjFmMmI2M2Y0M2I1MjI3MDcxZThhZmViNjUyOWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg4MTAxMzQ2YzExYTdlNzQwMzQwYjhhYTEzNGZkMWZmNDczOTBlZjI4ZTgxNWJiMzdjZGJhMmM5NDkxZDJjYjkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjQ0NDk5MDFkMzgzZjNhMTcxZDZiYzdmM2YyY2UzYmM5MDlkZjk4ZmRkZmM1MmI3ODM1YTUxYzBiNDJmOTk3ZjUifQ"
+          "resource": "repo://src/shared/config/theme/tokens/shadow.ts#L1-L9",
+          "version": "repo-lines-v1:sha256:334cf3663f9d3994630946d48d8ab109e38b3b832d9e0cd75515692c091cc1dc:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNTY4YmY0MWI2NzNiMjE2ODVmZjE3NTkwNjBjYzFlMDdjMTQ0YTU3OThkNjlmZWIwMzFhOTBiYmNiNDZhZjZkNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzc1ZWQ5NTI0MTk5Y2ZjZGMyMjIzZjg1NzM3ZDY2Y2FiYTI0YzY5ZThjZTc5YTAxNjU1YTZmNWRiZDVkOWU2NiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d9a9ea5896d54d43a3da30c9f5995124",
+      "statement": "테마 배럴은 fonts.ts를 import해 Pretendard 서브셋과 Audiowide 웹폰트 CSS를 로드하고, typography.logo.wordmark가 Audiowide 로고 글꼴 프리셋이다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/config/theme/fonts.ts#L1-L2",
+          "version": "repo-lines-v1:sha256:dc4c212690d786ce97e27963555c03f16190ddea4c3cdd233900626968da637e:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiYzZjMWE0YmM1ZjI3NTNhMjJjNGJlNmU3NTVjYzQwODdiMzllMDk0ODFhNDlhN2U2MzFmNTkxYWVhODQ2YTMxMiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiODE1NDRhOGE0Y2NkNTQ4MzZkYzhjNTlkYjg1MGUzNjEwY2YwMjExMWM1MmE5ZWJkNjI5MTA2ODI5NjAzODU0MCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
         },
         {
-          "resource": "repo://src/shared/ui/BottomSheet/BottomSheet.css.ts",
-          "version": "repo-file-v1:sha256:4f5d0d01aa39db521c0cbb75c23ece2e2ddb2da2a8f172ce97999a63b599bc01"
+          "resource": "repo://src/shared/config/theme/index.ts#L1-L1",
+          "version": "repo-lines-v1:sha256:30352f4284becd7bc17a35a6143cf7d5393d64a52d8cbda85f2e70ce98aab306:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMzAzNTJmNDI4NGJlY2Q3YmMxN2EzNWE2MTQzY2Y3ZDUzOTNkNjRhNTJkOGNiZGE4NWYyZTcwY2U5OGFhYjMwNiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMzAzNTJmNDI4NGJlY2Q3YmMxN2EzNWE2MTQzY2Y3ZDUzOTNkNjRhNTJkOGNiZGE4NWYyZTcwY2U5OGFhYjMwNiIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZmI4ZDFiNWEwMDBkMjdhYWUzNGY2MjA1YzQ3NTUxZjk1YmJlZjlkYzJmYzBjNzNmOWNjMTU5YmFkZmYwODIxNCJ9"
         },
         {
-          "resource": "repo://src/shared/ui/Button/Button.css.ts",
-          "version": "repo-file-v1:sha256:7aea526c42579e1f4012e3eabaf866ee9461adf52d0492eaabbbb74f82a708dd"
+          "resource": "repo://src/shared/config/theme/tokens/typography/semantic.css.ts#L161-L169",
+          "version": "repo-lines-v1:sha256:697634eb3b2e7a003489f29583fd7f018c0c3fa482f2f77f5968459b0db216a6:eyJzZWxlY3RlZExpbmVDb3VudCI6OSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzI3MDQ2ZmVmNTNiNjI5MmRhYTJiOWZlYTQ0NGVmZWU1NTlmNGIyMjM4ZmU0MWIyZjYxNjUwZmUzMGVjOWY4NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDEyY2EzNDVjY2Y3NWJmOWMwODA2YmNlNjk1YmU4ZGU4MDhiNzk5ODQyNTFhN2E1NGQyMDJjZjYxMDFkZDQ1MSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDc1NWE3NTExYjBkNjY0OTNkNDFiMmNkZmRiNzMwZmI4ZWRmZjU1ZjJkNzZjMTQyYjQ4NGM0ZThiZDU5NDkxZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_d5f04a95f8dc4ff6bd4e70a5180a348a",
+      "statement": "전역 CSS는 Vite 템플릿 스타일을 주석 처리하고 모든 요소의 margin/padding 리셋과 box-sizing: border-box, a 태그의 밑줄·색 초기화만 적용한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/styles/index.css",
+          "version": "repo-file-v1:sha256:0836d3c09e6346ed24bb3a4bce4d19f03047ea4076b3aeed3855a75c5238ad53"
         }
       ]
     }
   ],
   "verification": {
     "by": "openwiki/0.5.0",
-    "at": "2026-09-21T01:15:36.692Z"
+    "at": "2026-10-04T09:44:53.662Z"
   }
 }

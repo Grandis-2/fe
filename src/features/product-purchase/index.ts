@@ -1,23 +1,18 @@
 export { useProductPurchase } from './lib/useProductPurchase'
 export type {
-  ProductColorOption,
   ProductPurchase,
-  PurchaseOptionGroup,
   PurchaseOptionValue,
+  PurchaseProduct,
 } from './lib/useProductPurchase'
 export type { PurchaseDraft } from './model/purchaseDraft'
 export { PREORDER_BENEFIT_RATE } from './model/benefit'
-export {
-  PriceDisplay,
-  QuantityControl,
-  QuantityPriceDisplay,
-} from './ui/QuantityPriceDisplay'
+export { OrderItemList } from './ui/OrderItemList'
+export type { OrderItemListProps } from './ui/OrderItemList'
+export { PriceDisplay, QuantityControl } from './ui/QuantityPriceDisplay'
 export { PurchaseSummary } from './ui/PurchaseSummary'
 export type {
+  PurchaseSummaryOption,
   PurchaseSummaryProps,
   PurchaseSummaryRow,
 } from './ui/PurchaseSummary'
-export type {
-  QuantityControlProps,
-  QuantityPriceDisplayProps,
-} from './ui/QuantityPriceDisplay'
+export type { QuantityControlProps } from './ui/QuantityPriceDisplay'

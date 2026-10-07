@@ -1,9 +1,10 @@
+import { ChevronRight } from 'lucide-react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 
+import { brandMenus } from '@entities/product'
 import { SEARCH_PATH, searchPath } from '@shared/config/routes'
 
 import {
-  brandMenus,
   categoryThumbnails,
   links,
   linkPaths,
@@ -56,7 +57,7 @@ export function CategoryNav({
     <nav className={[styles.root, className].filter(Boolean).join(' ')}>
       <div className={[styles.links, styles.linksTone[tone]].join(' ')}>
         {/* data-mega-menu: 메뉴가 열렸는지(hover/focus)를 헤더가 :has()로 보고
-            배경을 불투명하게 바꾼다 — 흰 패널과 한 덩어리로 보이게. */}
+            배경을 패널과 같은 색으로 바꾼다 — 한 덩어리로 보이게. */}
         {Object.entries(brandMenus).map(([brand, menu]) => (
           <div key={brand} className={styles.brand} data-mega-menu>
             <Link
@@ -88,8 +89,8 @@ export function CategoryNav({
                             })}
                             className={
                               thumbnail
-                                ? styles.menuTileWithThumbnail
-                                : styles.menuTile
+                                ? styles.megaTileWithThumbnail
+                                : styles.megaTile
                             }
                             aria-current={
                               brand === activeCategory &&
@@ -120,7 +121,7 @@ export function CategoryNav({
                           <Link
                             key={b}
                             to={searchPath({ category: brand, brand: b })}
-                            className={styles.menuTile}
+                            className={styles.megaTile}
                             onClick={blurActiveElement}
                           >
                             {b}
@@ -140,6 +141,10 @@ export function CategoryNav({
                       onClick={blurActiveElement}
                     >
                       {item.label}
+                      <ChevronRight
+                        className={styles.menuAsideArrow}
+                        aria-hidden="true"
+                      />
                     </Link>
                   ))}
                 </div>
@@ -148,7 +153,7 @@ export function CategoryNav({
           </div>
         ))}
       </div>
-      <span className={styles.divider}>|</span>
+      <span className={styles.divider} aria-hidden="true" />
       <div className={[styles.links, styles.linksTone[tone]].join(' ')}>
         {links.map((link) => (
           <Link

@@ -3,22 +3,30 @@ import { useState } from 'react'
 import { MapPin, Plus } from 'lucide-react'
 
 import { AddressCard, useDefaultAddress } from '@entities/address'
-import { Button } from '@shared/ui'
+import { ActionButton } from '@shared/ui'
 
-import { AddressFormModal } from './AddressFormModal'
+import { AddressForm } from './AddressForm'
 import * as styles from './MypageAddress.css'
 
 export function MypageAddress() {
   // 저장하면 useSaveDefaultAddress가 캐시를 갱신하므로 여기서 다시 조회하지 않는다.
   const { data: address } = useDefaultAddress()
-  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   return (
-    <>
-      {address ? (
-        <div className={styles.root}>
-          <AddressCard address={address} onEdit={() => setFormOpen(true)} />
-        </div>
+    <div className={styles.root}>
+      <div className={styles.intro}>
+        <h1 className={styles.title}>배송지 관리</h1>
+        <span className={styles.description}>
+          배송지는 1개만 등록할 수 있어요. 결제할 때 이 주소가 자동으로
+          입력돼요.
+        </span>
+      </div>
+
+      {editing ? (
+        <AddressForm onClose={() => setEditing(false)} />
+      ) : address ? (
+        <AddressCard address={address} onEdit={() => setEditing(true)} />
       ) : (
         <div className={styles.empty}>
           <div className={styles.emptyIcon}>
@@ -36,16 +44,15 @@ export function MypageAddress() {
           <div className={styles.emptyCaption}>
             결제 단계에서 다른 배송지로 수정할 수 있습니다.
           </div>
-          <Button
+          <ActionButton
+            size="md"
             className={styles.emptyButton}
-            onClick={() => setFormOpen(true)}
+            onClick={() => setEditing(true)}
           >
             주소 추가
-          </Button>
+          </ActionButton>
         </div>
       )}
-
-      <AddressFormModal open={formOpen} onOpenChange={setFormOpen} />
-    </>
+    </div>
   )
 }

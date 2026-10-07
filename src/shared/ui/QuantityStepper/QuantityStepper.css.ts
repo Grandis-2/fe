@@ -13,6 +13,14 @@ export const root = style({
   background: color.background.base,
 })
 
+// 상품 상세 옵션 패널용 — 옵션 타일 옆에서 눌러지기 쉽게 키운다. 버튼이 칸을 꽉 채운다.
+export const medium = style({
+  width: '118px',
+  height: '40px',
+  borderRadius: '10px',
+  overflow: 'hidden',
+})
+
 export const step = style({
   display: 'inline-flex',
   alignItems: 'center',
@@ -33,6 +41,12 @@ export const step = style({
     `transform 160ms ${motion.easing.default}`,
   ].join(', '),
   selectors: {
+    [`${medium} &`]: {
+      width: '40px',
+      height: '100%',
+      margin: 0,
+      borderRadius: 0,
+    },
     '&:disabled': {
       color: color.text.disabled,
       cursor: 'not-allowed',
@@ -59,6 +73,9 @@ export const divider = style({
   width: '1px',
   height: '16px',
   background: color.border.subtle,
+  selectors: {
+    [`${medium} &`]: { height: '100%', background: color.border.default },
+  },
 })
 
 export const value = style([

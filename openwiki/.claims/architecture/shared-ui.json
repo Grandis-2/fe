@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:5b4fdfc3828f39006c68fe2b791a44091cc65cbec550e91be1fe05ddbd2d1c56",
+  "claims": [
+    {
+      "id": "claim_3de14c25f0af46478767da78f0416202",
+      "statement": "shared/ui/index.ts 배럴은 레이아웃(Container, Box), 액션, 폼, 오버레이(Modal, ConfirmDialog, ToastViewport, BottomSheet 네임스페이스), 데이터 표시(Table, StatCard, PriceText), 브랜드(PlanetIcon, SwirlBackground, Slider) 프리미티브를 공개한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/ui/index.ts#L1-L59",
+          "version": "repo-lines-v1:sha256:3a07c4becf6c36accd188fb157148d6e66ca17e1f8409e87660ad18a5e5b35cc:eyJzZWxlY3RlZExpbmVDb3VudCI6NTksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhYTliODVjMWUxYTJkZjg5MTRhMGYyNmNmNjgxOWVhNzAzNGZiY2JlNjY0YmI4NzQ4YjQwMzQ3NGE0MWY1M2IiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMyY2NjOWE0OWJkNzlhYWRhNmZmMGMxNTU5ZmYzY2NmY2E0Yzg3ODMzZDg4YzI2Y2NmODA0ZmQ1Y2Q2NmE1MDAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_a854a6d726ab47edbdff260c6ea87569",
+      "statement": "Button과 InlineAlert는 아이콘을 lucide 아이콘 이름 문자열(IconName)로 받아 lucide-react/dynamic의 DynamicIcon으로 그리며, InlineAlert는 'box_planet'을 받으면 PlanetIcon으로 대신 그린다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/ui/Button/Button.tsx#L1-L68",
+          "version": "repo-lines-v1:sha256:3f00279f1098c92d545d070edbef835d5157e22dfee3f07d85de99af590c0869:eyJzZWxlY3RlZExpbmVDb3VudCI6NjgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4MzY2MzMzYmZjY2RhNGFhOGMwYmJkYTA5NjQ0OTQwODZkODc4MTg1N2RhMTJmMWM0NTk3NGYxMmNiNGQxNDUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/shared/ui/InlineAlert/InlineAlert.tsx#L1-L29",
+          "version": "repo-lines-v1:sha256:4e361d54ad2d185976c1e3aa33e2273bd9bdf5809e43785f71dc2e647ef4f898:eyJzZWxlY3RlZExpbmVDb3VudCI6MjksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk0NDAyZWRlMTM0OTA5NWNjZjczMWNjYTM2YjE1OTQyNGU2MzJmMDI0MjY5NzRlYmFjMTczMmVjODVjM2FiZTAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_f7f05af9309b485fbda9cf079d98bee2",
+      "statement": "모달은 RootLayout에 하나만 두고 zustand modalStore의 open(content)로 내용을 넘겨 띄우며 한 번에 하나만 열리고, close()는 닫히는 애니메이션 동안 빈 상자가 보이지 않도록 content를 비우지 않는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/layouts/RootLayout.tsx#L53-L55",
+          "version": "repo-lines-v1:sha256:d6a4f613c5971621da2225312b5d6e0016e5c9667f397eddcf26b37be96db0c1:eyJzZWxlY3RlZExpbmVDb3VudCI6MywiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiNzNmMjM3YTM3YjEzZjdkM2Y2ZGZjYmY3YzM1NjU5Yzk4NzNlMmM1ZWRmMzFhYTIyNDg1OTMxNzdmY2JkYjdkMCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiNDJlYmU2NDhhMDg2YTEwZjgzMTkxMjVkNWEyMDMwNDZlMmIzMGJmMmRhODg2MDFjMWE4MjJjZWE3NWJmOWEwNyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiOTg3YmE4ZTBiMDM2NjU2NjY5OGU5MjFlODIyNzcwZDQ5YmFiMzhmOWY0NWZhMzFmMzI2YTU1YTEyNmU0Njg1YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMjFkMDliM2EzMmEzOTYzOTFhZjljZmUyNGE0YTE5ODYwZjRjZDc3MDJkM2U3ZmU3MzFhOWY5NTM2ZmNhYTIyNCJ9"
+        },
+        {
+          "resource": "repo://src/shared/model/modalStore.ts#L1-L22",
+          "version": "repo-lines-v1:sha256:e13428a7b76a166712e57805349f0ed475c2279aef7aa445975c9dd21f2da24b:eyJzZWxlY3RlZExpbmVDb3VudCI6MjIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM3Y2U2MjRmYzU2NzRlZGVlN2ViYjc4OWFlMGZlZWI0NTc0MzIwMDRlOWIyOTRiNzY0MzljMmIzNDU3YzlmNTgiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjVjMmQ3YjBlNmZjNGYwYzI5YjhkZjgzMmIzM2Y1NjJmZmEwMzg1MzQ4ODYzNWEzNDNhZTNhMjQ2NDcxNzRhMjIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_6444e6375488443190508b8aa236148b",
+      "statement": "Modal은 네이티브 <dialog>를 항상 마운트해 두고 showModal()/close()로만 여닫아 닫힘 애니메이션을 살리며, backdrop 클릭과 X 버튼이 onClose를 호출한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/ui/Modal/Modal.tsx#L17-L60",
+          "version": "repo-lines-v1:sha256:50a466c9634e0baaac4334e7912543e90f9c9993e4164a2259185a061f81509e:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVjYjZmODFiNWNiMTk5MmJjMDNmMmEwNTE2YzEyNGQ5Yzg0MmE2YzA4ZTIyYTM5OWEyMWIyZTVmMmExOGJjNjQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjM4MTlmMWE2OGY3MzI2ZmM5ZTU4YzczNDJiMWNiMzRkNjFiMTliNjY1NjJiNWJjOGEzMTRlZWQ0MjAzOThjODIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_e202bba5b50146878bd05b5145d8e307",
+      "statement": "ConfirmDialog는 제목·설명·확인/취소 버튼만 갖는 모달 내용 컴포넌트이며 껍데기는 Modal이 담당한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/ui/ConfirmDialog/ConfirmDialog.tsx#L17-L40",
+          "version": "repo-lines-v1:sha256:da27485cdec6cbd72f7a4cff31918a5471a229ec34d9f6e1930a05ff67d1e100:eyJzZWxlY3RlZExpbmVDb3VudCI6MjQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImUwNTYzMDRiMGVlYWJkODhhZDRjYmRkNjBiZGY0NjY1MWFkODU3YWQxZTAxMDRlNDJhYmZmNmIwNDNhZThlYTAiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjgxMDNkOWQwZGJhMDAwYTI2ZjA2NmFlYjZiZjRiNTM5NDIyODA5NWU4ZjY2MjVkYmM2ZDlhODA1Y2ZhYWU4YjYiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjoyLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjdmMTMxNTBkMjFjNmM2NjU0Yjc5NWFkNjIwZmY3ZmRiZDQ1YTQ1OTVjMjI4NzMyYWY0Yjc3Y2YwMDU1NjQ2MGEifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_256d9d0c12484225bdd2078cea665171",
+      "statement": "toastStore는 shared/lib/createStore로 만들어져 한 번에 하나의 토스트만 유지하고 연달아 호출하면 새 id로 교체하며, ToastViewport는 비어 있어도 role=status aria-live=polite 영역을 항상 렌더하고 기본 2500ms 뒤 퇴장 애니메이션이 끝나면 제거한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/model/toastStore.ts#L1-L27",
+          "version": "repo-lines-v1:sha256:b6475f9a7ac3090b22cd89bd66b6de22a607dfad645492a619480795cf8bdcb4:eyJzZWxlY3RlZExpbmVDb3VudCI6MjcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImM0ZmNjYjc2MTNhMzAyY2I4MDU2ZTVmMTc2ZmMxYzc1NjRkOTM4MmY2ZTg3OGIwNzZhZTU3ZDkzYjM1N2VhZTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE5Y2VkZWE4NjE0NTBiZGMxNjY2NTQ4MDJhMjlmYmY1MzM1NzQ0M2E2ZDFkMzQyYWE3NGU3ZGVkYjY3MmY3NTkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://src/shared/ui/Toast/Toast.tsx#L17-L60",
+          "version": "repo-lines-v1:sha256:56717cbeccf25132effb375c680a6cb761b2f0eaa2c0de6476aaceaf71b7c449:eyJzZWxlY3RlZExpbmVDb3VudCI6NDQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImEyZTM1YTgwNTRhNTEyNTA3ZDllOTJmOTM1YWU1MGNkYzU4ODAwNjE5ZThiYTVmZGJiNWViYTU0Nzk2ZDgyMGEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlMGZiNjZjNjYzZGY2M2M1ODc3ZTI1YmEyYjQyNzA1ZDNjYmI4ZmU3YWY1MWRhM2NmM2I1ZTYxNTZiZTkyYmIiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk3ZjA5MjczODg0MzkwZWRjNTNlMjQ4ZWIxMGNkYTUyZTkzOTBmMzA4YWNjYzQ3N2RkZWVjYmIzOTY3ZWJiZTkifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_365b0e299752479aa60d5e36ee6c5bc5",
+      "statement": "createStore는 useSyncExternalStore로 zustand create()와 같은 모양(훅에 getState/setState가 붙음)을 흉내 낸 최소 스토어 구현이다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/lib/createStore.ts#L1-L40",
+          "version": "repo-lines-v1:sha256:88e32b8a1cf9238a11edb55a4fa63cbbeb6a7e6f020eb5314803a56665495321:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZlY2NlZTcxYzlhYjI4MGFlMmE3MzBmOTljYzkzMjcwNDVkNzE5NDU5OTI3MGMxZDZlZWI0MTg2Yzk0ZDg4YjAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ee88239168cd4e1b8e78d73638efa970",
+      "statement": "BottomSheet.Root는 vaul Drawer의 기본값을 noBodyStyles=true, modal=false로 바꿔 Safari body 폭 축소와 스크롤 잠금 어긋남을 피하고, Content가 닫기 버튼 역할의 오버레이를 직접 그리며, 모바일 탭바 토큰 높이만큼 여백을 둔다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/ui/BottomSheet/BottomSheet.css.ts#L54-L54",
+          "version": "repo-lines-v1:sha256:00404441adb334f584f7963870c64f3924d1c4e13db7e383354dc60919c8e775:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MDQ0NDFhZGIzMzRmNTg0Zjc5NjM4NzBjNjRmMzkyNGQxYzRlMTNkYjdlMzgzMzU0ZGM2MDkxOWM4ZTc3NSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMDA0MDQ0NDFhZGIzMzRmNTg0Zjc5NjM4NzBjNjRmMzkyNGQxYzRlMTNkYjdlMzgzMzU0ZGM2MDkxOWM4ZTc3NSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiYWUxNmQ2ZjhjNzU5ZDgwNjY5NDRlZjRjOTUyZTQ0ZjZjMjJiMTUyOGQ1MWYwMDdlN2YzOTI1NDUwOWU4NDQxOSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiOTEwZWFmYTE3NmJlNGMwNWY4ZWNjZmVmNjcxOTNiMzc1NDAzNmRmNzQwZGQxNDVjOTJlOTU4MjdiYTg4NjZhZCJ9"
+        },
+        {
+          "resource": "repo://src/shared/ui/BottomSheet/BottomSheet.tsx#L12-L50",
+          "version": "repo-lines-v1:sha256:5527582cccf153e7a83f2bd6fbf4dc1315df19232d84e70741e60a9b21f48afb:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjZkMjVmZDZkMDEyMDVhMjkyY2MxOGVjOWVjZTkyYmZkNjUwMmQwMWE0ZDNlYjliMDUwMTEzZjJlNDY0YzNhMTYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE2OTYwMmZmNDJjN2RiN2MxODM2OGQ1OWUzNjQzZDU4ZDY1ZjQ2ZWRiYThmOTdkZjYxYzJhYjk5ZDdlZTVkNzQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjljMmJmMzAwN2NkOGE0NjdlMDU3ZTYxODk0MjZhMWMzN2IxODZmNzJjY2Y5NDNmYzliMTVhNWEyOGUyZjJlYjciLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijk2MDdkMTRiOTllZTFmMDJiYzUyYzZkMDVhOWY1OWZlZDM1Yjc2OGMxZTcyNGM5MDFkZTdiZWI4MmQ5MDQzYjAifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_70d67aa5b1f646b09d51d501ea981e0d",
+      "statement": "PriceText는 감싸는 요소 없이 '원' 단위만 별도 span으로 분리해 부모 타이포그래피를 그대로 받는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/ui/PriceText/PriceText.tsx",
+          "version": "repo-file-v1:sha256:498a3b2750f84af3cab9b58e41d91ebf386e5c4c6390182c3e440ce3e841ae19"
+        }
+      ]
+    },
+    {
+      "id": "claim_e11c772e8c1d40aa96b03b29f18fac48",
+      "statement": "useObjectUrls는 자신이 만든 objectURL만 추적해 해제하고 서버 이미지 URL은 건드리지 않으며, ImageUploader가 미리보기에 이를 쓴다.",
+      "evidence": [
+        {
+          "resource": "repo://src/shared/lib/useObjectUrls.ts#L1-L25",
+          "version": "repo-lines-v1:sha256:dc2b9bd5d97e1ca8189baf2d9d212cbffc1b530c796fa5fd10327ad8303b7eb9:eyJzZWxlY3RlZExpbmVDb3VudCI6MjUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjA1ZTI5MzczNGI3Zjk2OWUxYWUxYmY0OTc2N2UyYzA0NzgwZDU3YzMyNmVhZGY3MjI3MDVkM2EyOWFjMzBkNGQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjE0ODllYTg2MGZhYjg1YWYzODNmNDE4MzQzMjQ0ZjE3ODMwZTI2ZjBmOTY1NzVlNzEwYjdjMTliNjgzN2QwNDYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjVjOGFkOTdmZWUxMTI1ZjlhMzQ1OWY2NTgyYzI4NGY2ZTZmZDdkMGU3OTk2ZTJlNTE2NGVmMDNjNTlmZmNjYTgifQ"
+        },
+        {
+          "resource": "repo://src/shared/ui/ImageUploader/ImageUploader.tsx#L5-L5",
+          "version": "repo-lines-v1:sha256:1279462024e11a9797711296d13575bd509f7fc5613c292545cb739a5234f699:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTI3OTQ2MjAyNGUxMWE5Nzk3NzExMjk2ZDEzNTc1YmQ1MDlmN2ZjNTYxM2MyOTI1NDVjYjczOWE1MjM0ZjY5OSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTI3OTQ2MjAyNGUxMWE5Nzk3NzExMjk2ZDEzNTc1YmQ1MDlmN2ZjNTYxM2MyOTI1NDVjYjczOWE1MjM0ZjY5OSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiMDI3ZTA1YzZhZThmZTlhNmNiZWE0Y2M0NmQyZWMxM2Y5ZTJlNmNmNmJhYzQ1ZGQ2NmJkNTliNGE1YzI4YTE2YyIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiMzUwZjU4OTMzYjE1ZDZiNDZlYmY5ZDMzM2YwNTU3MjNjNDYwZWY5YzliMzNkMTBjYjIyMmYxOTQzNWRjMTcxYiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_f5a8047c2f5b473d97b70c1885890617",
+      "statement": "Storybook preview는 모든 스토리를 재시도를 끈 QueryClientProvider와 parameters.initialEntries로 진입 경로를 정하는 MemoryRouter로 감싸고, a11y 검사는 test: 'todo'로 UI에만 표시한다.",
+      "evidence": [
+        {
+          "resource": "repo://.storybook/main.ts#L1-L14",
+          "version": "repo-lines-v1:sha256:0b854a8d4d2132e5035364c3f3e8032fe136d9687405ae075085c606d9b0b4c3:eyJzZWxlY3RlZExpbmVDb3VudCI6MTQsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjkwZGYzNGM3ODVlMTNmM2JlOWQxNjcyYTczOTdjOGEyNDAyZDE5MGY4NGQ2OTcxMjk0Y2RkYmM0YWY3ZDNlMWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJhZjYwNDJkYWE2Y2ZkODFjYmVhNmQ1M2M4NWQ0YmY3ZjM4ZGJkNWQ2YzQ1NWJhMWQzY2E0ODMwZWViNTljNDkiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        },
+        {
+          "resource": "repo://.storybook/preview.tsx#L1-L46",
+          "version": "repo-lines-v1:sha256:9bc689e520f6d65d9611ec246abf902ed0805a15380f3058d4a655cc42ef306c:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImYxZjk0YTE0YmE1OTYxMzllYTUwMjU5OGQyMzFhZWFmYjEyYmRiOWYyNDdiZTI4NDNiOThhYmRhODQ4Zjk0NmYiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjEzZTIyNTEwNjRkMzgxNTMyOWVmODVlZWE1ZWNlNjJiM2I0NWUzMzY1MWIzNzg1NWNhYTBlY2YyOTFjNGFlNzgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.0",
+    "at": "2026-10-04T09:44:53.662Z"
+  }
+}

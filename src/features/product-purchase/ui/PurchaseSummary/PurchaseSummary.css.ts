@@ -1,9 +1,9 @@
 import { style } from '@vanilla-extract/css'
 
 import { breakpoint, color, spacing, typography } from '@shared/config/theme'
+import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
-// 카드 배경(background.page)이 옅어서 글자는 text.primary로 두고, 구분선은 primary.subtle을 옅게 섞는다.
-const divider = `1px solid color-mix(in srgb, ${color.primary.subtle} 40%, transparent)`
+const divider = `1px solid ${color.border.subtle}`
 
 export const root = style({
   display: 'none',
@@ -11,27 +11,57 @@ export const root = style({
     [breakpoint.desktop]: {
       display: 'flex',
       flexDirection: 'column',
-      gap: spacing[24],
-      padding: spacing[30],
+      gap: spacing[14],
+      padding: '28px',
       borderRadius: '20px',
-      background: color.background.page,
+      background: color.background.base,
+      border: divider,
       color: color.text.primary,
     },
   },
 })
 
-// 모바일 하단 바의 옵션 줄(ProductPurchaseBar의 productOption)과 같은 모양.
-export const title = style([
-  typography.body.sub,
-  { color: color.text.tertiary },
-])
-
-export const prices = style({
+export const selected = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[12],
-  paddingTop: spacing[24],
-  borderTop: divider,
+  paddingBottom: spacing[20],
+  borderBottom: divider,
+})
+
+export const selectedTitle = style([
+  typography.body.subSemibold,
+  { color: color.text.secondary },
+])
+
+export const chips = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[6],
+  margin: 0,
+  padding: 0,
+  listStyle: 'none',
+})
+
+export const chip = style([
+  typography.body.subMedium,
+  {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '7px',
+    height: '32px',
+    padding: `0 ${spacing[12]}`,
+    borderRadius: '8px',
+    background: color.background.surface,
+    border: `1px solid ${color.border.default}`,
+  },
+])
+
+export const chipDot = style({
+  width: '12px',
+  height: '12px',
+  borderRadius: '50%',
+  boxShadow: `inset 0 0 0 1px ${color.border.hover}`,
 })
 
 export const row = style([
@@ -40,8 +70,11 @@ export const row = style([
     display: 'flex',
     justifyContent: 'space-between',
     gap: spacing[8],
+    color: color.text.secondary,
   },
 ])
+
+export const accent = style({ color: color.primary.subtle })
 
 export const total = style([
   typography.body.defaultMedium,
@@ -50,12 +83,16 @@ export const total = style([
     alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: spacing[8],
+    marginTop: spacing[6],
   },
 ])
 
-export const totalValue = style([typography.title.lgSemibold])
+export const totalValue = style([
+  typography.title.xlSemibold,
+  { fontWeight: fontWeight.bold },
+])
 
 export const note = style([
   typography.body.defaultMedium,
-  { textAlign: 'center', color: color.primary.base },
+  { textAlign: 'center', color: color.primary.subtle },
 ])

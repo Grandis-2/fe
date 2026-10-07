@@ -3,7 +3,11 @@ import { Link, useLocation } from 'react-router'
 
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
+import { MOCK_ORDERS } from '@entities/order'
+import { KakaoLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
+import { useModalStore } from '@shared/model/modalStore'
+import { Button, Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
 
 import { useHeaderTheme } from '../lib/useHeaderTheme'
@@ -24,6 +28,7 @@ export function Header({
   onNotificationClick,
   className,
 }: HeaderProps) {
+  const openModal = useModalStore((state) => state.open)
   const { pathname } = useLocation()
   const isMainPage = pathname === HOME_PATH
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
@@ -31,16 +36,30 @@ export function Header({
   // 메인페이지에서만 헤더가 sticky다(그 외엔 root의 기본 position: relative를 그대로
   // 쓴다). 추후 다른 페이지도 sticky가 필요해지면 이 조건에 OR로 추가한다.
   const isStickyPage = isMainPage
+  // 어드민을 뺀 헤더는 늘 어두운 디자인이다. 뒤가 어두운 구간이면 바탕만 투명하게 둔다.
+  const isDark = !isAdminPage
   const { headerRef, isOnDark } = useHeaderTheme(pathname)
   // 개수 배지는 회원 쇼핑 화면에서만 — 어드민 종 아이콘은 관리자 알림이라 대상이 다르다.
   const showCounts = isMember && !isAdminPage
   const { data: cartCount = 0 } = useCartCount(showCounts)
   const { data: notificationCount = 0 } = useUnreadNotificationCount(showCounts)
+  // ponytail: 주문 API가 없어 목업에서 센다 — API가 붙으면 장바구니 개수처럼 조회 훅으로 바꾼다.
+  const pendingPurchaseCount = showCounts
+    ? MOCK_ORDERS.filter((order) => order.status === 'confirm').length
+    : 0
 
   // 아이콘 오른쪽 위 숫자. 0이면 안 그린다(개수는 aria-label에 따로 담는다).
-  const countBadge = (count: number) =>
+  const countBadge = (count: number, tone?: 'warning') =>
     count > 0 && (
-      <span className={styles.countBadge} aria-hidden="true">
+      <span
+        className={[
+          styles.countBadge,
+          tone === 'warning' && styles.countBadgeWarning,
+        ]
+          .filter(Boolean)
+          .join(' ')}
+        aria-hidden="true"
+      >
         {count > 99 ? '99+' : count}
       </span>
     )
@@ -65,9 +84,9 @@ export function Header({
       ref={headerRef}
       className={[
         styles.root,
-        styles.border[isMainPage ? 'hidden' : 'visible'],
+        isDark ? styles.onDark : styles.admin,
+        isDark && !isOnDark && styles.solid,
         isStickyPage && styles.sticky,
-        isOnDark && styles.onDark,
         className,
       ]
         .filter(Boolean)
@@ -77,17 +96,14 @@ export function Header({
         <div className={styles.leftGroup}>
           <Link
             to={isAdminPage ? ADMIN_HOME_PATH : HOME_PATH}
-            className={[styles.logo, isMember && styles.logoMember]
+            className={[styles.logo, isMember && !isDark && styles.logoMember]
               .filter(Boolean)
               .join(' ')}
           >
-            {isAdminPage ? 'NOVA ADMIN' : 'NOVA'}
+            <Logo suffix={isAdminPage ? ' ADMIN' : undefined} />
           </Link>
           {!isAdminPage && (
-            <CategoryNav
-              tone={isOnDark ? 'onDark' : 'default'}
-              className={styles.desktopOnly}
-            />
+            <CategoryNav tone="onDark" className={styles.desktopOnly} />
           )}
         </div>
         <div className={styles.actions}>
@@ -97,24 +113,52 @@ export function Header({
             <>
               {/* 모바일은 하단 탭바에 검색·마이페이지가 있어 헤더엔 알림·장바구니만 둔다. */}
               <HeaderSearch onSearchClick={onSearchClick} />
-              {notificationButton}
-              <Link
-                to={mypagePath('cart')}
-                className={[styles.iconButton, styles.badgeAnchor].join(' ')}
-                aria-label={
-                  cartCount > 0 ? `장바구니 ${cartCount}개` : '장바구니'
-                }
-              >
-                <ShoppingCart className={styles.icon} aria-hidden="true" />
-                {countBadge(cartCount)}
-              </Link>
-              <Link
-                to={mypagePath('preorder-check')}
-                className={[styles.iconButton, styles.desktopOnly].join(' ')}
-                aria-label="마이페이지"
-              >
-                <CircleUser className={styles.icon} aria-hidden="true" />
-              </Link>
+              {/* 비회원은 검색과 로그인만 — 알림·장바구니·마이페이지는 회원 전용이다. */}
+              {isMember ? (
+                <>
+                  {notificationButton}
+                  <Link
+                    to={mypagePath('cart')}
+                    className={[styles.iconButton, styles.badgeAnchor].join(
+                      ' ',
+                    )}
+                    aria-label={
+                      cartCount > 0 ? `장바구니 ${cartCount}개` : '장바구니'
+                    }
+                  >
+                    <ShoppingCart className={styles.icon} aria-hidden="true" />
+                    {countBadge(cartCount)}
+                  </Link>
+                  <Link
+                    to={mypagePath('preorder-check')}
+                    className={[
+                      styles.iconButton,
+                      styles.badgeAnchor,
+                      styles.desktopOnly,
+                    ].join(' ')}
+                    aria-label={
+                      pendingPurchaseCount > 0
+                        ? `마이페이지, 구매 확정 대기 ${pendingPurchaseCount}건`
+                        : '마이페이지'
+                    }
+                  >
+                    <CircleUser className={styles.icon} aria-hidden="true" />
+                    {/* 해야 할 일(구매 확정)이라 개수 배지와 달리 경고색이다. */}
+                    {countBadge(pendingPurchaseCount, 'warning')}
+                  </Link>
+                </>
+              ) : (
+                // 흰 바탕이라 메인 배너(어두운 구간) 위에서도 그대로 보인다.
+                <Button
+                  variant="outline"
+                  size="small"
+                  rounded
+                  className={styles.desktopOnly}
+                  onClick={() => openModal(<KakaoLoginModal />)}
+                >
+                  로그인
+                </Button>
+              )}
             </>
           )}
         </div>

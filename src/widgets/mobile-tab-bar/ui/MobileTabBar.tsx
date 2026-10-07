@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
+import { useSession } from '@entities/auth'
+import { KakaoLoginModal } from '@features/login'
 import {
   HOME_PATH,
   MYPAGE_PATH,
@@ -17,8 +19,10 @@ import {
   SEARCH_PATH,
 } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
+import { useModalStore } from '@shared/model/modalStore'
 import { BottomSheet } from '@shared/ui'
 import { MobileCategoryNav } from '@widgets/category-nav'
+import { SearchOverlay } from '@widgets/search'
 
 import * as styles from './MobileTabBar.css'
 
@@ -32,12 +36,6 @@ type Tab = {
 }
 
 const tabs: Tab[] = [
-  {
-    label: '검색',
-    icon: Search,
-    to: SEARCH_PATH,
-    isActive: (p) => p === SEARCH_PATH,
-  },
   {
     label: '홈',
     icon: House,
@@ -66,6 +64,9 @@ const HIDDEN_PATH = /^\/admin/
 export function MobileTabBar() {
   const { pathname } = useLocation()
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const { isLoggedIn } = useSession()
+  const openModal = useModalStore((state) => state.open)
 
   if (HIDDEN_PATH.test(pathname)) return null
 
@@ -78,7 +79,14 @@ export function MobileTabBar() {
         className={styles.tab}
         aria-current={active ? 'page' : undefined}
         // 시트가 modal={false}라 바깥 클릭으로 안 닫힌다 — 탭 이동 시 직접 닫는다.
-        onClick={() => setIsCategoryOpen(false)}
+        onClick={(event) => {
+          setIsCategoryOpen(false)
+          // 비회원은 마이페이지 대신 로그인 모달을 연다(헤더 마이페이지 아이콘과 같은 규칙).
+          if (!isLoggedIn && to.startsWith(MYPAGE_PATH)) {
+            event.preventDefault()
+            openModal(<KakaoLoginModal />)
+          }
+        }}
       >
         <Icon className={styles.icon} aria-hidden="true" />
         <span className={styles.label}>{label}</span>
@@ -89,7 +97,25 @@ export function MobileTabBar() {
   return (
     <>
       <nav className={styles.root} aria-label="하단 메뉴">
-        {renderTab(tabs[0])}
+        {/* 검색은 페이지가 아니라 전체 화면 검색창(SearchOverlay)을 연다 — 헤더 검색 아이콘과 같다. */}
+        <button
+          type="button"
+          className={styles.tab}
+          aria-haspopup="dialog"
+          // 카테고리 둘러보기·검색 결과(/search…) 화면에선 검색 탭이 켜져 있다.
+          aria-current={
+            !isCategoryOpen && pathname.startsWith(SEARCH_PATH)
+              ? 'page'
+              : undefined
+          }
+          onClick={() => {
+            setIsCategoryOpen(false)
+            setIsSearchOpen(true)
+          }}
+        >
+          <Search className={styles.icon} aria-hidden="true" />
+          <span className={styles.label}>검색</span>
+        </button>
         <button
           type="button"
           className={styles.tab}
@@ -99,7 +125,7 @@ export function MobileTabBar() {
           <LayoutGrid className={styles.icon} aria-hidden="true" />
           <span className={styles.label}>메뉴</span>
         </button>
-        {tabs.slice(1).map(renderTab)}
+        {tabs.map(renderTab)}
       </nav>
       <BottomSheet.Root open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
         <BottomSheet.Content className={styles.sheetContent}>
@@ -115,6 +141,7 @@ export function MobileTabBar() {
           </div>
         </BottomSheet.Content>
       </BottomSheet.Root>
+      {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
     </>
   )
 }

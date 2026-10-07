@@ -20,4 +20,5 @@ export const spacing = {
   80: '80px',
   90: '90px',
   100: '100px',
+  120: '120px',
 } as const

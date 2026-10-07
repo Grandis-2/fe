@@ -1,0 +1,138 @@
+{
+  "schemaVersion": 1,
+  "pageVersion": "sha256:34f5546d00de70b3eb5c721826bb12b0725c08eec281ee6757a3f6c582d98b35",
+  "claims": [
+    {
+      "id": "claim_06165f307034478f99770e23dc572529",
+      "statement": "관리자 라우트는 RootLayout 아래 AdminLayout(AdminSidebar + 콘텐츠)으로 렌더되며 로그인·역할 게이트 레이아웃으로 감싸이지 않는다. 개발자 기능 메뉴(정합성 대조·부하 검증·관리자 알림·Mock 설정)는 AdminPlaceholderPage로 연결된다.",
+      "evidence": [
+        {
+          "resource": "repo://src/app/layouts/AdminLayout.tsx",
+          "version": "repo-file-v1:sha256:401dcb813181c518d4ad9a1f42b03ee7c6d388dbcdc45a4980f4a0aa6567c111"
+        },
+        {
+          "resource": "repo://src/app/router/index.tsx#L93-L132",
+          "version": "repo-lines-v1:sha256:2c83d1c865477fc79b4f4d73d2bc09497b3eb4b2a767e22ee487dbb0d9c74ed3:eyJzZWxlY3RlZExpbmVDb3VudCI6NDAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQ5NWI4YzViZjg2Mzc0MzY3MWRlZjNmNjMwZWIyMzJkNTlhN2E2MzRhMDcwZmM0MzZlZWMzN2E4Njc0ZTZjMzAiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5NzhlMjUwM2I4Y2YzN2EwNmY3ZDZmMGEzYTZiNmZlMzU2OTFmYmNhYjUwYjg3NzVjYWI2ZmFiYzcxYzU5MmIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijk5MDdkZTczMGNjOTAyNmJhYmUzYTdkMzA0MmVhZGMyYTUxMTk5NDVkZWVkNzQ3ZTYzMjVkNThhMDExNGFhM2EiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImEwYmUyYTY2ZGYzY2NjMTg3OWJiMjNkMDY4YzhkNjAxN2U0ODU4MTE0NjVmMmE3NDk3NDc2ZjY1MmM1N2FmNDYifQ"
+        },
+        {
+          "resource": "repo://src/widgets/admin-sidebar/ui/AdminSidebar.tsx#L15-L40",
+          "version": "repo-lines-v1:sha256:4e0b505dd435f3e83af3a001dbef1bf2f59d6bbd2ce10d54d9c5cc6af20c8e05:eyJzZWxlY3RlZExpbmVDb3VudCI6MjYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijc2MmUyMTM2Y2JhYjBjMzFkMWIxMWM0MGI1NGY3NWFiMTBhYmMyMGFkNDc2NGJlYjk3NGQ5NmVlZTY1Mzg2NDIiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImYzOTU3ZTBmMTI5ZWY0ZDM0MTZmYTEwYTcwNmJmNzdjNzM4NDQwNzI3ODZhZTVkMDY5NjRkYzNmYTA2ZGY4ODUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjY0YjZhY2NhMTY1ZmUxODgzY2Q1YjZlYzBjZTAyMzQ1MDBiNzJjNDVjMDlmODk3OWViY2JjZmU3YmFhYWFiNTgifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_ac4a5752892c4b17b937a18bc8bd8817",
+      "statement": "관리자 세션 API postAdminSession은 entities/auth가 내보내지만 앱 코드에서 이를 호출하는 화면은 없다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/auth/api/auth.ts#L32-L37",
+          "version": "repo-lines-v1:sha256:6444baf0d6a2965e50ae37aadd944174c2e6edc37c64b72999329ecb6ae2466d:eyJzZWxlY3RlZExpbmVDb3VudCI6NiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOWY4YjkzYjdkNzNjMDRhMzVhNjc1MGRiNzljYzg0OGIwYTc0N2Q3Y2VmYmZhMWVlMWQ5ODc2NGJkMTc3ZGMyZCIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiYjIzNTI1ODljMzRkM2M2MDY4NTkzMWI2ZWNjNGQ1MDk5MWE3YzU2YzhmYmEyODk0MTE0NjU3NjkwMjcyY2FjMyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiNDU4ZTFlZTgyNGVhMDJkNjcwN2Q0MDMwYjlkYTM3ZTNjM2IwYWNhMDdiYzk5MzI3OThhM2RmMzAxNTRmMTBmOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjAsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSJ9"
+        },
+        {
+          "resource": "repo://src/entities/auth/index.ts#L1-L1",
+          "version": "repo-lines-v1:sha256:934dfcce464bcd91f4ad219dc41628aa099d8b79e9ead45dac4dbcc10332f52c:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiOTM0ZGZjY2U0NjRiY2Q5MWY0YWQyMTlkYzQxNjI4YWEwOTlkOGI3OWU5ZWFkNDVkYWM0ZGJjYzEwMzMyZjUyYyIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiOTM0ZGZjY2U0NjRiY2Q5MWY0YWQyMTlkYzQxNjI4YWEwOTlkOGI3OWU5ZWFkNDVkYWM0ZGJjYzEwMzMyZjUyYyIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjAsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTNiMGM0NDI5OGZjMWMxNDlhZmJmNGM4OTk2ZmI5MjQyN2FlNDFlNDY0OWI5MzRjYTQ5NTk5MWI3ODUyYjg1NSIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiZGU0NGFiYzljZmZiZmJlYzEzNjYxNWZhMmE1ZjUzMzViZDM4OTBiYmU3MzE2MzQyOGU5ZDIzNmEyMWRlNjI1MiJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_101cd938ec0f49ceaf329f6941db5664",
+      "statement": "관리자 상품 API는 목록·상세·등록(초안)·수정(오픈 이후 409)·전시(publish)·숨김(hide) 함수를 제공한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/admin-product/api/adminProduct.ts#L11-L60",
+          "version": "repo-lines-v1:sha256:2f16875af6be0986aa3da44be12676a8972f8a8956f04290188e6c28e5130033:eyJzZWxlY3RlZExpbmVDb3VudCI6NTAsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImRhMzIyZWI2ZTA3ZGJiYWFkY2YwMWJiOGE5ZDdlNTY4YmVhM2IxZGI4NjliNmQ5YTlmOWU4MDBkNWZlYWYwYjMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImIyMzUyNTg5YzM0ZDNjNjA2ODU5MzFiNmVjYzRkNTA5OTFhN2M1NmM4ZmJhMjg5NDExNDY1NzY5MDI3MmNhYzMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjQ0NjNkNjI4NzQ4M2NlZTE3NzI1MDg2ZTI5MzUwMzgwMGYzMzIzMzYxNzZjNzJjYTkwYzZhMjNhZmMzNjllM2IiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_39afcbb65a3a4f2595ded7c12f2ca131",
+      "statement": "AdminProductFormValue는 색상·옵션 그룹을 따로 들고 조합별 수량을 '색상|옵션값' 키의 quantities 맵으로만 보관하며, getProductVariants가 색상×옵션값 곡집합을 매번 다시 계산해 색상·옵션을 추가·삭제해도 남은 조합의 수량이 유지된다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/admin-product/model/form.ts#L103-L160",
+          "version": "repo-lines-v1:sha256:18972cfeb22df047270304ea0440cbf525176b4fca3cae98368a78faa05c2e84:eyJzZWxlY3RlZExpbmVDb3VudCI6NTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk4ZTA0ZWNmZDMzODRjNWU2MGViZGVjMDVlMmU1ZjQ5MGRiNWRlNmY3MDYxM2EyMmZkZThjYWIxZDhmNDQ0OGUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjExM2FkMWQ1MjM5NzNmNjQ2MjU0Yzc0YThlNDdkZWIwMGU4ZDFjNzRmNzBlNTA0ZjNjZmVhY2NmYmZiYjk3YjMiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImRmMDEzOGRmYjM2OGM5YWJlNzc2ZGIxOTExNjc5MDdhMzFmMWMxNzE0MTk4OWQ5ZTRkNGMxNDNiOTdhMzkyYTkiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImY3ZjQ1NDU1ZjhkY2U3ODE3OTg2OGFmZGE2ZTdmMjMxNjg5OTY2Y2VkNDRmMzYwYWZkNzE1NzgyMzNlMWQ5MzEifQ"
+        },
+        {
+          "resource": "repo://src/entities/admin-product/model/form.ts#L40-L60",
+          "version": "repo-lines-v1:sha256:52562700743216d50838e99dcb1b54e4c7a44d97dd7542425b90ea838ab284a7:eyJzZWxlY3RlZExpbmVDb3VudCI6MjEsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImExMWNlZDA0NTk1YmI0NDI1ZTE2MTg5MDJhZjFiMzZiYzk4MGNlMmVhNGE0MjgwNmFlOTM4YzJhNTMzNDhhZTUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImVmOWFlNDBmMGVjOTFiMmEyMDhmM2VhMzQ5Zjc0YTU5NjJiZGVlNDZiMzM2ZTNjMTM2MDI4YzM2MGFlNDM1OGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImIxMGVmM2NlZTljYTU3ZmU4MjRhMTljOWFhMWEzYmNiZmUwMDdhNTQ0MzE0ZDJhNWIyNzllYjdhYTdlY2MyOWQifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_fce332f0abdc4ffea00902ad8fd44fc2",
+      "statement": "상품 등록·수정 본문에는 수량 필드가 없어 toStockRequests가 서버 옵션 코드와 quantities 키를 맞춰 재고 PUT 요청을 만들고, 코드가 없는 조합은 건너뛴다. 업로드 이미지는 요청 본문에 실리지 않는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/admin-product/model/form.ts#L262-L300",
+          "version": "repo-lines-v1:sha256:41c6ddcb8341e3fdbd27789cbbc4fb8330bf7ec2f03a1e21b525d1ef8ccce8b5:eyJzZWxlY3RlZExpbmVDb3VudCI6MzksImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjMwNWU3OTUwYjU5OGYyMmNlMDQyYzdmZGIxY2E0ZWZjNTJmNThmODZjMjNhOWE2OWQwYTk0N2QxMDQyMTM3OTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6Ijg1NWYxMGY0Yjc3YTZmZDRlZDk5MTY4ODIyNGNjOWYyODlhMTdiYTBiZjY5YWRmOWZlNTQxYzkwOTE5Zjk5ZDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6Ijc5NTJlNGVlNDA5M2M4MjEzOGEyNzQzMTdkOThhMjI3ZGY2ZjVmZDA1MDk0YTQ2M2Y0NmZiNWI4NzBlMGE0N2IifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_947450cfd9054def8e4304530a7be038",
+      "statement": "상품 수정 저장은 updateAdminProduct 응답의 옵션 코드를 기준으로 재고 PUT들을 병렬로 보낸 뒤 목록으로 이동하며, 상품 등록은 재고 없이 초안을 만들고 새 상품 상세로 이동한다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/admin-product-detail/ui/AdminProductDetailPage.tsx#L89-L105",
+          "version": "repo-lines-v1:sha256:9d6440e234d707cb66463445a5588be306e8232282b223da41972962da0cfc44:eyJzZWxlY3RlZExpbmVDb3VudCI6MTcsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjRmMmEyZjk5NmYwOGU2ODBiZDI5MjEzNWE2ZmE0OTc4YmRhMjZlNjAyZDg0ZjMzY2IxZDU5NDc3NWQ0MzA0YjUiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImQzZTJkMGY0ZWI4ZjdkNGRlMzhhNTBmNWY2ODY4ZTZkNGQ3MDQzNWQzYmQ1ZjRkNWIzN2MwNjVkMzAyMzJjOWUiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjFkYjQ3ODc4ZDU4ZGUxYjk2YWY0YTcwYTVlM2NhYTE2NGU5NmNkOTQ1ZTgxYjVkOWI3OGYyNWVhYWM0OTg1MGMiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjkxY2QzMjUyMWU5YmJkYmFjZGU3MWQxY2FmNzE1ZTM5MDdlZTcwMGIwMWM1NDQxMGE4MmY4MzhjNjk0MmZkNDgifQ"
+        },
+        {
+          "resource": "repo://src/pages/admin-product-new/ui/AdminProductNewPage.tsx#L16-L47",
+          "version": "repo-lines-v1:sha256:1271d13a1f95d5934d5be52092060ce64dd92b9a5f1606380f49fffedff7acd1:eyJzZWxlY3RlZExpbmVDb3VudCI6MzIsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImI5YmQ2YTQxN2NlMTU0ZjdiZTUyNTQ1YjQyZGZiMzE3MjI4M2Q5OGFjMTQ5NDMzNjhlYjZlYTdlOTUzZWIxYmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjQxMmNhMzQ1Y2NmNzViZjljMDgwNmJjZTY5NWJlOGRlODA4Yjc5OTg0MjUxYTdhNTRkMjAyY2Y2MTAxZGQ0NTEiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjA3ZDRjZmM3N2U1NmVhMzNiZWE1YTE3NTI2N2EzOTA3ZDk1ZmNhY2ZhMjM5MmQ5NDBmZjA5OGVhNzQ5YzdhZGQiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_0d36a8c76ba24c27a7ef2a58808bc4dc",
+      "statement": "출고 회차는 게시된 버전이 있으면 그중 최신을, 없으면 가장 최근 초안을 보여주고, 다음 회차 시작 순번은 직전 회차 toSeq + 1이다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/admin-product/model/dispatch.ts#L7-L39",
+          "version": "repo-lines-v1:sha256:40676e76d35e97229247550c1caca766ab7f6c2acbd38bb2824521403f8c13c2:eyJzZWxlY3RlZExpbmVDb3VudCI6MzMsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImVhZjIyY2YwNzMyNTkyYzI0NzE0MWNiZTYxZWZhMTEwMTI2MTJmNWEzMTIyYjlhZjliYmFmNTJmNTcyNGQxOTQiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjdiZDNmYWEwNzUxOGI2MjUxNDhiMDJiNWJmMmNjZjAzMTAxNTE4MDFkZTIxODMyZTBkNmE0M2Y3Y2VlY2Q1ZTgiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImZlMDcxMmI5YmM2Yzk5MmE2YzBhZjc0MTY1OTUzNWYzMmMzMmQyMThkM2ZhMmUxMjc2NzEyMzc2OGUzYWQxM2QiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjowLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_4ecc5e8cd02c4f9f8f63f5d9e4b9d3f7",
+      "statement": "예약 현황 페이지는 예약 목록을 10초마다 다시 받고, 상태 탭·예약번호 검색을 받아온 최대 100건 목록에서 화면이 거르며, 재처리는 ConfirmDialog 확인 후 호출하고 목록을 다시 받는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/admin-reservations/ui/AdminReservationsPage.tsx#L43-L43",
+          "version": "repo-lines-v1:sha256:14dedfe1ff375405a0abd1a4cc5bdc19bee36a116c9ae50a73a29ce9620364a5:eyJzZWxlY3RlZExpbmVDb3VudCI6MSwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiMTRkZWRmZTFmZjM3NTQwNWEwYWJkMWE0Y2M1YmRjMTliZWUzNmExMTZjOWFlNTBhNzNhMjljZTk2MjAzNjRhNSIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiMTRkZWRmZTFmZjM3NTQwNWEwYWJkMWE0Y2M1YmRjMTliZWUzNmExMTZjOWFlNTBhNzNhMjljZTk2MjAzNjRhNSIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiODMzNjMyZjY1ZWI3NzZhNzE3ZDhkMmM3MzdlNDQxMjU2YjJlZTA3MGRmMjBiYjY0YjM2MDhjZmNhYjQzYWNjOCIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiNzhmZDkyNGNmZTc1MjU3MGNkNjc2M2Q2YzhjNGVhYWEwNGE1NzM4N2FjMTliMmY4NWVkMzIwYzgwNTgzYmQ2OCJ9"
+        },
+        {
+          "resource": "repo://src/pages/admin-reservations/ui/AdminReservationsPage.tsx#L95-L140",
+          "version": "repo-lines-v1:sha256:f080a7d4ffd990f7dd7bfd3340df04cc471f0c0dac583af103003c72f746b4a1:eyJzZWxlY3RlZExpbmVDb3VudCI6NDYsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjAxYmE0NzE5YzgwYjZmZTkxMWIwOTFhN2MwNTEyNGI2NGVlZWNlOTY0ZTA5YzA1OGVmOGY5ODA1ZGFjYTU0NmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6IjM4NTkxMmYzN2ExNTM5Yjk3Nzk1MTAzNzQ4OTM1MjhlNTIwYmViMmRlM2MzMWMxNWYwMDVkYTYwZGZkZDYzNTYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6IjE5NDI2ZDIwZDk4NjIyNGVlMmY1ZTk5M2JiY2RlYzQwYjIxODZhNDU5NTU4YjU1NWQwOTAyNjMzMWZlNmEwNDEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6ImE2ODI1NWIwYzQ5MTk2MmY5MTgyZGIyMWY2Y2Q1ZDQzMjVmZWI1MDM1ZGU4YzY4NWRlODYwNWRjMjYxNTc2NjMifQ"
+        }
+      ]
+    },
+    {
+      "id": "claim_9847d473fb2d47a0904cd4212321db21",
+      "statement": "프로모션 API가 없어 관리자 프로모션 화면들은 entities/admin-promotion/model/mock.ts의 mockPromotions·mockLinkableProducts 표본으로 채워진다.",
+      "evidence": [
+        {
+          "resource": "repo://src/entities/admin-promotion/model/mock.ts#L1-L15",
+          "version": "repo-lines-v1:sha256:f9ced15995f3b9b2963532b58d4000364d9a1a9bb8b8731552bbc48d35e393a9:eyJzZWxlY3RlZExpbmVDb3VudCI6MTUsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6ImMxYjdmOTA3OGU5ZTRlMWE0OWRiZDk4MmZiZmIxYWU5ZmVlMzU5NDlhNjhhNTdiN2FiNWE4NGE5ZDcyZTA1MmIiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6ImJkZjUwNDIzZTAyNTZhYzZmMzlhMmI3Mzc1OThkZjQyZTBkOTg1NDc4N2FiMDE3OWQ1YmIyNTVhOTQ2YTYzMGQiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjowLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImUzYjBjNDQyOThmYzFjMTQ5YWZiZjRjODk5NmZiOTI0MjdhZTQxZTQ2NDliOTM0Y2E0OTU5OTFiNzg1MmI4NTUiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjJhMGU1YmU3MTQ1OGRmNjA3YmUzMmI5MTA1ZTQ0NWFjOGZlMDkzODA5MmY3NDE3NmM5NjQ5NDczMTQ4NGMxZDcifQ"
+        },
+        {
+          "resource": "repo://src/pages/admin-promotions/ui/AdminPromotionsPage.tsx#L8-L9",
+          "version": "repo-lines-v1:sha256:9d5f1d19f208708d0a29bda9782cafb198ac189da51657997192baa55176bf60:eyJzZWxlY3RlZExpbmVDb3VudCI6MiwiZmlyc3RTZWxlY3RlZExpbmVIYXNoIjoiZDQ2ODA4ZWZhZDI3MTQ2ZGMxMzFkZmY4ZGZjOGVlZGU0MzE5ZjU2NDE4YTA2NGU3YTY3NTIyY2U0NGExODJhYiIsImxhc3RTZWxlY3RlZExpbmVIYXNoIjoiZTU0ZGIyNDMxMThjMTc0ZWM3MDAyZjJlOTJiYjFkMTlhMzRkOTc3MzQwYTZkOGI2YTVlMGRjMGQ5MWY0NGViOCIsInByZWNlZGluZ0NvbnRleHRMaW5lQ291bnQiOjMsInByZWNlZGluZ0NvbnRleHRIYXNoIjoiZTI5MjhiYzQ2MzJiZGJkZjdiMDAxN2U4YThkYTVkYzkxNTQyNTk3NzczMDZkMmM2NmUzNjk2ZTAzOGUzNGMzZiIsImZvbGxvd2luZ0NvbnRleHRMaW5lQ291bnQiOjMsImZvbGxvd2luZ0NvbnRleHRIYXNoIjoiN2Q0YTMwYWIzM2IxOGFiMzM0YTcxZDgwM2RmOGZjNGU4YzIwMTI4ZGQxYmY2YzQ4YmIyNDgzOGNlZGM2ZGYwNSJ9"
+        }
+      ]
+    },
+    {
+      "id": "claim_02297e0299b04f5b94699bffacdbb536",
+      "statement": "관리자 상품 상세는 useEffect에서 상세와 재고를 Promise.all로 직접 불러오고 cancelled 플래그로 늦게 온 응답을 무시하며, 실패는 cause.message를 상태에 담는다.",
+      "evidence": [
+        {
+          "resource": "repo://src/pages/admin-product-detail/ui/AdminProductDetailPage.tsx#L63-L80",
+          "version": "repo-lines-v1:sha256:400f535e895f75aba8e89338226510b1505a0ff8b3ce2ad2a93aacbcf7a0955b:eyJzZWxlY3RlZExpbmVDb3VudCI6MTgsImZpcnN0U2VsZWN0ZWRMaW5lSGFzaCI6IjU5NjZmYmZhODg5OThkYTc0NjU2YzUwMTk0OTU2YzI1ZjA4NDk0NTc2NjBjMDA5ZmU2M2QxZTlmYTlkYzkzMWMiLCJsYXN0U2VsZWN0ZWRMaW5lSGFzaCI6Ijk1YThkNWNkNDY0YjZiMGRmMTM2N2QwYTk5MWE0NDQ5NzgwOWU5NDhmZDc5ZmJjNzM0ZTQwNjMzOWE5OTllNmYiLCJwcmVjZWRpbmdDb250ZXh0TGluZUNvdW50IjozLCJwcmVjZWRpbmdDb250ZXh0SGFzaCI6ImU5N2RjYWU1ZGFhNWYyYTk3YmM1OTU5NWNiYmI4NTU4YzdmZjM5YTcyMTlmYTQ1YWM0NTczZWE0YmZjMGJmODEiLCJmb2xsb3dpbmdDb250ZXh0TGluZUNvdW50IjozLCJmb2xsb3dpbmdDb250ZXh0SGFzaCI6IjUyMTJlZmI1Y2JkZThhY2Q4MzExNzEzNDczZGYwYjA0MmU2YmIyOGM5NWQxMjhmMjgxMGE5NDU3NjhlNjU0MDgifQ"
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "by": "openwiki/0.5.0",
+    "at": "2026-10-04T09:44:53.662Z"
+  }
+}
