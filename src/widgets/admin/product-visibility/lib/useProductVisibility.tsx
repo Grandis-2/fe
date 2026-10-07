@@ -1,17 +1,18 @@
 import {
   useHideAdminProduct,
   usePublishAdminProduct,
+  type AdminProduct,
 } from '@entities/admin-product'
 import { useModalStore } from '@shared/model/modalStore'
 import { ConfirmDialog } from '@shared/ui'
 
 import { AdminProductHideDialog } from '../ui/AdminProductHideDialog'
 
-/** Tag·버튼을 그리는 데 필요한 최소한만 받는다 — 목록 요약과 상세 둘 다 넘길 수 있게. */
-export type VisibilityTarget = {
-  productId: string
-  name: string
-}
+/**
+ * Tag·버튼을 그리는 데 필요한 최소한만 받는다 — 목록 요약과 상세 둘 다 넘길 수 있게.
+ * 필드를 손으로 다시 적지 않고 모델에서 파생시킨다(상세도 같은 두 필드를 갖는다).
+ */
+export type VisibilityTarget = Pick<AdminProduct, 'productId' | 'name'>
 
 /**
  * 전시 상태를 바꾸는 흐름(확인 모달 → 요청 → 캐시 갱신)을 한곳에 모은다.

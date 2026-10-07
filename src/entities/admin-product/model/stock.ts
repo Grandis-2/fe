@@ -28,8 +28,9 @@ export type AdminProductStock = {
 export const getStockOptionGroups = (product: AdminProductDetail) =>
   product.optionGroups.filter((group) => group.groupCode !== COLOR_GROUP_CODE)
 
+/** 옵션 값 코드를 사람이 읽는 이름으로 바꾼다. 못 찾으면 '-'로 비워 둔다. */
 const valueName = (
-  values: { valueCode: string; name: string }[],
+  values: AdminProductDetail['optionGroups'][number]['values'],
   valueCode: string | undefined,
 ) => values.find((value) => value.valueCode === valueCode)?.name ?? '-'
 
