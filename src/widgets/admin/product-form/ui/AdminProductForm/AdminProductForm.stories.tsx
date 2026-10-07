@@ -22,10 +22,18 @@ export const Create: Story = {
 
     await userEvent.type(canvas.getByLabelText(/상품명/), '아이폰 18 Pro')
     await userEvent.type(canvas.getByLabelText(/모델명/), 'A23948')
+
+    await userEvent.click(canvas.getByRole('button', { name: '브랜드 선택' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Apple' }))
+
     await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
 
     await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ name: '아이폰 18 Pro', modelName: 'A23948' }),
+      expect.objectContaining({
+        name: '아이폰 18 Pro',
+        modelName: 'A23948',
+        brand: 'Apple',
+      }),
     )
   },
 }

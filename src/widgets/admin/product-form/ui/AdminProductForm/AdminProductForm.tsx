@@ -3,10 +3,19 @@ import { useState, type FormEvent } from 'react'
 import {
   createEmptyProductFormValue,
   getProductVariants,
+  PRODUCT_BRANDS,
   withPresetOptionGroups,
   type AdminProductFormValue,
 } from '@entities/admin-product'
-import { Button, Checkbox, FormSection, ImageUploader, Input } from '@shared/ui'
+import {
+  Button,
+  Checkbox,
+  Dropdown,
+  FormSection,
+  ImageUploader,
+  Input,
+} from '@shared/ui'
+import type { DropdownOption } from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
 import { NumberField } from '../NumberField'
@@ -34,6 +43,11 @@ const submitLabel: Record<AdminProductFormMode, string> = {
   create: '등록하기',
   edit: '수정하기',
 }
+
+const brandOptions: DropdownOption<string>[] = PRODUCT_BRANDS.map((brand) => ({
+  label: brand,
+  value: brand,
+}))
 
 export function AdminProductForm({
   mode,
@@ -79,6 +93,17 @@ export function AdminProductForm({
           required
           value={value.modelName}
           onChange={(event) => patch({ modelName: event.target.value })}
+        />
+      </FormSection>
+
+      <FormSection title="브랜드 정보">
+        <Dropdown
+          label="브랜드 선택"
+          size="medium"
+          width="220px"
+          options={brandOptions}
+          value={value.brand || undefined}
+          onSelect={(brand) => patch({ brand })}
         />
       </FormSection>
 

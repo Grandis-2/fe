@@ -76,3 +76,17 @@ export const productTypeLabels = [
   productTypeLabel({ badges: ['PREORDER'] }),
   productTypeLabel({ badges: [] }),
 ]
+
+/**
+ * 등록·수정 폼에서 고를 수 있는 브랜드.
+ *
+ * 자유 입력으로 두면 안 된다 — 구매자 쪽 브랜드 필터가 이 문자열을 그대로
+ * 쿼리(`?brand=Apple`)로 쓰고 정확히 일치할 때만 걸러서, 'samsung'·'삼성'처럼
+ * 한 글자만 달라도 그 상품은 필터에서 조용히 사라진다.
+ *
+ * LG가 들어 있는 건 메가 메뉴의 PC/주변기기 브랜드 묶음이 이미 LG를 내걸고
+ * 있어서다. 여기서 빼면 그 타일은 영원히 빈 결과만 돌려준다.
+ *
+ * ponytail: 브랜드 목록 API가 없어서 상수다. 생기면 응답으로 갈아 끼운다.
+ */
+export const PRODUCT_BRANDS = ['Samsung', 'Apple', 'LG'] as const

@@ -41,6 +41,8 @@ export type AdminProductFormValue = {
   name: string
   /** 서버의 productId로 저장되는 모델 코드 */
   modelName: string
+  /** PRODUCT_BRANDS 중 하나. 아직 고르지 않았으면 빈 문자열 */
+  brand: string
   isPreorder: boolean
   /** datetime-local 형식 문자열 */
   openAt: string
@@ -82,6 +84,7 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
   return {
     name: '',
     modelName: '',
+    brand: '',
     isPreorder: false,
     openAt: '',
     closeAt: '',
@@ -356,6 +359,8 @@ export function toUpsertRequest(
   return {
     productId: value.modelName || null,
     name: value.name,
+    // 안 골랐으면 키를 아예 빼서 수정 때 기존 브랜드를 빈 값으로 덮지 않는다.
+    brand: value.brand || undefined,
     optionGroups,
     variants,
     images: value.detailImages.map((image, index) => ({
@@ -409,6 +414,7 @@ export function toFormValue(
     ...createEmptyProductFormValue(),
     name: detail.name,
     modelName: detail.productId,
+    brand: detail.brand,
     isPreorder: detail.badges.includes('PREORDER'),
     openAt: toLocalInput(detail.sale.openAt),
     closeAt: toLocalInput(detail.sale.closeAt),

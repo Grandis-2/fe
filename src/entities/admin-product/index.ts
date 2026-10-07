@@ -29,6 +29,7 @@ export {
   HIDE_REASON_MAX_LENGTH,
   HIDE_REASON_MIN_LENGTH,
   isPreorder,
+  PRODUCT_BRANDS,
   productTypeLabel,
   productTypeLabels,
   saleStatusColor,
