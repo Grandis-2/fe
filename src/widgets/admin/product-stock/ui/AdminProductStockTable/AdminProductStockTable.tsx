@@ -1,0 +1,103 @@
+import {
+  getAdminProductStocks,
+  getStockOptionGroups,
+  isPreorder,
+  useAdminProduct,
+  useAdminProductStock,
+  type AdminProductStock,
+} from '@entities/admin-product'
+import { getErrorMessage } from '@shared/api/client'
+import { formatNumber, formatWon } from '@shared/lib/formatNumber'
+import { InlineAlert, Table } from '@shared/ui'
+import type { TableColumn } from '@shared/ui'
+
+import * as styles from './AdminProductStockTable.css'
+
+export type AdminProductStockTableProps = {
+  productId: string
+}
+
+/** 옵션 조합별 재고 현황 — 재고 수량에 상품 상세의 옵션 이름·가격을 붙여 보여준다 */
+export function AdminProductStockTable({
+  productId,
+}: AdminProductStockTableProps) {
+  const product = useAdminProduct(productId)
+  const stock = useAdminProductStock(productId)
+
+  // 열은 상품이 실제로 가진 옵션 그룹에서 만든다 — 상품마다 옵션 수가 달라서
+  // (스마트폰은 용량 하나, 노트북은 크기·RAM·용량·칩) 고정할 수 없다.
+  const optionGroups = product.data ? getStockOptionGroups(product.data) : []
+
+  const columns: TableColumn<AdminProductStock>[] = [
+    {
+      key: 'color',
+      header: '색상',
+      align: 'center',
+      render: (row) => row.color,
+    },
+    ...optionGroups.map((group, index) => ({
+      key: group.groupCode,
+      header: group.name,
+      align: 'center' as const,
+      render: (row: AdminProductStock) => row.optionNames[index] ?? '-',
+    })),
+    {
+      key: 'totalCount',
+      header: '총수량',
+      align: 'center',
+      render: (row) => formatNumber(row.totalCount),
+    },
+    {
+      key: 'price',
+      header: '가격',
+      align: 'center',
+      render: (row) => formatWon(row.price),
+    },
+    {
+      key: 'confirmedCount',
+      // 같은 reservedQuantity지만 일반 판매에는 '확정' 단계가 없어 팔린 수량으로 읽힌다.
+      header: product.data && isPreorder(product.data) ? '확정' : '판매',
+      align: 'center',
+      render: (row) => `${formatNumber(row.confirmedCount)}건`,
+    },
+    {
+      key: 'remainingCount',
+      header: '잔여',
+      align: 'center',
+      render: (row) => `${formatNumber(row.remainingCount)}건`,
+    },
+  ]
+
+  const failed = product.error ?? stock.error
+  const rows =
+    product.data && stock.data
+      ? getAdminProductStocks(product.data, stock.data)
+      : []
+
+  return (
+    <div className={styles.root}>
+      {/* 다시 불러오기에 실패해도 이전 데이터는 남아 표에 그대로 보인다 — 그 사실을 따로 알린다. */}
+      {failed != null && rows.length > 0 && (
+        <InlineAlert status="warning">
+          {getErrorMessage(failed, '재고를 다시 불러오지 못했습니다.')} 이전에
+          불러온 재고를 표시하고 있습니다.
+        </InlineAlert>
+      )}
+
+      <Table
+        columns={columns}
+        rows={rows}
+        rowKey={(row) => row.optionCode}
+        pageSize={10}
+        // 조회 실패를 '재고 없음'으로 보이면 운영 판단이 정반대가 된다.
+        emptyMessage={
+          failed
+            ? getErrorMessage(failed, '재고를 불러오지 못했습니다.')
+            : product.isPending || stock.isPending
+              ? '불러오는 중입니다.'
+              : '등록된 재고가 없습니다.'
+        }
+      />
+    </div>
+  )
+}

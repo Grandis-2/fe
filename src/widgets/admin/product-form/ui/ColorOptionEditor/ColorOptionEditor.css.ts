@@ -1,0 +1,153 @@
+import { style } from '@vanilla-extract/css'
+
+import { color, motion, spacing, typography } from '@shared/config/theme'
+
+export const root = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+})
+
+export const sectionLabel = style([
+  typography.title.smMedium,
+  { color: color.text.tertiary },
+])
+
+export const blockHeader = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+})
+
+export const colorBlock = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+  paddingBottom: spacing[12],
+  borderBottom: `1px solid ${color.border.subtle}`,
+  selectors: {
+    '&:last-of-type': { borderBottom: 'none', paddingBottom: 0 },
+  },
+})
+
+/**
+ * '색상 없음'일 때 색상 칸을 가라앉힌다. 지우지 않고 남겨 두는 이유는, 체크를 풀면
+ * 적어 둔 색과 이미지가 그대로 돌아와야 해서다.
+ *
+ * 여기서는 보이기만 바꾼다 — 못 누르게 하는 건 각 요소의 disabled가 맡는다.
+ * 전에는 pointerEvents: 'none'으로 때웠는데, 그건 포인터만 막아서 Tab으로 들어가면
+ * 키보드로는 색을 고치고 이미지를 추가·삭제할 수 있었다.
+ */
+export const mutedArea = style({
+  opacity: 0.45,
+})
+
+export const colorRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[10],
+})
+
+export const swatch = style({
+  position: 'relative',
+  flexShrink: 0,
+  width: '20px',
+  height: '20px',
+  borderRadius: '9999px',
+  border: `1px solid ${color.border.subtle}`,
+  cursor: 'pointer',
+  overflow: 'hidden',
+})
+
+// 아직 색을 고르지 않은 상태 — 회색 빈 원으로 보여준다.
+export const swatchEmpty = style([
+  swatch,
+  {
+    background: color.background.surface,
+    borderStyle: 'dashed',
+    borderColor: color.border.hover,
+  },
+])
+
+export const swatchInput = style({
+  position: 'absolute',
+  inset: 0,
+  opacity: 0,
+  cursor: 'pointer',
+})
+
+export const srOnly = style({
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  overflow: 'hidden',
+  clipPath: 'inset(50%)',
+  whiteSpace: 'nowrap',
+})
+
+export const noColorLabel = style([
+  typography.body.sub,
+  {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: spacing[6],
+    flexShrink: 0,
+    color: color.text.secondary,
+    cursor: 'pointer',
+  },
+])
+
+export const removeButton = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  width: '28px',
+  height: '28px',
+  padding: 0,
+  border: 'none',
+  borderRadius: '6px',
+  background: 'transparent',
+  color: color.text.tertiary,
+  cursor: 'pointer',
+  transition: `color ${motion.duration.fast} ${motion.easing.default}`,
+  selectors: {
+    '&:hover': { color: color.status.danger },
+  },
+})
+
+export const removeIcon = style({
+  width: '20px',
+  height: '20px',
+})
+
+export const addButton = style([
+  typography.body.defaultMedium,
+  {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[6],
+    width: '100%',
+    padding: spacing[10],
+    border: 'none',
+    borderRadius: '8px',
+    background: color.primary.subtler,
+    color: color.primary.base,
+    cursor: 'pointer',
+    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
+    selectors: {
+      '&:hover:not(:disabled)': { background: color.primary.subtlerHover },
+      '&:disabled': {
+        background: color.background.surface,
+        color: color.text.disabled,
+        cursor: 'not-allowed',
+      },
+    },
+  },
+])
+
+export const addIcon = style({
+  width: '16px',
+  height: '16px',
+})

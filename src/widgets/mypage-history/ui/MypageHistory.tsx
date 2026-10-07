@@ -29,8 +29,10 @@ const kindFilters = ['전체', '사전예약', '일반 구매'] as const
 type KindFilter = (typeof kindFilters)[number]
 
 // 0은 기간 제한 없음.
-const periods = [0, 1, 3, 6, 12] as const
-const periodLabel = (months: number) => (months ? `${months}개월` : '전체')
+const periodOptions = [0, 1, 3, 6, 12].map((months) => ({
+  label: months ? `${months}개월` : '전체',
+  value: months,
+}))
 
 const matchesKind = (order: Order, kind: KindFilter) =>
   kind === '전체' || (kind === '사전예약') === !!order.preorder
@@ -51,7 +53,6 @@ export function MypageHistory() {
   const navigate = useNavigate()
   const [kind, setKind] = useState<KindFilter>('전체')
   const [period, setPeriod] = useState<number>(6)
-  const [periodOpen, setPeriodOpen] = useState(false)
   const reviews = useMyReviewStore((state) => state.reviews)
   const [reviewFormOpen, setReviewFormOpen] = useState(false)
   const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null)
@@ -109,14 +110,9 @@ export function MypageHistory() {
           size="small"
           width="96px"
           label="기간"
-          options={periods.map(periodLabel)}
-          selectedOption={periodLabel(period)}
-          open={periodOpen}
-          onToggle={() => setPeriodOpen((open) => !open)}
-          onSelect={(_, index) => {
-            setPeriod(periods[index])
-            setPeriodOpen(false)
-          }}
+          options={periodOptions}
+          value={period}
+          onSelect={setPeriod}
         />
       </div>
 

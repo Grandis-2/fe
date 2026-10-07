@@ -6,15 +6,14 @@ import { RequireLogin } from '@app/layouts/RequireLogin'
 import { RootLayout } from '@app/layouts/RootLayout'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PAYMENT_CALLBACK_PATH } from '@features/payment'
-import { AdminHomePage } from '@pages/admin-home'
-import { AdminPlaceholderPage } from '@pages/admin-placeholder'
-import { AdminProductDetailPage } from '@pages/admin-product-detail'
-import { AdminProductNewPage } from '@pages/admin-product-new'
-import { AdminProductsPage } from '@pages/admin-products'
-import { AdminPromotionEditPage } from '@pages/admin-promotion-edit'
-import { AdminPromotionNewPage } from '@pages/admin-promotion-new'
-import { AdminPromotionsPage } from '@pages/admin-promotions'
-import { AdminReservationsPage } from '@pages/admin-reservations'
+import { AdminPlaceholderPage } from '@pages/admin/placeholder/AdminPlaceholderPage'
+import { AdminProductDetailPage } from '@pages/admin/product-detail/AdminProductDetailPage'
+import { AdminProductNewPage } from '@pages/admin/product-new/AdminProductNewPage'
+import { AdminProductsPage } from '@pages/admin/products/AdminProductsPage'
+import { AdminPromotionEditPage } from '@pages/admin/promotion-edit/AdminPromotionEditPage'
+import { AdminPromotionNewPage } from '@pages/admin/promotion-new/AdminPromotionNewPage'
+import { AdminPromotionsPage } from '@pages/admin/promotions/AdminPromotionsPage'
+import { AdminReservationsPage } from '@pages/admin/reservations/AdminReservationsPage'
 import { KakaoCallbackPage } from '@pages/kakao-callback/KakaoCallbackPage'
 import { MainPage } from '@pages/main/MainPage'
 import { Mypage } from '@pages/mypage/Mypage'
@@ -107,7 +106,11 @@ export const router = createBrowserRouter([
       {
         element: <AdminLayout />,
         children: [
-          { path: ADMIN_HOME_PATH, element: <AdminHomePage /> },
+          // 홈은 다른 용도로 바꿀 예정이라 비워 둔다. 메뉴 목록은 사이드바 한 곳에만 둔다.
+          {
+            path: ADMIN_HOME_PATH,
+            element: <AdminPlaceholderPage title="관리자 홈" />,
+          },
           // 홈을 제외한 나머지는 아직 기능 범위가 안 정해져서 전부 placeholder —
           // 스코프가 정해지는 대로 각자 전용 페이지로 교체.
           { path: ADMIN_PRODUCTS_PATH, element: <AdminProductsPage /> },

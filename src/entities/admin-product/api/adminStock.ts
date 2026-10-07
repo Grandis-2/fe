@@ -1,16 +1,16 @@
 import { apiClient } from '@shared/api/client'
 import type {
+  AdminStockItem,
   AdminStockPutRequest,
   AdminStockResponse,
-  AdminStockItem,
 } from '@shared/api/types'
 
 const stockPath = (productId: string) =>
   `/api/v1/admin/products/${productId}/stock`
 
 /** 옵션별 재고 현황을 조회한다 */
-export const getAdminProductStock = (productId: string) =>
-  apiClient.request<AdminStockResponse>(stockPath(productId))
+export const getAdminProductStock = (productId: string, signal?: AbortSignal) =>
+  apiClient.request<AdminStockResponse>(stockPath(productId), { signal })
 
 /**
  * 지정 옵션의 초기 수량·조정 설정을 반영한다.

@@ -1,4 +1,5 @@
 import { apiClient } from '@shared/api/client'
+import { toQueryString } from '@shared/api/queryString'
 import type {
   AdminProductDetail,
   AdminProductHideRequest,
@@ -10,24 +11,21 @@ import type {
 
 const BASE = '/api/v1/admin/products'
 
-const toQuery = (params: AdminProductListParams) => {
-  const query = new URLSearchParams()
-  if (params.displayStatus) query.set('displayStatus', params.displayStatus)
-  if (params.saleStatus) query.set('saleStatus', params.saleStatus)
-  if (params.q) query.set('q', params.q)
-  if (params.page !== undefined) query.set('page', String(params.page))
-  if (params.size !== undefined) query.set('size', String(params.size))
-  const search = query.toString()
-  return search ? `?${search}` : ''
-}
-
 /** 전시 상태와 무관하게 상품 목록을 조회한다 */
-export const getAdminProducts = (params: AdminProductListParams = {}) =>
-  apiClient.request<Paged<AdminProductSummary>>(`${BASE}${toQuery(params)}`)
+export const getAdminProducts = (
+  params: AdminProductListParams = {},
+  signal?: AbortSignal,
+) =>
+  apiClient.request<Paged<AdminProductSummary>>(
+    `${BASE}${toQueryString(params)}`,
+    {
+      signal,
+    },
+  )
 
 /** 전시 상태와 무관하게 상품 상세를 조회한다 */
-export const getAdminProduct = (productId: string) =>
-  apiClient.request<AdminProductDetail>(`${BASE}/${productId}`)
+export const getAdminProduct = (productId: string, signal?: AbortSignal) =>
+  apiClient.request<AdminProductDetail>(`${BASE}/${productId}`, { signal })
 
 /** 상품을 초안으로 등록한다 */
 export const createAdminProduct = (body: AdminProductUpsertRequest) =>
