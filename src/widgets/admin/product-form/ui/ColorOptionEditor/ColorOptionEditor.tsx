@@ -72,6 +72,7 @@ export function ColorOptionEditor({
                 className={styles.swatchInput}
                 // input[type=color]는 빈 값을 못 받아서 미선택일 때 검정을 넘긴다.
                 value={colorOption.hex || '#000000'}
+                disabled={hasNoColor}
                 onChange={(event) =>
                   patchColor(colorOption.id, {
                     hex: event.target.value.toUpperCase(),
@@ -103,6 +104,7 @@ export function ColorOptionEditor({
           <div className={hasNoColor ? styles.mutedArea : undefined}>
             <ImageUploader
               label="이미지"
+              disabled={hasNoColor}
               value={colorOption.images}
               onChange={(images) => patchColor(colorOption.id, { images })}
             />

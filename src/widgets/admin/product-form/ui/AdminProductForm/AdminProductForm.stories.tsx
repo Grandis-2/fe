@@ -224,6 +224,19 @@ export const NoColorAppliesToEveryBlock: Story = {
       await expect(field).toBeDisabled()
     }
 
+    // 흐리게만 두면(opacity·pointerEvents) Tab으로 닿아 키보드로는 그대로 조작된다.
+    // 색 선택과 이미지 업로드까지 실제로 disabled여야 한다.
+    for (const swatch of canvas.getAllByLabelText('색상 선택')) {
+      await expect(swatch).toBeDisabled()
+    }
+    // '이미지' 라벨이 붙은 건 색상 블록의 업로더뿐이다 — 상세·사양·유의사항
+    // 업로더는 라벨이 없고 색상과 무관해서 잠기지 않아야 한다.
+    const colorUploads = canvas.getAllByLabelText('이미지')
+    await expect(colorUploads).toHaveLength(2)
+    for (const upload of colorUploads) {
+      await expect(upload).toBeDisabled()
+    }
+
     // 풀면 적어 둔 값이 그대로 돌아온다 — 지우지 않고 가려만 뒀기 때문이다.
     await userEvent.click(canvas.getAllByLabelText('색상 없음')[0])
     await waitFor(async () =>
