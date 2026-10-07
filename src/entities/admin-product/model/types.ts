@@ -59,6 +59,12 @@ export const displayStatusVariant: Record<DisplayStatus, 'subtle' | 'outline'> =
 // 표의 전시 열 너비를 가장 긴 문구에 맞출 때 쓴다(Tag의 widthOptions).
 export const displayStatusLabels = Object.values(displayStatusLabel)
 
+/**
+ * 색상 옵션 그룹의 코드. 나머지 그룹은 폼이 opt1·opt2…로 발급한다(form.ts).
+ * 색상만 축이 따로라 이름이 고정이고, 폼과 재고 표가 같이 본다.
+ */
+export const COLOR_GROUP_CODE = 'color'
+
 /** 숨길 때 사유는 서버가 5~500자를 요구한다 */
 export const HIDE_REASON_MIN_LENGTH = 5
 export const HIDE_REASON_MAX_LENGTH = 500

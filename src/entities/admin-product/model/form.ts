@@ -8,6 +8,8 @@ import type {
 } from '@shared/api/types'
 import type { UploadedImage } from '@shared/ui'
 
+import { COLOR_GROUP_CODE } from './types'
+
 /* ------------------------------------------------------------------ *
  * 폼이 편집하는 모양 — 서버 DTO와 형태가 달라서 별도로 둔다.
  * (색상/옵션을 편집 중에는 코드가 없고, 조합 수량은 맵으로 들고 있다)
@@ -183,8 +185,6 @@ export function getProductVariants(
 /* ------------------------------------------------------------------ *
  * 폼 값 ↔ 서버 DTO
  * ------------------------------------------------------------------ */
-
-const COLOR_GROUP_CODE = 'color'
 
 // datetime-local('2026-09-20T09:00')을 서버가 쓰는 ISO 문자열로 바꾼다.
 const toIso = (local: string) =>

@@ -32,9 +32,7 @@ export {
   PRODUCT_BRANDS,
   productTypeLabel,
   productTypeLabels,
-  saleStatusColor,
   saleStatusLabel,
-  saleStatusLabels,
 } from './model/types'
 export type {
   AdminDisplayStatus,
@@ -59,7 +57,9 @@ export type {
 } from './model/form'
 export { AdminProductDisplayTag } from './ui/AdminProductDisplayTag'
 export type { AdminProductDisplayTagProps } from './ui/AdminProductDisplayTag'
+export { AdminProductSaleTag } from './ui/AdminProductSaleTag'
+export type { AdminProductSaleTagProps } from './ui/AdminProductSaleTag'
 export { OPTION_PRESETS, withPresetOptionGroups } from './model/optionPreset'
 export type { ProductOptionPreset } from './model/optionPreset'
-export { getAdminProductStocks } from './model/stock'
+export { getAdminProductStocks, getStockOptionGroups } from './model/stock'
 export type { AdminProductStock } from './model/stock'
