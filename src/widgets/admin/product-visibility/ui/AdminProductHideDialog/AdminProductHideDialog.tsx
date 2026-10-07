@@ -54,7 +54,7 @@ export function AdminProductHideDialog({
         <Input
           label="숨김 사유"
           maxLength={HIDE_REASON_MAX_LENGTH}
-          invalid={submitted && tooShort}
+          aria-invalid={submitted && tooShort}
           value={reason}
           size="small"
           onChange={(event) => setReason(event.target.value)}
@@ -69,12 +69,7 @@ export function AdminProductHideDialog({
 
       <div className={styles.actions}>
         <Button onClick={submit}>숨기기</Button>
-        <Button
-          variant="outline"
-          color="cancel"
-
-          onClick={onCancel}
-        >
+        <Button variant="outline" color="cancel" onClick={onCancel}>
           취소
         </Button>
       </div>

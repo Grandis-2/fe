@@ -37,7 +37,7 @@ export function ColorOptionEditor({
 
   return (
     <div className={styles.root}>
-      {colors.map((colorOption) => (
+      {colors.map((colorOption, index) => (
         <div key={colorOption.id} className={styles.colorBlock}>
           {/* 제목과 삭제 버튼을 한 줄에 둔다. */}
           <div className={styles.blockHeader}>
@@ -45,7 +45,7 @@ export function ColorOptionEditor({
             <button
               type="button"
               className={styles.removeButton}
-              aria-label={`색상 ${colors.indexOf(colorOption) + 1} 삭제`}
+              aria-label={`색상 ${index + 1} 삭제`}
               onClick={() =>
                 onChange(colors.filter((item) => item.id !== colorOption.id))
               }

@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router'
 
 import {
   AdminProductDisplayTag,
+  AdminProductSaleTag,
   isPreorder,
   productTypeLabel,
   productTypeLabels,
-  saleStatusColor,
   saleStatusLabel,
-  saleStatusLabels,
   useAdminProducts,
   type AdminProduct,
   type AdminSaleStatus,
@@ -161,17 +160,7 @@ export function AdminProductsPage() {
       key: 'status',
       header: '상태',
       align: 'center',
-      render: (product) => (
-        <Tag
-          variant="subtle"
-          size="medium"
-          rounded={false}
-          widthOptions={saleStatusLabels}
-          color={saleStatusColor[product.saleStatus]}
-        >
-          {saleStatusLabel[product.saleStatus]}
-        </Tag>
-      ),
+      render: (product) => <AdminProductSaleTag status={product.saleStatus} />,
     },
     {
       key: 'display',

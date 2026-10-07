@@ -2,16 +2,15 @@ import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
   AdminProductDisplayTag,
+  AdminProductSaleTag,
   isPreorder,
-  saleStatusColor,
-  saleStatusLabel,
   useAdminProduct,
   type AdminProductDetailModel,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
 import type { AdminProductTab } from '@shared/config/routes'
-import { Breadcrumb, InlineAlert, SegmentedTabs, Tag } from '@shared/ui'
+import { Breadcrumb, InlineAlert, SegmentedTabs } from '@shared/ui'
 import { AdminDispatchWindows } from '@widgets/admin/dispatch-windows'
 import { AdminProductEditForm } from '@widgets/admin/product-form'
 import { AdminProductStockTable } from '@widgets/admin/product-stock'
@@ -87,14 +86,7 @@ export function AdminProductDetailPage() {
 
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{name}</h1>
-        <Tag
-          variant="subtle"
-          size="medium"
-          rounded={false}
-          color={saleStatusColor[saleStatus]}
-        >
-          {saleStatusLabel[saleStatus]}
-        </Tag>
+        <AdminProductSaleTag status={saleStatus} />
         {/* 상태 뱃지끼리 붙여 둔다 — 판매와 전시는 둘 다 '지금 어떤 상태인가'다. */}
         <AdminProductDisplayTag status={displayStatus} />
         {/* 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 — 어느 탭에 있든
