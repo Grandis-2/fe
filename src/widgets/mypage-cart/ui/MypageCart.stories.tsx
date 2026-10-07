@@ -26,16 +26,14 @@ const items: CartItem[] = [
 
 const productDetails = {
   'MBP-14': {
-    name: '맥북 프로 14',
-    modelNumber: 'A3112',
-    thumbnailUrl: null,
-    variants: [{ optionCode: 'MBP-512-BLK', name: '512GB 스페이스 블랙' }],
+    title: '맥북 프로 14',
+    imageUrl: null,
+    variants: [{ sku: 'MBP-512-BLK', title: '512GB 스페이스 블랙' }],
   },
   'SM-G999': {
-    name: '갤럭시 G999',
-    modelNumber: 'SM-G999N',
-    thumbnailUrl: null,
-    variants: [{ optionCode: 'SM-256-BLK', name: '256GB 블랙' }],
+    title: '갤럭시 G999',
+    imageUrl: null,
+    variants: [{ sku: 'SM-256-BLK', title: '256GB 블랙' }],
   },
 }
 
@@ -74,7 +72,6 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText('맥북 프로 14')).toBeInTheDocument()
-    await expect(canvas.getByText('A3112')).toBeInTheDocument()
     await expect(canvas.getByText('256GB 블랙')).toBeInTheDocument()
   },
 }

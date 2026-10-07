@@ -1,8 +1,8 @@
 import {
   ProductTile,
   ProductTileSkeleton,
-  useProductCards,
-  type ProductSearchItem,
+  useProducts,
+  type ProductListItem,
 } from '@entities/product'
 import { Highlight, InlineAlert } from '@shared/ui'
 
@@ -15,7 +15,7 @@ const FALLBACK_LIMIT = 4
 export type ProductResultsProps = {
   keyword: string
   // 아직 첫 결과를 못 받았으면 undefined — 스켈레톤을 보여 준다.
-  results: ProductSearchItem[] | undefined
+  results: ProductListItem[] | undefined
   isError: boolean
 }
 
@@ -26,8 +26,8 @@ export function ProductResults({
   results,
   isError,
 }: ProductResultsProps) {
-  // 결과가 0건일 때 대신 보여 줄 상품. 메인 화면과 같은 캐시라 대개 이미 받아 둔 상태다.
-  const fallback = useProductCards('best')
+  // 결과가 0건일 때 대신 보여 줄 상품(최신 등록순).
+  const fallback = useProducts({ size: FALLBACK_LIMIT })
 
   if (isError) {
     return <InlineAlert status="error">상품을 검색하지 못했어요.</InlineAlert>
@@ -65,13 +65,13 @@ export function ProductResults({
           <section className={shared.section}>
             <h2 className={styles.fallbackTitle}>대신 이런 상품은 어때요?</h2>
             <div className={styles.grid}>
-              {fallback.data.slice(0, FALLBACK_LIMIT).map((product) => (
+              {fallback.data.items.map((product) => (
                 <ProductTile
                   key={product.productId}
                   productId={product.productId}
-                  name={product.name}
-                  imageUrl={product.colors[0]?.imageUrls[0]}
-                  price={product.basePrice}
+                  name={product.title}
+                  imageUrl={product.imageUrl}
+                  price={product.minPrice}
                 />
               ))}
             </div>
@@ -91,13 +91,13 @@ export function ProductResults({
             productId={product.productId}
             name={
               <Highlight
-                text={product.name}
+                text={product.title}
                 match={keyword}
                 className={styles.match}
               />
             }
-            imageUrl={product.thumbnailUrl}
-            price={product.priceRange.min}
+            imageUrl={product.imageUrl}
+            price={product.minPrice}
           />
         ))}
       </div>

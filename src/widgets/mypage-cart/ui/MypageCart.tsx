@@ -140,20 +140,20 @@ function CartItemRow({
   onRemove,
 }: CartItemRowProps) {
   const { data: product } = useProduct(item.productId)
-  const variant = product?.variants.find(
-    ({ optionCode }) => optionCode === item.optionCode,
-  )
+  // 장바구니의 optionCode는 상품 옵션의 sku다(장바구니는 아직 프론트 제안 API).
+  const variant = product?.variants.find(({ sku }) => sku === item.optionCode)
 
   return (
     <ProductPaymentCard
       className={className}
       variant="cart"
       product={{
-        imageSrc: product?.thumbnailUrl ?? undefined,
+        imageSrc: product?.imageUrl ?? undefined,
         productId: item.productId,
-        name: product?.name ?? item.productId,
-        modelNumber: product?.modelNumber ?? '',
-        optionSummary: variant?.name ?? item.optionCode,
+        name: product?.title ?? item.productId,
+        // ponytail: 백엔드 상세에 모델명 칸이 없어 비워 둔다 — 필요하면 백엔드에 요청.
+        modelNumber: '',
+        optionSummary: variant?.title ?? item.optionCode,
         quantityLabel: `수량 ${item.quantity}개`,
         priceLabel: formatWon(item.price * item.quantity),
       }}

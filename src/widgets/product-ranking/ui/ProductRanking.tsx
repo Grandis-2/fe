@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 
-import { useProductCards } from '@entities/product'
+import { useProducts } from '@entities/product'
 import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
@@ -14,10 +14,10 @@ const RANK_LIMIT = 10
 const cardClass = (rank: number) =>
   [styles.card, styles.cardSize[rank < 10 ? 'single' : 'double']].join(' ')
 
-// ponytail: 순위 API가 없어 베스트 상품 순서를 그대로 순위로 쓴다 — 순위 API가 생기면 교체.
+// ponytail: 백엔드에 순위·베스트 API가 없어 목록 API 순서(최신 등록순)를 그대로 순위로 쓴다 — 순위 API가 생기면 교체.
 export function ProductRanking() {
-  const { data, isPending, isError } = useProductCards('best')
-  const ranked = data?.slice(0, RANK_LIMIT)
+  const { data, isPending, isError } = useProducts({ size: RANK_LIMIT })
+  const ranked = data?.items
 
   const { rowRef, onScroll, canPrev, canNext, page } = useScrollArrows(
     ranked?.length,
@@ -75,7 +75,6 @@ export function ProductRanking() {
           ) : (
             ranked?.map((product, i) => {
               const rank = i + 1
-              const image = product.colors[0]?.imageUrls[0]
               return (
                 <Link
                   key={product.productId}
@@ -87,8 +86,12 @@ export function ProductRanking() {
                       {rank}
                     </span>
                     <div className={styles.tile}>
-                      {image && (
-                        <img src={image} alt="" className={styles.image} />
+                      {product.imageUrl && (
+                        <img
+                          src={product.imageUrl}
+                          alt=""
+                          className={styles.image}
+                        />
                       )}
                     </div>
                   </div>
@@ -100,11 +103,13 @@ export function ProductRanking() {
                       ].join(' ')}
                     >
                       <span className={styles.srOnly}>{rank}위 </span>
-                      {product.name}
+                      {product.title}
                     </span>
-                    <span className={typography.body.subSemibold}>
-                      <PriceText value={formatWon(product.basePrice)} />
-                    </span>
+                    {product.minPrice !== null && (
+                      <span className={typography.body.subSemibold}>
+                        <PriceText value={formatWon(product.minPrice)} />
+                      </span>
+                    )}
                   </div>
                 </Link>
               )

@@ -1,7 +1,7 @@
 import type { Preorder, PreorderModel } from './preorder'
 
 // ponytail: 아직 사전예약 API가 없어 목록·상세가 이 목업을 같이 쓴다 — API가 생기면 조회 훅으로 교체.
-// 이미지는 public에 있는 것을 돌려 쓰고, 모델의 상품 상세는 목업이 있는 맥북 네오(MB-NEO)로 보낸다.
+// 이미지는 public에 있는 것을 돌려 쓰고, 모델의 상품 상세는 사전예약 목업 상품(1번)으로 보낸다.
 const IMAGES = [
   '/images/banner1.png',
   '/images/banner2.png',
@@ -14,11 +14,14 @@ const monthDay = (date: string) => {
   return `${month}월 ${day}일`
 }
 
+// ponytail: 모델마다 상세 목업이 없어 전부 한 상품으로 보낸다 — 사전예약 상세라 saleMode가
+// PREORDER인 목업(1번)이어야 상품 상세에서 장바구니 없이 사전예약 흐름을 탄다.
+// 모델별 상품 API가 생기면 응답의 productId로 교체.
 const model = (id: string, name: string, price: number): PreorderModel => ({
   id,
   name,
   price,
-  productId: 'MB-NEO',
+  productId: '1',
 })
 
 type Row = [

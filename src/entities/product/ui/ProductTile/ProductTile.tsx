@@ -10,15 +10,16 @@ import { PriceText } from '@shared/ui'
 import * as styles from './ProductTile.css'
 
 export type ProductTileProps = {
-  productId: string
+  productId: string | number
   // 검색어 강조처럼 쓰는 쪽이 꾸밀 수 있게 노드로 받는다.
   name: ReactNode
   imageUrl?: string | null
-  price: number
+  // 판매 중 옵션이 없으면 최저가가 없어(null) 가격 줄을 비운다.
+  price: number | null
 }
 
 // 이미지·이름·가격만 있는 작은 상품 카드(어두운 화면용). 옵션·색상까지 고르는 큰 카드는 ProductCard.
-// 검색 결과(thumbnailUrl·priceRange)와 카드 목록(colors·basePrice)의 모양이 달라 값을 따로 받는다.
+// 검색어 강조처럼 이름을 꾸며 넘길 수 있게 상품 객체 대신 값을 따로 받는다.
 export function ProductTile({
   productId,
   name,
@@ -43,9 +44,11 @@ export function ProductTile({
       <span className={[typography.body.subSemibold, styles.name].join(' ')}>
         {name}
       </span>
-      <span className={typography.body.defaultMedium}>
-        <PriceText value={formatWon(price)} />
-      </span>
+      {price !== null && (
+        <span className={typography.body.defaultMedium}>
+          <PriceText value={formatWon(price)} />
+        </span>
+      )}
     </Link>
   )
 }

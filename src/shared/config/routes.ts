@@ -15,7 +15,7 @@ export const preorderPath = (preorderId: string | number) =>
   `${PREORDER_PATH}/${preorderId}`
 
 export const PRODUCTS_PATH = '/products'
-export const productPath = (productId: string) =>
+export const productPath = (productId: string | number) =>
   `${PRODUCTS_PATH}/${productId}`
 
 export const SEARCH_PATH = '/search'

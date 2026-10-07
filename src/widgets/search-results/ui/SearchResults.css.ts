@@ -1,13 +1,7 @@
 import { style } from '@vanilla-extract/css'
 
 import { searchStyles } from '@features/search'
-import {
-  breakpoint,
-  color,
-  onDark,
-  spacing,
-  typography,
-} from '@shared/config/theme'
+import { breakpoint, color, spacing, typography } from '@shared/config/theme'
 import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 const { divider, label } = searchStyles
@@ -71,30 +65,6 @@ export const total = style([
 
 export const count = style({ color: color.text.inverse, fontWeight: 700 })
 
-export const sorts = style({
-  display: 'flex',
-  gap: spacing[4],
-  // 모바일은 버튼 여백만큼 바깥으로 빼 글자를 왼쪽 선에 맞춘다.
-  '@media': {
-    [breakpoint.mobile]: { marginLeft: `-${spacing[10]}` },
-  },
-})
-
-export const sort = style([
-  typography.body.sub,
-  {
-    height: '32px',
-    padding: `0 ${spacing[10]}`,
-    border: 'none',
-    background: 'transparent',
-    color: onDark(55),
-    cursor: 'pointer',
-    selectors: {
-      '&[aria-pressed="true"]': { color: color.text.inverse, fontWeight: 700 },
-    },
-  },
-])
-
 // 카테고리 둘러보기 제목(모바일 › Apple › 스마트폰)의 구분 화살표 — 글자 크기를 따라간다.
 export const chevron = style({
   width: '0.8em',
@@ -115,4 +85,9 @@ export const cardGrid = style({
       gap: spacing[12],
     },
   },
+})
+
+export const pagination = style({
+  display: 'flex',
+  justifyContent: 'center',
 })

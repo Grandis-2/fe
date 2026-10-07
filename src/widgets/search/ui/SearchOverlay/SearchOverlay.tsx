@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router'
 
-import { brandMenus, useProductSearch } from '@entities/product'
+import { brandMenus, useProducts } from '@entities/product'
 import {
   ONGOING_PREORDERS,
   POPULAR_KEYWORDS,
@@ -25,6 +25,8 @@ import { Highlight } from '@shared/ui'
 import * as styles from './SearchOverlay.css'
 
 const SUGGEST_LIMIT = 6
+// 검색창 안 결과 그리드에 보일 상품 수.
+const SEARCH_SIZE = 8
 // 한 글자마다 요청하지 않도록 입력이 멈추고 나서 찾는다(한글 조합 중간값도 여기서 걸러진다).
 const DEBOUNCE_MS = 250
 
@@ -64,7 +66,10 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
   }, [query])
 
   const trimmed = query.trim()
-  const search = useProductSearch(keyword)
+  const search = useProducts(
+    { q: keyword, size: SEARCH_SIZE },
+    { enabled: keyword !== '' },
+  )
   const results = search.data?.items
 
   const pick = (label: string) => {
@@ -195,14 +200,14 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
                     <Link
                       to={productPath(product.productId)}
                       className={styles.suggestion}
-                      onClick={() => add(product.name)}
+                      onClick={() => add(product.title)}
                     >
                       <Search
                         className={styles.suggestionIcon}
                         aria-hidden="true"
                       />
                       <Highlight
-                        text={product.name}
+                        text={product.title}
                         match={keyword}
                         className={styles.match}
                       />

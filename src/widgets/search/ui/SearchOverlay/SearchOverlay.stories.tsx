@@ -5,33 +5,49 @@ import {
 } from '@tanstack/react-query'
 import { expect, fireEvent, fn } from 'storybook/test'
 
-import { products } from '@shared/api/mock/fixtures/product'
-import { bestProductCards } from '@shared/api/mock/fixtures/productCards'
+import type { ProductListItem } from '@entities/product'
 
 import { SearchOverlay } from './SearchOverlay'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-const keywordPage = (items: typeof products) => ({
+const product = (productId: number, title: string): ProductListItem => ({
+  productId,
+  saleMode: 'IN_STOCK',
+  title,
+  imageUrl: '/images/macbook_neo_sliver1.png',
+  status: 'ACTIVE',
+  minPrice: 1690000,
+  sellable: true,
+  soldOut: false,
+  preorderStatus: null,
+  opensAt: null,
+  closesAt: null,
+})
+
+const page = (items: ProductListItem[], size: number) => ({
   items,
   page: 0,
-  size: 8,
+  size,
   total: items.length,
-  totalPages: 1,
   hasNext: false,
 })
 
 // 입력은 fireEvent로 넣는다 — userEvent.type은 dialog 안 입력창에서 React onChange가 안 불렸다.
 // Storybook엔 MSW가 없어 조회가 실패한다 — 요청을 끄고 캐시만 채운다.
-const withCache = (keywords: Record<string, typeof products>) => {
+const withCache = (keywords: Record<string, ProductListItem[]>) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { enabled: false } },
   })
-  queryClient.setQueryData(['products', 'cards', 'best'], bestProductCards)
+  // 0건일 때 대신 보여 주는 상품(ProductResults의 fallback).
+  queryClient.setQueryData(
+    ['products', 'list', { size: 4 }],
+    page([product(1, 'NOVA 스마트폰 1'), product(2, 'NOVA 태블릿 1')], 4),
+  )
   for (const [keyword, items] of Object.entries(keywords)) {
     queryClient.setQueryData(
-      ['products', 'keyword', keyword, {}],
-      keywordPage(items),
+      ['products', 'list', { q: keyword, size: 8 }],
+      page(items, 8),
     )
   }
   return (Story: () => React.ReactNode) => (
@@ -48,7 +64,7 @@ const meta = {
   args: { onClose: fn() },
   decorators: [
     withCache({
-      맥북: products.filter(({ name }) => name.includes('맥북')),
+      맥북: [product(10, '맥북 프로 14'), product(11, '맥북 에어 13')],
       없는상품: [],
     }),
   ],
