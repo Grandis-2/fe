@@ -71,6 +71,8 @@ export type ProductOptionAxis = {
     value: string
     normalizedValue: string
     surcharge: number
+    // 색상 축 값의 색상칩 색. 백엔드에 추가 요청한 칸이라 아직 optional.
+    colorHex?: string
   }[]
 }
 
@@ -97,12 +99,7 @@ type ProductImageBundle = {
 // 배송 차수는 여기 없다 — GET /api/v1/products/{id}/shipment-batches(preorder)를 따로 부른다.
 export type ProductDetailView = Omit<
   ProductListItem,
-  | 'minPrice'
-  | 'preorderStatus'
-  | 'opensAt'
-  | 'closesAt'
-  | 'modelNumber'
-  | 'colors'
+  'minPrice' | 'preorderStatus' | 'opensAt' | 'closesAt' | 'colors'
 > & {
   categoryId: number | null
   description: string | null
@@ -122,4 +119,18 @@ export type ProductDetailView = Omit<
     gallery: ProductImageBundle[]
     detail: ProductImageBundle[]
   }
+}
+
+// GET /api/v1/products/{id}/shipment-batches(preorder) 한 줄. 날짜는 LocalDate라 'YYYY-MM-DD'로 온다.
+export type ShipmentBatch = {
+  batchNumber: number
+  positionFrom: number
+  // null이면 상한 없는 마지막 차수.
+  positionTo: number | null
+  estimatedShipStart: string
+  estimatedShipEnd: string
+}
+
+export type ShipmentBatchListResponse = {
+  items: ShipmentBatch[]
 }

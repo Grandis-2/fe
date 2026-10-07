@@ -1,6 +1,11 @@
 import { http } from 'msw'
 
-import { categories, COLORS, products } from '../fixtures/product'
+import {
+  categories,
+  COLORS,
+  products,
+  shipmentBatches,
+} from '../fixtures/product'
 import { fail, ok } from '../response'
 import { url } from '../url'
 
@@ -9,6 +14,7 @@ import type {
   ProductDetailView,
   ProductListItem,
   ProductPage,
+  ShipmentBatchListResponse,
 } from '../../types'
 import type { RequestHandler } from 'msw'
 
@@ -31,7 +37,7 @@ function toListItem(product: ProductDetailView): ProductListItem {
     opensAt: campaign?.opensAt ?? null,
     closesAt: campaign?.closesAt ?? null,
     // 백엔드에 추가 요청한 카드용 칸(모델명·색상칩). 목업은 색상 묶음 사진에서 만든다.
-    modelNumber: `NV-${product.productId}`,
+    modelNumber: product.modelNumber,
     colors: product.images.gallery.map(({ bundleKey, items }) => ({
       hex: COLORS.find(({ label }) => label === bundleKey)?.hex ?? '#888888',
       label: bundleKey,
@@ -126,6 +132,23 @@ export const productHandlers: RequestHandler[] = [
         (it) => String(it.variantId) === params.variantId,
       )
       return variant ? ok(variant) : notFound()
+    },
+  ),
+
+  // 사전예약이 아닌 상품은 404가 아니라 빈 목록이다.
+  http.get(
+    url('/api/v1/products/:productId/shipment-batches'),
+    ({ params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product) {
+        return fail(404, {
+          code: 'PRODUCT_NOT_FOUND',
+          message: '상품을 찾을 수 없습니다.',
+        })
+      }
+      return ok<ShipmentBatchListResponse>({
+        items: product.saleMode === 'PREORDER' ? shipmentBatches : [],
+      })
     },
   ),
 

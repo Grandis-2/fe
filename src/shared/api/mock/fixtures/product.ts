@@ -1,5 +1,6 @@
 import type {
   CategoryNode,
+  ShipmentBatch,
   ProductDetailVariant,
   ProductDetailView,
   ProductOptionAxis,
@@ -50,10 +51,11 @@ const optionAxes: ProductOptionAxis[] = [
   {
     key: 'color',
     label: '색상',
-    values: COLORS.map(({ label }) => ({
+    values: COLORS.map(({ label, hex }) => ({
       value: label,
       normalizedValue: label,
       surcharge: 0,
+      colorHex: hex,
     })),
   },
   {
@@ -123,6 +125,7 @@ function buildProduct(
     categoryId,
     saleMode,
     title,
+    modelNumber: `NV-${productId}`,
     description: null,
     imageUrl: gallery[0].items[0].url,
     status: 'ACTIVE',
@@ -202,3 +205,21 @@ const seeds: Seed[] = [
 export const products: ProductDetailView[] = seeds.map((seed, i) =>
   buildProduct(i + 1, seed),
 )
+
+// 사전예약 상품의 배송 차수 — 1~500번은 1차, 그 뒤는 2차(상한 없음).
+export const shipmentBatches: ShipmentBatch[] = [
+  {
+    batchNumber: 1,
+    positionFrom: 1,
+    positionTo: 500,
+    estimatedShipStart: '2026-10-15',
+    estimatedShipEnd: '2026-10-17',
+  },
+  {
+    batchNumber: 2,
+    positionFrom: 501,
+    positionTo: null,
+    estimatedShipStart: '2026-10-22',
+    estimatedShipEnd: '2026-10-24',
+  },
+]
