@@ -1,6 +1,7 @@
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
+  AdminProductDisplayTag,
   isPreorder,
   saleStatusColor,
   saleStatusLabel,
@@ -94,8 +95,10 @@ export function AdminProductDetailPage() {
         >
           {saleStatusLabel[saleStatus]}
         </Tag>
-        {/* 전시 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 —
-            어느 탭에 있든 같은 자리에서 누를 수 있고, 저장 버튼과 섞이지 않는다. */}
+        {/* 상태 뱃지끼리 붙여 둔다 — 판매와 전시는 둘 다 '지금 어떤 상태인가'다. */}
+        <AdminProductDisplayTag status={displayStatus} />
+        {/* 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 — 어느 탭에 있든
+            같은 자리에서 누를 수 있고, 저장 버튼과 섞이지 않는다. */}
         <AdminProductVisibility
           className={styles.visibility}
           product={{ productId, name, displayStatus }}

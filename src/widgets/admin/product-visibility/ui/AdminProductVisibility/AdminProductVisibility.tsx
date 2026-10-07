@@ -1,10 +1,5 @@
-import {
-  AdminProductDisplayTag,
-  type AdminDisplayStatus,
-} from '@entities/admin-product'
+import { type AdminDisplayStatus } from '@entities/admin-product'
 import { Button } from '@shared/ui'
-
-import * as styles from './AdminProductVisibility.css'
 
 import type { VisibilityTarget } from '../../lib/useProductVisibility'
 
@@ -18,8 +13,12 @@ export type AdminProductVisibilityProps = {
 }
 
 /**
- * 전시 상태 Tag와 전환 버튼. 상태를 바꾸는 흐름은 useProductVisibility가 맡고
- * 여기는 그리기만 한다 — 목록 셀과 상세 헤더가 같은 모양으로 서야 한다.
+ * 전시 상태를 바꾸는 버튼. 상태 자체는 AdminProductDisplayTag가 보여주므로 여기서는
+ * 다음 상태로 가는 길만 연다.
+ *
+ * 문구에 도착할 상태를 그대로 적는다 — '공개'·'숨기기'만으로는 지금 상태를 말하는지
+ * 누르면 그렇게 된다는 건지 헷갈린다. 뱃지에 쓰는 이름(게시중·숨김)을 그대로 써서
+ * 누른 뒤 뱃지가 뭘로 바뀌는지 미리 알 수 있게 한다.
  */
 export function AdminProductVisibility({
   product,
@@ -28,30 +27,25 @@ export function AdminProductVisibility({
   pending = false,
   className,
 }: AdminProductVisibilityProps) {
-  const { displayStatus } = product
-
-  return (
-    <span className={[styles.root, className].filter(Boolean).join(' ')}>
-      <AdminProductDisplayTag status={displayStatus} />
-      {displayStatus === 'PUBLISHED' ? (
-        <Button
-          size="small"
-          variant="outline"
-          color="cancel"
-          disabled={pending}
-          onClick={() => onHide(product)}
-        >
-          숨기기
-        </Button>
-      ) : (
-        <Button
-          size="small"
-          disabled={pending}
-          onClick={() => onPublish(product)}
-        >
-          공개
-        </Button>
-      )}
-    </span>
+  return product.displayStatus === 'PUBLISHED' ? (
+    <Button
+      className={className}
+      size="small"
+      variant="outline"
+      color="cancel"
+      disabled={pending}
+      onClick={() => onHide(product)}
+    >
+      숨김으로 전환하기
+    </Button>
+  ) : (
+    <Button
+      className={className}
+      size="small"
+      disabled={pending}
+      onClick={() => onPublish(product)}
+    >
+      게시중으로 전환하기
+    </Button>
   )
 }

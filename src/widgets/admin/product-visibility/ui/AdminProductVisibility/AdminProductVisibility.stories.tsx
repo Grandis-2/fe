@@ -23,10 +23,12 @@ type Story = StoryObj<typeof meta>
 export const Published: Story = {
   play: async ({ canvas, userEvent, args }) => {
     await expect(
-      canvas.queryByRole('button', { name: '공개' }),
+      canvas.queryByRole('button', { name: '게시중으로 전환하기' }),
     ).not.toBeInTheDocument()
 
-    await userEvent.click(canvas.getByRole('button', { name: '숨기기' }))
+    await userEvent.click(
+      canvas.getByRole('button', { name: '숨김으로 전환하기' }),
+    )
     await expect(args.onHide).toHaveBeenCalledWith(product)
   },
 }
@@ -35,7 +37,9 @@ export const Published: Story = {
 export const Hidden: Story = {
   args: { product: { ...product, displayStatus: 'HIDDEN' } },
   play: async ({ canvas, userEvent, args }) => {
-    await userEvent.click(canvas.getByRole('button', { name: '공개' }))
+    await userEvent.click(
+      canvas.getByRole('button', { name: '게시중으로 전환하기' }),
+    )
     await expect(args.onPublish).toHaveBeenCalled()
   },
 }
@@ -44,6 +48,8 @@ export const Hidden: Story = {
 export const Pending: Story = {
   args: { pending: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button', { name: '숨기기' })).toBeDisabled()
+    await expect(
+      canvas.getByRole('button', { name: '숨김으로 전환하기' }),
+    ).toBeDisabled()
   },
 }
