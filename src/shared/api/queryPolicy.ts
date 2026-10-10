@@ -24,6 +24,9 @@ export const queryPolicy = {
   account: { staleTime: 5 * 60_000, retry: retryUpTo(1) },
   // 장바구니·알림 개수 — 다른 화면이나 서버에서 바뀌는 값. 다시 볼 때마다 새로 묻는다.
   live: { staleTime: 0, retry: retryUpTo(1) },
+  // 대기열 순번 — 서버가 정한 간격(Retry-After)으로만 다시 묻는다. 마운트·포커스로 따로 묻지 않는다
+  // (간격을 임의로 줄이면 안 된다). 간격은 쓰는 쪽이 refetchInterval로 응답에서 읽는다.
+  polling: { staleTime: Infinity, retry: retryUpTo(2) },
 } as const
 
 /**

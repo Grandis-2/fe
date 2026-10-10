@@ -37,3 +37,11 @@ export function fail(
     { status },
   )
 }
+
+// 400 VALIDATION_FAILED — 문제 필드는 violations[].field로 알린다(쿼리·경로 파라미터 이름, 본문 전체는 'body').
+export const invalid = (violations: ApiViolation[]) =>
+  fail(400, {
+    code: 'VALIDATION_FAILED',
+    message: '요청 값이 올바르지 않습니다.',
+    violations,
+  })

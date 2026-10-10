@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import {
   CalendarCheck,
@@ -18,10 +18,8 @@ import {
   PREORDER_PATH,
   SEARCH_PATH,
 } from '@shared/config/routes'
-import { typography } from '@shared/config/theme'
 import { useModalStore } from '@shared/model/modalStore'
-import { BottomSheet } from '@shared/ui'
-import { MobileCategoryNav } from '@widgets/category-nav'
+import { MobileMenu } from '@widgets/category-nav'
 import { SearchOverlay } from '@widgets/search'
 
 import * as styles from './MobileTabBar.css'
@@ -60,13 +58,15 @@ const tabs: Tab[] = [
 // 아래를 비워 두고(ProductPurchaseBar.css, PreorderDetailPage.css) 탭바가 그 위에 뜬다.
 const HIDDEN_PATH = /^\/admin/
 
-// 모바일 전용 하단 플로팅 탭바. 카테고리는 페이지가 아니라 바텀시트(MobileCategoryNav)를 연다.
+// 모바일 전용 하단 플로팅 탭바. 메뉴는 페이지가 아니라 전체 화면 메뉴(MobileMenu)를 연다.
 export function MobileTabBar() {
   const { pathname } = useLocation()
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { isLoggedIn } = useSession()
   const openModal = useModalStore((state) => state.open)
+  // MobileMenu의 Esc 리스너가 렌더마다 다시 걸리지 않게 같은 함수를 넘긴다.
+  const closeMenu = useCallback(() => setIsCategoryOpen(false), [])
 
   if (HIDDEN_PATH.test(pathname)) return null
 
@@ -78,7 +78,7 @@ export function MobileTabBar() {
         to={to}
         className={styles.tab}
         aria-current={active ? 'page' : undefined}
-        // 시트가 modal={false}라 바깥 클릭으로 안 닫힌다 — 탭 이동 시 직접 닫는다.
+        // 메뉴가 열린 채 다른 탭으로 가면 메뉴를 닫는다.
         onClick={(event) => {
           setIsCategoryOpen(false)
           // 비회원은 마이페이지 대신 로그인 모달을 연다(헤더 마이페이지 아이콘과 같은 규칙).
@@ -127,20 +127,7 @@ export function MobileTabBar() {
         </button>
         {tabs.map(renderTab)}
       </nav>
-      <BottomSheet.Root open={isCategoryOpen} onOpenChange={setIsCategoryOpen}>
-        <BottomSheet.Content className={styles.sheetContent}>
-          <BottomSheet.Title
-            className={[typography.title.lgSemibold, styles.sheetTitle].join(
-              ' ',
-            )}
-          >
-            메뉴
-          </BottomSheet.Title>
-          <div className={styles.sheetScroll}>
-            <MobileCategoryNav onNavigate={() => setIsCategoryOpen(false)} />
-          </div>
-        </BottomSheet.Content>
-      </BottomSheet.Root>
+      {isCategoryOpen && <MobileMenu onClose={closeMenu} />}
       {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}
     </>
   )

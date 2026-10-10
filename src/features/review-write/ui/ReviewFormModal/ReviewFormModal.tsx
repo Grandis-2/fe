@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
-import { useMyReviewStore } from '@entities/review'
+import { useCreateReview, useUpdateReview, type Review } from '@entities/review'
+import { getErrorMessage } from '@shared/api/client'
 import { showToast } from '@shared/model/toastStore'
 import { ActionButton, Button, Modal, ModalTitle, Textarea } from '@shared/ui'
 
@@ -10,11 +11,12 @@ const MAX_LENGTH = 500
 const MIN_LENGTH = 10
 const RATINGS = [1, 2, 3, 4, 5]
 
-// 어느 주문 상품의 리뷰인지 — key는 myReviewKey(주문번호, 상품순번).
+// 어느 주문상품의 리뷰인지. 이미 쓴 리뷰가 있으면 review로 넘겨 수정한다.
 export type ReviewTarget = {
-  key: string
+  orderItemId: string
   productName: string
   optionSummary: string
+  review?: Pick<Review, 'reviewId' | 'rating' | 'body'>
 }
 
 export type ReviewFormModalProps = {
@@ -31,9 +33,10 @@ export function ReviewFormModal({
   target,
   onClose,
 }: ReviewFormModalProps) {
-  const reviews = useMyReviewStore((state) => state.reviews)
-  const save = useMyReviewStore((state) => state.save)
-  const saved = target ? reviews[target.key] : undefined
+  const create = useCreateReview()
+  const update = useUpdateReview()
+  const saved = target?.review
+  const isPending = create.isPending || update.isPending
   const [rating, setRating] = useState(0)
   const [text, setText] = useState('')
 
@@ -44,17 +47,28 @@ export function ReviewFormModal({
     setPrevOpen(open)
     if (open) {
       setRating(saved?.rating ?? 0)
-      setText(saved?.text ?? '')
+      setText(saved?.body ?? '')
     }
   }
 
   const valid = rating > 0 && text.trim().length >= MIN_LENGTH
 
+  // 서버가 받아 준 뒤에 닫는다 — 실패하면 모달을 그대로 두고 서버 문구를 보여 준다.
   const handleSubmit = () => {
-    if (!target || !valid) return
-    save(target.key, { rating, text: text.trim() })
-    showToast(saved ? '리뷰를 수정했어요.' : '리뷰가 등록되었어요.')
-    onClose()
+    if (!target || !valid || isPending) return
+    const body = text.trim()
+    const options = {
+      onSuccess: () => {
+        showToast(saved ? '리뷰를 수정했어요.' : '리뷰가 등록되었어요.')
+        onClose()
+      },
+      onError: (caught: unknown) =>
+        showToast(getErrorMessage(caught, '리뷰를 저장하지 못했어요.')),
+    }
+    if (saved)
+      update.mutate({ reviewId: saved.reviewId, rating, body }, options)
+    else
+      create.mutate({ orderItemId: target.orderItemId, rating, body }, options)
   }
 
   return (
@@ -108,7 +122,11 @@ export function ReviewFormModal({
           <Button variant="subtle" color="cancel" onClick={onClose}>
             취소
           </Button>
-          <ActionButton size="md" disabled={!valid} onClick={handleSubmit}>
+          <ActionButton
+            size="md"
+            disabled={!valid || isPending}
+            onClick={handleSubmit}
+          >
             {saved ? '수정 완료' : '리뷰 등록하기'}
           </ActionButton>
         </div>

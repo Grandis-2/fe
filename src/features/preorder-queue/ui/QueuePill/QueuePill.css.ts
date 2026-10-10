@@ -56,13 +56,11 @@ export const root = style({
 const dotColor = {
   waiting: color.primary.subtle,
   mine: statusOnDark.success,
-  expired: statusOnDark.danger,
 }
 
 export const border = styleVariants({
   waiting: { borderColor: tint(color.primary.subtle, 35) },
   mine: { borderColor: tint(statusOnDark.success, 50) },
-  expired: { borderColor: tint(color.primary.subtle, 35) },
 })
 
 export const dot = styleVariants(dotColor, (dot) => ({
@@ -105,26 +103,18 @@ export const desktopOnly = style({
   '@media': { [breakpoint.mobile]: { display: 'none' } },
 })
 
-export const timer = styleVariants(
+// 내 차례일 때 이동까지 남은 초.
+export const timer = style([
+  typography.body.subMedium,
   {
-    normal: { background: tint(color.primary.subtle, 14), color: onDark(92) },
-    warn: {
-      background: tint(statusOnDark.danger, 14),
-      color: statusOnDark.danger,
-    },
+    display: 'flex',
+    alignItems: 'center',
+    flex: 'none',
+    height: '32px',
+    padding: `0 ${spacing[12]}`,
+    borderRadius: '999px',
+    fontVariantNumeric: 'tabular-nums',
+    background: tint(color.primary.subtle, 14),
+    color: onDark(92),
   },
-  (tone) => [
-    typography.body.subMedium,
-    {
-      display: 'flex',
-      alignItems: 'center',
-      gap: spacing[6],
-      flex: 'none',
-      height: '32px',
-      padding: `0 ${spacing[12]}`,
-      borderRadius: '999px',
-      fontVariantNumeric: 'tabular-nums',
-      ...tone,
-    },
-  ],
-)
+])

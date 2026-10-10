@@ -13,6 +13,10 @@ import { fontSize } from '@shared/config/theme/tokens/typography/base'
 // 한 곳(CategoryNav.css)의 값을 그대로 쓴다.
 import { MEGA_MENU_OPEN, NAV_LINK_PADDING_X } from '@widgets/category-nav'
 
+import { DARK_HEADER_PADDING_X } from '../model/layout'
+
+import { panel as notificationPanel } from './HeaderNotification/HeaderNotification.css'
+
 import type { StyleRule } from '@vanilla-extract/css'
 
 // 헤더 높이는 breakpoint마다 달라서 숫자 상수 대신 :root의 CSS 변수로 둔다 —
@@ -54,6 +58,8 @@ export const root = style({
       background: darkSurface,
       transitionDelay: '0s',
     },
+    // 알림 패널도 메가 메뉴처럼 헤더 밑으로 내려오므로 페이지 위에 올린다.
+    [`&:has(${notificationPanel})`]: { zIndex: 10 },
   },
 })
 
@@ -92,7 +98,7 @@ export const content = style({
     [breakpoint.mobile]: { padding: `0 ${spacing[12]}` },
     [breakpoint.desktop]: {
       selectors: {
-        [`${onDark} &`]: { padding: '0 48px' },
+        [`${onDark} &`]: { padding: `0 ${DARK_HEADER_PADDING_X}` },
         // headerHeight(68px)는 시안 기준이라 어드민만 원래 높이로 되돌린다.
         [`${admin} &`]: { height: '63px' },
       },
@@ -193,6 +199,9 @@ export const iconButton = style({
   '@media': webOnly({ minWidth: '40px' }),
 })
 
+// 버튼을 감싼 요소(HeaderNotification)도 헤더 높이를 채워야 안의 버튼이 height:100%를 받는다.
+export const fill = style({ display: 'flex', alignSelf: 'stretch' })
+
 // 배지를 아이콘 오른쪽 위에 겹쳐 띄우는 기준 박스.
 export const badgeAnchor = style({ position: 'relative' })
 
@@ -224,7 +233,7 @@ export const countBadge = style([
         marginLeft: '1px',
         minWidth: '14px',
         height: '14px',
-        padding: `0 3px`,
+        padding: `0 ${spacing[3]}`,
         borderRadius: '7px',
         fontSize: '9px',
         fontWeight: 700,

@@ -53,7 +53,7 @@ export const badges = style({
 })
 
 const badgeBase = style({
-  padding: `3px ${spacing[8]}`,
+  padding: `${spacing[3]} ${spacing[8]}`,
   borderRadius: '6px',
   fontSize: fontSize[12],
   fontWeight: fontWeight.semibold,
