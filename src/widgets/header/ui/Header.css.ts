@@ -13,6 +13,8 @@ import { fontSize } from '@shared/config/theme/tokens/typography/base'
 // 한 곳(CategoryNav.css)의 값을 그대로 쓴다.
 import { MEGA_MENU_OPEN, NAV_LINK_PADDING_X } from '@widgets/category-nav'
 
+import { panel as notificationPanel } from './HeaderNotification/HeaderNotification.css'
+
 import type { StyleRule } from '@vanilla-extract/css'
 
 // 헤더 높이는 breakpoint마다 달라서 숫자 상수 대신 :root의 CSS 변수로 둔다 —
@@ -54,6 +56,8 @@ export const root = style({
       background: darkSurface,
       transitionDelay: '0s',
     },
+    // 알림 패널도 메가 메뉴처럼 헤더 밑으로 내려오므로 페이지 위에 올린다.
+    [`&:has(${notificationPanel})`]: { zIndex: 10 },
   },
 })
 
@@ -191,6 +195,9 @@ export const iconButton = style({
   // 시안: 40px 칸 가운데에 아이콘. 칸끼리는 actions의 gap(4px)만 띄운다.
   '@media': webOnly({ minWidth: '40px' }),
 })
+
+// 버튼을 감싼 요소(HeaderNotification)도 헤더 높이를 채워야 안의 버튼이 height:100%를 받는다.
+export const fill = style({ display: 'flex', alignSelf: 'stretch' })
 
 // 배지를 아이콘 오른쪽 위에 겹쳐 띄우는 기준 박스.
 export const badgeAnchor = style({ position: 'relative' })

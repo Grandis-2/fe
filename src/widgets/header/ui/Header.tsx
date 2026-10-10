@@ -13,6 +13,7 @@ import { CategoryNav } from '@widgets/category-nav'
 import { useHeaderTheme } from '../lib/useHeaderTheme'
 
 import * as styles from './Header.css'
+import { HeaderNotification } from './HeaderNotification'
 import { HeaderSearch } from './HeaderSearch'
 
 export type HeaderProps = {
@@ -67,21 +68,6 @@ export function Header({
       </span>
     )
 
-  // 어드민과 일반 헤더 양쪽에 들어가므로 한 번만 만들어 둔다.
-  const notificationButton = (
-    <button
-      type="button"
-      className={[styles.iconButton, styles.badgeAnchor].join(' ')}
-      aria-label={
-        notificationCount > 0 ? `알림 ${notificationCount}개` : '알림'
-      }
-      onClick={onNotificationClick}
-    >
-      <Bell className={styles.icon} aria-hidden="true" />
-      {countBadge(notificationCount)}
-    </button>
-  )
-
   return (
     <header
       ref={headerRef}
@@ -111,7 +97,15 @@ export function Header({
         </div>
         <div className={styles.actions}>
           {isAdminPage ? (
-            notificationButton
+            // 관리자 알림은 회원 알림과 대상이 달라 패널을 열지 않고 밖에 알리기만 한다.
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="알림"
+              onClick={onNotificationClick}
+            >
+              <Bell className={styles.icon} aria-hidden="true" />
+            </button>
           ) : (
             <>
               {/* 모바일은 하단 탭바에 검색·마이페이지가 있어 헤더엔 알림·장바구니만 둔다. */}
@@ -119,7 +113,14 @@ export function Header({
               {/* 비회원은 검색과 로그인만 — 알림·장바구니·마이페이지는 회원 전용이다. */}
               {isMember ? (
                 <>
-                  {notificationButton}
+                  <HeaderNotification
+                    label={
+                      notificationCount > 0
+                        ? `알림 ${notificationCount}개`
+                        : '알림'
+                    }
+                    badge={countBadge(notificationCount)}
+                  />
                   <Link
                     to={mypagePath('cart')}
                     className={[styles.iconButton, styles.badgeAnchor].join(
