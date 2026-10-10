@@ -35,7 +35,7 @@ export const header = style([
 export const tag = style({
   fontSize: '12px',
   fontWeight: fontWeight.bold,
-  padding: `3px ${spacing[8]}`,
+  padding: `${spacing[3]} ${spacing[8]}`,
 })
 
 export const rows = style([

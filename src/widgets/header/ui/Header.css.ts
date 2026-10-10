@@ -230,7 +230,7 @@ export const countBadge = style([
         marginLeft: '1px',
         minWidth: '14px',
         height: '14px',
-        padding: `0 3px`,
+        padding: `0 ${spacing[3]}`,
         borderRadius: '7px',
         fontSize: '9px',
         fontWeight: 700,

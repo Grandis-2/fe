@@ -133,7 +133,7 @@ export const alert = style({
 export const alertTexts = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: '3px',
+  gap: spacing[3],
   flex: 1,
   minWidth: 0,
 })

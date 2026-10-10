@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, typography } from '@shared/config/theme'
+import { color, motion, spacing, typography } from '@shared/config/theme'
 
 export const root = style({
   boxSizing: 'border-box',
@@ -81,7 +81,7 @@ export const divider = style({
 export const value = style([
   typography.body.defaultMedium,
   {
-    paddingTop: '3px',
+    paddingTop: spacing[3],
     flex: 1,
     textAlign: 'center',
     color: color.text.primary,
