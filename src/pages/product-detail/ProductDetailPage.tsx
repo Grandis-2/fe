@@ -12,6 +12,7 @@ import {
 } from '@entities/product'
 import { mockReviews, ReviewCard } from '@entities/review'
 import { useRequireLogin } from '@features/login'
+import { usePreorderSubmit } from '@features/preorder-queue'
 import { ProductGallery } from '@features/product-gallery'
 import {
   PREORDER_BENEFIT_RATE,
@@ -20,7 +21,7 @@ import {
   useProductPurchase,
   type PurchaseDraft,
 } from '@features/product-purchase'
-import { PAYMENT_PATH, resultPath } from '@shared/config/routes'
+import { PAYMENT_PATH, productPath, resultPath } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { ActionButton, InlineAlert } from '@shared/ui'
 import { ProductPageTab } from '@widgets/product-page-tab'
@@ -71,6 +72,7 @@ export function ProductDetailPage() {
   })
   const shipmentLabel = shipmentStartLabel(shipmentBatches)
   const purchase = useProductPurchase(product)
+  const preorderSubmit = usePreorderSubmit()
   const {
     selections,
     select,
@@ -87,8 +89,9 @@ export function ProductDetailPage() {
     benefitAmount,
     payAmount,
   } = purchase
-  // 조회가 끝나지 않았거나 실패했거나, 고른 조합을 살 수 없으면 결제/사전예약을 막는다.
-  const isCheckoutReady = Boolean(variant) && !unavailableReason
+  // 조회가 끝나지 않았거나 실패했거나, 고른 조합을 살 수 없거나, 접수 중이면 결제/사전예약을 막는다.
+  const isCheckoutReady =
+    Boolean(variant) && !unavailableReason && !preorderSubmit.isPending
 
   // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
   const handleCheckout = () => {
@@ -101,13 +104,27 @@ export function ProductDetailPage() {
       unitPrice,
     }
     // 결제·사전예약은 회원 전용 — 비회원이면 이동 대신 로그인 모달을 연다.
-    requireLogin(() =>
-      // 사전예약 완료 후 뒤로가기로 상세에 돌아와 다시 제출하는 걸 막는다(결제는 되돌아가서 수정 가능해야 하므로 그대로 둠).
-      navigate(isPreorder ? resultPath('preorder') : PAYMENT_PATH, {
-        state: [purchasePayload],
-        replace: isPreorder,
-      }),
-    )
+    requireLogin(() => {
+      if (!isPreorder) {
+        navigate(PAYMENT_PATH, { state: [purchasePayload] })
+        return
+      }
+      // 사전예약은 대기열 입장권으로 접수한다 — 입장권이 없으면 줄을 서고, 차례가 오면 이 상세로 돌아온다.
+      // 접수 후엔 뒤로가기로 상세에 돌아와 다시 제출하지 않게 기록을 바꾼다.
+      preorderSubmit.submitPreorder(
+        {
+          productId: product.productId,
+          productName: product.title,
+          optionId: variant.variantId,
+          returnTo: productPath(product.productId),
+        },
+        ({ preorderId }) =>
+          navigate(resultPath('preorder'), {
+            state: { preorderId },
+            replace: true,
+          }),
+      )
+    })
   }
   const {
     layoutRef,

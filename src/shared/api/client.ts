@@ -153,19 +153,35 @@ async function recoverFromUnauthorized(
   return onUnauthorized()
 }
 
-async function request<TData>(
+async function sendWithRecovery<TData>(
   path: string,
-  options: ApiRequestOptions = {},
-): Promise<TData> {
+  options: ApiRequestOptions,
+): Promise<RawResponse<TData>> {
   const response = await send<TData>(path, options)
   // 401은 딱 한 번만 회복을 시도한다 — 다시 보낸 요청이 또 401이면 그대로 던진다.
   if (
     response.status === 401 &&
     (await recoverFromUnauthorized(response, options))
   ) {
-    return unwrap(await send<TData>(path, options))
+    return send<TData>(path, options)
   }
-  return unwrap(response)
+  return response
 }
 
-export const apiClient = { request }
+async function request<TData>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<TData> {
+  return unwrap(await sendWithRecovery<TData>(path, options))
+}
+
+// 본문 말고 응답 헤더도 봐야 하는 호출용(대기열의 Retry-After 등). 헤더 이름은 소문자로 찾는다.
+async function requestWithHeaders<TData>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<{ data: TData; headers: Record<string, unknown> }> {
+  const response = await sendWithRecovery<TData>(path, options)
+  return { data: unwrap(response), headers: { ...response.headers } }
+}
+
+export const apiClient = { request, requestWithHeaders }

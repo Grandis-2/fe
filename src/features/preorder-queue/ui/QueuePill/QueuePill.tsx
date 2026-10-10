@@ -1,5 +1,3 @@
-import { Timer } from 'lucide-react'
-
 import { formatNumber } from '@shared/lib/formatNumber'
 
 import * as styles from './QueuePill.css'
@@ -13,7 +11,7 @@ export type QueuePillProps = {
   productName: string
   queue: Pick<
     PreorderQueueState,
-    'status' | 'ahead' | 'waitTime' | 'holdSeconds' | 'moveIn' | 'reopen'
+    'status' | 'ahead' | 'waitTime' | 'moveIn' | 'reopen'
   >
 }
 
@@ -26,16 +24,12 @@ const MESSAGE: Record<QueueStatus, (ahead: number) => string> = {
       ? `곧 내 차례예요 · 내 앞 ${formatNumber(ahead)}명`
       : `내 앞 ${formatNumber(ahead)}명`,
   mine: () => '내 차례예요 · 곧 예약 페이지로 이동해요',
-  expired: () => '순번이 만료되었어요',
 }
 
-const pad = (n: number) => String(n).padStart(2, '0')
-
-// 대기열 모달을 닫아 둔 동안 위에 떠서 순번·남은 유지 시간을 보여 준다. 누르면 모달이 다시 열린다.
+// 대기열 모달을 닫아 둔 동안 위에 떠서 순번을 보여 준다. 누르면 모달이 다시 열린다.
+// 닫아 둬도 순번 조회는 계속되므로 자리를 잃지 않는다.
 export function QueuePill({ productName, queue }: QueuePillProps) {
-  const { status, ahead, waitTime, holdSeconds, moveIn, reopen } = queue
-  // 마지막 1분부터는 빨갛게 — 곧 순번이 사라진다는 걸 알린다.
-  const warn = status === 'expired' || holdSeconds <= 60
+  const { status, ahead, waitTime, moveIn, reopen } = queue
 
   return (
     <button
@@ -60,14 +54,9 @@ export function QueuePill({ productName, queue }: QueuePillProps) {
           </span>
         </span>
       )}
-      {status === 'mine' ? (
-        // 내 차례면 순번 유지 시간 대신 이동까지 남은 초를 센다.
-        <span className={styles.timer.normal}>{moveIn}초 뒤 이동</span>
-      ) : (
-        <span className={styles.timer[warn ? 'warn' : 'normal']}>
-          <Timer size={13} aria-hidden="true" />
-          {pad(Math.floor(holdSeconds / 60))}:{pad(holdSeconds % 60)}
-        </span>
+      {/* 내 차례면 이동까지 남은 초를 센다. */}
+      {status === 'mine' && (
+        <span className={styles.timer}>{moveIn}초 뒤 이동</span>
       )}
     </button>
   )

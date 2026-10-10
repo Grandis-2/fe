@@ -48,3 +48,10 @@ export type Paged<TItem> = {
   totalPages: number
   hasNext: boolean
 }
+
+// 커서 페이지(내 예약·내 주문 목록). 전체 건수는 없고, nextCursor가 null이면 마지막 페이지다.
+// 커서는 받은 그대로 보낸다(해석하거나 고치면 400).
+export type CursorPage<TItem> = {
+  items: TItem[]
+  nextCursor: string | null
+}
