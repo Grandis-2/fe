@@ -17,3 +17,13 @@ export const orderStatusTag: Record<OrderStatus, StatusTag> = {
   CANCELING: { label: '취소 처리 중', color: 'gray' },
   CANCELED: { label: '취소 완료', color: 'gray' },
 }
+
+// 결제가 끝난 주문 상태 — 승인 결과 판정(confirmTossPayment)과 기존 주문 재진입(PaymentPage)이 같은 기준을 쓴다.
+// 여기 없는 상태(결제 대기·승인 중·취소, 명세에 없는 새 값)는 결제 완료로 보지 않는다.
+export const PAID_ORDER_STATUSES: readonly OrderStatus[] = [
+  'AWAITING_CONFIRMATION',
+  'PREPARING_ITEMS',
+  'READY_TO_SHIP',
+  'SHIPPED',
+  'DELIVERED',
+]

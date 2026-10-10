@@ -16,7 +16,7 @@ const SETTLE_POLL_MS = 3_000
 // ponytail: 목록은 첫 쪽(최대 100건)만 받는다 — 화면에 더 보기가 생기면 useInfiniteQuery로 nextCursor를 잇는다.
 const FIRST_PAGE = { size: 100 }
 
-const reservationKeys = {
+export const reservationKeys = {
   all: ['reservations'] as const,
   mine: ['reservations', 'mine'] as const,
   detail: (preorderId: string) =>

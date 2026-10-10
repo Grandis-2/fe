@@ -67,13 +67,20 @@ const NOTIFICATIONS: NotificationItem[] = [
   },
 ]
 
+// 페이지 주소에 ?mock=empty를 붙이면 알림이 하나도 없는 상태가 된다(빈 패널 확인용).
+// 실패는 forceErrorHandler의 ?mock=500으로 본다.
+const currentNotifications = () =>
+  new URLSearchParams(location.search).get('mock') === 'empty'
+    ? []
+    : NOTIFICATIONS
+
 export const notificationHandlers: RequestHandler[] = [
   http.get(url('/api/v1/notifications/unread-count'), () =>
     ok<CountResponse>({
-      count: NOTIFICATIONS.filter((item) => !item.read).length,
+      count: currentNotifications().filter((item) => !item.read).length,
     }),
   ),
   http.get(url('/api/v1/notifications'), () =>
-    ok<NotificationList>({ items: NOTIFICATIONS }),
+    ok<NotificationList>({ items: currentNotifications() }),
   ),
 ]

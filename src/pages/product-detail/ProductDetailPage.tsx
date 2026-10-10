@@ -306,12 +306,16 @@ export function ProductDetailPage() {
                     <InlineAlert status="error">
                       후기를 불러오지 못했어요.
                     </InlineAlert>
-                  ) : reviews.data?.items.length === 0 ? (
+                  ) : reviews.isPending ? (
+                    <InlineAlert status="info">
+                      후기를 불러오고 있어요.
+                    </InlineAlert>
+                  ) : reviews.data.items.length === 0 ? (
                     <InlineAlert status="info">
                       아직 등록된 후기가 없어요.
                     </InlineAlert>
                   ) : (
-                    reviews.data?.items.map((review) => (
+                    reviews.data.items.map((review) => (
                       <ReviewCard key={review.reviewId} review={review} />
                     ))
                   )}

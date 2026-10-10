@@ -79,7 +79,11 @@ export function MypageReviews() {
               <Button
                 variant="subtle"
                 color="cancel"
-                disabled={removeReview.isPending}
+                // 지우는 중인 카드의 버튼만 막는다(중복 삭제 방지).
+                disabled={
+                  removeReview.isPending &&
+                  removeReview.variables === review.reviewId
+                }
                 onClick={() =>
                   removeReview.mutate(review.reviewId, {
                     onSuccess: () => showToast('리뷰를 삭제했어요.'),

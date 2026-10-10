@@ -9,7 +9,10 @@ import {
   TAB_BAR_OFFSET,
   typography,
 } from '@shared/config/theme'
-import { fontWeight } from '@shared/config/theme/tokens/typography/base'
+import {
+  fontSize,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
 
 const divider = `1px solid ${color.border.subtle}`
 
@@ -209,7 +212,7 @@ export const eventTexts = style({
 // Tag small(10px)은 카드 제목 옆에서 작다 — 12px로 키운다(HistoryCard 태그와 같음).
 export const eventTag = style({
   alignSelf: 'flex-start',
-  fontSize: '12px',
+  fontSize: fontSize[12],
   fontWeight: fontWeight.bold,
   padding: `3px ${spacing[8]}`,
 })

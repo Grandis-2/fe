@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryPolicy } from '@shared/api/queryPolicy'
 
 import { enterQueue, getQueueStatus, submitPreorder } from './queue'
+import { reservationKeys } from './useReservations'
 
 import type { QueuePoll } from '../model/queue'
 
@@ -47,6 +48,6 @@ export const useSubmitPreorder = () => {
   return useMutation({
     mutationFn: submitPreorder,
     onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['reservations'] }),
+      queryClient.invalidateQueries({ queryKey: reservationKeys.all }),
   })
 }

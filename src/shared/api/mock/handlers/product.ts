@@ -77,14 +77,12 @@ const matchesAxes = (
       ),
   )
 
-// 가격순은 minPrice 기준이고 null은 정렬 방향과 상관없이 맨 뒤다.
+// 가격순은 minPrice 기준이고 null은 정렬 방향과 상관없이 맨 뒤다. null끼리는 같다고 봐 앞선 순서를 지킨다.
 const byPrice =
   (direction: 1 | -1) => (a: ProductListItem, b: ProductListItem) =>
-    a.minPrice === null
-      ? 1
-      : b.minPrice === null
-        ? -1
-        : (a.minPrice - b.minPrice) * direction
+    a.minPrice === null || b.minPrice === null
+      ? Number(a.minPrice === null) - Number(b.minPrice === null)
+      : (a.minPrice - b.minPrice) * direction
 
 // 없는 상품·비공개·준비 전이 모두 같은 404다.
 export const notFound = () =>

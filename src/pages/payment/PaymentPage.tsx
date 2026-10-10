@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useDefaultAddress, type DefaultAddress } from '@entities/address'
 import {
   OrderSummary,
+  PAID_ORDER_STATUSES,
   useCreatePaymentAttempt,
   usePlaceOrder,
 } from '@entities/order'
@@ -173,11 +174,16 @@ export function PaymentPage() {
         )
         return
       }
-      if (order.status !== 'AWAITING_PAYMENT') {
+      if (PAID_ORDER_STATUSES.includes(order.status)) {
         navigate(resultPath('preorder-paid'), {
           replace: true,
           state: { orderId: order.orderId },
         })
+        return
+      }
+      // 결제 대기만 결제 단계로 간다 — 그사이 취소가 시작됐거나 모르는 상태면 결제 완료로 보이지 않게 막는다.
+      if (order.status !== 'AWAITING_PAYMENT') {
+        setPaymentError('결제할 수 없는 주문이에요. 주문 내역을 확인해 주세요.')
         return
       }
       const attempt = await createAttempt.mutateAsync(order.orderId)

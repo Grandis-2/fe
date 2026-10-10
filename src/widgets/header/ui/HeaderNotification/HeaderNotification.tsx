@@ -59,8 +59,10 @@ export function HeaderNotification({ label, badge }: HeaderNotificationProps) {
         {notifications.map((notification) => {
           const content = (
             <>
+              {/* 역할 없는 span의 aria-label은 읽히지 않을 수 있어 점에 img 역할을 준다. */}
               <span
                 className={notification.read ? undefined : styles.unreadDot}
+                role={notification.read ? undefined : 'img'}
                 aria-label={notification.read ? undefined : '안 읽음'}
               />
               <span className={styles.body}>

@@ -1,7 +1,7 @@
 import {
   confirmOrderPayment,
   getOrder,
-  type OrderStatus,
+  PAID_ORDER_STATUSES,
 } from '@entities/order'
 import { isRetryableError } from '@shared/api/queryPolicy'
 
@@ -28,13 +28,6 @@ const DECLINE_MESSAGE = {
   FAILED: '결제가 완료되지 않았어요. 다시 시도해 주세요.',
 } as const
 
-const PAID: OrderStatus[] = [
-  'AWAITING_CONFIRMATION',
-  'PREPARING_ITEMS',
-  'READY_TO_SHIP',
-  'SHIPPED',
-  'DELIVERED',
-]
 const POLL_MS = 3_000
 // 승인은 최대 70초쯤 걸릴 수 있다(명세) — 그보다 조금 더 기다린다.
 const POLL_LIMIT_MS = 80_000
@@ -51,7 +44,8 @@ async function waitForOrder(orderId: string): Promise<PaymentOutcome> {
         if (isRetryableError(caught)) return null
         throw caught
       })
-    if (status && PAID.includes(status)) return { kind: 'approved' }
+    if (status && PAID_ORDER_STATUSES.includes(status))
+      return { kind: 'approved' }
     if (status === 'AWAITING_PAYMENT')
       return { kind: 'declined', message: DECLINE_MESSAGE.FAILED }
     if (status === 'CANCELING' || status === 'CANCELED')

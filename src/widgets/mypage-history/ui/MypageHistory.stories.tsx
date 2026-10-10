@@ -82,7 +82,10 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('결제 대기')).toBeVisible()
+    // '결제 대기'는 요약 칸 라벨과 첫 주문의 상태 태그, 두 곳에 그려진다.
+    const awaiting = canvas.getAllByText('결제 대기')
+    await expect(awaiting).toHaveLength(2)
+    for (const element of awaiting) await expect(element).toBeVisible()
     await expect(
       canvas.getByRole('button', { name: '예약 내역에서 결제하기' }),
     ).toBeVisible()

@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 
 import { confirmTossPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
-import { mypagePath, resultPath } from '@shared/config/routes'
+import { mypagePath, paymentPath, resultPath } from '@shared/config/routes'
 import { showToast } from '@shared/model/toastStore'
 
 export function PaymentCallbackPage() {
@@ -34,6 +34,12 @@ export function PaymentCallbackPage() {
       })
 
     if (!orderToken || !paymentKey || !tossOrderId || !amount) {
+      // 사용자가 결제창을 닫으면 토스가 failUrl로 code=PAY_PROCESS_CANCELED를 붙여 보낸다 — 실패가 아니라
+      // 결제를 안 한 것이니 실패 화면 대신 같은 예약의 결제 화면으로 돌려보낸다(requestTossPayment의 USER_CANCEL과 같은 취급).
+      if (searchParams.get('code') === 'PAY_PROCESS_CANCELED' && preorderId) {
+        navigate(paymentPath(preorderId), { replace: true })
+        return
+      }
       fail(searchParams.get('message'))
       return
     }
