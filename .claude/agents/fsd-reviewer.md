@@ -31,12 +31,14 @@ tools: Read, Grep, Glob, Bash
   - 폴링(`refetchInterval`, 직접 만든 타이머)이 화면을 떠나거나 완료·실패 상태가 되면 멈추는지, 실패 시 간격을 늘리는지(`pollingInterval()`).
   - StrictMode 이중 실행에도 한 번만 보내야 하는 명령(결제 승인, 대기열 진입, 접수)이 두 번 나가지 않는지.
   - 연속 클릭·Enter 연타로 같은 요청이 겹치지 않는지(버튼 `disabled`만으로 부족하면 진행 중 플래그).
-- **화면 상태 커버리지**: `useQuery`/`useSuspenseQuery`/`useMutation`을 쓰는(또는 그런 훅을 받는) 컴포넌트마다 확인한다.
-  - 로딩: `isPending`일 때 스켈레톤·스피너 등 뭔가 보이는지. 빈 화면·레이아웃 튐 → 지적.
-  - 빈 상태: 데이터가 0건일 때 안내가 있는지. 빈 리스트를 그냥 렌더하면 지적.
-  - 에러: `isError`일 때 `getErrorMessage`로 문구를 보여주는지. 에러를 빈 배열(`?? []`, `data || []`)로 덮어 "0건"으로 보이게 하면 위반.
+- **화면 상태 커버리지**: 서버 상태를 쓰는(또는 그 결과를 props로 받는) 컴포넌트마다, 훅 종류에 맞는 상태만 확인한다 — 해당 없는 상태를 요구하지 않는다.
+  - 일반 쿼리(`useQuery`):
+    - 로딩: `isPending`일 때 스켈레톤·스피너 등 뭔가 보이는지. 빈 화면·레이아웃 튐 → 지적.
+    - 빈 상태: 목록 조회에서 데이터가 0건일 때 안내가 있는지(단건 조회엔 요구하지 않는다).
+    - 에러: `isError`일 때 `getErrorMessage`로 문구를 보여주는지. 에러를 빈 배열(`?? []`, `data || []`)로 덮어 "0건"으로 보이게 하면 위반.
+  - Suspense 쿼리(`useSuspenseQuery`): 컴포넌트 안의 `isPending`·`isError` 처리를 요구하지 않는다 — 감싸는 `Suspense fallback`과 에러 경계(라우터 `errorElement` 등)가 있는지 본다.
   - `error.code` 분기: 백엔드 코드별 처리가 필요한 곳 — `VALIDATION_FAILED`(칸별 `details.violations[].field` 표시), `NOT_FOUND`(없는 리소스 화면), `UNAUTHENTICATED`/`FORBIDDEN`(로그인·권한), `DEPENDENCY_UNAVAILABLE`(잠시 후 다시) — 에서 `instanceof ApiRequestError`로 좁혀 분기하는지. 폼·상세 페이지에서 전부 같은 문구로 뭉개면 지적.
-  - mutation: 진행 중 버튼 `disabled`(`isPending`), 실패 시 문구 또는 롤백.
+  - mutation(`useMutation`): 로딩·빈 상태는 요구하지 않는다. 진행 중 버튼 `disabled`(`isPending`), 실패 시 문구 또는 롤백.
 - **재사용**: 새 컴포넌트/타입/색이 `shared/ui`, `entities/*`, `shared/config/theme`에 이미 있는지 grep. 토큰에 있는 값을 px·생 값으로 적었거나(`*.css.ts`의 hex는 lint가 잡는다 — `fontSize: '15px'`처럼 `typography` 토큰으로 대체 가능한 값을 본다), 손으로 복제한 타입(`Pick`/`Omit`/`Partial`로 파생 가능) → 지적.
 - **도메인 props**: 엔티티 필드를 props로 하나씩 펼치면 위반 → 객체째 `Pick<…>`.
 - **styling(`*.css.ts`)**: 토큰은 barrel(`@shared/config/theme`)에서. `maxWidth`+`padding`엔 `boxSizing`. 모바일 전용 조정이 데스크톱 값을 바꾸면 위반.

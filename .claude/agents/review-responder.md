@@ -16,8 +16,9 @@ tools: Read, Grep, Glob, Bash, Edit, Write
 - 인라인 코멘트:
   ```bash
   gh api repos/{owner}/{repo}/pulls/<번호>/comments --paginate \
-    --jq '.[] | select(.user.login=="coderabbitai[bot]") | {id, path, line, original_line, body: (.body | split("<details>")[0])}'
+    --jq '.[] | {id, author: .user.login, path, line, original_line, in_reply_to: .in_reply_to_id, body: (.body | split("<details>")[0])}'
   ```
+  작성자로 거르지 않는다 — CodeRabbit(`coderabbitai[bot]`)과 사람 리뷰어 코멘트를 모두 처리하고, 보고에 작성자를 적는다. `in_reply_to`가 있는 코멘트는 앞 코멘트에 대한 답글이라 스레드로 묶어 읽는다(본인이 단 답글은 판정 대상이 아니다). 본문이 `<details>` 안에만 있어 앞부분이 비면 `split` 없이 전체 본문을 다시 읽는다.
   `line`이 null이면 코드가 바뀌어 위치가 사라진 코멘트다(`original_line`은 리뷰 당시 줄) — 이미 반영됐는지 확인 대상.
 - 리뷰 본문(`gh pr view <번호> --json reviews`)의 "Actionable comments"·"Outside diff range" 항목도 같이 본다.
 - `gh pr checks <번호>`로 CI 실패가 있는지 본다 — "Changes requested"는 리뷰 상태일 뿐 CI 실패가 아니다. 둘을 구분해서 보고한다.

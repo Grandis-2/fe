@@ -17,7 +17,13 @@ tools: Read, Grep, Glob, Bash
 | 타입·빌드 | `npm run build` (`tsc -b && vite build`) | 짧음 |
 
 - 호출자가 범위를 주면 그것만 돌린다. 특정 스토리만: `npx vitest run src/widgets/category-nav/ui/MobileMenu/MobileMenu.stories.tsx`.
-- 범위가 없으면 셋 다 돌린다. 출력이 길면 `2>&1 | tail -80`이나 `grep -E 'FAIL|Error|✗|×'`로 줄여 읽는다.
+- 범위가 없으면 셋 다 돌린다.
+- **판정은 원래 명령의 종료 코드로 한다.** `명령 | tail`·`| grep`은 파이프 마지막 명령의 종료 코드를 돌려줘서, 실패가 필터에서 빠지면 성공처럼 보인다. 출력을 줄일 땐 파일에 먼저 받고 종료 코드를 따로 남긴다:
+  ```bash
+  npx vitest run > "$TMPDIR/vitest.log" 2>&1; echo "exit=$?"
+  tail -80 "$TMPDIR/vitest.log"; grep -E 'FAIL|Error|✗|×' "$TMPDIR/vitest.log"
+  ```
+  exit가 0이 아니면 필터 결과에 실패 줄이 없어도 실패로 보고 로그를 더 읽는다.
 - 스토리 테스트는 각 `*.stories.tsx`의 `play` 함수와 렌더링 자체가 테스트다. Storybook 서버(6006)는 없어도 된다.
 
 ## 실패 분석

@@ -13,7 +13,9 @@ tools: Read, Grep, Glob, Bash, Write
 - **상호작용 상태도 본다**: 호버, 메가 메뉴 열림/닫힘, 모달·시트 열림, 로딩/에러/빈 상태 등 변경과 관련된 것.
 - **키보드·포커스(사람 판단이 필요한 a11y)**: label·대비 같은 기계 검사는 Storybook a11y(axe)가 맡는다. 여기선 Playwright `page.keyboard.press('Tab')`으로 직접 확인한다.
   - Tab 순서가 화면 순서와 맞는지, 포커스 링이 보이는지(스크린샷으로), 마우스 전용 요소(`div onClick`)가 없는지.
-  - 모달·시트·메가 메뉴: 열면 포커스가 안으로 들어가고, Tab이 안에서 돌고(focus trap), `Escape`로 닫히고, 닫으면 연 버튼으로 포커스가 돌아오는지. `document.activeElement`를 `page.evaluate`로 찍어 근거로 남긴다.
+  - 모달(`showModal()`·`aria-modal`)·바텀시트: 열면 포커스가 안으로 들어가고, Tab이 안에서 돌고(focus trap), `Escape`로 닫히고, 닫으면 연 버튼으로 포커스가 돌아오는지.
+  - 모달이 아닌 메뉴·패널(헤더 메가 메뉴, 알림 패널, 탭바가 남는 모바일 메뉴): 포커스를 가두지 않는다 — Tab·Shift+Tab이 순서대로 메뉴 안팎을 오가는지, `Escape`로 닫히고 연 버튼으로 돌아오는지만 본다. 가둬 놨으면 오히려 지적한다.
+  - 근거는 `document.activeElement`를 `page.evaluate`로 찍어 남긴다.
 - 사용자 페이지는 항상 어두운 UI가 기준이다(admin 제외). 밝은 바탕이 나오면 의도인지 확인 대상으로 적는다.
 - 모바일 전용 변경이면 모바일(390px)과 데스크톱(1280px, `desktop` 브레이크포인트 744px 이상) 둘 다 찍어 데스크톱이 안 바뀌었는지 본다.
 

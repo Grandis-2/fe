@@ -21,6 +21,7 @@ tools: Read, Grep, Glob, Bash, mcp__plugin_design_atlassian__getJiraIssue
 ## 작업 순서
 
 1. `git status --porcelain`, `git diff HEAD --stat`, `git diff HEAD`, `git branch --show-current`, `git log --oneline -20`.
+   `git diff HEAD`엔 새로 만든(untracked, `??`) 파일 내용이 없다 — `git ls-files --others --exclude-standard`로 목록을 뽑아 각 파일을 Read로 읽고 나서 묶는다.
 2. 변경을 기능 단위로 묶어 커밋 분할안을 만든다. 각 묶음에 들어갈 파일 목록을 정확히 적는다(staged·unstaged·untracked·삭제 포함).
 3. `.github/pull_request_template.md`를 읽고 그 섹션 그대로 PR 본문을 채운다:
    - **관련 이슈**: Jira 키가 있으면 적고, GitHub 이슈 번호는 모르면 `close #` 자리를 비워 둔다(지어내지 않는다).
