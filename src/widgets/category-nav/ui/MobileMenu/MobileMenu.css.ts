@@ -58,7 +58,7 @@ export const titleRow = style({
 
 export const title = style([
   typography.title.lgSemibold,
-  { fontSize: '22px', fontWeight: fontWeight.bold },
+  { fontWeight: fontWeight.bold },
 ])
 
 // 모달 닫기 버튼(Modal.css의 closeButton)과 같은 모양 — 글자색을 옅게 깐 원으로만 hover를 보인다.
@@ -178,7 +178,6 @@ export const brandTile = style([
   {
     ...tileBase,
     height: '52px',
-    fontSize: '15px',
     fontWeight: fontWeight.bold,
   },
 ])
