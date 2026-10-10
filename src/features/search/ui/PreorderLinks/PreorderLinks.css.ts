@@ -37,7 +37,7 @@ export const status = styleVariants(
     typography.body.captionMedium,
     {
       flexShrink: 0,
-      padding: `3px ${spacing[8]}`,
+      padding: `${spacing[3]} ${spacing[8]}`,
       borderRadius: '6px',
       background: `color-mix(in srgb, ${statusColor} 15%, transparent)`,
       color: statusColor,

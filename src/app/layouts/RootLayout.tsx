@@ -7,7 +7,7 @@ import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PreorderQueue, usePreorderQueueStore } from '@features/preorder-queue'
 import { SIGNUP_PATH } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
-import { useToastStore } from '@shared/model/toastStore'
+import { showToast, useToastStore } from '@shared/model/toastStore'
 import { Modal, ToastViewport } from '@shared/ui'
 import { Header } from '@widgets/header'
 import { MobileTabBar } from '@widgets/mobile-tab-bar'
@@ -21,6 +21,7 @@ export function RootLayout() {
   const dismissToast = useToastStore((state) => state.dismiss)
   const queueTicket = usePreorderQueueStore((state) => state.ticket)
   const clearQueue = usePreorderQueueStore((state) => state.clear)
+  const admitQueue = usePreorderQueueStore((state) => state.admit)
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -58,10 +59,16 @@ export function RootLayout() {
       {queueTicket && (
         <PreorderQueue
           key={queueTicket.joinedAt}
+          productId={queueTicket.productId}
           productName={queueTicket.productName}
-          onComplete={() => {
+          onComplete={(admission) => {
+            admitQueue(admission)
             clearQueue()
             navigate(queueTicket.to)
+          }}
+          onFail={(message) => {
+            clearQueue()
+            showToast(message)
           }}
         />
       )}

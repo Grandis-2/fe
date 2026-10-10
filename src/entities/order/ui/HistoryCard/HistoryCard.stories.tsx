@@ -49,11 +49,11 @@ const base = {
 }
 
 export const Delivered: Story = {
-  args: { ...base, status: 'delivered' },
+  args: { ...base, tag: { label: '배송 완료', color: 'gray' } },
 }
 
 export const Shipping: Story = {
-  args: { ...base, status: 'shipping' },
+  args: { ...base, tag: { label: '배송 중', color: 'blue' } },
 }
 
 // 모듈 스코프 — 렌더마다 새 Date를 넘기면 카운트다운 타이머가 계속 새로 걸린다.
@@ -62,7 +62,8 @@ const dueAt = new Date(Date.now() + 18 * 60 * 60 * 1000)
 export const PurchaseConfirm: Story = {
   args: {
     ...base,
-    status: 'confirm',
+    tag: { label: '구매 확정 대기', color: 'yellow' },
+    highlight: true,
     preorder: true,
     numberLabel: '예약번호',
     purchaseDueAt: dueAt,
@@ -76,7 +77,7 @@ export const PurchaseConfirm: Story = {
 export const ExpandableItems: Story = {
   args: {
     ...base,
-    status: 'preship',
+    tag: { label: '예약 확정', color: 'primary' },
     preorder: true,
     items: [
       item,

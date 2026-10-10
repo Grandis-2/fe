@@ -21,7 +21,8 @@ const model = (id: string, name: string, price: number): PreorderModel => ({
   id,
   name,
   price,
-  productId: '1',
+  // 목업 상품 1번(맥북 프로 14, 사전예약)의 id — shared/api/mock/fixtures/product의 mockUuid(2, 1).
+  productId: '20000000-0000-4000-8000-000000000001',
 })
 
 type Row = [

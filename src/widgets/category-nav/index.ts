@@ -1,4 +1,5 @@
 export { CategoryNav } from './ui/CategoryNav'
 export type { CategoryNavProps, CategoryNavLink } from './ui/CategoryNav'
-export { MobileCategoryNav } from './ui/MobileCategoryNav'
+export { MobileMenu } from './ui/MobileMenu'
+export type { MobileMenuProps } from './ui/MobileMenu'
 export { MEGA_MENU_OPEN, NAV_LINK_PADDING_X } from './ui/CategoryNav.css'

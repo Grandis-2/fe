@@ -11,7 +11,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const PAGE = { page: 0, size: 12 }
 
-const product = (productId: number, title: string): ProductListItem => ({
+const product = (productId: string, title: string): ProductListItem => ({
   productId,
   saleMode: 'IN_STOCK',
   title,
@@ -40,7 +40,7 @@ const queryClient = new QueryClient({
 queryClient.setQueryData(['categories'], categories)
 queryClient.setQueryData(
   ['products', 'list', { q: '맥북', ...PAGE }],
-  listPage([product(1, '맥북 프로 14'), product(2, '맥북 에어 13')]),
+  listPage([product('1', '맥북 프로 14'), product('2', '맥북 에어 13')]),
 )
 queryClient.setQueryData(
   ['products', 'list', { q: '없는상품', ...PAGE }],
@@ -48,7 +48,7 @@ queryClient.setQueryData(
 )
 queryClient.setQueryData(
   ['products', 'list', { categoryId: categories[0].categoryId, ...PAGE }],
-  listPage([product(3, 'NOVA 스마트폰 1'), product(4, 'NOVA 태블릿 1')]),
+  listPage([product('3', 'NOVA 스마트폰 1'), product('4', 'NOVA 태블릿 1')]),
 )
 
 const meta = {

@@ -3,34 +3,27 @@ import { useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import { useCountdown } from '@shared/lib/useCountdown'
-import { Tag, type TagProps } from '@shared/ui'
-
-import { orderStatusLabel, type OrderStatus } from '../../model/orderStatus'
+import { Tag } from '@shared/ui'
 
 import * as styles from './HistoryCard.css'
+
+import type { StatusTag } from '../../model/orderStatus'
 
 // 상품이 많으면 다음 주문이 한참 아래로 밀리므로 처음엔 이만큼만 보여 준다.
 const COLLAPSED_COUNT = 2
 
-const tagColor: Record<OrderStatus, TagProps['color']> = {
-  confirm: 'yellow',
-  ready: 'primary',
-  preship: 'primary',
-  shipping: 'blue',
-  delivered: 'gray',
-  cancelled: 'gray',
-}
-
 // HistoryCard는 아이템을 renderItem으로 넘기기만 하고 필드는 읽지 않는다 —
 // 아이템 모양을 여기서 따로 선언하지 않고 제네릭 T로 호출부 타입을 그대로 받는다.
 export type HistoryCardProps<T> = {
-  status: OrderStatus
-  /** 상태 태그 대신 보일 태그(내 리뷰의 '리뷰 작성 가능' 등) */
-  badge?: { label: string; color: TagProps['color'] }
+  // 상태 태그. 주문은 orderStatusTag, 예약은 reservationStatusTag(@entities/preorder)에서 고른다.
+  tag: StatusTag
+  /** 사용자가 직접 할 일(구매 확정 등)이 남은 카드 — 테두리로 강조한다. */
+  highlight?: boolean
   /** 사전예약 주문이면 상태 옆에 '사전예약' 태그가 붙는다. */
   preorder?: boolean
   orderDate: string
-  orderNumber: string
+  /** 없으면 번호 칸을 그리지 않는다(내 리뷰처럼 주문 번호를 모를 때). */
+  orderNumber?: string
   numberLabel?: string
   /** 구매 확정 마감 — 있으면 머리 아래에 남은 시간 띠가 붙는다. 렌더마다 새 Date를 넘기지 않는다. */
   purchaseDueAt?: Date
@@ -44,8 +37,8 @@ export type HistoryCardProps<T> = {
 }
 
 export function HistoryCard<T>({
-  status,
-  badge,
+  tag,
+  highlight,
   preorder,
   orderDate,
   orderNumber,
@@ -63,23 +56,19 @@ export function HistoryCard<T>({
 
   return (
     <article
-      className={[
-        styles.root,
-        status === 'confirm' && styles.rootWarning,
-        className,
-      ]
+      className={[styles.root, highlight && styles.rootWarning, className]
         .filter(Boolean)
         .join(' ')}
     >
       <header className={styles.header}>
         <span className={styles.orderDate}>{orderDate}</span>
         <Tag
-          color={badge?.color ?? tagColor[status]}
+          color={tag.color}
           variant="subtle"
           rounded={false}
           className={styles.tag}
         >
-          {badge?.label ?? orderStatusLabel[status]}
+          {tag.label}
         </Tag>
         {preorder && (
           <Tag
@@ -91,9 +80,11 @@ export function HistoryCard<T>({
             사전예약
           </Tag>
         )}
-        <span className={styles.orderNumber}>
-          {numberLabel} {orderNumber}
-        </span>
+        {orderNumber && (
+          <span className={styles.orderNumber}>
+            {numberLabel} {orderNumber}
+          </span>
+        )}
       </header>
 
       {purchaseDueAt && <PurchaseDueNotice dueAt={purchaseDueAt} />}

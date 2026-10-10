@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
-import { MOCK_ORDERS } from '@entities/order'
+import { useMyReservations } from '@entities/preorder'
 import { KakaoLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
@@ -13,6 +13,7 @@ import { CategoryNav } from '@widgets/category-nav'
 import { useHeaderTheme } from '../lib/useHeaderTheme'
 
 import * as styles from './Header.css'
+import { HeaderNotification } from './HeaderNotification'
 import { HeaderSearch } from './HeaderSearch'
 
 export type HeaderProps = {
@@ -43,9 +44,12 @@ export function Header({
   const showCounts = isMember && !isAdminPage
   const { data: cartCount = 0 } = useCartCount(showCounts)
   const { data: notificationCount = 0 } = useUnreadNotificationCount(showCounts)
-  // ponytail: 주문 API가 없어 목업에서 센다 — API가 붙으면 장바구니 개수처럼 조회 훅으로 바꾼다.
+  // 구매 확정(결제)이 필요한 사전예약 수 — 결제 가능해진 예약이다.
+  const { data: reservations } = useMyReservations({ enabled: showCounts })
   const pendingPurchaseCount = showCounts
-    ? MOCK_ORDERS.filter((order) => order.status === 'confirm').length
+    ? (reservations?.items.filter(
+        ({ displayStatus }) => displayStatus === 'PAYABLE',
+      ).length ?? 0)
     : 0
 
   // 아이콘 오른쪽 위 숫자. 0이면 안 그린다(개수는 aria-label에 따로 담는다).
@@ -63,21 +67,6 @@ export function Header({
         {count > 99 ? '99+' : count}
       </span>
     )
-
-  // 어드민과 일반 헤더 양쪽에 들어가므로 한 번만 만들어 둔다.
-  const notificationButton = (
-    <button
-      type="button"
-      className={[styles.iconButton, styles.badgeAnchor].join(' ')}
-      aria-label={
-        notificationCount > 0 ? `알림 ${notificationCount}개` : '알림'
-      }
-      onClick={onNotificationClick}
-    >
-      <Bell className={styles.icon} aria-hidden="true" />
-      {countBadge(notificationCount)}
-    </button>
-  )
 
   return (
     <header
@@ -108,7 +97,15 @@ export function Header({
         </div>
         <div className={styles.actions}>
           {isAdminPage ? (
-            notificationButton
+            // 관리자 알림은 회원 알림과 대상이 달라 패널을 열지 않고 밖에 알리기만 한다.
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="알림"
+              onClick={onNotificationClick}
+            >
+              <Bell className={styles.icon} aria-hidden="true" />
+            </button>
           ) : (
             <>
               {/* 모바일은 하단 탭바에 검색·마이페이지가 있어 헤더엔 알림·장바구니만 둔다. */}
@@ -116,7 +113,14 @@ export function Header({
               {/* 비회원은 검색과 로그인만 — 알림·장바구니·마이페이지는 회원 전용이다. */}
               {isMember ? (
                 <>
-                  {notificationButton}
+                  <HeaderNotification
+                    label={
+                      notificationCount > 0
+                        ? `알림 ${notificationCount}개`
+                        : '알림'
+                    }
+                    badge={countBadge(notificationCount)}
+                  />
                   <Link
                     to={mypagePath('cart')}
                     className={[styles.iconButton, styles.badgeAnchor].join(

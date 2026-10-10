@@ -201,6 +201,7 @@ export function PreorderDetail({ preorder }: PreorderDetailProps) {
         onReserve={(model) => {
           setIsSheetOpen(false)
           joinPreorderQueue({
+            productId: model.productId,
             productName: model.name,
             to: productPath(model.productId),
           })

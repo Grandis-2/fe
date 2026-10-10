@@ -1,42 +1,43 @@
 import type {
   CategoryNode,
-  ShipmentBatch,
-  ProductDetailVariant,
+  OptionAxis,
   ProductDetailView,
-  ProductOptionAxis,
   SaleMode,
+  ShipmentBatch,
+  Variant,
 } from '../../types'
 
-// ponytail: 백엔드 카테고리 행은 이름이 프론트와 확정되면 넣는다고 비워 둔 상태다(be V202610052320 주석).
-// 그때까지 목업은 헤더 메뉴(brandMenus)의 상위 이름 + 브랜드 하위로 트리를 만든다 — 확정되면 이름을 맞춘다.
-const TREE: [code: string, name: string, brands: string[]][] = [
-  ['mobile', '모바일', ['Apple', 'Samsung']],
-  ['pc', 'PC/주변기기', ['Apple', 'Samsung', 'LG']],
-  ['wearable', '웨어러블', ['Apple', 'Samsung']],
+// 목업 id도 서버처럼 UUID 모양으로 만든다 — 핸들러가 형식 오류(400)를 흉내 내고, 다른 목업이 같은 id를 다시 만들 수 있게
+// 규칙을 고정한다. 첫 글자로 종류를 나눈다(1 카테고리 · 2 상품 · 3 옵션 · 4 리뷰 · 5 주문상품).
+export const mockUuid = (kind: 1 | 2 | 3 | 4 | 5, n: number) =>
+  `${kind}0000000-0000-4000-8000-${String(n).padStart(12, '0')}`
+
+// ponytail: 카테고리 이름이 아직 백엔드와 확정되지 않았다. 목업은 헤더 메뉴(brandMenus)의 상위 이름 + 브랜드 하위로
+// 트리를 만든다 — 확정되면 이름을 맞춘다.
+const TREE: [name: string, brands: string[]][] = [
+  ['모바일', ['Apple', 'Samsung']],
+  ['PC/주변기기', ['Apple', 'Samsung', 'LG']],
+  ['웨어러블', ['Apple', 'Samsung']],
 ]
 
-export const categories: CategoryNode[] = TREE.map(
-  ([code, name, brands], i) => {
-    const categoryId = i + 1
-    return {
-      categoryId,
-      code,
-      name,
-      parentId: null,
-      children: brands.map((brand, j) => ({
-        categoryId: categoryId * 10 + j + 1,
-        code: `${code}-${brand.toLowerCase()}`,
-        name: brand,
-        parentId: categoryId,
-        children: [],
-      })),
-    }
-  },
-)
+export const categories: CategoryNode[] = TREE.map(([name, brands], i) => {
+  const categoryId = mockUuid(1, (i + 1) * 10)
+  return {
+    categoryId,
+    name,
+    parentId: null,
+    children: brands.map((brand, j) => ({
+      categoryId: mockUuid(1, (i + 1) * 10 + j + 1),
+      name: brand,
+      parentId: categoryId,
+      children: [],
+    })),
+  }
+})
 
 // 색상별 촬영본(1~4)이 public/images에 이미 있다.
 // ponytail: 상품 이미지는 아직 맥북 촬영본뿐이라 모든 상품이 같은 이미지를 쓴다.
-export const COLORS = [
+const COLORS = [
   { slug: 'sliver', label: '실버', hex: '#D9D9DE' },
   { slug: 'blush', label: '블러쉬', hex: '#E8B4B8' },
   { slug: 'citrus', label: '시트러스', hex: '#D9F523' },
@@ -47,23 +48,29 @@ const STORAGES = [
   { label: '512GB', surcharge: 130000 },
 ]
 
-const optionAxes: ProductOptionAxis[] = [
+// 정규화값은 서버처럼 소문자·공백 제거로 만든다 — selections·bundleKey·필터가 이 값으로 맞춰진다.
+const normalize = (value: string) => value.replace(/\s+/g, '').toLowerCase()
+
+const optionAxes: OptionAxis[] = [
   {
     key: 'color',
     label: '색상',
-    values: COLORS.map(({ label, hex }) => ({
+    values: COLORS.map(({ slug, label, hex }) => ({
+      valueId: `color-${slug}`,
       value: label,
-      normalizedValue: label,
+      normalizedValue: normalize(label),
+      hex,
       surcharge: 0,
-      colorHex: hex,
     })),
   },
   {
     key: 'storage',
     label: '저장 용량',
     values: STORAGES.map(({ label, surcharge }) => ({
+      valueId: `storage-${normalize(label)}`,
       value: label,
-      normalizedValue: label,
+      normalizedValue: normalize(label),
+      hex: null,
       surcharge,
     })),
   },
@@ -71,7 +78,7 @@ const optionAxes: ProductOptionAxis[] = [
 
 type Seed = {
   title: string
-  categoryId: number
+  categoryId: string
   basePrice: number
   saleMode?: SaleMode
   // 일반 상품의 재고. 0이면 품절.
@@ -81,7 +88,7 @@ type Seed = {
 }
 
 function buildProduct(
-  productId: number,
+  n: number,
   {
     title,
     categoryId,
@@ -92,19 +99,18 @@ function buildProduct(
   }: Seed,
 ): ProductDetailView {
   const isPreorder = saleMode === 'PREORDER'
-  const variants: ProductDetailVariant[] = COLORS.flatMap((color) =>
-    STORAGES.map((storage) => {
-      const selections = { color: color.label, storage: storage.label }
+  const variants: Variant[] = COLORS.flatMap((color, c) =>
+    STORAGES.map((storage, s) => {
+      const selections = {
+        color: normalize(color.label),
+        storage: normalize(storage.label),
+      }
       return {
-        variantId:
-          productId * 100 +
-          COLORS.indexOf(color) * 10 +
-          STORAGES.indexOf(storage),
-        sku: `${productId}-${color.slug}-${storage.label}`,
-        title: `${color.label} ${storage.label}`,
+        variantId: mockUuid(3, n * 100 + c * 10 + s),
+        sku: `NV${n}-${color.slug}-${storage.label}`,
+        title: `${color.label} / ${storage.label}`,
         price: basePrice + storage.surcharge,
         filterAttributes: selections,
-        displayAttributes: selections,
         selections,
         status: paused ? 'PAUSED' : 'ACTIVE',
         availableQuantity: isPreorder ? null : stock,
@@ -112,20 +118,20 @@ function buildProduct(
     }),
   )
   const gallery = COLORS.map(({ slug, label }) => ({
-    bundleKey: label,
-    items: [1, 2, 3, 4].map((n) => ({
-      url: `/images/macbook_neo_${slug}${n}.png`,
-      position: n,
-      primary: n === 1,
+    bundleKey: normalize(label),
+    items: [1, 2, 3, 4].map((shot, position) => ({
+      url: `/images/macbook_neo_${slug}${shot}.png`,
+      position,
+      primary: position === 0,
     })),
   }))
   const sellable = variants.some((variant) => variant.status === 'ACTIVE')
   return {
-    productId,
+    productId: mockUuid(2, n),
     categoryId,
     saleMode,
     title,
-    modelNumber: `NV-${productId}`,
+    modelNumber: `NV-${n}`,
     description: null,
     imageUrl: gallery[0].items[0].url,
     status: 'ACTIVE',
@@ -136,8 +142,8 @@ function buildProduct(
     soldOut: !isPreorder && sellable && stock <= 0,
     campaign: isPreorder
       ? {
-          opensAt: '2026-10-01T01:00:00.000Z',
-          closesAt: '2026-12-31T14:59:59.000Z',
+          opensAt: '2026-10-01T01:00:00Z',
+          closesAt: '2026-12-31T14:59:59Z',
           status: 'OPEN',
         }
       : null,
@@ -147,42 +153,43 @@ function buildProduct(
   }
 }
 
-const brandId = (code: string, brand: string) =>
+const brandId = (parent: string, brand: string) =>
   categories
-    .find((node) => node.code === code)
-    ?.children.find((child) => child.name === brand)?.categoryId ?? 0
+    .find((node) => node.name === parent)
+    ?.children.find((child) => child.name === brand)?.categoryId ?? ''
 
 // 상위 카테고리별 [하위 상품군, 개수, 시작가, 판매 방식]. 브랜드는 하위 카테고리를 번갈아 쓴다.
 const LINES: [
-  code: string,
+  parent: string,
   line: string,
   count: number,
   price: number,
   mode?: SaleMode,
 ][] = [
-  ['mobile', '스마트폰', 8, 1250000],
-  ['mobile', '태블릿', 5, 890000],
-  ['mobile', '폴더블', 3, 2190000, 'PREORDER'],
-  ['pc', '노트북', 6, 1290000],
-  ['pc', '모니터', 4, 450000],
-  ['pc', '키보드', 4, 89000],
-  ['wearable', '스마트워치', 5, 390000],
-  ['wearable', '무선이어폰', 6, 259000],
+  ['모바일', '스마트폰', 8, 1250000],
+  ['모바일', '태블릿', 5, 890000],
+  ['모바일', '폴더블', 3, 2190000, 'PREORDER'],
+  ['PC/주변기기', '노트북', 6, 1290000],
+  ['PC/주변기기', '모니터', 4, 450000],
+  ['PC/주변기기', '키보드', 4, 89000],
+  ['웨어러블', '스마트워치', 5, 390000],
+  ['웨어러블', '무선이어폰', 6, 259000],
 ]
 
-// 1번은 사전예약 목업(entities/preorder)이 상세로 보내는 상품이라 손으로 둔다.
+// 첫 상품은 사전예약 목업(entities/preorder)이 상세로 보내는 상품이라 손으로 둔다.
+// 배열 뒤쪽일수록 최근 등록이다(NEWEST 정렬 기준).
 const seeds: Seed[] = [
   {
     title: '맥북 프로 14',
-    categoryId: brandId('pc', 'Apple'),
+    categoryId: brandId('PC/주변기기', 'Apple'),
     basePrice: 2390000,
     saleMode: 'PREORDER',
   },
-  ...LINES.flatMap(([code, line, count, price, saleMode]) => {
-    const brands = TREE.find(([treeCode]) => treeCode === code)?.[2] ?? []
+  ...LINES.flatMap(([parent, line, count, price, saleMode]) => {
+    const brands = TREE.find(([name]) => name === parent)?.[1] ?? []
     return Array.from({ length: count }, (_, i) => ({
       title: `NOVA ${line} ${i + 1}`,
-      categoryId: brandId(code, brands[i % brands.length]),
+      categoryId: brandId(parent, brands[i % brands.length]),
       basePrice: price + i * 50000,
       saleMode,
     }))
@@ -190,13 +197,13 @@ const seeds: Seed[] = [
   // 목록의 품절 · 판매 중지 표시를 확인하는 용도.
   {
     title: 'NOVA 스마트밴드 (품절)',
-    categoryId: brandId('wearable', 'Samsung'),
+    categoryId: brandId('웨어러블', 'Samsung'),
     basePrice: 79000,
     stock: 0,
   },
   {
     title: 'NOVA 마우스 (판매 중지)',
-    categoryId: brandId('pc', 'LG'),
+    categoryId: brandId('PC/주변기기', 'LG'),
     basePrice: 59000,
     paused: true,
   },
