@@ -10,7 +10,7 @@ import {
   type Product,
   type ShipmentBatch,
 } from '@entities/product'
-import { mockReviews, ReviewCard } from '@entities/review'
+import { ReviewCard, useProductReviews } from '@entities/review'
 import { useRequireLogin } from '@features/login'
 import { usePreorderSubmit } from '@features/preorder-queue'
 import { ProductGallery } from '@features/product-gallery'
@@ -71,6 +71,10 @@ export function ProductDetailPage() {
     enabled: isPreorder,
   })
   const shipmentLabel = shipmentStartLabel(shipmentBatches)
+  // 사전예약은 리뷰 탭이 없다(사전예약 상품엔 리뷰를 쓸 수 없다).
+  const reviews = useProductReviews(productId, {
+    enabled: product !== undefined && !isPreorder,
+  })
   const purchase = useProductPurchase(product)
   const preorderSubmit = usePreorderSubmit()
   const {
@@ -153,11 +157,6 @@ export function ProductDetailPage() {
   const { title, modelNumber } = product
   const selectedColor = colorAxis?.values.find(
     ({ normalizedValue }) => normalizedValue === selections[colorAxis.key],
-  )
-  // 상세에서는 이 상품 후기만 보여준다.
-  // ponytail: 리뷰는 아직 목업이라 상품명 앞부분으로 거른다 — GET /products/{id}/reviews를 붙이면 교체.
-  const reviews = mockReviews.filter(({ productName }) =>
-    productName.startsWith(title),
   )
 
   return (
@@ -303,9 +302,19 @@ export function ProductDetailPage() {
               <h2 className={styles.sectionTitle}>{label}</h2>
               {tab === 'review' ? (
                 <div className={styles.reviewList}>
-                  {reviews.map(({ id, ...review }) => (
-                    <ReviewCard key={id} {...review} />
-                  ))}
+                  {reviews.isError ? (
+                    <InlineAlert status="error">
+                      후기를 불러오지 못했어요.
+                    </InlineAlert>
+                  ) : reviews.data?.items.length === 0 ? (
+                    <InlineAlert status="info">
+                      아직 등록된 후기가 없어요.
+                    </InlineAlert>
+                  ) : (
+                    reviews.data?.items.map((review) => (
+                      <ReviewCard key={review.reviewId} review={review} />
+                    ))
+                  )}
                 </div>
               ) : (
                 <div className={styles.placeholder}>{label} 상세 이미지</div>

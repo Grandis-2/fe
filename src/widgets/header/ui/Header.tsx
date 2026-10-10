@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router'
 
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
-import { MOCK_ORDERS } from '@entities/order'
+import { useMyReservations } from '@entities/preorder'
 import { KakaoLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
@@ -43,9 +43,12 @@ export function Header({
   const showCounts = isMember && !isAdminPage
   const { data: cartCount = 0 } = useCartCount(showCounts)
   const { data: notificationCount = 0 } = useUnreadNotificationCount(showCounts)
-  // ponytail: 주문 API가 없어 목업에서 센다 — API가 붙으면 장바구니 개수처럼 조회 훅으로 바꾼다.
+  // 구매 확정(결제)이 필요한 사전예약 수 — 결제 가능해진 예약이다.
+  const { data: reservations } = useMyReservations({ enabled: showCounts })
   const pendingPurchaseCount = showCounts
-    ? MOCK_ORDERS.filter((order) => order.status === 'confirm').length
+    ? (reservations?.items.filter(
+        ({ displayStatus }) => displayStatus === 'PAYABLE',
+      ).length ?? 0)
     : 0
 
   // 아이콘 오른쪽 위 숫자. 0이면 안 그린다(개수는 aria-label에 따로 담는다).

@@ -97,3 +97,18 @@ export type PaymentAttempt = {
   // "상품명 옵션명"(여러 개면 " 외 N건", 100자 넘으면 "…").
   orderName: string
 }
+
+// POST /api/v1/orders/{orderToken}/payment-attempts/{tossOrderId}/confirm 본문 — successUrl 쿼리 값을 옮긴다.
+export type ConfirmPaymentRequest = {
+  paymentKey: string
+  // 주문 총액과 비교만 한다(다르면 409 PAYMENT_AMOUNT_MISMATCH).
+  amount: number
+}
+
+// 200 승인 결과 — APPROVED는 완료, DECLINED는 결제 준비부터 다시, PENDING은 주문 상세 폴링.
+export type ConfirmPaymentResponse = {
+  result: 'APPROVED' | 'DECLINED' | 'PENDING'
+  orderStatus: OrderStatus
+  // DECLINED일 때만. CARD_REJECTED는 다른 결제 수단, PAYMENT_EXPIRED는 결제창 다시 열기, FAILED는 일반 실패.
+  declineReason: 'CARD_REJECTED' | 'PAYMENT_EXPIRED' | 'FAILED' | null
+}

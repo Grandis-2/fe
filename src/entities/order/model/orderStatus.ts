@@ -1,13 +1,19 @@
-// 주문 한 건의 진행 상태. 사전예약은 구매 확정(confirm) → 출시 후 순차 발송(preship) 순으로,
-// 일반 구매는 배송 준비(ready)부터 시작한다.
-export type OrderStatus =
-  'confirm' | 'ready' | 'preship' | 'shipping' | 'delivered' | 'cancelled'
+import type { TagProps } from '@shared/ui'
 
-export const orderStatusLabel: Record<OrderStatus, string> = {
-  confirm: '구매 확정 대기',
-  ready: '배송 준비 중',
-  preship: '출시 후 순차 발송',
-  shipping: '배송 중',
-  delivered: '배송 완료',
-  cancelled: '취소 완료',
+import type { OrderStatus } from './order'
+
+// 카드 머리의 상태 태그 하나(문구·색).
+export type StatusTag = { label: string; color: TagProps['color'] }
+
+// 주문 상태별 태그(order 명세의 "화면" 칸). 승인 대기(AUTHORIZING)는 사용자가 기다릴 일이라 결제 대기와 같은 색이다.
+export const orderStatusTag: Record<OrderStatus, StatusTag> = {
+  AWAITING_PAYMENT: { label: '결제 대기', color: 'yellow' },
+  AUTHORIZING: { label: '결제 확인 중', color: 'yellow' },
+  AWAITING_CONFIRMATION: { label: '결제 완료', color: 'primary' },
+  PREPARING_ITEMS: { label: '배송 준비 중', color: 'primary' },
+  READY_TO_SHIP: { label: '배송 준비 중', color: 'primary' },
+  SHIPPED: { label: '배송 중', color: 'blue' },
+  DELIVERED: { label: '배송 완료', color: 'gray' },
+  CANCELING: { label: '취소 처리 중', color: 'gray' },
+  CANCELED: { label: '취소 완료', color: 'gray' },
 }
