@@ -156,6 +156,7 @@ export const logo = style([
 ])
 
 export const logoMember = style({
+  // eslint-disable-next-line no-restricted-syntax -- 그라데이션 중간 색, 대응 토큰 없음
   backgroundImage: `linear-gradient(90deg, ${color.primary.focus}, #55428c, ${color.secondary.subtle})`,
   backgroundClip: 'text',
   color: 'transparent',
