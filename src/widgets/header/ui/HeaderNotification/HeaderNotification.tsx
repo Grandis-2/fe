@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { Bell } from 'lucide-react'
-import { Link } from 'react-router'
 
-import {
-  formatNotificationTime,
-  useNotifications,
-} from '@entities/notification'
+import { useNotifications } from '@entities/notification'
 
 import * as headerStyles from '../Header.css'
+import { NotificationList } from '../NotificationList'
 
 import * as styles from './HeaderNotification.css'
 
@@ -47,65 +44,6 @@ export function HeaderNotification({ label, badge }: HeaderNotificationProps) {
     }
   }, [isOpen])
 
-  const renderList = () => {
-    if (isPending) return <div className={styles.status}>불러오는 중…</div>
-    if (isError)
-      return <div className={styles.status}>알림을 불러오지 못했어요.</div>
-    if (notifications.length === 0)
-      return <div className={styles.status}>새 알림이 없어요.</div>
-
-    return (
-      <ul className={styles.list}>
-        {notifications.map((notification) => {
-          const content = (
-            <>
-              {/* 역할 없는 span의 aria-label은 읽히지 않을 수 있어 점에 img 역할을 준다. */}
-              <span
-                className={notification.read ? undefined : styles.unreadDot}
-                role={notification.read ? undefined : 'img'}
-                aria-label={notification.read ? undefined : '안 읽음'}
-              />
-              <span className={styles.body}>
-                <span className={styles.itemHeader}>
-                  <span
-                    className={[
-                      styles.itemTitle,
-                      notification.read && styles.read,
-                    ]
-                      .filter(Boolean)
-                      .join(' ')}
-                  >
-                    {notification.title}
-                  </span>
-                  <span className={styles.time}>
-                    {formatNotificationTime(notification.createdAt)}
-                  </span>
-                </span>
-                <span className={styles.message}>{notification.message}</span>
-              </span>
-            </>
-          )
-
-          return (
-            <li key={notification.notificationId}>
-              {notification.link ? (
-                <Link
-                  to={notification.link}
-                  className={styles.item}
-                  onClick={() => setIsOpen(false)}
-                >
-                  {content}
-                </Link>
-              ) : (
-                <div className={styles.item}>{content}</div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-    )
-  }
-
   return (
     // 헤더의 다른 아이콘처럼 높이를 꽉 채워야 버튼이 헤더 높이만큼 잡힌다.
     <div ref={rootRef} className={headerStyles.fill}>
@@ -130,7 +68,12 @@ export function HeaderNotification({ label, badge }: HeaderNotificationProps) {
           data-theme="dark"
         >
           <div className={styles.title}>알림</div>
-          {renderList()}
+          <NotificationList
+            notifications={notifications}
+            isPending={isPending}
+            isError={isError}
+            onNavigate={() => setIsOpen(false)}
+          />
         </div>
       )}
     </div>
