@@ -3,7 +3,7 @@
 // 들어오면(딥링크 등) 없을 수 있다.
 export type PurchaseDraft = {
   // 고른 옵션 조합의 id — 주문(POST /api/v1/orders)·사전예약 접수에 보낼 값이다.
-  variantId: number
+  variantId: string
   productName: string
   // "실버 · 512GB"처럼 고른 옵션을 한 줄로 이은 문구.
   optionSummary: string

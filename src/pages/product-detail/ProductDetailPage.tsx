@@ -165,8 +165,7 @@ export function ProductDetailPage() {
                 colorName={colorAxis.label}
                 size="medium"
                 colors={colorAxis.values.map((value) => ({
-                  // ponytail: colorHex는 백엔드에 추가 요청한 칸 — 오기 전엔 칩 색이 비어 보인다.
-                  hex: value.colorHex ?? '',
+                  hex: value.hex ?? '',
                   label: value.value,
                   selected: value === selectedColor,
                 }))}
@@ -203,7 +202,7 @@ export function ProductDetailPage() {
             <PurchaseSummary
               options={[
                 ...(selectedColor
-                  ? [{ label: colorLabel, hex: selectedColor.colorHex }]
+                  ? [{ label: colorLabel, hex: selectedColor.hex ?? undefined }]
                   : []),
                 ...optionAxes.flatMap((axis) => {
                   const value = axis.values.find(

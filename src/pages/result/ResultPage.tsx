@@ -87,7 +87,7 @@ const content: Record<
 // 배송지·마감 시각까지 응답 값으로 교체한다.
 const fallbackDrafts: PurchaseDraft[] = [
   {
-    variantId: 101,
+    variantId: '101',
     productName: '맥북 프로 14',
     optionSummary: '스페이스 블랙 · 14인치 · 16GB · 512GB · M5',
     quantity: 1,

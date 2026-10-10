@@ -33,7 +33,7 @@ const GENERIC_PAYMENT_ERROR =
 // ponytail: 아직 주문서 API가 없어서 목업 데이터로 대체.
 const fallbackDrafts: PurchaseDraft[] = [
   {
-    variantId: 101,
+    variantId: '101',
     productName: '맥북 프로 14',
     optionSummary: '실버 · 512GB',
     quantity: 1,
