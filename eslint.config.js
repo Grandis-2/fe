@@ -154,6 +154,27 @@ export default defineConfig([
     },
   },
 
+  // 스타일 파일에 생 hex 색을 적지 않는다 — shared/config/theme의 color 토큰을 쓴다.
+  // 토큰 정의 파일은 예외. 브랜드 고정색(카카오 등)처럼 꼭 필요하면 줄 단위로 disable하고 이유를 적는다.
+  // .css.ts 밖(캔버스, 목 데이터의 상품 색, 컬러 피커 기본값)은 hex가 데이터라 검사하지 않는다.
+  {
+    files: ['src/**/*.css.ts'],
+    ignores: ['src/shared/config/theme/tokens/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/#[0-9a-fA-F]{3,8}\\b/]',
+          message: '생 hex 대신 @shared/config/theme의 color 토큰을 쓴다.',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/#[0-9a-fA-F]{3,8}\\b/]',
+          message: '생 hex 대신 @shared/config/theme의 color 토큰을 쓴다.',
+        },
+      ],
+    },
+  },
+
   // Storybook 설정(Node 런타임)
   // vite.config.ts 와 동일하게 tsconfig.node.json 을 resolver 대상으로 지정한다.
   {
