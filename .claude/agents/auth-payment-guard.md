@@ -1,6 +1,6 @@
 ---
 name: auth-payment-guard
-description: 로그인·세션·재발급·카카오 OAuth·토스 결제 코드가 백엔드 계약(11-frontend-guide.md)의 "하지 말 것"을 어기는지 검사하는 읽기 전용 리뷰어. use proactively after 변경이 entities/auth, features/login, features/payment, shared/api/client.ts, pages/kakao-callback, pages/payment*, 또는 sessionToken·Idempotency-Key를 건드렸을 때.
+description: 로그인·세션·재발급·카카오 OAuth·토스 결제 코드가 백엔드 계약(11-frontend-guide.md)의 "하지 말 것"을 어기는지 검사하는 읽기 전용 리뷰어. use proactively after 변경이 entities/auth, entities/order, features/login, features/payment, shared/api/client.ts, pages/kakao-callback, pages/payment*, 또는 sessionToken·Idempotency-Key를 건드렸을 때.
 tools: Read, Grep, Glob
 ---
 
@@ -10,7 +10,7 @@ tools: Read, Grep, Glob
 
 ## 볼 곳
 
-`src/entities/auth/`(`sessionStore`, `refreshCoordinator`, `api/auth`), `src/shared/api/client.ts`, `src/features/login/`(`kakaoState`, `getKakaoAuthorizeUrl`, `useKakaoCallback`), `src/pages/kakao-callback/`, `src/features/payment/`, `src/pages/payment*/`, 그리고 호출자가 지정한 파일. 범위 밖이라도 `sessionToken`·`localStorage`·`persist`·`atob`·`jwt`·`Idempotency-Key`를 Grep해서 새로 생긴 사용처를 찾는다.
+`src/entities/auth/`(`sessionStore`, `refreshCoordinator`, `api/auth`), `src/shared/api/client.ts`, `src/features/login/`(`kakaoState`, `getKakaoAuthorizeUrl`, `useKakaoCallback`), `src/pages/kakao-callback/`, `src/entities/order/`(주문 생성·결제 준비 `createPaymentAttempt`·승인 `confirmOrderPayment` — 결제 API는 order 서비스라 여기 있다), `src/features/payment/`, `src/pages/payment*/`, 그리고 호출자가 지정한 파일. 범위 밖이라도 `sessionToken`·`localStorage`·`persist`·`atob`·`jwt`·`Idempotency-Key`를 Grep해서 새로 생긴 사용처를 찾는다.
 
 ## 계약 체크리스트
 
