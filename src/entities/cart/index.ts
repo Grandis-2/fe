@@ -1,7 +1,10 @@
 export {
+  cartKeys,
+  useAddCartItem,
   useCartCount,
-  useCartItems,
+  useCartLines,
   useRemoveCartItem,
   useUpdateCartItemQuantity,
 } from './api/useCart'
-export type { CartItem } from './model/types'
+export { cartUnavailableLabel } from './model/cart'
+export type { CartLine, CartUnavailableReason } from './model/cart'
