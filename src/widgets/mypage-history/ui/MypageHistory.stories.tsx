@@ -16,6 +16,7 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
   status: 'AWAITING_PAYMENT',
   source: 'PREORDER',
   totalAmount: 2399000,
+  paymentDueAt: null,
   items: [
     {
       productId: '20000000-0000-4000-8000-000000000015',
@@ -24,6 +25,9 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
       optionTitle: '실버 섀도우 / 512GB',
       unitPrice: 2399000,
       quantity: 1,
+      warrantyQuantity: 0,
+      warrantyUnitPrice: 0,
+      lineAmount: 2399000,
     },
   ],
   shipTo: {

@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router'
 import {
   HistoryCard,
   orderStatusTag,
+  useCancelOrder,
   useOrders,
   type Order,
   type OrderStatus,
@@ -13,11 +14,13 @@ import {
   ProductPaymentCard,
   type ProductPaymentCardItem,
 } from '@entities/product'
+import { startOrderPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { mypagePath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
-import { ActionButton, Dropdown, SelectButton } from '@shared/ui'
+import { showToast } from '@shared/model/toastStore'
+import { ActionButton, Button, Dropdown, SelectButton } from '@shared/ui'
 
 import * as styles from './MypageHistory.css'
 
@@ -55,24 +58,56 @@ const withinMonths = (order: Order, months: number) => {
   return new Date(order.createdAt) >= since
 }
 
+const formatTime = (iso: string) =>
+  new Date(iso).toLocaleTimeString('ko-KR', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+
 const toItems = ({ items }: Order): ProductPaymentCardItem[] =>
   items.map((item) => ({
     productId: item.productId,
     name: item.productTitle,
     modelNumber: '',
-    optionSummary: item.optionTitle,
+    optionSummary: [
+      item.optionTitle,
+      item.warrantyQuantity > 0 && `보증 ${item.warrantyQuantity}개`,
+    ]
+      .filter(Boolean)
+      .join(' · '),
     quantityLabel: `수량 ${item.quantity}개`,
-    priceLabel: formatWon(item.unitPrice * item.quantity),
+    priceLabel: formatWon(item.lineAmount),
   }))
 
 const renderItem = (product: ProductPaymentCardItem) => (
   <ProductPaymentCard product={product} />
 )
 
-// 주문은 취소 API가 없다 — 사전예약 주문은 예약을 취소하면 주문에 반영된다(예약 내역에서).
-// 주문 응답엔 예약 id가 없어 결제를 이어갈 때도 예약 내역으로 보낸다.
+// 결제 대기 주문 — 장바구니 주문은 여기서 결제(기한 10분 안)·취소하고, 사전예약 주문은 예약 내역에서 결제·취소한다
+// (주문 응답엔 예약 id가 없고, 사전예약 주문 취소는 예약 취소로 한다).
 export function MypageHistory() {
   const navigate = useNavigate()
+  const cancelOrder = useCancelOrder()
+  const [payingId, setPayingId] = useState<string | null>(null)
+
+  // 결제 준비 → 토스 결제창. 정상 진행되면 페이지가 결제창으로 넘어간다.
+  const pay = async (orderId: string) => {
+    setPayingId(orderId)
+    try {
+      await startOrderPayment({ orderId })
+    } catch (caught) {
+      showToast(getErrorMessage(caught, '결제를 시작하지 못했어요.'))
+    } finally {
+      setPayingId(null)
+    }
+  }
+
+  const cancel = (orderId: string) =>
+    cancelOrder.mutate(orderId, {
+      onSuccess: () => showToast('주문을 취소했어요.'),
+      onError: (caught) =>
+        showToast(getErrorMessage(caught, '주문을 취소하지 못했어요.')),
+    })
   const [kind, setKind] = useState<KindFilter>('전체')
   const [period, setPeriod] = useState<number>(6)
   const { data, isPending, isError, error } = useOrders()
@@ -167,16 +202,43 @@ export function MypageHistory() {
                     {formatWon(order.totalAmount)}
                   </span>
                 </div>
-                {awaitingPayment && (
-                  <div className={styles.actions}>
-                    <ActionButton
-                      size="md"
-                      onClick={() => navigate(mypagePath('preorder-check'))}
-                    >
-                      예약 내역에서 결제하기
-                    </ActionButton>
+                {awaitingPayment && order.paymentDueAt && (
+                  <div className={styles.totalRow}>
+                    <span className={styles.totalLabel}>결제 기한</span>
+                    <span className={styles.totalLabel}>
+                      {formatTime(order.paymentDueAt)}까지
+                    </span>
                   </div>
                 )}
+                {awaitingPayment &&
+                  (order.source === 'CART' ? (
+                    <div className={styles.actions}>
+                      <Button
+                        variant="subtle"
+                        color="cancel"
+                        disabled={cancelOrder.isPending}
+                        onClick={() => cancel(order.orderId)}
+                      >
+                        주문 취소
+                      </Button>
+                      <ActionButton
+                        size="md"
+                        disabled={payingId !== null}
+                        onClick={() => void pay(order.orderId)}
+                      >
+                        결제하기
+                      </ActionButton>
+                    </div>
+                  ) : (
+                    <div className={styles.actions}>
+                      <ActionButton
+                        size="md"
+                        onClick={() => navigate(mypagePath('preorder-check'))}
+                      >
+                        예약 내역에서 결제하기
+                      </ActionButton>
+                    </div>
+                  ))}
               </>
             }
           />
