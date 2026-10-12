@@ -50,14 +50,14 @@ export function AdminPromotionsPage() {
   const openDetail = (promotion: AdminPromotion) =>
     navigate(adminPromotionPath(promotion.promotionId))
 
-  // 연결할 사전예약 상품이 없으면 프로모션부터 만들 수 없다.
+  // 연결할 사전예약 상품이 없으면 사전예약부터 만들 수 없다.
   const startCreate = () => {
     if (mockLinkableProducts.length === 0) {
       openModal(
         <ConfirmDialog
           title="안내"
           description={
-            '현재 새 사전예약 상품이 없습니다.\n먼저 만들고 사전예약 안내 탭을 생성할 수 있습니다.\n\n사전예약 상품을 생성하러 가시겠습니까?'
+            '현재 새 사전예약 상품이 없습니다.\n먼저 만들고 사전예약을 생성할 수 있습니다.\n\n사전예약 상품을 생성하러 가시겠습니까?'
           }
           confirmLabel="생성 하러 하기"
           onConfirm={() => {
@@ -83,7 +83,7 @@ export function AdminPromotionsPage() {
   const columns: TableColumn<AdminPromotion>[] = [
     {
       key: 'name',
-      header: '프로모션',
+      header: '사전예약명',
       align: 'center',
       render: (promotion) => (
         <span className={styles.promotionName}>{promotion.name}</span>
@@ -143,7 +143,7 @@ export function AdminPromotionsPage() {
       <div className={styles.header}>
         <div className={styles.title}>사전예약 관리</div>
         <Button icon="plus" size="medium" onClick={startCreate}>
-          새 프로모션
+          새 사전예약
         </Button>
       </div>
 
@@ -165,7 +165,7 @@ export function AdminPromotionsPage() {
           onClick: openDetail,
           icon: SquarePen,
         }}
-        emptyMessage="조건에 맞는 프로모션이 없습니다."
+        emptyMessage="조건에 맞는 사전예약이 없습니다."
       />
     </div>
   )

@@ -18,7 +18,7 @@ import { AdminPromotionForm } from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionEditPage.css'
 
-/** 사전예약 프로모션 수정. ponytail: API가 없어 목 데이터로 화면만 맞춰 둔다 */
+/** 사전예약 수정. ponytail: API가 없어 목 데이터로 화면만 맞춰 둔다 */
 export function AdminPromotionEditPage() {
   const navigate = useNavigate()
   const { promotionId = '' } = useParams()
@@ -27,10 +27,10 @@ export function AdminPromotionEditPage() {
   if (!promotion) {
     return (
       <div className={styles.notFound}>
-        <div>프로모션을 찾을 수 없습니다.</div>
+        <div>사전예약을 찾을 수 없습니다.</div>
         <Breadcrumb
           items={[
-            { label: '사전 예약 관리로 돌아가기', to: ADMIN_PROMOTIONS_PATH },
+            { label: '사전예약 관리로 돌아가기', to: ADMIN_PROMOTIONS_PATH },
           ]}
         />
       </div>
@@ -45,7 +45,7 @@ export function AdminPromotionEditPage() {
     <div className={styles.root}>
       <Breadcrumb
         items={[
-          { label: '사전 예약 관리', to: ADMIN_PROMOTIONS_PATH },
+          { label: '사전예약 관리', to: ADMIN_PROMOTIONS_PATH },
           { label: promotion.name },
         ]}
       />

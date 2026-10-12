@@ -1,10 +1,10 @@
 import axios, { type AxiosResponse } from 'axios'
 
-import { ApiRequestError, toTransportError } from './errors'
+import { ApiRequestError, sentRequestId, toTransportError } from './errors'
 
 import type { ApiResponse } from './types'
 
-export { ApiRequestError, getErrorMessage } from './errors'
+export { ApiRequestError, getErrorMessage, getTraceId } from './errors'
 
 // shared는 entities를 import할 수 없어서, 인증 헤더/401 처리는 entities/auth가 부팅 시 주입한다.
 let getAuthHeaders: () => Record<string, string> = () => ({})
@@ -68,6 +68,13 @@ async function send<TData>(
 
 // 봉투를 벗겨 data만 돌려주고, 실패는 ApiRequestError로 던진다.
 function unwrap<TData>(response: RawResponse<TData>): TData {
+  const headerTraceId: unknown = response.headers['x-request-id']
+  const fallbackTraceId =
+    typeof headerTraceId === 'string'
+      ? headerTraceId
+      : sentRequestId(response.config)
+
+  // 로그아웃 등 204 No Content는 파싱할 본문이 없다.
   if (response.status === 204) return undefined as TData
 
   const json = response.data
@@ -80,10 +87,15 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
         details: null,
       },
       response.status,
+      fallbackTraceId,
     )
   }
   if (json.success) return json.data
-  throw new ApiRequestError(json.error, response.status)
+  throw new ApiRequestError(
+    json.error,
+    response.status,
+    json.traceId ?? fallbackTraceId,
+  )
 }
 
 // 같은 요청을 다시 보내도 되는 상태인지 확인한다. true면 한 번 더 보낸다.

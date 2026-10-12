@@ -58,9 +58,9 @@ export function AdminPromotionForm({
 
   return (
     <form className={styles.root} onSubmit={handleSubmit}>
-      <FormSection title="프로모션 명">
+      <FormSection title="사전예약명">
         <Input
-          label="프로모션 명"
+          label="사전예약명"
           required
           value={value.name}
           onChange={(event) => patch({ name: event.target.value })}
@@ -69,7 +69,7 @@ export function AdminPromotionForm({
 
       <FormSection
         title="진행 기간"
-        description="프로모션 페이지가 보이는 기간입니다. 사전 예약 접수 오픈, 마감은 각 상품에서 정합니다."
+        description="사전예약 페이지가 보이는 기간입니다. 접수 오픈, 마감은 각 상품에서 정합니다."
       >
         <DateRangeField
           value={{ start: value.startAt, end: value.endAt }}
@@ -80,8 +80,8 @@ export function AdminPromotionForm({
       </FormSection>
 
       <FormSection
-        title="프로모션 썸네일 이미지"
-        description="프로모션 목록에 표시할 대표 이미지 한 장을 등록합니다."
+        title="사전예약 썸네일 이미지"
+        description="사전예약 목록에 표시할 대표 이미지 한 장을 등록합니다."
       >
         <PromotionThumbnailField
           value={value.thumbnail}
@@ -90,7 +90,7 @@ export function AdminPromotionForm({
       </FormSection>
 
       <FormSection
-        title="프로모션 상세 이미지"
+        title="사전예약 상세 이미지"
         description="혜택 / 기간 안내입니다. 세로로 긴 이미지가 위에서부터 이어 붙습니다."
       >
         <div className={styles.tileFrame}>
