@@ -18,6 +18,7 @@ export type MypageMenuProps = {
 const links: { link: MypageMenuLink; label: string }[] = [
   { link: 'history', label: '주문 내역' },
   { link: 'preorder-check', label: '예약 내역' },
+  { link: 'draw', label: '럭키드로우' },
   { link: 'cart', label: '장바구니' },
   { link: 'address-manage', label: '배송지 관리' },
   { link: 'reviews', label: '내 리뷰' },
