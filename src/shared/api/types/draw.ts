@@ -1,0 +1,73 @@
+import type { PaymentAttempt, ShipTo, ShipToInput } from './order'
+
+// 럭키 드로우 API(order 서비스 — api-docs의 order.json) 회원용 모양. 관리자(/admin/draws)는 다루지 않는다.
+// 회차는 증정품(gift) 하나를 걸고, 응모비를 한 번 결제한 응모만 추첨 대상이 된다. 당첨되면 서버가 0원 주문(source DRAW)을 만든다.
+
+// SCHEDULED 시작 전, OPEN 응모 중, CLOSED 마감. 응답 시점의 서버 시각 기준이고 추첨이 끝났는지는 나타내지 않는다.
+export type DrawPhase = 'SCHEDULED' | 'OPEN' | 'CLOSED'
+
+// 증정품 — 회차를 만든 때의 값으로 고정된다. imageUrl은 없으면 null.
+export type DrawGift = {
+  productId: string
+  variantId: string
+  productTitle: string
+  optionTitle: string
+  imageUrl: string | null
+}
+
+export type Draw = {
+  drawId: string
+  title: string
+  gift: DrawGift
+  // 응모비(원).
+  entryFee: number
+  winnerCount: number
+  opensAt: string
+  closesAt: string
+  phase: DrawPhase
+  createdAt: string
+}
+
+// 오프셋 페이지 — page는 0부터, 전체 건수는 total.
+export type DrawPage = {
+  items: Draw[]
+  page: number
+  size: number
+  total: number
+}
+
+export type DrawListParams = {
+  page?: number
+  // 1~100(기본 20).
+  size?: number
+}
+
+// AWAITING_PAYMENT 응모비 결제 전(거절·결제창 만료도 여기로 돌아온다), AUTHORIZING 결제 확인 중, PAID 결제 완료로 추첨 대상.
+export type DrawEntryStatus = 'AWAITING_PAYMENT' | 'AUTHORIZING' | 'PAID'
+
+export type DrawEntry = {
+  entryId: string
+  drawId: string
+  status: DrawEntryStatus
+  // 결과 반영 전이거나 PAID가 아니면 null. WON이면 내 주문 목록에 0원 주문이 있다.
+  result: 'WON' | 'LOST' | null
+  shipTo: ShipTo
+  createdAt: string
+  draw: Draw
+}
+
+// POST /api/v1/draws/{drawId}/entries 본문 — 배송지만 보낸다. 이미 응모했으면 새 배송지는 무시된다.
+export type EnterDrawRequest = {
+  shipTo: ShipToInput
+}
+
+// POST .../entries/me/payment-attempts 201 — 주문 결제 준비 응답과 모양이 같다.
+export type EntryPaymentAttempt = PaymentAttempt
+
+// POST .../entries/me/payment-attempts/{tossOrderId}/confirm 200 — APPROVED는 응모 완료, DECLINED는 결제 준비부터 다시,
+// PENDING은 내 응모를 폴링한다.
+export type EntryConfirmResponse = {
+  result: 'APPROVED' | 'DECLINED' | 'PENDING'
+  entryStatus: DrawEntryStatus
+  declineReason: 'CARD_REJECTED' | 'PAYMENT_EXPIRED' | 'FAILED' | null
+}
