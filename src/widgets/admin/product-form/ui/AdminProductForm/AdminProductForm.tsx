@@ -6,6 +6,7 @@ import {
   PRODUCT_BRANDS,
   withPresetOptionGroups,
   type AdminProductFormValue,
+  type ProductOptionPreset,
 } from '@entities/admin-product'
 import {
   Button,
@@ -23,6 +24,7 @@ import { NumberField } from '../NumberField'
 import { OptionGroupEditor } from '../OptionGroupEditor'
 import { OptionPresetField } from '../OptionPresetField'
 import { PreorderPeriodField } from '../PreorderPeriodField'
+import { TagField } from '../TagField'
 import { VariantTable } from '../VariantTable'
 
 import * as styles from './AdminProductForm.css'
@@ -72,6 +74,9 @@ export function AdminProductForm({
   const [value, setValue] = useState(
     defaultValue ?? createEmptyProductFormValue(),
   )
+  // 서버로 가지 않는 값이라 폼 값(AdminProductFormValue)에 넣지 않는다 — 옵션을 깔고
+  // 태그 추천을 고르는 데만 쓴다. 수정 폼에는 종류가 저장돼 있지 않아 비어 있다.
+  const [preset, setPreset] = useState<ProductOptionPreset>()
 
   const patch = (partial: Partial<AdminProductFormValue>) =>
     setValue((prev) => ({ ...prev, ...partial }))
@@ -162,11 +167,13 @@ export function AdminProductForm({
       >
         {/* 색상은 별도 축이라 프리셋이 손대지 않는다 — 이미 올린 이미지가 날아간다. */}
         <OptionPresetField
-          onSelect={(preset) =>
+          value={preset}
+          onSelect={(picked) => {
+            setPreset(picked)
             patch({
-              optionGroups: withPresetOptionGroups(value.optionGroups, preset),
+              optionGroups: withPresetOptionGroups(value.optionGroups, picked),
             })
-          }
+          }}
         />
         <div className={styles.card}>
           <ColorOptionEditor
@@ -203,6 +210,17 @@ export function AdminProductForm({
           onQuantityChange={(key, quantity) =>
             patch({ quantities: { ...value.quantities, [key]: quantity } })
           }
+        />
+      </FormSection>
+
+      <FormSection
+        title="검색 태그"
+        description="구매자에게는 보이지 않습니다. 검색에만 쓰이니 고객이 찾을 때 쓸 말을 넣어주세요."
+      >
+        <TagField
+          preset={preset}
+          value={value.tags}
+          onChange={(tags) => patch({ tags })}
         />
       </FormSection>
 
