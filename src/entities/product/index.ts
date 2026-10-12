@@ -1,4 +1,8 @@
-export { ProductCard, toProductCardData } from './ui/ProductCard'
+export {
+  ProductCard,
+  ProductCardSkeleton,
+  toProductCardData,
+} from './ui/ProductCard'
 export type { ProductCardProps, ProductCardData } from './ui/ProductCard'
 export { getProduct } from './api/getProduct'
 export { productDetailQuery, useProduct } from './api/useProduct'
