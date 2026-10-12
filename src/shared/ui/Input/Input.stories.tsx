@@ -27,7 +27,8 @@ export const Focused: Story = {
 
     const label = canvas.getByText('이름')
     await waitFor(() => expect(label).toHaveStyle({ fontSize: '12px' }))
-    await expect(label).toHaveStyle({ color: 'rgb(143, 143, 148)' }) // text.tertiary
+    // 포커스하면 라벨도 포커스 색으로 올라온다(Input.css.ts의 :focus-within).
+    await expect(label).toHaveStyle({ color: 'rgb(63, 72, 145)' }) // primary.base
   },
 }
 
