@@ -10,7 +10,7 @@ import {
 import { Link, useLocation } from 'react-router'
 
 import { useSession } from '@entities/auth'
-import { KakaoLoginModal } from '@features/login'
+import { openLoginModal } from '@features/login'
 import {
   HOME_PATH,
   MYPAGE_PATH,
@@ -18,7 +18,6 @@ import {
   PREORDER_PATH,
   SEARCH_PATH,
 } from '@shared/config/routes'
-import { useModalStore } from '@shared/model/modalStore'
 import { MobileMenu } from '@widgets/category-nav'
 import { SearchOverlay } from '@widgets/search'
 
@@ -64,7 +63,6 @@ export function MobileTabBar() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { isLoggedIn } = useSession()
-  const openModal = useModalStore((state) => state.open)
   // MobileMenu의 Esc 리스너가 렌더마다 다시 걸리지 않게 같은 함수를 넘긴다.
   const closeMenu = useCallback(() => setIsCategoryOpen(false), [])
 
@@ -84,7 +82,7 @@ export function MobileTabBar() {
           // 비회원은 마이페이지 대신 로그인 모달을 연다(헤더 마이페이지 아이콘과 같은 규칙).
           if (!isLoggedIn && to.startsWith(MYPAGE_PATH)) {
             event.preventDefault()
-            openModal(<KakaoLoginModal />)
+            openLoginModal()
           }
         }}
       >

@@ -1,4 +1,4 @@
-export { KakaoLoginModal } from './ui/KakaoLoginModal'
+export { openLoginModal } from './lib/openLoginModal'
 export { KAKAO_CALLBACK_PATH } from './lib/getKakaoAuthorizeUrl'
 export { useKakaoCallback } from './lib/useKakaoCallback'
 export { useRequireLogin } from './lib/useRequireLogin'

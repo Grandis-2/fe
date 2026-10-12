@@ -18,15 +18,9 @@ import { getErrorMessage } from '@shared/api/client'
 import { paymentPath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
+import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-import {
-  ActionButton,
-  Button,
-  ConfirmDialog,
-  Modal,
-  SelectButton,
-  Tag,
-} from '@shared/ui'
+import { ActionButton, Button, SelectButton, Tag } from '@shared/ui'
 
 import * as styles from './MypagePreorder.css'
 
@@ -97,7 +91,6 @@ export function MypagePreorder() {
   const navigate = useNavigate()
   const { data, isPending, isError, error } = useMyReservations()
   const cancel = useCancelReservation()
-  const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   // ponytail: 알림 신청 API가 없어 화면 안에서만 켜고 끈다.
   const [alertOffIds, setAlertOffIds] = useState<Set<number>>(new Set())
 
@@ -134,18 +127,24 @@ export function MypagePreorder() {
     })
 
   // 취소는 비동기로 끝난다 — 응답은 보통 '취소 중'이고, 목록을 다시 받아 상태를 맞춘다.
-  const confirmCancel = () => {
-    if (!cancelTarget) return
-    cancel.mutate(
-      { preorderId: cancelTarget.preorderId },
-      {
-        onSuccess: () => showToast('예약 취소를 요청했어요.'),
-        onError: (caught) =>
-          showToast(getErrorMessage(caught, '예약을 취소하지 못했어요.')),
+  const confirmCancel = (reservation: Reservation) =>
+    openModal({
+      title: '예약을 취소할까요?',
+      description: `${reservation.productTitle} · ${reservation.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.`,
+      confirmLabel: '예약 취소',
+      cancelLabel: '닫기',
+      onConfirm: () => {
+        closeModal()
+        cancel.mutate(
+          { preorderId: reservation.preorderId },
+          {
+            onSuccess: () => showToast('예약 취소를 요청했어요.'),
+            onError: (caught) =>
+              showToast(getErrorMessage(caught, '예약을 취소하지 못했어요.')),
+          },
+        )
       },
-    )
-    setCancelTarget(null)
-  }
+    })
 
   const cancelButton = (reservation: Reservation) =>
     CANCELABLE.includes(reservation.status) && (
@@ -153,7 +152,7 @@ export function MypagePreorder() {
         variant="subtle"
         color="cancel"
         disabled={cancel.isPending}
-        onClick={() => setCancelTarget(reservation)}
+        onClick={() => confirmCancel(reservation)}
       >
         예약 취소
       </Button>
@@ -300,22 +299,6 @@ export function MypagePreorder() {
           })}
         </ul>
       </section>
-
-      {/* 어두운 페이지 안에서 띄워야 다이얼로그도 어둡다(전역 모달은 밝게 뜬다). */}
-      <Modal open={cancelTarget !== null} onClose={() => setCancelTarget(null)}>
-        <ConfirmDialog
-          title="예약을 취소할까요?"
-          description={
-            cancelTarget
-              ? `${cancelTarget.productTitle} · ${cancelTarget.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.`
-              : undefined
-          }
-          confirmLabel="예약 취소"
-          cancelLabel="닫기"
-          onConfirm={confirmCancel}
-          onCancel={() => setCancelTarget(null)}
-        />
-      </Modal>
     </div>
   )
 }

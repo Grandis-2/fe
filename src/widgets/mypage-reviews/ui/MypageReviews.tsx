@@ -1,9 +1,7 @@
-import { useState } from 'react'
-
 import { HistoryCard } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
 import { useDeleteReview, useMyReviews, type Review } from '@entities/review'
-import { ReviewFormModal, type ReviewTarget } from '@features/review-write'
+import { openReviewForm } from '@features/review-write'
 import { getErrorMessage } from '@shared/api/client'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { showToast } from '@shared/model/toastStore'
@@ -31,21 +29,18 @@ const toItem = (review: Review) => ({
 export function MypageReviews() {
   const { data, isPending, isError, error } = useMyReviews()
   const removeReview = useDeleteReview()
-  const [formOpen, setFormOpen] = useState(false)
-  const [target, setTarget] = useState<ReviewTarget | null>(null)
 
   const reviews = data?.items ?? []
 
   const openForm = (review: Review) => {
     // 내 리뷰 응답에는 orderItemId가 늘 채워져 온다.
     if (!review.orderItemId) return
-    setTarget({
+    openReviewForm({
       orderItemId: review.orderItemId,
       productName: review.productTitle,
       optionSummary: review.optionTitle,
       review,
     })
-    setFormOpen(true)
   }
 
   return (
@@ -132,12 +127,6 @@ export function MypageReviews() {
           </div>
         </HistoryCard>
       ))}
-
-      <ReviewFormModal
-        open={formOpen}
-        target={target}
-        onClose={() => setFormOpen(false)}
-      />
     </div>
   )
 }

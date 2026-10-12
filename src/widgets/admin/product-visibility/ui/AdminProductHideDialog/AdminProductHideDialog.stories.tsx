@@ -7,7 +7,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: AdminProductHideDialog,
   tags: ['ai-generated'],
-  args: { productName: '갤럭시 Z 폴드8', onConfirm: fn(), onCancel: fn() },
+  args: { onConfirm: fn(), onCancel: fn() },
 } satisfies Meta<typeof AdminProductHideDialog>
 
 export default meta
@@ -15,7 +15,6 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/갤럭시 Z 폴드8/)).toBeVisible()
     // 아직 아무것도 안 했는데 경고부터 띄우지 않는다.
     await expect(canvas.queryByText(/5자 이상/)).not.toBeInTheDocument()
   },
