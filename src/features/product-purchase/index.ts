@@ -7,6 +7,7 @@ export type {
 } from './lib/useProductPurchase'
 export {
   cartLineToDraft,
+  drawToDraft,
   orderToDrafts,
   reservationToDraft,
 } from './lib/toPurchaseDrafts'
