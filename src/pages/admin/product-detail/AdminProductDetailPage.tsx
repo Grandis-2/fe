@@ -116,6 +116,7 @@ export function AdminProductDetailPage() {
           onSaved={() => navigate(ADMIN_PRODUCTS_PATH)}
           onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
           onPreview={() => navigate(productPath(productId))}
+          onEditDispatchWindow={() => setTab('shipping')}
         />
       )}
 

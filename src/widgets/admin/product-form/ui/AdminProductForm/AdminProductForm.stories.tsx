@@ -9,7 +9,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: AdminProductForm,
   tags: ['ai-generated'],
-  args: { onSubmit: fn(), onCancel: fn(), onPreview: fn() },
+  args: {
+    onSubmit: fn(),
+    onCancel: fn(),
+    onPreview: fn(),
+    onEditDispatchWindow: fn(),
+  },
 } satisfies Meta<typeof AdminProductForm>
 
 export default meta
@@ -61,6 +66,16 @@ export const Edit: Story = {
       ),
     ).toBeVisible()
 
+    // 1차 배송일은 등록 때만 받는다 — 여기서는 어디서 고치는지 알려주고 보내준다.
+    await expect(canvas.getByText('1차 예상 배송일')).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /미정/ })).toBeNull()
+    await expect(canvas.getByText(/배송 차수 수정이/)).toBeVisible()
+
+    await userEvent.click(
+      canvas.getByRole('button', { name: '배송 구간 설정으로 이동' }),
+    )
+    await expect(args.onEditDispatchWindow).toHaveBeenCalled()
+
     await userEvent.click(canvas.getByRole('button', { name: '취소' }))
     await expect(args.onCancel).toHaveBeenCalled()
   },
@@ -87,6 +102,10 @@ export const PreorderToggle: Story = {
     )
     await expect(canvas.getByLabelText('1차 배송 수량')).toBeVisible()
     await expect(canvas.queryByLabelText('수량')).toBeNull()
+
+    // 1차 예상 배송일은 등록할 때만 고를 수 있다 — 수량과 짝이 되어 1차 차수를 만든다.
+    await expect(canvas.getByText('1차 예상 배송일')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: /미정/ })).toBeVisible()
   },
 }
 

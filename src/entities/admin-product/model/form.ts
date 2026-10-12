@@ -1,6 +1,7 @@
 import type {
   AdminProductDetail,
   AdminProductUpsertRequest,
+  DispatchWindowPutRequest,
   AdminStockItem,
   AdminStockPutRequest,
   ProductOptionGroup as DtoOptionGroup,
@@ -8,6 +9,7 @@ import type {
 } from '@shared/api/types'
 import type { UploadedImage } from '@shared/ui'
 
+import { toDispatchWindowRequest } from './dispatch'
 import { COLOR_GROUP_CODE } from './types'
 
 /* ------------------------------------------------------------------ *
@@ -49,6 +51,11 @@ export type AdminProductFormValue = {
   /** datetime-local 형식 문자열 */
   openAt: string
   closeAt: string
+  /**
+   * 1차 배송 예상일('YYYY-MM-DD'). 미정이면 빈 문자열.
+   * 등록할 때 1차 배송 차수를 미리 만드는 데 쓴다(toFirstWaveRequest).
+   */
+  firstDeliveryDate: string
   colors: ProductColorOption[]
   optionGroups: ProductOptionGroup[]
   basePrice: number
@@ -91,6 +98,7 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     isPreorder: false,
     openAt: '',
     closeAt: '',
+    firstDeliveryDate: '',
     // 색상은 최소 한 칸을 미리 열어둔다 (아직 아무것도 선택되지 않은 상태).
     colors: [createColorOption()],
     optionGroups: [],
@@ -448,4 +456,32 @@ export function toFormValue(
       ),
     ),
   }
+}
+
+/**
+ * 사전예약 상품을 등록할 때 1차 배송 차수를 미리 만든다.
+ *
+ * 끝 번호는 폼에서 받은 1차 배송 수량의 합이다 — 1차로 보낼 물량이 N개면 1~N번
+ * 순번까지가 1차다. 2차 이후는 상세의 배송 구간 설정에서 이어 붙인다.
+ *
+ * 사전예약이 아니거나 수량이 0이면 만들 게 없어 null을 돌려준다.
+ */
+export function toFirstWaveRequest(
+  value: AdminProductFormValue,
+): DispatchWindowPutRequest | null {
+  if (!value.isPreorder) return null
+
+  const toSeq = Object.values(value.quantities).reduce(
+    (sum, quantity) => sum + quantity,
+    0,
+  )
+  if (toSeq < 1) return null
+
+  return toDispatchWindowRequest([
+    {
+      id: crypto.randomUUID(),
+      toSeq,
+      estimatedDeliveryDate: value.firstDeliveryDate || null,
+    },
+  ])
 }
