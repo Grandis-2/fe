@@ -48,6 +48,11 @@ export type AdminProductFormValue = {
   /** PRODUCT_BRANDS 중 하나. 아직 고르지 않았으면 빈 문자열 */
   brand: string
   isPreorder: boolean
+  /**
+   * 검색용 태그. 구매자 화면에는 나오지 않고 검색어로만 쓰인다.
+   * 후보(TAG_PRESETS)에서 골라도 되고 직접 적어도 되므로 자유 문자열이다.
+   */
+  tags: string[]
   /** datetime-local 형식 문자열 */
   openAt: string
   closeAt: string
@@ -95,6 +100,7 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     name: '',
     modelName: '',
     brand: '',
+    tags: [],
     isPreorder: false,
     openAt: '',
     closeAt: '',
@@ -370,6 +376,7 @@ export function toUpsertRequest(
     name: value.name,
     // 안 골랐으면 키를 아예 빼서 수정 때 기존 브랜드를 빈 값으로 덮지 않는다.
     brand: value.brand || undefined,
+    tags: value.tags,
     optionGroups,
     variants,
     images: value.detailImages.map((image, index) => ({
@@ -424,6 +431,7 @@ export function toFormValue(
     name: detail.name,
     modelName: detail.productId,
     brand: detail.brand,
+    tags: detail.tags ?? [],
     isPreorder: detail.badges.includes('PREORDER'),
     openAt: toLocalInput(detail.sale.openAt),
     closeAt: toLocalInput(detail.sale.closeAt),

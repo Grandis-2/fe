@@ -113,6 +113,10 @@ export type AdminProductSummary = ProductSummary & {
 
 // 관리자 상세도 마찬가지로 구매자용 상세에 운영 정보가 더 붙는다.
 export type AdminProductDetail = ProductDetail & {
+  // 관리자가 달아 둔 검색 태그. 아직 스펙에 없어 필드가 올 때까지는 비어 온다 —
+  // 그래서 반영 전에는 수정 폼을 다시 열면 골라 뒀던 태그가 비어 보인다.
+  // 백엔드 스펙에 반영 요청할 것.
+  tags?: string[]
   displayStatus: DisplayStatus
   hiddenReason: string | null
   firstAcceptSeqIssuedAt: string | null
@@ -130,6 +134,8 @@ export type AdminProductUpsertRequest = {
   productId?: string | null
   name?: string
   brand?: string
+  /** 태그(검색어). 구매자 화면엔 나오지 않는다 */
+  tags?: string[]
   categoryId?: string | null
   summary?: string | null
   descriptionHtml?: string | null

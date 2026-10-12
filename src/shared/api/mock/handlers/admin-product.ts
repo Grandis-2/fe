@@ -74,6 +74,7 @@ function applyUpsert(
     optionGroups: body.optionGroups ?? target.optionGroups,
     variants,
     badges: body.badges ?? target.badges,
+    tags: body.tags ?? target.tags,
     openAt,
     priceRange:
       prices.length > 0
@@ -127,7 +128,14 @@ export const adminProductHandlers: RequestHandler[] = [
         (product) => !displayStatus || product.displayStatus === displayStatus,
       )
       .filter((product) => !saleStatus || product.saleStatus === saleStatus)
-      .filter((product) => product.name.includes(keyword.trim()))
+      // 태그는 검색용이라 이름과 같이 본다 — 구매자 목록에는 안 나오고 검색어로만 걸린다.
+      .filter((product) => {
+        const trimmed = keyword.trim()
+        return (
+          product.name.includes(trimmed) ||
+          (product.tags ?? []).some((tag) => tag.includes(trimmed))
+        )
+      })
 
     const start = page * size
     const items = filtered.slice(start, start + size).map(toSummary)
