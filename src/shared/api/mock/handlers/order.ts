@@ -155,7 +155,9 @@ function paymentBlock(order: Pick<OrderRecord, 'preorderId' | 'paymentDueAt'>) {
   return isPaymentExpired(preorder) ? windowExpired() : null
 }
 
-function shipToViolations(address: Record<string, unknown>): ApiViolation[] {
+export function shipToViolations(
+  address: Record<string, unknown>,
+): ApiViolation[] {
   return Object.entries(SHIP_TO_LIMITS).flatMap(([key, max]) => {
     const value = address[key]
     if (
@@ -171,7 +173,7 @@ function shipToViolations(address: Record<string, unknown>): ApiViolation[] {
   })
 }
 
-const toShipTo = (address: Record<string, unknown>): ShipTo => ({
+export const toShipTo = (address: Record<string, unknown>): ShipTo => ({
   name: String(address.name).trim(),
   phone: String(address.phone).trim(),
   postalCode: String(address.postalCode).trim(),

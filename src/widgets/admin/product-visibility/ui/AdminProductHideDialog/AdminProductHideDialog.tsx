@@ -4,27 +4,23 @@ import {
   HIDE_REASON_MAX_LENGTH,
   HIDE_REASON_MIN_LENGTH,
 } from '@entities/admin-product'
-import { Button, InlineAlert, Input, ModalTitle } from '@shared/ui'
-
-import * as styles from './AdminProductHideDialog.css'
+import { InlineAlert, Input, ModalActions } from '@shared/ui'
 
 export type AdminProductHideDialogProps = {
-  productName: string
   onConfirm: (reason: string) => void
   onCancel: () => void
 }
 
 /**
- * 상품을 숨길 때 사유를 받는 모달 내용.
+ * 상품을 숨길 때 사유를 받는 모달 내용. 제목·안내 문구는 여는 쪽이 Modal에 넘긴다.
  *
  * 사유를 따로 받는 건 서버가 요구해서만이 아니다 — 구매자에게 보이던 상품이 사라지는
  * 일이라, 왜 내렸는지가 남아야 나중에 되돌릴지 판단할 수 있다.
  *
- * 입력 상태를 이 컴포넌트가 직접 들고 있다. 모달은 useModalStore가 ReactNode를
- * 스냅샷으로 들고 띄우는 구조라, 여는 쪽이 상태를 쥐면 글자를 쳐도 다시 그려지지 않는다.
+ * 입력 상태와 버튼을 이 컴포넌트가 직접 들고 있다. 전역 모달은 연 시점의 props를
+ * 그대로 들고 있어서, 여는 쪽이 상태를 쥐면 글자를 쳐도 다시 그려지지 않는다.
  */
 export function AdminProductHideDialog({
-  productName,
   onConfirm,
   onCancel,
 }: AdminProductHideDialogProps) {
@@ -42,24 +38,15 @@ export function AdminProductHideDialog({
   }
 
   return (
-    <div className={styles.content}>
-      <ModalTitle className={styles.title}>상품을 숨길까요?</ModalTitle>
-      <div className={styles.description}>
-        {productName}이(가) 구매자 화면에서 사라집니다.
-        <br />
-        다시 공개할 수 있습니다.
-      </div>
-
-      <div className={styles.field}>
-        <Input
-          label="숨김 사유"
-          maxLength={HIDE_REASON_MAX_LENGTH}
-          aria-invalid={submitted && tooShort}
-          value={reason}
-          size="small"
-          onChange={(event) => setReason(event.target.value)}
-        />
-      </div>
+    <>
+      <Input
+        label="숨김 사유"
+        maxLength={HIDE_REASON_MAX_LENGTH}
+        aria-invalid={submitted && tooShort}
+        value={reason}
+        size="small"
+        onChange={(event) => setReason(event.target.value)}
+      />
 
       {submitted && tooShort && (
         <InlineAlert status="error">
@@ -67,12 +54,11 @@ export function AdminProductHideDialog({
         </InlineAlert>
       )}
 
-      <div className={styles.actions}>
-        <Button onClick={submit}>숨기기</Button>
-        <Button variant="outline" color="cancel" onClick={onCancel}>
-          취소
-        </Button>
-      </div>
-    </div>
+      <ModalActions
+        confirmLabel="숨기기"
+        onConfirm={submit}
+        onCancel={onCancel}
+      />
+    </>
   )
 }

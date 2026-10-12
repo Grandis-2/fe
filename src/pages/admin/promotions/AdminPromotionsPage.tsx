@@ -18,9 +18,9 @@ import {
   ADMIN_PROMOTION_NEW_PATH,
   adminPromotionPath,
 } from '@shared/config/routes'
-import { useModalStore } from '@shared/model/modalStore'
+import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-import { Button, ConfirmDialog, SegmentedTabs, Table, Tag } from '@shared/ui'
+import { Button, SegmentedTabs, Table, Tag } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
 import * as styles from './AdminPromotionsPage.css'
@@ -36,8 +36,6 @@ type StatusFilter = (typeof statusFilters)[number]['value']
 
 export function AdminPromotionsPage() {
   const navigate = useNavigate()
-  const openModal = useModalStore((state) => state.open)
-  const closeModal = useModalStore((state) => state.close)
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
@@ -53,20 +51,17 @@ export function AdminPromotionsPage() {
   // 연결할 사전예약 상품이 없으면 사전예약부터 만들 수 없다.
   const startCreate = () => {
     if (mockLinkableProducts.length === 0) {
-      openModal(
-        <ConfirmDialog
-          title="안내"
-          description={
-            '현재 새 사전예약 상품이 없습니다.\n먼저 만들고 사전예약을 생성할 수 있습니다.\n\n사전예약 상품을 생성하러 가시겠습니까?'
-          }
-          confirmLabel="생성 하러 하기"
-          onConfirm={() => {
-            closeModal()
-            navigate(ADMIN_PRODUCT_NEW_PATH)
-          }}
-          onCancel={closeModal}
-        />,
-      )
+      openModal({
+        theme: 'light',
+        title: '안내',
+        description:
+          '현재 새 사전예약 상품이 없습니다.\n먼저 만들고 사전예약을 생성할 수 있습니다.\n\n사전예약 상품을 생성하러 가시겠습니까?',
+        confirmLabel: '생성 하러 하기',
+        onConfirm: () => {
+          closeModal()
+          navigate(ADMIN_PRODUCT_NEW_PATH)
+        },
+      })
       return
     }
     navigate(ADMIN_PROMOTION_NEW_PATH)

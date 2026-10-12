@@ -3,29 +3,19 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { X } from 'lucide-react'
 import { Link } from 'react-router'
 
-import { brandMenus } from '@entities/product'
+import { useBrandMenus } from '@entities/product'
 import { searchPath } from '@shared/config/routes'
-import { Tag, type TagProps } from '@shared/ui'
 
-import {
-  categoryThumbnails,
-  menuEvents,
-  type MenuEvent,
-} from '../../model/menu'
+import { categoryThumbnails } from '../../model/menu'
+import { MobileLuckyPanel } from '../MobileLuckyPanel'
 
 import * as styles from './MobileMenu.css'
 
 const tabs = [
   { value: 'category', label: '카테고리' },
-  { value: 'event', label: '이벤트' },
+  { value: 'lucky', label: 'LUCKY' },
 ] as const
 type MenuTab = (typeof tabs)[number]['value']
-
-const eventTagColor: Record<MenuEvent['tag'], TagProps['color']> = {
-  사전예약: 'primary',
-  할인: 'yellow',
-  이벤트: 'gray',
-}
 
 export type MobileMenuProps = {
   /** X·링크를 눌러 이동하거나 Esc를 누르면 닫는다. */
@@ -36,6 +26,7 @@ export type MobileMenuProps = {
 // 위에 그대로 떠 있어 다른 탭으로 바로 가거나 '메뉴'를 다시 눌러 닫을 수 있다 — 그래서
 // <dialog> 최상위 레이어(탭바까지 덮고 막는다) 대신 탭바 아래 z-index의 고정 레이어로 띄운다.
 export function MobileMenu({ onClose }: MobileMenuProps) {
+  const brandMenus = useBrandMenus()
   const [tab, setTab] = useState<MenuTab>('category')
   const rootRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -203,30 +194,9 @@ export function MobileMenu({ onClose }: MobileMenuProps) {
           id={panelId}
           className={styles.body}
           role="tabpanel"
-          aria-labelledby={tabId('event')}
+          aria-labelledby={tabId('lucky')}
         >
-          {menuEvents.map((event) => (
-            <Link
-              key={event.title}
-              to={event.to}
-              className={styles.eventCard}
-              onClick={onClose}
-            >
-              <img src={event.image} alt="" className={styles.eventImage} />
-              <div className={styles.eventTexts}>
-                <Tag
-                  color={eventTagColor[event.tag]}
-                  variant="subtle"
-                  rounded={false}
-                  className={styles.eventTag}
-                >
-                  {event.tag}
-                </Tag>
-                <span className={styles.eventTitle}>{event.title}</span>
-                <span className={styles.eventPeriod}>{event.period}</span>
-              </div>
-            </Link>
-          ))}
+          <MobileLuckyPanel onClose={onClose} />
         </div>
       )}
     </div>

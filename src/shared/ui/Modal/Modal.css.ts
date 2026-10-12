@@ -1,8 +1,14 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, onDark, spacing } from '@shared/config/theme'
+import {
+  color,
+  motion,
+  onDark,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 
-// 크기·여백은 내용에 따라 다르므로 여기서 정하지 않는다 — 쓰는 쪽이 className으로 준다.
+// 크기·여백은 dialog가 아니라 안쪽 래퍼(content)가 갖는다.
 // position은 건드리지 않는다 — <dialog>를 showModal()로 띄우면 브라우저 기본
 // 스타일시트가 position:fixed + inset:0 + margin:auto로 항상 가운데 정렬해 준다.
 export const dialog = style({
@@ -59,6 +65,53 @@ export const dialog = style({
       },
     },
   },
+})
+
+// 모든 모달이 같은 폭·여백을 쓴다 — 내용마다 달리 잡던 걸 한 곳으로 모았다.
+export const content = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[16],
+  width: '400px',
+  maxWidth: '100%',
+  padding: `${spacing[32]} ${spacing[24]} ${spacing[24]}`,
+  boxSizing: 'border-box',
+})
+
+// 한글은 기본값이면 글자 단위로 끊겨 '시도합니 / 다'처럼 단어 중간에서 줄이 바뀐다.
+// keep-all로 어절 단위로만 끊고, 띄어쓰기 없는 긴 값(예약번호 등)은 넘치지 않게 끊어 준다.
+const wrapByWord = {
+  wordBreak: 'keep-all',
+  overflowWrap: 'break-word',
+} as const
+
+export const title = style([
+  typography.title.lgSemibold,
+  {
+    color: color.text.primary,
+    textAlign: 'center',
+    // 오른쪽 위 닫기(X) 버튼과 겹치지 않게 양옆을 비운다(가운데 정렬이라 대칭으로).
+    paddingInline: spacing[32],
+    ...wrapByWord,
+  },
+])
+
+export const description = style([
+  typography.body.sub,
+  {
+    color: color.text.secondary,
+    textAlign: 'center',
+    // 줄바꿈을 그대로 살린다 — 안내 문구는 문장 단위로 끊어 읽힌다.
+    whiteSpace: 'pre-line',
+    ...wrapByWord,
+  },
+])
+
+export const actions = style({
+  display: 'flex',
+  justifyContent: 'center',
+  gap: spacing[8],
+  marginTop: spacing[8],
 })
 
 // X는 콘텐츠 padding과 무관하게 항상 dialog 우상단에 고정한다.

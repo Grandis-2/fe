@@ -37,3 +37,13 @@ export const PlanetIcon: Story = {
     children: '커스텀 아이콘도 쓸 수 있어요.',
   },
 }
+
+export const Big: Story = {
+  args: {
+    status: 'error',
+    icon: 'circle-x',
+    variant: 'big',
+    children: '큰 박스는 어두운 페이지용이에요.',
+  },
+  parameters: { backgrounds: { default: 'dark' } },
+}

@@ -25,10 +25,9 @@ import {
   type AdminReservationStatus,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
-import { useModalStore } from '@shared/model/modalStore'
+import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
-  ConfirmDialog,
   Dropdown,
   InlineAlert,
   Input,
@@ -65,9 +64,6 @@ const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
  * 걸 수 있다. 카드와 표는 같은 목록에서 나와야 숫자가 어긋나지 않는다.
  */
 export function AdminReservationsPage() {
-  const openModal = useModalStore((state) => state.open)
-  const closeModal = useModalStore((state) => state.close)
-
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [keyword, setKeyword] = useState('')
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
@@ -110,20 +106,18 @@ export function AdminReservationsPage() {
 
   // 되돌릴 수 없는 조치라서 한 번 더 묻는다. 끝나면 목록을 다시 받아 표를 갱신한다.
   const confirmReprocess = (reservation: AdminReservation) =>
-    openModal(
-      <ConfirmDialog
-        title="재처리를 시도할까요?"
-        description={`${reservationNo(reservation.reservationId)} · ${reservation.productName}의 외부 등록을 다시 시도합니다.`}
-        confirmLabel="재처리"
-        onCancel={closeModal}
-        onConfirm={() => {
-          closeModal()
-          // 지난 실패 문구가 남아 있으면 이번 시도의 결과처럼 보인다.
-          reprocess.reset()
-          reprocess.mutate(reservation.reservationId)
-        }}
-      />,
-    )
+    openModal({
+      theme: 'light',
+      title: '재처리를 시도할까요?',
+      description: `${reservationNo(reservation.reservationId)} · ${reservation.productName}의 외부 등록을 다시 시도합니다.`,
+      confirmLabel: '재처리',
+      onConfirm: () => {
+        closeModal()
+        // 지난 실패 문구가 남아 있으면 이번 시도의 결과처럼 보인다.
+        reprocess.reset()
+        reprocess.mutate(reservation.reservationId)
+      },
+    })
 
   // 예약번호로 거르는 쿼리 파라미터가 명세에 없어 받아온 목록에서 직접 찾는다.
   const trimmedKeyword = keyword.trim().toUpperCase()

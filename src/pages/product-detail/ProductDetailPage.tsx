@@ -326,8 +326,13 @@ export function ProductDetailPage() {
                       후기를 불러오고 있어요.
                     </InlineAlert>
                   ) : reviews.data.items.length === 0 ? (
-                    <InlineAlert status="info">
-                      아직 등록된 후기가 없어요.
+                    <InlineAlert
+                      status="info"
+                      variant="big"
+                      icon="message-square"
+                      description="첫 후기를 기다리고 있어요."
+                    >
+                      아직 등록된 후기가 없어요
                     </InlineAlert>
                   ) : (
                     reviews.data.items.map((review) => (

@@ -1,6 +1,6 @@
 import { createPaymentAttempt } from '@entities/order'
 
-import { requestTossPayment } from './requestTossPayment'
+import { PAYMENT_CALLBACK_PATH, requestTossPayment } from './requestTossPayment'
 
 type StartOrderPaymentParams = {
   // 결제 대기(AWAITING_PAYMENT) 주문의 주문 토큰.
@@ -24,8 +24,10 @@ export async function startOrderPayment({
     tossOrderId: attempt.tossOrderId,
     amount: attempt.amount,
     orderName: attempt.orderName,
-    orderToken: orderId,
-    preorderId,
+    callbackPath: PAYMENT_CALLBACK_PATH,
+    callbackQuery: preorderId
+      ? { orderToken: orderId, preorderId }
+      : { orderToken: orderId },
     customerName,
     customerEmail,
   })

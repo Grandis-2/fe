@@ -1,13 +1,11 @@
-import { useState } from 'react'
-
 import { HistoryCard } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
 import { useDeleteReview, useMyReviews, type Review } from '@entities/review'
-import { ReviewFormModal, type ReviewTarget } from '@features/review-write'
+import { openReviewForm } from '@features/review-write'
 import { getErrorMessage } from '@shared/api/client'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { showToast } from '@shared/model/toastStore'
-import { Button } from '@shared/ui'
+import { Button, InlineAlert } from '@shared/ui'
 
 import * as styles from './MypageReviews.css'
 
@@ -31,21 +29,18 @@ const toItem = (review: Review) => ({
 export function MypageReviews() {
   const { data, isPending, isError, error } = useMyReviews()
   const removeReview = useDeleteReview()
-  const [formOpen, setFormOpen] = useState(false)
-  const [target, setTarget] = useState<ReviewTarget | null>(null)
 
   const reviews = data?.items ?? []
 
   const openForm = (review: Review) => {
     // 내 리뷰 응답에는 orderItemId가 늘 채워져 온다.
     if (!review.orderItemId) return
-    setTarget({
+    openReviewForm({
       orderItemId: review.orderItemId,
       productName: review.productTitle,
       optionSummary: review.optionTitle,
       review,
     })
-    setFormOpen(true)
   }
 
   return (
@@ -60,10 +55,14 @@ export function MypageReviews() {
         <div className={styles.empty}>리뷰를 불러오는 중이에요.</div>
       ) : (
         reviews.length === 0 && (
-          <div className={styles.empty}>
-            아직 작성한 리뷰가 없어요. 리뷰는 배송 완료된 일반 구매 상품에 쓸 수
-            있어요.
-          </div>
+          <InlineAlert
+            status="info"
+            variant="big"
+            icon="message-square"
+            description="리뷰는 배송 완료된 일반 구매 상품에 쓸 수 있어요."
+          >
+            아직 작성한 리뷰가 없어요
+          </InlineAlert>
         )
       )}
 
@@ -128,12 +127,6 @@ export function MypageReviews() {
           </div>
         </HistoryCard>
       ))}
-
-      <ReviewFormModal
-        open={formOpen}
-        target={target}
-        onClose={() => setFormOpen(false)}
-      />
     </div>
   )
 }

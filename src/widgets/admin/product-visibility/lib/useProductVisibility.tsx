@@ -3,8 +3,7 @@ import {
   usePublishAdminProduct,
   type AdminProduct,
 } from '@entities/admin-product'
-import { useModalStore } from '@shared/model/modalStore'
-import { ConfirmDialog } from '@shared/ui'
+import { closeModal, openModal } from '@shared/model/modalStore'
 
 import { AdminProductHideDialog } from '../ui/AdminProductHideDialog'
 
@@ -23,8 +22,6 @@ export type VisibilityTarget = Pick<AdminProduct, 'productId' | 'name'>
  * 실패 문구를 어디에 띄울지가 애매해진다.
  */
 export function useProductVisibility() {
-  const openModal = useModalStore((state) => state.open)
-  const closeModal = useModalStore((state) => state.close)
   const publish = usePublishAdminProduct()
   const hide = useHideAdminProduct()
 
@@ -36,32 +33,34 @@ export function useProductVisibility() {
 
   const confirmPublish = (product: VisibilityTarget) => {
     resetBoth()
-    openModal(
-      <ConfirmDialog
-        title="상품을 공개할까요?"
-        description={`${product.name}이(가) 구매자 화면에 바로 노출됩니다.`}
-        confirmLabel="공개"
-        onCancel={closeModal}
-        onConfirm={() => {
-          closeModal()
-          publish.mutate(product.productId)
-        }}
-      />,
-    )
+    openModal({
+      theme: 'light',
+      title: '상품을 공개할까요?',
+      description: `${product.name}이(가) 구매자 화면에 바로 노출됩니다.`,
+      confirmLabel: '공개',
+      onConfirm: () => {
+        closeModal()
+        publish.mutate(product.productId)
+      },
+    })
   }
 
   const confirmHide = (product: VisibilityTarget) => {
     resetBoth()
-    openModal(
-      <AdminProductHideDialog
-        productName={product.name}
-        onCancel={closeModal}
-        onConfirm={(reason) => {
-          closeModal()
-          hide.mutate({ productId: product.productId, reason })
-        }}
-      />,
-    )
+    openModal({
+      theme: 'light',
+      title: '상품을 숨길까요?',
+      description: `${product.name}이(가) 구매자 화면에서 사라집니다.\n다시 공개할 수 있습니다.`,
+      children: (
+        <AdminProductHideDialog
+          onCancel={closeModal}
+          onConfirm={(reason) => {
+            closeModal()
+            hide.mutate({ productId: product.productId, reason })
+          }}
+        />
+      ),
+    })
   }
 
   return {

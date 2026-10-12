@@ -5,6 +5,7 @@ import { adminReservationHandlers } from './admin-reservation'
 import { adminStockHandlers } from './admin-stock'
 import { authHandlers } from './auth'
 import { cartHandlers } from './cart'
+import { drawHandlers } from './draw'
 import { forceErrorHandler } from './forceError'
 import { notificationHandlers } from './notification'
 import { orderHandlers } from './order'
@@ -28,6 +29,7 @@ export const handlers: RequestHandler[] = [
   ...waitingroomHandlers,
   ...preorderHandlers,
   ...orderHandlers,
+  ...drawHandlers,
   ...cartHandlers,
   ...notificationHandlers,
   ...authHandlers,

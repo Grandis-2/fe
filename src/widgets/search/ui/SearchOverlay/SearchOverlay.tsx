@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Search, X } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router'
 
-import { brandMenus, useProducts } from '@entities/product'
+import { useBrandMenus, useProducts } from '@entities/product'
 import {
   ONGOING_PREORDERS,
   POPULAR_KEYWORDS,
@@ -37,6 +37,7 @@ export type SearchOverlayProps = {
 // 검색 아이콘을 누르면 화면 전체를 덮는다. 열 때 마운트하고 닫을 때 언마운트한다 —
 // 그래서 다시 열면 검색어가 비어 있다. Esc·취소와 페이지 이동으로 닫힌다.
 export function SearchOverlay({ onClose }: SearchOverlayProps) {
+  const brandMenus = useBrandMenus()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
