@@ -1,18 +1,18 @@
+import { useMemo } from 'react'
+
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 
-import {
-  PREORDER_BENEFIT_RATE,
-  type PurchaseDraft,
-} from '@features/product-purchase'
+import { useOrder } from '@entities/order'
+import { useReservation, type ReservationDetail } from '@entities/preorder'
+import { orderToDrafts, reservationToDraft } from '@features/product-purchase'
 import {
   HOME_PATH,
   mypagePath,
-  PAYMENT_PATH,
+  paymentPath,
   PREORDER_PATH,
   RESULT_STATUSES,
   type ResultStatus,
 } from '@shared/config/routes'
-import { formatWon } from '@shared/lib/formatNumber'
 import { ActionButton } from '@shared/ui'
 import {
   OrderReceipt,
@@ -28,6 +28,37 @@ import * as styles from './ResultPage.css'
 // 공유해서 한 페이지로 둔다. 진입할 때 ?status=로 고른다(RESULT_STATUSES).
 const isResultStatus = (value: string | null): value is ResultStatus =>
   RESULT_STATUSES.includes(value as ResultStatus)
+
+// 들어오는 쪽이 history state로 넘기는 값 — 상품 상세(접수)는 preorderId, 결제 콜백은 orderId(성공)나
+// failReason·preorderId(실패). 새로고침하거나 주소로 직접 오면 없을 수 있다.
+type ResultState = {
+  preorderId?: string
+  orderId?: string
+  failReason?: string | null
+}
+
+const readState = (state: unknown): ResultState =>
+  state !== null && typeof state === 'object' ? (state as ResultState) : {}
+
+// 예약 접수 화면의 결제 상태 칸.
+const reservationPaymentLabel: Partial<
+  Record<ReservationDetail['displayStatus'], string>
+> = {
+  RECEIVED: '예약 처리 중 · 잠시 뒤 구매 확정 가능',
+  PROCESSING: '예약 처리 중 · 잠시 뒤 구매 확정 가능',
+  PAYABLE: '미결제 · 구매 확정 필요',
+  PAYMENT_IN_PROGRESS: '미결제 · 결제 진행 중',
+  PAYMENT_EXPIRED: '결제 기한 지남',
+  RESERVED: '결제 완료',
+  CANCELING: '예약 취소 중',
+  CANCELED: '예약 취소됨',
+}
+
+// 'YYYY-MM-DD'를 시간대 변환 없이 'M.D'로 자른다.
+const monthDay = (date: string) => {
+  const [, month, day] = date.split('-').map(Number)
+  return `${month}.${day}`
+}
 
 type Action = { label: string; to: string }
 
@@ -49,7 +80,8 @@ const content: Record<
     heading: '예약이 접수되었어요',
     description:
       '주문이 몰려 결제까지 완료되지 못했어요. 예약 순서는 확보되었으니, 24시간 안에 직접 구매를 확정해 주세요.',
-    primary: { label: '지금 구매 확정하기', to: PAYMENT_PATH },
+    // 예약 id가 있으면 그 예약의 결제로 보낸다(아래 primaryTo).
+    primary: { label: '지금 구매 확정하기', to: mypagePath('preorder-check') },
     secondary: { label: '예약 내역 보기', to: mypagePath('preorder-check') },
     note: '24시간 안에 구매를 확정하지 않으면 예약은 자동으로 취소돼요. 예약 내역에서도 구매를 확정할 수 있어요.',
   },
@@ -77,31 +109,10 @@ const content: Record<
     heading: '결제에 실패했어요',
     description:
       '결제가 완료되지 않아 주문이 접수되지 않았어요. 결제 수단을 확인한 뒤 다시 시도해 주세요.',
-    primary: { label: '다시 결제하기', to: PAYMENT_PATH },
-    secondary: { label: '장바구니로', to: mypagePath('cart') },
+    primary: { label: '다시 결제하기', to: mypagePath('preorder-check') },
+    secondary: { label: '예약 내역 보기', to: mypagePath('preorder-check') },
   },
 }
-
-// 토스 결제창을 거쳐 오면(paid·failed) history state가 끊겨 주문 상품을 넘겨받지 못한다.
-// ponytail: 주문 조회 API가 아직 없어서 시안 값을 그대로 둔 목업 — 붙는 대로 주문번호·결제 수단·
-// 배송지·마감 시각까지 응답 값으로 교체한다.
-const fallbackDrafts: PurchaseDraft[] = [
-  {
-    variantId: 101,
-    productName: '맥북 프로 14',
-    optionSummary: '스페이스 블랙 · 14인치 · 16GB · 512GB · M5',
-    quantity: 1,
-    unitPrice: 2390000,
-  },
-]
-const mockOrder = {
-  number: '26100712',
-  payMethod: '신용·체크카드 (일시불)',
-  address: '서울특별시 강남구 테헤란로 123',
-  deliveryEta: '10월 9일 (금) 도착 예정',
-}
-// 모듈 스코프라 렌더마다 새 Date가 생기지 않는다(useCountdown 타이머가 다시 걸리지 않게).
-const mockPurchaseDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
 export function ResultPage() {
   const [searchParams] = useSearchParams()
@@ -115,55 +126,74 @@ export function ResultPage() {
   const { tone, badge, heading, description, primary, secondary, note } =
     content[status]
   const isPaid = tone === 'success'
-  const isPreorder = status === 'preorder' || status === 'preorder-paid'
-
-  // 상품 상세(사전예약)는 고른 상품 목록을, 결제 콜백(실패)은 { failReason }을 state로 넘긴다.
-  const state: unknown = location.state
-  const drafts =
-    Array.isArray(state) && state.length > 0
-      ? (state as PurchaseDraft[])
-      : fallbackDrafts
-  const failReason =
-    typeof (state as { failReason?: unknown } | null)?.failReason === 'string'
-      ? (state as { failReason: string }).failReason
-      : undefined
-
-  // 사전예약만 혜택이 붙는다 — 결제 화면의 "결제 예정 금액"과 같은 계산.
-  const orderAmount = drafts.reduce(
-    (sum, item) => sum + item.unitPrice * item.quantity,
-    0,
+  const {
+    preorderId = '',
+    orderId = '',
+    failReason,
+  } = readState(location.state)
+  const { data: reservation } = useReservation(isPaid ? '' : preorderId)
+  const { data: order } = useOrder(isPaid ? orderId : '')
+  // useCountdown이 매 렌더 새 Date로 타이머를 다시 걸지 않게 값이 바뀔 때만 만든다.
+  const paymentDueAt = reservation?.paymentDueAt
+  const dueAt = useMemo(
+    () => (paymentDueAt ? new Date(paymentDueAt) : null),
+    [paymentDueAt],
   )
-  const benefit = isPreorder
-    ? Math.round(orderAmount * PREORDER_BENEFIT_RATE)
-    : 0
 
-  const rows: OrderReceiptRow[] = [
-    ...(benefit
-      ? [
-          {
-            label: `사전예약 혜택 (${PREORDER_BENEFIT_RATE * 100}%)`,
-            value: `-${formatWon(benefit)}`,
-            tone: 'brand' as const,
-          },
-        ]
-      : []),
-    { label: '결제 수단', value: mockOrder.payMethod },
-    { label: '배송지', value: mockOrder.address },
-    isPaid
-      ? {
-          label: '예상 배송일',
-          value: isPreorder ? '출시일 이후 순차 발송' : mockOrder.deliveryEta,
-        }
-      : {
+  const items = order
+    ? orderToDrafts(order)
+    : reservation
+      ? [reservationToDraft(reservation)]
+      : []
+  // 금액은 서버가 정한 값이다 — 주문 총액, 아직 주문 전이면 예약 접수 당시 단가.
+  const amount = order?.totalAmount ?? reservation?.unitPrice ?? 0
+
+  const rows: OrderReceiptRow[] = isPaid
+    ? [
+        { label: '결제 수단', value: '신용·체크카드' },
+        ...(order
+          ? [
+              {
+                label: '배송지',
+                value: [order.shipTo.line1, order.shipTo.line2]
+                  .filter(Boolean)
+                  .join(' '),
+              },
+            ]
+          : []),
+        { label: '예상 배송일', value: '출시일 이후 순차 발송' },
+      ]
+    : [
+        ...(reservation
+          ? [
+              {
+                label: '배송 차수',
+                value: `${reservation.shipmentBatch.batchNumber}차 · ${monthDay(reservation.shipmentBatch.estimatedShipStart)}~${monthDay(reservation.shipmentBatch.estimatedShipEnd)} 발송 예정`,
+              },
+            ]
+          : []),
+        {
           label: '결제 상태',
-          value: tone === 'pending' ? '미결제 · 구매 확정 필요' : '미결제',
-          tone: tone === 'pending' ? 'warning' : 'danger',
+          value:
+            status === 'failed'
+              ? '미결제'
+              : ((reservation &&
+                  reservationPaymentLabel[reservation.displayStatus]) ??
+                '미결제 · 구매 확정 필요'),
+          tone: status === 'failed' ? 'danger' : 'warning',
         },
-  ]
+      ]
 
-  // 결제 화면으로 갈 땐 같은 주문을 이어서 보여 주도록 상품을 같이 넘긴다.
-  const go = ({ to }: Action) =>
-    void navigate(to, to === PAYMENT_PATH ? { state: drafts } : undefined)
+  // 예약 접수·결제 실패의 기본 버튼은 그 예약의 결제로 보낸다. 예약 접수 직후엔 외부 등록이 끝나야(PAYABLE) 결제할 수 있다.
+  const primaryTo =
+    preorderId && (status === 'preorder' || status === 'failed')
+      ? paymentPath(preorderId)
+      : primary.to
+  const primaryDisabled =
+    status === 'preorder' &&
+    reservation !== undefined &&
+    reservation.displayStatus !== 'PAYABLE' &&
+    reservation.displayStatus !== 'PAYMENT_IN_PROGRESS'
 
   return (
     <div
@@ -179,9 +209,7 @@ export function ResultPage() {
           <div className={styles.description}>{description}</div>
         </div>
 
-        {status === 'preorder' && (
-          <PurchaseDeadline dueAt={mockPurchaseDueAt} />
-        )}
+        {status === 'preorder' && dueAt && <PurchaseDeadline dueAt={dueAt} />}
 
         {status === 'failed' && (
           <div className={styles.failure}>
@@ -197,28 +225,41 @@ export function ResultPage() {
           </div>
         )}
 
-        <OrderReceipt
-          number={
-            status === 'failed'
-              ? undefined
-              : {
-                  label: status === 'preorder' ? '예약번호' : '주문번호',
-                  value: `${status === 'preorder' ? 'RV' : 'NV'}${mockOrder.number}`,
-                }
-          }
-          items={drafts}
-          rows={rows}
-          amountLabel={isPaid ? '총 결제 금액' : '결제 예정 금액'}
-          amount={orderAmount - benefit}
-          amountPending={!isPaid}
-        />
+        {items.length > 0 && (
+          <OrderReceipt
+            number={
+              order
+                ? {
+                    label: '주문번호',
+                    value: order.orderId.slice(0, 8).toUpperCase(),
+                  }
+                : reservation && status === 'preorder'
+                  ? {
+                      label: '예약 순번',
+                      value: `${reservation.queuePosition.toLocaleString()}번`,
+                    }
+                  : undefined
+            }
+            items={items}
+            rows={rows}
+            amountLabel={isPaid ? '총 결제 금액' : '결제 예정 금액'}
+            amount={amount}
+            amountPending={!isPaid}
+          />
+        )}
 
         <div className={styles.actions}>
-          <ActionButton variant="neutral" onClick={() => go(secondary)}>
+          <ActionButton
+            variant="neutral"
+            onClick={() => navigate(secondary.to)}
+          >
             {secondary.label}
           </ActionButton>
-          <ActionButton onClick={() => go(primary)}>
-            {primary.label}
+          <ActionButton
+            disabled={primaryDisabled}
+            onClick={() => navigate(primaryTo)}
+          >
+            {primaryDisabled ? '예약 처리 중이에요' : primary.label}
           </ActionButton>
         </div>
 

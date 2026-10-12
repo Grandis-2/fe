@@ -11,7 +11,7 @@ import { SearchOverlay } from './SearchOverlay'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-const product = (productId: number, title: string): ProductListItem => ({
+const product = (productId: string, title: string): ProductListItem => ({
   productId,
   saleMode: 'IN_STOCK',
   title,
@@ -42,7 +42,7 @@ const withCache = (keywords: Record<string, ProductListItem[]>) => {
   // 0건일 때 대신 보여 주는 상품(ProductResults의 fallback).
   queryClient.setQueryData(
     ['products', 'list', { size: 4 }],
-    page([product(1, 'NOVA 스마트폰 1'), product(2, 'NOVA 태블릿 1')], 4),
+    page([product('1', 'NOVA 스마트폰 1'), product('2', 'NOVA 태블릿 1')], 4),
   )
   for (const [keyword, items] of Object.entries(keywords)) {
     queryClient.setQueryData(
@@ -64,7 +64,7 @@ const meta = {
   args: { onClose: fn() },
   decorators: [
     withCache({
-      맥북: [product(10, '맥북 프로 14'), product(11, '맥북 에어 13')],
+      맥북: [product('10', '맥북 프로 14'), product('11', '맥북 에어 13')],
       없는상품: [],
     }),
   ],

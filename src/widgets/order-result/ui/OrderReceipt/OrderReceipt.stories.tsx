@@ -15,7 +15,7 @@ export const Default: Story = {
     number: { label: '주문번호', value: 'NV26100712' },
     items: [
       {
-        variantId: 1,
+        variantId: '1',
         productName: '맥북 프로 14',
         optionSummary: '스페이스 블랙 · 512GB',
         quantity: 1,

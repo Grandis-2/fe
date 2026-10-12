@@ -1,65 +1,73 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
-import { HistoryCard, MOCK_ORDERS } from '@entities/order'
+import { HistoryCard } from '@entities/order'
+import {
+  reservationStatusTag,
+  useCancelReservation,
+  useMyReservations,
+  type Reservation,
+  type ReservationDisplayStatus,
+} from '@entities/preorder'
 import {
   ProductPaymentCard,
   type ProductPaymentCardItem,
 } from '@entities/product'
-import { PAYMENT_PATH } from '@shared/config/routes'
-import { ActionButton, Button, SelectButton, Tag } from '@shared/ui'
+import { getErrorMessage } from '@shared/api/client'
+import { paymentPath } from '@shared/config/routes'
+import { formatDotDate } from '@shared/lib/formatDotDate'
+import { formatWon } from '@shared/lib/formatNumber'
+import { showToast } from '@shared/model/toastStore'
+import {
+  ActionButton,
+  Button,
+  ConfirmDialog,
+  Modal,
+  SelectButton,
+  Tag,
+} from '@shared/ui'
 
 import * as styles from './MypagePreorder.css'
 
-type MockReservation = {
-  orderDate: string
-  orderNumber: string
-  items: ProductPaymentCardItem[]
+// 화면 단계별 묶음 — 결제(구매 확정)가 필요한 것, 진행 중인 것, 끝난 것.
+const NEEDS_PAYMENT: ReservationDisplayStatus[] = [
+  'PAYABLE',
+  'PAYMENT_IN_PROGRESS',
+]
+const IN_PROGRESS: ReservationDisplayStatus[] = [
+  'RECEIVED',
+  'PROCESSING',
+  'RESERVED',
+  'CANCELING',
+]
+// 취소는 접수·결제 대기·예약 확정일 때 할 수 있다(배송 시작 여부는 취소할 때 서버가 확인한다).
+const CANCELABLE: Reservation['status'][] = [
+  'PENDING_SYNC',
+  'REGISTERED',
+  'RESERVED',
+]
+
+const STEP_LABELS = ['예약 접수', '구매 확정', '발송'] as const
+
+// 'YYYY-MM-DD'를 시간대 변환 없이 'M.D'로 자른다.
+const monthDay = (date: string) => {
+  const [, month, day] = date.split('-').map(Number)
+  return `${month}.${day}`
 }
 
-// 구매 확정을 기다리는 예약 — 주문 내역·헤더 배지와 같은 목업을 본다.
-const pendingReservations = MOCK_ORDERS.filter(
-  (order) => order.status === 'confirm',
+const toItem = (reservation: Reservation): ProductPaymentCardItem => ({
+  productId: reservation.productId,
+  name: reservation.productTitle,
+  modelNumber: '',
+  optionSummary: reservation.optionTitle,
+  quantityLabel: '수량 1개',
+  priceLabel: formatWon(reservation.unitPrice),
+})
+
+const renderItem = (product: ProductPaymentCardItem) => (
+  <ProductPaymentCard product={product} />
 )
-
-// ponytail: 아직 사전예약 API가 없어서 목업 데이터로 대체.
-const confirmedReservations: (MockReservation & {
-  facts: { label: string; value: string }[]
-})[] = [
-  {
-    orderDate: '2026.10.05',
-    orderNumber: 'NV26100531',
-    facts: [
-      { label: '예약 순번', value: '312번째' },
-      { label: '출시일', value: '10.24 (금)' },
-      { label: '발송 시작', value: '10.24부터' },
-    ],
-    items: [
-      {
-        name: '맥북 프로 14',
-        modelNumber: 'A3112',
-        optionSummary: '스페이스 블랙 · 16GB · 512GB · M5',
-        quantityLabel: '수량 1개',
-        priceLabel: '2,390,000원',
-      },
-      {
-        name: '에어팟 프로 3',
-        modelNumber: 'A3184',
-        optionSummary: '화이트',
-        quantityLabel: '수량 1개',
-        priceLabel: '369,000원',
-      },
-    ],
-  },
-]
-
-// 예약은 끝났고 출시·발송을 기다리는 중이다.
-const steps = [
-  { label: '예약 완료', done: true },
-  { label: '출시', done: false },
-  { label: '발송', done: false },
-]
 
 const openAlerts = [
   {
@@ -85,14 +93,37 @@ const openAlerts = [
 // D-day 태그 폭을 가장 긴 값에 맞춰 제목 줄이 세로로 가지런하다.
 const alertDDays = openAlerts.map((alert) => alert.dDay)
 
-const renderItem = (product: ProductPaymentCardItem) => (
-  <ProductPaymentCard product={product} />
-)
-
 export function MypagePreorder() {
   const navigate = useNavigate()
+  const { data, isPending, isError, error } = useMyReservations()
+  const cancel = useCancelReservation()
+  const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   // ponytail: 알림 신청 API가 없어 화면 안에서만 켜고 끈다.
   const [alertOffIds, setAlertOffIds] = useState<Set<number>>(new Set())
+
+  const reservations = useMemo(() => data?.items ?? [], [data])
+  // 결제 기한 카운트다운 — 렌더마다 새 Date를 넘기면 useCountdown 타이머가 계속 새로 걸려 응답이 바뀔 때만 만든다.
+  const dueDates = useMemo(
+    () =>
+      new Map(
+        reservations.map(({ preorderId, paymentDueAt }) => [
+          preorderId,
+          paymentDueAt ? new Date(paymentDueAt) : undefined,
+        ]),
+      ),
+    [reservations],
+  )
+  const needsPayment = reservations.filter(({ displayStatus }) =>
+    NEEDS_PAYMENT.includes(displayStatus),
+  )
+  const inProgress = reservations.filter(({ displayStatus }) =>
+    IN_PROGRESS.includes(displayStatus),
+  )
+  const ended = reservations.filter(
+    ({ displayStatus }) =>
+      !NEEDS_PAYMENT.includes(displayStatus) &&
+      !IN_PROGRESS.includes(displayStatus),
+  )
 
   const toggleAlert = (id: number) =>
     setAlertOffIds((prev) => {
@@ -102,87 +133,140 @@ export function MypagePreorder() {
       return next
     })
 
+  // 취소는 비동기로 끝난다 — 응답은 보통 '취소 중'이고, 목록을 다시 받아 상태를 맞춘다.
+  const confirmCancel = () => {
+    if (!cancelTarget) return
+    cancel.mutate(
+      { preorderId: cancelTarget.preorderId },
+      {
+        onSuccess: () => showToast('예약 취소를 요청했어요.'),
+        onError: (caught) =>
+          showToast(getErrorMessage(caught, '예약을 취소하지 못했어요.')),
+      },
+    )
+    setCancelTarget(null)
+  }
+
+  const cancelButton = (reservation: Reservation) =>
+    CANCELABLE.includes(reservation.status) && (
+      <Button
+        variant="subtle"
+        color="cancel"
+        disabled={cancel.isPending}
+        onClick={() => setCancelTarget(reservation)}
+      >
+        예약 취소
+      </Button>
+    )
+
+  const card = (reservation: Reservation, highlight = false) => (
+    <HistoryCard
+      key={reservation.preorderId}
+      tag={reservationStatusTag[reservation.displayStatus]}
+      highlight={highlight}
+      preorder
+      orderDate={formatDotDate(reservation.createdAt)}
+      orderNumber={`${reservation.queuePosition.toLocaleString()}번`}
+      numberLabel="예약 순번"
+      purchaseDueAt={
+        highlight ? dueDates.get(reservation.preorderId) : undefined
+      }
+      items={[toItem(reservation)]}
+      renderItem={renderItem}
+      footer={
+        highlight ? (
+          <div className={styles.actions}>
+            {cancelButton(reservation)}
+            <ActionButton
+              size="md"
+              onClick={() => navigate(paymentPath(reservation.preorderId))}
+            >
+              구매 확정하기
+            </ActionButton>
+          </div>
+        ) : (
+          cancelButton(reservation) || undefined
+        )
+      }
+    >
+      {!highlight && (
+        <>
+          <dl className={styles.facts}>
+            <div className={styles.fact}>
+              <dt className={styles.factLabel}>배송 차수</dt>
+              <dd className={styles.factValue}>
+                {reservation.shipmentBatch.batchNumber}차
+              </dd>
+            </div>
+            <div className={styles.fact}>
+              <dt className={styles.factLabel}>발송 예정</dt>
+              <dd className={styles.factValue}>
+                {monthDay(reservation.shipmentBatch.estimatedShipStart)}~
+                {monthDay(reservation.shipmentBatch.estimatedShipEnd)}
+              </dd>
+            </div>
+          </dl>
+          {/* 예약 확정(결제 완료)이면 두 단계까지 끝났다. */}
+          <ol className={styles.steps}>
+            {STEP_LABELS.map((label, index) => {
+              const done =
+                index === 0 ||
+                (index === 1 && reservation.status === 'RESERVED')
+              return (
+                <li key={label} className={styles.step}>
+                  <div className={styles.bar[done ? 'done' : 'todo']} />
+                  <span className={styles.stepLabel[done ? 'done' : 'todo']}>
+                    {label}
+                  </span>
+                </li>
+              )
+            })}
+          </ol>
+        </>
+      )}
+    </HistoryCard>
+  )
+
   return (
     <div className={styles.root}>
       <h1 className={styles.title}>예약 내역</h1>
 
-      {pendingReservations.length > 0 && (
+      {isError && (
+        <div className={styles.sectionTitle}>
+          {getErrorMessage(error, '예약 내역을 불러오지 못했어요.')}
+        </div>
+      )}
+      {isPending && (
+        <div className={styles.sectionTitle}>
+          예약 내역을 불러오는 중이에요.
+        </div>
+      )}
+
+      {needsPayment.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>구매 확정이 필요해요</h2>
-          {pendingReservations.map((reservation) => (
-            <HistoryCard
-              key={reservation.orderNumber}
-              status="confirm"
-              preorder
-              orderDate={reservation.orderDate.replaceAll('-', '.')}
-              orderNumber={reservation.orderNumber}
-              numberLabel="예약번호"
-              purchaseDueAt={reservation.purchaseDueAt}
-              items={reservation.items}
-              renderItem={renderItem}
-              footer={
-                <div className={styles.actions}>
-                  {/* ponytail: 예약 취소 API가 아직 없어 버튼만 둔다. */}
-                  <Button variant="subtle" color="cancel">
-                    예약 취소
-                  </Button>
-                  <ActionButton
-                    size="md"
-                    onClick={() => navigate(PAYMENT_PATH)}
-                  >
-                    구매 확정하기
-                  </ActionButton>
-                </div>
-              }
-            />
-          ))}
+          {needsPayment.map((reservation) => card(reservation, true))}
         </section>
       )}
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>
-          진행 중인 예약{' '}
-          <span className={styles.count}>{confirmedReservations.length}</span>
-        </h2>
-        {confirmedReservations.map((reservation) => (
-          <HistoryCard
-            key={reservation.orderNumber}
-            status="preship"
-            preorder
-            orderDate={reservation.orderDate}
-            orderNumber={reservation.orderNumber}
-            numberLabel="예약번호"
-            items={reservation.items}
-            renderItem={renderItem}
-            footer={
-              <Button variant="subtle" color="cancel">
-                예약 취소
-              </Button>
-            }
-          >
-            <dl className={styles.facts}>
-              {reservation.facts.map((fact) => (
-                <div key={fact.label} className={styles.fact}>
-                  <dt className={styles.factLabel}>{fact.label}</dt>
-                  <dd className={styles.factValue}>{fact.value}</dd>
-                </div>
-              ))}
-            </dl>
-            <ol className={styles.steps}>
-              {steps.map((step) => (
-                <li key={step.label} className={styles.step}>
-                  <div className={styles.bar[step.done ? 'done' : 'todo']} />
-                  <span
-                    className={styles.stepLabel[step.done ? 'done' : 'todo']}
-                  >
-                    {step.label}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </HistoryCard>
-        ))}
-      </section>
+      {data && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            진행 중인 예약{' '}
+            <span className={styles.count}>{inProgress.length}</span>
+          </h2>
+          {inProgress.map((reservation) => card(reservation))}
+        </section>
+      )}
+
+      {ended.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>
+            지난 예약 <span className={styles.count}>{ended.length}</span>
+          </h2>
+          {ended.map((reservation) => card(reservation))}
+        </section>
+      )}
 
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>알림 신청한 사전예약</h2>
@@ -216,6 +300,22 @@ export function MypagePreorder() {
           })}
         </ul>
       </section>
+
+      {/* 어두운 페이지 안에서 띄워야 다이얼로그도 어둡다(전역 모달은 밝게 뜬다). */}
+      <Modal open={cancelTarget !== null} onClose={() => setCancelTarget(null)}>
+        <ConfirmDialog
+          title="예약을 취소할까요?"
+          description={
+            cancelTarget
+              ? `${cancelTarget.productTitle} · ${cancelTarget.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.`
+              : undefined
+          }
+          confirmLabel="예약 취소"
+          cancelLabel="닫기"
+          onConfirm={confirmCancel}
+          onCancel={() => setCancelTarget(null)}
+        />
+      </Modal>
     </div>
   )
 }

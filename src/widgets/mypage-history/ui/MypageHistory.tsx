@@ -4,25 +4,36 @@ import { useNavigate } from 'react-router'
 
 import {
   HistoryCard,
-  MOCK_ORDERS,
+  orderStatusTag,
+  useOrders,
   type Order,
   type OrderStatus,
 } from '@entities/order'
-import { ProductPaymentCard } from '@entities/product'
-import { myReviewKey, useMyReviewStore } from '@entities/review'
-import { ReviewFormModal, type ReviewTarget } from '@features/review-write'
-import { mypagePath, PAYMENT_PATH } from '@shared/config/routes'
+import {
+  ProductPaymentCard,
+  type ProductPaymentCardItem,
+} from '@entities/product'
+import { getErrorMessage } from '@shared/api/client'
+import { mypagePath } from '@shared/config/routes'
+import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
-import { parseDateOnly } from '@shared/lib/parseDateOnly'
-import { ActionButton, Button, Dropdown, SelectButton } from '@shared/ui'
+import { ActionButton, Dropdown, SelectButton } from '@shared/ui'
 
 import * as styles from './MypageHistory.css'
 
-const summary: { label: string; statuses: OrderStatus[] }[] = [
-  { label: '구매 확정 대기', statuses: ['confirm'] },
-  { label: '배송 준비', statuses: ['ready', 'preship'] },
-  { label: '배송 중', statuses: ['shipping'] },
-  { label: '배송 완료', statuses: ['delivered'] },
+// 요약 칸 — 결제 대기는 사용자가 할 일이 남은 상태라 경고색으로 센다.
+const summary: { label: string; statuses: OrderStatus[]; warning?: true }[] = [
+  {
+    label: '결제 대기',
+    statuses: ['AWAITING_PAYMENT', 'AUTHORIZING'],
+    warning: true,
+  },
+  {
+    label: '배송 준비',
+    statuses: ['AWAITING_CONFIRMATION', 'PREPARING_ITEMS', 'READY_TO_SHIP'],
+  },
+  { label: '배송 중', statuses: ['SHIPPED'] },
+  { label: '배송 완료', statuses: ['DELIVERED'] },
 ]
 
 const kindFilters = ['전체', '사전예약', '일반 구매'] as const
@@ -35,29 +46,39 @@ const periodOptions = [0, 1, 3, 6, 12].map((months) => ({
 }))
 
 const matchesKind = (order: Order, kind: KindFilter) =>
-  kind === '전체' || (kind === '사전예약') === !!order.preorder
+  kind === '전체' || (kind === '사전예약') === (order.source === 'PREORDER')
 
 const withinMonths = (order: Order, months: number) => {
   if (!months) return true
   const since = new Date()
   since.setMonth(since.getMonth() - months)
-  const ordered = parseDateOnly(order.orderDate)
-  return !!ordered && ordered >= since
+  return new Date(order.createdAt) >= since
 }
 
-// 사전예약은 구매 확정 전·출시 전까지, 일반 구매는 배송 준비 중일 때만 취소할 수 있다.
-const isCancelable = ({ preorder, status }: Order) =>
-  preorder ? status === 'confirm' || status === 'preship' : status === 'ready'
+const toItems = ({ items }: Order): ProductPaymentCardItem[] =>
+  items.map((item) => ({
+    productId: item.productId,
+    name: item.productTitle,
+    modelNumber: '',
+    optionSummary: item.optionTitle,
+    quantityLabel: `수량 ${item.quantity}개`,
+    priceLabel: formatWon(item.unitPrice * item.quantity),
+  }))
 
+const renderItem = (product: ProductPaymentCardItem) => (
+  <ProductPaymentCard product={product} />
+)
+
+// 주문은 취소 API가 없다 — 사전예약 주문은 예약을 취소하면 주문에 반영된다(예약 내역에서).
+// 주문 응답엔 예약 id가 없어 결제를 이어갈 때도 예약 내역으로 보낸다.
 export function MypageHistory() {
   const navigate = useNavigate()
   const [kind, setKind] = useState<KindFilter>('전체')
   const [period, setPeriod] = useState<number>(6)
-  const reviews = useMyReviewStore((state) => state.reviews)
-  const [reviewFormOpen, setReviewFormOpen] = useState(false)
-  const [reviewTarget, setReviewTarget] = useState<ReviewTarget | null>(null)
+  const { data, isPending, isError, error } = useOrders()
 
-  const visibleOrders = MOCK_ORDERS.filter(
+  const orders = data?.items ?? []
+  const visibleOrders = orders.filter(
     (order) => matchesKind(order, kind) && withinMonths(order, period),
   )
 
@@ -68,8 +89,8 @@ export function MypageHistory() {
       </h1>
 
       <dl className={styles.summary}>
-        {summary.map(({ label, statuses }) => {
-          const count = MOCK_ORDERS.filter((order) =>
+        {summary.map(({ label, statuses, warning }) => {
+          const count = orders.filter((order) =>
             statuses.includes(order.status),
           ).length
           return (
@@ -78,11 +99,7 @@ export function MypageHistory() {
               <dd
                 className={
                   styles.summaryValue[
-                    !count
-                      ? 'empty'
-                      : statuses.includes('confirm')
-                        ? 'warning'
-                        : 'default'
+                    !count ? 'empty' : warning ? 'warning' : 'default'
                   ]
                 }
               >
@@ -116,80 +133,48 @@ export function MypageHistory() {
         />
       </div>
 
-      {visibleOrders.length === 0 && (
-        <div className={styles.empty}>해당하는 주문 내역이 없어요.</div>
+      {isError ? (
+        <div className={styles.empty}>
+          {getErrorMessage(error, '주문 내역을 불러오지 못했어요.')}
+        </div>
+      ) : isPending ? (
+        <div className={styles.empty}>주문 내역을 불러오는 중이에요.</div>
+      ) : (
+        visibleOrders.length === 0 && (
+          <div className={styles.empty}>해당하는 주문 내역이 없어요.</div>
+        )
       )}
 
       {visibleOrders.map((order) => {
-        const pending = order.status === 'confirm'
-        const cancelable = isCancelable(order)
+        const awaitingPayment = order.status === 'AWAITING_PAYMENT'
         return (
           <HistoryCard
-            key={order.orderNumber}
-            status={order.status}
-            preorder={order.preorder}
-            orderDate={order.orderDate.replaceAll('-', '.')}
-            orderNumber={order.orderNumber}
-            numberLabel={pending ? '예약번호' : '주문번호'}
-            purchaseDueAt={order.purchaseDueAt}
-            items={order.items}
-            renderItem={(product, index) => {
-              if (order.status !== 'delivered')
-                return <ProductPaymentCard product={product} />
-              // 배송 완료 상품마다 리뷰 쓰기 — 이미 썼으면 내 리뷰 탭에서 본다.
-              const key = myReviewKey(order.orderNumber, index)
-              const review = reviews[key]
-              return (
-                <ProductPaymentCard
-                  variant="checkout"
-                  product={product}
-                  actionLabel={
-                    review
-                      ? `★ ${review.rating} 내가 쓴 리뷰 보기`
-                      : '리뷰 쓰기'
-                  }
-                  onActionClick={() => {
-                    if (review) {
-                      navigate(mypagePath('reviews'))
-                      window.scrollTo(0, 0)
-                      return
-                    }
-                    setReviewTarget({
-                      key,
-                      productName: product.name,
-                      optionSummary: product.optionSummary,
-                    })
-                    setReviewFormOpen(true)
-                  }}
-                />
-              )
-            }}
+            key={order.orderId}
+            tag={orderStatusTag[order.status]}
+            highlight={awaitingPayment}
+            preorder={order.source === 'PREORDER'}
+            orderDate={formatDotDate(order.createdAt)}
+            orderNumber={order.orderId.slice(0, 8).toUpperCase()}
+            items={toItems(order)}
+            renderItem={renderItem}
             footer={
               <>
                 <div className={styles.totalRow}>
                   <span className={styles.totalLabel}>
-                    {pending ? '결제 예정' : '결제 금액'}
+                    {awaitingPayment ? '결제 예정' : '결제 금액'}
                   </span>
                   <span className={styles.totalValue}>
-                    {formatWon(order.amount)}
+                    {formatWon(order.totalAmount)}
                   </span>
                 </div>
-                {(cancelable || pending) && (
+                {awaitingPayment && (
                   <div className={styles.actions}>
-                    {/* ponytail: 주문 취소 API가 아직 없어 버튼만 둔다. */}
-                    {cancelable && (
-                      <Button variant="subtle" color="cancel">
-                        {order.preorder ? '예약 취소' : '주문 취소'}
-                      </Button>
-                    )}
-                    {pending && (
-                      <ActionButton
-                        size="md"
-                        onClick={() => navigate(PAYMENT_PATH)}
-                      >
-                        구매 확정하기
-                      </ActionButton>
-                    )}
+                    <ActionButton
+                      size="md"
+                      onClick={() => navigate(mypagePath('preorder-check'))}
+                    >
+                      예약 내역에서 결제하기
+                    </ActionButton>
                   </div>
                 )}
               </>
@@ -197,12 +182,6 @@ export function MypageHistory() {
           />
         )
       })}
-
-      <ReviewFormModal
-        open={reviewFormOpen}
-        target={reviewTarget}
-        onClose={() => setReviewFormOpen(false)}
-      />
     </div>
   )
 }

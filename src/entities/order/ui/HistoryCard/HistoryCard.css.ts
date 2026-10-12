@@ -53,7 +53,7 @@ export const orderDate = style([
 export const tag = style({
   fontSize: fontSize[12],
   fontWeight: fontWeight.bold,
-  padding: `3px ${spacing[8]}`,
+  padding: `${spacing[3]} ${spacing[8]}`,
 })
 
 export const orderNumber = style([

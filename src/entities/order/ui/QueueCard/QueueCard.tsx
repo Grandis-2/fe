@@ -51,7 +51,7 @@ export function QueueCard({
 
       <div className={styles.notice}>
         <Timer size={14} aria-hidden="true" className={styles.noticeIcon} />
-        모달창을 닫으면 5분 동안 순번이 유지됩니다.
+        창을 닫아도 순번은 유지돼요. 차례가 오면 예약 페이지로 이동해요.
       </div>
 
       {confirmingLeave ? (

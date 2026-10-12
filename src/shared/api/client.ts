@@ -20,12 +20,18 @@ export function configureApiAuth(config: {
 export class ApiRequestError extends Error {
   readonly error: ApiError
   readonly status: number
+  /**
+   * 문의·버그 신고 때 서버 로그를 찾는 추적 ID(11-frontend-guide.md §1) — 봉투의 traceId,
+   * 없으면 응답 헤더 X-Request-Id, 응답을 못 받았으면(타임아웃 등) 우리가 보낸 X-Request-Id.
+   */
+  readonly traceId: string | null
 
-  constructor(error: ApiError, status: number) {
+  constructor(error: ApiError, status: number, traceId: string | null = null) {
     super(error.message)
     this.name = 'ApiRequestError'
     this.error = error
     this.status = status
+    this.traceId = traceId
   }
 }
 
@@ -33,6 +39,10 @@ export class ApiRequestError extends Error {
 // 호출부의 기본 문구를 쓴다.
 export const getErrorMessage = (caught: unknown, fallback: string) =>
   caught instanceof ApiRequestError ? caught.error.message : fallback
+
+// 에러 화면에 "문의 코드"로 보여줄 추적 ID. API 실패가 아니면(렌더링 오류 등) null.
+export const getTraceId = (caught: unknown) =>
+  caught instanceof ApiRequestError ? caught.traceId : null
 
 export type ApiRequestOptions = {
   method?: string
@@ -66,6 +76,14 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 // 짧은 요청 ID. 서버 제약(영숫자·.·_·-, 64자 이하)을 만족한다.
 const requestId = () => crypto.randomUUID().replace(/-/g, '')
 
+// 요청에 실어 보낸 X-Request-Id — 서버는 이 값을 그대로 traceId로 이어 쓴다.
+const sentRequestId = (config: { headers?: unknown } | undefined) => {
+  const value = (config?.headers as Record<string, unknown> | undefined)?.[
+    'X-Request-Id'
+  ]
+  return typeof value === 'string' ? value : null
+}
+
 type RawResponse<TData> = AxiosResponse<ApiResponse<TData> | string>
 
 // 응답 자체를 못 받은 경우(타임아웃, 네트워크 끊김)도 다른 실패와 같은 ApiRequestError로
@@ -87,6 +105,7 @@ function toTransportError(caught: unknown): unknown {
           details: null,
         },
     0,
+    sentRequestId(caught.config),
   )
 }
 
@@ -113,6 +132,12 @@ async function send<TData>(
 
 // 봉투를 벗겨 data만 돌려주고, 실패는 ApiRequestError로 던진다.
 function unwrap<TData>(response: RawResponse<TData>): TData {
+  const headerTraceId: unknown = response.headers['x-request-id']
+  const fallbackTraceId =
+    typeof headerTraceId === 'string'
+      ? headerTraceId
+      : sentRequestId(response.config)
+
   // 로그아웃 등 204 No Content는 파싱할 본문이 없다.
   if (response.status === 204) return undefined as TData
 
@@ -127,10 +152,15 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
         details: null,
       },
       response.status,
+      fallbackTraceId,
     )
   }
   if (json.success) return json.data
-  throw new ApiRequestError(json.error, response.status)
+  throw new ApiRequestError(
+    json.error,
+    response.status,
+    json.traceId ?? fallbackTraceId,
+  )
 }
 
 // 401을 받았을 때 같은 요청을 다시 보내도 되는 상태로 만들어 본다. true면 한 번 더 보낸다.
@@ -153,19 +183,35 @@ async function recoverFromUnauthorized(
   return onUnauthorized()
 }
 
-async function request<TData>(
+async function sendWithRecovery<TData>(
   path: string,
-  options: ApiRequestOptions = {},
-): Promise<TData> {
+  options: ApiRequestOptions,
+): Promise<RawResponse<TData>> {
   const response = await send<TData>(path, options)
   // 401은 딱 한 번만 회복을 시도한다 — 다시 보낸 요청이 또 401이면 그대로 던진다.
   if (
     response.status === 401 &&
     (await recoverFromUnauthorized(response, options))
   ) {
-    return unwrap(await send<TData>(path, options))
+    return send<TData>(path, options)
   }
-  return unwrap(response)
+  return response
 }
 
-export const apiClient = { request }
+async function request<TData>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<TData> {
+  return unwrap(await sendWithRecovery<TData>(path, options))
+}
+
+// 본문 말고 응답 헤더도 봐야 하는 호출용(대기열의 Retry-After 등). 헤더 이름은 소문자로 찾는다.
+async function requestWithHeaders<TData>(
+  path: string,
+  options: ApiRequestOptions = {},
+): Promise<{ data: TData; headers: Record<string, unknown> }> {
+  const response = await sendWithRecovery<TData>(path, options)
+  return { data: unwrap(response), headers: { ...response.headers } }
+}
+
+export const apiClient = { request, requestWithHeaders }

@@ -1,4 +1,4 @@
-import { EVENTS_PATH, PREORDER_PATH } from '@shared/config/routes'
+import { EVENTS_PATH, PREORDER_PATH, preorderPath } from '@shared/config/routes'
 
 export type CategoryNavLink = '이벤트' | '사전예약'
 
@@ -23,3 +23,37 @@ export const linkPaths: Record<CategoryNavLink, string> = {
   이벤트: EVENTS_PATH,
   사전예약: PREORDER_PATH,
 }
+
+export type MenuEvent = {
+  tag: '사전예약' | '할인' | '이벤트'
+  title: string
+  period: string
+  to: string
+  image: string
+}
+
+// 모바일 메뉴의 이벤트 탭.
+// ponytail: 이벤트 API·페이지가 없어 상수로 둔다(배너 이미지는 메인 배너 것을 빌려 씀) — 생기면 응답으로 교체.
+export const menuEvents: MenuEvent[] = [
+  {
+    tag: '사전예약',
+    title: '아이폰 18 Pro, Pro Max 사전예약 오픈',
+    period: '10.10 (토) ~ 10.16 (금)',
+    to: preorderPath('1'),
+    image: '/images/banner1.png',
+  },
+  {
+    tag: '할인',
+    title: '맥북 사전예약 고객 액세서리 최대 20% 할인',
+    period: '10.01 (목) ~ 10.31 (토)',
+    to: EVENTS_PATH,
+    image: '/images/macbook_neo_citrus1.png',
+  },
+  {
+    tag: '이벤트',
+    title: '쓰던 기기 보상 판매, 최대 30만 원 추가 보상',
+    period: '10.08 (목) ~ 11.09 (월)',
+    to: EVENTS_PATH,
+    image: '/images/banner2.png',
+  },
+]

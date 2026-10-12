@@ -23,8 +23,8 @@ export const root = style({
   left: spacing[16],
   right: spacing[16],
   bottom: TAB_BAR_OFFSET,
-  // 바텀시트(BottomSheet.css, 30)보다 위 — 카테고리 시트가 열려 있어도 탭바는 보이고
-  // 다른 탭으로 바로 이동할 수 있다.
+  // 바텀시트(BottomSheet.css, 30)·전체 화면 메뉴(MobileMenu.css, 30)보다 위 — 열려 있어도
+  // 탭바는 보이고 다른 탭으로 바로 이동할 수 있다.
   zIndex: 31,
   // vaul(1.1.2)은 modal={false}여도 Radix Dialog를 modal로 열어 body에 pointer-events:none을
   // 건다 — 탭바는 body 아래라 이걸 상속해 클릭이 막히므로 직접 되살린다.
@@ -111,25 +111,3 @@ export const label = style([
     },
   },
 ])
-
-// 탭바만큼의 여백은 BottomSheet가 맨 아래에 깔아 준다 — 여기선 기본 padding만 뺀다.
-export const sheetContent = style({
-  paddingBottom: 0,
-})
-
-// 목록이 시트 최대 높이(90vh)를 넘으면 여기서 스크롤한다. 시트 본체(vaul Content)에
-// overflow를 주면 vaul이 시트 아래에 까는 ::after(높이 200%)까지 스크롤 영역에 들어가
-// 빈 공간이 두 배로 생긴다 — 그래서 안쪽 래퍼가 스크롤을 맡는다.
-export const sheetScroll = style({
-  flex: 1,
-  minHeight: 0,
-  overflowY: 'auto',
-  // modal={false}라 body 스크롤 잠금이 없다 — 끝에 닿은 스크롤이 뒤 페이지로 넘어가지 않게 끊는다.
-  overscrollBehavior: 'contain',
-  paddingBottom: spacing[16],
-})
-
-export const sheetTitle = style({
-  marginBottom: spacing[20],
-  color: color.text.primary,
-})

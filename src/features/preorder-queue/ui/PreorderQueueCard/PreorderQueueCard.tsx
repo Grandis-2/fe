@@ -28,10 +28,14 @@ export function PreorderQueueCard({
       <div className={styles.productName}>{productName}</div>
       <QueueCard
         className={styles.card}
-        myOrderNumber={formatNumber(queue.myOrder)}
+        myOrderNumber={
+          queue.myOrder === null ? '-' : formatNumber(queue.myOrder)
+        }
         waitTime={queue.waitTime}
         progressPercent={queue.progressPercent}
-        totalWaitingCount={formatNumber(queue.totalWaiting)}
+        totalWaitingCount={
+          queue.totalWaiting === null ? '-' : formatNumber(queue.totalWaiting)
+        }
         onLeave={queue.leave}
       />
     </div>

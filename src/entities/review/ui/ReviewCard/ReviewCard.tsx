@@ -1,4 +1,5 @@
 import { typography } from '@shared/config/theme'
+import { formatDotDate } from '@shared/lib/formatDotDate'
 
 import * as styles from './ReviewCard.css'
 
@@ -6,19 +7,30 @@ import type { Review } from '../../model/review'
 
 const MAX_RATING = 5
 
-export type ReviewCardProps = Omit<Review, 'id'> & {
+export type ReviewCardProps = {
+  review: Pick<
+    Review,
+    | 'imageUrl'
+    | 'rating'
+    | 'body'
+    | 'productTitle'
+    | 'optionTitle'
+    | 'authorName'
+    | 'createdAt'
+  >
   className?: string
 }
 
-export function ReviewCard({
-  thumbnailSrc,
-  rating,
-  reviewText,
-  productName,
-  maskedAuthorName,
-  date,
-  className,
-}: ReviewCardProps) {
+export function ReviewCard({ review, className }: ReviewCardProps) {
+  const {
+    imageUrl,
+    rating,
+    body,
+    productTitle,
+    optionTitle,
+    authorName,
+    createdAt,
+  } = review
   // rating이 API/목업 오류로 범위를 벗어나거나(음수, 5 초과) 정수가 아니어도
   // 별점 라벨과 채워지는 별 개수가 항상 같은 값을 보도록 먼저 정규화한다.
   const safeRating = Number.isFinite(rating)
@@ -26,8 +38,8 @@ export function ReviewCard({
     : 0
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      {thumbnailSrc ? (
-        <img src={thumbnailSrc} alt="" className={styles.thumbnail} />
+      {imageUrl ? (
+        <img src={imageUrl} alt="" className={styles.thumbnail} />
       ) : (
         <div className={styles.thumbnail} />
       )}
@@ -53,16 +65,16 @@ export function ReviewCard({
               ' ',
             )}
           >
-            {reviewText}
+            {body}
           </div>
         </div>
         <div className={[typography.body.sub, styles.productName].join(' ')}>
-          {productName}
+          {productTitle} · {optionTitle}
         </div>
       </div>
       <div className={[typography.body.sub, styles.meta].join(' ')}>
-        <span>{maskedAuthorName}</span>
-        <span>{date}</span>
+        <span>{authorName}</span>
+        <span>{formatDotDate(createdAt)}</span>
       </div>
     </div>
   )

@@ -1,25 +1,26 @@
 import { useState } from 'react'
 
 import { Settings } from 'lucide-react'
-import { Link, useLocation } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import { useDefaultAddress, type DefaultAddress } from '@entities/address'
-import { OrderSummary } from '@entities/order'
-import { preparePayment } from '@entities/payment'
+import {
+  OrderSummary,
+  PAID_ORDER_STATUSES,
+  useCreatePaymentAttempt,
+  usePlaceOrder,
+} from '@entities/order'
+import { useReservation, type ReservationDetail } from '@entities/preorder'
 import { useProfile } from '@entities/profile'
 import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@features/address-search'
 import { requestTossPayment } from '@features/payment'
-import {
-  OrderItemList,
-  PREORDER_BENEFIT_RATE,
-  type PurchaseDraft,
-} from '@features/product-purchase'
+import { OrderItemList, reservationToDraft } from '@features/product-purchase'
 import { terms, TermsAgreement } from '@features/terms-agreement'
 import { getErrorMessage } from '@shared/api/client'
-import { mypagePath } from '@shared/config/routes'
+import { mypagePath, resultPath } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { ActionButton, Container, Input, InlineAlert } from '@shared/ui'
@@ -29,17 +30,31 @@ import * as styles from './PaymentPage.css'
 const GENERIC_PAYMENT_ERROR =
   '결제 요청 중 문제가 발생했습니다. 다시 시도해 주세요.'
 
-// 직접 /payment로 들어오면(딥링크 등) 상품 상세·장바구니가 넘기는 주문 상품이 없어 아래 목업으로 대체한다.
-// ponytail: 아직 주문서 API가 없어서 목업 데이터로 대체.
-const fallbackDrafts: PurchaseDraft[] = [
-  {
-    variantId: 101,
-    productName: '맥북 프로 14',
-    optionSummary: '실버 · 512GB',
-    quantity: 1,
-    unitPrice: 2390000,
-  },
+// 결제할 수 있는 예약 단계. 결제 진행 중(주문만 만들고 결제창을 닫음)이면 같은 주문으로 다시 결제한다.
+const PAYABLE: ReservationDetail['displayStatus'][] = [
+  'PAYABLE',
+  'PAYMENT_IN_PROGRESS',
 ]
+
+// 결제할 수 없는 예약일 때 안내 문구.
+const UNPAYABLE_MESSAGE: Partial<
+  Record<ReservationDetail['displayStatus'], string>
+> = {
+  RECEIVED: '예약을 등록하고 있어요. 결제는 등록이 끝난 뒤에 할 수 있어요.',
+  PROCESSING: '예약을 등록하고 있어요. 결제는 등록이 끝난 뒤에 할 수 있어요.',
+  PAYMENT_EXPIRED: '결제 기한이 지나 결제할 수 없어요.',
+  RESERVED: '이미 결제가 끝난 예약이에요.',
+  CANCELING: '취소 중인 예약이라 결제할 수 없어요.',
+  CANCELED: '취소된 예약이라 결제할 수 없어요.',
+}
+
+const formatDueAt = (iso: string) =>
+  new Date(iso).toLocaleString('ko-KR', {
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 
 // 저장된 기본 배송지가 없을 때의 처리(배송지 등록 유도 등)가 정해지기 전까지는 배송지가
 // 있다고 가정하고 이 값으로 채운다.
@@ -62,13 +77,15 @@ const REQUIRED_KEYS = [
   'addressDetail',
 ] as const
 
+// 사전예약 하나를 결제한다(order 명세: 결제 가능해진 예약 → 주문 생성 → 결제 준비 → 토스 결제창 → 승인).
+// 일반 구매·장바구니 결제는 아직 주문 API가 없어 예약 id 없이 들어오면 안내만 보인다.
 export function PaymentPage() {
-  const location = useLocation()
-  // 예전 형식(객체 하나)이 남은 history state나 빈 목록이면 목업으로 대체한다.
-  const drafts =
-    Array.isArray(location.state) && location.state.length > 0
-      ? (location.state as PurchaseDraft[])
-      : fallbackDrafts
+  const [searchParams] = useSearchParams()
+  const preorderId = searchParams.get('preorderId') ?? ''
+  const navigate = useNavigate()
+  const reservation = useReservation(preorderId)
+  const placeOrder = usePlaceOrder()
+  const createAttempt = useCreatePaymentAttempt()
   const { data: profile } = useProfile()
   const { data: savedAddress } = useDefaultAddress()
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
@@ -101,18 +118,11 @@ export function PaymentPage() {
     .filter(Boolean)
     .join(' ')
 
-  const totalQuantity = drafts.reduce((sum, item) => sum + item.quantity, 0)
-  const orderAmount = drafts.reduce(
-    (sum, item) => sum + item.unitPrice * item.quantity,
-    0,
-  )
-  const preorderBenefit = Math.round(orderAmount * PREORDER_BENEFIT_RATE)
-  const totalAmount = orderAmount - preorderBenefit
-  // 결제창에 뜨는 주문명 — 여러 건이면 "맥북 프로 14 외 2건".
-  const orderName =
-    drafts.length > 1
-      ? `${drafts[0].productName} 외 ${drafts.length - 1}건`
-      : drafts[0].productName
+  const detail = reservation.data
+  const payable = detail ? PAYABLE.includes(detail.displayStatus) : false
+  // 결제 금액은 서버가 정한다 — 예약 접수 당시 단가 그대로(수량 1).
+  const totalAmount = detail?.unitPrice ?? 0
+  const isPaying = placeOrder.isPending || createAttempt.isPending
 
   const requiredAgreed = terms.every(
     (term) => !term.required || agreedIds.has(term.id),
@@ -138,29 +148,84 @@ export function PaymentPage() {
   const toggleAllAgree = (checked: boolean) =>
     setAgreedIds(checked ? new Set(terms.map((term) => term.id)) : new Set())
 
-  // ① 결제 준비(주문ID·금액 확정) → ② 토스 결제창(카드) 요청. 정상 진행되면
-  // 브라우저가 결제창 오버레이를 띄운 뒤 successUrl/failUrl로 이동하므로, catch는
-  // 오버레이가 뜨기 전 오류(파라미터 오류, 네트워크 실패 등)만 잡는다.
+  // ① 주문 생성(같은 예약이면 기존 주문) → ② 결제 준비(tossOrderId·금액·주문명) → ③ 토스 결제창(카드).
+  // 정상 진행되면 브라우저가 successUrl/failUrl로 이동하므로, catch는 결제창이 뜨기 전 오류만 잡는다.
   const handlePayment = async () => {
     form.markSubmitted()
     setPaymentError(null)
-    if (!form.requiredFilled) return
+    if (!form.requiredFilled || !payable) return
 
     try {
-      const { orderId, amount } = await preparePayment({
-        orderName,
-        amount: totalAmount,
+      const order = await placeOrder.mutateAsync({
+        source: 'PREORDER',
+        preorderId,
+        shipTo: {
+          name: form.values.name,
+          phone: form.values.phone,
+          postalCode: form.values.postcode,
+          line1: form.values.address,
+          line2: form.values.addressDetail || null,
+        },
       })
+      // 기존 주문이 이미 결제됐으면 결제 단계로 가지 않고 결과를 보여 준다.
+      if (order.status === 'AUTHORIZING') {
+        setPaymentError(
+          '결제를 확인하고 있어요. 잠시 뒤 주문 내역에서 결과를 확인해 주세요.',
+        )
+        return
+      }
+      if (PAID_ORDER_STATUSES.includes(order.status)) {
+        navigate(resultPath('preorder-paid'), {
+          replace: true,
+          state: { orderId: order.orderId },
+        })
+        return
+      }
+      // 결제 대기만 결제 단계로 간다 — 그사이 취소가 시작됐거나 모르는 상태면 결제 완료로 보이지 않게 막는다.
+      if (order.status !== 'AWAITING_PAYMENT') {
+        setPaymentError('결제할 수 없는 주문이에요. 주문 내역을 확인해 주세요.')
+        return
+      }
+      const attempt = await createAttempt.mutateAsync(order.orderId)
       await requestTossPayment({
-        orderId,
-        amount,
-        orderName,
+        tossOrderId: attempt.tossOrderId,
+        amount: attempt.amount,
+        orderName: attempt.orderName,
+        orderToken: order.orderId,
+        preorderId,
         customerName: form.values.name,
         customerEmail: form.values.email || undefined,
       })
     } catch (caught) {
       setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
     }
+  }
+
+  // 예약 id 없이 들어왔거나(일반 구매·장바구니) 예약을 아직 못 받았으면 안내만 보인다.
+  if (!detail) {
+    return (
+      <div className={styles.root} data-theme="dark" data-header-theme="dark">
+        <Container>
+          <div className={styles.title}>주문 / 결제</div>
+          {!preorderId ? (
+            <InlineAlert status="info">
+              지금은 사전예약 결제만 할 수 있어요. 일반 구매·장바구니 결제는
+              준비 중이에요.{' '}
+              <Link to={mypagePath('preorder-check')}>예약 내역으로 가기</Link>
+            </InlineAlert>
+          ) : (
+            <InlineAlert status={reservation.isError ? 'error' : 'info'}>
+              {reservation.isError
+                ? getErrorMessage(
+                    reservation.error,
+                    '예약을 불러오지 못했어요.',
+                  )
+                : '예약을 불러오는 중이에요.'}
+            </InlineAlert>
+          )}
+        </Container>
+      </div>
+    )
   }
 
   return (
@@ -171,11 +236,17 @@ export function PaymentPage() {
         {paymentError && (
           <InlineAlert status="error">{paymentError}</InlineAlert>
         )}
+        {!payable && (
+          <InlineAlert status="info">
+            {UNPAYABLE_MESSAGE[detail.displayStatus] ??
+              '결제할 수 있는 예약이 아니에요.'}
+          </InlineAlert>
+        )}
 
         <div className={styles.layout}>
           <div className={styles.form}>
             <section className={styles.section}>
-              <OrderItemList items={drafts} />
+              <OrderItemList items={[reservationToDraft(detail)]} />
             </section>
 
             <section className={styles.section}>
@@ -246,18 +317,22 @@ export function PaymentPage() {
           <OrderSummary
             className={styles.summary}
             rows={[
-              { label: '상품 수', value: `${totalQuantity}개` },
-              { label: '주문 금액', value: formatWon(orderAmount) },
-              {
-                label: '사전예약 혜택',
-                value: `-${formatWon(preorderBenefit)}`,
-                highlight: true,
-              },
+              { label: '상품 수', value: '1개' },
+              { label: '주문 금액', value: formatWon(totalAmount) },
+              ...(detail.paymentDueAt
+                ? [
+                    {
+                      label: '결제 기한',
+                      value: `${formatDueAt(detail.paymentDueAt)}까지`,
+                      highlight: true,
+                    },
+                  ]
+                : []),
             ]}
             totalLabel="결제 예정 금액"
             totalValue={formatWon(totalAmount)}
             actionLabel={`${formatWon(totalAmount)} 결제하기`}
-            actionDisabled={!requiredAgreed}
+            actionDisabled={!requiredAgreed || !payable || isPaying}
             darkAction
             onAction={() => void handlePayment()}
           >

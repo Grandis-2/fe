@@ -26,7 +26,9 @@ export const kakaoButton = style({
   height: '48px',
   border: 'none',
   borderRadius: '12px',
+  // eslint-disable-next-line no-restricted-syntax -- 카카오 브랜드 고정색
   background: '#FEE500',
+  // eslint-disable-next-line no-restricted-syntax -- 카카오 브랜드 고정색
   color: '#191919',
   cursor: 'pointer',
   transition: `opacity ${motion.duration.fast} ${motion.easing.default}`,
