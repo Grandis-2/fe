@@ -16,7 +16,6 @@ export {
 } from './api/useDispatchWindow'
 export {
   createWaveDraft,
-  formatDeliveryDate,
   formatSeqRange,
   nextFromSeq,
   toDispatchWindowRequest,
@@ -35,7 +34,6 @@ export {
   saleStatusLabel,
 } from './model/types'
 export type {
-  AdminDisplayStatus,
   AdminProduct,
   AdminProductDetailModel,
   AdminSaleStatus,

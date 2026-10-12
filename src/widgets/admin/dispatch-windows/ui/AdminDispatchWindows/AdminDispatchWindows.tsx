@@ -4,7 +4,6 @@ import { Plus, X } from 'lucide-react'
 
 import {
   createWaveDraft,
-  formatDeliveryDate,
   formatSeqRange,
   nextFromSeq,
   toDispatchWindowRequest,
@@ -18,10 +17,15 @@ import {
   type DispatchWaveModel,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
-import { Button, InlineAlert, Input, Table } from '@shared/ui'
+import { formatDeliveryDate } from '@shared/lib/formatDeliveryDate'
+import {
+  Button,
+  DeliveryDateField,
+  InlineAlert,
+  Input,
+  Table,
+} from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
-
-import { DeliveryDateField } from '../DeliveryDateField'
 
 import * as styles from './AdminDispatchWindows.css'
 
