@@ -65,13 +65,17 @@ export function MobileLuckyPanel({ onClose }: MobileLuckyPanelProps) {
       </div>
 
       {error ? (
-        <InlineAlert status="error">
+        <InlineAlert status="error" variant="big">
           {getErrorMessage(error, '럭키드로우를 불러오지 못했어요.')}
         </InlineAlert>
       ) : isPending ? (
-        <InlineAlert status="info">럭키드로우를 불러오는 중이에요.</InlineAlert>
+        <InlineAlert status="info" variant="big" icon="info">
+          럭키드로우를 불러오는 중이에요.
+        </InlineAlert>
       ) : visible.length === 0 ? (
-        <InlineAlert status="info">해당하는 럭키드로우가 없어요.</InlineAlert>
+        <InlineAlert status="info" variant="big" icon="info">
+          해당하는 럭키드로우가 없어요.
+        </InlineAlert>
       ) : (
         <div className={styles.list}>
           {visible.map((draw) => {

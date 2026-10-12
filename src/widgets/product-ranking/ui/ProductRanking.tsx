@@ -42,7 +42,13 @@ export function ProductRanking() {
       </div>
 
       {message ? (
-        <InlineAlert status={isError ? 'error' : 'info'}>{message}</InlineAlert>
+        <InlineAlert
+          status={isError ? 'error' : 'info'}
+          variant="big"
+          icon={isError ? 'triangle-alert' : 'package'}
+        >
+          {message}
+        </InlineAlert>
       ) : (
         <div
           ref={rowRef}

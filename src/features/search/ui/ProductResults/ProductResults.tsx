@@ -52,14 +52,14 @@ export function ProductResults({
       <>
         <section className={shared.section}>
           <h2 className={shared.sectionTitle}>상품</h2>
-          <div className={styles.empty}>
-            <div className={styles.emptyTitle}>
-              &apos;{keyword}&apos; 검색 결과가 없어요
-            </div>
-            <div className={styles.emptyHint}>
-              철자를 확인하거나 다른 검색어로 찾아보세요.
-            </div>
-          </div>
+          <InlineAlert
+            status="info"
+            variant="big"
+            icon="search-x"
+            description="철자를 확인하거나 다른 검색어로 찾아보세요."
+          >
+            &apos;{keyword}&apos; 검색 결과가 없어요
+          </InlineAlert>
         </section>
         {fallback.data && (
           <section className={shared.section}>

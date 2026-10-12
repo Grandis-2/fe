@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import {
   findCategoryId,
   ProductCard,
+  ProductCardSkeleton,
   useCategories,
   useProducts,
 } from '@entities/product'
@@ -42,11 +43,17 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
 
   // 트리 조회가 실패하면 목록은 영영 안 묻기 때문에(pending 그대로) 실패를 먼저 본다.
   const message = isError
-    ? `${category} 상품을 불러오지 못했어요.`
+    ? {
+        title: `${category} 상품을 불러오지 못했어요`,
+        description: '일시적인 오류예요. 잠시 후 다시 시도해 주세요.',
+      }
     : isPending
-      ? '불러오는 중이에요.'
+      ? { title: '불러오는 중이에요' }
       : items?.length === 0
-        ? `아직 등록된 ${category} 상품이 없어요.`
+        ? {
+            title: `아직 등록된 ${category} 상품이 없어요`,
+            description: '새 상품이 등록되면 이곳에서 가장 먼저 보여드릴게요.',
+          }
         : null
 
   return (
@@ -62,21 +69,32 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
             <ChevronRight size={22} aria-hidden className={styles.chevron} />
           </Link>
         </h3>
-        {!message && (
+        {!message && !isPending && (
           <ScrollArrows canPrev={canPrev} canNext={canNext} onPage={page} />
         )}
       </div>
       {message ? (
-        <InlineAlert status={isError ? 'error' : 'info'}>{message}</InlineAlert>
+        <InlineAlert
+          status={isError ? 'error' : 'info'}
+          variant="big"
+          icon={isError ? 'triangle-alert' : isPending ? 'loader' : 'package'}
+          description={message.description}
+        >
+          {message.title}
+        </InlineAlert>
       ) : (
         <div ref={rowRef} className={styles.row} onScroll={onScroll}>
-          {items?.map((product) => (
-            <ProductCard
-              key={product.productId}
-              {...getCardProps(product)}
-              className={styles.card}
-            />
-          ))}
+          {isPending
+            ? [0, 1, 2, 3].map((i) => (
+                <ProductCardSkeleton key={i} className={styles.card} />
+              ))
+            : items?.map((product) => (
+                <ProductCard
+                  key={product.productId}
+                  {...getCardProps(product)}
+                  className={styles.card}
+                />
+              ))}
         </div>
       )}
     </section>

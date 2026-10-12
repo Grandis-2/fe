@@ -50,13 +50,15 @@ export function DrawDetail({ drawId }: DrawDetailProps) {
 
   if (draw.isError)
     return (
-      <InlineAlert status="error">
+      <InlineAlert status="error" variant="big">
         {getErrorMessage(draw.error, '럭키드로우를 불러오지 못했어요.')}
       </InlineAlert>
     )
   if (!draw.data)
     return (
-      <InlineAlert status="info">럭키드로우를 불러오는 중이에요.</InlineAlert>
+      <InlineAlert status="info" variant="big" icon="info">
+        럭키드로우를 불러오는 중이에요.
+      </InlineAlert>
     )
 
   return (

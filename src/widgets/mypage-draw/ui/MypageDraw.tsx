@@ -20,7 +20,7 @@ import { DRAW_PATH, drawPath, mypagePath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, Button, SelectButton } from '@shared/ui'
+import { ActionButton, Button, InlineAlert, SelectButton } from '@shared/ui'
 
 import * as styles from './MypageDraw.css'
 
@@ -95,11 +95,11 @@ export function MypageDraw() {
         <div className={styles.empty}>응모 내역을 불러오는 중이에요.</div>
       ) : (
         visible.length === 0 && (
-          <div className={styles.empty}>
+          <InlineAlert status="info" variant="big" icon="ticket">
             {filter === '당첨'
-              ? '아직 당첨 내역이 없어요.'
-              : '아직 응모 내역이 없어요.'}
-          </div>
+              ? '아직 당첨 내역이 없어요'
+              : '아직 응모 내역이 없어요'}
+          </InlineAlert>
         )
       )}
 
