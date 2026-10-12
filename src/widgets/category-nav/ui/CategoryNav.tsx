@@ -1,7 +1,7 @@
 import { ChevronRight } from 'lucide-react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 
-import { brandMenus } from '@entities/product'
+import { useBrandMenus } from '@entities/product'
 import { SEARCH_PATH, searchPath } from '@shared/config/routes'
 
 import {
@@ -36,6 +36,7 @@ export function CategoryNav({
   onLinkClick,
   className,
 }: CategoryNavProps) {
+  const brandMenus = useBrandMenus()
   // 검색 페이지에 있을 때만 URL의 카테고리로 브랜드 링크·타일을 활성 표시한다.
   const { pathname } = useLocation()
   const [searchParams] = useSearchParams()
