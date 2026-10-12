@@ -1,14 +1,16 @@
 import { useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import { useDefaultAddress, type DefaultAddress } from '@entities/address'
+import { cartKeys, useCartLines, type CartLine } from '@entities/cart'
 import {
   OrderSummary,
   PAID_ORDER_STATUSES,
-  useCreatePaymentAttempt,
   usePlaceOrder,
+  type CartOrderItem,
 } from '@entities/order'
 import { useReservation, type ReservationDetail } from '@entities/preorder'
 import { useProfile } from '@entities/profile'
@@ -16,10 +18,15 @@ import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@features/address-search'
-import { requestTossPayment } from '@features/payment'
-import { OrderItemList, reservationToDraft } from '@features/product-purchase'
+import { startOrderPayment } from '@features/payment'
+import {
+  cartLineToDraft,
+  OrderItemList,
+  reservationToDraft,
+  type PurchaseDraft,
+} from '@features/product-purchase'
 import { terms, TermsAgreement } from '@features/terms-agreement'
-import { getErrorMessage } from '@shared/api/client'
+import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { mypagePath, resultPath } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { useFormFields } from '@shared/lib/useFormFields'
@@ -46,6 +53,32 @@ const UNPAYABLE_MESSAGE: Partial<
   RESERVED: '이미 결제가 끝난 예약이에요.',
   CANCELING: '취소 중인 예약이라 결제할 수 없어요.',
   CANCELED: '취소된 예약이라 결제할 수 없어요.',
+}
+
+// 장바구니 주문이 이 코드로 거절되면 장바구니가 바뀐 것이다 — 다시 받아 지금 값·상태를 보여 준다.
+const CART_REFRESH_CODES = [
+  'CART_CHANGED',
+  'PRICE_CHANGED',
+  'STATE_CONFLICT',
+  'INSUFFICIENT_STOCK',
+]
+
+// 고른 장바구니 줄을 주문 요청 줄로 — 화면에 보여 준 가격을 그대로 옮긴다(다르면 서버가 PRICE_CHANGED).
+const toCartOrderItem = (line: CartLine): CartOrderItem => ({
+  variantId: line.variantId,
+  quantity: line.quantity,
+  warranty: line.warranty,
+  expectedUnitPrice: line.unitPrice ?? 0,
+  ...(line.warranty ? { expectedWarrantyPrice: line.warrantyPrice ?? 0 } : {}),
+})
+
+// 결제할 대상 하나 — 사전예약 하나 또는 장바구니에서 고른 줄. 화면은 이 모양만 본다.
+type Checkout = {
+  items: PurchaseDraft[]
+  totalAmount: number
+  // 결제할 수 없으면 그 이유. null이면 결제할 수 있다.
+  blockedReason: string | null
+  dueRow: string | null
 }
 
 const formatDueAt = (iso: string) =>
@@ -77,15 +110,22 @@ const REQUIRED_KEYS = [
   'addressDetail',
 ] as const
 
-// 사전예약 하나를 결제한다(order 명세: 결제 가능해진 예약 → 주문 생성 → 결제 준비 → 토스 결제창 → 승인).
+// 사전예약 하나(?preorderId=) 또는 장바구니에서 고른 줄(?cart=)을 결제한다(order 명세: 주문 생성 → 결제 준비 →
+// 토스 결제창 → 승인). 바로 구매는 아직 주문 API가 없어 둘 다 없이 들어오면 안내만 보인다.
 // 일반 구매·장바구니 결제는 아직 주문 API가 없어 예약 id 없이 들어오면 안내만 보인다.
 export function PaymentPage() {
   const [searchParams] = useSearchParams()
   const preorderId = searchParams.get('preorderId') ?? ''
+  const cartItemIds = (searchParams.get('cart') ?? '')
+    .split(',')
+    .filter(Boolean)
+  const isCart = !preorderId && cartItemIds.length > 0
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const reservation = useReservation(preorderId)
+  const cart = useCartLines({ enabled: isCart })
   const placeOrder = usePlaceOrder()
-  const createAttempt = useCreatePaymentAttempt()
+  const [isStarting, setIsStarting] = useState(false)
   const { data: profile } = useProfile()
   const { data: savedAddress } = useDefaultAddress()
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
@@ -119,10 +159,41 @@ export function PaymentPage() {
     .join(' ')
 
   const detail = reservation.data
-  const payable = detail ? PAYABLE.includes(detail.displayStatus) : false
-  // 결제 금액은 서버가 정한다 — 예약 접수 당시 단가 그대로(수량 1).
-  const totalAmount = detail?.unitPrice ?? 0
-  const isPaying = placeOrder.isPending || createAttempt.isPending
+  const cartLines = isCart
+    ? cart.data?.filter(({ cartItemId }) => cartItemIds.includes(cartItemId))
+    : undefined
+  // 결제 금액은 서버가 정한다 — 사전예약은 예약 접수 당시 단가(수량 1), 장바구니는 지금 가격의 줄 금액 합.
+  const checkout: Checkout | null = detail
+    ? {
+        items: [reservationToDraft(detail)],
+        totalAmount: detail.unitPrice,
+        blockedReason: PAYABLE.includes(detail.displayStatus)
+          ? null
+          : (UNPAYABLE_MESSAGE[detail.displayStatus] ??
+            '결제할 수 있는 예약이 아니에요.'),
+        dueRow: detail.paymentDueAt
+          ? `${formatDueAt(detail.paymentDueAt)}까지`
+          : null,
+      }
+    : cartLines
+      ? {
+          items: cartLines.map(cartLineToDraft),
+          totalAmount: cartLines.reduce(
+            (sum, line) => sum + (line.lineAmount ?? 0),
+            0,
+          ),
+          blockedReason:
+            cartLines.length !== cartItemIds.length
+              ? '장바구니가 바뀌었어요. 장바구니에서 다시 골라 주세요.'
+              : cartLines.some(({ purchasable }) => !purchasable)
+                ? '지금 살 수 없는 상품이 있어요. 장바구니에서 확인해 주세요.'
+                : null,
+          dueRow: '주문 후 10분 안에 결제',
+        }
+      : null
+  const payable = checkout !== null && checkout.blockedReason === null
+  const totalAmount = checkout?.totalAmount ?? 0
+  const isPaying = placeOrder.isPending || isStarting
 
   const requiredAgreed = terms.every(
     (term) => !term.required || agreedIds.has(term.id),
@@ -156,17 +227,22 @@ export function PaymentPage() {
     if (!form.requiredFilled || !payable) return
 
     try {
-      const order = await placeOrder.mutateAsync({
-        source: 'PREORDER',
-        preorderId,
-        shipTo: {
-          name: form.values.name,
-          phone: form.values.phone,
-          postalCode: form.values.postcode,
-          line1: form.values.address,
-          line2: form.values.addressDetail || null,
-        },
-      })
+      const shipTo = {
+        name: form.values.name,
+        phone: form.values.phone,
+        postalCode: form.values.postcode,
+        line1: form.values.address,
+        line2: form.values.addressDetail || null,
+      }
+      const order = await placeOrder.mutateAsync(
+        cartLines
+          ? {
+              source: 'CART',
+              items: cartLines.map(toCartOrderItem),
+              shipTo,
+            }
+          : { source: 'PREORDER', preorderId, shipTo },
+      )
       // 기존 주문이 이미 결제됐으면 결제 단계로 가지 않고 결과를 보여 준다.
       if (order.status === 'AUTHORIZING') {
         setPaymentError(
@@ -175,7 +251,7 @@ export function PaymentPage() {
         return
       }
       if (PAID_ORDER_STATUSES.includes(order.status)) {
-        navigate(resultPath('preorder-paid'), {
+        navigate(resultPath(cartLines ? 'paid' : 'preorder-paid'), {
           replace: true,
           state: { orderId: order.orderId },
         })
@@ -186,41 +262,47 @@ export function PaymentPage() {
         setPaymentError('결제할 수 없는 주문이에요. 주문 내역을 확인해 주세요.')
         return
       }
-      const attempt = await createAttempt.mutateAsync(order.orderId)
-      await requestTossPayment({
-        tossOrderId: attempt.tossOrderId,
-        amount: attempt.amount,
-        orderName: attempt.orderName,
-        orderToken: order.orderId,
-        preorderId,
+      setIsStarting(true)
+      await startOrderPayment({
+        orderId: order.orderId,
+        preorderId: cartLines ? undefined : preorderId,
         customerName: form.values.name,
         customerEmail: form.values.email || undefined,
       })
     } catch (caught) {
+      if (
+        caught instanceof ApiRequestError &&
+        CART_REFRESH_CODES.includes(caught.error.code)
+      )
+        void queryClient.invalidateQueries({ queryKey: cartKeys.all })
       setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
+    } finally {
+      setIsStarting(false)
     }
   }
 
-  // 예약 id 없이 들어왔거나(일반 구매·장바구니) 예약을 아직 못 받았으면 안내만 보인다.
-  if (!detail) {
+  // 결제할 대상 없이 들어왔거나(바로 구매) 예약·장바구니를 아직 못 받았으면 안내만 보인다.
+  const loadQuery = isCart ? cart : reservation
+  if (!checkout) {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
         <Container>
           <div className={styles.title}>주문 / 결제</div>
-          {!preorderId ? (
+          {!preorderId && !isCart ? (
             <InlineAlert status="info">
-              지금은 사전예약 결제만 할 수 있어요. 일반 구매·장바구니 결제는
-              준비 중이에요.{' '}
-              <Link to={mypagePath('preorder-check')}>예약 내역으로 가기</Link>
+              바로 구매는 아직 준비 중이에요. 장바구니에 담아 결제해 주세요.{' '}
+              <Link to={mypagePath('cart')}>장바구니로 가기</Link>
             </InlineAlert>
           ) : (
-            <InlineAlert status={reservation.isError ? 'error' : 'info'}>
-              {reservation.isError
+            <InlineAlert status={loadQuery.isError ? 'error' : 'info'}>
+              {loadQuery.isError
                 ? getErrorMessage(
-                    reservation.error,
-                    '예약을 불러오지 못했어요.',
+                    loadQuery.error,
+                    isCart
+                      ? '장바구니를 불러오지 못했어요.'
+                      : '예약을 불러오지 못했어요.',
                   )
-                : '예약을 불러오는 중이에요.'}
+                : '주문할 상품을 불러오는 중이에요.'}
             </InlineAlert>
           )}
         </Container>
@@ -236,17 +318,14 @@ export function PaymentPage() {
         {paymentError && (
           <InlineAlert status="error">{paymentError}</InlineAlert>
         )}
-        {!payable && (
-          <InlineAlert status="info">
-            {UNPAYABLE_MESSAGE[detail.displayStatus] ??
-              '결제할 수 있는 예약이 아니에요.'}
-          </InlineAlert>
+        {checkout.blockedReason && (
+          <InlineAlert status="info">{checkout.blockedReason}</InlineAlert>
         )}
 
         <div className={styles.layout}>
           <div className={styles.form}>
             <section className={styles.section}>
-              <OrderItemList items={[reservationToDraft(detail)]} />
+              <OrderItemList items={checkout.items} />
             </section>
 
             <section className={styles.section}>
@@ -317,13 +396,16 @@ export function PaymentPage() {
           <OrderSummary
             className={styles.summary}
             rows={[
-              { label: '상품 수', value: '1개' },
+              {
+                label: '상품 수',
+                value: `${checkout.items.reduce((sum, item) => sum + item.quantity, 0)}개`,
+              },
               { label: '주문 금액', value: formatWon(totalAmount) },
-              ...(detail.paymentDueAt
+              ...(checkout.dueRow
                 ? [
                     {
                       label: '결제 기한',
-                      value: `${formatDueAt(detail.paymentDueAt)}까지`,
+                      value: checkout.dueRow,
                       highlight: true,
                     },
                   ]

@@ -2,7 +2,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
 
-import { createPaymentAttempt, getOrder, getOrders, placeOrder } from './order'
+import {
+  cancelOrder,
+  createPaymentAttempt,
+  getOrder,
+  getOrders,
+  placeOrder,
+} from './order'
 
 // 승인 결과를 기다리는 동안(AUTHORIZING) 주문 상세를 다시 묻는다.
 const AUTHORIZING_POLL_MS = 3_000
@@ -43,3 +49,12 @@ export const usePlaceOrder = () => {
 
 export const useCreatePaymentAttempt = () =>
   useMutation({ mutationFn: createPaymentAttempt })
+
+// 결제 전 장바구니 주문 취소 — 서버 확인 뒤 주문 목록·상세를 다시 받는다.
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: cancelOrder,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: orderKeys.all }),
+  })
+}

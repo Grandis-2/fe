@@ -1,10 +1,15 @@
+export { useAddToCart } from './lib/useAddToCart'
 export { useProductPurchase } from './lib/useProductPurchase'
 export type {
   ProductPurchase,
   PurchaseOptionValue,
   PurchaseProduct,
 } from './lib/useProductPurchase'
-export { orderToDrafts, reservationToDraft } from './lib/toPurchaseDrafts'
+export {
+  cartLineToDraft,
+  orderToDrafts,
+  reservationToDraft,
+} from './lib/toPurchaseDrafts'
 export type { PurchaseDraft } from './model/purchaseDraft'
 export { PREORDER_BENEFIT_RATE } from './model/benefit'
 export { OrderItemList } from './ui/OrderItemList'

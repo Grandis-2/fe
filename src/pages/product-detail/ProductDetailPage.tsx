@@ -18,6 +18,7 @@ import {
   PREORDER_BENEFIT_RATE,
   PurchaseSummary,
   QuantityControl,
+  useAddToCart,
   useProductPurchase,
   type PurchaseDraft,
 } from '@features/product-purchase'
@@ -77,6 +78,7 @@ export function ProductDetailPage() {
   })
   const purchase = useProductPurchase(product)
   const preorderSubmit = usePreorderSubmit()
+  const { addToCart, isAdding } = useAddToCart()
   const {
     selections,
     select,
@@ -96,6 +98,12 @@ export function ProductDetailPage() {
   // 조회가 끝나지 않았거나 실패했거나, 고른 조합을 살 수 없거나, 접수 중이면 결제/사전예약을 막는다.
   const isCheckoutReady =
     Boolean(variant) && !unavailableReason && !preorderSubmit.isPending
+
+  // 장바구니는 회원 전용 — 비회원이면 로그인 모달을 연다. 고른 조합을 살 수 없으면 담지 않는다.
+  const handleAddToCart = () => {
+    if (!variant || !isCheckoutReady) return
+    requireLogin(() => addToCart(variant.variantId, quantity))
+  }
 
   // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
   const handleCheckout = () => {
@@ -248,7 +256,12 @@ export function ProductDetailPage() {
               )}
               <div className={styles.actions}>
                 {!isPreorder && (
-                  <ActionButton variant="cart" fullWidth>
+                  <ActionButton
+                    variant="cart"
+                    fullWidth
+                    onClick={handleAddToCart}
+                    disabled={!isCheckoutReady || isAdding}
+                  >
                     장바구니
                   </ActionButton>
                 )}
@@ -275,6 +288,8 @@ export function ProductDetailPage() {
         shipmentLabel={shipmentLabel}
         onCheckout={handleCheckout}
         checkoutDisabled={!isCheckoutReady}
+        onAddToCart={handleAddToCart}
+        addToCartDisabled={!isCheckoutReady || isAdding}
       />
       <div
         className={styles.tabBarWrapper}

@@ -4,9 +4,12 @@
 export const HOME_PATH = '/'
 export const SIGNUP_PATH = '/signup'
 export const PAYMENT_PATH = '/payment'
-// 결제는 사전예약 하나 단위다(order 명세: 결제 가능해진 예약으로 주문을 만든다). 새로고침해도 남도록 쿼리에 싣는다.
+// 결제는 사전예약 하나, 또는 장바구니에서 고른 줄 단위다(order 명세). 새로고침해도 남도록 쿼리에 싣는다.
 export const paymentPath = (preorderId: string) =>
   `${PAYMENT_PATH}?${new URLSearchParams({ preorderId })}`
+// 장바구니에서 고른 줄(cartItemId)을 결제한다.
+export const cartPaymentPath = (cartItemIds: string[]) =>
+  `${PAYMENT_PATH}?${new URLSearchParams({ cart: cartItemIds.join(',') })}`
 export const REVIEWS_PATH = '/reviews'
 // 헤더·탭바 없이 전체 화면으로 뜨는 사전예약 안내(RootLayout 밖).
 export const ONBOARDING_PATH = '/onboarding'

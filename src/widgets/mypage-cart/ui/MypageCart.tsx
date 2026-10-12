@@ -1,94 +1,77 @@
 import { useState } from 'react'
 
-import { useQueries } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 
 import {
-  type CartItem,
-  useCartItems,
+  cartUnavailableLabel,
+  useCartLines,
   useRemoveCartItem,
   useUpdateCartItemQuantity,
+  type CartLine,
 } from '@entities/cart'
 import { OrderSummary } from '@entities/order'
-import {
-  ProductPaymentCard,
-  productDetailQuery,
-  useProduct,
-} from '@entities/product'
-import type { PurchaseDraft } from '@features/product-purchase'
+import { ProductPaymentCard } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
-import { HOME_PATH, PAYMENT_PATH } from '@shared/config/routes'
+import { cartPaymentPath, HOME_PATH } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { Button, Checkbox, InlineAlert } from '@shared/ui'
 
 import * as styles from './MypageCart.css'
 
+// 장바구니(GET /api/v1/cart) — 줄마다 지금 가격·재고·살 수 있는지가 같이 온다.
+// 살 수 없는 줄(purchasable false)은 고를 수 없고 이유를 보여 준다. 고른 줄을 결제 화면(?cart=)으로 넘긴다.
 export function MypageCart() {
   const navigate = useNavigate()
-  const { data: items = [], isPending, isError } = useCartItems()
+  const { data: lines = [], isPending, isError } = useCartLines()
   const updateQuantity = useUpdateCartItemQuantity()
   const removeCartItem = useRemoveCartItem()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const selectedItems = items.filter((item) => selectedIds.has(item.id))
-  const allSelected = items.length > 0 && selectedItems.length === items.length
 
-  const selectedTotal = selectedItems.reduce(
-    (total, item) => total + item.price * item.quantity,
+  const purchasableLines = lines.filter(({ purchasable }) => purchasable)
+  // 고른 뒤 살 수 없게 바뀐 줄은 선택에서 저절로 빠진다.
+  const selectedLines = purchasableLines.filter(({ cartItemId }) =>
+    selectedIds.has(cartItemId),
+  )
+  const allSelected =
+    purchasableLines.length > 0 &&
+    selectedLines.length === purchasableLines.length
+  const selectedTotal = selectedLines.reduce(
+    (total, line) => total + (line.lineAmount ?? 0),
     0,
   )
 
-  // 결제 화면에 넘길 상품명·옵션은 상품 상세에만 있다. 각 줄(CartItemRow)이 이미 같은 키로
-  // 불러 둔 캐시를 그대로 쓴다. 하나라도 아직 없거나 옵션을 못 찾으면 결제를 막는다.
-  const selectedProducts = useQueries({
-    queries: selectedItems.map((item) => productDetailQuery(item.productId)),
-  })
-  const checkoutDrafts = selectedItems.flatMap(
-    (item, index): PurchaseDraft[] => {
-      const product = selectedProducts[index]?.data
-      const variant = product?.variants.find(
-        ({ sku }) => sku === item.optionCode,
-      )
-      if (!product || !variant) return []
-      return [
-        {
-          variantId: variant.variantId,
-          productName: product.title,
-          optionSummary: variant.title,
-          quantity: item.quantity,
-          unitPrice: item.price,
-        },
-      ]
-    },
-  )
-  const checkoutReady =
-    selectedItems.length > 0 && checkoutDrafts.length === selectedItems.length
-
   const toggleAll = (checked: boolean) =>
-    setSelectedIds(checked ? new Set(items.map((item) => item.id)) : new Set())
+    setSelectedIds(
+      checked
+        ? new Set(purchasableLines.map(({ cartItemId }) => cartItemId))
+        : new Set(),
+    )
 
-  // 요청은 바뀐 수량을 통째로 보내므로, 응답 전에 또 누르면 같은 값이 두 번 간다 — 진행 중엔 무시한다.
-  const changeQuantity = (id: string, quantity: number) => {
+  const toggleOne = (cartItemId: string, checked: boolean) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) next.add(cartItemId)
+      else next.delete(cartItemId)
+      return next
+    })
+
+  // 최종 수량을 보내므로 응답 전에 또 눌러도 결과는 같지만, 요청이 쌓이지 않게 진행 중엔 무시한다.
+  const changeQuantity = (cartItemId: string, quantity: number) => {
     if (updateQuantity.isPending) return
-    updateQuantity.mutate({ id, quantity })
+    updateQuantity.mutate({ cartItemId, quantity })
   }
 
-  const removeItem = (id: string) => {
+  const removeLine = (cartItemId: string) => {
     if (removeCartItem.isPending) return
-    removeCartItem.mutate(id, {
-      onSuccess: () =>
-        setSelectedIds((prev) => {
-          const next = new Set(prev)
-          next.delete(id)
-          return next
-        }),
+    removeCartItem.mutate(cartItemId, {
+      onSuccess: () => toggleOne(cartItemId, false),
     })
   }
 
-  // 선택한 줄을 한꺼번에 지운다. 일부만 실패하면 그 줄은 목록에 남고 오류 문구가 뜬다
-  // (removeCartItem.error) — 지워진 줄만 선택에서 뺀다.
+  // 선택한 줄을 한꺼번에 지운다. 일부만 실패하면 그 줄은 목록에 남고 오류 문구가 뜬다 — 지워진 줄만 선택에서 뺀다.
   const removeSelected = async () => {
     if (removeCartItem.isPending) return
-    const ids = selectedItems.map((item) => item.id)
+    const ids = selectedLines.map(({ cartItemId }) => cartItemId)
     const results = await Promise.allSettled(
       ids.map((id) => removeCartItem.mutateAsync(id)),
     )
@@ -107,14 +90,6 @@ export function MypageCart() {
       : null
   const actionError = updateQuantity.error ?? removeCartItem.error
 
-  const toggleOne = (id: string, checked: boolean) =>
-    setSelectedIds((prev) => {
-      const next = new Set(prev)
-      if (checked) next.add(id)
-      else next.delete(id)
-      return next
-    })
-
   return (
     <div className={styles.root}>
       <h1 className={styles.title}>장바구니</h1>
@@ -130,7 +105,7 @@ export function MypageCart() {
         </InlineAlert>
       )}
 
-      {!isPending && !isError && items.length === 0 && (
+      {!isPending && !isError && lines.length === 0 && (
         <div className={styles.empty}>
           <span>장바구니에 담긴 상품이 없어요.</span>
           <Button
@@ -143,22 +118,23 @@ export function MypageCart() {
         </div>
       )}
 
-      {items.length > 0 && (
+      {lines.length > 0 && (
         <>
           <div className={styles.toolbar}>
             <label className={styles.selectAll}>
               <Checkbox
                 checked={allSelected}
+                disabled={purchasableLines.length === 0}
                 onChange={(event) => toggleAll(event.target.checked)}
               />
               전체 선택
-              <span className={styles.selectAllCount}>{items.length}개</span>
+              <span className={styles.selectAllCount}>{lines.length}개</span>
             </label>
             <Button
               size="small"
               variant="subtle"
               color="cancel"
-              disabled={selectedItems.length === 0 || removeCartItem.isPending}
+              disabled={selectedLines.length === 0 || removeCartItem.isPending}
               onClick={() => void removeSelected()}
             >
               선택 삭제
@@ -167,33 +143,40 @@ export function MypageCart() {
 
           <div className={styles.layout}>
             <div className={styles.list}>
-              {items.map((item) => (
-                <CartItemRow
-                  key={item.id}
-                  item={item}
-                  className={styles.item}
-                  checked={selectedIds.has(item.id)}
-                  onCheckedChange={(checked) => toggleOne(item.id, checked)}
-                  onQuantityChange={(quantity) =>
-                    changeQuantity(item.id, quantity)
+              {lines.map((line) => (
+                <CartLineRow
+                  key={line.cartItemId}
+                  line={line}
+                  checked={selectedIds.has(line.cartItemId) && line.purchasable}
+                  onCheckedChange={(checked) =>
+                    line.purchasable && toggleOne(line.cartItemId, checked)
                   }
-                  onRemove={() => removeItem(item.id)}
+                  onQuantityChange={(quantity) =>
+                    changeQuantity(line.cartItemId, quantity)
+                  }
+                  onRemove={() => removeLine(line.cartItemId)}
                 />
               ))}
             </div>
             <OrderSummary
               className={styles.summary}
               rows={[
-                { label: '선택 상품', value: `${selectedItems.length}개` },
+                { label: '선택 상품', value: `${selectedLines.length}개` },
                 { label: '상품 금액', value: formatWon(selectedTotal) },
                 { label: '배송비', value: '무료' },
               ]}
               totalLabel="결제 예정 금액"
               totalValue={formatWon(selectedTotal)}
               actionLabel="결제하기"
-              actionDisabled={!checkoutReady}
+              actionDisabled={selectedLines.length === 0}
               darkAction
-              onAction={() => navigate(PAYMENT_PATH, { state: checkoutDrafts })}
+              onAction={() =>
+                navigate(
+                  cartPaymentPath(
+                    selectedLines.map(({ cartItemId }) => cartItemId),
+                  ),
+                )
+              }
             />
           </div>
         </>
@@ -202,46 +185,51 @@ export function MypageCart() {
   )
 }
 
-type CartItemRowProps = {
-  item: CartItem
-  className: string
+type CartLineRowProps = {
+  line: CartLine
   checked: boolean
   onCheckedChange: (checked: boolean) => void
   onQuantityChange: (quantity: number) => void
   onRemove: () => void
 }
 
-function CartItemRow({
-  item,
-  className,
+// 장바구니 한 줄 — 살 수 없으면 카드 아래에 이유를 붙인다.
+function CartLineRow({
+  line,
   checked,
   onCheckedChange,
   onQuantityChange,
   onRemove,
-}: CartItemRowProps) {
-  const { data: product } = useProduct(item.productId)
-  // 장바구니의 optionCode는 상품 옵션의 sku다(장바구니는 아직 프론트 제안 API).
-  const variant = product?.variants.find(({ sku }) => sku === item.optionCode)
-
+}: CartLineRowProps) {
   return (
-    <ProductPaymentCard
-      className={className}
-      variant="cart"
-      product={{
-        imageSrc: product?.imageUrl ?? undefined,
-        productId: item.productId,
-        name: product?.title ?? item.productId,
-        // ponytail: 백엔드 상세에 모델명 칸이 없어 비워 둔다 — 필요하면 백엔드에 요청.
-        modelNumber: '',
-        optionSummary: variant?.title ?? item.optionCode,
-        quantityLabel: `수량 ${item.quantity}개`,
-        priceLabel: formatWon(item.price * item.quantity),
-      }}
-      checked={checked}
-      onCheckedChange={onCheckedChange}
-      quantity={item.quantity}
-      onQuantityChange={onQuantityChange}
-      onRemove={onRemove}
-    />
+    <div className={styles.item}>
+      <ProductPaymentCard
+        variant="cart"
+        product={{
+          imageSrc: line.imageUrl ?? undefined,
+          productId: line.productId ?? undefined,
+          name: line.productTitle ?? '판매 종료된 상품',
+          modelNumber: '',
+          optionSummary: [line.optionTitle, line.warranty && '보증 포함']
+            .filter(Boolean)
+            .join(' · '),
+          quantityLabel: `수량 ${line.quantity}개`,
+          priceLabel:
+            line.lineAmount === null ? '-' : formatWon(line.lineAmount),
+        }}
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        quantity={line.quantity}
+        onQuantityChange={onQuantityChange}
+        onRemove={onRemove}
+      />
+      {line.unavailableReason && (
+        <InlineAlert status="info">
+          {cartUnavailableLabel[line.unavailableReason]}
+          {line.unavailableReason === 'INSUFFICIENT_STOCK' &&
+            ` (최대 ${line.availableQuantity}개)`}
+        </InlineAlert>
+      )}
+    </div>
   )
 }

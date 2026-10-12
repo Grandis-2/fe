@@ -109,8 +109,9 @@ const content: Record<
     heading: '결제에 실패했어요',
     description:
       '결제가 완료되지 않아 주문이 접수되지 않았어요. 결제 수단을 확인한 뒤 다시 시도해 주세요.',
-    primary: { label: '다시 결제하기', to: mypagePath('preorder-check') },
-    secondary: { label: '예약 내역 보기', to: mypagePath('preorder-check') },
+    // 사전예약이면 같은 예약의 결제로(아래 primaryTo), 장바구니 주문이면 주문 내역에서 기한 안에 다시 결제한다.
+    primary: { label: '다시 결제하기', to: mypagePath('history') },
+    secondary: { label: '장바구니로', to: mypagePath('cart') },
   },
 }
 
@@ -161,7 +162,13 @@ export function ResultPage() {
               },
             ]
           : []),
-        { label: '예상 배송일', value: '출시일 이후 순차 발송' },
+        {
+          label: '예상 배송일',
+          value:
+            status === 'preorder-paid'
+              ? '출시일 이후 순차 발송'
+              : '결제 확인 후 순차 발송',
+        },
       ]
     : [
         ...(reservation
@@ -189,6 +196,11 @@ export function ResultPage() {
     preorderId && (status === 'preorder' || status === 'failed')
       ? paymentPath(preorderId)
       : primary.to
+  // 사전예약 결제가 실패했으면 장바구니 대신 예약 내역으로 보낸다.
+  const secondaryAction =
+    status === 'failed' && preorderId
+      ? { label: '예약 내역 보기', to: mypagePath('preorder-check') }
+      : secondary
   const primaryDisabled =
     status === 'preorder' &&
     reservation !== undefined &&
@@ -251,9 +263,9 @@ export function ResultPage() {
         <div className={styles.actions}>
           <ActionButton
             variant="neutral"
-            onClick={() => navigate(secondary.to)}
+            onClick={() => navigate(secondaryAction.to)}
           >
-            {secondary.label}
+            {secondaryAction.label}
           </ActionButton>
           <ActionButton
             disabled={primaryDisabled}

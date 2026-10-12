@@ -1,59 +1,57 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect } from 'storybook/test'
 
-import { type CartItem } from '@entities/cart'
+import { type CartLine } from '@entities/cart'
 import { color } from '@shared/config/theme'
 
 import { MypageCart } from './MypageCart'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-const items: CartItem[] = [
-  {
-    id: 'cart-1',
-    productId: 'MBP-14',
-    optionCode: 'MBP-512-BLK',
-    quantity: 1,
-    price: 2390000,
-  },
-  {
-    id: 'cart-2',
-    productId: 'SM-G999',
-    optionCode: 'SM-256-BLK',
+const line = (cartItemId: string, overrides: Partial<CartLine>): CartLine => ({
+  cartItemId,
+  productId: '20000000-0000-4000-8000-000000000002',
+  variantId: '30000000-0000-4000-8000-000000000200',
+  productTitle: '맥북 프로 14',
+  optionTitle: '스페이스 블랙 / 512GB',
+  imageUrl: null,
+  warranty: false,
+  quantity: 1,
+  unitPrice: 2390000,
+  warrantyPrice: 0,
+  lineAmount: 2390000,
+  availableQuantity: 10,
+  purchasable: true,
+  unavailableReason: null,
+  ...overrides,
+})
+
+// 두 줄은 살 수 있고, 판매 중지 줄 하나는 고를 수 없다.
+const lines: CartLine[] = [
+  line('a0000000-0000-4000-8000-000000000001', {}),
+  line('a0000000-0000-4000-8000-000000000002', {
+    productTitle: '갤럭시 G999',
+    optionTitle: '256GB 블랙',
     quantity: 2,
-    price: 1290000,
-  },
+    unitPrice: 1290000,
+    lineAmount: 2580000,
+  }),
+  line('a0000000-0000-4000-8000-000000000003', {
+    productTitle: 'NOVA 마우스',
+    optionTitle: '실버 / 256GB',
+    unitPrice: 59000,
+    lineAmount: 59000,
+    purchasable: false,
+    unavailableReason: 'PAUSED',
+  }),
 ]
 
-const productDetails = {
-  'MBP-14': {
-    title: '맥북 프로 14',
-    imageUrl: null,
-    variants: [{ sku: 'MBP-512-BLK', title: '512GB 스페이스 블랙' }],
-  },
-  'SM-G999': {
-    title: '갤럭시 G999',
-    imageUrl: null,
-    variants: [{ sku: 'SM-256-BLK', title: '256GB 블랙' }],
-  },
-}
-
 // Storybook엔 MSW가 없어 장바구니 조회가 실패한다 — 캐시를 미리 채우고 다시 묻지 않게 한다.
-const withCart = (data: CartItem[]) => {
+const withCart = (data: CartLine[]) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity, retry: false } },
   })
-  queryClient.setQueryData(['cart', 'items'], data)
-  for (const item of data) {
-    const product =
-      productDetails[item.productId as keyof typeof productDetails]
-    if (product) {
-      queryClient.setQueryData(['products', 'detail', item.productId], {
-        ...product,
-        productId: item.productId,
-      })
-    }
-  }
+  queryClient.setQueryData(['cart', 'lines'], data)
   return (Story: () => React.ReactNode) => (
     <QueryClientProvider client={queryClient}>
       <div
@@ -69,7 +67,7 @@ const withCart = (data: CartItem[]) => {
 const meta = {
   component: MypageCart,
   tags: ['ai-generated'],
-  decorators: [withCart(items)],
+  decorators: [withCart(lines)],
 } satisfies Meta<typeof MypageCart>
 
 export default meta
@@ -79,6 +77,8 @@ export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText('맥북 프로 14')).toBeInTheDocument()
     await expect(canvas.getByText('256GB 블랙')).toBeInTheDocument()
+    // 살 수 없는 줄은 이유가 붙는다.
+    await expect(canvas.getByText('판매가 중지된 상품이에요.')).toBeVisible()
   },
 }
 
@@ -91,7 +91,7 @@ export const SelectAll: Story = {
     await expect(first).toBeChecked()
     await expect(second).toBeChecked()
 
-    // 리모컨 합계는 선택한 상품의 (단가 x 수량) 합이다 — 2,390,000 + 1,290,000 x 2.
+    // 합계는 살 수 있는 줄의 줄 금액 합이다 — 2,390,000 + 1,290,000 x 2(판매 중지 줄은 빠진다).
     await expect(canvas.getAllByText('4,970,000원')[0]).toBeVisible()
 
     // 하나라도 해제하면 전체 선택도 풀린다.
