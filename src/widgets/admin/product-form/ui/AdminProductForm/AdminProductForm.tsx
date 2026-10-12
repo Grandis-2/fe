@@ -180,6 +180,7 @@ export function AdminProductForm({
 
         <VariantTable
           variants={variants}
+          isPreorder={value.isPreorder}
           colors={value.colors}
           optionGroups={value.optionGroups}
           quantities={value.quantities}
