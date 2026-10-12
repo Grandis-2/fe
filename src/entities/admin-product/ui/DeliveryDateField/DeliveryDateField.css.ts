@@ -12,25 +12,31 @@ export const root = style({
   position: 'relative',
 })
 
+/** 두 변형이 함께 쓰는 바탕 — 높이·배경·hover 테두리는 같다 */
+const boxBase = style({
+  boxSizing: 'border-box',
+  display: 'flex',
+  alignItems: 'center',
+  height: '46px',
+  background: color.background.base,
+  cursor: 'pointer',
+  transition: `border-color ${motion.duration.fast} ${motion.easing.default}`,
+  selectors: {
+    '&:hover': { borderColor: color.primary.base },
+  },
+})
+
+// compact — 표 칸에서 좁게 쓴다. 아이콘까지 한 박스에 담아 왼쪽 정렬.
 const triggerBase = style([
+  boxBase,
   typography.body.sub,
   {
-    boxSizing: 'border-box',
-    display: 'flex',
-    alignItems: 'center',
     gap: spacing[8],
     width: '100%',
-    height: '46px',
     padding: `0 ${spacing[12]}`,
     borderRadius: '8px',
     border: `1px solid ${color.primary.surface}`,
-    background: color.background.base,
-    cursor: 'pointer',
     textAlign: 'left',
-    transition: `border-color ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { borderColor: color.primary.base },
-    },
   },
 ])
 
@@ -108,3 +114,50 @@ export const undecidedButton = style([
     },
   },
 ])
+
+/* ------------------------------------------------------------------ *
+ * variant 'field' — 폼 한 줄에 들어갈 때.
+ * 아이콘을 박스 밖에 두고 박스는 가운데 정렬로, 같은 섹션에 서는 다른
+ * 일시 입력칸과 높이·라운드·테두리를 맞춘다.
+ * ------------------------------------------------------------------ */
+
+export const row = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[12],
+})
+
+// 누르는 건 옆 박스 하나뿐이라 버튼이 아니라 장식이다.
+export const iconBox = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  width: '32px',
+  height: '32px',
+  color: color.text.tertiary,
+})
+
+export const iconLarge = style({
+  width: '24px',
+  height: '24px',
+})
+
+// field — 폼 한 줄에서 옆 입력칸과 나란히 선다. 아이콘은 밖, 글자는 가운데.
+const summaryBase = style([
+  boxBase,
+  typography.body.defaultRegular,
+  {
+    flex: '1 1 0%',
+    minWidth: 0,
+    justifyContent: 'center',
+    padding: `0 ${spacing[16]}`,
+    borderRadius: '12px',
+    border: `1px solid ${color.border.default}`,
+    textAlign: 'center',
+  },
+])
+
+export const summary = style([summaryBase, { color: color.text.primary }])
+
+export const summaryEmpty = style([summaryBase, { color: color.text.tertiary }])

@@ -3,8 +3,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryPolicy } from '@shared/api/queryPolicy'
 import type { AdminProductDetail } from '@shared/api/types'
 
-import { toStockRequests, toUpsertRequest } from '../model/form'
+import {
+  toFirstWaveRequest,
+  toStockRequests,
+  toUpsertRequest,
+} from '../model/form'
 
+import { putDispatchWindow } from './adminDispatch'
 import {
   createAdminProduct,
   getAdminProduct,
@@ -40,14 +45,35 @@ export const useAdminProductStock = (productId: string) =>
     ...queryPolicy.live,
   })
 
-/** 상품을 초안으로 등록한다. 응답을 상세 캐시에 넣어 등록 직후 상세 화면이 다시 조회하지 않게 한다 */
+/**
+ * 상품을 초안으로 등록한다. 응답을 상세 캐시에 넣어 등록 직후 상세 화면이 다시
+ * 조회하지 않게 한다.
+ *
+ * 사전예약이면 1차 배송 차수까지 이어서 만든다 — 폼에서 1차 배송 수량과 예상
+ * 배송일을 이미 받았으니, 배송 구간 설정 탭이 빈 화면으로 열리지 않게 한다.
+ *
+ * 차수는 상품이 만들어진 뒤에야 저장할 수 있어서(경로에 productId가 들어간다)
+ * 요청이 두 번 나간다. 차수 저장이 실패해도 상품은 이미 생겼으므로 throw하지
+ * 않고 `dispatchSaved: false`로 알려, 화면이 배송 구간 탭으로 보내 다시 넣게 한다.
+ */
 export const useCreateAdminProduct = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (value: AdminProductFormValue) =>
-      createAdminProduct(toUpsertRequest(value)),
-    onSuccess: (created) =>
-      queryClient.setQueryData(adminProductKey(created.productId), created),
+    mutationFn: async (value: AdminProductFormValue) => {
+      const product = await createAdminProduct(toUpsertRequest(value))
+      queryClient.setQueryData(adminProductKey(product.productId), product)
+
+      const firstWave = toFirstWaveRequest(value)
+      if (!firstWave) return { product, dispatchSaved: true }
+
+      const dispatchSaved = await putDispatchWindow(
+        product.productId,
+        firstWave,
+      )
+        .then(() => true)
+        .catch(() => false)
+      return { product, dispatchSaved }
+    },
   })
 }
 

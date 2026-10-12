@@ -22,7 +22,7 @@ const navGroups = [
     label: '백오피스',
     items: [
       { path: ADMIN_PRODUCTS_PATH, label: '상품 관리' },
-      { path: ADMIN_PROMOTIONS_PATH, label: '사전 예약 관리' },
+      { path: ADMIN_PROMOTIONS_PATH, label: '사전예약 관리' },
       { path: ADMIN_RESERVATIONS_PATH, label: '예약 현황' },
       { path: ADMIN_CONSISTENCY_CHECK_PATH, label: '정합성 대조' },
     ],

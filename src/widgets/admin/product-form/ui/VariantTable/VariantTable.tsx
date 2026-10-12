@@ -17,6 +17,11 @@ export type VariantTableProps = {
   optionGroups: ProductOptionGroup[]
   quantities: Record<string, number>
   onQuantityChange: (key: string, quantity: number) => void
+  /**
+   * 사전예약이면 등록 때 받는 수량이 전체 재고가 아니라 1차 배송 물량이다 —
+   * 2차 이후는 배송 차수 탭에서 따로 정하므로 이름으로 구분해 준다.
+   */
+  isPreorder?: boolean
 }
 
 export function VariantTable({
@@ -25,7 +30,9 @@ export function VariantTable({
   optionGroups,
   quantities,
   onQuantityChange,
+  isPreorder = false,
 }: VariantTableProps) {
+  const quantityLabel = isPreorder ? '1차 배송 수량' : '수량'
   const hexByName = new Map(
     colors.map((colorOption) => [
       colorOption.noColor ? '색상 없음' : colorOption.name,
@@ -75,14 +82,14 @@ export function VariantTable({
     },
     {
       key: 'quantity',
-      header: '수량',
+      header: quantityLabel,
       align: 'center',
-      width: '140px',
+      width: isPreorder ? '170px' : '140px',
       render: (variant) => (
         <div className={styles.quantityField}>
           <NumberField
             size="small"
-            label="수량"
+            label={quantityLabel}
             value={quantities[variant.key] ?? 0}
             onChange={(quantity) => onQuantityChange(variant.key, quantity)}
           />

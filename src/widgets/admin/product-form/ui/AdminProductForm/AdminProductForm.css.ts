@@ -39,7 +39,7 @@ export const checkboxLabel = style([
   { color: color.text.primary },
 ])
 
-export const checkboxHint = style([
+export const hint = style([
   typography.body.defaultRegular,
   { color: color.text.tertiary },
 ])

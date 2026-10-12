@@ -9,7 +9,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: AdminProductForm,
   tags: ['ai-generated'],
-  args: { onSubmit: fn(), onCancel: fn(), onPreview: fn() },
+  args: {
+    onSubmit: fn(),
+    onCancel: fn(),
+    onPreview: fn(),
+    onEditDispatchWindow: fn(),
+  },
 } satisfies Meta<typeof AdminProductForm>
 
 export default meta
@@ -61,20 +66,46 @@ export const Edit: Story = {
       ),
     ).toBeVisible()
 
+    // 1차 배송일은 등록 때만 받는다 — 여기서는 어디서 고치는지 알려주고 보내준다.
+    await expect(canvas.getByText('1차 예상 배송일')).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /미정/ })).toBeNull()
+    await expect(canvas.getByText(/배송 차수 수정이/)).toBeVisible()
+
+    await userEvent.click(
+      canvas.getByRole('button', { name: '배송 구간 설정으로 이동' }),
+    )
+    await expect(args.onEditDispatchWindow).toHaveBeenCalled()
+
     await userEvent.click(canvas.getByRole('button', { name: '취소' }))
     await expect(args.onCancel).toHaveBeenCalled()
   },
 }
 
-/** 사전 예약을 끄면 오픈/마감 일시 입력이 사라진다. */
+/**
+ * 사전 예약을 끄면 오픈/마감 일시 입력이 사라진다.
+ * 수량 칸 이름도 같이 바뀐다 — 사전예약은 받는 수량이 1차 배송 물량이다.
+ */
 export const PreorderToggle: Story = {
   args: { mode: 'create' },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText('오픈 / 마감 일시')).toBeNull()
+
+    // 조합이 하나는 있어야 수량 칸이 그려진다.
+    await userEvent.type(canvas.getByLabelText('색상 입력'), '딥 블루')
+    await waitFor(async () =>
+      expect(canvas.getByLabelText('수량')).toBeVisible(),
+    )
+
     await userEvent.click(canvas.getByText('사전 예약으로 판매'))
     await waitFor(() =>
       expect(canvas.getByRole('button', { name: '달력 열기' })).toBeVisible(),
     )
+    await expect(canvas.getByLabelText('1차 배송 수량')).toBeVisible()
+    await expect(canvas.queryByLabelText('수량')).toBeNull()
+
+    // 1차 예상 배송일은 등록할 때만 고를 수 있다 — 수량과 짝이 되어 1차 차수를 만든다.
+    await expect(canvas.getByText('1차 예상 배송일')).toBeVisible()
+    await expect(canvas.getByRole('button', { name: /미정/ })).toBeVisible()
   },
 }
 
