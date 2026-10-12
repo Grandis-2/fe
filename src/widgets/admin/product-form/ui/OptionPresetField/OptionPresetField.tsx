@@ -8,8 +8,12 @@ import type { DropdownOption } from '@shared/ui'
 import * as styles from './OptionPresetField.css'
 
 export type OptionPresetFieldProps = {
-  /** 지금 고른 종류. 태그 추천도 같이 보므로 폼이 들고 있다 */
-  value?: ProductOptionPreset
+  /**
+   * 지금 고른 종류. 태그 추천도 같이 보므로 폼이 들고 있다.
+   * 아직 안 골랐으면 undefined지만 받기는 반드시 받는다 — 안 넘기면 고른 값이
+   * 화면에 남지 않는다(Dropdown은 내부 상태가 없다).
+   */
+  value: ProductOptionPreset | undefined
   onSelect: (preset: ProductOptionPreset) => void
 }
 

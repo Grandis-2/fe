@@ -376,7 +376,9 @@ export function toUpsertRequest(
     name: value.name,
     // 안 골랐으면 키를 아예 빼서 수정 때 기존 브랜드를 빈 값으로 덮지 않는다.
     brand: value.brand || undefined,
-    tags: value.tags,
+    // 비어 있으면 키를 뺀다 — 상세 응답에 tags가 아직 없어 폼이 늘 빈 배열로 시작하는데,
+    // 그대로 보내면 수정만 해도 전에 달아 둔 태그가 지워진다(brand와 같은 이유).
+    tags: value.tags.length > 0 ? value.tags : undefined,
     optionGroups,
     variants,
     images: value.detailImages.map((image, index) => ({

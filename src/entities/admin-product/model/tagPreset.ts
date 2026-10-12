@@ -26,16 +26,6 @@ const SYNONYMS: Record<string, string[]> = {
 }
 
 /**
- * 대분류별로 자주 붙는 말. 종류가 달라도 같은 묶음이면 비슷하게 찾는다 —
- * PC/주변기기는 쓰임새(게이밍·사무용)로, 웨어러블은 선물로 많이 검색된다.
- */
-const CATEGORY_TAGS: Record<string, string[]> = {
-  모바일: ['신제품', '한정판'],
-  'PC/주변기기': ['게이밍', '사무용', '고사양'],
-  웨어러블: ['선물', '신제품'],
-}
-
-/**
  * 종류와 무관하게 아무 상품에나 붙을 수 있는 말. 추천에는 묶음에 맞는 것만 올라가고
  * 나머지는 전체 목록에서 고른다.
  */
@@ -47,7 +37,20 @@ const GENERAL_TAGS = [
   '게이밍',
   '사무용',
   '선물',
-]
+] as const
+
+/**
+ * 대분류별로 자주 붙는 말. 종류가 달라도 같은 묶음이면 비슷하게 찾는다 —
+ * PC/주변기기는 쓰임새(게이밍·사무용)로, 웨어러블은 선물로 많이 검색된다.
+ *
+ * 공통어 중에서만 고르게 타입을 묶어 둔다 — 전체 목록(TAG_PRESETS)에 없는 말을
+ * 추천하면 그 태그는 추천을 지운 뒤 다시 찾을 길이 없다.
+ */
+const CATEGORY_TAGS: Record<string, (typeof GENERAL_TAGS)[number][]> = {
+  모바일: ['신제품', '한정판'],
+  'PC/주변기기': ['게이밍', '사무용', '고사양'],
+  웨어러블: ['선물', '신제품'],
+}
 
 /**
  * 고른 제품 종류에 맞는 추천 태그 — 그 종류의 말(유의어 포함) 다음에 대분류 공통 말.
@@ -58,10 +61,14 @@ const GENERAL_TAGS = [
 export function recommendedTags(preset?: ProductOptionPreset): string[] {
   if (!preset) return []
 
+  // 유의어와 대분류 공통어에 같은 말이 겹쳐 적히면 칩이 두 번 나오고 React key가
+  // 부딪힌다 — 목록은 손으로 늘리는 자리라 여기서 한 번 걸러 둔다.
   return [
-    preset.name,
-    ...(SYNONYMS[preset.name] ?? []),
-    ...(CATEGORY_TAGS[preset.category] ?? []),
+    ...new Set([
+      preset.name,
+      ...(SYNONYMS[preset.name] ?? []),
+      ...(CATEGORY_TAGS[preset.category] ?? []),
+    ]),
   ]
 }
 
@@ -78,9 +85,11 @@ export function recommendedTags(preset?: ProductOptionPreset): string[] {
  * 후보일 뿐이라 여기 없는 말은 직접 적어 넣는다(TagField).
  */
 export const TAG_PRESETS = [
-  ...OPTION_PRESETS.flatMap((preset) => [
-    preset.name,
-    ...(SYNONYMS[preset.name] ?? []),
+  ...new Set([
+    ...OPTION_PRESETS.flatMap((preset) => [
+      preset.name,
+      ...(SYNONYMS[preset.name] ?? []),
+    ]),
+    ...GENERAL_TAGS,
   ]),
-  ...GENERAL_TAGS,
 ]

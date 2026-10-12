@@ -13,6 +13,8 @@ import * as fields from '../fields.css'
 
 import * as styles from './TagField.css'
 
+const TAG_MAX_LENGTH = 20
+
 export type TagFieldProps = {
   value: string[]
   onChange: (tags: string[]) => void
@@ -101,6 +103,9 @@ export function TagField({ value, onChange, preset }: TagFieldProps) {
           className={fields.growField}
           size="small"
           label="태그 직접 입력"
+          // 검색어로 쓰는 말이라 길 이유가 없다. Tag는 줄바꿈을 하지 않아서
+          // 긴 한 덩어리가 들어오면 칩 하나가 줄 폭을 넘긴다.
+          maxLength={TAG_MAX_LENGTH}
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           onKeyDown={handleKeyDown}

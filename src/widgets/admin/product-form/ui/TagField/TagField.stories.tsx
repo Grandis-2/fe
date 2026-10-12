@@ -114,6 +114,21 @@ export const IgnoresDuplicate: Story = {
   },
 }
 
+/**
+ * 서버에서 온 긴 태그도 줄을 넘기지 않고 다음 줄로 내려간다.
+ * 직접 입력은 20자에서 막히지만 들어온 값에는 제한이 없다.
+ */
+export const LongTag: Story = {
+  args: { value: ['한정판스페셜에디션사은품증정행사'] },
+  play: async ({ canvas }) => {
+    // 후보에 없는 말이라 추천 줄에 선다 — 접힌 목록을 펼치지 않아도 보인다.
+    const chip = canvas.getByRole('button', {
+      name: '한정판스페셜에디션사은품증정행사',
+    })
+    await expect(chip).toHaveAttribute('aria-pressed', 'true')
+  },
+}
+
 /** 이미 고른 추천 태그를 다시 누르면 꺼진다 */
 export const UnpicksTag: Story = {
   args: { value: ['스마트폰', '핸드폰'] },
