@@ -5,7 +5,10 @@ import { MainLayout } from '@app/layouts/MainLayout'
 import { RequireLogin } from '@app/layouts/RequireLogin'
 import { RootLayout } from '@app/layouts/RootLayout'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
-import { PAYMENT_CALLBACK_PATH } from '@features/payment'
+import {
+  DRAW_PAYMENT_CALLBACK_PATH,
+  PAYMENT_CALLBACK_PATH,
+} from '@features/payment'
 import { AdminPlaceholderPage } from '@pages/admin/placeholder/AdminPlaceholderPage'
 import { AdminProductDetailPage } from '@pages/admin/product-detail/AdminProductDetailPage'
 import { AdminProductNewPage } from '@pages/admin/product-new/AdminProductNewPage'
@@ -14,6 +17,9 @@ import { AdminPromotionEditPage } from '@pages/admin/promotion-edit/AdminPromoti
 import { AdminPromotionNewPage } from '@pages/admin/promotion-new/AdminPromotionNewPage'
 import { AdminPromotionsPage } from '@pages/admin/promotions/AdminPromotionsPage'
 import { AdminReservationsPage } from '@pages/admin/reservations/AdminReservationsPage'
+import { DrawPage } from '@pages/draw/DrawPage'
+import { DrawDetailPage } from '@pages/draw-detail/DrawDetailPage'
+import { DrawPaymentCallbackPage } from '@pages/draw-payment-callback/DrawPaymentCallbackPage'
 import { KakaoCallbackPage } from '@pages/kakao-callback/KakaoCallbackPage'
 import { MainPage } from '@pages/main/MainPage'
 import { Mypage } from '@pages/mypage/Mypage'
@@ -41,6 +47,8 @@ import {
   ADMIN_RESERVATIONS_PATH,
   adminProductPath,
   adminPromotionPath,
+  DRAW_PATH,
+  drawPath,
   HOME_PATH,
   MYPAGE_PATH,
   ONBOARDING_PATH,
@@ -81,6 +89,8 @@ export const router = createBrowserRouter([
             path: productPath(':productId'),
             element: <ProductDetailPage />,
           },
+          { path: DRAW_PATH, element: <DrawPage /> },
+          { path: drawPath(':drawId'), element: <DrawDetailPage /> },
           { path: REVIEWS_PATH, element: <ReviewsPage /> },
           // 카테고리 둘러보기(/search)와 키워드 검색(/search/results)은 같은 검색 화면이다.
           { path: SEARCH_PATH, element: <SearchResultsPage /> },
@@ -97,6 +107,10 @@ export const router = createBrowserRouter([
               { path: MYPAGE_PATH, element: <Mypage /> },
               { path: PAYMENT_PATH, element: <PaymentPage /> },
               { path: PAYMENT_CALLBACK_PATH, element: <PaymentCallbackPage /> },
+              {
+                path: DRAW_PAYMENT_CALLBACK_PATH,
+                element: <DrawPaymentCallbackPage />,
+              },
               { path: RESULT_PATH, element: <ResultPage /> },
             ],
           },

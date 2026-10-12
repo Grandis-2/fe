@@ -1,6 +1,7 @@
 import { Outlet, useLocation } from 'react-router'
 
 import {
+  DRAW_PATH,
   HOME_PATH,
   MYPAGE_PATH,
   PAYMENT_PATH,
@@ -15,12 +16,14 @@ import * as styles from './MainLayout.css'
 
 export function MainLayout() {
   const { pathname } = useLocation()
-  // 메인, 사전예약 목록·상세, 상품 상세, 검색(카테고리·키워드), 결제, 마이페이지는 어두운 페이지다 — 모바일 하단 탭바 여백까지 같은 색으로 채운다.
+  // 메인, 사전예약·럭키드로우 목록·상세, 상품 상세, 검색(카테고리·키워드), 결제, 마이페이지는 어두운 페이지다 — 모바일 하단 탭바 여백까지 같은 색으로 채운다.
   const isDarkBackground =
     pathname === HOME_PATH ||
     pathname.startsWith(`${PRODUCTS_PATH}/`) ||
     pathname === PREORDER_PATH ||
     pathname.startsWith(`${PREORDER_PATH}/`) ||
+    pathname === DRAW_PATH ||
+    pathname.startsWith(`${DRAW_PATH}/`) ||
     pathname === SEARCH_PATH ||
     pathname === SEARCH_RESULTS_PATH ||
     pathname === PAYMENT_PATH ||
@@ -30,6 +33,8 @@ export function MainLayout() {
   const isBaseBackground =
     pathname === PREORDER_PATH ||
     pathname.startsWith(`${PREORDER_PATH}/`) ||
+    pathname === DRAW_PATH ||
+    pathname.startsWith(`${DRAW_PATH}/`) ||
     pathname.startsWith(`${PRODUCTS_PATH}/`)
 
   return (
