@@ -16,6 +16,7 @@ export {
 } from './api/useDispatchWindow'
 export {
   createWaveDraft,
+  formatDeliveryDate,
   formatSeqRange,
   nextFromSeq,
   toDispatchWindowRequest,
@@ -53,6 +54,8 @@ export type {
   ProductOptionValue,
   ProductVariant,
 } from './model/form'
+export { DeliveryDateField } from './ui/DeliveryDateField'
+export type { DeliveryDateFieldProps } from './ui/DeliveryDateField'
 export { AdminProductDisplayTag } from './ui/AdminProductDisplayTag'
 export type { AdminProductDisplayTagProps } from './ui/AdminProductDisplayTag'
 export { AdminProductSaleTag } from './ui/AdminProductSaleTag'

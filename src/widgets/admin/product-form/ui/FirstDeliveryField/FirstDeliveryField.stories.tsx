@@ -1,4 +1,4 @@
-import { expect, fn, userEvent } from 'storybook/test'
+import { expect, fn, userEvent, within } from 'storybook/test'
 
 import { FirstDeliveryField } from './FirstDeliveryField'
 
@@ -16,8 +16,25 @@ type Story = StoryObj<typeof meta>
 /** 등록할 때는 날짜를 고른다. 안 고르면 미정이다. */
 export const Editable: Story = {
   args: { editable: true, value: '' },
-  play: async ({ canvas }) => {
-    await expect(canvas.getByRole('button')).toHaveTextContent('미정')
+  play: async ({ canvas, args }) => {
+    const trigger = canvas.getByRole('button', { name: /1차 예상 배송일/ })
+    await expect(trigger).toHaveTextContent('미정')
+
+    // 값이 없으면 달력이 이번 달로 열린다 — 달을 넘기지 않아도 되게 오늘 기준으로 고른다.
+    const today = new Date()
+    const year = today.getFullYear()
+    const month = today.getMonth() + 1
+
+    // 달력은 body로 포털된다 — 캔버스 밖이라 body에서 찾는다.
+    await userEvent.click(trigger)
+    await userEvent.click(
+      await within(document.body).findByRole('button', {
+        name: `${year}년 ${month}월 20일`,
+      }),
+    )
+    await expect(args.onChange).toHaveBeenCalledWith(
+      `${year}-${String(month).padStart(2, '0')}-20`,
+    )
   },
 }
 

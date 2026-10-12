@@ -464,6 +464,10 @@ export function toFormValue(
  * 끝 번호는 폼에서 받은 1차 배송 수량의 합이다 — 1차로 보낼 물량이 N개면 1~N번
  * 순번까지가 1차다. 2차 이후는 상세의 배송 구간 설정에서 이어 붙인다.
  *
+ * 지금 있는 조합의 수량만 센다 — quantities는 색상·옵션을 지워도 키를 그대로
+ * 들고 있다(살아남은 조합의 입력값을 지키려고 일부러 그런다). 그걸 다 합치면
+ * 상품에 없는 물량까지 1차 구간에 들어간다.
+ *
  * 사전예약이 아니거나 수량이 0이면 만들 게 없어 null을 돌려준다.
  */
 export function toFirstWaveRequest(
@@ -471,8 +475,8 @@ export function toFirstWaveRequest(
 ): DispatchWindowPutRequest | null {
   if (!value.isPreorder) return null
 
-  const toSeq = Object.values(value.quantities).reduce(
-    (sum, quantity) => sum + quantity,
+  const toSeq = getProductVariants(value).reduce(
+    (sum, variant) => sum + (value.quantities[variant.key] ?? 0),
     0,
   )
   if (toSeq < 1) return null

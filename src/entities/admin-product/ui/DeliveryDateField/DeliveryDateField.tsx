@@ -3,11 +3,11 @@ import { useState } from 'react'
 import { CalendarDays } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
-import { formatDeliveryDate } from '@shared/lib/formatDeliveryDate'
 import { parseDateOnly } from '@shared/lib/parseDateOnly'
 import { usePopoverAnchor } from '@shared/lib/usePopoverAnchor'
+import { Calendar } from '@shared/ui'
 
-import { Calendar } from '../Calendar'
+import { formatDeliveryDate } from '../../model/dispatch'
 
 import * as styles from './DeliveryDateField.css'
 
@@ -15,6 +15,11 @@ export type DeliveryDateFieldProps = {
   /** 'YYYY-MM-DD'. null이면 미정 */
   value: string | null
   onChange: (value: string | null) => void
+  /**
+   * 스크린리더가 읽을 칸 이름. 버튼 글자는 값('미정', '2026년 9월 20일 (일)')뿐이라
+   * 이게 없으면 무엇을 고르는 버튼인지 알 수 없다.
+   */
+  label: string
   /**
    * 'compact'(기본)는 표 칸에 들어갈 때 — 아이콘까지 한 박스에 담아 좁게 쓴다.
    * 'field'는 폼 한 줄에 들어갈 때 — 아이콘을 밖에 두고 박스를 가운데 정렬해,
@@ -34,6 +39,7 @@ const POPOVER_HEIGHT = 420
 export function DeliveryDateField({
   value,
   onChange,
+  label,
   layout = 'compact',
 }: DeliveryDateFieldProps) {
   const [open, setOpen] = useState(false)
@@ -47,6 +53,10 @@ export function DeliveryDateField({
     width: POPOVER_WIDTH,
     height: POPOVER_HEIGHT,
   })
+
+  const text = formatDeliveryDate(value)
+  // 버튼 글자는 값뿐이라 칸 이름을 앞에 붙여 읽히게 한다.
+  const accessibleName = `${label} ${text}`
 
   const toggle = () => {
     measure()
@@ -64,10 +74,11 @@ export function DeliveryDateField({
             type="button"
             ref={triggerRef}
             className={value ? styles.summary : styles.summaryEmpty}
+            aria-label={accessibleName}
             aria-expanded={open}
             onClick={toggle}
           >
-            {formatDeliveryDate(value)}
+            {text}
           </button>
         </div>
       ) : (
@@ -75,11 +86,12 @@ export function DeliveryDateField({
           type="button"
           ref={triggerRef}
           className={value ? styles.trigger : styles.triggerEmpty}
+          aria-label={accessibleName}
           aria-expanded={open}
           onClick={toggle}
         >
           <CalendarDays className={styles.icon} aria-hidden="true" />
-          <span className={styles.text}>{formatDeliveryDate(value)}</span>
+          <span className={styles.text}>{text}</span>
         </button>
       )}
 

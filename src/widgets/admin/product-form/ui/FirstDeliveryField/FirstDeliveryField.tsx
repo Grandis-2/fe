@@ -1,4 +1,5 @@
-import { Button, DeliveryDateField } from '@shared/ui'
+import { DeliveryDateField } from '@entities/admin-product'
+import { Button } from '@shared/ui'
 
 import * as styles from './FirstDeliveryField.css'
 
@@ -20,6 +21,8 @@ export type FirstDeliveryFieldProps = {
  * 이 폼은 1차만 알고 있어서, 등록 뒤에 여기서 저장하면 2차 이후가 지워진다.
  * 그래서 전체를 들고 있는 배송 구간 설정으로 보낸다.
  */
+const FIELD_LABEL = '1차 예상 배송일'
+
 export function FirstDeliveryField({
   value,
   onChange,
@@ -28,10 +31,11 @@ export function FirstDeliveryField({
 }: FirstDeliveryFieldProps) {
   return (
     <div className={styles.root}>
-      <div className={styles.title}>1차 예상 배송일</div>
+      <div className={styles.title}>{FIELD_LABEL}</div>
 
       {editable ? (
         <DeliveryDateField
+          label={FIELD_LABEL}
           layout="field"
           value={value || null}
           onChange={(next) => onChange(next ?? '')}
