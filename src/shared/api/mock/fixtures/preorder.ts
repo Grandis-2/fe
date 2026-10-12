@@ -1,6 +1,7 @@
 import { mockUuid, products, shipmentBatches } from './product'
 
 import type {
+  CartOrderItem,
   Order,
   OrderEvent,
   PreorderEvent,
@@ -8,10 +9,10 @@ import type {
   ShipmentBatch,
 } from '../../types'
 
-// 사전예약·주문 목업이 같이 쓰는 메모리 DB. 화면 상태(displayStatus)는 핸들러가 이 원본으로 계산한다.
+// 사전예약·주문·장바구니 목업이 같이 쓰는 메모리 DB. 화면 상태(displayStatus·장바구니 가격)는 핸들러가 이 원본으로 계산한다.
 // 토스 결제창은 페이지를 통째로 이동시켰다가 돌아온다 — 그때 MSW 모듈도 다시 평가되므로, 인증 목업처럼
 // localStorage에 실어 새로고침에도 주문·결제창이 남게 한다(saveOrderDb).
-// ponytail: 스키마 버전이 없다 — 모양이 바뀌어 꼬이면 localStorage의 nova-order-mock-db를 지운다. 로그인한 사람은 모두 같은 "나"다.
+// 모양이 바뀌면 DB_KEY의 버전을 올려 예전 기록을 버린다. 로그인한 사람은 모두 같은 "나"다.
 
 export type PreorderRecord = {
   preorderId: string
@@ -33,8 +34,19 @@ export type PreorderRecord = {
 }
 
 export type OrderRecord = Order & {
-  preorderId: string
+  // 사전예약 주문의 예약 id.
+  preorderId: string | null
+  // 장바구니 주문이 고른 줄 — 결제가 승인되면 이만큼 장바구니에서 뺀다.
+  cartItems: CartOrderItem[] | null
   events: OrderEvent[]
+}
+
+// 장바구니 한 줄의 원본. 이름·가격·재고는 조회할 때 상품 목업에서 계산한다.
+export type CartLineRecord = {
+  cartItemId: string
+  variantId: string
+  warranty: boolean
+  quantity: number
 }
 
 const HOUR = 60 * 60 * 1000
@@ -159,9 +171,11 @@ const seedOrders: OrderRecord[] = reserved
       {
         orderId: mockUuid(5, 900),
         preorderId: reserved.preorderId,
+        cartItems: null,
         status: 'AWAITING_CONFIRMATION',
         source: 'PREORDER',
         totalAmount: reserved.unitPrice,
+        paymentDueAt: null,
         items: [
           {
             productId: reserved.productId,
@@ -170,6 +184,9 @@ const seedOrders: OrderRecord[] = reserved
             optionTitle: reserved.optionTitle,
             unitPrice: reserved.unitPrice,
             quantity: 1,
+            warrantyQuantity: 0,
+            warrantyUnitPrice: 0,
+            lineAmount: reserved.unitPrice,
           },
         ],
         shipTo: {
@@ -210,6 +227,21 @@ const seedOrders: OrderRecord[] = reserved
     ]
   : []
 
+// 장바구니 시드 — 보증 포함·미포함 줄(스마트폰 1), 판매 중지(마우스), 품절(스마트밴드)을 한 번에 본다.
+// 옵션 id는 fixtures/product의 규칙(상품 번호 × 100 + 색상 × 10 + 용량)을 따른다.
+const seedCart: CartLineRecord[] = [
+  { productNo: 2, variant: 0, warranty: false, quantity: 2 },
+  { productNo: 2, variant: 0, warranty: true, quantity: 1 },
+  { productNo: 18, variant: 31, warranty: false, quantity: 1 },
+  { productNo: 44, variant: 0, warranty: false, quantity: 1 },
+  { productNo: 43, variant: 0, warranty: false, quantity: 1 },
+].map(({ productNo, variant, warranty, quantity }, i) => ({
+  cartItemId: mockUuid(5, 800 + i),
+  variantId: mockUuid(3, productNo * 100 + variant),
+  warranty,
+  quantity,
+}))
+
 // 결제창 하나(tossOrderId → 주문·금액). 부를 때마다 새로 만들고 35분 뒤 만료된다.
 export type PaymentAttemptRecord = {
   orderId: string
@@ -221,9 +253,10 @@ type OrderDb = {
   preorders: PreorderRecord[]
   orders: OrderRecord[]
   attempts: [string, PaymentAttemptRecord][]
+  cart: CartLineRecord[]
 }
 
-const DB_KEY = 'nova-order-mock-db'
+const DB_KEY = 'nova-order-mock-db-v2'
 
 function loadOrderDb(): OrderDb | null {
   try {
@@ -241,13 +274,20 @@ export const orders: OrderRecord[] = saved?.orders ?? seedOrders
 export const paymentAttempts = new Map<string, PaymentAttemptRecord>(
   saved?.attempts ?? [],
 )
+// 줄을 지우거나 비울 때 배열을 통째로 바꾸지 않고 splice로 고친다(다른 모듈이 같은 배열을 본다).
+export const cartLines: CartLineRecord[] = saved?.cart ?? seedCart
 
 // 예약·주문·결제창을 바꾼 핸들러가 부른다.
 export function saveOrderDb() {
   try {
     localStorage.setItem(
       DB_KEY,
-      JSON.stringify({ preorders, orders, attempts: [...paymentAttempts] }),
+      JSON.stringify({
+        preorders,
+        orders,
+        attempts: [...paymentAttempts],
+        cart: cartLines,
+      }),
     )
   } catch {
     // 저장 공간이 막혀 있으면 메모리로만 동작한다.

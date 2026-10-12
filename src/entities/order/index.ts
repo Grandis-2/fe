@@ -6,8 +6,13 @@ export { orderStatusTag, PAID_ORDER_STATUSES } from './model/orderStatus'
 export type { StatusTag } from './model/orderStatus'
 export { OrderSummary } from './ui/OrderSummary'
 export type { OrderSummaryProps, OrderSummaryRow } from './ui/OrderSummary'
-export { confirmOrderPayment, getOrder } from './api/order'
 export {
+  confirmOrderPayment,
+  createPaymentAttempt,
+  getOrder,
+} from './api/order'
+export {
+  useCancelOrder,
   useCreatePaymentAttempt,
   useOrder,
   useOrders,
@@ -19,4 +24,6 @@ export type {
   OrderPaymentResult,
   Order,
   OrderStatus,
+  PlacedOrder,
+  CartOrderItem,
 } from './model/order'

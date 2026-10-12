@@ -12,9 +12,10 @@ type RequestTossPaymentParams = {
   tossOrderId: string
   amount: number
   orderName: string
-  // 돌아와서 승인 API 경로에 쓸 주문 토큰과, 실패했을 때 다시 결제할 예약 id. successUrl·failUrl 쿼리에 실어 둔다.
+  // 돌아와서 승인 API 경로에 쓸 주문 토큰과, 실패했을 때 다시 결제할 예약 id(사전예약 주문만).
+  // successUrl·failUrl 쿼리에 실어 둔다.
   orderToken: string
-  preorderId: string
+  preorderId?: string
   customerName?: string
   customerEmail?: string
 }
@@ -37,7 +38,7 @@ export async function requestTossPayment({
   // ANONYMOUS로 둔다 — 백엔드가 회원 식별자를 세션에 내려주면 그 값으로 바꾼다.
   const payment = tossPayments.payment({ customerKey: ANONYMOUS })
   // 토스는 이 쿼리 뒤에 paymentKey·orderId(tossOrderId)·amount(실패면 code·message)를 붙여 돌려보낸다.
-  const callbackUrl = `${window.location.origin}${PAYMENT_CALLBACK_PATH}?${new URLSearchParams({ orderToken, preorderId })}`
+  const callbackUrl = `${window.location.origin}${PAYMENT_CALLBACK_PATH}?${new URLSearchParams(preorderId ? { orderToken, preorderId } : { orderToken })}`
 
   try {
     await payment.requestPayment({

@@ -85,6 +85,8 @@ type Seed = {
   stock?: number
   // 옵션을 전부 판매 중지로 둔다 — 목록에서 "판매 중지"로 보인다.
   paused?: boolean
+  // 따로 고르는 보증 금액. 없으면 보증을 팔지 않는다.
+  warranty?: number
 }
 
 function buildProduct(
@@ -96,6 +98,7 @@ function buildProduct(
     saleMode = 'IN_STOCK',
     stock = 10,
     paused,
+    warranty,
   }: Seed,
 ): ProductDetailView {
   const isPreorder = saleMode === 'PREORDER'
@@ -137,7 +140,7 @@ function buildProduct(
     status: 'ACTIVE',
     visible: true,
     basePrice,
-    warranty: { offered: false, surcharge: 0 },
+    warranty: { offered: warranty !== undefined, surcharge: warranty ?? 0 },
     sellable,
     soldOut: !isPreorder && sellable && stock <= 0,
     campaign: isPreorder
@@ -165,11 +168,12 @@ const LINES: [
   count: number,
   price: number,
   mode?: SaleMode,
+  warranty?: number,
 ][] = [
-  ['모바일', '스마트폰', 8, 1250000],
+  ['모바일', '스마트폰', 8, 1250000, 'IN_STOCK', 199000],
   ['모바일', '태블릿', 5, 890000],
   ['모바일', '폴더블', 3, 2190000, 'PREORDER'],
-  ['PC/주변기기', '노트북', 6, 1290000],
+  ['PC/주변기기', '노트북', 6, 1290000, 'IN_STOCK', 290000],
   ['PC/주변기기', '모니터', 4, 450000],
   ['PC/주변기기', '키보드', 4, 89000],
   ['웨어러블', '스마트워치', 5, 390000],
@@ -185,13 +189,14 @@ const seeds: Seed[] = [
     basePrice: 2390000,
     saleMode: 'PREORDER',
   },
-  ...LINES.flatMap(([parent, line, count, price, saleMode]) => {
+  ...LINES.flatMap(([parent, line, count, price, saleMode, warranty]) => {
     const brands = TREE.find(([name]) => name === parent)?.[1] ?? []
     return Array.from({ length: count }, (_, i) => ({
       title: `NOVA ${line} ${i + 1}`,
       categoryId: brandId(parent, brands[i % brands.length]),
       basePrice: price + i * 50000,
       saleMode,
+      warranty,
     }))
   }),
   // 목록의 품절 · 판매 중지 표시를 확인하는 용도.
