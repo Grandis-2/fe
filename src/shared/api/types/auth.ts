@@ -27,3 +27,9 @@ export type AdminLoginRequest = {
   username: string
   password: string
 }
+
+/**
+ * 관리자 로그인 응답. 회원과 달리 displayName·profileComplete가 없다 —
+ * 관리자는 표시할 이름도, 채울 추가 정보도 없다.
+ */
+export type AdminSessionResponse = Pick<Session, 'sessionToken' | 'role'>

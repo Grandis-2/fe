@@ -1,6 +1,7 @@
 import { apiClient } from '@shared/api/client'
 import type {
   AdminLoginRequest,
+  AdminSessionResponse,
   KakaoCallbackRequest,
   Session,
   SessionInfo,
@@ -30,7 +31,7 @@ export const deleteSession = () =>
   })
 
 export const postAdminSession = (body: AdminLoginRequest) =>
-  apiClient.request<Session>('/api/v1/admin/session', {
+  apiClient.request<AdminSessionResponse>('/api/v1/admin/session', {
     method: 'POST',
     body,
     skipAuthRefresh: true,
