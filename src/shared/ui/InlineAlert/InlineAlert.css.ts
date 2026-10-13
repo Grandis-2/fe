@@ -1,6 +1,16 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { createVar, style, styleVariants } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@shared/config/theme'
+import {
+  color,
+  onDark,
+  spacing,
+  statusOnDark,
+  typography,
+} from '@shared/config/theme'
+import {
+  fontSize,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
 
 export const root = style([
   typography.body.sub,
@@ -48,4 +58,80 @@ export const tone = styleVariants({
     borderColor: `color-mix(in srgb, ${color.status.success} 20%, transparent)`,
     color: textTone(color.status.success),
   },
+})
+
+// big — 어두운 페이지 바탕에 얹는 가운데 정렬 안내 카드(에러·빈 목록). 아이콘 타일과 제목·설명을 세로로 쌓는다.
+// 강조색(accent)과 테두리는 tone마다 다르고, 나머지 모양은 변수로 받아 한 벌만 둔다.
+const accent = createVar()
+const border = createVar()
+const tileBg = createVar()
+const tileBorder = createVar()
+
+export const bigRoot = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: spacing[20],
+  padding: `56px ${spacing[24]}`,
+  borderRadius: '20px',
+  border: border,
+  textAlign: 'center',
+  // 위쪽에서 강조색이 옅게 번진다.
+  background: `radial-gradient(60% 80% at 50% 0%, color-mix(in srgb, ${accent} 10%, transparent), transparent 70%), ${color.backgroundDark.surface}`,
+})
+
+export const bigIcon = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '56px',
+  height: '56px',
+  borderRadius: '16px',
+  background: tileBg,
+  border: `1px solid ${tileBorder}`,
+  color: accent,
+})
+
+export const bigText = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[6],
+  textWrap: 'pretty',
+})
+
+export const bigTitle = style({
+  fontSize: fontSize[18],
+  fontWeight: fontWeight.bold,
+  color: color.text.inverse,
+})
+
+export const bigDescription = style({
+  fontSize: fontSize[14],
+  color: onDark(64),
+})
+
+// 상태색 tone: 강조색을 옅게 깐 타일과 실선 테두리.
+const bigTint = (tone: string) => ({
+  vars: {
+    [accent]: tone,
+    [border]: `1px solid color-mix(in srgb, ${tone} 28%, transparent)`,
+    [tileBg]: `color-mix(in srgb, ${tone} 12%, transparent)`,
+    [tileBorder]: `color-mix(in srgb, ${tone} 35%, transparent)`,
+  },
+})
+
+export const bigTone = styleVariants({
+  brand: bigTint(color.primary.subtle),
+  error: bigTint(statusOnDark.danger),
+  warning: bigTint(statusOnDark.warning),
+  // 빈 목록 — 점선 테두리에 차분한 타일.
+  info: {
+    vars: {
+      [accent]: color.primary.subtle,
+      [border]: `1px dashed ${onDark(16)}`,
+      [tileBg]: onDark(6),
+      [tileBorder]: onDark(16),
+    },
+  },
+  success: bigTint(statusOnDark.success),
 })

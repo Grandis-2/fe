@@ -6,6 +6,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import { useDefaultAddress, type DefaultAddress } from '@entities/address'
 import { cartKeys, useCartLines, type CartLine } from '@entities/cart'
+import { getDrawPhase, useDraw, useEnterDraw } from '@entities/draw'
 import {
   OrderSummary,
   PAID_ORDER_STATUSES,
@@ -18,18 +19,20 @@ import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@features/address-search'
-import { startOrderPayment } from '@features/payment'
+import { startDrawEntryPayment, startOrderPayment } from '@features/payment'
 import {
   cartLineToDraft,
+  drawToDraft,
   OrderItemList,
   reservationToDraft,
   type PurchaseDraft,
 } from '@features/product-purchase'
 import { terms, TermsAgreement } from '@features/terms-agreement'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
-import { mypagePath, resultPath } from '@shared/config/routes'
+import { drawPath, mypagePath, resultPath } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { useFormFields } from '@shared/lib/useFormFields'
+import { showToast } from '@shared/model/toastStore'
 import { ActionButton, Container, Input, InlineAlert } from '@shared/ui'
 
 import * as styles from './PaymentPage.css'
@@ -119,11 +122,14 @@ export function PaymentPage() {
   const cartItemIds = (searchParams.get('cart') ?? '')
     .split(',')
     .filter(Boolean)
-  const isCart = !preorderId && cartItemIds.length > 0
+  const drawId = searchParams.get('drawId') ?? ''
+  const isCart = !preorderId && !drawId && cartItemIds.length > 0
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const reservation = useReservation(preorderId)
   const cart = useCartLines({ enabled: isCart })
+  const draw = useDraw(drawId)
+  const enterDraw = useEnterDraw()
   const placeOrder = usePlaceOrder()
   const [isStarting, setIsStarting] = useState(false)
   const { data: profile } = useProfile()
@@ -159,41 +165,50 @@ export function PaymentPage() {
     .join(' ')
 
   const detail = reservation.data
+  const drawData = draw.data
   const cartLines = isCart
     ? cart.data?.filter(({ cartItemId }) => cartItemIds.includes(cartItemId))
     : undefined
   // 결제 금액은 서버가 정한다 — 사전예약은 예약 접수 당시 단가(수량 1), 장바구니는 지금 가격의 줄 금액 합.
-  const checkout: Checkout | null = detail
+  const checkout: Checkout | null = drawData
     ? {
-        items: [reservationToDraft(detail)],
-        totalAmount: detail.unitPrice,
-        blockedReason: PAYABLE.includes(detail.displayStatus)
-          ? null
-          : (UNPAYABLE_MESSAGE[detail.displayStatus] ??
-            '결제할 수 있는 예약이 아니에요.'),
-        dueRow: detail.paymentDueAt
-          ? `${formatDueAt(detail.paymentDueAt)}까지`
-          : null,
+        items: [drawToDraft(drawData)],
+        totalAmount: drawData.entryFee,
+        blockedReason:
+          getDrawPhase(drawData) === 'OPEN' ? null : '응모 기간이 아니에요.',
+        dueRow: `${formatDueAt(drawData.closesAt)}까지`,
       }
-    : cartLines
+    : detail
       ? {
-          items: cartLines.map(cartLineToDraft),
-          totalAmount: cartLines.reduce(
-            (sum, line) => sum + (line.lineAmount ?? 0),
-            0,
-          ),
-          blockedReason:
-            cartLines.length !== cartItemIds.length
-              ? '장바구니가 바뀌었어요. 장바구니에서 다시 골라 주세요.'
-              : cartLines.some(({ purchasable }) => !purchasable)
-                ? '지금 살 수 없는 상품이 있어요. 장바구니에서 확인해 주세요.'
-                : null,
-          dueRow: '주문 후 10분 안에 결제',
+          items: [reservationToDraft(detail)],
+          totalAmount: detail.unitPrice,
+          blockedReason: PAYABLE.includes(detail.displayStatus)
+            ? null
+            : (UNPAYABLE_MESSAGE[detail.displayStatus] ??
+              '결제할 수 있는 예약이 아니에요.'),
+          dueRow: detail.paymentDueAt
+            ? `${formatDueAt(detail.paymentDueAt)}까지`
+            : null,
         }
-      : null
+      : cartLines
+        ? {
+            items: cartLines.map(cartLineToDraft),
+            totalAmount: cartLines.reduce(
+              (sum, line) => sum + (line.lineAmount ?? 0),
+              0,
+            ),
+            blockedReason:
+              cartLines.length !== cartItemIds.length
+                ? '장바구니가 바뀌었어요. 장바구니에서 다시 골라 주세요.'
+                : cartLines.some(({ purchasable }) => !purchasable)
+                  ? '지금 살 수 없는 상품이 있어요. 장바구니에서 확인해 주세요.'
+                  : null,
+            dueRow: '주문 후 10분 안에 결제',
+          }
+        : null
   const payable = checkout !== null && checkout.blockedReason === null
   const totalAmount = checkout?.totalAmount ?? 0
-  const isPaying = placeOrder.isPending || isStarting
+  const isPaying = placeOrder.isPending || enterDraw.isPending || isStarting
 
   const requiredAgreed = terms.every(
     (term) => !term.required || agreedIds.has(term.id),
@@ -233,6 +248,26 @@ export function PaymentPage() {
         postalCode: form.values.postcode,
         line1: form.values.address,
         line2: form.values.addressDetail || null,
+      }
+      // 럭키 드로우 — 응모(배송지 저장) → 응모비 결제 준비 → 토스 결제창. 이미 응모한 회차면 서버가 기존 응모를 돌려준다.
+      if (drawId) {
+        const entry = await enterDraw.mutateAsync({ drawId, shipTo })
+        if (entry.status !== 'AWAITING_PAYMENT') {
+          showToast(
+            entry.status === 'PAID'
+              ? '이미 응모한 회차예요.'
+              : '응모비 결제를 확인하고 있어요.',
+          )
+          navigate(drawPath(drawId), { replace: true })
+          return
+        }
+        setIsStarting(true)
+        await startDrawEntryPayment({
+          drawId,
+          customerName: form.values.name,
+          customerEmail: form.values.email || undefined,
+        })
+        return
       }
       const order = await placeOrder.mutateAsync(
         cartLines
@@ -282,13 +317,13 @@ export function PaymentPage() {
   }
 
   // 결제할 대상 없이 들어왔거나(바로 구매) 예약·장바구니를 아직 못 받았으면 안내만 보인다.
-  const loadQuery = isCart ? cart : reservation
+  const loadQuery = drawId ? draw : isCart ? cart : reservation
   if (!checkout) {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
         <Container>
           <div className={styles.title}>주문 / 결제</div>
-          {!preorderId && !isCart ? (
+          {!preorderId && !isCart && !drawId ? (
             <InlineAlert status="info">
               바로 구매는 아직 준비 중이에요. 장바구니에 담아 결제해 주세요.{' '}
               <Link to={mypagePath('cart')}>장바구니로 가기</Link>
@@ -298,9 +333,11 @@ export function PaymentPage() {
               {loadQuery.isError
                 ? getErrorMessage(
                     loadQuery.error,
-                    isCart
-                      ? '장바구니를 불러오지 못했어요.'
-                      : '예약을 불러오지 못했어요.',
+                    drawId
+                      ? '럭키드로우를 불러오지 못했어요.'
+                      : isCart
+                        ? '장바구니를 불러오지 못했어요.'
+                        : '예약을 불러오지 못했어요.',
                   )
                 : '주문할 상품을 불러오는 중이에요.'}
             </InlineAlert>
@@ -313,7 +350,9 @@ export function PaymentPage() {
   return (
     <div className={styles.root} data-theme="dark" data-header-theme="dark">
       <Container>
-        <div className={styles.title}>주문 / 결제</div>
+        <div className={styles.title}>
+          {drawId ? '응모 / 결제' : '주문 / 결제'}
+        </div>
 
         {paymentError && (
           <InlineAlert status="error">{paymentError}</InlineAlert>
@@ -397,14 +436,17 @@ export function PaymentPage() {
             className={styles.summary}
             rows={[
               {
-                label: '상품 수',
+                label: drawId ? '증정품' : '상품 수',
                 value: `${checkout.items.reduce((sum, item) => sum + item.quantity, 0)}개`,
               },
-              { label: '주문 금액', value: formatWon(totalAmount) },
+              {
+                label: drawId ? '응모비' : '주문 금액',
+                value: formatWon(totalAmount),
+              },
               ...(checkout.dueRow
                 ? [
                     {
-                      label: '결제 기한',
+                      label: drawId ? '응모 마감' : '결제 기한',
                       value: checkout.dueRow,
                       highlight: true,
                     },
@@ -413,7 +455,7 @@ export function PaymentPage() {
             ]}
             totalLabel="결제 예정 금액"
             totalValue={formatWon(totalAmount)}
-            actionLabel={`${formatWon(totalAmount)} 결제하기`}
+            actionLabel={`${formatWon(totalAmount)} ${drawId ? '결제하고 응모하기' : '결제하기'}`}
             actionDisabled={!requiredAgreed || !payable || isPaying}
             darkAction
             onAction={() => void handlePayment()}

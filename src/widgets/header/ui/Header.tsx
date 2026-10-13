@@ -4,9 +4,8 @@ import { Link, useLocation } from 'react-router'
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
 import { useMyReservations } from '@entities/preorder'
-import { KakaoLoginModal } from '@features/login'
+import { openLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
-import { useModalStore } from '@shared/model/modalStore'
 import { Button, Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
 
@@ -29,7 +28,6 @@ export function Header({
   onNotificationClick,
   className,
 }: HeaderProps) {
-  const openModal = useModalStore((state) => state.open)
   const { pathname } = useLocation()
   const isMainPage = pathname === HOME_PATH
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
@@ -158,7 +156,7 @@ export function Header({
                   size="small"
                   rounded
                   className={styles.desktopOnly}
-                  onClick={() => openModal(<KakaoLoginModal />)}
+                  onClick={() => openLoginModal()}
                 >
                   로그인
                 </Button>

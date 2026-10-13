@@ -14,7 +14,6 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   args: {
-    productName: '아이폰 18 Pro',
     queue: {
       myOrder: 131,
       waitTime: '약 4분',

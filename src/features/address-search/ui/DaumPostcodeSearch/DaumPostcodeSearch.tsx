@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { typography, breakpoint } from '@shared/config/theme'
-import { BottomSheet, Modal, ModalTitle } from '@shared/ui'
+import { BottomSheet, Modal } from '@shared/ui'
 
 import {
   useDaumPostcodeEmbed,
@@ -45,20 +45,9 @@ export function DaumPostcodeSearch({
 
   if (isDesktop) {
     return (
-      <Modal open={open} onClose={() => onOpenChange(false)} padding={0}>
-        <div className={styles.modalContent}>
-          <ModalTitle
-            className={[
-              typography.title.lgSemibold,
-              styles.title,
-              styles.modalTitle,
-            ].join(' ')}
-          >
-            주소 검색
-          </ModalTitle>
-          <div className={styles.embedWrapper}>
-            <div ref={containerRef} className={styles.embed} />
-          </div>
+      <Modal open={open} onClose={() => onOpenChange(false)} title="주소 검색">
+        <div className={styles.modalEmbed}>
+          <div ref={containerRef} className={styles.embed} />
         </div>
       </Modal>
     )

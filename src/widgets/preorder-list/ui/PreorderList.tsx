@@ -65,7 +65,9 @@ export function PreorderList({ preorders }: PreorderListProps) {
       </div>
 
       {visible.length === 0 ? (
-        <InlineAlert status="info">해당하는 사전예약이 없어요.</InlineAlert>
+        <InlineAlert status="info" variant="big" icon="package">
+          해당하는 사전예약이 없어요
+        </InlineAlert>
       ) : (
         <div className={styles.grid}>
           {visible.map((preorder) => (

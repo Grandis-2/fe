@@ -16,6 +16,7 @@ export function RootLayout() {
   const { isLoggedIn, isSignupPending } = useSession()
   const isModalOpen = useModalStore((state) => state.isOpen)
   const modalContent = useModalStore((state) => state.content)
+  const modalOpenCount = useModalStore((state) => state.openCount)
   const closeModal = useModalStore((state) => state.close)
   const toasts = useToastStore((state) => state.toasts)
   const dismissToast = useToastStore((state) => state.dismiss)
@@ -52,9 +53,14 @@ export function RootLayout() {
       <Header isMember={isLoggedIn} />
       <Outlet />
       <MobileTabBar />
-      <Modal open={isModalOpen} onClose={closeModal}>
-        {modalContent}
-      </Modal>
+      {modalContent && (
+        <Modal
+          key={modalOpenCount}
+          {...modalContent}
+          open={isModalOpen}
+          onClose={closeModal}
+        />
+      )}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
       {queueTicket && (
         <PreorderQueue

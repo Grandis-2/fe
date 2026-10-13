@@ -1,4 +1,5 @@
 import type { CartLine } from '@entities/cart'
+import type { Draw } from '@entities/draw'
 import type { Order } from '@entities/order'
 import type { Reservation } from '@entities/preorder'
 
@@ -43,4 +44,15 @@ export const cartLineToDraft = (line: CartLine): PurchaseDraft => ({
     .join(' · '),
   quantity: line.quantity,
   unitPrice: (line.unitPrice ?? 0) + (line.warrantyPrice ?? 0),
+})
+
+// 럭키 드로우 — 증정품 한 줄. 결제하는 건 증정품 값이 아니라 응모비라서 단가에 응모비를 둔다.
+export const drawToDraft = (
+  draw: Pick<Draw, 'gift' | 'entryFee'>,
+): PurchaseDraft => ({
+  variantId: draw.gift.variantId,
+  productName: draw.gift.productTitle,
+  optionSummary: draw.gift.optionTitle,
+  quantity: 1,
+  unitPrice: draw.entryFee,
 })

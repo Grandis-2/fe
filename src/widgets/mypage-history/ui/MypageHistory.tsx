@@ -20,7 +20,13 @@ import { mypagePath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, Button, Dropdown, SelectButton } from '@shared/ui'
+import {
+  ActionButton,
+  Button,
+  Dropdown,
+  InlineAlert,
+  SelectButton,
+} from '@shared/ui'
 
 import * as styles from './MypageHistory.css'
 
@@ -176,7 +182,9 @@ export function MypageHistory() {
         <div className={styles.empty}>주문 내역을 불러오는 중이에요.</div>
       ) : (
         visibleOrders.length === 0 && (
-          <div className={styles.empty}>해당하는 주문 내역이 없어요.</div>
+          <InlineAlert status="info" variant="big" icon="receipt-text">
+            해당하는 주문 내역이 없어요
+          </InlineAlert>
         )
       )}
 

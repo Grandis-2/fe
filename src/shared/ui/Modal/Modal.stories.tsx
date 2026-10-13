@@ -24,7 +24,7 @@ function OpenableModal() {
   return (
     <>
       <Button onClick={() => setOpen(true)}>모달 열기</Button>
-      <Modal open={open} onClose={onClose}>
+      <Modal open={open} onClose={onClose} title="제목">
         <div>모달 내용</div>
       </Modal>
     </>
@@ -34,7 +34,7 @@ function OpenableModal() {
 export const Default: Story = {
   // open은 OpenableModal이 자체 상태로 관리한다 — args는 필수 prop 타입을
   // 맞추기 위한 자리만 채운다.
-  args: { open: false, onClose: fn(), children: null },
+  args: { open: false, onClose: fn(), title: '제목' },
   render: () => <OpenableModal />,
   play: async ({ canvas, userEvent }) => {
     // 처음엔 닫혀 있다 — 닫힌 dialog는 display:none이라 role 자체가 안 잡힌다.
@@ -64,7 +64,7 @@ const expectClosed = (
 ) => waitFor(() => expect(canvas.queryByRole('dialog')).not.toBeInTheDocument())
 
 export const ClosesByCloseButton: Story = {
-  args: { open: false, onClose: fn(), children: null },
+  args: { open: false, onClose: fn(), title: '제목' },
   render: () => <OpenableModal />,
   play: async ({ canvas, userEvent }) => {
     await openModal(canvas, userEvent)
@@ -74,7 +74,7 @@ export const ClosesByCloseButton: Story = {
 }
 
 export const ClosesByBackdrop: Story = {
-  args: { open: false, onClose: fn(), children: null },
+  args: { open: false, onClose: fn(), title: '제목' },
   render: () => <OpenableModal />,
   play: async ({ canvas, userEvent }) => {
     const dialog = await openModal(canvas, userEvent)
@@ -99,7 +99,7 @@ export const ClosesByBackdrop: Story = {
  * 영영 안 열린다.
  */
 export const SyncsWithNativeClose: Story = {
-  args: { open: false, onClose: fn(), children: null },
+  args: { open: false, onClose: fn(), title: '제목' },
   render: () => <OpenableModal />,
   play: async ({ canvas, userEvent }) => {
     const dialog = (await openModal(canvas, userEvent)) as HTMLDialogElement
@@ -108,5 +108,46 @@ export const SyncsWithNativeClose: Story = {
 
     // 다시 열린다면 React 상태가 네이티브 닫힘을 따라왔다는 뜻이다.
     await openModal(canvas, userEvent)
+  },
+}
+
+// onConfirm을 넘기면 확인/취소 버튼이 붙는다(예전 ConfirmDialog).
+export const WithActions: Story = {
+  args: {
+    open: true,
+    onClose: fn(),
+    title: '안내',
+    description:
+      '현재 새 사전예약 상품이 없습니다.\n먼저 만들고 사전예약 안내 탭을 생성할 수 있습니다.\n\n사전예약 상품을 생성하러 가시겠습니까?',
+    confirmLabel: '생성 하러 하기',
+    onConfirm: fn(),
+  },
+  play: async ({ canvas, userEvent, args }) => {
+    const dialog = await canvas.findByRole('dialog', { name: '안내' })
+    await waitFor(() => expect(dialog).toBeVisible())
+
+    await userEvent.click(
+      canvas.getByRole('button', { name: '생성 하러 하기' }),
+    )
+    await expect(args.onConfirm).toHaveBeenCalledTimes(1)
+
+    // onCancel을 안 넘기면 취소는 닫기와 같다.
+    await userEvent.click(canvas.getByRole('button', { name: '취소' }))
+    await expect(args.onClose).toHaveBeenCalled()
+  },
+}
+
+export const ConfirmDisabled: Story = {
+  args: {
+    open: true,
+    onClose: fn(),
+    title: '삭제할까요?',
+    onConfirm: fn(),
+    confirmDisabled: true,
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      await canvas.findByRole('button', { name: '확인' }),
+    ).toBeDisabled()
   },
 }
