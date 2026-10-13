@@ -1,3 +1,4 @@
+import { ApiRequestError } from '@shared/api/client'
 import type { AdminLoginRequest, KakaoCallbackRequest } from '@shared/api/types'
 
 import { deleteSession, postAdminSession, postKakaoCallback } from '../api/auth'
@@ -70,11 +71,31 @@ export async function loginAsAdmin(body: AdminLoginRequest) {
   })
 }
 
+// 503 뒤처리를 보내기까지 기다리는 시간.
+const LOGOUT_CLEANUP_DELAY_MS = 3000
+
 export async function logout() {
+  // 뒤처리에 쓸 토큰을 미리 들고 있는다 — 아래 finally가 스토어를 비운다.
+  const sessionToken = useSessionStore.getState().sessionToken
+
   try {
     await deleteSession()
+  } catch (caught) {
+    // 503은 쿠키는 지워졌지만 서버 정리가 덜 끝난 상태다. 그대로 두면 끊겼어야 할
+    // 액세스 토큰이 만료까지(약 30분) 살아남아 관리자 API를 계속 부를 수 있다.
+    // 명세대로 잠시 뒤 토큰을 직접 실어 한 번 더 보내 정리를 마친다 — 사용자에게는
+    // 이미 로그아웃이므로 결과를 기다리지 않고, 실패해도 알리지 않는다.
+    const isUnfinished =
+      caught instanceof ApiRequestError && caught.status === 503
+    if (!isUnfinished) throw caught
+
+    if (sessionToken) {
+      setTimeout(() => {
+        void deleteSession(sessionToken).catch(() => undefined)
+      }, LOGOUT_CLEANUP_DELAY_MS)
+    }
   } finally {
-    // 로그아웃 응답은 항상 204다 — 실패해도 로컬 상태는 반드시 지운다.
+    // 로그아웃은 응답이 어떻든 로컬 상태를 반드시 지운다.
     useSessionStore.getState().clearSession()
     // 다른 탭도 refreshCoordinator와 같은 프로토콜로 세션 해제를 알아야 한다.
     broadcastSessionCleared()

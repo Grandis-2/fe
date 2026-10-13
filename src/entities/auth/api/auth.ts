@@ -24,10 +24,17 @@ export const refreshSession = () =>
 export const getSession = () =>
   apiClient.request<SessionInfo>('/api/v1/session', { skipAuthRefresh: true })
 
-export const deleteSession = () =>
+/**
+ * 로그아웃. 503이면 서버 정리가 덜 끝나므로 잠시 뒤 한 번 더 보내는데, 그때는 이미
+ * 세션 스토어를 비운 뒤라 토큰이 자동으로 실리지 않는다 — 그 경우에만 직접 넘긴다.
+ */
+export const deleteSession = (sessionToken?: string) =>
   apiClient.request<void>('/api/v1/session', {
     method: 'DELETE',
     skipAuthRefresh: true,
+    headers: sessionToken
+      ? { Authorization: `Bearer ${sessionToken}` }
+      : undefined,
   })
 
 export const postAdminSession = (body: AdminLoginRequest) =>

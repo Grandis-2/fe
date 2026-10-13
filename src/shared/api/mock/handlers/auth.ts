@@ -260,6 +260,15 @@ export const authHandlers: RequestHandler[] = [
     const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (token) sessions.delete(token)
+
+    // 서버는 두 역할의 리프레시 쿠키를 모두 지운다. 목은 X-Mock-Set-Cookie로 한 줄만
+    // 내릴 수 있어, 지우지 못하는 쪽은 리프레시 토큰을 버려 같은 결과를 만든다 —
+    // 남겨 두면 로그아웃한 뒤 새로고침에서 그 세션이 되살아난다.
+    const cookies = parseCookies(document.cookie)
+    for (const name of Object.values(REFRESH_COOKIE)) {
+      const refreshToken = cookies[name]
+      if (refreshToken) refreshTokens.delete(refreshToken)
+    }
     saveDB()
 
     const cookieName = REFRESH_COOKIE[record?.role ?? 'USER']
