@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { ReceiptText } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -182,7 +183,7 @@ export function MypageHistory() {
         <div className={styles.empty}>주문 내역을 불러오는 중이에요.</div>
       ) : (
         visibleOrders.length === 0 && (
-          <InlineAlert status="info" variant="big" icon="receipt-text">
+          <InlineAlert status="info" variant="big" icon={ReceiptText}>
             해당하는 주문 내역이 없어요
           </InlineAlert>
         )

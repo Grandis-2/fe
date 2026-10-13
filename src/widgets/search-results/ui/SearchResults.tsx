@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react'
 
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, SearchX, TriangleAlert } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import {
@@ -136,7 +136,7 @@ export function SearchResults() {
           <InlineAlert
             status={isError ? 'error' : 'info'}
             variant="big"
-            icon={isError ? 'triangle-alert' : 'search-x'}
+            icon={isError ? TriangleAlert : SearchX}
           >
             {cardMessage}
           </InlineAlert>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { Ticket } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 
 import {
@@ -95,7 +96,7 @@ export function MypageDraw() {
         <div className={styles.empty}>응모 내역을 불러오는 중이에요.</div>
       ) : (
         visible.length === 0 && (
-          <InlineAlert status="info" variant="big" icon="ticket">
+          <InlineAlert status="info" variant="big" icon={Ticket}>
             {filter === '당첨'
               ? '아직 당첨 내역이 없어요'
               : '아직 응모 내역이 없어요'}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 
+import { Info } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { useSession } from '@entities/auth'
@@ -56,7 +57,7 @@ export function DrawDetail({ drawId }: DrawDetailProps) {
     )
   if (!draw.data)
     return (
-      <InlineAlert status="info" variant="big" icon="info">
+      <InlineAlert status="info" variant="big" icon={Info}>
         럭키드로우를 불러오는 중이에요.
       </InlineAlert>
     )

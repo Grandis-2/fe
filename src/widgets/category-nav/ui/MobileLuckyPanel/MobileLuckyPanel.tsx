@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { Info } from 'lucide-react'
 import { Link } from 'react-router'
 
 import {
@@ -69,11 +70,11 @@ export function MobileLuckyPanel({ onClose }: MobileLuckyPanelProps) {
           {getErrorMessage(error, '럭키드로우를 불러오지 못했어요.')}
         </InlineAlert>
       ) : isPending ? (
-        <InlineAlert status="info" variant="big" icon="info">
+        <InlineAlert status="info" variant="big" icon={Info}>
           럭키드로우를 불러오는 중이에요.
         </InlineAlert>
       ) : visible.length === 0 ? (
-        <InlineAlert status="info" variant="big" icon="info">
+        <InlineAlert status="info" variant="big" icon={Info}>
           해당하는 럭키드로우가 없어요.
         </InlineAlert>
       ) : (

@@ -1,10 +1,10 @@
 import type { ButtonHTMLAttributes } from 'react'
 
-import { DynamicIcon, type IconName } from 'lucide-react/dynamic'
-
 import { spacing } from '@shared/config/theme'
 
 import * as styles from './Button.css'
+
+import type { LucideIcon } from 'lucide-react'
 
 type ButtonColor = 'primary' | 'secondary' | 'cancel' | 'close'
 type ButtonVariant = 'solid' | 'outline' | 'subtle'
@@ -27,7 +27,8 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: ButtonVariant
   size?: ButtonSize
   rounded?: boolean
-  icon?: IconName
+  // 아이콘 컴포넌트를 넘긴다(icon={Plus}) — 이름 문자열로 받으면 lucide 아이콘 전체를 동적으로 불러와야 한다.
+  icon?: LucideIcon
 }
 
 export function Button({
@@ -35,7 +36,7 @@ export function Button({
   variant = 'solid',
   size = 'medium',
   rounded,
-  icon,
+  icon: Icon,
   className,
   children,
   ...rest
@@ -55,13 +56,7 @@ export function Button({
         .join(' ')}
       {...rest}
     >
-      {icon && (
-        <DynamicIcon
-          name={icon}
-          size={iconSize[size]}
-          className={styles.icon}
-        />
-      )}
+      {Icon && <Icon size={iconSize[size]} className={styles.icon} />}
       {children}
     </button>
   )

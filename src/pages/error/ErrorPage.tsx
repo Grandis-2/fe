@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react'
 import { useNavigate, useRouteError } from 'react-router'
 
 import { getTraceId } from '@shared/api/client'
@@ -35,7 +36,7 @@ export function ErrorPage() {
           <Button
             variant="outline"
             color="secondary"
-            icon="globe"
+            icon={Globe}
             onClick={() => void navigate(HOME_PATH)}
           >
             홈으로
