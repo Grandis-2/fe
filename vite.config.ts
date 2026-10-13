@@ -29,20 +29,20 @@ export default defineConfig({
       '/api': {
         target: 'https://api.grandis-nova.link',
         changeOrigin: true, // Host 를 api.grandis-nova.link 로
-        // cookieDomainRewrite: 'localhost', // 응답 쿠키(refresh_token)를 localhost 에 저장
-        // configure: (proxy) => {
-        //   proxy.on('proxyReq', (req) => {
-        //     // 앱의 CORS · 재발급 Origin 검사를 운영 프런트로 통과시킨다 (개발 서버에서만)
-        //     req.setHeader('origin', 'https://www.grandis-nova.link')
-        //     // localhost 의 다른 쿠키(IDE, Auth.js 등)는 넘기지 않는다 — WAF 가 차단한 원인
-        //     const keep = String(req.getHeader('cookie') ?? '')
-        //       .split(/;\s*/)
-        //       .filter((c) => c.startsWith('refresh_token='))
-        //     keep.length
-        //       ? req.setHeader('cookie', keep.join('; '))
-        //       : req.removeHeader('cookie')
-        //   })
-        // },
+        cookieDomainRewrite: 'localhost', // 응답 쿠키(refresh_token)를 localhost 에 저장
+        configure: (proxy) => {
+          proxy.on('proxyReq', (req) => {
+            // 앱의 CORS · 재발급 Origin 검사를 운영 프런트로 통과시킨다 (개발 서버에서만)
+            req.setHeader('origin', 'https://www.grandis-nova.link')
+            // localhost 의 다른 쿠키(IDE, Auth.js 등)는 넘기지 않는다 — WAF 가 차단한 원인
+            const keep = String(req.getHeader('cookie') ?? '')
+              .split(/;\s*/)
+              .filter((c) => c.startsWith('refresh_token='))
+            keep.length
+              ? req.setHeader('cookie', keep.join('; '))
+              : req.removeHeader('cookie')
+          })
+        },
       },
     },
   },
