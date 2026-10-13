@@ -34,10 +34,12 @@ export default defineConfig({
           proxy.on('proxyReq', (req) => {
             // 앱의 CORS · 재발급 Origin 검사를 운영 프런트로 통과시킨다 (개발 서버에서만)
             req.setHeader('origin', 'https://www.grandis-nova.link')
-            // localhost 의 다른 쿠키(IDE, Auth.js 등)는 넘기지 않는다 — WAF 가 차단한 원인
+            // localhost 의 다른 쿠키(IDE, Auth.js 등)는 넘기지 않는다 — WAF 가 차단한 원인.
+            // 관리자 리프레시는 admin_refresh_token 이라 이름을 같이 받는다 — 빼면
+            // 관리자 세션이 새로고침마다 끊긴다.
             const keep = String(req.getHeader('cookie') ?? '')
               .split(/;\s*/)
-              .filter((c) => c.startsWith('refresh_token='))
+              .filter((c) => /^(admin_)?refresh_token=/.test(c))
             keep.length
               ? req.setHeader('cookie', keep.join('; '))
               : req.removeHeader('cookie')
