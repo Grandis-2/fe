@@ -1,3 +1,4 @@
+import { Info } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import {
@@ -72,11 +73,11 @@ export function DrawList() {
           {getErrorMessage(error, '럭키드로우를 불러오지 못했어요.')}
         </InlineAlert>
       ) : isPending ? (
-        <InlineAlert status="info" variant="big" icon="info">
+        <InlineAlert status="info" variant="big" icon={Info}>
           럭키드로우를 불러오는 중이에요.
         </InlineAlert>
       ) : visible.length === 0 ? (
-        <InlineAlert status="info" variant="big" icon="info">
+        <InlineAlert status="info" variant="big" icon={Info}>
           해당하는 럭키드로우가 없어요.
         </InlineAlert>
       ) : (

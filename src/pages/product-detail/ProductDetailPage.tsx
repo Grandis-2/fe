@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 
+import { MessageSquare } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
 import {
@@ -329,7 +330,7 @@ export function ProductDetailPage() {
                     <InlineAlert
                       status="info"
                       variant="big"
-                      icon="message-square"
+                      icon={MessageSquare}
                       description="첫 후기를 기다리고 있어요."
                     >
                       아직 등록된 후기가 없어요

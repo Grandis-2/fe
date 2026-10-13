@@ -1,3 +1,5 @@
+import { SearchX } from 'lucide-react'
+
 import {
   ProductTile,
   ProductTileSkeleton,
@@ -55,7 +57,7 @@ export function ProductResults({
           <InlineAlert
             status="info"
             variant="big"
-            icon="search-x"
+            icon={SearchX}
             description="철자를 확인하거나 다른 검색어로 찾아보세요."
           >
             &apos;{keyword}&apos; 검색 결과가 없어요

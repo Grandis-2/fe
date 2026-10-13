@@ -1,4 +1,4 @@
-import { DynamicIcon, type IconName } from 'lucide-react/dynamic'
+import { TriangleAlert, type LucideIcon } from 'lucide-react'
 
 import { spacing } from '@shared/config/theme'
 
@@ -8,7 +8,8 @@ import * as styles from './InlineAlert.css'
 
 export type InlineAlertProps = {
   status: keyof typeof styles.tone
-  icon?: IconName | 'box_planet'
+  // 아이콘 컴포넌트를 넘긴다(icon={Info}, icon={PlanetIcon}).
+  icon?: LucideIcon | typeof PlanetIcon
   variant?: 'small' | 'big'
   // big에서만 제목(children) 아래에 보조 설명으로 나온다.
   description?: React.ReactNode
@@ -16,17 +17,12 @@ export type InlineAlertProps = {
 
 export function InlineAlert({
   status = 'info',
-  icon = 'triangle-alert',
+  icon: Icon = TriangleAlert,
   variant = 'small',
   description,
   children,
 }: InlineAlertProps & { children: React.ReactNode }) {
-  const iconNode =
-    icon === 'box_planet' ? (
-      <PlanetIcon size={variant === 'big' ? 26 : spacing[16]} />
-    ) : (
-      <DynamicIcon name={icon} size={variant === 'big' ? 26 : spacing[16]} />
-    )
+  const iconNode = <Icon size={variant === 'big' ? 26 : spacing[16]} />
 
   if (variant === 'big') {
     return (
