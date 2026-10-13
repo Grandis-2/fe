@@ -23,11 +23,14 @@ export function InlineAlert({
   children,
 }: InlineAlertProps & { children: React.ReactNode }) {
   const iconNode = <Icon size={variant === 'big' ? 26 : spacing[16]} />
+  // 행동 뒤에 나타나는 안내다 — 읽히지 않으면 스크린리더는 왜 실패했는지 알 수 없다.
+  // error는 즉시 끊고 읽는 alert, 나머지는 기다렸다 읽는 status.
+  const role = status === 'error' ? 'alert' : 'status'
 
   if (variant === 'big') {
     return (
       <div
-        role={status === 'error' ? 'alert' : 'status'}
+        role={role}
         className={[styles.bigRoot, styles.bigTone[status]].join(' ')}
       >
         <div className={styles.bigIcon}>{iconNode}</div>
@@ -42,7 +45,7 @@ export function InlineAlert({
   }
 
   return (
-    <div className={[styles.root, styles.tone[status]].join(' ')}>
+    <div role={role} className={[styles.root, styles.tone[status]].join(' ')}>
       {iconNode}
       <div>{children}</div>
     </div>
