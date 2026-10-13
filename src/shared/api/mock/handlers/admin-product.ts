@@ -10,7 +10,7 @@ import type {
   AdminProductListItem,
   AdminProductUpsertRequest,
   PageResponse,
-  PreorderStage,
+  PreorderSaleStatus,
 } from '../../types'
 import type { RequestHandler } from 'msw'
 
@@ -40,7 +40,7 @@ const toListItem = (detail: AdminProductDetail): AdminProductListItem => ({
   // 저장된 상세의 saleStatus는 값이 접수 단계와 같다(BEFORE_OPEN·OPEN·CLOSED).
   preorderStatus:
     detail.saleMode === 'PREORDER'
-      ? (detail.saleStatus as PreorderStage)
+      ? (detail.saleStatus as PreorderSaleStatus)
       : null,
   opensAt: detail.saleMode === 'PREORDER' ? detail.openAt : null,
   closesAt: detail.saleMode === 'PREORDER' ? detail.sale.closeAt : null,

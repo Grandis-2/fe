@@ -2,8 +2,8 @@ import type {
   AdminProductDetail,
   AdminStockItem,
   DisplayStatus,
-  PreorderStage,
-  ProductSaleState,
+  PreorderSaleStatus,
+  ProductSaleStatus,
   SaleMode,
 } from '@shared/api/types'
 
@@ -27,9 +27,9 @@ export type AdminProduct = {
   opensAt: string | null
   closesAt: string | null
   /** 상품 판매 상태 — 사전예약이든 일반이든 모든 상품에 있다 */
-  status: ProductSaleState
+  status: ProductSaleStatus
   /** 사전예약 접수 단계. 일반 상품이거나 회차가 아직 없으면 null */
-  preorderStatus: PreorderStage | null
+  preorderStatus: PreorderSaleStatus | null
   displayStatus: DisplayStatus
   /** 판매 중인 옵션의 최저가(원). 없으면 null */
   minPrice: number | null
@@ -38,17 +38,17 @@ export type AdminProduct = {
 
 // 화면(pages/widgets)은 DTO를 직접 import할 수 없어 여기서 다시 내보낸다.
 export type AdminStockItemModel = AdminStockItem
-export type AdminSaleState = ProductSaleState
-export type AdminPreorderStage = PreorderStage
+export type AdminSaleState = ProductSaleStatus
+export type AdminPreorderStage = PreorderSaleStatus
 export type AdminDisplayStatus = DisplayStatus
 
 /** 상품 판매 상태 — 백엔드의 status를 그대로 쓴다 */
-export const saleStateLabel: Record<ProductSaleState, string> = {
+export const saleStateLabel: Record<ProductSaleStatus, string> = {
   ACTIVE: '판매 중',
   PAUSED: '판매 중지',
 }
 
-export const saleStateColor: Record<ProductSaleState, 'green' | 'yellow'> = {
+export const saleStateColor: Record<ProductSaleStatus, 'green' | 'yellow'> = {
   ACTIVE: 'green',
   PAUSED: 'yellow',
 }
@@ -57,14 +57,14 @@ export const saleStateColor: Record<ProductSaleState, 'green' | 'yellow'> = {
  * 사전예약 접수 단계 — 판매 상태와 다른 축이다. 판매 중인 상품도 아직 오픈 전일 수
  * 있고, 접수가 마감된 뒤에도 판매 상태는 그대로 ACTIVE다.
  */
-export const preorderStageLabel: Record<PreorderStage, string> = {
+export const preorderStageLabel: Record<PreorderSaleStatus, string> = {
   BEFORE_OPEN: '오픈 전',
   OPEN: '접수 중',
   CLOSED: '접수 마감',
 }
 
 export const preorderStageColor: Record<
-  PreorderStage,
+  PreorderSaleStatus,
   'blue' | 'green' | 'gray'
 > = {
   BEFORE_OPEN: 'blue',

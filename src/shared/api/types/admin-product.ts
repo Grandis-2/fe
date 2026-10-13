@@ -1,4 +1,4 @@
-import type { SaleMode } from './product'
+import type { PreorderSaleStatus, ProductSaleStatus, SaleMode } from './product'
 
 // 관리자 상품 API가 아직 쓰는 이전(프론트 제안) 상품 모양. 구매자 화면은 백엔드 계약(product.ts)으로 옮겼고,
 // 관리자 상품을 백엔드(AdminProductController)에 맞출 때 이 블록도 같이 걷어낸다.
@@ -116,7 +116,7 @@ export type AdminProductListItem = {
   /** 대표 사진. 없으면 null */
   imageUrl: string | null
   /** 상품 판매 상태 */
-  status: ProductSaleState
+  status: ProductSaleStatus
   /** 관리자가 고른 공개 여부. 회원에게 보이려면 준비 완료도 필요하다 */
   visible: boolean
   /** false면 서버가 아직 준비(사전예약 회차·일반 상품 재고)를 끝내지 않았다 */
@@ -129,17 +129,11 @@ export type AdminProductListItem = {
   /** 일반 상품 품절 여부. 사전예약은 늘 false */
   soldOut: boolean
   /** 사전예약 접수 단계. 일반 상품이거나 회차가 없으면 null */
-  preorderStatus: PreorderStage | null
+  preorderStatus: PreorderSaleStatus | null
   /** 사전예약 오픈 시각(ISO-8601 UTC). 없으면 null */
   opensAt: string | null
   closesAt: string | null
 }
-
-/** 상품 판매 상태 — ACTIVE는 판매 중, PAUSED는 판매 중지 */
-export type ProductSaleState = 'ACTIVE' | 'PAUSED'
-
-/** 사전예약 접수 단계 */
-export type PreorderStage = 'BEFORE_OPEN' | 'OPEN' | 'CLOSED'
 
 // 관리자 상세도 마찬가지로 구매자용 상세에 운영 정보가 더 붙는다.
 export type AdminProductDetail = ProductDetail & {
@@ -182,7 +176,7 @@ export type AdminProductListParams = {
   /** 상품명과 태그에서 대소문자 없이 부분 일치. 비우면 무시한다 */
   q?: string
   saleMode?: SaleMode
-  status?: ProductSaleState
+  status?: ProductSaleStatus
   /** 0부터 시작한다 */
   page?: number
   /** 1~100(기본 20) */
