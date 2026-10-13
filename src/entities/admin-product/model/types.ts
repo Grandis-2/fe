@@ -1,14 +1,41 @@
 import type {
-  AdminProductDetail,
-  AdminStockItem,
   DisplayStatus,
+  OptionAxis,
   PreorderSaleStatus,
+  ProductDetailView,
   ProductSaleStatus,
   SaleMode,
+  StockOverviewItem,
 } from '@shared/api/types'
 
-// 서버 응답과 화면이 쓰는 모양이 같아서 매퍼 없이 그대로 재노출한다.
-export type AdminProductDetailModel = AdminProductDetail
+/**
+ * 관리자 상세가 화면에 그리는 모양.
+ *
+ * 응답은 회원 상세(product)에 태그·등록 상태가 따로 붙어 온다. 헤더·수정 폼·재고
+ * 탭·배송 탭이 같이 쓰므로 한 모양으로 편다 — 태그는 콤마 문자열을 배열로, 전시는
+ * 목록과 같은 규칙으로 한 값으로 모은다.
+ */
+export type AdminProductDetailModel = Pick<
+  ProductDetailView,
+  | 'productId'
+  | 'saleMode'
+  | 'status'
+  | 'campaign'
+  | 'basePrice'
+  | 'optionAxes'
+  | 'variants'
+  | 'description'
+  | 'warranty'
+  | 'images'
+  | 'categoryId'
+> & {
+  name: string
+  displayStatus: DisplayStatus
+  /** 검색 태그. 서버는 콤마로 이은 문자열로 준다 */
+  tags: string[]
+  /** 준비 완료. false면 공개로 골라 뒀어도 회원에게 보이지 않는다 */
+  registrationCompleted: boolean
+}
 
 /**
  * 관리자 상품 목록이 화면에 그리는 모양.
@@ -37,7 +64,7 @@ export type AdminProduct = {
 }
 
 // 화면(pages/widgets)은 DTO를 직접 import할 수 없어 여기서 다시 내보낸다.
-export type AdminStockItemModel = AdminStockItem
+export type AdminStockItemModel = StockOverviewItem
 export type AdminSaleState = ProductSaleStatus
 export type AdminPreorderStage = PreorderSaleStatus
 export type AdminDisplayStatus = DisplayStatus
@@ -104,14 +131,19 @@ export const displayStatusVariant: Record<DisplayStatus, 'subtle' | 'outline'> =
 export const displayStatusLabels = Object.values(displayStatusLabel)
 
 /**
+ * 조합(variant)은 축마다 정규화값(selections)을 들고 있다 — 화면은 관리자가 적은
+ * 이름(value)을 보여야 해서 되돌린다. 못 찾으면 undefined라 쓰는 쪽이 빈 칸을 정한다.
+ */
+export const axisValueName = (
+  axis: OptionAxis | undefined,
+  normalized?: string,
+) => axis?.values.find((value) => value.normalizedValue === normalized)?.value
+
+/**
  * 색상 옵션 그룹의 코드. 나머지 그룹은 폼이 opt1·opt2…로 발급한다(form.ts).
  * 색상만 축이 따로라 이름이 고정이고, 폼과 재고 표가 같이 본다.
  */
 export const COLOR_GROUP_CODE = 'color'
-
-/** 숨길 때 사유는 서버가 5~500자를 요구한다 */
-export const HIDE_REASON_MIN_LENGTH = 5
-export const HIDE_REASON_MAX_LENGTH = 500
 
 /** 사전 예약 상품인지 — 목록·상세가 모두 saleMode로 알려 준다 */
 export const isPreorder = (product: { saleMode: SaleMode }) =>

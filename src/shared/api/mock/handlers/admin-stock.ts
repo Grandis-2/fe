@@ -8,7 +8,7 @@ import { url } from '../url'
 import type {
   AdminStockItem,
   AdminStockPutRequest,
-  AdminStockResponse,
+  StockOverviewResponse,
 } from '../../types'
 import type { RequestHandler } from 'msw'
 
@@ -30,11 +30,31 @@ const hasVariant = (productId: string, optionCode: string) =>
 export const adminStockHandlers: RequestHandler[] = [
   http.get(url('/api/v1/admin/products/:productId/stock'), ({ params }) => {
     const productId = String(params.productId)
-    if (!productExists(productId)) return notFound()
+    const product = adminProductStore.find(
+      (item) => item.productId === productId,
+    )
+    if (!product) return notFound()
 
-    return ok<AdminStockResponse>({
+    // 사전예약은 재고를 세지 않는다 — 오류 대신 tracked false와 빈 목록을 준다.
+    if (product.saleMode === 'PREORDER') {
+      return ok<StockOverviewResponse>({ productId, tracked: false, items: [] })
+    }
+
+    // 저장소(예전 모양)를 명세 모양으로 바꿔 내보낸다. 옵션 id는 상세 목업과 같은
+    // 옵션 코드를 쓴다.
+    return ok<StockOverviewResponse>({
       productId,
-      items: adminStockStore.filter((item) => item.productId === productId),
+      tracked: true,
+      items: adminStockStore
+        .filter((item) => item.productId === productId)
+        .map((item) => ({
+          optionId: item.optionCode,
+          registered: true,
+          stockTotal: item.initialQuantity,
+          stockReserved: item.reservedQuantity,
+          stockSold: 0,
+          available: item.availableQuantity,
+        })),
     })
   }),
 

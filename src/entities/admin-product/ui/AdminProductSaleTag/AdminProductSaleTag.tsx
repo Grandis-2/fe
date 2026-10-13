@@ -12,11 +12,8 @@ import {
 } from '../../model/types'
 
 export type AdminProductSaleTagProps = {
-  /**
-   * 상품 판매 상태. 목록은 늘 주고, 상세는 응답을 아직 명세에 맞추지 않아 모른다 —
-   * 모르는 값을 '판매 중'으로 꾸며 보여주지 않으려고 선택으로 둔다.
-   */
-  status?: AdminSaleState
+  /** 상품 판매 상태. 모든 상품에 있다 */
+  status: AdminSaleState
   /**
    * 사전예약 접수 단계. 있으면 판매 상태 뒤에 같이 선다 — 판매 상태와 다른 축이라
    * 하나로 합치면 '판매 중지인데 접수 중'처럼 서로 어긋난 경우를 가린다.
@@ -34,16 +31,14 @@ export function AdminProductSaleTag({
 }: AdminProductSaleTagProps) {
   return (
     <>
-      {status && (
-        <Tag
-          size="medium"
-          rounded={false}
-          widthOptions={saleStateLabels}
-          color={saleStateColor[status]}
-        >
-          {saleStateLabel[status]}
-        </Tag>
-      )}
+      <Tag
+        size="medium"
+        rounded={false}
+        widthOptions={saleStateLabels}
+        color={saleStateColor[status]}
+      >
+        {saleStateLabel[status]}
+      </Tag>
       {stage && (
         <Tag
           size="medium"

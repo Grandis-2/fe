@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
-import type { AdminProductDetail } from '@shared/api/types'
 
 import {
   toFirstWaveRequest,
@@ -13,8 +12,7 @@ import { putDispatchWindow } from './adminDispatch'
 import {
   createAdminProduct,
   getAdminProduct,
-  hideAdminProduct,
-  publishAdminProduct,
+  setAdminProductVisibility,
   updateAdminProduct,
 } from './adminProduct'
 import { getAdminProductStock, putAdminProductStock } from './adminStock'
@@ -23,6 +21,7 @@ import {
   adminProductKey,
   adminProductStockKey,
 } from './keys'
+import { toAdminProductDetail } from './toAdminProduct'
 
 import type { AdminProductFormValue } from '../model/form'
 
@@ -33,6 +32,7 @@ export const useAdminProduct = (productId: string) =>
   useQuery({
     queryKey: adminProductKey(productId),
     queryFn: ({ signal }) => getAdminProduct(productId, signal),
+    select: toAdminProductDetail,
     ...queryPolicy.live,
   })
 
@@ -61,7 +61,9 @@ export const useCreateAdminProduct = () => {
   return useMutation({
     mutationFn: async (value: AdminProductFormValue) => {
       const product = await createAdminProduct(toUpsertRequest(value))
-      queryClient.setQueryData(adminProductKey(product.productId), product)
+      // 등록 응답은 아직 예전 모양이라 상세 캐시에 그대로 넣으면 상세 매퍼가 깨진다.
+      // 넣지 않고 목록만 무효화해, 상세는 들어갈 때 새로 받는다.
+      void queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY })
 
       const firstWave = toFirstWaveRequest(value)
       if (!firstWave) return { product, dispatchSaved: true }
@@ -93,7 +95,10 @@ export const useUpdateAdminProduct = (productId: string) => {
         productId,
         toUpsertRequest(value),
       )
-      queryClient.setQueryData(adminProductKey(productId), updated)
+      // 수정 응답은 아직 예전 모양이라 상세 캐시에 넣지 않고 다시 받는다.
+      void queryClient.invalidateQueries({
+        queryKey: adminProductKey(productId),
+      })
 
       // PATCH가 옵션 코드를 새로 만들므로, 재고는 반드시 그 응답 기준으로 보낸다.
       // 수정 전 상세의 코드로 보내면 새 옵션에 재고가 붙지 않는다.
@@ -116,31 +121,23 @@ export const useUpdateAdminProduct = (productId: string) => {
 }
 
 /**
- * 전시 상태를 바꾼다(게시 ↔ 숨김). 상세 캐시는 응답으로 바로 갱신하고, 목록은
- * 무효화해 다시 받는다 — 목록 행에도 전시 상태가 보여서 같이 바뀌어야 한다.
+ * 공개 여부를 바꾼다. 응답은 공개 여부뿐이라 상세·목록을 무효화해 다시 받는다 —
+ * 목록 행에도 전시 상태가 보여서 같이 바뀌어야 한다.
  */
-const useDisplayStatusMutation = <TVariables>(
-  mutationFn: (variables: TVariables) => Promise<AdminProductDetail>,
-) => {
+export const useSetAdminProductVisibility = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn,
-    onSuccess: (updated) => {
-      queryClient.setQueryData(adminProductKey(updated.productId), updated)
-      return queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY })
-    },
+    mutationFn: ({
+      productId,
+      visible,
+    }: {
+      productId: string
+      visible: boolean
+    }) => setAdminProductVisibility(productId, { visible }),
+    onSuccess: (_, { productId }) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: adminProductKey(productId) }),
+        queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
+      ]),
   })
 }
-
-/** 초안·숨김 → 게시중. 사유를 받지 않는다 */
-export const usePublishAdminProduct = () =>
-  useDisplayStatusMutation((productId: string) =>
-    publishAdminProduct(productId),
-  )
-
-/** 게시중 → 숨김. 서버가 5자 이상의 사유를 요구한다 */
-export const useHideAdminProduct = () =>
-  useDisplayStatusMutation(
-    ({ productId, reason }: { productId: string; reason: string }) =>
-      hideAdminProduct(productId, { reason }),
-  )

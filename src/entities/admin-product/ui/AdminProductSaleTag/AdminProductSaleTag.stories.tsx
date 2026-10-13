@@ -59,12 +59,3 @@ export const PreorderBeforeOpen: Story = {
     await expect(visibleLabel(canvas, '오픈 전')).toBeVisible()
   },
 }
-
-/** 상세 화면은 아직 판매 상태를 모른다 — 접수 단계만 보여준다 */
-export const StageOnly: Story = {
-  args: { stage: 'OPEN' },
-  play: async ({ canvas }) => {
-    await expect(visibleLabel(canvas, '접수 중')).toBeVisible()
-    await expect(canvas.queryByText('판매 중')).toBeNull()
-  },
-}

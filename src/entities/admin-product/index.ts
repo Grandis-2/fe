@@ -5,8 +5,7 @@ export {
   useAdminProduct,
   useAdminProductStock,
   useCreateAdminProduct,
-  useHideAdminProduct,
-  usePublishAdminProduct,
+  useSetAdminProductVisibility,
   useUpdateAdminProduct,
 } from './api/useAdminProduct'
 export { useAdminProducts } from './api/useAdminProducts'
@@ -26,8 +25,6 @@ export {
 } from './model/dispatch'
 export type { DispatchWaveDraft, DispatchWaveModel } from './model/dispatch'
 export {
-  HIDE_REASON_MAX_LENGTH,
-  HIDE_REASON_MIN_LENGTH,
   isPreorder,
   PRODUCT_BRANDS,
   productTypeLabel,

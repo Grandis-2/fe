@@ -27,11 +27,19 @@ const tabs: { value: AdminProductTab; label: string }[] = [
   { value: 'shipping', label: '배송 구간 설정' },
 ]
 
-const DEFAULT_TAB: AdminProductTab = 'stock'
-
-// 배송 차수는 사전 예약에만 있다 — 일반 판매는 순번도 차수도 없다.
+/**
+ * 판매 방식에 따라 탭이 갈린다. 배송 차수는 사전예약에만 있고(일반 판매는 순번도
+ * 차수도 없다), 재고는 일반 상품만 센다(사전예약은 재고 API가 tracked false와 빈
+ * 목록을 주고, 명세가 그때 재고 탭을 숨기라고 한다).
+ */
 const tabsOf = (product: AdminProductDetailModel) =>
-  isPreorder(product) ? tabs : tabs.filter((item) => item.value !== 'shipping')
+  tabs.filter((item) =>
+    isPreorder(product) ? item.value !== 'stock' : item.value !== 'shipping',
+  )
+
+// 일반 상품은 재고 조회가, 사전예약은 재고 탭이 없어 수정이 처음 화면이다.
+const defaultTabOf = (product: AdminProductDetailModel): AdminProductTab =>
+  isPreorder(product) ? 'edit' : 'stock'
 
 /**
  * 주소에서 상품과 탭만 읽고 화면을 조립한다. 데이터 조회·저장·에러 표시는
@@ -61,10 +69,10 @@ export function AdminProductDetailPage() {
   }
 
   const visibleTabs = tabsOf(product.data)
-  // 일반 판매 상품에 ?tab=shipping으로 들어와도 기본 탭으로 보낸다.
+  // 그 상품에 없는 탭(?tab=shipping인 일반 상품 등)으로 들어와도 기본 탭으로 보낸다.
   const tab =
     visibleTabs.find((item) => item.value === searchParams.get('tab'))?.value ??
-    DEFAULT_TAB
+    defaultTabOf(product.data)
 
   const setTab = (next: AdminProductTab) => {
     const params = new URLSearchParams(searchParams)
@@ -73,7 +81,7 @@ export function AdminProductDetailPage() {
     setSearchParams(params, { replace: true })
   }
 
-  const { name, saleStatus, displayStatus } = product.data
+  const { name, status, campaign, displayStatus } = product.data
 
   return (
     <div className={styles.root}>
@@ -86,9 +94,7 @@ export function AdminProductDetailPage() {
 
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{name}</h1>
-        {/* 예전 상세 응답의 saleStatus는 값이 사전예약 접수 단계와 같다 — 판매
-            상태(ACTIVE·PAUSED)는 응답에 없어서 상세를 명세에 맞출 때 채운다. */}
-        <AdminProductSaleTag stage={saleStatus} />
+        <AdminProductSaleTag status={status} stage={campaign?.status} />
         {/* 상태 뱃지끼리 붙여 둔다 — 판매와 전시는 둘 다 '지금 어떤 상태인가'다. */}
         <AdminProductDisplayTag status={displayStatus} />
         {/* 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 — 어느 탭에 있든

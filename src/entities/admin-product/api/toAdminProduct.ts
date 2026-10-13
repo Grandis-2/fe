@@ -1,15 +1,26 @@
-import type { AdminProductListItem } from '@shared/api/types'
+import type {
+  AdminProductListItem,
+  AdminProductResponse,
+  DisplayStatus,
+} from '@shared/api/types'
 
-import type { AdminProduct } from '../model/types'
+import type { AdminProduct, AdminProductDetailModel } from '../model/types'
 
 /**
- * 전시 상태를 한 값으로 모은다 — 서버는 두 불리언으로 알려 준다.
+ * 전시 상태를 한 값으로 모은다 — 서버는 두 불리언으로 알려 준다. 목록과 상세가 같은
+ * 규칙을 써야 해서 둘 다 여기를 거친다.
  *
  * 준비가 안 끝났으면(registrationCompleted false) 공개로 골라 뒀어도 회원에게
  * 보이지 않으므로 그 상태가 먼저다.
  */
-const toDisplayStatus = (item: AdminProductListItem) =>
-  !item.registrationCompleted ? 'DRAFT' : item.visible ? 'PUBLISHED' : 'HIDDEN'
+const toDisplayStatus = ({
+  visible,
+  registrationCompleted,
+}: {
+  visible: boolean
+  registrationCompleted: boolean
+}): DisplayStatus =>
+  !registrationCompleted ? 'DRAFT' : visible ? 'PUBLISHED' : 'HIDDEN'
 
 /**
  * 관리자 목록 한 줄을 화면이 쓰는 모양으로 바꾼다.
@@ -30,4 +41,37 @@ export const toAdminProduct = (item: AdminProductListItem): AdminProduct => ({
   displayStatus: toDisplayStatus(item),
   minPrice: item.minPrice,
   thumbnailUrl: item.imageUrl,
+})
+
+// 빈 조각은 버린다 — '삼성,,갤럭시'나 끝 콤마에서 빈 태그가 생기지 않게.
+const splitTags = (tags: string | null) =>
+  (tags ?? '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+
+/** 관리자 상세를 화면이 쓰는 모양으로 편다 */
+export const toAdminProductDetail = ({
+  product,
+  tags,
+  registration,
+}: AdminProductResponse): AdminProductDetailModel => ({
+  productId: product.productId,
+  name: product.title,
+  saleMode: product.saleMode,
+  status: product.status,
+  campaign: product.campaign,
+  basePrice: product.basePrice,
+  optionAxes: product.optionAxes,
+  variants: product.variants,
+  description: product.description,
+  warranty: product.warranty,
+  images: product.images,
+  categoryId: product.categoryId,
+  tags: splitTags(tags),
+  registrationCompleted: registration.completed,
+  displayStatus: toDisplayStatus({
+    visible: product.visible,
+    registrationCompleted: registration.completed,
+  }),
 })

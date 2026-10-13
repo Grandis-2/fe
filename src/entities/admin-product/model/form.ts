@@ -2,15 +2,20 @@ import type {
   AdminProductDetail,
   AdminProductUpsertRequest,
   DispatchWindowPutRequest,
-  AdminStockItem,
   AdminStockPutRequest,
+  ProductImageBundle,
   ProductOptionGroup as DtoOptionGroup,
   ProductVariant as DtoVariant,
+  StockOverviewItem,
 } from '@shared/api/types'
 import type { UploadedImage } from '@shared/ui'
 
 import { toDispatchWindowRequest } from './dispatch'
-import { COLOR_GROUP_CODE } from './types'
+import {
+  axisValueName,
+  COLOR_GROUP_CODE,
+  type AdminProductDetailModel,
+} from './types'
 
 /* ------------------------------------------------------------------ *
  * 폼이 편집하는 모양 — 서버 DTO와 형태가 달라서 별도로 둔다.
@@ -394,77 +399,90 @@ export function toUpsertRequest(
 }
 
 /**
- * 옵션 값 하나의 추가금을 variant 가격에서 되돌린다.
- *
- * 서버 variant에는 추가금 필드가 없고 최종 가격만 있다. toUpsertRequest가
- * `가격 = 기본가 + 고른 값들의 추가금 합`으로 만들므로 그 역이 성립한다 —
- * 이 값을 가진 variant 중 가장 싼 것에서 기본가(최저가)를 빼면 된다.
- *
- * 되돌리지 않으면 수정 탭에서 아무것도 안 바꾸고 저장만 해도 모든 variant가
- * 최저가로 덮어써진다.
+ * 상세 이미지 묶음의 영역 이름 — 서버는 images.detail[]을 영역 이름으로 나눈다.
+ * 폼은 세 칸으로 들고 있어서 이름으로 짝을 짓는다.
  */
-function extraPriceOf(
-  detail: AdminProductDetail,
-  groupCode: string,
-  valueCode: string,
-) {
-  const prices = detail.variants
-    .filter((variant) => variant.optionValues[groupCode] === valueCode)
-    .map((variant) => variant.price)
+const DETAIL_SECTIONS = {
+  detailImages: '상세정보',
+  specImages: '제품사양',
+  noticeImages: '유의사항',
+} as const
 
-  if (prices.length === 0) return 0
-  return Math.min(...prices) - detail.priceRange.min
-}
+const toUploadedImages = (bundle?: ProductImageBundle): UploadedImage[] =>
+  (bundle?.items ?? []).map((item) => ({
+    id: item.url,
+    url: item.url,
+    name: item.url.split('/').pop() ?? '',
+  }))
 
-/** 상세 응답을 폼이 편집할 수 있는 모양으로 되돌린다 */
+/** 상세를 폼이 편집할 수 있는 모양으로 되돌린다 */
 export function toFormValue(
-  detail: AdminProductDetail,
-  stockItems: AdminStockItem[] = [],
+  detail: AdminProductDetailModel,
+  stockItems: StockOverviewItem[] = [],
 ): AdminProductFormValue {
-  const colorGroup = detail.optionGroups.find(
-    (group) => group.groupCode === COLOR_GROUP_CODE,
+  const colorAxis = detail.optionAxes.find(
+    (axis) => axis.key === COLOR_GROUP_CODE,
   )
-  const otherGroups = detail.optionGroups.filter(
-    (group) => group.groupCode !== COLOR_GROUP_CODE,
+  const otherAxes = detail.optionAxes.filter(
+    (axis) => axis.key !== COLOR_GROUP_CODE,
   )
+  const detailBundle = (section: string) =>
+    detail.images.detail.find((bundle) => bundle.bundleKey === section)
 
   return {
     ...createEmptyProductFormValue(),
     name: detail.name,
-    modelName: detail.productId,
-    brand: detail.brand,
-    tags: detail.tags ?? [],
-    isPreorder: detail.badges.includes('PREORDER'),
-    openAt: toLocalInput(detail.sale.openAt),
-    closeAt: toLocalInput(detail.sale.closeAt),
-    colors: colorGroup?.values.map((value) => ({
-      id: value.valueCode,
-      name: value.name,
-      hex: value.colorHex ?? '',
-      noColor: false,
-      images: [],
-    })) ?? [createColorOption()],
-    optionGroups: otherGroups.map((group) => ({
-      id: group.groupCode,
-      name: group.name,
-      values: group.values.map((value) => ({
-        id: value.valueCode,
-        label: value.name,
-        extraPrice: extraPriceOf(detail, group.groupCode, value.valueCode),
+    // 모델명·브랜드는 아직 서버에 필드가 없다 — 생기면 여기서 채운다.
+    tags: detail.tags,
+    isPreorder: detail.saleMode === 'PREORDER',
+    openAt: toLocalInput(detail.campaign?.opensAt ?? null),
+    closeAt: toLocalInput(detail.campaign?.closesAt ?? null),
+    colors: colorAxis
+      ? colorAxis.values.map((value) => ({
+          id: value.valueId,
+          name: value.value,
+          hex: value.hex ?? '',
+          noColor: false,
+          // 갤러리는 색상 정규화값으로 묶여 온다.
+          images: toUploadedImages(
+            detail.images.gallery.find(
+              (bundle) => bundle.bundleKey === value.normalizedValue,
+            ),
+          ),
+        }))
+      : // 색상 축이 없는 상품(키보드 등)은 '색상 없음'으로 둔다 — 빈 색상 칸을 두면
+        // 조합이 하나도 안 만들어져 수량 표가 비어 보인다.
+        [{ ...createColorOption(), noColor: true }],
+    optionGroups: otherAxes.map((axis) => ({
+      id: axis.key,
+      name: axis.label,
+      values: axis.values.map((value) => ({
+        id: value.valueId,
+        label: value.value,
+        // 서버가 값마다 추가금을 준다 — 예전처럼 조합 가격에서 거꾸로 계산하지 않는다.
+        extraPrice: value.surcharge,
       })),
     })),
-    basePrice: detail.priceRange.min,
-    // 재고 응답의 optionCode를 폼의 수량 키(색상|옵션값)로 되돌린다.
+    basePrice: detail.basePrice,
+    // 재고는 옵션 id(= variantId)로 온다. 폼의 수량 키(색상|옵션값)로 옮긴다.
     quantities: Object.fromEntries(
-      Object.entries(buildOptionCodeByQuantityKey(detail)).flatMap(
-        ([quantityKey, optionCode]) => {
-          const stock = stockItems.find(
-            (item) => item.optionCode === optionCode,
-          )
-          return stock ? [[quantityKey, stock.initialQuantity]] : []
-        },
-      ),
+      detail.variants.flatMap((variant) => {
+        const stock = stockItems.find(
+          (item) => item.optionId === variant.variantId,
+        )
+        if (!stock) return []
+        const key = buildVariantKey(
+          axisValueName(colorAxis, variant.selections[COLOR_GROUP_CODE]) ?? '',
+          otherAxes.map(
+            (axis) => axisValueName(axis, variant.selections[axis.key]) ?? '',
+          ),
+        )
+        return [[key, stock.stockTotal]]
+      }),
     ),
+    detailImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.detailImages)),
+    specImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.specImages)),
+    noticeImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.noticeImages)),
   }
 }
 

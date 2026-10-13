@@ -2,11 +2,13 @@ import { apiClient } from '@shared/api/client'
 import { toQueryString } from '@shared/api/queryString'
 import type {
   AdminProductDetail,
-  AdminProductHideRequest,
   AdminProductListItem,
   AdminProductListParams,
+  AdminProductResponse,
   AdminProductUpsertRequest,
   PageResponse,
+  VisibilityChangeRequest,
+  VisibilityView,
 } from '@shared/api/types'
 
 const BASE = '/api/v1/admin/products'
@@ -21,9 +23,9 @@ export const getAdminProducts = (
     { signal },
   )
 
-/** 전시 상태와 무관하게 상품 상세를 조회한다 */
+/** 전시 상태와 무관하게 상품 상세를 조회한다 — 회원 상세에 태그·등록 상태가 붙는다 */
 export const getAdminProduct = (productId: string, signal?: AbortSignal) =>
-  apiClient.request<AdminProductDetail>(`${BASE}/${productId}`, { signal })
+  apiClient.request<AdminProductResponse>(`${BASE}/${productId}`, { signal })
 
 /** 상품을 초안으로 등록한다 */
 export const createAdminProduct = (body: AdminProductUpsertRequest) =>
@@ -39,18 +41,15 @@ export const updateAdminProduct = (
     body,
   })
 
-/** DRAFT/HIDDEN → PUBLISHED */
-export const publishAdminProduct = (productId: string) =>
-  apiClient.request<AdminProductDetail>(`${BASE}/${productId}/publish`, {
-    method: 'POST',
-  })
-
-/** PUBLISHED → HIDDEN. reason은 5자 이상이어야 한다 */
-export const hideAdminProduct = (
+/**
+ * 공개 여부를 바꾼다. 사전예약 오픈 전후 언제든 되고, 되돌릴 수 있다 — 수정 잠금
+ * 409가 없다. 사유는 받지 않는다(판매 중지와 다른 동작이다).
+ */
+export const setAdminProductVisibility = (
   productId: string,
-  body: AdminProductHideRequest,
+  body: VisibilityChangeRequest,
 ) =>
-  apiClient.request<AdminProductDetail>(`${BASE}/${productId}/hide`, {
-    method: 'POST',
+  apiClient.request<VisibilityView>(`${BASE}/${productId}/visibility`, {
+    method: 'PATCH',
     body,
   })

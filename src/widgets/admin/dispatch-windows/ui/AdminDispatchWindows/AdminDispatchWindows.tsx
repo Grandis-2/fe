@@ -47,7 +47,13 @@ export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
 
   const waves = dispatchWindow.data?.waves ?? []
   // 오픈 이후에는 배송 기준과 기존 배정을 바꾸지 않는다(서버도 409로 막는다).
-  const editable = !!dispatchWindow.data && product.data?.saleStatus !== 'OPEN'
+  // 차수 저장은 오픈 뒤 409다 — 접수 중(OPEN)뿐 아니라 마감(CLOSED)도 이미 오픈한
+  // 뒤다. 회차가 아직 없으면(등록 직후 준비 중) 오픈 전이라 고칠 수 있다.
+  const campaignStatus = product.data?.campaign?.status
+  const editable =
+    !!dispatchWindow.data &&
+    campaignStatus !== 'OPEN' &&
+    campaignStatus !== 'CLOSED'
 
   // 편집을 여는 순간 화면에 보이던 구성으로 초안을 채운다.
   const startEdit = () => {

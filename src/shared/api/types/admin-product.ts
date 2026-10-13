@@ -1,4 +1,9 @@
-import type { PreorderSaleStatus, ProductSaleStatus, SaleMode } from './product'
+import type {
+  PreorderSaleStatus,
+  ProductDetailView,
+  ProductSaleStatus,
+  SaleMode,
+} from './product'
 
 // 관리자 상품 API가 아직 쓰는 이전(프론트 제안) 상품 모양. 구매자 화면은 백엔드 계약(product.ts)으로 옮겼고,
 // 관리자 상품을 백엔드(AdminProductController)에 맞출 때 이 블록도 같이 걷어낸다.
@@ -135,7 +140,42 @@ export type AdminProductListItem = {
   closesAt: string | null
 }
 
-// 관리자 상세도 마찬가지로 구매자용 상세에 운영 정보가 더 붙는다.
+/** 등록 상태 — 등록 상태 조회(GET /admin/products/registrations/{key})와 같은 모양 */
+export type RegistrationStatusView = {
+  productId: string
+  /** 등록 때 받은 멱등 키. 등록 API 도입 전 상품은 null */
+  idempotencyKey: string | null
+  /**
+   * 준비 완료 — 사전예약은 회차, 일반 상품은 재고가 만들어지면 true.
+   * false인 동안은 공개로 골라 뒀어도 회원에게 보이지 않는다.
+   */
+  completed: boolean
+}
+
+/** 관리자 상세(GET /api/v1/admin/products/{productId}) */
+export type AdminProductResponse = {
+  /** 회원 상세와 같은 모양이다. visible만 실제 값이고 회원 상세에선 늘 true다 */
+  product: ProductDetailView
+  /** 검색 키워드를 콤마로 이은 문자열. 없으면 null. 회원에게는 나가지 않는다 */
+  tags: string | null
+  registration: RegistrationStatusView
+}
+
+/** 공개 여부 전환(PATCH .../visibility). boolean만 받는다 — "true"·1은 400 */
+export type VisibilityChangeRequest = {
+  visible: boolean
+}
+
+export type VisibilityView = {
+  productId: string
+  visible: boolean
+}
+
+/**
+ * 예전 상세 모양(프론트 제안). 등록·수정 본문(AdminProductUpsertRequest)과 목업
+ * 저장소가 아직 이 모양이라 남겨 둔다 — 조회는 AdminProductResponse로 옮겼고,
+ * 등록·수정을 명세에 맞출 때 같이 걷어낸다.
+ */
 export type AdminProductDetail = ProductDetail & {
   // 관리자가 달아 둔 검색 태그. 아직 스펙에 없어 필드가 올 때까지는 비어 온다 —
   // 그래서 반영 전에는 수정 폼을 다시 열면 골라 뒀던 태그가 비어 보인다.
@@ -181,8 +221,4 @@ export type AdminProductListParams = {
   page?: number
   /** 1~100(기본 20) */
   size?: number
-}
-
-export type AdminProductHideRequest = {
-  reason: string
 }
