@@ -95,4 +95,6 @@ export const ADMIN_RESERVATIONS_PATH = '/admin/orders'
 export const ADMIN_CONSISTENCY_CHECK_PATH = '/admin/consistency-check'
 export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'
 export const ADMIN_NOTIFICATIONS_PATH = '/admin/notifications'
+// 관리자 로그인. 사이드바 없는 단독 화면이라 AdminLayout 밖에 둔다.
+export const ADMIN_LOGIN_PATH = '/admin/login'
 export const ADMIN_MOCK_SETTINGS_PATH = '/admin/mock-settings'

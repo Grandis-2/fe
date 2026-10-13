@@ -1,12 +1,15 @@
-import type { KakaoCallbackRequest } from '@shared/api/types'
+import type { AdminLoginRequest, KakaoCallbackRequest } from '@shared/api/types'
 
-import { deleteSession, postKakaoCallback } from '../api/auth'
+import { deleteSession, postAdminSession, postKakaoCallback } from '../api/auth'
 
 import {
   broadcastSessionCleared,
   ensureFreshSession,
 } from './refreshCoordinator'
 import { useSessionStore, type SessionState } from './sessionStore'
+
+// 화면(features/pages)은 DTO를 직접 import할 수 없어 여기서 다시 내보낸다.
+export type { AdminLoginRequest } from '@shared/api/types'
 
 // 위젯이 매번 네 필드를 따로 select하지 않도록 묶어 둔다.
 export function useSession() {
@@ -45,6 +48,26 @@ export async function initAuth() {
     // 실패(비로그인)여도 판단은 끝났다 — 로그인 필요 화면이 기다리지 않게 한다.
     useSessionStore.getState().markAuthReady()
   }
+}
+
+/**
+ * 관리자 로그인. 성공하면 서버가 관리자 리프레시 쿠키를 심고 회원 쿠키를 지운다 —
+ * 한 브라우저에서 회원과 관리자를 같이 쓸 수 없다.
+ *
+ * 응답에는 sessionToken과 role만 온다. 스토어는 회원과 같은 모양을 쓰므로 나머지를
+ * 여기서 채운다 — 관리자는 표시할 이름이 없고(null), 채울 추가 정보도 없다(true).
+ *
+ * 열려 있는 다른 탭은 회원 쿠키가 지워진 걸 모르므로 세션 해제를 알린다.
+ */
+export async function loginAsAdmin(body: AdminLoginRequest) {
+  const { sessionToken, role } = await postAdminSession(body)
+  broadcastSessionCleared()
+  useSessionStore.getState().setSession({
+    sessionToken,
+    role,
+    displayName: null,
+    profileComplete: true,
+  })
 }
 
 export async function logout() {
