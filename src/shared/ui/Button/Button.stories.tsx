@@ -1,3 +1,4 @@
+import { ShoppingCart } from 'lucide-react'
 import { expect, waitFor } from 'storybook/test'
 
 import { Button } from './Button'
@@ -49,7 +50,7 @@ export const WithIcon: Story = {
     color: 'primary',
     variant: 'solid',
     size: 'small',
-    icon: 'shopping-cart',
+    icon: ShoppingCart,
   },
   play: async ({ canvas }) => {
     const button = canvas.getByRole('button', { name: '장바구니' })
@@ -66,7 +67,7 @@ export const IconSizes: Story = {
     color: 'primary',
     variant: 'solid',
     size: 'medium',
-    icon: 'shopping-cart',
+    icon: ShoppingCart,
   },
 }
 

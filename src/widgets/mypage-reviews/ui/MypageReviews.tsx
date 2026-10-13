@@ -1,3 +1,5 @@
+import { MessageSquare } from 'lucide-react'
+
 import { HistoryCard } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
 import { useDeleteReview, useMyReviews, type Review } from '@entities/review'
@@ -58,7 +60,7 @@ export function MypageReviews() {
           <InlineAlert
             status="info"
             variant="big"
-            icon="message-square"
+            icon={MessageSquare}
             description="리뷰는 배송 완료된 일반 구매 상품에 쓸 수 있어요."
           >
             아직 작성한 리뷰가 없어요

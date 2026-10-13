@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { SquarePen } from 'lucide-react'
+import { Plus, SquarePen } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -137,7 +137,7 @@ export function AdminPromotionsPage() {
     <div className={styles.root}>
       <div className={styles.header}>
         <div className={styles.title}>사전예약 관리</div>
-        <Button icon="plus" size="medium" onClick={startCreate}>
+        <Button icon={Plus} size="medium" onClick={startCreate}>
           새 사전예약
         </Button>
       </div>

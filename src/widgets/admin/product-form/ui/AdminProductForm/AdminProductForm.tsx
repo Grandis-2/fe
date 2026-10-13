@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
+import { Eye } from 'lucide-react'
+
 import {
   createEmptyProductFormValue,
   getProductVariants,
@@ -253,7 +255,7 @@ export function AdminProductForm({
           type="button"
           variant="outline"
           color="primary"
-          icon="eye"
+          icon={Eye}
           onClick={() => onPreview(value)}
         >
           미리보기

@@ -1,4 +1,4 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Loader, Package, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 
 import {
@@ -77,7 +77,7 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
         <InlineAlert
           status={isError ? 'error' : 'info'}
           variant="big"
-          icon={isError ? 'triangle-alert' : isPending ? 'loader' : 'package'}
+          icon={isError ? TriangleAlert : isPending ? Loader : Package}
           description={message.description}
         >
           {message.title}

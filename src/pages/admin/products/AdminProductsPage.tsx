@@ -1,5 +1,6 @@
 import { useState } from 'react'
 
+import { Plus } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -183,7 +184,7 @@ export function AdminProductsPage() {
       <div className={styles.header}>
         <div className={styles.title}>상품 관리</div>
         <Button
-          icon="plus"
+          icon={Plus}
           size="medium"
           onClick={() => navigate(ADMIN_PRODUCT_NEW_PATH)}
         >
