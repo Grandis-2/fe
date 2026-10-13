@@ -1,3 +1,4 @@
+import { Package } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import {
@@ -65,7 +66,9 @@ export function PreorderList({ preorders }: PreorderListProps) {
       </div>
 
       {visible.length === 0 ? (
-        <InlineAlert status="info">해당하는 사전예약이 없어요.</InlineAlert>
+        <InlineAlert status="info" variant="big" icon={Package}>
+          해당하는 사전예약이 없어요
+        </InlineAlert>
       ) : (
         <div className={styles.grid}>
           {visible.map((preorder) => (

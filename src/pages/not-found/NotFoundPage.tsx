@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { HOME_PATH } from '@shared/config/routes'
@@ -21,7 +22,7 @@ export function NotFoundPage() {
             주소가 잘못되었거나 삭제된 페이지예요.
           </div>
         </div>
-        <Button icon="globe" onClick={() => void navigate(HOME_PATH)}>
+        <Button icon={Globe} onClick={() => void navigate(HOME_PATH)}>
           홈으로
         </Button>
       </div>

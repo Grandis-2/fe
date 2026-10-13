@@ -4,6 +4,7 @@ import { Plus, X } from 'lucide-react'
 
 import {
   createWaveDraft,
+  DeliveryDateField,
   formatDeliveryDate,
   formatSeqRange,
   nextFromSeq,
@@ -20,8 +21,6 @@ import {
 import { getErrorMessage } from '@shared/api/client'
 import { Button, InlineAlert, Input, Table } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
-
-import { DeliveryDateField } from '../DeliveryDateField'
 
 import * as styles from './AdminDispatchWindows.css'
 
@@ -154,6 +153,7 @@ export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
       width: '35%',
       render: (draft) => (
         <DeliveryDateField
+          label="예상 배송일"
           value={draft.estimatedDeliveryDate}
           onChange={(date) =>
             patchDraft(draft.id, { estimatedDeliveryDate: date })

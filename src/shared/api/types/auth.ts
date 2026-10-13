@@ -4,7 +4,8 @@ export type SessionRole = 'USER' | 'ADMIN'
 // 타입에도 없다.
 export type Session = {
   sessionToken: string
-  displayName: string
+  // 회원은 카카오 닉네임(없으면 "카카오 회원"), 관리자는 null.
+  displayName: string | null
   role: SessionRole
   // 이름·이메일·연락처(entities/profile)가 다 채워졌는지 — 로그인/재발급/세션조회
   // 세 응답에 다 실려 온다. ADMIN은 항상 true.

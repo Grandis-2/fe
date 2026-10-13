@@ -1,11 +1,12 @@
 import { Fragment, useState } from 'react'
 
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, SearchX, TriangleAlert } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import {
   findCategoryId,
   ProductCard,
+  ProductCardSkeleton,
   useCategories,
   useProducts,
 } from '@entities/product'
@@ -74,13 +75,11 @@ export function SearchResults() {
   )
   const cardMessage = isError
     ? '상품을 불러오지 못했어요.'
-    : cards === undefined
-      ? '불러오는 중이에요.'
-      : cards.length === 0
-        ? isCategoryMode
-          ? '조건에 맞는 상품이 없어요.'
-          : `'${keyword}' 검색 결과가 없어요.`
-        : null
+    : cards?.length === 0
+      ? isCategoryMode
+        ? '조건에 맞는 상품이 없어요.'
+        : `'${keyword}' 검색 결과가 없어요.`
+      : null
 
   // 검색어가 바뀌면 결과가 달라지므로 1페이지로 돌아간다.
   const setParam = (key: string, value: string) =>
@@ -134,18 +133,26 @@ export function SearchResults() {
 
       {(keyword || isCategoryMode) &&
         (cardMessage ? (
-          <InlineAlert status={isError ? 'error' : 'info'}>
+          <InlineAlert
+            status={isError ? 'error' : 'info'}
+            variant="big"
+            icon={isError ? TriangleAlert : SearchX}
+          >
             {cardMessage}
           </InlineAlert>
         ) : (
           <>
             <div className={styles.cardGrid}>
-              {cards?.map((product) => (
-                <ProductCard
-                  key={product.productId}
-                  {...getCardProps(product)}
-                />
-              ))}
+              {cards
+                ? cards.map((product) => (
+                    <ProductCard
+                      key={product.productId}
+                      {...getCardProps(product)}
+                    />
+                  ))
+                : Array.from({ length: PAGE_SIZE }, (_, i) => (
+                    <ProductCardSkeleton key={i} />
+                  ))}
             </div>
             {totalPages > 1 && (
               // 공용 Navigator는 밝은 바탕 기준이라 이 안쪽만 어두운 토큰을 쓴다(ProductCard와 같은 방식).

@@ -302,6 +302,9 @@ reviews:
         요약은 한국어이고 마침표로 끝내지 않는다.
     description:
       mode: 'warning'
+    docstrings:
+      mode: 'warning' # 주석 유무는 머지를 막을 사유가 아니다(위 "지적하지 말 것")
+      threshold: 50
     custom_checks:
       - name: 'FSD 경계'
         mode: 'error'

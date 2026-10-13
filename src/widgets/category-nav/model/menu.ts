@@ -1,6 +1,6 @@
-import { EVENTS_PATH, PREORDER_PATH } from '@shared/config/routes'
+import { DRAW_PATH, PREORDER_PATH } from '@shared/config/routes'
 
-export type CategoryNavLink = '이벤트' | '사전예약'
+export type CategoryNavLink = '사전예약' | 'LUCKY'
 
 // 메가 메뉴·모바일 바텀시트 카테고리 타일에 쓰는 썸네일. public/images/menu에 있는 이미지만 쓴다
 // (이미지가 없는 카테고리는 기존 텍스트 타일 그대로 둔다).
@@ -18,8 +18,8 @@ export const categoryThumbnails: Record<string, string> = {
   스마트밴드: '/images/menu/wearable_smartband.png',
 }
 
-export const links: CategoryNavLink[] = ['이벤트', '사전예약']
+export const links: CategoryNavLink[] = ['사전예약', 'LUCKY']
 export const linkPaths: Record<CategoryNavLink, string> = {
-  이벤트: EVENTS_PATH,
   사전예약: PREORDER_PATH,
+  LUCKY: DRAW_PATH,
 }

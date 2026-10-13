@@ -39,8 +39,15 @@ export function AdminProductNewPage() {
         submitting={create.isPending}
         onSubmit={(value) =>
           create.mutate(value, {
-            onSuccess: (created) =>
-              navigate(adminProductPath(created.productId)),
+            // 1차 차수 저장만 실패했으면 배송 구간 탭으로 보낸다 — 상품은 이미
+            // 만들어졌으니, 고칠 수 있는 자리에 내려놓는 게 알림보다 낫다.
+            onSuccess: ({ product, dispatchSaved }) =>
+              navigate(
+                adminProductPath(
+                  product.productId,
+                  dispatchSaved ? undefined : 'shipping',
+                ),
+              ),
           })
         }
         onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}

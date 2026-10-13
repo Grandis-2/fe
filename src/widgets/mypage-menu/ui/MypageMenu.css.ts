@@ -49,7 +49,7 @@ export const avatar = style({
 export const profileTexts = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: '3px',
+  gap: spacing[3],
   minWidth: 0,
 })
 

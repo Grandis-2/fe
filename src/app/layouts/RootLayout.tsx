@@ -7,7 +7,7 @@ import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PreorderQueue, usePreorderQueueStore } from '@features/preorder-queue'
 import { SIGNUP_PATH } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
-import { useToastStore } from '@shared/model/toastStore'
+import { showToast, useToastStore } from '@shared/model/toastStore'
 import { Modal, ToastViewport } from '@shared/ui'
 import { Header } from '@widgets/header'
 import { MobileTabBar } from '@widgets/mobile-tab-bar'
@@ -16,11 +16,13 @@ export function RootLayout() {
   const { isLoggedIn, isSignupPending } = useSession()
   const isModalOpen = useModalStore((state) => state.isOpen)
   const modalContent = useModalStore((state) => state.content)
+  const modalOpenCount = useModalStore((state) => state.openCount)
   const closeModal = useModalStore((state) => state.close)
   const toasts = useToastStore((state) => state.toasts)
   const dismissToast = useToastStore((state) => state.dismiss)
   const queueTicket = usePreorderQueueStore((state) => state.ticket)
   const clearQueue = usePreorderQueueStore((state) => state.clear)
+  const admitQueue = usePreorderQueueStore((state) => state.admit)
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -51,17 +53,28 @@ export function RootLayout() {
       <Header isMember={isLoggedIn} />
       <Outlet />
       <MobileTabBar />
-      <Modal open={isModalOpen} onClose={closeModal}>
-        {modalContent}
-      </Modal>
+      {modalContent && (
+        <Modal
+          key={modalOpenCount}
+          {...modalContent}
+          open={isModalOpen}
+          onClose={closeModal}
+        />
+      )}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
       {queueTicket && (
         <PreorderQueue
           key={queueTicket.joinedAt}
+          productId={queueTicket.productId}
           productName={queueTicket.productName}
-          onComplete={() => {
+          onComplete={(admission) => {
+            admitQueue(admission)
             clearQueue()
             navigate(queueTicket.to)
+          }}
+          onFail={(message) => {
+            clearQueue()
+            showToast(message)
           }}
         />
       )}

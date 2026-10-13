@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
+import { Eye } from 'lucide-react'
+
 import {
   createEmptyProductFormValue,
   getProductVariants,
@@ -18,6 +20,7 @@ import {
 import type { DropdownOption } from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
+import { FirstDeliveryField } from '../FirstDeliveryField'
 import { NumberField } from '../NumberField'
 import { OptionGroupEditor } from '../OptionGroupEditor'
 import { OptionPresetField } from '../OptionPresetField'
@@ -36,6 +39,11 @@ export type AdminProductFormProps = {
   onPreview: (value: AdminProductFormValue) => void
   /** 저장 요청이 진행 중이면 제출 버튼을 막는다 — 연타하면 같은 저장이 여러 번 나간다 */
   submitting?: boolean
+  /**
+   * 배송 구간 설정으로 보낸다. 수정 화면에서만 주며, 주지 않으면 버튼이 안 나온다 —
+   * 같은 페이지의 탭 전환이라 어디로 갈지는 페이지가 정한다.
+   */
+  onEditDispatchWindow?: () => void
 }
 
 // 라벨을 페이지가 넘기면 화면마다 문구가 어긋나기 쉬워 여기 한 곳에 둔다.
@@ -61,6 +69,7 @@ export function AdminProductForm({
   onCancel,
   onPreview,
   submitting = false,
+  onEditDispatchWindow,
 }: AdminProductFormProps) {
   const [value, setValue] = useState(
     defaultValue ?? createEmptyProductFormValue(),
@@ -121,20 +130,29 @@ export function AdminProductForm({
             />
             <span className={styles.checkboxTexts}>
               <span className={styles.checkboxLabel}>사전 예약으로 판매</span>
-              <span className={styles.checkboxHint}>
+              <span className={styles.hint}>
                 접수 순번과 배송 차수가 적용됩니다.
               </span>
             </span>
           </label>
 
           {value.isPreorder && (
-            <div className={styles.period}>
-              <div className={styles.periodTitle}>오픈 / 마감 일시</div>
-              <PreorderPeriodField
-                openAt={value.openAt}
-                onChange={(openAt, closeAt) => patch({ openAt, closeAt })}
+            <>
+              <div className={styles.period}>
+                <div className={styles.periodTitle}>오픈 / 마감 일시</div>
+                <PreorderPeriodField
+                  openAt={value.openAt}
+                  onChange={(openAt, closeAt) => patch({ openAt, closeAt })}
+                />
+              </div>
+
+              <FirstDeliveryField
+                editable={mode === 'create'}
+                value={value.firstDeliveryDate}
+                onChange={(firstDeliveryDate) => patch({ firstDeliveryDate })}
+                onEditDispatchWindow={onEditDispatchWindow}
               />
-            </div>
+            </>
           )}
         </div>
       </FormSection>
@@ -180,6 +198,7 @@ export function AdminProductForm({
 
         <VariantTable
           variants={variants}
+          isPreorder={value.isPreorder}
           colors={value.colors}
           optionGroups={value.optionGroups}
           quantities={value.quantities}
@@ -236,7 +255,7 @@ export function AdminProductForm({
           type="button"
           variant="outline"
           color="primary"
-          icon="eye"
+          icon={Eye}
           onClick={() => onPreview(value)}
         >
           미리보기

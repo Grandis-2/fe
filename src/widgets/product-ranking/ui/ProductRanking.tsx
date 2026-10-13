@@ -1,3 +1,4 @@
+import { Package, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { useProducts } from '@entities/product'
@@ -42,7 +43,13 @@ export function ProductRanking() {
       </div>
 
       {message ? (
-        <InlineAlert status={isError ? 'error' : 'info'}>{message}</InlineAlert>
+        <InlineAlert
+          status={isError ? 'error' : 'info'}
+          variant="big"
+          icon={isError ? TriangleAlert : Package}
+        >
+          {message}
+        </InlineAlert>
       ) : (
         <div
           ref={rowRef}

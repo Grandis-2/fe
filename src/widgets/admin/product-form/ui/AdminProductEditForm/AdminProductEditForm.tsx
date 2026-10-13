@@ -19,6 +19,8 @@ export type AdminProductEditFormProps = {
   onSaved: () => void
   onCancel: () => void
   onPreview: () => void
+  /** 배송 구간 설정 탭으로 보낸다 — 1차 배송일은 거기서 고친다 */
+  onEditDispatchWindow?: () => void
 }
 
 /** 상품을 불러와 수정 폼을 채우고, 저장까지 맡는다 — 어디로 이동할지만 쓰는 쪽이 정한다 */
@@ -27,6 +29,7 @@ export function AdminProductEditForm({
   onSaved,
   onCancel,
   onPreview,
+  onEditDispatchWindow,
 }: AdminProductEditFormProps) {
   const product = useAdminProduct(productId)
   const stock = useAdminProductStock(productId)
@@ -82,6 +85,7 @@ export function AdminProductEditForm({
         }}
         onCancel={onCancel}
         onPreview={onPreview}
+        onEditDispatchWindow={onEditDispatchWindow}
       />
     </div>
   )

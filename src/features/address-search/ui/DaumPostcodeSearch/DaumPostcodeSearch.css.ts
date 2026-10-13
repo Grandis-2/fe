@@ -4,26 +4,13 @@ import { color, spacing } from '@shared/config/theme'
 
 export const title = style({ color: color.text.primary })
 
-// 컨테이너 padding은 0(embed가 끝까지 차도록) — 제목만 자기 여백을 갖는다.
-export const modalTitle = style({
-  padding: `${spacing[24]} ${spacing[24]} 0`,
-})
-
 export const sheetTitle = style({
   padding: `0 ${spacing[16]}`,
 })
 
-// 실제 크기(=embed 영역 확보)는 이 두 컨테이너가 정한다 — embed 자신은 항상
-// 100%/100%로 부모를 꽉 채운다(아래 embed).
-export const modalContent = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[16],
-  width: '400px',
-  maxWidth: '90vw',
-  height: '550px',
-  boxSizing: 'border-box',
-})
+// 실제 크기(=embed 영역 확보)는 아래 두 곳이 정한다 — embed 자신은 항상
+// 100%/100%로 부모를 꽉 채운다(아래 embed). 모달은 폭을 Modal이 정하고 높이만 준다.
+export const modalEmbed = style({ height: '480px' })
 
 // BottomSheet.Content는 maxHeight:90vh로 시트 전체만 제한할 뿐 자기 높이가
 // 정해져 있지 않아, 그 안에서 flex:1로는 채울 공간이 없다 — 그래서 이 래퍼가
@@ -52,6 +39,6 @@ export const embed = style({
 // 거기에 background-color:#fff를 인라인으로 박는다(우리 div가 아니라 그 밑에
 // 하나 더 낳는 div). 인라인 스타일은 같은 인라인이 아니면 못 이기므로, 몇 겹
 // 아래든 잡히도록 후손 선택자 + !important로 덮어쓴다.
-globalStyle(`${embedWrapper} div`, {
+globalStyle(`${embedWrapper} div, ${modalEmbed} div`, {
   backgroundColor: 'transparent !important',
 })

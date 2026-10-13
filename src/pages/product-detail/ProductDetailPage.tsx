@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 
+import { MessageSquare } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
 import {
@@ -10,17 +11,19 @@ import {
   type Product,
   type ShipmentBatch,
 } from '@entities/product'
-import { mockReviews, ReviewCard } from '@entities/review'
+import { ReviewCard, useProductReviews } from '@entities/review'
 import { useRequireLogin } from '@features/login'
+import { usePreorderSubmit } from '@features/preorder-queue'
 import { ProductGallery } from '@features/product-gallery'
 import {
   PREORDER_BENEFIT_RATE,
   PurchaseSummary,
   QuantityControl,
+  useAddToCart,
   useProductPurchase,
   type PurchaseDraft,
 } from '@features/product-purchase'
-import { PAYMENT_PATH, resultPath } from '@shared/config/routes'
+import { PAYMENT_PATH, productPath, resultPath } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { ActionButton, InlineAlert } from '@shared/ui'
 import { ProductPageTab } from '@widgets/product-page-tab'
@@ -70,7 +73,13 @@ export function ProductDetailPage() {
     enabled: isPreorder,
   })
   const shipmentLabel = shipmentStartLabel(shipmentBatches)
+  // 사전예약은 리뷰 탭이 없다(사전예약 상품엔 리뷰를 쓸 수 없다).
+  const reviews = useProductReviews(productId, {
+    enabled: product !== undefined && !isPreorder,
+  })
   const purchase = useProductPurchase(product)
+  const preorderSubmit = usePreorderSubmit()
+  const { addToCart, isAdding } = useAddToCart()
   const {
     selections,
     select,
@@ -87,8 +96,15 @@ export function ProductDetailPage() {
     benefitAmount,
     payAmount,
   } = purchase
-  // 조회가 끝나지 않았거나 실패했거나, 고른 조합을 살 수 없으면 결제/사전예약을 막는다.
-  const isCheckoutReady = Boolean(variant) && !unavailableReason
+  // 조회가 끝나지 않았거나 실패했거나, 고른 조합을 살 수 없거나, 접수 중이면 결제/사전예약을 막는다.
+  const isCheckoutReady =
+    Boolean(variant) && !unavailableReason && !preorderSubmit.isPending
+
+  // 장바구니는 회원 전용 — 비회원이면 로그인 모달을 연다. 고른 조합을 살 수 없으면 담지 않는다.
+  const handleAddToCart = () => {
+    if (!variant || !isCheckoutReady) return
+    requireLogin(() => addToCart(variant.variantId, quantity))
+  }
 
   // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
   const handleCheckout = () => {
@@ -101,13 +117,27 @@ export function ProductDetailPage() {
       unitPrice,
     }
     // 결제·사전예약은 회원 전용 — 비회원이면 이동 대신 로그인 모달을 연다.
-    requireLogin(() =>
-      // 사전예약 완료 후 뒤로가기로 상세에 돌아와 다시 제출하는 걸 막는다(결제는 되돌아가서 수정 가능해야 하므로 그대로 둠).
-      navigate(isPreorder ? resultPath('preorder') : PAYMENT_PATH, {
-        state: [purchasePayload],
-        replace: isPreorder,
-      }),
-    )
+    requireLogin(() => {
+      if (!isPreorder) {
+        navigate(PAYMENT_PATH, { state: [purchasePayload] })
+        return
+      }
+      // 사전예약은 대기열 입장권으로 접수한다 — 입장권이 없으면 줄을 서고, 차례가 오면 이 상세로 돌아온다.
+      // 접수 후엔 뒤로가기로 상세에 돌아와 다시 제출하지 않게 기록을 바꾼다.
+      preorderSubmit.submitPreorder(
+        {
+          productId: product.productId,
+          productName: product.title,
+          optionId: variant.variantId,
+          returnTo: productPath(product.productId),
+        },
+        ({ preorderId }) =>
+          navigate(resultPath('preorder'), {
+            state: { preorderId },
+            replace: true,
+          }),
+      )
+    })
   }
   const {
     layoutRef,
@@ -137,11 +167,6 @@ export function ProductDetailPage() {
   const selectedColor = colorAxis?.values.find(
     ({ normalizedValue }) => normalizedValue === selections[colorAxis.key],
   )
-  // 상세에서는 이 상품 후기만 보여준다.
-  // ponytail: 리뷰는 아직 목업이라 상품명 앞부분으로 거른다 — GET /products/{id}/reviews를 붙이면 교체.
-  const reviews = mockReviews.filter(({ productName }) =>
-    productName.startsWith(title),
-  )
 
   return (
     <div className={styles.root} data-theme="dark" data-header-theme="dark">
@@ -165,8 +190,7 @@ export function ProductDetailPage() {
                 colorName={colorAxis.label}
                 size="medium"
                 colors={colorAxis.values.map((value) => ({
-                  // ponytail: colorHex는 백엔드에 추가 요청한 칸 — 오기 전엔 칩 색이 비어 보인다.
-                  hex: value.colorHex ?? '',
+                  hex: value.hex ?? '',
                   label: value.value,
                   selected: value === selectedColor,
                 }))}
@@ -203,7 +227,7 @@ export function ProductDetailPage() {
             <PurchaseSummary
               options={[
                 ...(selectedColor
-                  ? [{ label: colorLabel, hex: selectedColor.colorHex }]
+                  ? [{ label: colorLabel, hex: selectedColor.hex ?? undefined }]
                   : []),
                 ...optionAxes.flatMap((axis) => {
                   const value = axis.values.find(
@@ -233,7 +257,12 @@ export function ProductDetailPage() {
               )}
               <div className={styles.actions}>
                 {!isPreorder && (
-                  <ActionButton variant="cart" fullWidth>
+                  <ActionButton
+                    variant="cart"
+                    fullWidth
+                    onClick={handleAddToCart}
+                    disabled={!isCheckoutReady || isAdding}
+                  >
                     장바구니
                   </ActionButton>
                 )}
@@ -260,6 +289,8 @@ export function ProductDetailPage() {
         shipmentLabel={shipmentLabel}
         onCheckout={handleCheckout}
         checkoutDisabled={!isCheckoutReady}
+        onAddToCart={handleAddToCart}
+        addToCartDisabled={!isCheckoutReady || isAdding}
       />
       <div
         className={styles.tabBarWrapper}
@@ -287,9 +318,28 @@ export function ProductDetailPage() {
               <h2 className={styles.sectionTitle}>{label}</h2>
               {tab === 'review' ? (
                 <div className={styles.reviewList}>
-                  {reviews.map(({ id, ...review }) => (
-                    <ReviewCard key={id} {...review} />
-                  ))}
+                  {reviews.isError ? (
+                    <InlineAlert status="error">
+                      후기를 불러오지 못했어요.
+                    </InlineAlert>
+                  ) : reviews.isPending ? (
+                    <InlineAlert status="info">
+                      후기를 불러오고 있어요.
+                    </InlineAlert>
+                  ) : reviews.data.items.length === 0 ? (
+                    <InlineAlert
+                      status="info"
+                      variant="big"
+                      icon={MessageSquare}
+                      description="첫 후기를 기다리고 있어요."
+                    >
+                      아직 등록된 후기가 없어요
+                    </InlineAlert>
+                  ) : (
+                    reviews.data.items.map((review) => (
+                      <ReviewCard key={review.reviewId} review={review} />
+                    ))
+                  )}
                 </div>
               ) : (
                 <div className={styles.placeholder}>{label} 상세 이미지</div>

@@ -3,7 +3,7 @@ import type { ProductListItem } from '../../model/product'
 
 // 목록 응답(ProductListItem)을 카드가 그리는 모양(ProductCardData)으로 바꾼다 —
 // 선택된 색상 인덱스를 받아 선택 표시까지 채운다.
-// 색상·모델명은 백엔드에 추가 요청한 칸이라, 오기 전엔 대표 사진 한 장으로 그리고 색상칩·모델명은 비운다.
+// 색상·모델명은 백엔드에 추가될 칸이라, 오기 전엔 대표 사진 한 장으로 그리고 색상칩·모델명은 비운다.
 export function toProductCardData(
   product: ProductListItem,
   colorIndex: number,

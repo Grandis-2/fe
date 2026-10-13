@@ -2,8 +2,28 @@ export { QueueCard } from './ui/QueueCard'
 export type { QueueCardProps } from './ui/QueueCard'
 export { HistoryCard } from './ui/HistoryCard'
 export type { HistoryCardProps } from './ui/HistoryCard'
-export type { OrderStatus } from './model/orderStatus'
+export { orderStatusTag, PAID_ORDER_STATUSES } from './model/orderStatus'
+export type { StatusTag } from './model/orderStatus'
 export { OrderSummary } from './ui/OrderSummary'
 export type { OrderSummaryProps, OrderSummaryRow } from './ui/OrderSummary'
-export { MOCK_ORDERS } from './model/mockOrders'
-export type { Order, OrderItem } from './model/mockOrders'
+export {
+  confirmOrderPayment,
+  createPaymentAttempt,
+  getOrder,
+} from './api/order'
+export {
+  useCancelOrder,
+  useCreatePaymentAttempt,
+  useOrder,
+  useOrders,
+  usePlaceOrder,
+} from './api/useOrders'
+export type {
+  OrderDetail,
+  OrderPaymentAttempt,
+  OrderPaymentResult,
+  Order,
+  OrderStatus,
+  PlacedOrder,
+  CartOrderItem,
+} from './model/order'

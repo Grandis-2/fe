@@ -23,9 +23,8 @@ type Story = StoryObj<typeof meta>
 
 export const Write: Story = {
   args: {
-    open: true,
     target: {
-      key: 'story-0',
+      orderItemId: '50000000-0000-4000-8000-000000000003',
       productName: '애플 펜슬 프로',
       optionSummary: '화이트',
     },

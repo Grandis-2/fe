@@ -16,6 +16,8 @@ export const onDark = (percent: number) =>
 export const statusOnDark = {
   success: `color-mix(in srgb, ${color.status.success} 70%, white)`,
   danger: `color-mix(in srgb, ${color.status.danger} 55%, white)`,
+  info: `color-mix(in srgb, ${color.status.info} 55%, white)`,
+  warning: `color-mix(in srgb, ${color.status.warning} 55%, white)`,
 }
 
 // 어두운 바탕 위 강조 버튼 — 남색에서 보라로 번지는 바탕과 남색 빛 그림자.

@@ -1,6 +1,11 @@
 export { ReviewCard } from './ui/ReviewCard'
 export type { ReviewCardProps } from './ui/ReviewCard'
-export { mockReviews } from './model/mockReviews'
+export {
+  useCreateReview,
+  useDeleteReview,
+  useMyReviews,
+  useProductReviews,
+  useReviews,
+  useUpdateReview,
+} from './api/useReviews'
 export type { Review } from './model/review'
-export { myReviewKey, useMyReviewStore } from './model/myReviewStore'
-export type { MyReview } from './model/myReviewStore'

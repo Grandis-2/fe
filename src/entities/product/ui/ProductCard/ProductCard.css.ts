@@ -13,6 +13,8 @@ import {
   fontWeight,
 } from '@shared/config/theme/tokens/typography/base'
 
+import { skeleton } from '../ProductTile/ProductTile.css'
+
 // 모바일은 검색 페이지처럼 2열로 놓이는 작은 카드라서(폭 ≈ 170px) 모서리·여백·글자를 줄인다.
 // 데스크톱 값은 그대로 두고 아래 '@media'의 mobile 블록에서만 덮어쓴다.
 
@@ -145,3 +147,28 @@ export const priceUnit = style({
     [breakpoint.mobile]: { fontSize: fontSize[12] },
   },
 })
+
+// 스켈레톤 — 실제 카드와 같은 root·media·content 뼈대를 쓰고 안쪽만 셔머 블록으로 채워 로딩이 끝나도 레이아웃이 튀지 않게 한다.
+export const skeletonMedia = style([media, skeleton, { borderRadius: '12px' }])
+
+export const skeletonDots = style({
+  display: 'flex',
+  justifyContent: 'center',
+  gap: spacing[6],
+  marginTop: spacing[10],
+  width: '100%',
+})
+
+export const skeletonDot = style([
+  skeleton,
+  { width: '5px', height: '5px', borderRadius: '50%' },
+])
+
+export const skeletonLine = style([skeleton, { borderRadius: '6px' }])
+
+export const skeletonSwatches = style({ display: 'flex', gap: spacing[8] })
+
+export const skeletonSwatch = style([
+  skeleton,
+  { width: '18px', height: '18px', borderRadius: '50%' },
+])

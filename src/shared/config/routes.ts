@@ -4,6 +4,15 @@
 export const HOME_PATH = '/'
 export const SIGNUP_PATH = '/signup'
 export const PAYMENT_PATH = '/payment'
+// 결제는 사전예약 하나, 또는 장바구니에서 고른 줄 단위다(order 명세). 새로고침해도 남도록 쿼리에 싣는다.
+export const paymentPath = (preorderId: string) =>
+  `${PAYMENT_PATH}?${new URLSearchParams({ preorderId })}`
+// 럭키 드로우 응모 — 배송지를 받고 응모한 뒤 응모비를 결제한다.
+export const drawPaymentPath = (drawId: string) =>
+  `${PAYMENT_PATH}?${new URLSearchParams({ drawId })}`
+// 장바구니에서 고른 줄(cartItemId)을 결제한다.
+export const cartPaymentPath = (cartItemIds: string[]) =>
+  `${PAYMENT_PATH}?${new URLSearchParams({ cart: cartItemIds.join(',') })}`
 export const REVIEWS_PATH = '/reviews'
 // 헤더·탭바 없이 전체 화면으로 뜨는 사전예약 안내(RootLayout 밖).
 export const ONBOARDING_PATH = '/onboarding'
@@ -13,6 +22,10 @@ export const EVENTS_PATH = '/events'
 export const PREORDER_PATH = '/preorder'
 export const preorderPath = (preorderId: string | number) =>
   `${PREORDER_PATH}/${preorderId}`
+
+// 럭키 드로우 — 회차 목록과 회차 상세(응모).
+export const DRAW_PATH = '/draws'
+export const drawPath = (drawId: string) => `${DRAW_PATH}/${drawId}`
 
 export const PRODUCTS_PATH = '/products'
 export const productPath = (productId: string | number) =>
@@ -33,6 +46,7 @@ export const MYPAGE_TABS = [
   'history',
   'address-manage',
   'reviews',
+  'draw',
 ] as const
 export type MypageTab = (typeof MYPAGE_TABS)[number]
 

@@ -13,7 +13,7 @@ import { AdminPromotionForm } from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionNewPage.css'
 
-/** 새 사전예약 프로모션 등록. ponytail: API가 없어 저장은 목록 복귀까지만 한다 */
+/** 새 사전예약 등록. ponytail: API가 없어 저장은 목록 복귀까지만 한다 */
 export function AdminPromotionNewPage() {
   const navigate = useNavigate()
 
@@ -25,12 +25,12 @@ export function AdminPromotionNewPage() {
     <div className={styles.root}>
       <Breadcrumb
         items={[
-          { label: '사전 예약 관리', to: ADMIN_PROMOTIONS_PATH },
-          { label: '새 프로모션' },
+          { label: '사전예약 관리', to: ADMIN_PROMOTIONS_PATH },
+          { label: '새 사전예약' },
         ]}
       />
 
-      <h1 className={styles.title}>새 프로모션</h1>
+      <h1 className={styles.title}>새 사전예약</h1>
 
       <AdminPromotionForm
         mode="create"

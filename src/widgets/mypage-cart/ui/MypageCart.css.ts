@@ -75,7 +75,10 @@ export const list = style([
   },
 ])
 
+// 장바구니 한 줄 — 카드 아래에 살 수 없는 이유가 붙을 수 있다.
 export const item = style({
+  display: 'grid',
+  gap: spacing[12],
   paddingBlock: '18px',
   selectors: { '& + &': { borderTop: divider } },
 })

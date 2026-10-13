@@ -12,11 +12,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// 모달 껍데기 없이 내용만 렌더링한다 — 실제로는 useModalStore.open(<KakaoLoginModal />)로
-// shared/ui/Modal 안에 들어간다. 카카오 버튼은 실제 네비게이션을 일으켜서 누르지 않는다.
+// 모달 껍데기 없이 내용만 렌더링한다 — 실제로는 openLoginModal()이 제목과 함께
+// shared/ui/Modal 안에 넣는다. 카카오 버튼은 실제 네비게이션을 일으켜서 누르지 않는다.
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('로그인')).toBeVisible()
     await expect(
       canvas.getByRole('button', { name: '카카오로 로그인' }),
     ).toBeVisible()

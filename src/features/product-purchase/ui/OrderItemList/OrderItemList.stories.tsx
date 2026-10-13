@@ -25,21 +25,21 @@ type Story = StoryObj<typeof meta>
 
 const items = [
   {
-    variantId: 1,
+    variantId: '1',
     productName: '맥북 프로 14',
     optionSummary: '스페이스 블랙 · 512GB',
     quantity: 1,
     unitPrice: 2390000,
   },
   {
-    variantId: 2,
+    variantId: '2',
     productName: '아이폰 18 Pro',
     optionSummary: '딥 블루 · 256GB',
     quantity: 2,
     unitPrice: 1550000,
   },
   {
-    variantId: 3,
+    variantId: '3',
     productName: '에어팟 프로 3',
     optionSummary: '화이트',
     quantity: 1,
