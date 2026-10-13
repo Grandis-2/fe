@@ -1,11 +1,17 @@
-import { Bell, CircleUser, ShoppingCart } from 'lucide-react'
-import { Link, useLocation } from 'react-router'
+import { Bell, CircleUser, LogOut, ShoppingCart } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router'
 
+import { logout } from '@entities/auth'
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
 import { useMyReservations } from '@entities/preorder'
 import { openLoginModal } from '@features/login'
-import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
+import {
+  ADMIN_HOME_PATH,
+  ADMIN_LOGIN_PATH,
+  HOME_PATH,
+  mypagePath,
+} from '@shared/config/routes'
 import { Button, Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
 
@@ -38,6 +44,15 @@ export function Header({
   // 어드민을 뺀 헤더는 늘 어두운 디자인이다. 뒤가 어두운 구간이면 바탕만 투명하게 둔다.
   const isDark = !isAdminPage
   const { headerRef, isOnDark } = useHeaderTheme(pathname)
+  const navigate = useNavigate()
+
+  // 세션을 지우고 로그인 화면으로. 서버 응답이 실패해도 로컬 세션은 비워지므로
+  // (logout의 finally) 어느 쪽이든 보낸다 — 관리자 화면에 남겨 두면 다음 요청마다
+  // 401을 맞는다. 그래서 실패를 잡는 이유가 '문구 표시'가 아니라 '화면 이동'이다.
+  const handleLogout = async () => {
+    await logout().catch(() => undefined)
+    navigate(ADMIN_LOGIN_PATH, { replace: true })
+  }
   // 개수 배지는 회원 쇼핑 화면에서만 — 어드민 종 아이콘은 관리자 알림이라 대상이 다르다.
   const showCounts = isMember && !isAdminPage
   const { data: cartCount = 0 } = useCartCount(showCounts)
@@ -95,15 +110,25 @@ export function Header({
         </div>
         <div className={styles.actions}>
           {isAdminPage ? (
-            // 관리자 알림은 회원 알림과 대상이 달라 패널을 열지 않고 밖에 알리기만 한다.
-            <button
-              type="button"
-              className={styles.iconButton}
-              aria-label="알림"
-              onClick={onNotificationClick}
-            >
-              <Bell className={styles.icon} aria-hidden="true" />
-            </button>
+            <>
+              {/* 관리자 알림은 회원 알림과 대상이 달라 패널을 열지 않고 밖에 알리기만 한다. */}
+              <button
+                type="button"
+                className={styles.iconButton}
+                aria-label="알림"
+                onClick={onNotificationClick}
+              >
+                <Bell className={styles.icon} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className={styles.iconButton}
+                aria-label="로그아웃"
+                onClick={() => void handleLogout()}
+              >
+                <LogOut className={styles.icon} aria-hidden="true" />
+              </button>
+            </>
           ) : (
             <>
               {/* 모바일은 하단 탭바에 검색·마이페이지가 있어 헤더엔 알림·장바구니만 둔다. */}

@@ -6,6 +6,9 @@ import { ADMIN_HOME_PATH } from '@shared/config/routes'
 
 import * as styles from './AdminLoginPage.css'
 
+// 헤더·사이드바 없는 단독 화면이다(라우터에서 RootLayout 밖에 둔다) — 로그인 전에는
+// 알림도 메뉴도 누를 수 없고, 누를 수 없는 것을 보여 주면 막힌 화면으로 읽힌다.
+
 // 돌아갈 곳이 관리자 화면인지 확인한다 — next에 아무 경로나 넣어 보낼 수 있다.
 const safeNext = (next: string | null) =>
   next?.startsWith('/admin') && !next.startsWith('//') ? next : ADMIN_HOME_PATH
