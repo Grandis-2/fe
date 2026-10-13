@@ -101,15 +101,45 @@ type ProductDetail = ProductSummary & {
 
 export type DisplayStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN'
 
-// 관리자 목록은 구매자용 요약(ProductSummary)에 운영 정보가 더 붙는다.
-export type AdminProductSummary = ProductSummary & {
-  displayStatus: DisplayStatus
-  variantCount: number
-  activeDispatchWindowVersion: number | null
-  firstAcceptSeqIssuedAt: string | null
-  updatedAt: string
-  updatedBy: string | null
+/**
+ * 관리자 상품 목록 한 줄(GET /api/v1/admin/products). 노출 규칙 없이 비공개·준비 전·
+ * 판매 중지·마감 상품까지 모두 나오고, 등록 최신순으로만 정렬된다.
+ *
+ * 판매 상태와 전시 상태가 한 필드로 오지 않는다 — 사전예약은 preorderStatus,
+ * 일반 상품은 status를 보고, 전시는 visible과 registrationCompleted를 같이 본다.
+ * 화면이 쓰는 한 값으로 바꾸는 건 entities/admin-product/api의 매퍼가 한다.
+ */
+export type AdminProductListItem = {
+  productId: string
+  saleMode: SaleMode
+  title: string
+  /** 대표 사진. 없으면 null */
+  imageUrl: string | null
+  /** 상품 판매 상태 */
+  status: ProductSaleState
+  /** 관리자가 고른 공개 여부. 회원에게 보이려면 준비 완료도 필요하다 */
+  visible: boolean
+  /** false면 서버가 아직 준비(사전예약 회차·일반 상품 재고)를 끝내지 않았다 */
+  registrationCompleted: boolean
+  /** 판매 중지를 포함한 전체 옵션 수 */
+  optionCount: number
+  /** 판매 중인 옵션의 최저가(원). 없으면 null */
+  minPrice: number | null
+  sellable: boolean
+  /** 일반 상품 품절 여부. 사전예약은 늘 false */
+  soldOut: boolean
+  /** 사전예약 접수 단계. 일반 상품이거나 회차가 없으면 null */
+  preorderStatus: PreorderStage | null
+  /** 사전예약 오픈 시각(ISO-8601 UTC). 없으면 null */
+  opensAt: string | null
+  closesAt: string | null
 }
+
+/** 상품 판매 상태 — ACTIVE는 판매 중, PAUSED는 판매 중지 */
+export type ProductSaleState = 'ACTIVE' | 'PAUSED'
+
+/** 사전예약 접수 단계 */
+export type PreorderStage = 'BEFORE_OPEN' | 'OPEN' | 'CLOSED'
 
 // 관리자 상세도 마찬가지로 구매자용 상세에 운영 정보가 더 붙는다.
 export type AdminProductDetail = ProductDetail & {
@@ -149,11 +179,13 @@ export type AdminProductUpsertRequest = {
 }
 
 export type AdminProductListParams = {
-  displayStatus?: DisplayStatus
-  saleStatus?: SaleStatus
+  /** 상품명과 태그에서 대소문자 없이 부분 일치. 비우면 무시한다 */
   q?: string
+  saleMode?: SaleMode
+  status?: ProductSaleState
   /** 0부터 시작한다 */
   page?: number
+  /** 1~100(기본 20) */
   size?: number
 }
 

@@ -3,24 +3,22 @@ import { toQueryString } from '@shared/api/queryString'
 import type {
   AdminProductDetail,
   AdminProductHideRequest,
+  AdminProductListItem,
   AdminProductListParams,
-  AdminProductSummary,
   AdminProductUpsertRequest,
-  Paged,
+  PageResponse,
 } from '@shared/api/types'
 
 const BASE = '/api/v1/admin/products'
 
-/** 전시 상태와 무관하게 상품 목록을 조회한다 */
+/** 전시 규칙 없이 상품 목록을 조회한다 — 비공개·준비 전·판매 중지까지 다 나온다 */
 export const getAdminProducts = (
   params: AdminProductListParams = {},
   signal?: AbortSignal,
 ) =>
-  apiClient.request<Paged<AdminProductSummary>>(
+  apiClient.request<PageResponse<AdminProductListItem>>(
     `${BASE}${toQueryString(params)}`,
-    {
-      signal,
-    },
+    { signal },
   )
 
 /** 전시 상태와 무관하게 상품 상세를 조회한다 */

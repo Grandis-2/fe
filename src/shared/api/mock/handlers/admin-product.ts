@@ -7,16 +7,12 @@ import { url } from '../url'
 import type {
   AdminProductDetail,
   AdminProductHideRequest,
-  AdminProductSummary,
+  AdminProductListItem,
   AdminProductUpsertRequest,
-  DisplayStatus,
-  Paged,
-  SaleStatus,
+  PageResponse,
+  PreorderStage,
 } from '../../types'
 import type { RequestHandler } from 'msw'
-
-const DISPLAY_STATUSES: DisplayStatus[] = ['DRAFT', 'PUBLISHED', 'HIDDEN']
-const SALE_STATUSES: SaleStatus[] = ['BEFORE_OPEN', 'OPEN', 'CLOSED']
 
 const notFound = () =>
   fail(404, {
@@ -25,23 +21,29 @@ const notFound = () =>
     retryable: false,
   })
 
-const toSummary = (detail: AdminProductDetail): AdminProductSummary => ({
+// 저장된 상세에서 목록 한 줄을 만든다. 서버처럼 판매·전시를 한 필드로 주지 않는다 —
+// 사전예약 단계와 일반 상품 상태를 따로 싣고, 전시는 두 불리언으로 나눈다.
+const toListItem = (detail: AdminProductDetail): AdminProductListItem => ({
   productId: detail.productId,
-  name: detail.name,
-  brand: detail.brand,
-  thumbnailUrl: detail.thumbnailUrl,
-  priceRange: detail.priceRange,
-  openAt: detail.openAt,
-  saleStatus: detail.saleStatus,
-  stockPolicy: detail.stockPolicy,
-  ratingSummary: detail.ratingSummary,
-  badges: detail.badges,
-  displayStatus: detail.displayStatus,
-  variantCount: detail.variants.length,
-  activeDispatchWindowVersion: detail.activeDispatchWindowVersion,
-  firstAcceptSeqIssuedAt: detail.firstAcceptSeqIssuedAt,
-  updatedAt: detail.updatedAt,
-  updatedBy: detail.updatedBy,
+  saleMode: detail.saleMode,
+  title: detail.name,
+  imageUrl: detail.thumbnailUrl,
+  // 판매 상태는 접수 단계와 다른 축이다 — 접수가 마감돼도 판매 상태는 ACTIVE다.
+  // 숨긴 상품만 판매 중지로 둬서 '판매 중지' 뱃지를 화면에서 볼 수 있게 한다.
+  status: detail.displayStatus === 'HIDDEN' ? 'PAUSED' : 'ACTIVE',
+  visible: detail.displayStatus === 'PUBLISHED',
+  registrationCompleted: detail.displayStatus !== 'DRAFT',
+  optionCount: detail.variants.length,
+  minPrice: detail.priceRange.min,
+  sellable: detail.saleStatus === 'OPEN',
+  soldOut: false,
+  // 저장된 상세의 saleStatus는 값이 접수 단계와 같다(BEFORE_OPEN·OPEN·CLOSED).
+  preorderStatus:
+    detail.saleMode === 'PREORDER'
+      ? (detail.saleStatus as PreorderStage)
+      : null,
+  opensAt: detail.saleMode === 'PREORDER' ? detail.openAt : null,
+  closesAt: detail.saleMode === 'PREORDER' ? detail.sale.closeAt : null,
 })
 
 const findProduct = (productId: string) =>
@@ -91,8 +93,8 @@ export const adminProductHandlers: RequestHandler[] = [
     const params = new URL(request.url).searchParams
     const page = Number(params.get('page') ?? 0)
     const size = Number(params.get('size') ?? 20)
-    const displayStatus = params.get('displayStatus')
-    const saleStatus = params.get('saleStatus')
+    const saleMode = params.get('saleMode')
+    const status = params.get('status')
     const keyword = params.get('q') ?? ''
 
     const violations = [
@@ -105,12 +107,11 @@ export const adminProductHandlers: RequestHandler[] = [
       keyword.length > 100
         ? { field: 'q', message: '100자 이하여야 합니다.' }
         : null,
-      displayStatus &&
-      !DISPLAY_STATUSES.includes(displayStatus as DisplayStatus)
-        ? { field: 'displayStatus', message: '지원하지 않는 전시 상태입니다.' }
+      saleMode && !['PREORDER', 'IN_STOCK'].includes(saleMode)
+        ? { field: 'saleMode', message: '지원하지 않는 판매 방식입니다.' }
         : null,
-      saleStatus && !SALE_STATUSES.includes(saleStatus as SaleStatus)
-        ? { field: 'saleStatus', message: '지원하지 않는 판매 상태입니다.' }
+      status && !['ACTIVE', 'PAUSED'].includes(status)
+        ? { field: 'status', message: '지원하지 않는 판매 상태입니다.' }
         : null,
     ].filter((violation) => violation !== null)
 
@@ -124,30 +125,29 @@ export const adminProductHandlers: RequestHandler[] = [
     }
 
     const filtered = adminProductStore
-      .filter(
-        (product) => !displayStatus || product.displayStatus === displayStatus,
-      )
-      .filter((product) => !saleStatus || product.saleStatus === saleStatus)
+      .map(toListItem)
+      .filter((product) => !saleMode || product.saleMode === saleMode)
+      .filter((product) => !status || product.status === status)
       // 태그는 검색용이라 이름과 같이 본다 — 구매자 목록에는 안 나오고 검색어로만 걸린다.
       .filter((product) => {
         const trimmed = keyword.trim()
+        if (!trimmed) return true
+        const tags = findProduct(product.productId)?.tags ?? []
         return (
-          product.name.includes(trimmed) ||
-          (product.tags ?? []).some((tag) => tag.includes(trimmed))
+          product.title.includes(trimmed) ||
+          tags.some((tag) => tag.includes(trimmed))
         )
       })
 
     const start = page * size
-    const items = filtered.slice(start, start + size).map(toSummary)
-    const totalPages = Math.ceil(filtered.length / size)
 
-    return ok<Paged<AdminProductSummary>>({
-      items,
+    // 관리자 목록 봉투엔 totalPages가 없다(PageResponse).
+    return ok<PageResponse<AdminProductListItem>>({
+      items: filtered.slice(start, start + size),
       page,
       size,
       total: filtered.length,
-      totalPages,
-      hasNext: page + 1 < totalPages,
+      hasNext: start + size < filtered.length,
     })
   }),
 

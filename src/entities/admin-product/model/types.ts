@@ -1,30 +1,74 @@
 import type {
   AdminProductDetail,
-  AdminProductSummary,
   AdminStockItem,
   DisplayStatus,
-  ProductBadge,
-  SaleStatus,
+  PreorderStage,
+  ProductSaleState,
+  SaleMode,
 } from '@shared/api/types'
 
 // 서버 응답과 화면이 쓰는 모양이 같아서 매퍼 없이 그대로 재노출한다.
-export type AdminProduct = AdminProductSummary
 export type AdminProductDetailModel = AdminProductDetail
+
+/**
+ * 관리자 상품 목록이 화면에 그리는 모양.
+ *
+ * 판매·전시 상태를 한 값으로 들고 있다 — 응답은 사전예약/일반에 따라 다른 필드를
+ * 주고(preorderStatus vs status), 전시는 두 불리언으로 온다. 표의 셀마다 그 분기를
+ * 다시 하면 같은 규칙이 여러 곳으로 흩어지므로 매퍼에서 한 번만 정한다.
+ */
+export type AdminProduct = {
+  productId: string
+  name: string
+  saleMode: SaleMode
+  /** 판매 중지를 포함한 전체 옵션 수 */
+  optionCount: number
+  /** 사전예약 오픈 시각. 일반 상품이거나 회차가 없으면 null */
+  opensAt: string | null
+  closesAt: string | null
+  /** 상품 판매 상태 — 사전예약이든 일반이든 모든 상품에 있다 */
+  status: ProductSaleState
+  /** 사전예약 접수 단계. 일반 상품이거나 회차가 아직 없으면 null */
+  preorderStatus: PreorderStage | null
+  displayStatus: DisplayStatus
+  /** 판매 중인 옵션의 최저가(원). 없으면 null */
+  minPrice: number | null
+  thumbnailUrl: string | null
+}
 
 // 화면(pages/widgets)은 DTO를 직접 import할 수 없어 여기서 다시 내보낸다.
 export type AdminStockItemModel = AdminStockItem
-export type AdminSaleStatus = SaleStatus
+export type AdminSaleState = ProductSaleState
+export type AdminPreorderStage = PreorderStage
 export type AdminDisplayStatus = DisplayStatus
 
-export const saleStatusLabel: Record<SaleStatus, string> = {
-  BEFORE_OPEN: '판매 예정',
-  OPEN: '판매 중',
-  CLOSED: '판매 종료',
+/** 상품 판매 상태 — 백엔드의 status를 그대로 쓴다 */
+export const saleStateLabel: Record<ProductSaleState, string> = {
+  ACTIVE: '판매 중',
+  PAUSED: '판매 중지',
 }
 
-export const saleStatusColor: Record<SaleStatus, 'green' | 'blue' | 'gray'> = {
-  OPEN: 'green',
+export const saleStateColor: Record<ProductSaleState, 'green' | 'yellow'> = {
+  ACTIVE: 'green',
+  PAUSED: 'yellow',
+}
+
+/**
+ * 사전예약 접수 단계 — 판매 상태와 다른 축이다. 판매 중인 상품도 아직 오픈 전일 수
+ * 있고, 접수가 마감된 뒤에도 판매 상태는 그대로 ACTIVE다.
+ */
+export const preorderStageLabel: Record<PreorderStage, string> = {
+  BEFORE_OPEN: '오픈 전',
+  OPEN: '접수 중',
+  CLOSED: '접수 마감',
+}
+
+export const preorderStageColor: Record<
+  PreorderStage,
+  'blue' | 'green' | 'gray'
+> = {
   BEFORE_OPEN: 'blue',
+  OPEN: 'green',
   CLOSED: 'gray',
 }
 
@@ -69,19 +113,20 @@ export const COLOR_GROUP_CODE = 'color'
 export const HIDE_REASON_MIN_LENGTH = 5
 export const HIDE_REASON_MAX_LENGTH = 500
 
-/** 사전 예약 상품인지 — 별도 필드가 없어 badges로 판단한다 */
-export const isPreorder = (product: { badges: ProductBadge[] }) =>
-  product.badges.includes('PREORDER')
+/** 사전 예약 상품인지 — 목록·상세가 모두 saleMode로 알려 준다 */
+export const isPreorder = (product: { saleMode: SaleMode }) =>
+  product.saleMode === 'PREORDER'
 
 /** 표와 뱃지에 찍는 판매 유형 문구 */
-export const productTypeLabel = (product: { badges: ProductBadge[] }) =>
+export const productTypeLabel = (product: { saleMode: SaleMode }) =>
   isPreorder(product) ? '사전 예약' : '일반 판매'
 
 // 표의 Tag 열 너비를 가장 긴 문구에 맞출 때 쓴다(Tag의 widthOptions).
-export const saleStatusLabels = Object.values(saleStatusLabel)
+export const saleStateLabels = Object.values(saleStateLabel)
+export const preorderStageLabels = Object.values(preorderStageLabel)
 export const productTypeLabels = [
-  productTypeLabel({ badges: ['PREORDER'] }),
-  productTypeLabel({ badges: [] }),
+  productTypeLabel({ saleMode: 'PREORDER' }),
+  productTypeLabel({ saleMode: 'IN_STOCK' }),
 ]
 
 /**

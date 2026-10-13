@@ -86,7 +86,9 @@ export function AdminProductDetailPage() {
 
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{name}</h1>
-        <AdminProductSaleTag status={saleStatus} />
+        {/* 예전 상세 응답의 saleStatus는 값이 사전예약 접수 단계와 같다 — 판매
+            상태(ACTIVE·PAUSED)는 응답에 없어서 상세를 명세에 맞출 때 채운다. */}
+        <AdminProductSaleTag stage={saleStatus} />
         {/* 상태 뱃지끼리 붙여 둔다 — 판매와 전시는 둘 다 '지금 어떤 상태인가'다. */}
         <AdminProductDisplayTag status={displayStatus} />
         {/* 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 — 어느 탭에 있든

@@ -32,12 +32,14 @@ export {
   PRODUCT_BRANDS,
   productTypeLabel,
   productTypeLabels,
-  saleStatusLabel,
+  preorderStageLabel,
+  saleStateLabel,
 } from './model/types'
 export type {
   AdminProduct,
   AdminProductDetailModel,
-  AdminSaleStatus,
+  AdminPreorderStage,
+  AdminSaleState,
 } from './model/types'
 export {
   createColorOption,
