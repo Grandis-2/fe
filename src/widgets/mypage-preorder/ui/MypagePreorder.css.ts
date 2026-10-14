@@ -1,10 +1,7 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
 import { breakpoint, color, spacing, typography } from '@shared/config/theme'
-import {
-  fontSize,
-  fontWeight,
-} from '@shared/config/theme/tokens/typography/base'
+import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 const divider = `1px solid ${color.border.subtle}`
 // HistoryCard 안쪽 여백과 맞춘다.
@@ -25,7 +22,8 @@ export const title = style([
   typography.title.xxlSemibold,
   {
     margin: 0,
-    '@media': { [breakpoint.mobile]: { fontSize: fontSize[24] } },
+    // 모바일은 헤더가 같은 제목을 띄운다(getMobileTitle).
+    '@media': { [breakpoint.mobile]: { display: 'none' } },
   },
 ])
 

@@ -43,6 +43,8 @@ export const back = style({
   color: onDark(64),
   textDecoration: 'none',
   selectors: { '&:hover': { color: color.text.inverse } },
+  // 모바일은 헤더의 뒤로 가기가 대신한다.
+  '@media': { [breakpoint.mobile]: { display: 'none' } },
 })
 
 export const badges = style({

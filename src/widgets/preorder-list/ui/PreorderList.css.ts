@@ -39,8 +39,9 @@ export const title = style([
   typography.title.xxlSemibold,
   {
     margin: 0,
+    // 모바일은 헤더가 같은 제목을 띄운다(getMobileTitle).
     '@media': {
-      [breakpoint.mobile]: { fontSize: fontSize[20] },
+      [breakpoint.mobile]: { display: 'none' },
     },
   },
 ])

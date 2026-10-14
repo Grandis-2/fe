@@ -1,7 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
 import { breakpoint, color, spacing, typography } from '@shared/config/theme'
-import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
   display: 'flex',
@@ -21,7 +20,8 @@ export const title = style([
   typography.title.xxlSemibold,
   {
     margin: 0,
-    '@media': { [breakpoint.mobile]: { fontSize: fontSize[24] } },
+    // 모바일은 헤더가 같은 제목을 띄운다(getMobileTitle).
+    '@media': { [breakpoint.mobile]: { display: 'none' } },
   },
 ])
 

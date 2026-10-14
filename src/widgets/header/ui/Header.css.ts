@@ -115,6 +115,30 @@ export const desktopOnly = style({
   },
 })
 
+export const mobileOnly = style({
+  '@media': {
+    [breakpoint.desktop]: { selectors: { '&&': { display: 'none' } } },
+  },
+})
+
+// 모바일 헤더의 '< 제목'. 화살표 칸을 왼쪽 여백 쪽으로 당겨 화살표가 여백 선에 붙게 한다.
+export const mobileTitle = style({
+  display: 'flex',
+  alignItems: 'center',
+  alignSelf: 'stretch',
+  gap: spacing[4],
+  marginLeft: `-${spacing[4]}`,
+})
+
+export const mobileTitleText = style([
+  typography.title.mdSemibold,
+  {
+    margin: 0,
+    color: color.text.inverse,
+    whiteSpace: 'nowrap',
+  },
+])
+
 // 메인페이지에서만 헤더가 sticky다(Header.tsx의 isStickyPage). 그 외 페이지는
 // root의 기본 position: relative를 그대로 쓴다 — 상품 상세엔 자체 sticky
 // 주문바/탭바가 있어 겹치면 안 되고, 마이페이지는 스크롤에 안 따라오게 한다.

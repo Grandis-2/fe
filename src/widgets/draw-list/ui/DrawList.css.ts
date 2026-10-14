@@ -40,7 +40,8 @@ export const title = style({
   margin: 0,
   fontSize: fontSize[32],
   fontWeight: fontWeight.bold,
-  '@media': { [breakpoint.mobile]: { fontSize: fontSize[24] } },
+  // 모바일은 헤더가 같은 제목을 띄운다(getMobileTitle).
+  '@media': { [breakpoint.mobile]: { display: 'none' } },
 })
 
 export const description = style({

@@ -1,5 +1,5 @@
-import { Bell, CircleUser, ShoppingCart } from 'lucide-react'
-import { Link, useLocation } from 'react-router'
+import { Bell, ChevronLeft, CircleUser, ShoppingCart } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router'
 
 import { useSession } from '@entities/auth'
 import { useCartCount } from '@entities/cart'
@@ -10,6 +10,7 @@ import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { Button, Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
 
+import { getMobileTitle } from '../lib/getMobileTitle'
 import { useHeaderTheme } from '../lib/useHeaderTheme'
 
 import * as styles from './Header.css'
@@ -27,7 +28,12 @@ export function Header({
   onNotificationClick,
   className,
 }: HeaderProps) {
-  const { pathname } = useLocation()
+  const { pathname, search, key } = useLocation()
+  const navigate = useNavigate()
+  // 모바일은 홈을 뺀 화면에서 로고 대신 '< 제목'을 띄운다 — 데스크톱은 그대로 로고.
+  const mobileTitle = getMobileTitle(pathname, search)
+  // 주소로 바로 들어와 돌아갈 곳이 없으면(첫 진입의 key는 'default') 홈으로 보낸다.
+  const goBack = () => (key === 'default' ? navigate(HOME_PATH) : navigate(-1))
   // 카카오 인증만 마친 가입 진행 중 사용자는 세션이 있어도 회원이 아니다 — isLoggedIn만 본다.
   const { isLoggedIn: isMember, isAuthReady } = useSession()
   // 새로고침 직후 세션 복구 중이거나 카카오 콜백에서 세션을 받는 중엔 회원인지 아직 모른다 —
@@ -85,9 +91,26 @@ export function Header({
     >
       <div className={styles.content}>
         <div className={styles.leftGroup}>
+          {mobileTitle && (
+            <div className={[styles.mobileTitle, styles.mobileOnly].join(' ')}>
+              <button
+                type="button"
+                className={styles.iconButton}
+                aria-label="뒤로 가기"
+                onClick={goBack}
+              >
+                <ChevronLeft className={styles.icon} aria-hidden="true" />
+              </button>
+              <span className={styles.mobileTitleText}>{mobileTitle}</span>
+            </div>
+          )}
           <Link
             to={isAdminPage ? ADMIN_HOME_PATH : HOME_PATH}
-            className={[styles.logo, isMember && !isDark && styles.logoMember]
+            className={[
+              styles.logo,
+              isMember && !isDark && styles.logoMember,
+              mobileTitle && styles.desktopOnly,
+            ]
               .filter(Boolean)
               .join(' ')}
           >

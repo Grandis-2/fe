@@ -2,7 +2,11 @@ import { LogOut, Orbit } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { logout } from '@entities/auth'
-import { HOME_PATH, type MypageTab } from '@shared/config/routes'
+import {
+  HOME_PATH,
+  MYPAGE_TAB_LABELS,
+  type MypageTab,
+} from '@shared/config/routes'
 
 import * as styles from './MypageMenu.css'
 
@@ -17,13 +21,13 @@ export type MypageMenuProps = {
   className?: string
 }
 
-const links: { link: MypageMenuLink; label: string }[] = [
-  { link: 'history', label: '주문 내역' },
-  { link: 'preorder-check', label: '예약 내역' },
-  { link: 'draw', label: '럭키드로우' },
-  { link: 'cart', label: '장바구니' },
-  { link: 'address-manage', label: '배송지 관리' },
-  { link: 'reviews', label: '내 리뷰' },
+const links: MypageMenuLink[] = [
+  'history',
+  'preorder-check',
+  'draw',
+  'cart',
+  'address-manage',
+  'reviews',
 ]
 
 // 넓은 화면에선 왼쪽 세로 메뉴, 좁은 화면에선 프로필 아래 가로로 스크롤되는 밑줄 탭이 된다.
@@ -65,7 +69,7 @@ export function MypageMenu({
         </button>
       </div>
       <nav className={styles.nav} aria-label="마이페이지">
-        {links.map(({ link, label }) => (
+        {links.map((link) => (
           <button
             key={link}
             type="button"
@@ -73,7 +77,7 @@ export function MypageMenu({
             aria-current={link === activeLink ? 'page' : undefined}
             onClick={() => onLinkClick?.(link)}
           >
-            {label}
+            {MYPAGE_TAB_LABELS[link]}
           </button>
         ))}
       </nav>
