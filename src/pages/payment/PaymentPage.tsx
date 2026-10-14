@@ -31,6 +31,7 @@ import { terms, TermsAgreement } from '@features/terms-agreement'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { drawPath, mypagePath, resultPath } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
+import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { showToast } from '@shared/model/toastStore'
 import { ActionButton, Container, Input, InlineAlert } from '@shared/ui'
@@ -376,9 +377,13 @@ export function PaymentPage() {
                   placeholder="이름"
                 />
                 <Input
-                  {...field('phone', "휴대폰 ('-'을 제외한 숫자만)")}
+                  {...field('phone', '휴대폰')}
+                  value={formatPhoneInput(form.values.phone)}
+                  onChange={(event) =>
+                    form.setValues({ phone: toPhoneDigits(event.target.value) })
+                  }
                   variant="stacked"
-                  placeholder="01012345678"
+                  placeholder="010-1234-5678"
                   inputMode="numeric"
                 />
               </div>
