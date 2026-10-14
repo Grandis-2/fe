@@ -48,26 +48,27 @@ export function AdminProductStockTable({
     },
     {
       key: 'total',
-      header: '총량',
+      header: '전체 수량',
       align: 'center',
       render: (row) => formatNumber(row.total),
     },
     {
-      // 확보는 진행 중인 주문이 잡아 둔 수량이다 — 아직 팔린 게 아니라 판매와 따로 센다.
+      // 결제 대기는 주문은 했고 결제 전이라 잡아 둔 수량이다(장바구니에 담기만 해선 안
+      // 잡힌다) — 아직 팔린 게 아니라 판매 완료와 따로 센다.
       key: 'reserved',
-      header: '확보',
+      header: '결제 대기',
       align: 'center',
       render: (row) => formatNumber(row.reserved),
     },
     {
       key: 'sold',
-      header: '판매',
+      header: '판매 완료',
       align: 'center',
       render: (row) => formatNumber(row.sold),
     },
     {
       key: 'available',
-      header: '가용',
+      header: '남은 수량',
       align: 'center',
       render: (row) => formatNumber(row.available),
     },
