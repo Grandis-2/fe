@@ -15,8 +15,9 @@ export type AdminProductSaleTagProps = {
   /** 상품 판매 상태. 모든 상품에 있다 */
   status: AdminSaleState
   /**
-   * 사전예약 접수 단계. 있으면 판매 상태 뒤에 같이 선다 — 판매 상태와 다른 축이라
-   * 하나로 합치면 '판매 중지인데 접수 중'처럼 서로 어긋난 경우를 가린다.
+   * 사전예약 접수 단계. 있으면 이것만 보인다 — 판매 중(ACTIVE)은 '판매 중지를 걸지
+   * 않았다'는 뜻일 뿐이라 '오픈 전'과 같이 서면 오픈한 것처럼 읽힌다. 판매 중지는
+   * 회차 취소라 접수 단계와 같이 보인다.
    */
   stage?: AdminPreorderStage | null
 }
@@ -29,16 +30,21 @@ export function AdminProductSaleTag({
   status,
   stage,
 }: AdminProductSaleTagProps) {
+  // 사전예약이 판매 중이면 접수 단계가 상태를 다 말해 준다.
+  const showSaleState = !stage || status === 'PAUSED'
+
   return (
     <>
-      <Tag
-        size="medium"
-        rounded={false}
-        widthOptions={saleStateLabels}
-        color={saleStateColor[status]}
-      >
-        {saleStateLabel[status]}
-      </Tag>
+      {showSaleState && (
+        <Tag
+          size="medium"
+          rounded={false}
+          widthOptions={saleStateLabels}
+          color={saleStateColor[status]}
+        >
+          {saleStateLabel[status]}
+        </Tag>
+      )}
       {stage && (
         <Tag
           size="medium"
