@@ -21,13 +21,7 @@ import { mypagePath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { showToast } from '@shared/model/toastStore'
-import {
-  ActionButton,
-  Button,
-  Dropdown,
-  InlineAlert,
-  SelectButton,
-} from '@shared/ui'
+import { ActionButton, Button, Chip, Dropdown, InlineAlert } from '@shared/ui'
 
 import * as styles from './MypageHistory.css'
 
@@ -153,14 +147,13 @@ export function MypageHistory() {
       <div className={styles.toolbar}>
         <div className={styles.chips}>
           {kindFilters.map((filter) => (
-            <SelectButton
+            <Chip
               key={filter}
-              className={styles.chip}
               selected={filter === kind}
               onClick={() => setKind(filter)}
             >
               {filter}
-            </SelectButton>
+            </Chip>
           ))}
         </div>
         <Dropdown

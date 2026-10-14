@@ -23,24 +23,6 @@ export const title = style([
   },
 ])
 
-export const chips = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: spacing[8],
-})
-
-// SelectButton small을 알약 모양 필터로 키운다(주문 내역 필터와 같은 모양).
-export const chip = style([
-  typography.body.subMedium,
-  {
-    height: '38px',
-    padding: `0 ${spacing[16]}`,
-    borderRadius: '19px',
-    border: `1.5px solid ${color.border.default}`,
-    color: color.text.secondary,
-  },
-])
-
 export const empty = style([
   typography.body.defaultRegular,
   {

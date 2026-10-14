@@ -1,12 +1,6 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
-import {
-  breakpoint,
-  color,
-  motion,
-  onDark,
-  spacing,
-} from '@shared/config/theme'
+import { breakpoint, color, onDark, spacing } from '@shared/config/theme'
 import {
   fontFamily,
   fontSize,
@@ -54,55 +48,6 @@ export const tabs = style({
   display: 'flex',
   flexWrap: 'wrap',
   gap: spacing[8],
-})
-
-const tabBase = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[6],
-  height: '40px',
-  padding: `0 18px`,
-  borderRadius: '20px',
-  fontFamily: fontFamily.pretendard,
-  fontSize: fontSize[14],
-  fontWeight: fontWeight.semibold,
-  cursor: 'pointer',
-  transition: [
-    `color ${motion.duration.fast} ${motion.easing.default}`,
-    `background ${motion.duration.fast} ${motion.easing.default}`,
-  ].join(', '),
-  selectors: {
-    '&:focus-visible': {
-      outline: `2px solid ${color.primary.subtle}`,
-      outlineOffset: '2px',
-    },
-  },
-})
-
-export const tab = styleVariants({
-  active: [
-    tabBase,
-    {
-      border: `1px solid ${color.primary.base}`,
-      background: onDark(8),
-      color: color.text.inverse,
-    },
-  ],
-  inactive: [
-    tabBase,
-    {
-      border: `1px solid ${onDark(14)}`,
-      background: 'transparent',
-      color: onDark(55),
-      selectors: { '&:hover': { color: onDark(90) } },
-    },
-  ],
-})
-
-export const count = style({
-  fontWeight: fontWeight.medium,
-  color: onDark(55),
-  fontVariantNumeric: 'tabular-nums',
 })
 
 // 넓은 화면 4열, 중간 2열, 모바일 1열.

@@ -43,23 +43,6 @@ export const chips = style({
   gap: spacing[8],
 })
 
-// SelectButton small을 알약 모양 필터로 키운다 — 고르기 전에도 테두리가 보인다.
-export const chip = style([
-  typography.body.subMedium,
-  {
-    height: '38px',
-    padding: `0 ${spacing[16]}`,
-    borderRadius: '19px',
-    border: `1.5px solid ${color.border.default}`,
-    color: color.text.secondary,
-  },
-])
-
-export const count = style({
-  marginLeft: spacing[4],
-  color: color.primary.subtle,
-})
-
 export const empty = style([
   typography.body.defaultRegular,
   {

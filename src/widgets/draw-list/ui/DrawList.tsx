@@ -8,7 +8,7 @@ import {
   type DrawPhase,
 } from '@entities/draw'
 import { getErrorMessage } from '@shared/api/client'
-import { InlineAlert } from '@shared/ui'
+import { Chip, InlineAlert } from '@shared/ui'
 
 import * as styles from './DrawList.css'
 
@@ -51,20 +51,22 @@ export function DrawList() {
         </span>
       </div>
 
-      <div className={styles.tabs} role="group" aria-label="럭키드로우 상태">
+      {/* 페이지는 어둡지만 테마 밖이라 Chip이 어두운 토큰을 쓰도록 여기서 켠다. */}
+      <div
+        className={styles.tabs}
+        role="group"
+        aria-label="럭키드로우 상태"
+        data-theme="dark"
+      >
         {TABS.map(({ value, param, label }) => (
-          <button
+          <Chip
             key={value}
-            type="button"
-            className={
-              styles.tab[value === active.value ? 'active' : 'inactive']
-            }
-            aria-pressed={value === active.value}
+            selected={value === active.value}
+            count={count(value)}
             onClick={() => select(param)}
           >
             {label}
-            <span className={styles.count}>{count(value)}</span>
-          </button>
+          </Chip>
         ))}
       </div>
 

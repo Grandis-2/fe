@@ -9,7 +9,7 @@ import {
   type PreorderStatus,
 } from '@entities/preorder'
 import { getErrorMessage } from '@shared/api/client'
-import { InlineAlert } from '@shared/ui'
+import { Chip, InlineAlert } from '@shared/ui'
 
 import * as styles from './PreorderList.css'
 
@@ -19,7 +19,7 @@ const TABS: { value: PreorderStatus; label: string }[] = [
   { value: 'done', label: '마감' },
 ]
 
-// 사전예약 제목 + 상태 탭(개수) + 카드 그리드. 고른 탭은 URL(?status=)에 남겨
+// 사전예약 제목 + 그 아래 상태 칩(개수) + 카드 그리드. 고른 탭은 URL(?status=)에 남겨
 // 새로고침·뒤로 가기·공유해도 유지된다. 상태는 카드와 같은 규칙(날짜)으로 나눈다.
 export function PreorderList() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -48,18 +48,22 @@ export function PreorderList() {
     <div className={styles.root}>
       <div className={styles.header}>
         <h1 className={styles.title}>사전예약</h1>
-        <div className={styles.tabs} role="group" aria-label="사전예약 상태">
+        {/* 페이지는 어둡지만 테마 밖이라 Chip이 어두운 토큰을 쓰도록 여기서 켠다. */}
+        <div
+          className={styles.tabs}
+          role="group"
+          aria-label="사전예약 상태"
+          data-theme="dark"
+        >
           {TABS.map(({ value, label }) => (
-            <button
+            <Chip
               key={value}
-              type="button"
-              className={styles.tab[value === active ? 'active' : 'inactive']}
-              aria-pressed={value === active}
+              selected={value === active}
+              count={count(value)}
               onClick={() => select(value)}
             >
               {label}
-              <span className={styles.count}>{count(value)}</span>
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
