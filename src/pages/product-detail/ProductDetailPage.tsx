@@ -147,7 +147,7 @@ export function ProductDetailPage() {
     activeTab,
     handleTabChange,
     registerPanelRef,
-  } = useProductDetailScroll(productId)
+  } = useProductDetailScroll(productId, product !== undefined)
 
   if (!product) {
     return (
