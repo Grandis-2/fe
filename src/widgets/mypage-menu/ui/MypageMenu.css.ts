@@ -68,7 +68,8 @@ export const email = style([
   },
 ])
 
-// 좁은 화면에선 가로 탭 — 넘치면 옆으로 스크롤한다.
+// 좁은 화면에선 가로 밑줄 탭 — 넘치면 옆으로 스크롤한다. 바닥선은 inset 그림자로
+// 그려 선택된 탭의 밑줄(역시 inset)이 그 위에 겹쳐 보이게 한다.
 export const nav = style({
   display: 'flex',
   gap: spacing[4],
@@ -76,6 +77,10 @@ export const nav = style({
   scrollbarWidth: 'none',
   '@media': {
     [breakpoint.desktop]: { flexDirection: 'column', overflowX: 'visible' },
+    [breakpoint.mobile]: {
+      gap: 0,
+      boxShadow: `inset 0 -1px 0 ${color.border.subtle}`,
+    },
   },
 })
 
@@ -108,6 +113,19 @@ export const link = style([
         background: brandTint(16),
         color: color.text.primary,
         fontWeight: fontWeight.bold,
+      },
+    },
+    '@media': {
+      [breakpoint.mobile]: {
+        padding: `0 ${spacing[12]}`,
+        borderRadius: 0,
+        selectors: {
+          '&:hover': { background: 'transparent' },
+          '&[aria-current="page"], &[aria-current="page"]:hover': {
+            background: 'transparent',
+            boxShadow: `inset 0 -2px 0 ${color.primary.subtle}`,
+          },
+        },
       },
     },
   },

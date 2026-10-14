@@ -28,8 +28,6 @@ export const title = style([
   },
 ])
 
-export const count = style({ color: color.primary.subtle })
-
 // 상태별 건수 네 칸 — 칸 사이만 세로선으로 가른다.
 export const summary = style([
   card,

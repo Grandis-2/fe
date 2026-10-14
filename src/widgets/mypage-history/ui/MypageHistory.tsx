@@ -126,9 +126,7 @@ export function MypageHistory() {
 
   return (
     <div className={styles.root}>
-      <h1 className={styles.title}>
-        주문 내역 <span className={styles.count}>{visibleOrders.length}건</span>
-      </h1>
+      <h1 className={styles.title}>주문 내역</h1>
 
       <dl className={styles.summary}>
         {summary.map(({ label, statuses, warning }) => {

@@ -55,7 +55,10 @@ export const chip = style([
   },
 ])
 
-export const count = style({ color: color.primary.subtle })
+export const count = style({
+  marginLeft: spacing[4],
+  color: color.primary.subtle,
+})
 
 export const empty = style([
   typography.body.defaultRegular,

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 
+import { BellOff, BellRing } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { HistoryCard } from '@entities/order'
@@ -20,7 +21,7 @@ import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, Button, SelectButton, Tag } from '@shared/ui'
+import { ActionButton, Button, Tag } from '@shared/ui'
 
 import * as styles from './MypagePreorder.css'
 
@@ -252,7 +253,7 @@ export function MypagePreorder() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
             진행 중인 예약{' '}
-            <span className={styles.count}>{inProgress.length}</span>
+            <span className={styles.count}>{inProgress.length}건</span>
           </h2>
           {inProgress.map((reservation) => card(reservation))}
         </section>
@@ -261,14 +262,17 @@ export function MypagePreorder() {
       {ended.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
-            지난 예약 <span className={styles.count}>{ended.length}</span>
+            지난 예약 <span className={styles.count}>{ended.length}건</span>
           </h2>
           {ended.map((reservation) => card(reservation))}
         </section>
       )}
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>알림 신청한 사전예약</h2>
+        <h2 className={styles.sectionTitle}>
+          알림 신청한 사전예약{' '}
+          <span className={styles.count}>{openAlerts.length}건</span>
+        </h2>
         <ul className={styles.alerts}>
           {openAlerts.map((alert) => {
             const on = !alertOffIds.has(alert.id)
@@ -287,13 +291,21 @@ export function MypagePreorder() {
                   <span className={styles.alertTitle}>{alert.title}</span>
                   <span className={styles.alertDate}>{alert.opensAt} 오픈</span>
                 </div>
-                <SelectButton
+                {/* 테두리 없이 아이콘만 보인다. 켜짐/꺼짐은 aria-pressed가 알려 주므로 이름은 고정한다. */}
+                <button
+                  type="button"
                   className={styles.alertToggle}
-                  selected={on}
+                  aria-pressed={on}
+                  aria-label={`${alert.title} 오픈 알림`}
+                  title={on ? '알림 받는 중' : '알림 받기'}
                   onClick={() => toggleAlert(alert.id)}
                 >
-                  {on ? '알림 받는 중' : '알림 받기'}
-                </SelectButton>
+                  {on ? (
+                    <BellRing size={22} aria-hidden="true" />
+                  ) : (
+                    <BellOff size={22} aria-hidden="true" />
+                  )}
+                </button>
               </li>
             )
           })}

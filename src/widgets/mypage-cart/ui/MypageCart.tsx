@@ -95,12 +95,12 @@ export function MypageCart() {
       <h1 className={styles.title}>장바구니</h1>
 
       {listMessage && (
-        <InlineAlert status={isError ? 'error' : 'info'}>
+        <InlineAlert variant="big" status={isError ? 'error' : 'info'}>
           {listMessage}
         </InlineAlert>
       )}
       {actionError && (
-        <InlineAlert status="error">
+        <InlineAlert variant="big" status="error">
           {getErrorMessage(actionError, '장바구니를 변경하지 못했어요.')}
         </InlineAlert>
       )}

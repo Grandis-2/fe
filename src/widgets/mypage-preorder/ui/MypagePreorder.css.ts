@@ -40,7 +40,10 @@ export const sectionTitle = style([
   { margin: 0, fontSize: '17px', fontWeight: fontWeight.bold },
 ])
 
-export const count = style({ color: color.primary.subtle })
+export const count = style({
+  marginLeft: spacing[4],
+  color: color.primary.subtle,
+})
 
 // 버튼 둘을 반씩 나눈다.
 export const actions = style({
@@ -149,13 +152,16 @@ export const alertDate = style([
 ])
 
 // SelectButton small에 테두리를 둘러 꺼진 상태도 버튼으로 읽히게 한다.
+// 테두리·배경 없이 벨 아이콘만 — 켜져 있으면 브랜드색, 꺼져 있으면 흐리게.
 export const alertToggle = style({
+  display: 'flex',
   flexShrink: 0,
-  height: '34px',
-  padding: `0 ${spacing[14]}`,
-  borderRadius: '10px',
-  border: `1px solid ${color.border.default}`,
-  background: color.background.surface,
-  color: color.text.secondary,
-  whiteSpace: 'nowrap',
+  padding: spacing[4],
+  border: 'none',
+  background: 'transparent',
+  color: color.text.tertiary,
+  cursor: 'pointer',
+  selectors: {
+    '&[aria-pressed="true"]': { color: color.primary.subtle },
+  },
 })
