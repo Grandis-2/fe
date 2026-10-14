@@ -243,7 +243,9 @@ export const schedule = style([
   list,
   {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+    // 단계 수가 데이터마다 달라(결제 마감일·출시일이 없으면 빠짐) 개수만큼 나눈다.
+    gridAutoFlow: 'column',
+    gridAutoColumns: 'minmax(0, 1fr)',
     borderTop: `1px solid ${onDark(10)}`,
     '@media': {
       [mobile]: { display: 'flex', flexDirection: 'column', borderTop: 'none' },

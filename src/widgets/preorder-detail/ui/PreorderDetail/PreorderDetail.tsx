@@ -6,15 +6,17 @@ import { Link, useNavigate } from 'react-router'
 import {
   formatPreorderDate,
   getPreorderSchedule,
+  usePreorder,
   type Preorder,
   type PreorderModel,
   type PreorderStatus,
 } from '@entities/preorder'
 import { useRequireLogin } from '@features/login'
 import { joinPreorderQueue } from '@features/preorder-queue'
+import { getErrorMessage } from '@shared/api/client'
 import { PREORDER_PATH, productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
-import { Button } from '@shared/ui'
+import { Button, InlineAlert } from '@shared/ui'
 
 import {
   formatOpenTime,
@@ -39,12 +41,39 @@ const CTA_LABEL: Record<PreorderStatus, string> = {
 }
 
 export type PreorderDetailProps = {
+  /** 사전예약 상품 id(라우트 파라미터) */
+  preorderId: string
+}
+
+// 사전예약 상품을 불러와 프로모션 상세를 그린다. 사전예약 상품이 아니거나 회차가 없으면 찾을 수 없다고 한다.
+export function PreorderDetail({ preorderId }: PreorderDetailProps) {
+  const { data: preorder, isPending, error } = usePreorder(preorderId)
+
+  if (error) {
+    return (
+      <InlineAlert status="error">
+        {getErrorMessage(error, '사전예약을 불러오지 못했어요.')}
+      </InlineAlert>
+    )
+  }
+  if (isPending) {
+    return (
+      <InlineAlert status="info">사전예약을 불러오는 중이에요.</InlineAlert>
+    )
+  }
+  if (!preorder) {
+    return <InlineAlert status="error">사전예약을 찾을 수 없어요.</InlineAlert>
+  }
+  return <PreorderPromotion preorder={preorder} />
+}
+
+export type PreorderPromotionProps = {
   preorder: Preorder
 }
 
 // 사전예약 프로모션 상세. 상태(날짜로 계산)마다 뱃지·일정 강조·유의사항·하단 버튼·
 // 모델 시트가 달라진다 — 진행 중: 예약, 오픈 전: 카운트다운 + 오픈 알림, 마감: 일반 구매.
-export function PreorderDetail({ preorder }: PreorderDetailProps) {
+export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
   const navigate = useNavigate()
   const requireLogin = useRequireLogin()
   const { status, ddayLabel } = getPreorderSchedule(
@@ -109,40 +138,49 @@ export function PreorderDetail({ preorder }: PreorderDetailProps) {
       </div>
 
       <div className={styles.hero}>
-        <img
-          src={preorder.imageSrc}
-          alt={preorder.imageAlt ?? ''}
-          className={styles.heroImage[status === 'done' ? 'dimmed' : 'normal']}
-        />
+        {preorder.imageSrc && (
+          <img
+            src={preorder.imageSrc}
+            alt={preorder.imageAlt ?? ''}
+            className={
+              styles.heroImage[status === 'done' ? 'dimmed' : 'normal']
+            }
+          />
+        )}
         {status === 'done' && (
           <span className={styles.closedNotice}>사전예약이 마감되었어요</span>
         )}
       </div>
 
       <div className={styles.sections}>
-        <section className={styles.section}>
-          <h2
-            className={
-              styles.sectionTitle[status === 'done' ? 'muted' : 'normal']
-            }
-          >
-            사전예약 혜택
-            {status === 'done' && <span className={styles.ended}> · 종료</span>}
-          </h2>
-          <ol className={styles.benefits}>
-            {preorder.benefits.map((benefit, index) => (
-              <li key={benefit.title} className={styles.benefit}>
-                <span className={styles.benefitNumber}>
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                <span className={styles.benefitTitle}>{benefit.title}</span>
-                <span className={styles.benefitDescription}>
-                  {benefit.description}
-                </span>
-              </li>
-            ))}
-          </ol>
-        </section>
+        {/* 혜택 API가 없어 지금은 비어 온다 — 비면 섹션째 뺀다. */}
+        {preorder.benefits.length > 0 && (
+          <section className={styles.section}>
+            <h2
+              className={
+                styles.sectionTitle[status === 'done' ? 'muted' : 'normal']
+              }
+            >
+              사전예약 혜택
+              {status === 'done' && (
+                <span className={styles.ended}> · 종료</span>
+              )}
+            </h2>
+            <ol className={styles.benefits}>
+              {preorder.benefits.map((benefit, index) => (
+                <li key={benefit.title} className={styles.benefit}>
+                  <span className={styles.benefitNumber}>
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className={styles.benefitTitle}>{benefit.title}</span>
+                  <span className={styles.benefitDescription}>
+                    {benefit.description}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
 
         <section className={styles.section}>
           <h2 className={styles.sectionTitle.normal}>진행 일정</h2>
