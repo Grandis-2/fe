@@ -1,13 +1,17 @@
+import { useRef } from 'react'
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { ApiRequestError } from '@shared/api/client'
 import { queryPolicy } from '@shared/api/queryPolicy'
+import type { ProductRegistrationRequest } from '@shared/api/types'
 
-import { toFirstWaveRequest, toUpsertRequest } from '../model/form'
+import { toRegistrationRequest } from '../model/registration'
 
-import { putDispatchWindow } from './adminDispatch'
 import {
-  createAdminProduct,
   getAdminProduct,
+  getRegistrationStatus,
+  registerAdminProduct,
   setAdminProductVisibility,
 } from './adminProduct'
 import { getAdminProductStock } from './adminStock'
@@ -40,37 +44,76 @@ export const useAdminProductStock = (productId: string) =>
     ...queryPolicy.live,
   })
 
+const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// 같은 키 요청이 처리 중(409 REGISTRATION_IN_PROGRESS)이면 잠시 뒤 같은 키로 다시
+// 보낸다 — 명세가 그렇게 하라고 한다. 다른 실패는 그대로 던진다.
+const IN_PROGRESS_RETRIES = 4
+const IN_PROGRESS_DELAY_MS = 1000
+
+async function register(key: string, body: ProductRegistrationRequest) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await registerAdminProduct(key, body)
+    } catch (caught) {
+      const inProgress =
+        caught instanceof ApiRequestError &&
+        caught.error.code === 'REGISTRATION_IN_PROGRESS'
+      if (!inProgress || attempt >= IN_PROGRESS_RETRIES) throw caught
+      await delay(IN_PROGRESS_DELAY_MS)
+    }
+  }
+}
+
+// 준비(사전예약 회차·일반 재고 생성)가 끝날 때까지 몇 초 간격으로 확인한다.
+const READY_POLL_MS = 1500
+const READY_POLL_TRIES = 20
+
 /**
- * 상품을 초안으로 등록한다. 응답을 상세 캐시에 넣어 등록 직후 상세 화면이 다시
- * 조회하지 않게 한다.
+ * 준비가 끝났는지 기다린다. 여기서 나는 실패는 삼킨다 — 상품은 이미 등록됐는데 확인
+ * 요청이 실패했다고 등록 실패로 보이면, 관리자가 다시 눌러 같은 상품을 또 만든다.
+ * 끝내 확인이 안 되면 준비 중으로 둔다(상세에서 '초안'으로 보인다).
+ */
+async function waitUntilReady(key: string) {
+  for (let attempt = 0; attempt < READY_POLL_TRIES; attempt += 1) {
+    await delay(READY_POLL_MS)
+    const status = await getRegistrationStatus(key).catch(() => null)
+    if (status?.completed) return true
+  }
+  return false
+}
+
+/**
+ * 상품을 등록한다. 사전예약은 회차·1차 배송 차수까지, 일반 상품은 조합별 재고까지
+ * 한 번에 보낸다.
  *
- * 사전예약이면 1차 배송 차수까지 이어서 만든다 — 폼에서 1차 배송 수량과 예상
- * 배송일을 이미 받았으니, 배송 구간 설정 탭이 빈 화면으로 열리지 않게 한다.
- *
- * 차수는 상품이 만들어진 뒤에야 저장할 수 있어서(경로에 productId가 들어간다)
- * 요청이 두 번 나간다. 차수 저장이 실패해도 상품은 이미 생겼으므로 throw하지
- * 않고 `dispatchSaved: false`로 알려, 화면이 배송 구간 탭으로 보내 다시 넣게 한다.
+ * 등록 키는 응답을 받을 때까지 유지한다. 응답을 못 받았거나(네트워크·타임아웃) 서버
+ * 장애로 실패하면 이미 등록됐을 수 있어서, 다시 누르면 같은 키를 보낸다 — 서버는 같은
+ * 키면 새로 만들지 않고 처음 상품을 돌려준다. 서버가 본문을 보고 거절한 400만 고쳐서
+ * 새로 보내는 것이라 키를 버린다.
  */
 export const useCreateAdminProduct = () => {
   const queryClient = useQueryClient()
+  const keyRef = useRef<string | null>(null)
+
   return useMutation({
     mutationFn: async (value: AdminProductFormValue) => {
-      const product = await createAdminProduct(toUpsertRequest(value))
-      // 등록 응답은 아직 예전 모양이라 상세 캐시에 그대로 넣으면 상세 매퍼가 깨진다.
-      // 넣지 않고 목록만 무효화해, 상세는 들어갈 때 새로 받는다.
-      void queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY })
+      keyRef.current ??= crypto.randomUUID()
+      const key = keyRef.current
+      const { registration } = await register(key, toRegistrationRequest(value))
+      // 등록은 끝났다 — 다음 등록은 새 키로 한다.
+      keyRef.current = null
 
-      const firstWave = toFirstWaveRequest(value)
-      if (!firstWave) return { product, dispatchSaved: true }
-
-      const dispatchSaved = await putDispatchWindow(
-        product.productId,
-        firstWave,
-      )
-        .then(() => true)
-        .catch(() => false)
-      return { product, dispatchSaved }
+      const ready = registration.completed || (await waitUntilReady(key))
+      return { productId: registration.productId, ready }
     },
+    onError: (caught) => {
+      if (caught instanceof ApiRequestError && caught.status === 400) {
+        keyRef.current = null
+      }
+    },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
   })
 }
 

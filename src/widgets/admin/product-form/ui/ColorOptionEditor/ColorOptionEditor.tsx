@@ -15,10 +15,12 @@ export type ColorOptionEditorProps = {
   onChange: (colors: ProductColorOption[]) => void
   /**
    * 수정 화면에서 서버에 이미 있는 색상 id. 넘기면 등록 뒤 규칙을 따른다 — 서버에 값을
-   * 지우는 API가 없어 이 색상들은 지울 수 없고, '색상 없음'(축 자체)과 사진은 바꿀 수
-   * 없다. 이번에 더한 색상은 아직 저장 전이라 지울 수 있다.
+   * 지우는 API가 없어 이 색상들은 지울 수 없고, '색상 없음'(축 자체)은 바꿀 수 없다.
+   * 이번에 더한 색상은 아직 저장 전이라 지울 수 있다.
    */
   existingIds?: ReadonlySet<string>
+  /** 사진 칸을 막는다 — 사진을 올리거나 바꿀 곳(업로드 API)이 아직 없을 때 */
+  imagesLocked?: boolean
 }
 
 /**
@@ -29,6 +31,7 @@ export function ColorOptionEditor({
   colors,
   onChange,
   existingIds,
+  imagesLocked = false,
 }: ColorOptionEditorProps) {
   const editing = existingIds !== undefined
   // '색상 없음'인 상품은 색상을 더 만들 수 없다.
@@ -120,8 +123,7 @@ export function ColorOptionEditor({
           <div className={hasNoColor ? styles.mutedArea : undefined}>
             <ImageUploader
               label="이미지"
-              // 등록 뒤에는 사진을 바꾸는 API가 없다.
-              disabled={hasNoColor || editing}
+              disabled={hasNoColor || imagesLocked}
               value={colorOption.images}
               onChange={(images) => patchColor(colorOption.id, { images })}
             />

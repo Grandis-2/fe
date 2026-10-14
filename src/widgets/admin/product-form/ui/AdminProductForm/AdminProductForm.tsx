@@ -10,6 +10,7 @@ import {
   type AdminProductFormValue,
   type ProductOptionPreset,
 } from '@entities/admin-product'
+import { findCategoryId, useCategories } from '@entities/product'
 import {
   Button,
   Checkbox,
@@ -87,10 +88,12 @@ export function AdminProductForm({
   lockReason,
 }: AdminProductFormProps) {
   const editing = mode === 'edit'
-  // 등록 뒤에는 사진을 바꾸는 API가 없다.
+  // 사진은 아직 올릴 곳이 없다 — 업로드(S3)가 준비되면 열고, 등록 뒤에는 바꾸는 API가
+  // 아예 없다. 칸을 열어 두면 고른 사진이 조용히 버려진다.
   const imageNote = editing
     ? '등록 뒤에는 사진을 바꿀 수 없습니다.'
-    : '색상과 무관하게 상품 하단에 세로로 이어 붙습니다. 권장 가로 폭 1000px.'
+    : '사진 업로드를 준비하고 있습니다. 지금은 사진 없이 등록됩니다.'
+  const { data: categoryTree } = useCategories()
   const [value, setValue] = useState(
     defaultValue ?? createEmptyProductFormValue(),
   )
@@ -110,10 +113,23 @@ export function AdminProductForm({
     ),
   ].join(' X ')
 
+  // 종류는 실서버 카테고리 트리의 하위 노드다(모바일 > 스마트폰). 트리에 그 종류가
+  // 없으면 대분류로 등록한다 — 서버는 상위·하위 어느 쪽에도 받는다.
+  const categoryIdOf = (picked: ProductOptionPreset) =>
+    categoryTree &&
+    (findCategoryId(categoryTree, picked.category, picked.name) ??
+      findCategoryId(categoryTree, picked.category))
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (submitting || lockReason) return
-    onSubmit(value)
+    // 등록이면 고른 종류를 카테고리 id로 바꿔 싣는다. 제출할 때 찾는 건 종류를 고를 때
+    // 트리가 아직 안 왔어도 되게 하려는 것이다. 수정은 서버 값 그대로다(바꿀 수 없다).
+    onSubmit(
+      editing || !preset
+        ? value
+        : { ...value, categoryId: categoryIdOf(preset) ?? '' },
+    )
   }
 
   return (
@@ -133,16 +149,17 @@ export function AdminProductForm({
           <Input
             label="모델명"
             required
-            // 아직 서버에 모델명 필드가 없어 수정에서는 저장할 곳이 없다.
-            disabled={editing}
+            // 아직 서버에 모델명 필드가 없어 저장할 곳이 없다 — 생기면 연다.
+            disabled
             value={value.modelName}
             onChange={(event) => patch({ modelName: event.target.value })}
           />
         </FormSection>
 
         <FormSection title="브랜드 정보">
-          {/* 브랜드도 아직 서버 필드가 없다. Dropdown은 disabled를 받지 않아 감싸서 막는다. */}
-          <fieldset className={styles.plainFieldset} disabled={editing}>
+          {/* 브랜드도 아직 서버 필드가 없다 — 생기면 연다. Dropdown은 disabled를 받지 않아
+              감싸서 막는다. */}
+          <fieldset className={styles.plainFieldset} disabled>
             <Dropdown
               label="브랜드 선택"
               size="medium"
@@ -185,8 +202,8 @@ export function AdminProductForm({
 
                 <FirstDeliveryField
                   editable={mode === 'create'}
-                  value={value.firstDeliveryDate}
-                  onChange={(firstDeliveryDate) => patch({ firstDeliveryDate })}
+                  value={value.firstDelivery}
+                  onChange={(firstDelivery) => patch({ firstDelivery })}
                   onEditDispatchWindow={onEditDispatchWindow}
                 />
               </>
@@ -225,6 +242,7 @@ export function AdminProductForm({
             <ColorOptionEditor
               colors={value.colors}
               existingIds={existingIds}
+              imagesLocked
               onChange={(colors) => patch({ colors })}
             />
           </div>
@@ -258,8 +276,10 @@ export function AdminProductForm({
             onQuantityChange={(key, quantity) =>
               patch({ quantities: { ...value.quantities, [key]: quantity } })
             }
-            // 사전예약은 재고를 세지 않고, 1차 배송 수량은 배송 구간 설정에서 고친다.
-            hideQuantity={editing && value.isPreorder}
+            // 사전예약은 재고를 세지 않는다(서버가 stock을 받지 않는다). 등록 때 1차 배송
+            // 차수는 끝이 열린 채로만 보낼 수 있어서 1차 물량도 실을 곳이 없다 —
+            // 물량 경계는 배송 구간 설정에서 2차를 더할 때 정한다.
+            hideQuantity={value.isPreorder}
             pausedKeys={editing ? value.pausedKeys : undefined}
             onPausedChange={
               editing
@@ -290,7 +310,7 @@ export function AdminProductForm({
             <ImageUploader
               ratio="portrait"
               showCount={false}
-              disabled={editing}
+              disabled
               value={value.detailImages}
               onChange={(detailImages) => patch({ detailImages })}
             />
@@ -302,7 +322,7 @@ export function AdminProductForm({
             <ImageUploader
               ratio="portrait"
               showCount={false}
-              disabled={editing}
+              disabled
               value={value.specImages}
               onChange={(specImages) => patch({ specImages })}
             />
@@ -314,7 +334,7 @@ export function AdminProductForm({
             <ImageUploader
               ratio="portrait"
               showCount={false}
-              disabled={editing}
+              disabled
               value={value.noticeImages}
               onChange={(noticeImages) => patch({ noticeImages })}
             />

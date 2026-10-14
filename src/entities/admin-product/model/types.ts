@@ -131,6 +131,17 @@ export const displayStatusVariant: Record<DisplayStatus, 'subtle' | 'outline'> =
 export const displayStatusLabels = Object.values(displayStatusLabel)
 
 /**
+ * 서버가 같은 값으로 보는지 비교할 때 쓰는 모양 — 공백을 떼고 대소문자를 무시한다.
+ * 서버는 대소문자·전각·악센트만 다른 값도 같은 값으로 보고 400을 준다.
+ */
+export const comparableValue = (value: string) =>
+  value.replace(/\s+/g, '').toLowerCase()
+
+/** storage 축 값은 숫자와 MB·GB·TB 단위만 된다(서버 400). 공백은 무시한다 */
+export const isStorageValue = (value: string) =>
+  /^\d+(MB|GB|TB)$/i.test(value.replace(/\s+/g, ''))
+
+/**
  * 조합(variant)은 축마다 정규화값(selections)을 들고 있다 — 화면은 관리자가 적은
  * 이름(value)을 보여야 해서 되돌린다. 못 찾으면 undefined라 쓰는 쪽이 빈 칸을 정한다.
  */

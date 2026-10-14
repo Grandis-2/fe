@@ -11,7 +11,12 @@ import type {
 } from '@shared/api/types'
 
 import { buildVariantKey, toIso, type AdminProductFormValue } from './form'
-import { COLOR_GROUP_CODE, type AdminProductDetailModel } from './types'
+import {
+  COLOR_GROUP_CODE,
+  comparableValue,
+  isStorageValue,
+  type AdminProductDetailModel,
+} from './types'
 
 /**
  * 수정 화면의 저장 계획.
@@ -34,9 +39,6 @@ export const editSectionLabel: Record<EditSection, string> = {
   options: '옵션',
   stock: '재고',
 }
-
-// 서버 정규화값과 같은 규칙 — 공백만 뗀다(256 GB → 256GB).
-const normalize = (value: string) => value.replace(/\s+/g, '')
 
 /* ------------------------------------------------------------------ *
  * 잠금
@@ -216,7 +218,8 @@ function resolveValueIds(axis: FormAxis, serverAxis: OptionAxis | undefined) {
     const hit = serverAxis.values.find(
       (serverValue) =>
         !claimed.has(serverValue.valueId) &&
-        serverValue.normalizedValue === normalize(formValue.name),
+        comparableValue(serverValue.normalizedValue) ===
+          comparableValue(formValue.name),
     )
     if (hit) {
       resolved.set(formValue.formId, hit.valueId)
@@ -262,7 +265,7 @@ function combinationsOf(
         .map(
           (pick, index) =>
             resolvedByAxis.get(axes[index].key)?.get(pick.formId) ??
-            `new:${normalize(pick.name)}`,
+            `new:${comparableValue(pick.name)}`,
         )
         .join(IDENTITY_SEPARATOR),
       hasAddedValue: combo.some((pick) => addedIds.has(pick.formId)),
@@ -290,8 +293,6 @@ function serverIdentityOf(
     )
     .join(IDENTITY_SEPARATOR)
 }
-
-const STORAGE_PATTERN = /^\d+(MB|GB|TB)$/i
 
 export type OptionsPlan = {
   valueEdits: { valueId: string; body: OptionValueEditRequest }[]
@@ -353,10 +354,7 @@ export function planOptions(
       )
       if (!original) addedIds.add(formValue.formId)
 
-      if (
-        axis.key === 'storage' &&
-        !STORAGE_PATTERN.test(normalize(formValue.name))
-      ) {
+      if (axis.key === 'storage' && !isStorageValue(formValue.name)) {
         return {
           ...plan,
           error: `용량은 숫자와 MB·GB·TB로 적어 주세요(예: 256GB). '${formValue.name}'`,

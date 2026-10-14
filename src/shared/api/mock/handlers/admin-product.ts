@@ -1,6 +1,7 @@
 import { http } from 'msw'
 
 import { adminProductStore } from '../fixtures/admin-product'
+import { adminStockStore } from '../fixtures/admin-stock'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
@@ -8,13 +9,14 @@ import type {
   AdminProductDetail,
   AdminProductListItem,
   AdminProductResponse,
-  AdminProductUpsertRequest,
   OptionValueAddRequest,
   OptionValueEditRequest,
   PageResponse,
   PreorderCampaignRequest,
   PreorderSaleStatus,
   ProductEditRequest,
+  ProductRegistrationRequest,
+  ProductRegistrationResponse,
   Variant,
   VariantAddRequest,
   VariantEditRequest,
@@ -177,8 +179,8 @@ function toVariantView(
 }
 
 /**
- * 저장소의 상세(예전 모양)를 관리자 상세 응답(명세 모양)으로 바꾼다. 저장소는 등록이
- * 아직 예전 본문을 쓰기 때문에 그대로 두고, 읽을 때만 바꿔 내보낸다.
+ * 저장소의 상세(예전 모양)를 관리자 상세 응답(명세 모양)으로 바꾼다. 저장소는 다른
+ * 목업(재고·배송 차수·예약)이 같이 쓰고 있어 그대로 두고, 읽을 때만 바꿔 내보낸다.
  */
 function toAdminProductResponse(
   detail: AdminProductDetail,
@@ -254,47 +256,206 @@ const readBody = <T>(request: Request) =>
 const findProduct = (productId: string) =>
   adminProductStore.find((product) => product.productId === productId)
 
-/** 등록/수정 본문을 저장 형태로 반영한다 */
-function applyUpsert(
-  target: AdminProductDetail,
-  body: AdminProductUpsertRequest,
-): AdminProductDetail {
-  const variants = body.variants ?? target.variants
-  const prices = variants.map((variant) => variant.price)
-  const openAt = body.openAt ?? target.openAt
-  const closeAt =
-    body.closeAt === undefined ? target.sale.closeAt : body.closeAt
+/*
+ * 등록 키별 기록. 같은 키로 다시 오면 새로 만들지 않고 처음 상품을 돌려준다. 준비
+ * (회차·재고 생성)는 실서버처럼 잠시 뒤 끝난다 — readyAt이 지나면 초안을 푼다.
+ */
+type RegistrationRecord = { productId: string; body: string; readyAt: number }
+const registrations = new Map<string, RegistrationRecord>()
+const READY_DELAY_MS = 2000
 
-  return {
-    ...target,
-    name: body.name ?? target.name,
-    brand: body.brand ?? target.brand,
-    categoryId:
-      body.categoryId === undefined ? target.categoryId : body.categoryId,
-    summary: body.summary === undefined ? target.summary : body.summary,
-    descriptionHtml:
-      body.descriptionHtml === undefined
-        ? target.descriptionHtml
-        : body.descriptionHtml,
-    images: body.images ?? target.images,
-    specs: body.specs ?? target.specs,
-    optionGroups: body.optionGroups ?? target.optionGroups,
+function settleRegistrations() {
+  const now = Date.now()
+  for (const record of registrations.values()) {
+    const product = findProduct(record.productId)
+    if (product?.displayStatus === 'DRAFT' && record.readyAt <= now) {
+      // 등록은 늘 비공개로 들어온다(프론트가 visible false로 보낸다).
+      product.displayStatus = 'HIDDEN'
+    }
+  }
+}
+
+const registrationOf = (key: string, record: RegistrationRecord) => ({
+  productId: record.productId,
+  idempotencyKey: key,
+  completed: findProduct(record.productId)?.displayStatus !== 'DRAFT',
+})
+
+/** 서버가 400을 줄 본문이면 그 위반을 돌려준다 — 프론트 검증을 빠져나간 값 확인용 */
+function registrationViolations(body: Partial<ProductRegistrationRequest>) {
+  const preorder = body.saleMode === 'PREORDER'
+  const axes = body.optionAxes ?? []
+  const batches = body.shipmentBatches ?? []
+  return [
+    !body.categoryId ? { field: 'categoryId', message: '필수입니다.' } : null,
+    body.saleMode !== 'PREORDER' && body.saleMode !== 'IN_STOCK'
+      ? { field: 'saleMode', message: 'PREORDER 또는 IN_STOCK' }
+      : null,
+    !body.title?.trim() || body.title.length > 100
+      ? { field: 'title', message: '1~100자여야 합니다.' }
+      : null,
+    axes.some(
+      (axis) =>
+        axis.key === 'storage' &&
+        axis.values.some(
+          (value) => !STORAGE_PATTERN.test(normalize(value.value)),
+        ),
+    )
+      ? { field: 'optionAxes', message: '용량은 숫자와 MB·GB·TB만 됩니다.' }
+      : null,
+    preorder && !body.campaign
+      ? { field: 'campaign', message: '사전예약은 필수입니다.' }
+      : null,
+    preorder &&
+    body.campaign &&
+    Date.parse(body.campaign.opensAt) < Date.now() + 30 * 60_000
+      ? {
+          field: 'campaign.opensAt',
+          message: '지금부터 30분 뒤 이후여야 합니다.',
+        }
+      : null,
+    preorder && (batches.length === 0 || batches.at(-1)?.positionTo !== null)
+      ? {
+          field: 'shipmentBatches',
+          message: '마지막 차수는 positionTo가 null이어야 합니다.',
+        }
+      : null,
+    !preorder && (body.campaign || body.shipmentBatches)
+      ? { field: 'campaign', message: '일반 상품은 보낼 수 없습니다.' }
+      : null,
+    preorder && body.combinations?.some((combo) => combo.stock !== undefined)
+      ? {
+          field: 'combinations.stock',
+          message: '사전예약은 재고를 받지 않습니다.',
+        }
+      : null,
+    !preorder &&
+    (body.combinations ?? []).some(
+      (combo) => !combo.excluded && combo.stock === undefined,
+    )
+      ? {
+          field: 'combinations.stock',
+          message: '일반 상품은 재고가 필요합니다.',
+        }
+      : null,
+  ].filter((violation) => violation !== null)
+}
+
+/** 등록 본문으로 저장소(예전 모양) 상품을 만든다. 조합은 축의 모든 곱이다 */
+function createFromRegistration(
+  body: ProductRegistrationRequest,
+): AdminProductDetail {
+  const productId = `PRD-${crypto.randomUUID().slice(0, 8)}`
+  const now = new Date().toISOString()
+  const preorder = body.saleMode === 'PREORDER'
+  const axes = body.optionAxes ?? []
+
+  const optionGroups = axes.map((axis, groupIndex) => ({
+    groupCode: axis.key,
+    name: axis.label,
+    sortOrder: groupIndex,
+    values: axis.values.map((value, index) => {
+      const valueCode = `${axis.key}-${index + 1}`
+      surcharges.set(
+        surchargeKey(productId, axis.key, valueCode),
+        value.surcharge ?? 0,
+      )
+      return {
+        valueCode,
+        name: value.value,
+        colorHex: value.hex ? value.hex.toUpperCase() : null,
+        imageUrl: null,
+        sortOrder: index,
+      }
+    }),
+  }))
+  basePrices.set(productId, body.basePrice)
+
+  const combos = optionGroups.reduce<Record<string, string>[]>(
+    (acc, group) =>
+      acc.flatMap((picked) =>
+        group.values.map((value) => ({
+          ...picked,
+          [group.groupCode]: value.valueCode,
+        })),
+      ),
+    [{}],
+  )
+  const variants = combos.map((optionValues, index) => ({
+    optionCode: `V-${crypto.randomUUID().slice(0, 8)}`,
+    name: '',
+    optionValues,
+    price: 0,
+    listPrice: null,
+    available: true,
+    sortOrder: index,
+    images: [],
+  }))
+
+  const openAt = body.campaign?.opensAt ?? now
+  const created: AdminProductDetail = {
+    ...adminProductStore[0],
+    productId,
+    name: body.title,
+    categoryId: body.categoryId,
+    summary: body.description ?? null,
+    saleMode: body.saleMode,
+    badges: preorder ? ['PREORDER'] : [],
+    tags: body.tags ? body.tags.split(',') : [],
+    optionGroups,
     variants,
-    badges: body.badges ?? target.badges,
-    tags: body.tags ?? target.tags,
+    images: [],
+    specs: [],
     openAt,
-    priceRange:
-      prices.length > 0
-        ? { min: Math.min(...prices), max: Math.max(...prices) }
-        : target.priceRange,
-    sale: { ...target.sale, openAt, closeAt },
-    updatedAt: new Date().toISOString(),
+    sale: {
+      ...adminProductStore[0].sale,
+      openAt,
+      closeAt: body.campaign?.closesAt ?? null,
+    },
+    saleStatus: preorder ? 'BEFORE_OPEN' : 'OPEN',
+    // 준비가 끝날 때까지 초안이다.
+    displayStatus: 'DRAFT',
+    hiddenReason: null,
+    createdAt: now,
+    updatedAt: now,
     updatedBy: 'admin',
   }
+  recompute(created)
+
+  // 일반 상품은 조합마다 재고가 생긴다 — 재고 목업이 같은 옵션 코드로 찾는다.
+  if (!preorder) {
+    for (const variant of variants) {
+      const names = Object.fromEntries(
+        Object.entries(variant.optionValues).map(([groupCode, valueCode]) => [
+          groupCode,
+          normalize(valueNameOf(created, groupCode, valueCode)),
+        ]),
+      )
+      const stock =
+        body.combinations?.find((combo) =>
+          Object.entries(names).every(
+            ([key, name]) => normalize(combo.selections[key] ?? '') === name,
+          ),
+        )?.stock ?? 0
+      adminStockStore.push({
+        productId,
+        optionCode: variant.optionCode,
+        policy: 'LIMITED',
+        initialQuantity: stock,
+        availableQuantity: stock,
+        reservedQuantity: 0,
+        adjustmentsEnabled: true,
+        updatedAt: now,
+        updatedBy: 'admin',
+      })
+    }
+  }
+  return created
 }
 
 export const adminProductHandlers: RequestHandler[] = [
   http.get(url('/api/v1/admin/products'), ({ request }) => {
+    settleRegistrations()
     const params = new URL(request.url).searchParams
     const page = Number(params.get('page') ?? 0)
     const size = Number(params.get('size') ?? 20)
@@ -357,39 +518,68 @@ export const adminProductHandlers: RequestHandler[] = [
   }),
 
   http.post(url('/api/v1/admin/products'), async ({ request }) => {
-    const body = (await request.json()) as AdminProductUpsertRequest
+    const key = request.headers.get('Idempotency-Key')
+    if (!key) {
+      return invalid([{ field: 'Idempotency-Key', message: '필수입니다.' }])
+    }
+    const raw = await request.text()
 
-    if (!body.name?.trim()) {
-      return fail(400, {
-        code: 'VALIDATION_FAILED',
-        message: '입력값을 확인해 주세요.',
-        retryable: false,
-        violations: [{ field: 'name', message: '필수 항목입니다.' }],
-      })
+    // 같은 키 재전송 — 새로 만들지 않는다. 본문이 다르면 다른 등록이라 거절한다.
+    const previous = registrations.get(key)
+    if (previous) {
+      if (previous.body !== raw) {
+        return fail(409, {
+          code: 'IDEMPOTENCY_KEY_REUSED',
+          message: '같은 등록 키로 다른 내용을 보냈습니다.',
+        })
+      }
+      settleRegistrations()
+      const registration = registrationOf(key, previous)
+      return ok<ProductRegistrationResponse>(
+        { registration, product: null },
+        registration.completed ? 200 : 202,
+      )
     }
 
-    // 등록은 항상 초안(DRAFT)으로 시작한다.
-    const created = applyUpsert(
-      {
-        ...adminProductStore[0],
-        productId: body.productId ?? `PRD-${crypto.randomUUID().slice(0, 8)}`,
-        displayStatus: 'DRAFT',
-        saleStatus: 'BEFORE_OPEN',
-        hiddenReason: null,
-        variants: [],
-        optionGroups: [],
-        images: [],
-        specs: [],
-        createdAt: new Date().toISOString(),
-      },
-      body,
-    )
-    adminProductStore.unshift(created)
+    let body: Partial<ProductRegistrationRequest> | null = null
+    try {
+      body = JSON.parse(raw) as Partial<ProductRegistrationRequest>
+    } catch {
+      body = null
+    }
+    if (!body)
+      return invalid([{ field: 'body', message: 'JSON이어야 합니다.' }])
+    const violations = registrationViolations(body)
+    if (violations.length > 0) return invalid(violations)
 
-    return ok(created, 201)
+    const created = createFromRegistration(body as ProductRegistrationRequest)
+    adminProductStore.unshift(created)
+    const record = {
+      productId: created.productId,
+      body: raw,
+      readyAt: Date.now() + READY_DELAY_MS,
+    }
+    registrations.set(key, record)
+
+    return ok<ProductRegistrationResponse>(
+      {
+        registration: registrationOf(key, record),
+        product: toAdminProductResponse(created).product,
+      },
+      201,
+    )
+  }),
+
+  http.get(url('/api/v1/admin/products/registrations/:key'), ({ params }) => {
+    const key = String(params.key)
+    const record = registrations.get(key)
+    if (!record) return notFound()
+    settleRegistrations()
+    return ok(registrationOf(key, record))
   }),
 
   http.get(url('/api/v1/admin/products/:productId'), ({ params }) => {
+    settleRegistrations()
     const product = findProduct(String(params.productId))
     return product ? ok(toAdminProductResponse(product)) : notFound()
   }),

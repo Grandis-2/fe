@@ -220,6 +220,75 @@ export type VariantEditRequest = {
 }
 
 /**
+ * 상품 등록(POST /admin/products). Idempotency-Key 헤더가 필수다 — 같은 키로 다시
+ * 보내면 새로 만들지 않고 처음 등록한 상품을 돌려준다. 모르는 필드는 400이다.
+ *
+ * 사진(images)은 아직 보내지 않는다 — 업로드(S3)가 준비되면 필드를 더한다.
+ */
+export type ProductRegistrationRequest = {
+  /** 상위·하위 모두 가능. 없는 카테고리는 400 */
+  categoryId: string
+  /** 등록 뒤 바꿀 수 없다 */
+  saleMode: SaleMode
+  /** 1~100자 */
+  title: string
+  description?: string
+  /** 콤마로 이은 검색 키워드 500자 이하 */
+  tags?: string
+  /** 준비가 끝나야 실제로 보인다 */
+  visible: boolean
+  basePrice: number
+  /** 생략하면 서버가 모든 조합을 만든다 */
+  optionAxes?: RegistrationOptionAxis[]
+  /** 조합별 조정(제외·SKU·재고). 생략한 조합도 만들어진다 */
+  combinations?: RegistrationCombination[]
+  /** 사전예약만, 필수. 일반 상품이 보내면 400 */
+  campaign?: { opensAt: string; closesAt: string }
+  /** 사전예약만, 필수(1~100개). 일반 상품이 보내면 400 */
+  shipmentBatches?: RegistrationShipmentBatch[]
+}
+
+export type RegistrationOptionAxis = {
+  /** 소문자 1~40자, 상품 안에서 유일. 목록 필터는 color·storage만 쓴다 */
+  key: string
+  label: string
+  /** 1~20개. 입력 순서가 화면 순서다 */
+  values: { value: string; surcharge?: number; hex?: string }[]
+}
+
+export type RegistrationCombination = {
+  /** 축 키별 값 — 모든 축을 하나씩. optionAxes에 쓴 값과 같은 글자로 */
+  selections: Record<string, string>
+  excluded?: boolean
+  sku?: string
+  /** 일반 상품은 필수(0이면 품절). 사전예약은 0이어도 보내면 400 */
+  stock?: number
+}
+
+/**
+ * 배송 차수. 첫 차수는 1번부터, 다음 차수는 앞 차수 positionTo + 1부터 이어 붙고,
+ * 마지막 차수 하나만 positionTo가 null(상한 없음)이다.
+ */
+export type RegistrationShipmentBatch = {
+  batchNumber: number
+  positionFrom: number
+  positionTo: number | null
+  /** YYYY-MM-DD */
+  estimatedShipStart: string
+  /** YYYY-MM-DD, 시작일 이후 */
+  estimatedShipEnd: string
+}
+
+/**
+ * 등록 응답. 201(새로 등록)에만 product가 있고, 같은 키 재전송(200·202)은 null이다 —
+ * 그때는 registration.productId로 상세를 본다.
+ */
+export type ProductRegistrationResponse = {
+  registration: RegistrationStatusView
+  product: ProductDetailView | null
+}
+
+/**
  * 사전예약 모집 일정 생성·변경(PUT /admin/preorders/products/{productId}/campaign).
  * 바꿀 때 오픈은 지금부터 10분 뒤 이후여야 하고, 이미 오픈한 회차는 409다.
  */
@@ -229,9 +298,8 @@ export type PreorderCampaignRequest = {
 }
 
 /**
- * 예전 상세 모양(프론트 제안). 등록·수정 본문(AdminProductUpsertRequest)과 목업
- * 저장소가 아직 이 모양이라 남겨 둔다 — 조회는 AdminProductResponse로 옮겼고,
- * 등록·수정을 명세에 맞출 때 같이 걷어낸다.
+ * 예전 상세 모양(프론트 제안). 목업 저장소가 아직 이 모양이라 남겨 둔다 — 조회·
+ * 등록·수정은 명세 모양으로 옮겼다.
  */
 export type AdminProductDetail = ProductDetail & {
   // 관리자가 달아 둔 검색 태그. 아직 스펙에 없어 필드가 올 때까지는 비어 온다 —
@@ -245,28 +313,6 @@ export type AdminProductDetail = ProductDetail & {
   createdAt: string
   updatedAt: string
   updatedBy: string | null
-}
-
-/**
- * 등록(POST)과 수정(PATCH)이 같은 본문을 쓴다.
- * 스펙에 required가 없어 전 필드가 선택이다 — 최소 필드가 확정되면 좁힌다.
- */
-export type AdminProductUpsertRequest = {
-  productId?: string | null
-  name?: string
-  brand?: string
-  /** 태그(검색어). 구매자 화면엔 나오지 않는다 */
-  tags?: string[]
-  categoryId?: string | null
-  summary?: string | null
-  descriptionHtml?: string | null
-  images?: ProductImage[]
-  specs?: ProductSpecGroup[]
-  optionGroups?: ProductOptionGroup[]
-  variants?: ProductVariant[]
-  openAt?: string
-  closeAt?: string | null
-  badges?: ProductBadge[]
 }
 
 export type AdminProductListParams = {

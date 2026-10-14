@@ -14,6 +14,7 @@ export type {
   EditSaveResult,
 } from './api/useSaveAdminProductEdits'
 export { editLockReason, editSectionLabel } from './model/edit'
+export { validateRegistration } from './model/registration'
 export type { EditSection } from './model/edit'
 export {
   useDispatchWindow,

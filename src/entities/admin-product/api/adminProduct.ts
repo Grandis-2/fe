@@ -1,16 +1,17 @@
 import { apiClient } from '@shared/api/client'
 import { toQueryString } from '@shared/api/queryString'
 import type {
-  AdminProductDetail,
   AdminProductListItem,
   AdminProductListParams,
   AdminProductResponse,
-  AdminProductUpsertRequest,
   OptionValueAddRequest,
   OptionValueEditRequest,
   PageResponse,
   PreorderCampaignRequest,
+  ProductRegistrationRequest,
+  ProductRegistrationResponse,
   ProductEditRequest,
+  RegistrationStatusView,
   Variant,
   VariantAddRequest,
   VariantEditRequest,
@@ -34,9 +35,25 @@ export const getAdminProducts = (
 export const getAdminProduct = (productId: string, signal?: AbortSignal) =>
   apiClient.request<AdminProductResponse>(`${BASE}/${productId}`, { signal })
 
-/** 상품을 초안으로 등록한다 */
-export const createAdminProduct = (body: AdminProductUpsertRequest) =>
-  apiClient.request<AdminProductDetail>(BASE, { method: 'POST', body })
+/**
+ * 상품을 등록한다. 같은 키로 다시 보내면 새로 만들지 않고 처음 등록한 상품을 돌려준다
+ * — 응답을 못 받았을 때 같은 키로 다시 보내야 상품이 두 개 생기지 않는다.
+ */
+export const registerAdminProduct = (
+  idempotencyKey: string,
+  body: ProductRegistrationRequest,
+) =>
+  apiClient.request<ProductRegistrationResponse>(BASE, {
+    method: 'POST',
+    body,
+    headers: { 'Idempotency-Key': idempotencyKey },
+  })
+
+/** 등록 상태 — 준비가 끝났는지(completed). 등록 응답을 못 받았을 때 productId도 여기 있다 */
+export const getRegistrationStatus = (idempotencyKey: string) =>
+  apiClient.request<RegistrationStatusView>(
+    `${BASE}/registrations/${encodeURIComponent(idempotencyKey)}`,
+  )
 
 /** 상품명·태그·기본가 등을 고친다. 보낸 필드만 바뀐다 */
 export const editAdminProduct = (productId: string, body: ProductEditRequest) =>

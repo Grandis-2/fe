@@ -20,25 +20,24 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+/**
+ * 모델명·브랜드는 아직 서버 필드가 없어 막혀 있다 — 열어 두면 적은 값이 조용히
+ * 버려진다. 필드가 생기면 연다.
+ */
 export const Create: Story = {
   args: { mode: 'create' },
   play: async ({ canvas, args }) => {
     await expect(canvas.getByRole('button', { name: '등록하기' })).toBeVisible()
+    await expect(canvas.getByLabelText(/모델명/)).toBeDisabled()
+    await expect(
+      canvas.getByRole('button', { name: '브랜드 선택' }),
+    ).toBeDisabled()
 
     await userEvent.type(canvas.getByLabelText(/상품명/), '아이폰 18 Pro')
-    await userEvent.type(canvas.getByLabelText(/모델명/), 'A23948')
-
-    await userEvent.click(canvas.getByRole('button', { name: '브랜드 선택' }))
-    await userEvent.click(canvas.getByRole('button', { name: 'Apple' }))
-
     await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
 
     await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: '아이폰 18 Pro',
-        modelName: 'A23948',
-        brand: 'Apple',
-      }),
+      expect.objectContaining({ name: '아이폰 18 Pro' }),
     )
   },
 }
@@ -66,8 +65,8 @@ export const Edit: Story = {
       ),
     ).toBeVisible()
 
-    // 1차 배송일은 등록 때만 받는다 — 여기서는 어디서 고치는지 알려주고 보내준다.
-    await expect(canvas.getByText('1차 예상 배송일')).toBeVisible()
+    // 1차 배송 기간은 등록 때만 받는다 — 여기서는 어디서 고치는지 알려주고 보내준다.
+    await expect(canvas.getByText('1차 배송 기간')).toBeVisible()
     await expect(canvas.queryByRole('button', { name: /미정/ })).toBeNull()
     await expect(canvas.getByText(/배송 차수 수정이/)).toBeVisible()
 
@@ -82,8 +81,8 @@ export const Edit: Story = {
 }
 
 /**
- * 사전 예약을 끄면 오픈/마감 일시 입력이 사라진다.
- * 수량 칸 이름도 같이 바뀐다 — 사전예약은 받는 수량이 1차 배송 물량이다.
+ * 사전 예약을 켜면 오픈/마감 일시와 1차 배송 기간을 받는다. 수량 칸은 사라진다 —
+ * 서버가 사전예약 재고를 받지 않고, 등록 때 1차 차수는 끝이 열린 채로만 만들어진다.
  */
 export const PreorderToggle: Story = {
   args: { mode: 'create' },
@@ -100,12 +99,13 @@ export const PreorderToggle: Story = {
     await waitFor(() =>
       expect(canvas.getByRole('button', { name: '달력 열기' })).toBeVisible(),
     )
-    await expect(canvas.getByLabelText('1차 배송 수량')).toBeVisible()
     await expect(canvas.queryByLabelText('수량')).toBeNull()
+    await expect(canvas.queryByLabelText('1차 배송 수량')).toBeNull()
 
-    // 1차 예상 배송일은 등록할 때만 고를 수 있다 — 수량과 짝이 되어 1차 차수를 만든다.
-    await expect(canvas.getByText('1차 예상 배송일')).toBeVisible()
-    await expect(canvas.getByRole('button', { name: /미정/ })).toBeVisible()
+    // 1차 배송 기간은 등록할 때만 고를 수 있다 — 이 기간으로 1차 차수가 만들어진다.
+    await expect(
+      canvas.getByRole('button', { name: /1차 배송 기간/ }),
+    ).toBeVisible()
   },
 }
 
@@ -349,16 +349,13 @@ export const EditPausesVariant: Story = {
   },
 }
 
-/**
- * 등록 화면에는 판매 끄기 칸이 없다 — 아직 만들어진 조합이 없다. 사전예약이면 수량
- * 칸은 있다(1차 배송 수량) — 아래 EditPreorderHidesQuantity의 대조군이다.
- */
+/** 등록 화면에는 판매 끄기 칸이 없다 — 아직 만들어진 조합이 없다. */
 export const CreateHasNoPauseToggle: Story = {
   args: { mode: 'create', defaultValue: { ...savedProduct, isPreorder: true } },
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole('switch')).toBeNull()
     await expect(
-      canvas.getByRole('columnheader', { name: '1차 배송 수량' }),
+      canvas.getByRole('columnheader', { name: '가격' }),
     ).toBeVisible()
   },
 }
