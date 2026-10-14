@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { Outlet, useLocation, useNavigate } from 'react-router'
 
@@ -13,10 +13,17 @@ export function RequireLogin() {
   const { pathname, search } = useLocation()
   const navigate = useNavigate()
   const isBlocked = isAuthReady && !isLoggedIn
+  // 이 화면에서 회원이었다가 세션이 지워진 경우(로그아웃 등) — 로그아웃은 세션을 즉시 지워서
+  // 홈 이동이 끝나기 전에 여기가 먼저 반응할 수 있다. 그땐 로그인 모달 없이 홈으로만 보낸다.
+  const wasLoggedIn = useRef(false)
+
+  useEffect(() => {
+    if (isLoggedIn) wasLoggedIn.current = true
+  }, [isLoggedIn])
 
   useEffect(() => {
     if (!isBlocked) return
-    openLoginModal(`${pathname}${search}`)
+    if (!wasLoggedIn.current) openLoginModal(`${pathname}${search}`)
     navigate(HOME_PATH, { replace: true })
   }, [isBlocked, pathname, search, navigate])
 

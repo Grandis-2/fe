@@ -112,3 +112,29 @@ export const link = style([
     },
   },
 ])
+
+// 프로필 줄 오른쪽 끝의 아이콘 버튼.
+export const logout = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  width: '36px',
+  height: '36px',
+  marginLeft: 'auto',
+  border: 'none',
+  borderRadius: '50%',
+  background: 'transparent',
+  color: color.text.tertiary,
+  cursor: 'pointer',
+  transition: [
+    `background-color ${motion.duration.fast} ${motion.easing.default}`,
+    `color ${motion.duration.fast} ${motion.easing.default}`,
+  ].join(', '),
+  selectors: {
+    '&:hover': {
+      background: color.background.surface,
+      color: color.text.primary,
+    },
+  },
+})
