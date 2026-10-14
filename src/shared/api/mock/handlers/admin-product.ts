@@ -288,6 +288,13 @@ function registrationViolations(body: Partial<ProductRegistrationRequest>) {
   const batches = body.shipmentBatches ?? []
   return [
     !body.categoryId ? { field: 'categoryId', message: '필수입니다.' } : null,
+    // 실서버와 같은 문구 — 문서엔 아직 없지만 필수다.
+    !body.brand || !['APPLE', 'SAMSUNG', 'LG'].includes(body.brand)
+      ? { field: 'brand', message: '형식이 맞지 않습니다.' }
+      : null,
+    !body.modelName?.trim()
+      ? { field: 'modelName', message: 'must not be blank' }
+      : null,
     body.saleMode !== 'PREORDER' && body.saleMode !== 'IN_STOCK'
       ? { field: 'saleMode', message: 'PREORDER 또는 IN_STOCK' }
       : null,
@@ -397,6 +404,7 @@ function createFromRegistration(
     ...adminProductStore[0],
     productId,
     name: body.title,
+    modelNumber: body.modelName,
     categoryId: body.categoryId,
     summary: body.description ?? null,
     saleMode: body.saleMode,

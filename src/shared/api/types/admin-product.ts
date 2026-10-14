@@ -225,9 +225,18 @@ export type VariantEditRequest = {
  *
  * 사진(images)은 아직 보내지 않는다 — 업로드(S3)가 준비되면 필드를 더한다.
  */
+/** 서버가 받는 브랜드 — 이 셋 말고는 400(형식 오류) */
+export type ProductBrandCode = 'APPLE' | 'SAMSUNG' | 'LG'
+
 export type ProductRegistrationRequest = {
   /** 상위·하위 모두 가능. 없는 카테고리는 400 */
   categoryId: string
+  /*
+   * brand·modelName은 문서(api-docs)에 아직 없지만 서버가 필수로 받는다 — 빠지면 400
+   * (brand must not be null, modelName must not be blank). 2026-10-14 실서버로 확인.
+   */
+  brand: ProductBrandCode
+  modelName: string
   /** 등록 뒤 바꿀 수 없다 */
   saleMode: SaleMode
   /** 1~100자 */

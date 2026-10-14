@@ -6,7 +6,7 @@ import {
   useCreateAdminProduct,
   validateRegistration,
 } from '@entities/admin-product'
-import { getErrorMessage } from '@shared/api/client'
+import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCTS_PATH, adminProductPath } from '@shared/config/routes'
 import { showToast } from '@shared/model/toastStore'
 import { Breadcrumb, InlineAlert } from '@shared/ui'
@@ -18,6 +18,11 @@ import * as styles from './AdminProductNewPage.css'
  * 새 상품 등록. 등록은 항상 초안으로 들어가고, 공개는 상세 화면에서 따로 누른다 —
  * 옵션·가격을 다 채우기 전에 구매자에게 노출되지 않게 한다.
  */
+const violationsOf = (caught: unknown) =>
+  caught instanceof ApiRequestError
+    ? (caught.error.details?.violations ?? [])
+    : []
+
 export function AdminProductNewPage() {
   const navigate = useNavigate()
   const create = useCreateAdminProduct()
@@ -38,6 +43,13 @@ export function AdminProductNewPage() {
         <InlineAlert status="error">
           {invalid ??
             getErrorMessage(create.error, '상품을 등록하지 못했습니다.')}
+          {/* 400이면 서버가 어느 칸이 틀렸는지 준다 — 요약 문구만으로는 고칠 곳을 모른다. */}
+          {!invalid &&
+            violationsOf(create.error).map(({ field, message }) => (
+              <div key={field}>
+                {field}: {message}
+              </div>
+            ))}
         </InlineAlert>
       )}
 

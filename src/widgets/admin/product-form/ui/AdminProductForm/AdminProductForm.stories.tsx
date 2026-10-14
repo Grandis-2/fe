@@ -20,24 +20,25 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/**
- * 모델명·브랜드는 아직 서버 필드가 없어 막혀 있다 — 열어 두면 적은 값이 조용히
- * 버려진다. 필드가 생기면 연다.
- */
 export const Create: Story = {
   args: { mode: 'create' },
   play: async ({ canvas, args }) => {
     await expect(canvas.getByRole('button', { name: '등록하기' })).toBeVisible()
-    await expect(canvas.getByLabelText(/모델명/)).toBeDisabled()
-    await expect(
-      canvas.getByRole('button', { name: '브랜드 선택' }),
-    ).toBeDisabled()
 
     await userEvent.type(canvas.getByLabelText(/상품명/), '아이폰 18 Pro')
+    await userEvent.type(canvas.getByLabelText(/모델명/), 'A23948')
+
+    await userEvent.click(canvas.getByRole('button', { name: '브랜드 선택' }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Apple' }))
+
     await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
 
     await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({ name: '아이폰 18 Pro' }),
+      expect.objectContaining({
+        name: '아이폰 18 Pro',
+        modelName: 'A23948',
+        brand: 'Apple',
+      }),
     )
   },
 }

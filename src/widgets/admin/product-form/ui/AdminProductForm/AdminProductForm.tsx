@@ -149,17 +149,16 @@ export function AdminProductForm({
           <Input
             label="모델명"
             required
-            // 아직 서버에 모델명 필드가 없어 저장할 곳이 없다 — 생기면 연다.
-            disabled
+            // 등록에만 싣는다 — 수정 API(PATCH)가 모델명을 받는지는 아직 모른다.
+            disabled={editing}
             value={value.modelName}
             onChange={(event) => patch({ modelName: event.target.value })}
           />
         </FormSection>
 
         <FormSection title="브랜드 정보">
-          {/* 브랜드도 아직 서버 필드가 없다 — 생기면 연다. Dropdown은 disabled를 받지 않아
-              감싸서 막는다. */}
-          <fieldset className={styles.plainFieldset} disabled>
+          {/* 브랜드도 등록에만 싣는다. Dropdown은 disabled를 받지 않아 감싸서 막는다. */}
+          <fieldset className={styles.plainFieldset} disabled={editing}>
             <Dropdown
               label="브랜드 선택"
               size="medium"

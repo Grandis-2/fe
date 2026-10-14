@@ -1,4 +1,5 @@
 import type {
+  ProductBrandCode,
   ProductRegistrationRequest,
   RegistrationCombination,
   RegistrationOptionAxis,
@@ -19,6 +20,13 @@ const axisKeyOf = (label: string, index: number) =>
   label.trim() === STORAGE_LABEL ? 'storage' : `option${index + 1}`
 
 const MIN_OPEN_LEAD_MS = 30 * 60 * 1000
+
+// 폼 드롭다운(PRODUCT_BRANDS)의 이름을 서버 코드로 바꾼다. 없는 이름이면 undefined.
+const BRAND_CODE: Partial<Record<string, ProductBrandCode>> = {
+  Apple: 'APPLE',
+  Samsung: 'SAMSUNG',
+  LG: 'LG',
+}
 
 /**
  * 폼을 등록 축으로 편다. 조합 표(getProductVariants)와 같은 규칙을 따른다 — '색상
@@ -74,6 +82,8 @@ export function validateRegistration(
 
   const title = value.name.trim()
   if (!title || title.length > 100) return '상품명은 1~100자로 적어 주세요.'
+  if (!value.modelName.trim()) return '모델명을 적어 주세요.'
+  if (!BRAND_CODE[value.brand]) return '브랜드를 골라 주세요.'
   if (value.tags.join(',').length > 500)
     return '태그는 모두 합쳐 500자까지입니다.'
 
@@ -160,6 +170,9 @@ export function toRegistrationRequest(
 
   const common = {
     categoryId: value.categoryId,
+    // validateRegistration을 통과했으면 늘 있다.
+    brand: BRAND_CODE[value.brand] ?? 'APPLE',
+    modelName: value.modelName.trim(),
     title: value.name.trim(),
     // 공개는 상세에서 따로 한다 — 옵션·가격을 확인하기 전에 구매자에게 보이지 않게.
     visible: false,
