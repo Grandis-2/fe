@@ -3,6 +3,7 @@
 // 매퍼(toUpsertRequest 등)도 훅 안에서만 쓴다 — 화면이 DTO를 직접 만들면 안 된다.
 export {
   useAdminProduct,
+  useAdminProductDetails,
   useAdminProductStock,
   useCreateAdminProduct,
   useSetAdminProductVisibility,

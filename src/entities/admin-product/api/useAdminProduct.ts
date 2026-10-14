@@ -1,6 +1,11 @@
 import { useRef } from 'react'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
 import { queryPolicy } from '@shared/api/queryPolicy'
@@ -33,6 +38,21 @@ export const useAdminProduct = (productId: string) =>
     queryFn: ({ signal }) => getAdminProduct(productId, signal),
     select: toAdminProductDetail,
     ...queryPolicy.live,
+  })
+
+/**
+ * 여러 상품의 상세를 한 번에 받는다 — 목록에 없는 옵션(색상·용량)이 필요할 때.
+ * 상세 화면과 키가 같아 이미 받은 상품은 다시 부르지 않고 캐시를 쓴다.
+ */
+export const useAdminProductDetails = (productIds: string[]) =>
+  useQueries({
+    queries: productIds.map((productId) => ({
+      queryKey: adminProductKey(productId),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        getAdminProduct(productId, signal),
+      select: toAdminProductDetail,
+      ...queryPolicy.live,
+    })),
   })
 
 /** 조합별 재고 수량. 옵션 이름·가격은 상품 상세에 있어 둘을 합쳐 써야 한다 */

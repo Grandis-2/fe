@@ -3,3 +3,4 @@ export type {
   AdminPromotionFormProps,
   AdminPromotionFormMode,
 } from './ui/AdminPromotionForm'
+export { useLinkableProducts } from './lib/useLinkableProducts'
