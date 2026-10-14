@@ -2,6 +2,11 @@ import { keyframes, style, styleVariants } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@shared/config/theme'
 
+// 다크 테마(사용자 페이지) — 토큰만 뒤집으면 강조 글자(primary.focus/base)가 어두운 바탕에
+// 묻힌다(Tag와 같은 이유). 글자는 text.primary/primary.subtle로, 바탕은 페이지보다 한 단계
+// 뜬 surface로 따로 정한다. 관리자(밝은 테마)는 위 기본값 그대로다.
+const dark = '[data-theme="dark"] &'
+
 const optionEnter = keyframes({
   from: { opacity: 0, transform: 'translateY(-4px)' },
   to: { opacity: 1, transform: 'translateY(0)' },
@@ -21,6 +26,7 @@ export const box = style({
   border: `1px solid ${color.border.default}`,
   overflow: 'hidden',
   transition: `border-color ${motion.duration.fast} ${motion.easing.default}`,
+  selectors: { [dark]: { background: color.background.surface } },
 })
 
 export const size = styleVariants({
@@ -49,6 +55,12 @@ export const menu = style({
   borderTopRightRadius: 0,
   // 마지막 옵션까지 모서리가 잘리도록.
   overflow: 'hidden',
+  selectors: {
+    [dark]: {
+      background: color.background.surface,
+      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+    },
+  },
 })
 
 export const menuSize = styleVariants({
@@ -70,6 +82,7 @@ export const trigger = styleVariants({
       border: 'none',
       background: 'transparent',
       textAlign: 'left',
+      selectors: { [dark]: { color: color.text.primary } },
     },
   ],
   small: [
@@ -86,6 +99,7 @@ export const trigger = styleVariants({
       border: 'none',
       background: 'transparent',
       textAlign: 'left',
+      selectors: { [dark]: { color: color.text.primary } },
     },
   ],
 })
@@ -129,6 +143,8 @@ export const option = styleVariants({
         '&:hover': {
           background: color.background.subSurface,
         },
+        [dark]: { background: color.background.surface },
+        [`${dark}:hover`]: { background: color.background.subSurface },
       },
     },
   ],
@@ -148,6 +164,8 @@ export const option = styleVariants({
         '&:hover': {
           background: color.background.subSurface,
         },
+        [dark]: { background: color.background.surface },
+        [`${dark}:hover`]: { background: color.background.subSurface },
       },
     },
   ],
@@ -159,6 +177,10 @@ export const optionSelected = style({
   selectors: {
     '&:hover': {
       background: color.primary.surface,
+    },
+    [`${dark}, ${dark}:hover`]: {
+      background: color.primary.surface,
+      color: color.primary.subtle,
     },
   },
 })

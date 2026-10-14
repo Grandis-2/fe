@@ -2,6 +2,8 @@ import { useState } from 'react'
 
 import { expect, waitFor } from 'storybook/test'
 
+import { color } from '@shared/config/theme'
+
 import { Dropdown } from './Dropdown'
 
 import type { DropdownOption, DropdownProps } from './Dropdown'
@@ -33,6 +35,28 @@ export const Open: Story = {
     ).toBeInTheDocument()
     await waitFor(() => expect(canvas.getByText('부산광역시')).toBeVisible())
   },
+}
+
+/** 사용자 페이지(data-theme="dark") — 마이페이지 주문 내역의 기간 선택과 같은 small 크기 */
+export const Dark: Story = {
+  args: {
+    label: '기간',
+    options,
+    open: true,
+    value: 'GYEONGGI',
+    size: 'small',
+    width: '120px',
+  },
+  decorators: [
+    (Story) => (
+      <div
+        data-theme="dark"
+        style={{ padding: 24, height: 180, background: color.background.page }}
+      >
+        <Story />
+      </div>
+    ),
+  ],
 }
 
 /** 열림 상태를 안 넘기면 컴포넌트가 직접 들고 여닫는다 */
