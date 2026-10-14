@@ -12,7 +12,7 @@ import {
 import { OrderSummary } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
-import { cartPaymentPath, HOME_PATH } from '@shared/config/routes'
+import { cartPaymentPath, SEARCH_PATH } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { Button, Checkbox, InlineAlert } from '@shared/ui'
 
@@ -111,7 +111,7 @@ export function MypageCart() {
           <Button
             variant="subtle"
             color="cancel"
-            onClick={() => navigate(HOME_PATH)}
+            onClick={() => navigate(SEARCH_PATH)}
           >
             쇼핑하러 가기
           </Button>
