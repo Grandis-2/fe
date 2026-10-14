@@ -97,6 +97,43 @@ export const footer = style({
   borderTop: `1px solid ${color.border.default}`,
 })
 
+// 버튼 사이에서 남는 폭을 쓰는 결과 문구 — 오류가 없으면 비어 있다.
+export const footerMessage = style([
+  typography.body.sub,
+  {
+    flex: '1 1 auto',
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing[6],
+    minWidth: 0,
+    color: color.status.danger,
+  },
+])
+
+export const footerIcon = style({
+  width: '16px',
+  height: '16px',
+  flexShrink: 0,
+})
+
+export const footerLink = style([
+  typography.body.subMedium,
+  {
+    padding: 0,
+    border: 'none',
+    background: 'transparent',
+    color: color.status.danger,
+    textDecoration: 'underline',
+    cursor: 'pointer',
+  },
+])
+
+export const variants = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[8],
+})
+
 export const footerRight = style({
   display: 'flex',
   gap: spacing[8],

@@ -7,6 +7,7 @@ import {
   useAdminProduct,
   useAdminProductStock,
   useSaveAdminProductEdits,
+  validateProductBasics,
   type EditSaveResult,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
@@ -103,6 +104,19 @@ export function AdminProductEditForm({
         existingIds={existingIds}
         lockReason={editLockReason(product.data)}
         submitting={save.isPending}
+        waitingForNetwork={save.isPaused}
+        // 상품명·모델명·브랜드는 비우면 서버가 400을 준다 — 보내기 전에 칸에서 알린다.
+        validate={validateProductBasics}
+        // 위 알림은 버튼 자리에서 안 보인다 — 무엇이 실패했는지는 버튼 줄에도 적는다.
+        submitError={
+          save.isError
+            ? getErrorMessage(save.error, '상품을 저장하지 못했습니다.')
+            : failures.length > 0
+              ? `저장하지 못한 항목: ${failures
+                  .map((failure) => editSectionLabel[failure.section])
+                  .join(', ')} — 위 안내를 확인해 주세요.`
+              : null
+        }
         onSubmit={(value) => {
           setResult(undefined)
           save.mutate(value, {

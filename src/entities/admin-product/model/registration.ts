@@ -10,8 +10,8 @@ import {
   COLOR_GROUP_CODE,
   comparableValue,
   isStorageValue,
-  MODEL_NAME_MAX,
 } from './types'
+import { validateProductBasics, type FormIssue } from './validation'
 
 /**
  * 상품 등록 본문. 등록은 한 번에 보낸다 — 사전예약은 회차·배송 차수까지, 일반 상품은
@@ -69,73 +69,80 @@ function registrationAxesOf(
 }
 
 /**
- * 보낼 수 없는 값이면 그 이유를 돌려준다. 서버가 400을 줄 값을 미리 걸러, 관리자가
- * 고칠 자리를 바로 알게 한다.
+ * 보낼 수 없는 값을 칸별로 모은다. 서버가 400을 줄 값을 미리 걸러, 관리자가 고칠 칸을
+ * 한 번에 알게 한다 — 첫 문제만 알려 주면 고치고 누를 때마다 다음 문제가 나온다.
+ * 칸마다 첫 문제만 담는다.
  */
 export function validateRegistration(
   value: AdminProductFormValue,
   now = Date.now(),
-): string | null {
-  if (!value.categoryId) return '제품 카테고리를 골라 주세요.'
-
-  const title = value.name.trim()
-  if (!title || title.length > 100) return '상품명은 1~100자로 적어 주세요.'
-  const modelName = value.modelName.trim()
-  if (!modelName || modelName.length > MODEL_NAME_MAX) {
-    return `모델명은 1~${MODEL_NAME_MAX}자로 적어 주세요.`
+): FormIssue[] {
+  const issues = validateProductBasics(value)
+  const add = (field: FormIssue['field'], message: string) => {
+    if (!issues.some((issue) => issue.field === field)) {
+      issues.push({ field, message })
+    }
   }
-  if (!brandCodeOf(value.brand)) return '브랜드를 골라 주세요.'
-  if (value.tags.join(',').length > 500)
-    return '태그는 모두 합쳐 500자까지입니다.'
+
+  if (!value.categoryId) add('category', '제품 카테고리를 골라 주세요.')
 
   const axes = registrationAxesOf(value)
-  if (axes.length > 5) return '옵션 종류는 5개까지입니다.'
+  if (axes.length > 5) add('options', '옵션 종류는 5개까지입니다.')
   if (new Set(axes.map((axis) => axis.key)).size !== axes.length) {
-    return '같은 이름의 옵션이 두 번 있습니다.'
+    add('options', '같은 이름의 옵션이 두 번 있습니다.')
   }
   for (const axis of axes) {
-    if (!axis.label) return '옵션 이름을 적어 주세요.'
-    if (axis.values.length > 20) return `${axis.label}은(는) 20개까지입니다.`
-
+    if (!axis.label) add('options', '옵션 이름을 적어 주세요.')
+    if (axis.values.length > 20) {
+      add('options', `${axis.label}은(는) 20개까지입니다.`)
+    }
     // 서버는 대소문자·공백만 다른 값도 같은 값으로 보고 400을 준다.
     const seen = new Set<string>()
     for (const { value: name } of axis.values) {
-      if (name.length > 60) return `${axis.label} 값은 60자까지입니다.`
+      if (name.length > 60) add('options', `${axis.label} 값은 60자까지입니다.`)
       if (seen.has(comparableValue(name))) {
-        return `${axis.label}에 같은 값이 두 번 있습니다. ('${name}')`
+        add('options', `${axis.label}에 같은 값이 두 번 있습니다. ('${name}')`)
       }
       seen.add(comparableValue(name))
       if (axis.key === 'storage' && !isStorageValue(name)) {
-        return `용량은 숫자와 MB·GB·TB로 적어 주세요(예: 256GB). ('${name}')`
+        add(
+          'options',
+          `용량은 숫자와 MB·GB·TB로 적어 주세요(예: 256GB). ('${name}')`,
+        )
       }
     }
   }
 
   const variants = getProductVariants(value)
   if (variants.length === 0) {
-    return "색상을 입력하거나 '색상 없음'을 골라 주세요."
-  }
-  if (variants.length > 500) return '조합은 500개까지입니다.'
-  if (variants.every((variant) => value.pausedKeys.includes(variant.key))) {
-    return '판매할 조합을 하나 이상 남겨 주세요.'
+    add('options', "색상을 입력하거나 '색상 없음'을 골라 주세요.")
+  } else if (variants.length > 500) {
+    add('variants', '조합은 500개까지입니다.')
+  } else if (
+    variants.every((variant) => value.pausedKeys.includes(variant.key))
+  ) {
+    add('variants', '판매할 조합을 하나 이상 남겨 주세요.')
   }
 
   if (value.isPreorder) {
     const opensAt = toIso(value.openAt)
     const closesAt = toIso(value.closeAt)
-    if (!opensAt || !closesAt) return '오픈·마감 일시를 정해 주세요.'
-    if (Date.parse(opensAt) < now + MIN_OPEN_LEAD_MS) {
-      return '오픈은 지금부터 30분 뒤 이후여야 합니다.'
-    }
-    if (Date.parse(closesAt) <= Date.parse(opensAt)) {
-      return '마감은 오픈보다 뒤여야 합니다.'
+    if (!opensAt || !closesAt) {
+      add('schedule', '오픈·마감 일시를 정해 주세요.')
+    } else if (Date.parse(opensAt) < now + MIN_OPEN_LEAD_MS) {
+      add('schedule', '오픈은 지금부터 30분 뒤 이후여야 합니다.')
+    } else if (Date.parse(closesAt) <= Date.parse(opensAt)) {
+      add('schedule', '마감은 오픈보다 뒤여야 합니다.')
     }
     const { start, end } = value.firstDelivery
-    if (!start || !end) return '1차 배송 기간을 정해 주세요.'
-    if (end < start) return '1차 배송 종료일은 시작일 이후여야 합니다.'
+    if (!start || !end) {
+      add('firstDelivery', '1차 배송 기간을 정해 주세요.')
+    } else if (end < start) {
+      add('firstDelivery', '1차 배송 종료일은 시작일 이후여야 합니다.')
+    }
   }
 
-  return null
+  return issues
 }
 
 /**

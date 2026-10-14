@@ -1,6 +1,10 @@
 import { expect, fn, userEvent, waitFor } from 'storybook/test'
 
-import { createEmptyProductFormValue } from '@entities/admin-product'
+import {
+  createEmptyProductFormValue,
+  validateProductBasics,
+  validateRegistration,
+} from '@entities/admin-product'
 
 import { AdminProductForm } from './AdminProductForm'
 
@@ -479,6 +483,106 @@ export const EditBrandAndModelName: Story = {
 
     await expect(args.onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ modelName: 'SM-S30U', brand: 'Apple' }),
+    )
+  },
+}
+
+/**
+ * 필수 칸을 비우고 누르면 보내지 않는다 — 칸마다 문구를 붙이고, 버튼 줄에 몇 개인지
+ * 알리고, 첫 칸(상품명)에 포커스를 둔다.
+ */
+export const CreateShowsIssues: Story = {
+  args: { mode: 'create', validate: validateRegistration },
+  play: async ({ canvas, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
+
+    await expect(args.onSubmit).not.toHaveBeenCalled()
+    await expect(canvas.getByText('상품명을 적어 주세요.')).toBeVisible()
+    await expect(canvas.getByText('모델명을 적어 주세요.')).toBeVisible()
+    await expect(canvas.getByText('브랜드를 골라 주세요.')).toBeVisible()
+    await expect(canvas.getByText('제품 카테고리를 골라 주세요.')).toBeVisible()
+    await expect(canvas.getByRole('alert')).toHaveTextContent(
+      /확인이 필요한 항목 \d+개/,
+    )
+    await expect(canvas.getByLabelText(/상품명/)).toHaveFocus()
+
+    // 한 번 누른 뒤에는 고치는 즉시 그 문구가 사라진다.
+    await userEvent.type(canvas.getByLabelText(/상품명/), '갤럭시 S30')
+    await expect(canvas.queryByText('상품명을 적어 주세요.')).toBeNull()
+  },
+}
+
+/** 처음부터 빨간 문구를 띄우지 않는다 — 누르기 전엔 검사하지 않는다 */
+export const NoIssuesBeforeSubmit: Story = {
+  args: { mode: 'create', validate: validateRegistration },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText('상품명을 적어 주세요.')).toBeNull()
+    await expect(canvas.getByRole('alert')).toBeEmptyDOMElement()
+  },
+}
+
+/** 수정도 상품명·모델명·브랜드를 비우면 보내지 않는다 */
+export const EditRequiresBasics: Story = {
+  args: {
+    mode: 'edit',
+    validate: validateProductBasics,
+    defaultValue: { ...savedProduct, modelName: '', brand: '' },
+  },
+  play: async ({ canvas, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: '수정하기' }))
+    await expect(args.onSubmit).not.toHaveBeenCalled()
+    await expect(canvas.getByText('모델명을 적어 주세요.')).toBeVisible()
+    await expect(canvas.getByText('브랜드를 골라 주세요.')).toBeVisible()
+    await expect(canvas.getByLabelText(/모델명/)).toHaveFocus()
+  },
+}
+
+/** 서버가 준 칸별 오류(400)는 그 칸에 붙고, 고치기 시작하면 걷힌다 */
+export const ServerIssues: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: savedProduct,
+    serverIssues: [
+      { field: 'modelName', message: 'size must be between 1 and 40' },
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByText('size must be between 1 and 40'),
+    ).toBeVisible()
+    await userEvent.type(canvas.getByLabelText(/모델명/), 'X')
+    await expect(canvas.queryByText('size must be between 1 and 40')).toBeNull()
+  },
+}
+
+/** 칸에 붙일 수 없는 실패는 버튼 줄에 보인다 — 버튼이 화면 아래라 위 알림은 안 보인다 */
+export const SubmitError: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: savedProduct,
+    submitError: '저장하지 못한 항목: 옵션 — 위 안내를 확인해 주세요.',
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('alert')).toHaveTextContent(
+      '저장하지 못한 항목: 옵션',
+    )
+  },
+}
+
+/** 오프라인이라 요청이 멈춰 있으면 '저장 중…'에서 멈춘 게 아니라 기다리는 중이라고 알린다 */
+export const WaitingForNetwork: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: savedProduct,
+    submitting: true,
+    waitingForNetwork: true,
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole('button', { name: '연결 대기 중…' }),
+    ).toBeDisabled()
+    await expect(canvas.getByRole('alert')).toHaveTextContent(
+      '인터넷 연결이 끊겼습니다',
     )
   },
 }

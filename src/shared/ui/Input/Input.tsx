@@ -12,6 +12,11 @@ export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   variant?: 'floating' | 'stacked'
   required?: boolean
   invalid?: boolean
+  /**
+   * 칸 아래에 띄울 오류 문구. 주면 invalid와 상관없이 오류 모양이 된다 — 필수 누락
+   * 말고도 형식·길이 오류를 그 칸에 붙일 때 쓴다.
+   */
+  error?: string
 }
 
 export function Input({
@@ -20,6 +25,7 @@ export function Input({
   variant = 'floating',
   required,
   invalid,
+  error,
   className,
   placeholder,
   id,
@@ -29,8 +35,10 @@ export function Input({
   // 호출부가 id를 직접 주면 그걸 우선한다.
   const generatedId = useId()
   const inputId = id ?? generatedId
-  const showError = Boolean(required && invalid)
-  const errorMessage = showError ? `${label}을(를) 필수로 작성해주세요` : null
+  const errorId = useId()
+  const errorMessage =
+    error ?? (required && invalid ? `${label}을(를) 필수로 작성해주세요` : null)
+  const showError = Boolean(errorMessage)
   const stacked = variant === 'stacked'
   const labelText = (
     <>
@@ -67,6 +75,9 @@ export function Input({
           // floating 라벨은 :placeholder-shown으로 비었는지 보므로 빈 칸이라도 한 칸을 깐다.
           placeholder={stacked ? placeholder : (placeholder ?? ' ')}
           required={required}
+          // 스크린리더가 칸에 들어왔을 때 오류도 같이 읽는다.
+          aria-invalid={showError || undefined}
+          aria-describedby={showError ? errorId : undefined}
           {...rest}
         />
         {!stacked && (
@@ -81,7 +92,7 @@ export function Input({
         )}
       </div>
       {errorMessage && (
-        <div className={styles.errorRow}>
+        <div id={errorId} className={styles.errorRow}>
           <AlertCircle className={styles.errorIcon[size]} aria-hidden="true" />
           <span className={styles.errorText[size]}>{errorMessage}</span>
         </div>

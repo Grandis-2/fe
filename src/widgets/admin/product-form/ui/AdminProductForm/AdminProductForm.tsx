@@ -1,6 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 
-import { Eye } from 'lucide-react'
+import { AlertCircle, Eye } from 'lucide-react'
 
 import {
   createEmptyProductFormValue,
@@ -9,6 +9,8 @@ import {
   PRODUCT_BRANDS,
   withPresetOptionGroups,
   type AdminProductFormValue,
+  type FormField,
+  type FormIssue,
   type ProductOptionPreset,
 } from '@entities/admin-product'
 import { findCategoryId, useCategories } from '@entities/product'
@@ -24,6 +26,7 @@ import {
 import type { DropdownOption } from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
+import { FieldError } from '../FieldError'
 import { FirstDeliveryField } from '../FirstDeliveryField'
 import { NumberField } from '../NumberField'
 import { OptionGroupEditor } from '../OptionGroupEditor'
@@ -59,6 +62,42 @@ export type AdminProductFormProps = {
    * 사전예약은 오픈 3분 전부터 공개 여부 말고는 서버가 409로 거절한다.
    */
   lockReason?: string | null
+  /**
+   * 제출 전에 칸별로 검사한다. 문제가 있으면 보내지 않고 그 칸에 문구를 붙인 뒤 첫 칸으로
+   * 스크롤한다. 한 번 제출한 뒤에는 고칠 때마다 다시 검사해 고친 문구가 바로 사라진다.
+   */
+  validate?: (value: AdminProductFormValue) => FormIssue[]
+  /** 서버가 준 칸별 오류(400). 받으면 그 칸에 붙이고 스크롤한다. 고치기 시작하면 걷는다 */
+  serverIssues?: FormIssue[]
+  /** 칸에 붙일 수 없는 실패 문구 — 버튼 줄에 보여준다 */
+  submitError?: string | null
+  /**
+   * 오프라인이라 요청이 멈춰 있다(TanStack Query는 오프라인이면 보내지 않고 기다렸다가
+   * 연결되면 보낸다). 알리지 않으면 '저장 중…'에서 멈춘 것처럼 보인다.
+   */
+  waitingForNetwork?: boolean
+}
+
+/** 칸을 감싼 요소에 붙이는 표식. 첫 오류 칸을 찾아 스크롤할 때 쓴다 */
+const fieldAttr = (field: FormField) => ({ 'data-field': field })
+
+/**
+ * 화면 순서상 첫 오류 칸으로 스크롤하고 그 안의 입력에 포커스를 둔다. 순서는 DOM으로
+ * 정한다 — 검사 순서와 화면 순서가 달라도 위에서부터 고치게 된다.
+ */
+function focusFirst(form: HTMLFormElement | null, fields: Set<FormField>) {
+  const target = [
+    ...(form?.querySelectorAll<HTMLElement>('[data-field]') ?? []),
+  ].find((element) => fields.has(element.dataset.field as FormField))
+  if (!target) return
+  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  const focusable = target.matches('input, button, textarea')
+    ? target
+    : target.querySelector<HTMLElement>(
+        'input:not(:disabled), button:not(:disabled), textarea:not(:disabled)',
+      )
+  // 스크롤은 위에서 부드럽게 한다 — 포커스가 다시 튀어 스크롤하지 않게 막는다.
+  focusable?.focus({ preventScroll: true })
 }
 
 // 라벨을 페이지가 넘기면 화면마다 문구가 어긋나기 쉬워 여기 한 곳에 둔다.
@@ -87,7 +126,16 @@ export function AdminProductForm({
   onEditDispatchWindow,
   existingIds,
   lockReason,
+  validate,
+  serverIssues,
+  submitError,
+  waitingForNetwork = false,
 }: AdminProductFormProps) {
+  const formRef = useRef<HTMLFormElement>(null)
+  // 처음엔 검사하지 않는다 — 쓰기도 전에 빨간 문구가 뜨면 거슬린다.
+  const [attempted, setAttempted] = useState(false)
+  // 고치기 시작하면 서버 오류를 걷는다. 걷은 묶음을 기억해 새 오류가 오면 다시 보인다.
+  const [dismissedServer, setDismissedServer] = useState<FormIssue[]>()
   const editing = mode === 'edit'
   // 사진은 아직 올릴 곳이 없다 — 업로드(S3)가 준비되면 열고, 등록 뒤에는 바꾸는 API가
   // 아예 없다. 칸을 열어 두면 고른 사진이 조용히 버려진다.
@@ -102,8 +150,10 @@ export function AdminProductForm({
   // 태그 추천을 고르는 데만 쓴다. 수정 폼에는 종류가 저장돼 있지 않아 비어 있다.
   const [preset, setPreset] = useState<ProductOptionPreset>()
 
-  const patch = (partial: Partial<AdminProductFormValue>) =>
+  const patch = (partial: Partial<AdminProductFormValue>) => {
     setValue((prev) => ({ ...prev, ...partial }))
+    setDismissedServer(serverIssues)
+  }
 
   // 조합은 상태로 두지 않고 매번 파생시킨다 — 옵션을 바꿔도 quantities는 그대로 남는다.
   const variants = getProductVariants(value)
@@ -121,20 +171,51 @@ export function AdminProductForm({
     (findCategoryId(categoryTree, picked.category, picked.name) ??
       findCategoryId(categoryTree, picked.category))
 
+  // 등록이면 고른 종류를 카테고리 id로 바꿔 싣는다. 보낼 때 찾는 건 종류를 고를 때
+  // 트리가 아직 안 왔어도 되게 하려는 것이다. 수정은 서버 값 그대로다(바꿀 수 없다).
+  const submitValue =
+    editing || !preset
+      ? value
+      : { ...value, categoryId: categoryIdOf(preset) ?? '' }
+
+  const visibleServer =
+    serverIssues && serverIssues !== dismissedServer ? serverIssues : []
+  const issues = [
+    ...(attempted && validate ? validate(submitValue) : []),
+    ...visibleServer,
+  ]
+  // 칸마다 첫 문구만 보인다.
+  const issueOf = (field: FormField) =>
+    issues.find((issue) => issue.field === field)?.message
+  const issueFields = new Set(issues.map((issue) => issue.field))
+
+  // 서버 오류가 새로 오면 그 칸으로 데려간다.
+  useEffect(() => {
+    if (serverIssues?.length) {
+      focusFirst(formRef.current, new Set(serverIssues.map((i) => i.field)))
+    }
+  }, [serverIssues])
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (submitting || lockReason) return
-    // 등록이면 고른 종류를 카테고리 id로 바꿔 싣는다. 제출할 때 찾는 건 종류를 고를 때
-    // 트리가 아직 안 왔어도 되게 하려는 것이다. 수정은 서버 값 그대로다(바꿀 수 없다).
-    onSubmit(
-      editing || !preset
-        ? value
-        : { ...value, categoryId: categoryIdOf(preset) ?? '' },
-    )
+    setAttempted(true)
+    const found = validate?.(submitValue) ?? []
+    if (found.length > 0) {
+      focusFirst(formRef.current, new Set(found.map((issue) => issue.field)))
+      return
+    }
+    onSubmit(submitValue)
   }
 
   return (
-    <form className={styles.root} onSubmit={handleSubmit}>
+    // 브라우저 기본 필수 말풍선은 끈다 — 검사는 validate가 하고 문구는 칸 아래에 띄운다.
+    <form
+      ref={formRef}
+      className={styles.root}
+      noValidate
+      onSubmit={handleSubmit}
+    >
       {lockReason && <InlineAlert status="info">{lockReason}</InlineAlert>}
 
       {/* 잠기면 안의 입력·버튼을 브라우저가 한꺼번에 막는다 — 칸마다 disabled를 넘기지
@@ -142,14 +223,18 @@ export function AdminProductForm({
       <fieldset className={styles.sections} disabled={!!lockReason}>
         <FormSection title="기본 정보">
           <Input
+            {...fieldAttr('name')}
             label="상품명"
             required
+            error={issueOf('name')}
             value={value.name}
             onChange={(event) => patch({ name: event.target.value })}
           />
           <Input
+            {...fieldAttr('modelName')}
             label="모델명"
             required
+            error={issueOf('modelName')}
             // 서버가 1~40자만 받는다.
             maxLength={MODEL_NAME_MAX}
             value={value.modelName}
@@ -160,7 +245,7 @@ export function AdminProductForm({
         <FormSection title="브랜드 정보">
           {/* Dropdown은 disabled를 받지 않아 fieldset으로 감싼다 — 잠금(lockReason)일 때
               바깥 fieldset이 막는다. */}
-          <fieldset className={styles.plainFieldset}>
+          <fieldset className={styles.plainFieldset} {...fieldAttr('brand')}>
             <Dropdown
               label="브랜드 선택"
               size="medium"
@@ -170,6 +255,7 @@ export function AdminProductForm({
               onSelect={(brand) => patch({ brand })}
             />
           </fieldset>
+          <FieldError message={issueOf('brand')} />
         </FormSection>
 
         <FormSection title="판매 방식">
@@ -193,20 +279,24 @@ export function AdminProductForm({
 
             {value.isPreorder && (
               <>
-                <div className={styles.period}>
+                <div className={styles.period} {...fieldAttr('schedule')}>
                   <div className={styles.periodTitle}>오픈 / 마감 일시</div>
                   <PreorderPeriodField
                     openAt={value.openAt}
                     onChange={(openAt, closeAt) => patch({ openAt, closeAt })}
                   />
+                  <FieldError message={issueOf('schedule')} />
                 </div>
 
-                <FirstDeliveryField
-                  editable={mode === 'create'}
-                  value={value.firstDelivery}
-                  onChange={(firstDelivery) => patch({ firstDelivery })}
-                  onEditDispatchWindow={onEditDispatchWindow}
-                />
+                <div {...fieldAttr('firstDelivery')}>
+                  <FirstDeliveryField
+                    editable={mode === 'create'}
+                    value={value.firstDelivery}
+                    onChange={(firstDelivery) => patch({ firstDelivery })}
+                    onEditDispatchWindow={onEditDispatchWindow}
+                  />
+                  <FieldError message={issueOf('firstDelivery')} />
+                </div>
               </>
             )}
           </div>
@@ -258,20 +348,23 @@ export function AdminProductForm({
             </span>
           ) : (
             // 색상은 별도 축이라 프리셋이 손대지 않는다 — 이미 올린 이미지가 날아간다.
-            <OptionPresetField
-              value={preset}
-              onSelect={(picked) => {
-                setPreset(picked)
-                patch({
-                  optionGroups: withPresetOptionGroups(
-                    value.optionGroups,
-                    picked,
-                  ),
-                })
-              }}
-            />
+            <div {...fieldAttr('category')}>
+              <OptionPresetField
+                value={preset}
+                onSelect={(picked) => {
+                  setPreset(picked)
+                  patch({
+                    optionGroups: withPresetOptionGroups(
+                      value.optionGroups,
+                      picked,
+                    ),
+                  })
+                }}
+              />
+              <FieldError message={issueOf('category')} />
+            </div>
           )}
-          <div className={styles.card}>
+          <div className={styles.card} {...fieldAttr('options')}>
             <ColorOptionEditor
               colors={value.colors}
               existingIds={existingIds}
@@ -284,6 +377,7 @@ export function AdminProductForm({
             existingIds={existingIds}
             onChange={(optionGroups) => patch({ optionGroups })}
           />
+          <FieldError message={issueOf('options')} />
         </FormSection>
 
         <FormSection
@@ -300,44 +394,50 @@ export function AdminProductForm({
             onChange={(basePrice) => patch({ basePrice })}
           />
 
-          <VariantTable
-            variants={variants}
-            isPreorder={value.isPreorder}
-            colors={value.colors}
-            optionGroups={value.optionGroups}
-            quantities={value.quantities}
-            onQuantityChange={(key, quantity) =>
-              patch({ quantities: { ...value.quantities, [key]: quantity } })
-            }
-            // 사전예약은 재고를 세지 않는다(서버가 stock을 받지 않는다). 등록 때 1차 배송
-            // 차수는 끝이 열린 채로만 보낼 수 있어서 1차 물량도 실을 곳이 없다 —
-            // 물량 경계는 배송 구간 설정에서 2차를 더할 때 정한다.
-            hideQuantity={value.isPreorder}
-            // 등록에선 끈 조합을 만들지 않고, 수정에선 판매 중지로 둔다.
-            pausedKeys={value.pausedKeys}
-            excludeOnPause={!editing}
-            onPausedChange={(key, paused) =>
-              patch({
-                pausedKeys: paused
-                  ? [...value.pausedKeys, key]
-                  : value.pausedKeys.filter((item) => item !== key),
-              })
-            }
-          />
+          <div {...fieldAttr('variants')} className={styles.variants}>
+            <VariantTable
+              variants={variants}
+              isPreorder={value.isPreorder}
+              colors={value.colors}
+              optionGroups={value.optionGroups}
+              quantities={value.quantities}
+              onQuantityChange={(key, quantity) =>
+                patch({ quantities: { ...value.quantities, [key]: quantity } })
+              }
+              // 사전예약은 재고를 세지 않는다(서버가 stock을 받지 않는다). 등록 때 1차 배송
+              // 차수는 끝이 열린 채로만 보낼 수 있어서 1차 물량도 실을 곳이 없다 —
+              // 물량 경계는 배송 구간 설정에서 2차를 더할 때 정한다.
+              hideQuantity={value.isPreorder}
+              // 등록에선 끈 조합을 만들지 않고, 수정에선 판매 중지로 둔다.
+              pausedKeys={value.pausedKeys}
+              excludeOnPause={!editing}
+              onPausedChange={(key, paused) =>
+                patch({
+                  pausedKeys: paused
+                    ? [...value.pausedKeys, key]
+                    : value.pausedKeys.filter((item) => item !== key),
+                })
+              }
+            />
+            <FieldError message={issueOf('variants')} />
+          </div>
         </FormSection>
 
         <FormSection
           title="검색 태그"
           description="구매자에게는 보이지 않습니다. 검색에만 쓰이니 고객이 찾을 때 쓸 말을 넣어주세요."
         >
-          <TagField
-            // 수정은 제품 종류(추천 기준)를 모른다 — 고른 태그가 '그 외'에 접혀 안
-            // 보이지 않게 따로 모아 보여준다.
-            showSelected={editing}
-            preset={preset}
-            value={value.tags}
-            onChange={(tags) => patch({ tags })}
-          />
+          <div {...fieldAttr('tags')}>
+            <TagField
+              // 수정은 제품 종류(추천 기준)를 모른다 — 고른 태그가 '그 외'에 접혀 안
+              // 보이지 않게 따로 모아 보여준다.
+              showSelected={editing}
+              preset={preset}
+              value={value.tags}
+              onChange={(tags) => patch({ tags })}
+            />
+            <FieldError message={issueOf('tags')} />
+          </div>
         </FormSection>
 
         <FormSection title="상세 이미지" description={imageNote}>
@@ -387,6 +487,35 @@ export function AdminProductForm({
         >
           미리보기
         </Button>
+        {/* 버튼은 화면 아래에 붙어 있어 맨 위 알림은 안 보인다 — 누른 자리에서 결과를
+            알린다. 새로 생기면 스크린리더가 읽도록 alert로 둔다. */}
+        <div className={styles.footerMessage} role="alert">
+          {issues.length > 0 ? (
+            <>
+              <AlertCircle className={styles.footerIcon} aria-hidden="true" />
+              확인이 필요한 항목 {issueFields.size}개
+              <button
+                type="button"
+                className={styles.footerLink}
+                onClick={() => focusFirst(formRef.current, issueFields)}
+              >
+                첫 항목으로 이동
+              </button>
+            </>
+          ) : waitingForNetwork ? (
+            <>
+              <AlertCircle className={styles.footerIcon} aria-hidden="true" />
+              인터넷 연결이 끊겼습니다. 연결되면 자동으로 이어서 보냅니다.
+            </>
+          ) : (
+            submitError && (
+              <>
+                <AlertCircle className={styles.footerIcon} aria-hidden="true" />
+                {submitError}
+              </>
+            )
+          )}
+        </div>
         <div className={styles.footerRight}>
           <Button
             type="button"
@@ -397,7 +526,11 @@ export function AdminProductForm({
             취소
           </Button>
           <Button type="submit" disabled={submitting || !!lockReason}>
-            {submitting ? '저장 중…' : submitLabel[mode]}
+            {waitingForNetwork
+              ? '연결 대기 중…'
+              : submitting
+                ? '저장 중…'
+                : submitLabel[mode]}
           </Button>
         </div>
       </div>
