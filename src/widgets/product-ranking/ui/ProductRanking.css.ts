@@ -1,10 +1,11 @@
-import { keyframes, style, styleVariants } from '@vanilla-extract/css'
+import { style, styleVariants } from '@vanilla-extract/css'
 
 import {
   bleedScrollRow,
   breakpoint,
   color,
   onDark,
+  skeleton,
   spacing,
 } from '@shared/config/theme'
 import { fontSize } from '@shared/config/theme/tokens/typography/base'
@@ -151,20 +152,6 @@ export const name = style({
   overflow: 'hidden',
   whiteSpace: 'nowrap',
   textOverflow: 'ellipsis',
-})
-
-const shimmer = keyframes({
-  '0%': { backgroundPosition: '100% 0' },
-  '100%': { backgroundPosition: '-100% 0' },
-})
-
-const skeleton = style({
-  background: `linear-gradient(90deg, ${onDark(6)} 0%, ${onDark(6)} 35%, ${onDark(12)} 50%, ${onDark(6)} 65%, ${onDark(6)} 100%)`,
-  backgroundSize: '200% 100%',
-  animation: `${shimmer} 1.4s linear infinite`,
-  '@media': {
-    '(prefers-reduced-motion: reduce)': { animation: 'none' },
-  },
 })
 
 export const tileSkeleton = style([tileBase, skeleton])
