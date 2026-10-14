@@ -1,10 +1,11 @@
 import { Bell, CircleUser, ShoppingCart } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
+import { useSession } from '@entities/auth'
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
 import { useMyReservations } from '@entities/preorder'
-import { openLoginModal } from '@features/login'
+import { KAKAO_CALLBACK_PATH, openLoginModal } from '@features/login'
 import { ADMIN_HOME_PATH, HOME_PATH, mypagePath } from '@shared/config/routes'
 import { Button, Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
@@ -16,19 +17,22 @@ import { HeaderNotification } from './HeaderNotification'
 import { HeaderSearch } from './HeaderSearch'
 
 export type HeaderProps = {
-  isMember?: boolean
   onSearchClick?: () => void
   onNotificationClick?: () => void
   className?: string
 }
 
 export function Header({
-  isMember = false,
   onSearchClick,
   onNotificationClick,
   className,
 }: HeaderProps) {
   const { pathname } = useLocation()
+  // 카카오 인증만 마친 가입 진행 중 사용자는 세션이 있어도 회원이 아니다 — isLoggedIn만 본다.
+  const { isLoggedIn: isMember, isAuthReady } = useSession()
+  // 새로고침 직후 세션 복구 중이거나 카카오 콜백에서 세션을 받는 중엔 회원인지 아직 모른다 —
+  // 로그인 버튼을 잠깐 보였다가 회원 아이콘으로 바꾸지 않도록 둘 다 그리지 않는다.
+  const isSessionUnknown = !isAuthReady || pathname === KAKAO_CALLBACK_PATH
   const isMainPage = pathname === HOME_PATH
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
   const isAdminPage = pathname.startsWith(ADMIN_HOME_PATH)
@@ -150,16 +154,18 @@ export function Header({
                   </Link>
                 </>
               ) : (
-                // 흰 바탕이라 메인 배너(어두운 구간) 위에서도 그대로 보인다.
-                <Button
-                  variant="outline"
-                  size="small"
-                  rounded
-                  className={styles.desktopOnly}
-                  onClick={() => openLoginModal()}
-                >
-                  로그인
-                </Button>
+                !isSessionUnknown && (
+                  // 흰 바탕이라 메인 배너(어두운 구간) 위에서도 그대로 보인다.
+                  <Button
+                    variant="outline"
+                    size="small"
+                    rounded
+                    className={styles.desktopOnly}
+                    onClick={() => openLoginModal()}
+                  >
+                    로그인
+                  </Button>
+                )
               )}
             </>
           )}

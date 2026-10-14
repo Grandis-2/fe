@@ -13,7 +13,7 @@ import { Header } from '@widgets/header'
 import { MobileTabBar } from '@widgets/mobile-tab-bar'
 
 export function RootLayout() {
-  const { isLoggedIn, isSignupPending } = useSession()
+  const { isSignupPending } = useSession()
   const isModalOpen = useModalStore((state) => state.isOpen)
   const modalContent = useModalStore((state) => state.content)
   const modalOpenCount = useModalStore((state) => state.openCount)
@@ -50,7 +50,7 @@ export function RootLayout() {
 
   return (
     <>
-      <Header isMember={isLoggedIn} />
+      <Header />
       <Outlet />
       <MobileTabBar />
       {modalContent && (
