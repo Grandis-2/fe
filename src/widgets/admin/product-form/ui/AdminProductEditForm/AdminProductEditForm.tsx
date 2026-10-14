@@ -1,10 +1,13 @@
 import { useState } from 'react'
 
 import {
+  editLockReason,
+  editSectionLabel,
   toFormValue,
   useAdminProduct,
   useAdminProductStock,
-  useUpdateAdminProduct,
+  useSaveAdminProductEdits,
+  type EditSaveResult,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { InlineAlert } from '@shared/ui'
@@ -15,7 +18,7 @@ import * as styles from './AdminProductEditForm.css'
 
 export type AdminProductEditFormProps = {
   productId: string
-  /** 상품 본문과 재고가 모두 저장됐을 때 */
+  /** 바뀐 섹션이 모두 저장됐을 때 */
   onSaved: () => void
   onCancel: () => void
   onPreview: () => void
@@ -23,7 +26,13 @@ export type AdminProductEditFormProps = {
   onEditDispatchWindow?: () => void
 }
 
-/** 상품을 불러와 수정 폼을 채우고, 저장까지 맡는다 — 어디로 이동할지만 쓰는 쪽이 정한다 */
+/**
+ * 상품을 불러와 수정 폼을 채우고, 저장까지 맡는다 — 어디로 이동할지만 쓰는 쪽이 정한다.
+ *
+ * 저장은 섹션(기본 정보·판매 일정·옵션·재고)마다 요청이 따로라 일부만 실패할 수 있다.
+ * 실패한 섹션을 모아 보여주고 폼은 그대로 둔다 — 상세를 다시 받아 기준이 바뀌므로,
+ * 다시 저장하면 반영된 건 빠지고 실패한 것만 간다.
+ */
 export function AdminProductEditForm({
   productId,
   onSaved,
@@ -33,9 +42,8 @@ export function AdminProductEditForm({
 }: AdminProductEditFormProps) {
   const product = useAdminProduct(productId)
   const stock = useAdminProductStock(productId)
-  const update = useUpdateAdminProduct(productId)
-  // 본문은 저장됐는데 재고 일부가 실패한 경우 — 실패와 구분해서 알린다.
-  const [failedStockCount, setFailedStockCount] = useState(0)
+  const save = useSaveAdminProductEdits(productId)
+  const [result, setResult] = useState<EditSaveResult>()
 
   const loadError = product.error ?? stock.error
   if (loadError) {
@@ -50,36 +58,57 @@ export function AdminProductEditForm({
     return <div className={styles.message}>불러오는 중입니다.</div>
   }
 
+  // 서버에 이미 있는 옵션 종류·값 — 등록 뒤에는 이것들을 지울 수 없다.
+  const existingIds = new Set(
+    product.data.optionAxes.flatMap((axis) => [
+      axis.key,
+      ...axis.values.map((value) => value.valueId),
+    ]),
+  )
+  const failures = result?.failures ?? []
+
   return (
     <div className={styles.root}>
-      {update.isError && (
+      {save.isError && (
         <InlineAlert status="error">
-          {getErrorMessage(update.error, '상품을 저장하지 못했습니다.')}
+          {getErrorMessage(save.error, '상품을 저장하지 못했습니다.')}
         </InlineAlert>
       )}
-      {failedStockCount > 0 && (
-        <InlineAlert status="warning">
-          상품 정보는 저장했지만 재고 {failedStockCount}건을 저장하지
-          못했습니다. 재고 조회 탭에서 확인해 주세요.
+      {failures.length > 0 && (
+        <InlineAlert status="error">
+          <div>
+            저장하지 못한 항목이 있습니다. 나머지는 저장됐고, 다시 저장하면 이
+            항목만 보냅니다.
+          </div>
+          <ul className={styles.failures}>
+            {failures.map((failure) => (
+              <li key={failure.section}>
+                {editSectionLabel[failure.section]} — {failure.message}
+              </li>
+            ))}
+          </ul>
         </InlineAlert>
+      )}
+      {result && !result.changed && (
+        <InlineAlert status="info">바뀐 내용이 없습니다.</InlineAlert>
       )}
 
       <AdminProductForm
         // 폼은 defaultValue를 처음에만 읽는다. 상세 화면에 머문 채 상품만 바뀌면
         // (뒤로/앞으로 가기 등) 이전 상품 값이 남아 새 상품에 저장될 수 있어 새로 만든다.
+        // 저장 뒤 상세를 다시 받아도 폼은 그대로다 — 실패한 입력을 지우지 않으려고.
         key={productId}
         mode="edit"
         defaultValue={toFormValue(product.data, stock.data)}
-        submitting={update.isPending}
+        existingIds={existingIds}
+        lockReason={editLockReason(product.data)}
+        submitting={save.isPending}
         onSubmit={(value) => {
-          setFailedStockCount(0)
-          update.mutate(value, {
-            onSuccess: (result) => {
-              if (result.failedStockCount > 0) {
-                setFailedStockCount(result.failedStockCount)
-              } else {
-                onSaved()
-              }
+          setResult(undefined)
+          save.mutate(value, {
+            onSuccess: (saved) => {
+              setResult(saved)
+              if (saved.changed && saved.failures.length === 0) onSaved()
             },
           })
         }}

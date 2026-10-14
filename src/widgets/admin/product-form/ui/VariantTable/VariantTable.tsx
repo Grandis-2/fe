@@ -4,7 +4,7 @@ import type {
   ProductVariant,
 } from '@entities/admin-product'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Table } from '@shared/ui'
+import { Table, Toggle } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
 import { NumberField } from '../NumberField'
@@ -22,6 +22,14 @@ export type VariantTableProps = {
    * 2차 이후는 배송 차수 탭에서 따로 정하므로 이름으로 구분해 준다.
    */
   isPreorder?: boolean
+  /** 수량 칸을 숨긴다 — 사전예약 수정 화면은 1차 배송 수량을 배송 구간 설정에서 고친다 */
+  hideQuantity?: boolean
+  /**
+   * 수정 화면에서만 — 조합마다 판매 여부를 고른다. 서버에 옵션을 지우는 API가 없어서
+   * 그만 팔 조합은 지우지 않고 판매 중지로 둔다. 넘기지 않으면 칸이 없다.
+   */
+  pausedKeys?: string[]
+  onPausedChange?: (key: string, paused: boolean) => void
 }
 
 export function VariantTable({
@@ -31,6 +39,9 @@ export function VariantTable({
   quantities,
   onQuantityChange,
   isPreorder = false,
+  hideQuantity = false,
+  pausedKeys,
+  onPausedChange,
 }: VariantTableProps) {
   const quantityLabel = isPreorder ? '1차 배송 수량' : '수량'
   const hexByName = new Map(
@@ -80,22 +91,49 @@ export function VariantTable({
       align: 'center',
       render: (variant) => formatNumber(variant.price),
     },
-    {
-      key: 'quantity',
-      header: quantityLabel,
-      align: 'center',
-      width: isPreorder ? '170px' : '140px',
-      render: (variant) => (
-        <div className={styles.quantityField}>
-          <NumberField
-            size="small"
-            label={quantityLabel}
-            value={quantities[variant.key] ?? 0}
-            onChange={(quantity) => onQuantityChange(variant.key, quantity)}
-          />
-        </div>
-      ),
-    },
+    ...(hideQuantity
+      ? []
+      : [
+          {
+            key: 'quantity',
+            header: quantityLabel,
+            align: 'center' as const,
+            width: isPreorder ? '170px' : '140px',
+            render: (variant: ProductVariant) => (
+              <div className={styles.quantityField}>
+                <NumberField
+                  size="small"
+                  label={quantityLabel}
+                  value={quantities[variant.key] ?? 0}
+                  onChange={(quantity) =>
+                    onQuantityChange(variant.key, quantity)
+                  }
+                />
+              </div>
+            ),
+          },
+        ]),
+    ...(pausedKeys && onPausedChange
+      ? [
+          {
+            key: 'selling',
+            header: '판매',
+            align: 'center' as const,
+            render: (variant: ProductVariant) => (
+              <Toggle
+                // 스위치만 있는 칸이라 어느 조합인지 이름에 담는다.
+                aria-label={`${[variant.colorName, ...variant.optionLabels]
+                  .filter(Boolean)
+                  .join(' ')} 판매`}
+                checked={!pausedKeys.includes(variant.key)}
+                onChange={(event) =>
+                  onPausedChange(variant.key, !event.target.checked)
+                }
+              />
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (

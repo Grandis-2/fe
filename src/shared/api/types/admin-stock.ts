@@ -27,8 +27,16 @@ export type StockOverviewResponse = {
   items: StockOverviewItem[]
 }
 
-// ── 아래는 예전 모양(프론트 제안). 수정 저장과 목업 저장소가 아직 쓴다 — 수정을
-// 명세에 맞출 때 같이 걷어낸다.
+/**
+ * 재고 총량 설정(PUT). 요청한 옵션만 덮어쓰고 나머지는 그대로다. 전부 반영되거나
+ * 전부 안 된다 — 한 옵션이라도 총량이 확보+판매보다 작으면 409다.
+ */
+export type StockRequest = {
+  items: { optionId: string; stockTotal: number }[]
+}
+
+// ── 아래는 예전 모양(프론트 제안). 목업 저장소가 아직 쓴다 — 등록을 명세에 맞출 때
+// 같이 걷어낸다.
 
 // 스펙에 LIMITED만 등장한다. 다른 값이 생기면 여기에 추가한다.
 export type StockPolicyLimited = 'LIMITED'
@@ -46,12 +54,4 @@ export type AdminStockItem = {
   adjustmentsEnabled: boolean
   updatedAt: string
   updatedBy: string | null
-}
-
-export type AdminStockPutRequest = {
-  optionCode: string
-  initialQuantity: number
-  policy?: StockPolicyLimited
-  adjustmentsEnabled?: boolean
-  reason?: string | null
 }

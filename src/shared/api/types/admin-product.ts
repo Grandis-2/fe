@@ -172,6 +172,63 @@ export type VisibilityView = {
 }
 
 /**
+ * 상품 수정(PATCH /admin/products/{productId}). 보낸 필드만 바뀐다 — 생략하면
+ * 그대로 두고, 하나도 없으면 400이다. 응답은 관리자 상세와 같은 모양이다.
+ */
+export type ProductEditRequest = {
+  /** 1~100자, 공백만은 불가 */
+  title?: string
+  /** 5,000자 이하. 빈 문자열이면 비운다 */
+  description?: string
+  /** 콤마로 이은 검색 키워드 500자 이하. 빈 문자열이면 비운다 */
+  tags?: string
+  /** 바꾸면 모든 옵션 가격이 다시 계산된다 */
+  basePrice?: number
+  warranty?: { offered: boolean; surcharge?: number }
+}
+
+/** 옵션 값 하나 수정. 보낸 필드만 바뀌고 셋 다 없으면 400 */
+export type OptionValueEditRequest = {
+  /** 1~60자. 바꾸면 그 값을 고른 옵션의 이름·selections도 함께 바뀐다 */
+  value?: string
+  /** 이 값을 고른 옵션만 가격이 다시 계산된다 */
+  surcharge?: number
+  /** color 축만. 빈 문자열이면 지운다 */
+  hex?: string
+}
+
+/** 기존 축에 값 하나 추가. 새 축은 만들 수 없다 */
+export type OptionValueAddRequest = {
+  axisKey: string
+  /** 1~60자, 같은 축 중복 불가, storage는 숫자+단위 */
+  value: string
+  surcharge?: number
+  hex?: string
+}
+
+/** 아직 없는 조합 하나를 옵션으로 만든다. 새 옵션은 바로 판매 중이다 */
+export type VariantAddRequest = {
+  /** 축 키별 값 — 모든 축을 넣는다. 축이 없는 상품은 {} */
+  selections: Record<string, string>
+  /** 비우면 서버 기본값 */
+  sku?: string
+}
+
+/** 옵션 하나를 판매 중지하거나 다시 판다. 이미 받은 주문·예약은 그대로다 */
+export type VariantEditRequest = {
+  status: ProductSaleStatus
+}
+
+/**
+ * 사전예약 모집 일정 생성·변경(PUT /admin/preorders/products/{productId}/campaign).
+ * 바꿀 때 오픈은 지금부터 10분 뒤 이후여야 하고, 이미 오픈한 회차는 409다.
+ */
+export type PreorderCampaignRequest = {
+  opensAt: string
+  closesAt: string
+}
+
+/**
  * 예전 상세 모양(프론트 제안). 등록·수정 본문(AdminProductUpsertRequest)과 목업
  * 저장소가 아직 이 모양이라 남겨 둔다 — 조회는 AdminProductResponse로 옮겼고,
  * 등록·수정을 명세에 맞출 때 같이 걷어낸다.

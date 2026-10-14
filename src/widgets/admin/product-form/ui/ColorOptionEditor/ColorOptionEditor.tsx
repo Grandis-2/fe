@@ -13,6 +13,12 @@ import * as styles from './ColorOptionEditor.css'
 export type ColorOptionEditorProps = {
   colors: ProductColorOption[]
   onChange: (colors: ProductColorOption[]) => void
+  /**
+   * 수정 화면에서 서버에 이미 있는 색상 id. 넘기면 등록 뒤 규칙을 따른다 — 서버에 값을
+   * 지우는 API가 없어 이 색상들은 지울 수 없고, '색상 없음'(축 자체)과 사진은 바꿀 수
+   * 없다. 이번에 더한 색상은 아직 저장 전이라 지울 수 있다.
+   */
+  existingIds?: ReadonlySet<string>
 }
 
 /**
@@ -22,7 +28,9 @@ export type ColorOptionEditorProps = {
 export function ColorOptionEditor({
   colors,
   onChange,
+  existingIds,
 }: ColorOptionEditorProps) {
+  const editing = existingIds !== undefined
   // '색상 없음'인 상품은 색상을 더 만들 수 없다.
   const hasNoColor = colors.some((colorOption) => colorOption.noColor)
 
@@ -46,16 +54,18 @@ export function ColorOptionEditor({
           {/* 제목과 삭제 버튼을 한 줄에 둔다. */}
           <div className={styles.blockHeader}>
             <span className={styles.sectionLabel}>색상</span>
-            <button
-              type="button"
-              className={styles.removeButton}
-              aria-label={`색상 ${index + 1} 삭제`}
-              onClick={() =>
-                onChange(colors.filter((item) => item.id !== colorOption.id))
-              }
-            >
-              <X className={styles.removeIcon} aria-hidden="true" />
-            </button>
+            {!existingIds?.has(colorOption.id) && (
+              <button
+                type="button"
+                className={styles.removeButton}
+                aria-label={`색상 ${index + 1} 삭제`}
+                onClick={() =>
+                  onChange(colors.filter((item) => item.id !== colorOption.id))
+                }
+              >
+                <X className={styles.removeIcon} aria-hidden="true" />
+              </button>
+            )}
           </div>
 
           <div className={styles.colorRow}>
@@ -99,6 +109,8 @@ export function ColorOptionEditor({
             <label className={styles.noColorLabel}>
               <Checkbox
                 checked={hasNoColor}
+                // 색상 축을 만들거나 없애는 일이라 등록 뒤에는 바꿀 수 없다.
+                disabled={editing}
                 onChange={(event) => toggleNoColor(event.target.checked)}
               />
               색상 없음
@@ -108,7 +120,8 @@ export function ColorOptionEditor({
           <div className={hasNoColor ? styles.mutedArea : undefined}>
             <ImageUploader
               label="이미지"
-              disabled={hasNoColor}
+              // 등록 뒤에는 사진을 바꾸는 API가 없다.
+              disabled={hasNoColor || editing}
               value={colorOption.images}
               onChange={(images) => patchColor(colorOption.id, { images })}
             />

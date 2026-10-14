@@ -16,6 +16,7 @@ import {
   Dropdown,
   FormSection,
   ImageUploader,
+  InlineAlert,
   Input,
 } from '@shared/ui'
 import type { DropdownOption } from '@shared/ui'
@@ -46,6 +47,16 @@ export type AdminProductFormProps = {
    * 같은 페이지의 탭 전환이라 어디로 갈지는 페이지가 정한다.
    */
   onEditDispatchWindow?: () => void
+  /**
+   * 수정 화면에서 서버에 이미 있는 옵션 종류(축 키)·값 id. 등록 뒤에는 축을 만들거나
+   * 지울 수 없고 있던 값도 지울 수 없어서(지우는 API가 없다) 그 칸들의 삭제를 막는다.
+   */
+  existingIds?: ReadonlySet<string>
+  /**
+   * 지금 고칠 수 없는 이유. 있으면 폼 전체를 읽기 전용으로 두고 이 문구를 보여준다 —
+   * 사전예약은 오픈 3분 전부터 공개 여부 말고는 서버가 409로 거절한다.
+   */
+  lockReason?: string | null
 }
 
 // 라벨을 페이지가 넘기면 화면마다 문구가 어긋나기 쉬워 여기 한 곳에 둔다.
@@ -72,7 +83,14 @@ export function AdminProductForm({
   onPreview,
   submitting = false,
   onEditDispatchWindow,
+  existingIds,
+  lockReason,
 }: AdminProductFormProps) {
+  const editing = mode === 'edit'
+  // 등록 뒤에는 사진을 바꾸는 API가 없다.
+  const imageNote = editing
+    ? '등록 뒤에는 사진을 바꿀 수 없습니다.'
+    : '색상과 무관하게 상품 하단에 세로로 이어 붙습니다. 권장 가로 폭 1000px.'
   const [value, setValue] = useState(
     defaultValue ?? createEmptyProductFormValue(),
   )
@@ -94,179 +112,215 @@ export function AdminProductForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (submitting) return
+    if (submitting || lockReason) return
     onSubmit(value)
   }
 
   return (
     <form className={styles.root} onSubmit={handleSubmit}>
-      <FormSection title="기본 정보">
-        <Input
-          label="상품명"
-          required
-          value={value.name}
-          onChange={(event) => patch({ name: event.target.value })}
-        />
-        <Input
-          label="모델명"
-          required
-          value={value.modelName}
-          onChange={(event) => patch({ modelName: event.target.value })}
-        />
-      </FormSection>
+      {lockReason && <InlineAlert status="info">{lockReason}</InlineAlert>}
 
-      <FormSection title="브랜드 정보">
-        <Dropdown
-          label="브랜드 선택"
-          size="medium"
-          width="220px"
-          options={brandOptions}
-          value={value.brand || undefined}
-          onSelect={(brand) => patch({ brand })}
-        />
-      </FormSection>
+      {/* 잠기면 안의 입력·버튼을 브라우저가 한꺼번에 막는다 — 칸마다 disabled를 넘기지
+          않는다. 아래 버튼(미리보기·취소)은 잠겨도 눌려야 해서 밖에 둔다. */}
+      <fieldset className={styles.sections} disabled={!!lockReason}>
+        <FormSection title="기본 정보">
+          <Input
+            label="상품명"
+            required
+            value={value.name}
+            onChange={(event) => patch({ name: event.target.value })}
+          />
+          <Input
+            label="모델명"
+            required
+            // 아직 서버에 모델명 필드가 없어 수정에서는 저장할 곳이 없다.
+            disabled={editing}
+            value={value.modelName}
+            onChange={(event) => patch({ modelName: event.target.value })}
+          />
+        </FormSection>
 
-      <FormSection title="판매 방식">
-        <div className={styles.card}>
-          <label className={styles.checkboxRow}>
-            <Checkbox
-              checked={value.isPreorder}
-              onChange={(event) => patch({ isPreorder: event.target.checked })}
+        <FormSection title="브랜드 정보">
+          {/* 브랜드도 아직 서버 필드가 없다. Dropdown은 disabled를 받지 않아 감싸서 막는다. */}
+          <fieldset className={styles.plainFieldset} disabled={editing}>
+            <Dropdown
+              label="브랜드 선택"
+              size="medium"
+              width="220px"
+              options={brandOptions}
+              value={value.brand || undefined}
+              onSelect={(brand) => patch({ brand })}
             />
-            <span className={styles.checkboxTexts}>
-              <span className={styles.checkboxLabel}>사전 예약으로 판매</span>
-              <span className={styles.hint}>
-                접수 순번과 배송 차수가 적용됩니다.
-              </span>
-            </span>
-          </label>
+          </fieldset>
+        </FormSection>
 
-          {value.isPreorder && (
-            <>
-              <div className={styles.period}>
-                <div className={styles.periodTitle}>오픈 / 마감 일시</div>
-                <PreorderPeriodField
-                  openAt={value.openAt}
-                  onChange={(openAt, closeAt) => patch({ openAt, closeAt })}
-                />
-              </div>
-
-              <FirstDeliveryField
-                editable={mode === 'create'}
-                value={value.firstDeliveryDate}
-                onChange={(firstDeliveryDate) => patch({ firstDeliveryDate })}
-                onEditDispatchWindow={onEditDispatchWindow}
+        <FormSection title="판매 방식">
+          <div className={styles.card}>
+            <label className={styles.checkboxRow}>
+              <Checkbox
+                checked={value.isPreorder}
+                // 판매 방식은 등록 뒤 바꿀 수 없다.
+                disabled={editing}
+                onChange={(event) =>
+                  patch({ isPreorder: event.target.checked })
+                }
               />
-            </>
-          )}
-        </div>
-      </FormSection>
+              <span className={styles.checkboxTexts}>
+                <span className={styles.checkboxLabel}>사전 예약으로 판매</span>
+                <span className={styles.hint}>
+                  접수 순번과 배송 차수가 적용됩니다.
+                </span>
+              </span>
+            </label>
 
-      <FormSection
-        title="옵션"
-        description={`고객이 옵션을 고르면 해당 이미지가 표시됩니다.
+            {value.isPreorder && (
+              <>
+                <div className={styles.period}>
+                  <div className={styles.periodTitle}>오픈 / 마감 일시</div>
+                  <PreorderPeriodField
+                    openAt={value.openAt}
+                    onChange={(openAt, closeAt) => patch({ openAt, closeAt })}
+                  />
+                </div>
+
+                <FirstDeliveryField
+                  editable={mode === 'create'}
+                  value={value.firstDeliveryDate}
+                  onChange={(firstDeliveryDate) => patch({ firstDeliveryDate })}
+                  onEditDispatchWindow={onEditDispatchWindow}
+                />
+              </>
+            )}
+          </div>
+        </FormSection>
+
+        <FormSection
+          title="옵션"
+          description={`고객이 옵션을 고르면 해당 이미지가 표시됩니다.
 옵션당 최대 10장, 첫 장이 대표 이미지입니다.`}
-      >
-        {/* 색상은 별도 축이라 프리셋이 손대지 않는다 — 이미 올린 이미지가 날아간다. */}
-        <OptionPresetField
-          value={preset}
-          onSelect={(picked) => {
-            setPreset(picked)
-            patch({
-              optionGroups: withPresetOptionGroups(value.optionGroups, picked),
-            })
-          }}
-        />
-        <div className={styles.card}>
-          <ColorOptionEditor
-            colors={value.colors}
-            onChange={(colors) => patch({ colors })}
+        >
+          {/* 프리셋은 옵션 종류(축)를 새로 까는데, 등록 뒤에는 축을 만들 수 없다. */}
+          {editing ? (
+            <span className={styles.hint}>
+              등록 뒤에는 옵션 종류와 사진을 바꿀 수 없습니다. 값은
+              이름·추가금을 고치거나 새로 더할 수 있고, 그만 팔 조합은 아래
+              표에서 판매를 끕니다.
+            </span>
+          ) : (
+            // 색상은 별도 축이라 프리셋이 손대지 않는다 — 이미 올린 이미지가 날아간다.
+            <OptionPresetField
+              value={preset}
+              onSelect={(picked) => {
+                setPreset(picked)
+                patch({
+                  optionGroups: withPresetOptionGroups(
+                    value.optionGroups,
+                    picked,
+                  ),
+                })
+              }}
+            />
+          )}
+          <div className={styles.card}>
+            <ColorOptionEditor
+              colors={value.colors}
+              existingIds={existingIds}
+              onChange={(colors) => patch({ colors })}
+            />
+          </div>
+          <OptionGroupEditor
+            groups={value.optionGroups}
+            existingIds={existingIds}
+            onChange={(optionGroups) => patch({ optionGroups })}
           />
-        </div>
-        <OptionGroupEditor
-          groups={value.optionGroups}
-          onChange={(optionGroups) => patch({ optionGroups })}
-        />
-      </FormSection>
+        </FormSection>
 
-      <FormSection
-        title="옵션별 가격 / 재고"
-        description={
-          variants.length > 0
-            ? `${comboSummary} = ${variants.length}개 조합이 자동으로 만들어졌습니다.`
-            : undefined
-        }
-      >
-        <NumberField
-          label="기본 가격"
-          value={value.basePrice}
-          onChange={(basePrice) => patch({ basePrice })}
-        />
-
-        <VariantTable
-          variants={variants}
-          isPreorder={value.isPreorder}
-          colors={value.colors}
-          optionGroups={value.optionGroups}
-          quantities={value.quantities}
-          onQuantityChange={(key, quantity) =>
-            patch({ quantities: { ...value.quantities, [key]: quantity } })
+        <FormSection
+          title="옵션별 가격 / 재고"
+          description={
+            variants.length > 0
+              ? `${comboSummary} = ${variants.length}개 조합이 자동으로 만들어졌습니다.`
+              : undefined
           }
-        />
-      </FormSection>
-
-      <FormSection
-        title="검색 태그"
-        description="구매자에게는 보이지 않습니다. 검색에만 쓰이니 고객이 찾을 때 쓸 말을 넣어주세요."
-      >
-        <TagField
-          preset={preset}
-          value={value.tags}
-          onChange={(tags) => patch({ tags })}
-        />
-      </FormSection>
-
-      <FormSection
-        title="상세 이미지"
-        description="색상과 무관하게 상품 하단에 세로로 이어 붙습니다. 권장 가로 폭 1000px."
-      >
-        <div className={styles.card}>
-          <ImageUploader
-            ratio="portrait"
-            showCount={false}
-            value={value.detailImages}
-            onChange={(detailImages) => patch({ detailImages })}
+        >
+          <NumberField
+            label="기본 가격"
+            value={value.basePrice}
+            onChange={(basePrice) => patch({ basePrice })}
           />
-        </div>
-      </FormSection>
 
-      <FormSection
-        title="제품 사양"
-        description="색상과 무관하게 상품 하단에 세로로 이어 붙습니다. 권장 가로 폭 1000px."
-      >
-        <div className={styles.card}>
-          <ImageUploader
-            ratio="portrait"
-            showCount={false}
-            value={value.specImages}
-            onChange={(specImages) => patch({ specImages })}
+          <VariantTable
+            variants={variants}
+            isPreorder={value.isPreorder}
+            colors={value.colors}
+            optionGroups={value.optionGroups}
+            quantities={value.quantities}
+            onQuantityChange={(key, quantity) =>
+              patch({ quantities: { ...value.quantities, [key]: quantity } })
+            }
+            // 사전예약은 재고를 세지 않고, 1차 배송 수량은 배송 구간 설정에서 고친다.
+            hideQuantity={editing && value.isPreorder}
+            pausedKeys={editing ? value.pausedKeys : undefined}
+            onPausedChange={
+              editing
+                ? (key, paused) =>
+                    patch({
+                      pausedKeys: paused
+                        ? [...value.pausedKeys, key]
+                        : value.pausedKeys.filter((item) => item !== key),
+                    })
+                : undefined
+            }
           />
-        </div>
-      </FormSection>
+        </FormSection>
 
-      <FormSection
-        title="유의 사항"
-        description="색상과 무관하게 상품 하단에 세로로 이어 붙습니다. 권장 가로 폭 1000px."
-      >
-        <div className={styles.card}>
-          <ImageUploader
-            ratio="portrait"
-            showCount={false}
-            value={value.noticeImages}
-            onChange={(noticeImages) => patch({ noticeImages })}
+        <FormSection
+          title="검색 태그"
+          description="구매자에게는 보이지 않습니다. 검색에만 쓰이니 고객이 찾을 때 쓸 말을 넣어주세요."
+        >
+          <TagField
+            preset={preset}
+            value={value.tags}
+            onChange={(tags) => patch({ tags })}
           />
-        </div>
-      </FormSection>
+        </FormSection>
+
+        <FormSection title="상세 이미지" description={imageNote}>
+          <div className={styles.card}>
+            <ImageUploader
+              ratio="portrait"
+              showCount={false}
+              disabled={editing}
+              value={value.detailImages}
+              onChange={(detailImages) => patch({ detailImages })}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection title="제품 사양" description={imageNote}>
+          <div className={styles.card}>
+            <ImageUploader
+              ratio="portrait"
+              showCount={false}
+              disabled={editing}
+              value={value.specImages}
+              onChange={(specImages) => patch({ specImages })}
+            />
+          </div>
+        </FormSection>
+
+        <FormSection title="유의 사항" description={imageNote}>
+          <div className={styles.card}>
+            <ImageUploader
+              ratio="portrait"
+              showCount={false}
+              disabled={editing}
+              value={value.noticeImages}
+              onChange={(noticeImages) => patch({ noticeImages })}
+            />
+          </div>
+        </FormSection>
+      </fieldset>
 
       <div className={styles.footer}>
         <Button
@@ -287,7 +341,7 @@ export function AdminProductForm({
           >
             취소
           </Button>
-          <Button type="submit" disabled={submitting}>
+          <Button type="submit" disabled={submitting || !!lockReason}>
             {submitting ? '저장 중…' : submitLabel[mode]}
           </Button>
         </div>

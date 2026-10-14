@@ -6,9 +6,15 @@ export {
   useAdminProductStock,
   useCreateAdminProduct,
   useSetAdminProductVisibility,
-  useUpdateAdminProduct,
 } from './api/useAdminProduct'
 export { useAdminProducts } from './api/useAdminProducts'
+export { useSaveAdminProductEdits } from './api/useSaveAdminProductEdits'
+export type {
+  EditFailure,
+  EditSaveResult,
+} from './api/useSaveAdminProductEdits'
+export { editLockReason, editSectionLabel } from './model/edit'
+export type { EditSection } from './model/edit'
 export {
   useDispatchWindow,
   useSaveDispatchWindow,

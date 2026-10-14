@@ -1,8 +1,6 @@
 import type {
-  AdminProductDetail,
   AdminProductUpsertRequest,
   DispatchWindowPutRequest,
-  AdminStockPutRequest,
   ProductImageBundle,
   ProductOptionGroup as DtoOptionGroup,
   ProductVariant as DtoVariant,
@@ -75,6 +73,11 @@ export type AdminProductFormValue = {
    * 색상이나 옵션을 추가·삭제해도 살아남은 조합의 입력값이 유지되게 한다.
    */
   quantities: Record<string, number>
+  /**
+   * 판매 중지할 조합의 키(quantities와 같은 키). 수정 화면에서만 쓴다 — 서버에 옵션을
+   * 지우는 API가 없어서, 그만 팔 조합은 지우는 대신 판매 중지로 둔다.
+   */
+  pausedKeys: string[]
   detailImages: UploadedImage[]
   specImages: UploadedImage[]
   noticeImages: UploadedImage[]
@@ -115,6 +118,7 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     optionGroups: [],
     basePrice: 0,
     quantities: {},
+    pausedKeys: [],
     detailImages: [],
     specImages: [],
     noticeImages: [],
@@ -207,7 +211,7 @@ export function getProductVariants(
  * ------------------------------------------------------------------ */
 
 // datetime-local('2026-09-20T09:00')을 서버가 쓰는 ISO 문자열로 바꾼다.
-const toIso = (local: string) =>
+export const toIso = (local: string) =>
   local ? new Date(local).toISOString() : undefined
 
 // 반대로 ISO를 datetime-local이 읽는 형식으로 자른다(로컬 시각 기준).
@@ -247,58 +251,6 @@ function buildCombinations(groups: ProductOptionGroup[]): Combination[] {
         })),
       ),
     [{ codes: {}, labels: [], extraPrice: 0 }],
-  )
-}
-
-/**
- * 상세 응답의 variant마다 폼의 수량 맵 키를 계산해 optionCode와 짝지어 둔다.
- * 폼은 서버 옵션 코드를 들고 있지 않아서, 재고를 저장할 때 이 표로 되돌린다.
- */
-export function buildOptionCodeByQuantityKey(
-  detail: AdminProductDetail,
-): Record<string, string> {
-  const colorGroup = detail.optionGroups.find(
-    (group) => group.groupCode === COLOR_GROUP_CODE,
-  )
-  const otherGroups = detail.optionGroups.filter(
-    (group) => group.groupCode !== COLOR_GROUP_CODE,
-  )
-
-  return Object.fromEntries(
-    detail.variants.map((variant) => {
-      const colorName =
-        colorGroup?.values.find(
-          (value) => value.valueCode === variant.optionValues.color,
-        )?.name ?? ''
-      const labels = otherGroups.map(
-        (group) =>
-          group.values.find(
-            (value) =>
-              value.valueCode === variant.optionValues[group.groupCode],
-          )?.name ?? '',
-      )
-
-      return [buildVariantKey(colorName, labels), variant.optionCode]
-    }),
-  )
-}
-
-/**
- * 폼의 조합별 수량을 재고 API 요청들로 바꾼다.
- * 상품 등록/수정 본문(ProductUpsert)에는 수량 필드가 없어서 재고는 따로 보낸다.
- * 서버가 아직 옵션 코드를 발급하지 않은 조합(새로 추가한 옵션)은 건너뛴다.
- */
-export function toStockRequests(
-  value: AdminProductFormValue,
-  detail: AdminProductDetail,
-): AdminStockPutRequest[] {
-  const optionCodeByKey = buildOptionCodeByQuantityKey(detail)
-
-  return Object.entries(value.quantities).flatMap(
-    ([quantityKey, initialQuantity]) => {
-      const optionCode = optionCodeByKey[quantityKey]
-      return optionCode ? [{ optionCode, initialQuantity }] : []
-    },
   )
 }
 
@@ -428,6 +380,14 @@ export function toFormValue(
   )
   const detailBundle = (section: string) =>
     detail.images.detail.find((bundle) => bundle.bundleKey === section)
+  // 조합은 축마다 정규화값을 들고 있다 — 폼의 키는 화면 이름으로 만든다.
+  const variantKeyOf = (variant: AdminProductDetailModel['variants'][number]) =>
+    buildVariantKey(
+      axisValueName(colorAxis, variant.selections[COLOR_GROUP_CODE]) ?? '',
+      otherAxes.map(
+        (axis) => axisValueName(axis, variant.selections[axis.key]) ?? '',
+      ),
+    )
 
   return {
     ...createEmptyProductFormValue(),
@@ -464,20 +424,16 @@ export function toFormValue(
       })),
     })),
     basePrice: detail.basePrice,
+    pausedKeys: detail.variants
+      .filter((variant) => variant.status === 'PAUSED')
+      .map((variant) => variantKeyOf(variant)),
     // 재고는 옵션 id(= variantId)로 온다. 폼의 수량 키(색상|옵션값)로 옮긴다.
     quantities: Object.fromEntries(
       detail.variants.flatMap((variant) => {
         const stock = stockItems.find(
           (item) => item.optionId === variant.variantId,
         )
-        if (!stock) return []
-        const key = buildVariantKey(
-          axisValueName(colorAxis, variant.selections[COLOR_GROUP_CODE]) ?? '',
-          otherAxes.map(
-            (axis) => axisValueName(axis, variant.selections[axis.key]) ?? '',
-          ),
-        )
-        return [[key, stock.stockTotal]]
+        return stock ? [[variantKeyOf(variant), stock.stockTotal]] : []
       }),
     ),
     detailImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.detailImages)),

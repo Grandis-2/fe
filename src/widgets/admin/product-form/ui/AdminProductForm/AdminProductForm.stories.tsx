@@ -275,3 +275,130 @@ export const NoColorAppliesToEveryBlock: Story = {
     )
   },
 }
+
+// 수정 화면 공통 — 서버에 이미 있는 색상 두 개, 용량 두 개.
+const savedProduct = {
+  ...createEmptyProductFormValue(),
+  name: '갤럭시 G999',
+  basePrice: 1_200_000,
+  colors: [
+    { id: 'c-bk', name: '딥 블루', hex: '#3F4891', noColor: false, images: [] },
+    { id: 'c-sv', name: '실버', hex: '#C7C9D1', noColor: false, images: [] },
+  ],
+  optionGroups: [
+    {
+      id: 'storage',
+      name: '용량',
+      values: [
+        { id: 's-256', label: '256GB', extraPrice: 0 },
+        { id: 's-512', label: '512GB', extraPrice: 250_000 },
+      ],
+    },
+  ],
+}
+const savedIds = new Set(['color', 'c-bk', 'c-sv', 'storage', 's-256', 's-512'])
+
+/**
+ * 등록 뒤에는 서버에 옵션을 지우는 API도, 축을 만드는 API도 없다. 있던 색상·값은
+ * 지울 수 없고 옵션 종류(축)는 손댈 수 없다. 새로 더한 값은 저장 전이라 지울 수 있다.
+ */
+export const EditKeepsSavedOptions: Story = {
+  args: { mode: 'edit', defaultValue: savedProduct, existingIds: savedIds },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.queryByRole('button', { name: /색상 \d+ 삭제/ }),
+    ).toBeNull()
+    await expect(
+      canvas.queryByRole('button', { name: /용량 값 \d+ 삭제/ }),
+    ).toBeNull()
+    await expect(
+      canvas.queryByRole('button', { name: '옵션 1 삭제' }),
+    ).toBeNull()
+    await expect(canvas.getByLabelText('옵션 이름')).toBeDisabled()
+    await expect(canvas.queryByRole('button', { name: '옵션 추가' })).toBeNull()
+    // '색상 없음'은 색상 축 자체를 만들거나 없애는 일이라 잠근다.
+    for (const box of canvas.getAllByLabelText('색상 없음')) {
+      await expect(box).toBeDisabled()
+    }
+    // 프리셋은 축을 새로 깔아서 등록 뒤에는 보여주지 않는다.
+    await expect(canvas.queryByText('제품 카테고리 선택')).toBeNull()
+
+    // 값은 더할 수 있고, 더한 값은 저장 전이라 지울 수 있다.
+    await userEvent.click(
+      canvas.getByRole('button', { name: /옵션 타입 추가/ }),
+    )
+    await expect(
+      canvas.getByRole('button', { name: '용량 값 3 삭제' }),
+    ).toBeVisible()
+  },
+}
+
+/** 그만 팔 조합은 지우지 않고 판매를 끈다 — 끈 조합이 저장 값에 실린다 */
+export const EditPausesVariant: Story = {
+  args: { mode: 'edit', defaultValue: savedProduct, existingIds: savedIds },
+  play: async ({ canvas, args }) => {
+    const toggle = canvas.getByRole('switch', { name: '딥 블루 256GB 판매' })
+    await expect(toggle).toBeChecked()
+    await userEvent.click(toggle)
+    await expect(toggle).not.toBeChecked()
+
+    await userEvent.click(canvas.getByRole('button', { name: '수정하기' }))
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ pausedKeys: ['딥 블루|256GB'] }),
+    )
+  },
+}
+
+/**
+ * 등록 화면에는 판매 끄기 칸이 없다 — 아직 만들어진 조합이 없다. 사전예약이면 수량
+ * 칸은 있다(1차 배송 수량) — 아래 EditPreorderHidesQuantity의 대조군이다.
+ */
+export const CreateHasNoPauseToggle: Story = {
+  args: { mode: 'create', defaultValue: { ...savedProduct, isPreorder: true } },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole('switch')).toBeNull()
+    await expect(
+      canvas.getByRole('columnheader', { name: '1차 배송 수량' }),
+    ).toBeVisible()
+  },
+}
+
+/**
+ * 사전예약 오픈 3분 전부터는 공개 여부 말고는 서버가 409로 거절한다 — 폼 전체를 읽기
+ * 전용으로 두고 이유를 알린다. 취소·미리보기는 눌려야 한다.
+ */
+export const EditLocked: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: { ...savedProduct, isPreorder: true },
+    existingIds: savedIds,
+    lockReason: '사전예약은 오픈 3분 전부터 공개 여부 말고는 바꿀 수 없습니다.',
+  },
+  play: async ({ canvas, args }) => {
+    await expect(
+      canvas.getByText(/오픈 3분 전부터 공개 여부 말고는/),
+    ).toBeVisible()
+    await expect(canvas.getByLabelText(/상품명/)).toBeDisabled()
+    await expect(
+      canvas.getByRole('button', { name: '수정하기' }),
+    ).toBeDisabled()
+
+    await userEvent.click(canvas.getByRole('button', { name: '취소' }))
+    await expect(args.onCancel).toHaveBeenCalled()
+  },
+}
+
+/** 사전예약 수정 화면은 수량 칸이 없다 — 재고를 세지 않고 1차 물량은 배송 탭에서 고친다 */
+export const EditPreorderHidesQuantity: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: { ...savedProduct, isPreorder: true },
+    existingIds: savedIds,
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.queryByRole('columnheader', { name: '1차 배송 수량' }),
+    ).toBeNull()
+    await expect(canvas.getAllByRole('switch').length).toBeGreaterThan(0)
+  },
+}

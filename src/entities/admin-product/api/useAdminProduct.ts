@@ -2,20 +2,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
 
-import {
-  toFirstWaveRequest,
-  toStockRequests,
-  toUpsertRequest,
-} from '../model/form'
+import { toFirstWaveRequest, toUpsertRequest } from '../model/form'
 
 import { putDispatchWindow } from './adminDispatch'
 import {
   createAdminProduct,
   getAdminProduct,
   setAdminProductVisibility,
-  updateAdminProduct,
 } from './adminProduct'
-import { getAdminProductStock, putAdminProductStock } from './adminStock'
+import { getAdminProductStock } from './adminStock'
 import {
   ADMIN_PRODUCTS_KEY,
   adminProductKey,
@@ -80,49 +75,8 @@ export const useCreateAdminProduct = () => {
 }
 
 /**
- * 상품 본문과 조합별 재고를 함께 저장한다. 등록/수정 본문에는 수량 필드가 없어서
- * 재고는 재고 API로 옵션마다 따로 보낸다.
- *
- * 본문 저장(PATCH)이 성공한 뒤 재고 일부가 실패할 수 있다 — 한 번에 저장하는 API가
- * 없어서 되돌릴 수 없다. 그래서 throw하지 않고 실패 건수를 돌려줘, 화면이 "상품은
- * 저장됐고 재고 N건은 실패"를 구분해서 알리게 한다. 본문 저장 실패는 그대로 throw한다.
- */
-export const useUpdateAdminProduct = (productId: string) => {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: async (value: AdminProductFormValue) => {
-      const updated = await updateAdminProduct(
-        productId,
-        toUpsertRequest(value),
-      )
-      // 수정 응답은 아직 예전 모양이라 상세 캐시에 넣지 않고 다시 받는다.
-      void queryClient.invalidateQueries({
-        queryKey: adminProductKey(productId),
-      })
-
-      // PATCH가 옵션 코드를 새로 만들므로, 재고는 반드시 그 응답 기준으로 보낸다.
-      // 수정 전 상세의 코드로 보내면 새 옵션에 재고가 붙지 않는다.
-      const results = await Promise.allSettled(
-        toStockRequests(value, updated).map((body) =>
-          putAdminProductStock(productId, body),
-        ),
-      )
-      void queryClient.invalidateQueries({
-        queryKey: adminProductStockKey(productId),
-      })
-
-      return {
-        failedStockCount: results.filter(
-          (result) => result.status === 'rejected',
-        ).length,
-      }
-    },
-  })
-}
-
-/**
- * 공개 여부를 바꾼다. 응답은 공개 여부뿐이라 상세·목록을 무효화해 다시 받는다 —
- * 목록 행에도 전시 상태가 보여서 같이 바뀌어야 한다.
+ * 공개 여부를 바꾼다. 응답은 공개 여부뿐이라 다시 받는다 — 목록 행에도 전시 상태가
+ * 보여서 상세와 같이 바뀌어야 한다.
  */
 export const useSetAdminProductVisibility = () => {
   const queryClient = useQueryClient()
@@ -134,10 +88,8 @@ export const useSetAdminProductVisibility = () => {
       productId: string
       visible: boolean
     }) => setAdminProductVisibility(productId, { visible }),
-    onSuccess: (_, { productId }) =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminProductKey(productId) }),
-        queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
-      ]),
+    // 목록·상세가 모두 이 접두사 아래라 한 번에 다시 받는다(keys.ts).
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
   })
 }

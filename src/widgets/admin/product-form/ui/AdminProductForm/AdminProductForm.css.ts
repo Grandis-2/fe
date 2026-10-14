@@ -10,6 +10,25 @@ export const root = style({
   maxWidth: '1000px',
 })
 
+// fieldset은 기본 테두리·여백이 있어 지운다 — 잠금(disabled)만 빌려 쓴다.
+const fieldsetReset = {
+  minWidth: 0,
+  margin: 0,
+  padding: 0,
+  border: 0,
+} as const
+
+/** 섹션들을 감싸는 fieldset. 잠기면 안의 입력을 한꺼번에 막고, 간격은 root와 같다 */
+export const sections = style({
+  ...fieldsetReset,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[40],
+})
+
+/** 칸 하나만 감싸 막을 때 — 모양은 그대로 둔다 */
+export const plainFieldset = style(fieldsetReset)
+
 /** 섹션 내용을 감싸는 흰 카드 */
 export const card = style({
   display: 'flex',

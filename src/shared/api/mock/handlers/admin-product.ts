@@ -1,7 +1,7 @@
 import { http } from 'msw'
 
 import { adminProductStore } from '../fixtures/admin-product'
-import { fail, ok } from '../response'
+import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
 import type {
@@ -9,8 +9,15 @@ import type {
   AdminProductListItem,
   AdminProductResponse,
   AdminProductUpsertRequest,
+  OptionValueAddRequest,
+  OptionValueEditRequest,
   PageResponse,
+  PreorderCampaignRequest,
   PreorderSaleStatus,
+  ProductEditRequest,
+  Variant,
+  VariantAddRequest,
+  VariantEditRequest,
   VisibilityChangeRequest,
   VisibilityView,
 } from '../../types'
@@ -51,28 +58,132 @@ const toListItem = (detail: AdminProductDetail): AdminProductListItem => ({
 // 명세의 정규화값은 공백만 뗀다(256 GB → 256GB). 대소문자는 그대로 둔다.
 const normalize = (value: string) => value.replace(/\s+/g, '')
 
+const STORAGE_PATTERN = /^\d+(MB|GB|TB)$/i
+
+/*
+ * 기본가와 값별 추가금. 저장소(예전 모양)는 조합 가격만 들고 있어서 처음엔 가격에서
+ * 거꾸로 구하지만, 한 번 고치면 여기 적어 두고 가격을 거기서 다시 계산한다 — 서버도
+ * 옵션 가격을 기본가 + 고른 값의 추가금으로 계산한다. 값을 새로 더하면 아직 조합이
+ * 없어 가격에서 구할 수 없으므로 반드시 여기 적어 둔다.
+ */
+const basePrices = new Map<string, number>()
+const surcharges = new Map<string, number>()
+const surchargeKey = (
+  productId: string,
+  groupCode: string,
+  valueCode: string,
+) => `${productId}|${groupCode}|${valueCode}`
+
+const baseOf = (detail: AdminProductDetail) =>
+  basePrices.get(detail.productId) ?? detail.priceRange.min
+
+function surchargeOf(
+  detail: AdminProductDetail,
+  groupCode: string,
+  valueCode: string,
+) {
+  const stored = surcharges.get(
+    surchargeKey(detail.productId, groupCode, valueCode),
+  )
+  if (stored !== undefined) return stored
+  const prices = detail.variants
+    .filter((variant) => variant.optionValues[groupCode] === valueCode)
+    .map((variant) => variant.price)
+  return prices.length > 0 ? Math.min(...prices) - baseOf(detail) : 0
+}
+
+/** 가격에서 거꾸로 구하던 값을 고정한다 — 고치기 전에 불러야 다른 값이 흔들리지 않는다 */
+function pinPrices(detail: AdminProductDetail) {
+  for (const group of detail.optionGroups) {
+    for (const value of group.values) {
+      const key = surchargeKey(
+        detail.productId,
+        group.groupCode,
+        value.valueCode,
+      )
+      if (!surcharges.has(key)) {
+        surcharges.set(
+          key,
+          surchargeOf(detail, group.groupCode, value.valueCode),
+        )
+      }
+    }
+  }
+  if (!basePrices.has(detail.productId)) {
+    basePrices.set(detail.productId, baseOf(detail))
+  }
+}
+
+const valueNameOf = (
+  detail: AdminProductDetail,
+  groupCode: string,
+  valueCode: string | undefined,
+) =>
+  detail.optionGroups
+    .find((group) => group.groupCode === groupCode)
+    ?.values.find((value) => value.valueCode === valueCode)?.name ?? ''
+
+/** 옵션 가격 = 기본가 + 고른 값의 추가금. 이름도 값 이름으로 다시 잇는다 */
+function recompute(detail: AdminProductDetail) {
+  const base = baseOf(detail)
+  for (const variant of detail.variants) {
+    variant.price =
+      base +
+      Object.entries(variant.optionValues).reduce(
+        (sum, [groupCode, valueCode]) =>
+          sum + surchargeOf(detail, groupCode, valueCode),
+        0,
+      )
+    variant.name = detail.optionGroups
+      .map((group) =>
+        valueNameOf(
+          detail,
+          group.groupCode,
+          variant.optionValues[group.groupCode],
+        ),
+      )
+      .filter(Boolean)
+      .join(' ')
+  }
+  const prices = detail.variants.map((variant) => variant.price)
+  if (prices.length > 0) {
+    detail.priceRange = { min: Math.min(...prices), max: Math.max(...prices) }
+  }
+  detail.updatedAt = new Date().toISOString()
+}
+
+/** 저장소의 조합 하나를 명세의 옵션(variant) 모양으로 바꾼다 */
+function toVariantView(
+  detail: AdminProductDetail,
+  variant: AdminProductDetail['variants'][number],
+): Variant {
+  return {
+    // 저장소엔 variantId가 없어 옵션 코드를 쓴다 — 재고 목업도 같은 값으로 옵션을
+    // 가리켜야 상세와 재고가 맞붙는다.
+    variantId: variant.optionCode,
+    sku: variant.optionCode,
+    title: variant.name,
+    price: variant.price,
+    filterAttributes: {},
+    selections: Object.fromEntries(
+      Object.entries(variant.optionValues).map(([groupCode, valueCode]) => [
+        groupCode,
+        normalize(valueNameOf(detail, groupCode, valueCode)),
+      ]),
+    ),
+    status: variant.available ? 'ACTIVE' : 'PAUSED',
+    availableQuantity: null,
+  }
+}
+
 /**
- * 저장소의 상세(예전 모양)를 관리자 상세 응답(명세 모양)으로 바꾼다. 저장소는 등록·
- * 수정이 아직 예전 본문을 쓰기 때문에 그대로 두고, 읽을 때만 바꿔 내보낸다.
+ * 저장소의 상세(예전 모양)를 관리자 상세 응답(명세 모양)으로 바꾼다. 저장소는 등록이
+ * 아직 예전 본문을 쓰기 때문에 그대로 두고, 읽을 때만 바꿔 내보낸다.
  */
 function toAdminProductResponse(
   detail: AdminProductDetail,
 ): AdminProductResponse {
-  const basePrice = detail.priceRange.min
   const preorder = detail.saleMode === 'PREORDER'
-
-  // 저장소는 값마다 추가금을 들고 있지 않다 — 그 값을 고른 조합 중 가장 싼 가격에서
-  // 기본가를 빼면 등록 때 더한 추가금이 나온다.
-  const surchargeOf = (groupCode: string, valueCode: string) => {
-    const prices = detail.variants
-      .filter((variant) => variant.optionValues[groupCode] === valueCode)
-      .map((variant) => variant.price)
-    return prices.length > 0 ? Math.min(...prices) - basePrice : 0
-  }
-  const valueName = (groupCode: string, valueCode: string) =>
-    detail.optionGroups
-      .find((group) => group.groupCode === groupCode)
-      ?.values.find((value) => value.valueCode === valueCode)?.name ?? ''
 
   return {
     product: {
@@ -87,7 +198,7 @@ function toAdminProductResponse(
       categoryId: detail.categoryId ?? '',
       description: detail.summary,
       visible: detail.displayStatus === 'PUBLISHED',
-      basePrice,
+      basePrice: baseOf(detail),
       warranty: { offered: false, surcharge: 0 },
       campaign: preorder
         ? {
@@ -105,26 +216,12 @@ function toAdminProductResponse(
           value: value.name,
           normalizedValue: normalize(value.name),
           hex: value.colorHex,
-          surcharge: surchargeOf(group.groupCode, value.valueCode),
+          surcharge: surchargeOf(detail, group.groupCode, value.valueCode),
         })),
       })),
-      variants: detail.variants.map((variant) => ({
-        // 저장소엔 variantId가 없어 옵션 코드를 쓴다 — 재고 목업도 같은 값으로
-        // 옵션을 가리켜야 상세와 재고가 맞붙는다.
-        variantId: variant.optionCode,
-        sku: variant.optionCode,
-        title: variant.name,
-        price: variant.price,
-        filterAttributes: {},
-        selections: Object.fromEntries(
-          Object.entries(variant.optionValues).map(([groupCode, valueCode]) => [
-            groupCode,
-            normalize(valueName(groupCode, valueCode)),
-          ]),
-        ),
-        status: variant.available ? 'ACTIVE' : 'PAUSED',
-        availableQuantity: null,
-      })),
+      variants: detail.variants.map((variant) =>
+        toVariantView(detail, variant),
+      ),
       images: { gallery: [], detail: [] },
     },
     tags: detail.tags?.length ? detail.tags.join(',') : null,
@@ -136,6 +233,23 @@ function toAdminProductResponse(
     },
   }
 }
+
+/**
+ * 사전예약은 회차 오픈 3분 전부터 공개 여부 말고는 고칠 수 없다(409). 목업은 시각을
+ * 세지 않고 오픈 전/뒤로만 가른다.
+ */
+const lockedResponse = (detail: AdminProductDetail) =>
+  detail.saleMode === 'PREORDER' && detail.saleStatus !== 'BEFORE_OPEN'
+    ? fail(409, {
+        code: 'STATE_CONFLICT',
+        message:
+          '사전예약은 오픈 3분 전부터 공개 여부 말고는 바꿀 수 없습니다.',
+      })
+    : null
+
+// 본문이 비었거나 JSON이 아니면 null — 핸들러가 400으로 돌려보낸다.
+const readBody = <T>(request: Request) =>
+  request.json().catch(() => null) as Promise<Partial<T> | null>
 
 const findProduct = (productId: string) =>
   adminProductStore.find((product) => product.productId === productId)
@@ -283,23 +397,46 @@ export const adminProductHandlers: RequestHandler[] = [
   http.patch(
     url('/api/v1/admin/products/:productId'),
     async ({ request, params }) => {
-      const index = adminProductStore.findIndex(
-        (product) => product.productId === String(params.productId),
+      const product = findProduct(String(params.productId))
+      if (!product) return notFound()
+
+      const body = await readBody<ProductEditRequest>(request)
+      const allowed = ['title', 'description', 'tags', 'basePrice', 'warranty']
+      // 서버는 모르는 필드를 400으로 막는다 — 예전 본문을 보내면 여기서 걸린다.
+      const unknown = Object.keys(body ?? {}).find(
+        (key) => !allowed.includes(key),
       )
-      if (index === -1) return notFound()
-
-      // 오픈 이후에는 전시 내용을 바꾸지 않는다.
-      if (adminProductStore[index].saleStatus === 'OPEN') {
-        return fail(409, {
-          code: 'PRODUCT_ALREADY_OPEN',
-          message: '오픈 이후에는 변경할 수 없습니다.',
-          retryable: false,
-        })
+      if (unknown) {
+        return invalid([{ field: unknown, message: '알 수 없는 칸입니다.' }])
       }
+      if (!body || Object.keys(body).length === 0) {
+        return invalid([{ field: 'body', message: '바꿀 항목이 없습니다.' }])
+      }
+      const locked = lockedResponse(product)
+      if (locked) return locked
 
-      const body = (await request.json()) as AdminProductUpsertRequest
-      adminProductStore[index] = applyUpsert(adminProductStore[index], body)
-      return ok(adminProductStore[index])
+      if (body.title !== undefined) {
+        if (!body.title.trim() || body.title.length > 100) {
+          return invalid([{ field: 'title', message: '1~100자여야 합니다.' }])
+        }
+        product.name = body.title
+      }
+      if (body.tags !== undefined) {
+        // 빈 문자열이면 비운다.
+        product.tags = body.tags
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      }
+      if (body.description !== undefined) {
+        product.summary = body.description || null
+      }
+      if (body.basePrice !== undefined) {
+        pinPrices(product)
+        basePrices.set(product.productId, body.basePrice)
+      }
+      recompute(product)
+      return ok(toAdminProductResponse(product))
     },
   ),
 
@@ -328,6 +465,254 @@ export const adminProductHandlers: RequestHandler[] = [
       return ok<VisibilityView>({
         productId: product.productId,
         visible: body.visible,
+      })
+    },
+  ),
+
+  http.patch(
+    url('/api/v1/admin/products/:productId/option-values/:valueId'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product) return notFound()
+      const valueId = String(params.valueId)
+      const group = product.optionGroups.find((candidate) =>
+        candidate.values.some((value) => value.valueCode === valueId),
+      )
+      const target = group?.values.find((value) => value.valueCode === valueId)
+      if (!group || !target) return notFound()
+
+      const body = await readBody<OptionValueEditRequest>(request)
+      if (
+        !body ||
+        (body.value === undefined &&
+          body.surcharge === undefined &&
+          body.hex === undefined)
+      ) {
+        return invalid([{ field: 'body', message: '바꿀 항목이 없습니다.' }])
+      }
+      const locked = lockedResponse(product)
+      if (locked) return locked
+
+      if (body.value !== undefined) {
+        const name = body.value.trim()
+        if (!name || name.length > 60) {
+          return invalid([{ field: 'value', message: '1~60자여야 합니다.' }])
+        }
+        const duplicate = group.values.some(
+          (value) =>
+            value.valueCode !== valueId &&
+            normalize(value.name) === normalize(name),
+        )
+        if (duplicate) {
+          return invalid([
+            { field: 'value', message: '같은 값이 이미 있습니다.' },
+          ])
+        }
+        target.name = name
+      }
+      if (body.hex !== undefined) {
+        target.colorHex = body.hex ? body.hex.toUpperCase() : null
+      }
+      if (body.surcharge !== undefined) {
+        pinPrices(product)
+        surcharges.set(
+          surchargeKey(product.productId, group.groupCode, valueId),
+          body.surcharge,
+        )
+      }
+      recompute(product)
+      return ok(toAdminProductResponse(product))
+    },
+  ),
+
+  http.post(
+    url('/api/v1/admin/products/:productId/option-values'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product) return notFound()
+
+      const body = await readBody<OptionValueAddRequest>(request)
+      // 새 축은 만들 수 없다 — 등록 때 정한 축이어야 한다(대소문자 무시).
+      const group = product.optionGroups.find(
+        (candidate) =>
+          candidate.groupCode.toLowerCase() === body?.axisKey?.toLowerCase(),
+      )
+      if (!body || !group) {
+        return invalid([
+          { field: 'axisKey', message: '상품에 있는 축이어야 합니다.' },
+        ])
+      }
+      const locked = lockedResponse(product)
+      if (locked) return locked
+
+      const name = body.value?.trim() ?? ''
+      if (!name || name.length > 60) {
+        return invalid([{ field: 'value', message: '1~60자여야 합니다.' }])
+      }
+      if (
+        group.values.some((value) => normalize(value.name) === normalize(name))
+      ) {
+        return invalid([
+          { field: 'value', message: '같은 값이 이미 있습니다.' },
+        ])
+      }
+      if (
+        group.groupCode === 'storage' &&
+        !STORAGE_PATTERN.test(normalize(name))
+      ) {
+        return invalid([
+          { field: 'value', message: '숫자와 MB·GB·TB만 됩니다(예: 256GB).' },
+        ])
+      }
+
+      pinPrices(product)
+      const valueCode = `${group.groupCode}-${crypto.randomUUID().slice(0, 8)}`
+      group.values.push({
+        valueCode,
+        name,
+        colorHex: body.hex ? body.hex.toUpperCase() : null,
+        imageUrl: null,
+        sortOrder: group.values.length,
+      })
+      surcharges.set(
+        surchargeKey(product.productId, group.groupCode, valueCode),
+        body.surcharge ?? 0,
+      )
+      // 값만 생기고 옵션(조합)은 생기지 않는다 — POST variants로 하나씩 만든다.
+      return ok(toAdminProductResponse(product), 201)
+    },
+  ),
+
+  http.post(
+    url('/api/v1/admin/products/:productId/variants'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product) return notFound()
+
+      const body = await readBody<VariantAddRequest>(request)
+      const selections = body?.selections ?? {}
+      const locked = lockedResponse(product)
+      if (locked) return locked
+
+      // 모든 축의 값이 있어야 하고, 축에 있는 값이어야 한다.
+      const optionValues: Record<string, string> = {}
+      for (const group of product.optionGroups) {
+        const picked = selections[group.groupCode]
+        const value = group.values.find(
+          (candidate) =>
+            picked !== undefined &&
+            normalize(candidate.name) === normalize(picked),
+        )
+        if (!value) {
+          return invalid([
+            {
+              field: `selections.${group.groupCode}`,
+              message: '축에 있는 값이어야 합니다.',
+            },
+          ])
+        }
+        optionValues[group.groupCode] = value.valueCode
+      }
+      const exists = product.variants.some((variant) =>
+        product.optionGroups.every(
+          (group) =>
+            variant.optionValues[group.groupCode] ===
+            optionValues[group.groupCode],
+        ),
+      )
+      if (exists) {
+        return invalid([
+          { field: 'selections', message: '이미 있는 조합입니다.' },
+        ])
+      }
+
+      pinPrices(product)
+      const variant = {
+        optionCode: `V-${crypto.randomUUID().slice(0, 8)}`,
+        name: '',
+        optionValues,
+        price: 0,
+        listPrice: null,
+        // 새 옵션은 바로 판매 중이다.
+        available: true,
+        sortOrder: product.variants.length,
+        images: [],
+      }
+      product.variants.push(variant)
+      recompute(product)
+      return ok(toVariantView(product, variant), 201)
+    },
+  ),
+
+  http.patch(
+    url('/api/v1/admin/products/:productId/variants/:variantId'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      const variant = product?.variants.find(
+        (candidate) => candidate.optionCode === String(params.variantId),
+      )
+      if (!product || !variant) return notFound()
+
+      const body = await readBody<VariantEditRequest>(request)
+      if (body?.status !== 'ACTIVE' && body?.status !== 'PAUSED') {
+        return invalid([{ field: 'status', message: 'ACTIVE 또는 PAUSED' }])
+      }
+      const locked = lockedResponse(product)
+      if (locked) return locked
+
+      variant.available = body.status === 'ACTIVE'
+      product.updatedAt = new Date().toISOString()
+      return ok(toVariantView(product, variant))
+    },
+  ),
+
+  // 일정은 preorder 서비스 경로다. 목업은 상품 저장소의 판매 시각을 같이 쓴다.
+  http.put(
+    url('/api/v1/admin/preorders/products/:productId/campaign'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product || product.saleMode !== 'PREORDER') return notFound()
+      if (product.saleStatus !== 'BEFORE_OPEN') {
+        return fail(409, {
+          code: 'PRODUCT_ALREADY_OPEN',
+          message: '이미 오픈한 회차는 바꿀 수 없습니다.',
+        })
+      }
+
+      const body = await readBody<PreorderCampaignRequest>(request)
+      if (!body?.opensAt || !body.closesAt) {
+        return invalid([
+          { field: 'body', message: '오픈·마감 시각이 필요합니다.' },
+        ])
+      }
+      const opensAt = Date.parse(body.opensAt)
+      if (Date.parse(body.closesAt) <= opensAt) {
+        return invalid([
+          { field: 'closesAt', message: '오픈보다 뒤여야 합니다.' },
+        ])
+      }
+      // 지금과 같은 일정을 다시 보내면 10분 규칙 없이 통과한다.
+      const minute = (iso: string) => Math.floor(Date.parse(iso) / 60_000)
+      const same =
+        minute(body.opensAt) === minute(product.sale.openAt) &&
+        minute(body.closesAt) === minute(product.sale.closeAt ?? '')
+      if (!same && opensAt < Date.now() + 10 * 60_000) {
+        return invalid([
+          { field: 'opensAt', message: '지금부터 10분 뒤 이후여야 합니다.' },
+        ])
+      }
+
+      product.sale.openAt = body.opensAt
+      product.sale.closeAt = body.closesAt
+      product.openAt = body.opensAt
+      product.updatedAt = new Date().toISOString()
+      return ok({
+        productId: product.productId,
+        opensAt: body.opensAt,
+        closesAt: body.closesAt,
+        saleStatus: product.saleStatus,
+        issuedCount: 0,
+        openNotifiedAt: null,
       })
     },
   ),
