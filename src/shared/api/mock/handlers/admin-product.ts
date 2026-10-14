@@ -404,7 +404,25 @@ function createFromRegistration(
       ),
     [{}],
   )
-  const variants = combos.map((optionValues, index) => ({
+  // 등록 때 뺀 조합(excluded)은 만들지 않는다 — 이름(정규화값)으로 맞춘다.
+  const nameOf = (groupCode: string, valueCode: string) =>
+    normalize(
+      optionGroups
+        .find((group) => group.groupCode === groupCode)
+        ?.values.find((value) => value.valueCode === valueCode)?.name ?? '',
+    )
+  const excluded = (body.combinations ?? []).filter((combo) => combo.excluded)
+  const kept = combos.filter(
+    (optionValues) =>
+      !excluded.some((combo) =>
+        Object.entries(optionValues).every(
+          ([groupCode, valueCode]) =>
+            normalize(combo.selections[groupCode] ?? '') ===
+            nameOf(groupCode, valueCode),
+        ),
+      ),
+  )
+  const variants = kept.map((optionValues, index) => ({
     optionCode: `V-${crypto.randomUUID().slice(0, 8)}`,
     name: '',
     optionValues,

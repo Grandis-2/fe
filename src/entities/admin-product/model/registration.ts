@@ -116,6 +116,9 @@ export function validateRegistration(
     return "색상을 입력하거나 '색상 없음'을 골라 주세요."
   }
   if (variants.length > 500) return '조합은 500개까지입니다.'
+  if (variants.every((variant) => value.pausedKeys.includes(variant.key))) {
+    return '판매할 조합을 하나 이상 남겨 주세요.'
+  }
 
   if (value.isPreorder) {
     const opensAt = toIso(value.openAt)
@@ -148,8 +151,8 @@ function toCombinations(
     .filter((axis) => axis.key !== COLOR_GROUP_CODE)
     .map((axis) => axis.key)
 
-  return getProductVariants(value).map((variant) => ({
-    selections: {
+  return getProductVariants(value).map((variant) => {
+    const selections = {
       ...(hasColor && { [COLOR_GROUP_CODE]: variant.colorName.trim() }),
       ...Object.fromEntries(
         groupKeys.map((key, index) => [
@@ -157,9 +160,16 @@ function toCombinations(
           variant.optionLabels[index].trim(),
         ]),
       ),
-    },
-    stock: value.quantities[variant.key] ?? 0,
-  }))
+    }
+    // 판매를 끈 조합은 만들지 않는다 — 재고도 받지 않는다(빼면 서버가 만든다).
+    if (value.pausedKeys.includes(variant.key)) {
+      return { selections, excluded: true }
+    }
+    // 사전예약은 재고를 받지 않는다(0이어도 보내면 400).
+    return value.isPreorder
+      ? { selections }
+      : { selections, stock: value.quantities[variant.key] ?? 0 }
+  })
 }
 
 /** 폼 값을 등록 본문으로 바꾼다. validateRegistration을 통과한 값이어야 한다 */
@@ -192,10 +202,12 @@ export function toRegistrationRequest(
     }
   }
 
+  // 사전예약은 뺀 조합이 있을 때만 조합을 싣는다 — 생략하면 서버가 모두 만든다.
+  const combinations = toCombinations(value, axes)
   return {
     ...common,
     saleMode: 'PREORDER',
-    // 사전예약은 재고를 받지 않는다(stock을 보내면 400). 조합은 생략하면 서버가 모두 만든다.
+    ...(combinations.some((combo) => combo.excluded) && { combinations }),
     campaign: {
       opensAt: toIso(value.openAt) ?? '',
       closesAt: toIso(value.closeAt) ?? '',

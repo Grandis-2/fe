@@ -53,12 +53,8 @@ async function applyOptions(productId: string, plan: OptionsPlan) {
   for (const body of plan.valueAdds) {
     await addOptionValue(productId, body)
   }
-  for (const { body, paused } of plan.variantAdds) {
-    const created = await addVariant(productId, body)
-    // 새 조합은 판매 중으로 생긴다 — 중지로 골라 뒀으면 바로 멈춘다.
-    if (paused) {
-      await editVariant(productId, created.variantId, { status: 'PAUSED' })
-    }
+  for (const body of plan.variantAdds) {
+    await addVariant(productId, body)
   }
   for (const { variantId, status } of plan.variantStatus) {
     await editVariant(productId, variantId, { status })

@@ -239,8 +239,6 @@ type Combination = {
   key: string
   /** 축마다 서버 값 id. 아직 서버에 없는 값은 'new:<이름>' */
   identity: string
-  /** 이번 수정에서 새로 더한 값이 들어 있는지 */
-  hasAddedValue: boolean
   selections: Record<string, string>
 }
 
@@ -250,7 +248,6 @@ const IDENTITY_SEPARATOR = '\u0000'
 function combinationsOf(
   axes: FormAxis[],
   resolvedByAxis: Map<string, Map<string, string>>,
-  addedIds: Set<string>,
 ): Combination[] {
   const picks = axes.reduce<FormAxisValue[][]>(
     (acc, axis) =>
@@ -273,7 +270,6 @@ function combinationsOf(
             `new:${comparableValue(pick.name)}`,
         )
         .join(IDENTITY_SEPARATOR),
-      hasAddedValue: combo.some((pick) => addedIds.has(pick.formId)),
       selections: Object.fromEntries(
         combo.map((pick, index) => [axes[index].key, pick.name]),
       ),
@@ -302,8 +298,8 @@ function serverIdentityOf(
 export type OptionsPlan = {
   valueEdits: { valueId: string; body: OptionValueEditRequest }[]
   valueAdds: OptionValueAddRequest[]
-  /** 새로 만들 조합. 판매 중지로 골라 뒀으면 만든 뒤 바로 중지한다 */
-  variantAdds: { body: VariantAddRequest; paused: boolean }[]
+  /** 새로 만들 조합 — 서버에 없고 판매 스위치를 켠 것 */
+  variantAdds: VariantAddRequest[]
   variantStatus: { variantId: string; status: ProductSaleStatus }[]
   /** 보내기 전에 걸러 낸 문제. 있으면 옵션 섹션을 보내지 않는다 */
   error: string | null
@@ -313,8 +309,9 @@ export type OptionsPlan = {
  * 옵션 섹션의 요청들. 보내는 순서는 값 수정 → 값 추가 → 조합 추가 → 조합 판매 상태다
  * — 조합은 축에 있는 값으로만 만들 수 있어서 값이 먼저다.
  *
- * 조합은 이번에 더한 값이 들어간 것만 만든다. 기존 값끼리의 빠진 조합은 등록 때
- * 일부러 뺀 것이라(excluded) 건드리지 않는다 — 안 그러면 수정 저장마다 생겨난다.
+ * 서버에 없는 조합은 판매 스위치를 켰을 때만 만든다. 등록 때 뺀 조합은 폼을 열 때
+ * 꺼진 채로 오고(toFormValue), 이번에 더한 값의 조합은 켜진 채로 생긴다 — 끄면 만들지
+ * 않는다. 서버에 옵션을 지우는 API가 없어 '만들고 바로 중지'보다 안 만드는 게 낫다.
  */
 export function planOptions(
   value: AdminProductFormValue,
@@ -342,7 +339,6 @@ export function planOptions(
   }
 
   const resolvedByAxis = new Map<string, Map<string, string>>()
-  const addedIds = new Set<string>()
 
   for (const axis of axes) {
     const serverAxis = server.optionAxes.find(
@@ -352,13 +348,6 @@ export function planOptions(
     resolvedByAxis.set(axis.key, resolved)
 
     for (const formValue of axis.values) {
-      // 원래 있던 값인지 — id가 그대로면 있던 값, 아니면 이번에 더한 값이다(이름으로
-      // 서버 값을 찾았더라도 지난 저장에서 추가된 것뿐이다).
-      const original = serverAxis?.values.some(
-        (serverValue) => serverValue.valueId === formValue.formId,
-      )
-      if (!original) addedIds.add(formValue.formId)
-
       if (axis.key === 'storage' && !isStorageValue(formValue.name)) {
         return {
           ...plan,
@@ -427,16 +416,13 @@ export function planOptions(
   )
   const paused = new Set(value.pausedKeys)
 
-  for (const combination of combinationsOf(axes, resolvedByAxis, addedIds)) {
+  for (const combination of combinationsOf(axes, resolvedByAxis)) {
     const variant = serverByIdentity.get(combination.identity)
     const wantPaused = paused.has(combination.key)
 
     if (!variant) {
-      if (combination.hasAddedValue) {
-        plan.variantAdds.push({
-          body: { selections: combination.selections },
-          paused: wantPaused,
-        })
+      if (!wantPaused) {
+        plan.variantAdds.push({ selections: combination.selections })
       }
       continue
     }
@@ -490,19 +476,17 @@ export function planStock(
     ]),
   )
 
-  const items = combinationsOf(axes, resolvedByAxis, new Set()).flatMap(
-    (combination) => {
-      const variant = serverByIdentity.get(combination.identity)
-      if (!variant) return []
-      const wanted = value.quantities[combination.key] ?? 0
-      const current =
-        stockItems.find((item) => item.optionId === variant.variantId)
-          ?.stockTotal ?? 0
-      return wanted === current
-        ? []
-        : [{ optionId: variant.variantId, stockTotal: wanted }]
-    },
-  )
+  const items = combinationsOf(axes, resolvedByAxis).flatMap((combination) => {
+    const variant = serverByIdentity.get(combination.identity)
+    if (!variant) return []
+    const wanted = value.quantities[combination.key] ?? 0
+    const current =
+      stockItems.find((item) => item.optionId === variant.variantId)
+        ?.stockTotal ?? 0
+    return wanted === current
+      ? []
+      : [{ optionId: variant.variantId, stockTotal: wanted }]
+  })
 
   return items.length > 0 ? { items } : null
 }

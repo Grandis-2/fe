@@ -77,8 +77,10 @@ export type AdminProductFormValue = {
    */
   quantities: Record<string, number>
   /**
-   * 판매 중지할 조합의 키(quantities와 같은 키). 수정 화면에서만 쓴다 — 서버에 옵션을
-   * 지우는 API가 없어서, 그만 팔 조합은 지우는 대신 판매 중지로 둔다.
+   * 판매 스위치를 끈 조합의 키(quantities와 같은 키).
+   * - 등록: 만들지 않는다(서버 excluded)
+   * - 수정: 이미 있는 조합은 판매 중지, 서버에 없는 조합(등록 때 뺀 것·새 값의 조합)은
+   *   만들지 않는다. 서버에 옵션을 지우는 API가 없어서 그만 팔 조합은 판매 중지로 둔다.
    */
   pausedKeys: string[]
   detailImages: UploadedImage[]
@@ -267,7 +269,7 @@ export function toFormValue(
       ),
     )
 
-  return {
+  const value: AdminProductFormValue = {
     ...createEmptyProductFormValue(),
     name: detail.name,
     modelName: detail.modelName,
@@ -320,4 +322,12 @@ export function toFormValue(
     specImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.specImages)),
     noticeImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.noticeImages)),
   }
+
+  // 축의 곱집합 중 서버에 없는 조합은 등록 때 뺀 것이다 — 스위치를 꺼서 보여준다.
+  // 켜 두면 판매 중인 것처럼 읽히는데 실제로는 없다.
+  const existing = new Set(detail.variants.map(variantKeyOf))
+  const missing = getProductVariants(value)
+    .map((variant) => variant.key)
+    .filter((key) => !existing.has(key))
+  return { ...value, pausedKeys: [...value.pausedKeys, ...missing] }
 }

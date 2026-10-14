@@ -137,3 +137,19 @@ export const UnpicksTag: Story = {
     await expect(args.onChange).toHaveBeenCalledWith(['핸드폰'])
   },
 }
+
+/**
+ * 수정 폼은 추천 기준(제품 종류)이 없어 고른 태그가 '그 외'에 접혀 안 보인다 —
+ * 선택된 태그를 맨 위에 따로 모은다. 누르면 빠진다.
+ */
+export const ShowsSelected: Story = {
+  args: { showSelected: true, value: ['갤럭시', '직접 쓴 태그'] },
+  play: async ({ canvas, args }) => {
+    await expect(canvas.getByText('선택된 태그 (2)')).toBeVisible()
+    const picked = canvas.getByRole('button', { name: '직접 쓴 태그' })
+    await expect(picked).toHaveAttribute('aria-pressed', 'true')
+
+    await userEvent.click(picked)
+    await expect(args.onChange).toHaveBeenCalledWith(['갤럭시'])
+  },
+}

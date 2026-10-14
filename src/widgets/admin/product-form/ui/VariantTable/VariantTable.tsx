@@ -25,10 +25,13 @@ export type VariantTableProps = {
   /** 수량 칸을 숨긴다 — 사전예약 수정 화면은 1차 배송 수량을 배송 구간 설정에서 고친다 */
   hideQuantity?: boolean
   /**
-   * 수정 화면에서만 — 조합마다 판매 여부를 고른다. 서버에 옵션을 지우는 API가 없어서
-   * 그만 팔 조합은 지우지 않고 판매 중지로 둔다. 넘기지 않으면 칸이 없다.
+   * 조합마다 판매 여부를 고른다. 넘기지 않으면 칸이 없다.
+   * - 등록: 끈 조합은 만들지 않는다(서버 excluded) — 수량도 받지 않는다
+   * - 수정: 서버에 옵션을 지우는 API가 없어서 그만 팔 조합은 판매 중지로 둔다
    */
   pausedKeys?: string[]
+  /** 등록 화면 — 끈 조합의 수량 칸을 막는다(만들지 않으니 재고가 없다) */
+  excludeOnPause?: boolean
   onPausedChange?: (key: string, paused: boolean) => void
 }
 
@@ -42,6 +45,7 @@ export function VariantTable({
   hideQuantity = false,
   pausedKeys,
   onPausedChange,
+  excludeOnPause = false,
 }: VariantTableProps) {
   const quantityLabel = isPreorder ? '1차 배송 수량' : '수량'
   const hexByName = new Map(
@@ -104,6 +108,9 @@ export function VariantTable({
                 <NumberField
                   size="small"
                   label={quantityLabel}
+                  disabled={
+                    excludeOnPause && !!pausedKeys?.includes(variant.key)
+                  }
                   value={quantities[variant.key] ?? 0}
                   onChange={(quantity) =>
                     onQuantityChange(variant.key, quantity)

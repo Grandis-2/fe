@@ -23,6 +23,11 @@ export type TagFieldProps = {
    * 그때는 추천을 비우고 전체 목록만 안내한다.
    */
   preset?: ProductOptionPreset
+  /**
+   * 고른 태그를 맨 위에 따로 모은다. 수정 폼은 추천이 없어 고른 태그가 '그 외'에
+   * 접혀 들어가 안 보이므로 켠다.
+   */
+  showSelected?: boolean
 }
 
 /** Tag는 span이라 누를 수 없어 버튼으로 감싼다 — 생김새는 전부 안의 Tag가 가진다. */
@@ -62,7 +67,12 @@ function TagToggle({
  * 위에는 고른 제품 종류에 맞는 추천과 직접 적은 태그만 둔다 — 후보 30여 개를 한꺼번에
  * 펼치면 어느 게 이 상품에 맞는 말인지 고르기 어렵다. 나머지는 '전체 보기'로 접어 둔다.
  */
-export function TagField({ value, onChange, preset }: TagFieldProps) {
+export function TagField({
+  value,
+  onChange,
+  preset,
+  showSelected = false,
+}: TagFieldProps) {
   const [draft, setDraft] = useState('')
   const [expanded, setExpanded] = useState(false)
 
@@ -122,25 +132,48 @@ export function TagField({ value, onChange, preset }: TagFieldProps) {
         </Button>
       </div>
 
-      <div className={styles.group}>
-        <div className={styles.groupTitle}>
-          {recommended.length > 0
-            ? `${preset?.name} 추천 태그`
-            : '제품 카테고리를 고르면 추천 태그가 나옵니다'}
-        </div>
-        {(typed.length > 0 || recommended.length > 0) && (
-          <div className={styles.tags}>
-            {[...typed, ...recommended].map((tag) => (
-              <TagToggle
-                key={tag}
-                tag={tag}
-                picked={value.includes(tag)}
-                onToggle={() => toggle(tag)}
-              />
-            ))}
+      {showSelected ? (
+        // 직접 적은 태그도 여기 들어 있다 — 위 추천 줄은 기준(제품 종류)이 없어 뺀다.
+        <div className={styles.group}>
+          <div className={styles.groupTitle}>
+            {value.length > 0
+              ? `선택된 태그 (${value.length})`
+              : '선택된 태그가 없습니다'}
           </div>
-        )}
-      </div>
+          {value.length > 0 && (
+            <div className={styles.tags}>
+              {value.map((tag) => (
+                <TagToggle
+                  key={tag}
+                  tag={tag}
+                  picked
+                  onToggle={() => toggle(tag)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className={styles.group}>
+          <div className={styles.groupTitle}>
+            {recommended.length > 0
+              ? `${preset?.name} 추천 태그`
+              : '제품 카테고리를 고르면 추천 태그가 나옵니다'}
+          </div>
+          {(typed.length > 0 || recommended.length > 0) && (
+            <div className={styles.tags}>
+              {[...typed, ...recommended].map((tag) => (
+                <TagToggle
+                  key={tag}
+                  tag={tag}
+                  picked={value.includes(tag)}
+                  onToggle={() => toggle(tag)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className={styles.group}>
         <button

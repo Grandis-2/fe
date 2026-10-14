@@ -313,16 +313,15 @@ export function AdminProductForm({
             // 차수는 끝이 열린 채로만 보낼 수 있어서 1차 물량도 실을 곳이 없다 —
             // 물량 경계는 배송 구간 설정에서 2차를 더할 때 정한다.
             hideQuantity={value.isPreorder}
-            pausedKeys={editing ? value.pausedKeys : undefined}
-            onPausedChange={
-              editing
-                ? (key, paused) =>
-                    patch({
-                      pausedKeys: paused
-                        ? [...value.pausedKeys, key]
-                        : value.pausedKeys.filter((item) => item !== key),
-                    })
-                : undefined
+            // 등록에선 끈 조합을 만들지 않고, 수정에선 판매 중지로 둔다.
+            pausedKeys={value.pausedKeys}
+            excludeOnPause={!editing}
+            onPausedChange={(key, paused) =>
+              patch({
+                pausedKeys: paused
+                  ? [...value.pausedKeys, key]
+                  : value.pausedKeys.filter((item) => item !== key),
+              })
             }
           />
         </FormSection>
@@ -332,6 +331,9 @@ export function AdminProductForm({
           description="구매자에게는 보이지 않습니다. 검색에만 쓰이니 고객이 찾을 때 쓸 말을 넣어주세요."
         >
           <TagField
+            // 수정은 제품 종류(추천 기준)를 모른다 — 고른 태그가 '그 외'에 접혀 안
+            // 보이지 않게 따로 모아 보여준다.
+            showSelected={editing}
             preset={preset}
             value={value.tags}
             onChange={(tags) => patch({ tags })}

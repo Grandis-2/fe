@@ -353,14 +353,25 @@ export const EditPausesVariant: Story = {
   },
 }
 
-/** 등록 화면에는 판매 끄기 칸이 없다 — 아직 만들어진 조합이 없다. */
-export const CreateHasNoPauseToggle: Story = {
-  args: { mode: 'create', defaultValue: { ...savedProduct, isPreorder: true } },
-  play: async ({ canvas }) => {
-    await expect(canvas.queryByRole('switch')).toBeNull()
-    await expect(
-      canvas.getByRole('columnheader', { name: '가격' }),
-    ).toBeVisible()
+/**
+ * 등록에서도 조합마다 판매 스위치가 있다 — 끈 조합은 만들지 않는다(서버 excluded).
+ * 일반 상품이면 끈 조합의 수량 칸도 막는다(만들지 않으니 재고가 없다).
+ */
+export const CreateExcludesVariant: Story = {
+  args: { mode: 'create', defaultValue: savedProduct },
+  play: async ({ canvas, args }) => {
+    const toggle = canvas.getByRole('switch', { name: '딥 블루 256GB 판매' })
+    await expect(toggle).toBeChecked()
+    await userEvent.click(toggle)
+    await expect(toggle).not.toBeChecked()
+
+    const row = toggle.closest('tr')
+    await expect(row?.querySelector('input')).toBeDisabled()
+
+    await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ pausedKeys: ['딥 블루|256GB'] }),
+    )
   },
 }
 
