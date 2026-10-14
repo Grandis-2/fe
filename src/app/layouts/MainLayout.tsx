@@ -11,6 +11,7 @@ import {
   SEARCH_RESULTS_PATH,
   SIGNUP_PATH,
 } from '@shared/config/routes'
+import { Footer } from '@widgets/footer'
 
 import { isCallbackPath } from './callbackPaths'
 import * as styles from './MainLayout.css'
@@ -53,7 +54,10 @@ export function MainLayout() {
         .filter(Boolean)
         .join(' ')}
     >
-      <Outlet />
+      <div className={styles.content}>
+        <Outlet />
+      </div>
+      {!isCallback && <Footer />}
     </div>
   )
 }
