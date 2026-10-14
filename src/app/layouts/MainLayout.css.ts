@@ -33,3 +33,12 @@ export const darkBackground = style({
 export const transparentBackground = style({
   background: 'transparent',
 })
+
+export const withoutHeader = style({
+  minHeight: '100vh',
+  '@media': {
+    [breakpoint.mobile]: {
+      paddingBottom: 0,
+    },
+  },
+})
