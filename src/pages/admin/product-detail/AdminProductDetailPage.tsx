@@ -132,7 +132,6 @@ export function AdminProductDetailPage() {
       {tab === 'edit' && (
         <AdminProductEditForm
           productId={productId}
-          onSaved={() => navigate(ADMIN_PRODUCTS_PATH)}
           onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
           onPreview={() => navigate(productPath(productId))}
           onEditDispatchWindow={() => setTab('shipping')}

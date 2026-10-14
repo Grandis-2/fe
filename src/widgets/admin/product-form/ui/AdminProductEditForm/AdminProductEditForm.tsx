@@ -11,6 +11,7 @@ import {
   type EditSaveResult,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
+import { showToast } from '@shared/model/toastStore'
 import { InlineAlert } from '@shared/ui'
 
 import { AdminProductForm } from '../AdminProductForm'
@@ -19,8 +20,6 @@ import * as styles from './AdminProductEditForm.css'
 
 export type AdminProductEditFormProps = {
   productId: string
-  /** 바뀐 섹션이 모두 저장됐을 때 */
-  onSaved: () => void
   onCancel: () => void
   onPreview: () => void
   /** 배송 구간 설정 탭으로 보낸다 — 1차 배송일은 거기서 고친다 */
@@ -28,7 +27,10 @@ export type AdminProductEditFormProps = {
 }
 
 /**
- * 상품을 불러와 수정 폼을 채우고, 저장까지 맡는다 — 어디로 이동할지만 쓰는 쪽이 정한다.
+ * 상품을 불러와 수정 폼을 채우고, 저장까지 맡는다.
+ *
+ * 저장해도 이 화면에 남는다 — 저장이 제대로 됐는지 바로 보고 이어서 고칠 수 있게. 다 저장되면
+ * 서버 값을 다시 받아 폼을 새로 채운다(새로 만든 조합·판매 상태가 서버 기준으로 맞춰진다).
  *
  * 저장은 섹션(기본 정보·판매 일정·옵션·재고)마다 요청이 따로라 일부만 실패할 수 있다.
  * 실패한 섹션을 모아 보여주고 폼은 그대로 둔다 — 상세를 다시 받아 기준이 바뀌므로,
@@ -36,7 +38,6 @@ export type AdminProductEditFormProps = {
  */
 export function AdminProductEditForm({
   productId,
-  onSaved,
   onCancel,
   onPreview,
   onEditDispatchWindow,
@@ -45,6 +46,8 @@ export function AdminProductEditForm({
   const stock = useAdminProductStock(productId)
   const save = useSaveAdminProductEdits(productId)
   const [result, setResult] = useState<EditSaveResult>()
+  // 저장이 끝나면 올려 폼을 새로 만든다 — 폼은 처음 값(defaultValue)으로만 채워진다.
+  const [formVersion, setFormVersion] = useState(0)
 
   const loadError = product.error ?? stock.error
   if (loadError) {
@@ -90,15 +93,13 @@ export function AdminProductEditForm({
           </ul>
         </InlineAlert>
       )}
-      {result && !result.changed && (
-        <InlineAlert status="info">바뀐 내용이 없습니다.</InlineAlert>
-      )}
 
       <AdminProductForm
         // 폼은 defaultValue를 처음에만 읽는다. 상세 화면에 머문 채 상품만 바뀌면
         // (뒤로/앞으로 가기 등) 이전 상품 값이 남아 새 상품에 저장될 수 있어 새로 만든다.
-        // 저장 뒤 상세를 다시 받아도 폼은 그대로다 — 실패한 입력을 지우지 않으려고.
-        key={productId}
+        // 일부 실패면 폼을 그대로 둔다(실패한 입력을 지우지 않으려고). 다 저장되면
+        // formVersion을 올려 서버 값으로 새로 채운다.
+        key={`${productId}-${formVersion}`}
         mode="edit"
         defaultValue={toFormValue(product.data, stock.data)}
         existingIds={existingIds}
@@ -120,9 +121,18 @@ export function AdminProductEditForm({
         onSubmit={(value) => {
           setResult(undefined)
           save.mutate(value, {
-            onSuccess: (saved) => {
+            onSuccess: async (saved) => {
               setResult(saved)
-              if (saved.changed && saved.failures.length === 0) onSaved()
+              // 맨 위 알림은 화면 아래 버튼 자리에서 안 보인다 — 토스트로 알린다.
+              if (!saved.changed) {
+                showToast('바뀐 내용이 없습니다.')
+                return
+              }
+              if (saved.failures.length > 0) return
+              // 서버 값을 다 받은 뒤에 폼을 새로 만든다 — 먼저 만들면 옛 값으로 채워진다.
+              await Promise.all([product.refetch(), stock.refetch()])
+              setFormVersion((version) => version + 1)
+              showToast('상품을 저장했습니다.')
             },
           })
         }}
