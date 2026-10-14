@@ -58,16 +58,6 @@ export const router = createBrowserRouter([
       })),
     errorElement: <ErrorPage />,
   },
-  // 로그인 전에는 사이드바도 헤더의 알림도 쓸 데가 없어 RootLayout 밖에 둔다.
-  {
-    path: ADMIN_LOGIN_PATH,
-    hydrateFallbackElement: <></>,
-    lazy: () =>
-      import('@pages/admin/login/AdminLoginPage').then((m) => ({
-        Component: m.AdminLoginPage,
-      })),
-    errorElement: <ErrorPage />,
-  },
   {
     element: <RootLayout />,
     hydrateFallbackElement: <></>,
@@ -213,6 +203,16 @@ export const router = createBrowserRouter([
             ],
           },
         ],
+      },
+      // 관리자 로그인은 헤더(로고)는 두고 사이드바는 없다 — AdminLayout·RequireAdmin
+      // 밖에 둔다. 헤더의 알림·로그아웃은 로그인 전이라 Header가 이 경로에서 숨긴다.
+      {
+        path: ADMIN_LOGIN_PATH,
+        lazy: () =>
+          import('@pages/admin/login/AdminLoginPage').then((m) => ({
+            Component: m.AdminLoginPage,
+          })),
+        errorElement: <ErrorPage />,
       },
       {
         element: <RequireAdmin />,

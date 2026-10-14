@@ -38,6 +38,8 @@ export function Header({
   const isMainPage = pathname === HOME_PATH
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
   const isAdminPage = pathname.startsWith(ADMIN_HOME_PATH)
+  // 관리자 로그인 화면 — 로그인 전이라 알림도 로그아웃도 누를 데가 없다. 로고만 둔다.
+  const isAdminLogin = pathname === ADMIN_LOGIN_PATH
   // 메인페이지에서만 헤더가 sticky다(그 외엔 root의 기본 position: relative를 그대로
   // 쓴다). 추후 다른 페이지도 sticky가 필요해지면 이 조건에 OR로 추가한다.
   const isStickyPage = isMainPage
@@ -109,7 +111,7 @@ export function Header({
           )}
         </div>
         <div className={styles.actions}>
-          {isAdminPage ? (
+          {isAdminLogin ? null : isAdminPage ? (
             <>
               {/* 관리자 알림은 회원 알림과 대상이 달라 패널을 열지 않고 밖에 알리기만 한다. */}
               <button
