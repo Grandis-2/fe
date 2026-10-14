@@ -53,3 +53,25 @@ export const Pending: Story = {
     ).toBeDisabled()
   },
 }
+
+/**
+ * 사전예약은 공개로 둬도 접수 기간 밖이면 공개 예정·공개 종료로 보인다 — 공개 설정은
+ * 켜져 있으니 내리는 버튼을 준다.
+ */
+export const Scheduled: Story = {
+  args: { product: { ...product, displayStatus: 'SCHEDULED' } },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole('button', { name: '숨김으로 전환하기' }),
+    ).toBeVisible()
+  },
+}
+
+export const Ended: Story = {
+  args: { product: { ...product, displayStatus: 'ENDED' } },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole('button', { name: '숨김으로 전환하기' }),
+    ).toBeVisible()
+  },
+}

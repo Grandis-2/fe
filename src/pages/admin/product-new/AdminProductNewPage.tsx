@@ -15,8 +15,9 @@ import { AdminProductForm } from '@widgets/admin/product-form'
 import * as styles from './AdminProductNewPage.css'
 
 /**
- * 새 상품 등록. 등록은 항상 초안으로 들어가고, 공개는 상세 화면에서 따로 누른다 —
- * 옵션·가격을 다 채우기 전에 구매자에게 노출되지 않게 한다.
+ * 새 상품 등록. 일반 상품은 비공개로 들어가 상세 화면에서 따로 공개한다 — 옵션·가격을
+ * 확인하기 전에 구매자에게 노출되지 않게. 사전예약은 공개로 들어가지만 접수 기간에만
+ * 구매자에게 보인다.
  */
 const violationsOf = (caught: unknown) =>
   caught instanceof ApiRequestError

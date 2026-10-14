@@ -1,4 +1,4 @@
-import { type AdminProduct } from '@entities/admin-product'
+import { isPublicSetting, type AdminProduct } from '@entities/admin-product'
 import { Button } from '@shared/ui'
 
 import type { VisibilityTarget } from '../../lib/useProductVisibility'
@@ -28,7 +28,8 @@ export function AdminProductVisibility({
   pending = false,
   className,
 }: AdminProductVisibilityProps) {
-  return product.displayStatus === 'PUBLISHED' ? (
+  // 공개 예정·공개 종료도 공개 설정은 켜져 있다 — 접수 기간 밖이라 안 보일 뿐이다.
+  return isPublicSetting(product.displayStatus) ? (
     <Button
       className={className}
       size="small"

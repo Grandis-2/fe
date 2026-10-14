@@ -34,6 +34,7 @@ export {
 export type { DispatchWaveDraft, DispatchWaveModel } from './model/dispatch'
 export {
   isPreorder,
+  isPublicSetting,
   PRODUCT_BRANDS,
   productTypeLabel,
   productTypeLabels,

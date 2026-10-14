@@ -1,26 +1,39 @@
 import type {
   AdminProductListItem,
   AdminProductResponse,
-  DisplayStatus,
+  PreorderSaleStatus,
 } from '@shared/api/types'
 
-import type { AdminProduct, AdminProductDetailModel } from '../model/types'
+import type {
+  AdminDisplayStatus,
+  AdminProduct,
+  AdminProductDetailModel,
+} from '../model/types'
 
 /**
- * 전시 상태를 한 값으로 모은다 — 서버는 두 불리언으로 알려 준다. 목록과 상세가 같은
- * 규칙을 써야 해서 둘 다 여기를 거친다.
+ * 전시 상태를 한 값으로 모은다 — 서버는 두 불리언과 접수 단계로 알려 준다. 목록과
+ * 상세가 같은 규칙을 써야 해서 둘 다 여기를 거친다.
  *
  * 준비가 안 끝났으면(registrationCompleted false) 공개로 골라 뒀어도 회원에게
- * 보이지 않으므로 그 상태가 먼저다.
+ * 보이지 않으므로 그 상태가 먼저다. 사전예약은 공개로 둬도 접수 기간에만 보여서,
+ * 기간 밖이면 공개 예정·공개 종료로 나눈다 — '게시중'이라고 하면 지금 보이는 줄 안다.
  */
 const toDisplayStatus = ({
   visible,
   registrationCompleted,
+  stage,
 }: {
   visible: boolean
   registrationCompleted: boolean
-}): DisplayStatus =>
-  !registrationCompleted ? 'DRAFT' : visible ? 'PUBLISHED' : 'HIDDEN'
+  /** 사전예약 접수 단계. 일반 상품이거나 회차가 아직 없으면 null */
+  stage: PreorderSaleStatus | null | undefined
+}): AdminDisplayStatus => {
+  if (!registrationCompleted) return 'DRAFT'
+  if (!visible) return 'HIDDEN'
+  if (stage === 'BEFORE_OPEN') return 'SCHEDULED'
+  if (stage === 'CLOSED') return 'ENDED'
+  return 'PUBLISHED'
+}
 
 /**
  * 관리자 목록 한 줄을 화면이 쓰는 모양으로 바꾼다.
@@ -38,7 +51,7 @@ export const toAdminProduct = (item: AdminProductListItem): AdminProduct => ({
   closesAt: item.closesAt,
   status: item.status,
   preorderStatus: item.preorderStatus,
-  displayStatus: toDisplayStatus(item),
+  displayStatus: toDisplayStatus({ ...item, stage: item.preorderStatus }),
   minPrice: item.minPrice,
   thumbnailUrl: item.imageUrl,
 })
@@ -73,5 +86,6 @@ export const toAdminProductDetail = ({
   displayStatus: toDisplayStatus({
     visible: product.visible,
     registrationCompleted: registration.completed,
+    stage: product.campaign?.status,
   }),
 })

@@ -269,8 +269,9 @@ function settleRegistrations() {
   for (const record of registrations.values()) {
     const product = findProduct(record.productId)
     if (product?.displayStatus === 'DRAFT' && record.readyAt <= now) {
-      // 등록은 늘 비공개로 들어온다(프론트가 visible false로 보낸다).
-      product.displayStatus = 'HIDDEN'
+      // 등록 때 보낸 공개 여부를 따른다 — 사전예약은 공개, 일반 상품은 비공개로 온다.
+      const { visible } = JSON.parse(record.body) as { visible?: boolean }
+      product.displayStatus = visible ? 'PUBLISHED' : 'HIDDEN'
     }
   }
 }

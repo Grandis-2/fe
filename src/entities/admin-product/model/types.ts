@@ -30,7 +30,7 @@ export type AdminProductDetailModel = Pick<
   | 'categoryId'
 > & {
   name: string
-  displayStatus: DisplayStatus
+  displayStatus: AdminDisplayStatus
   /** 검색 태그. 서버는 콤마로 이은 문자열로 준다 */
   tags: string[]
   /** 준비 완료. false면 공개로 골라 뒀어도 회원에게 보이지 않는다 */
@@ -57,7 +57,7 @@ export type AdminProduct = {
   status: ProductSaleStatus
   /** 사전예약 접수 단계. 일반 상품이거나 회차가 아직 없으면 null */
   preorderStatus: PreorderSaleStatus | null
-  displayStatus: DisplayStatus
+  displayStatus: AdminDisplayStatus
   /** 판매 중인 옵션의 최저가(원). 없으면 null */
   minPrice: number | null
   thumbnailUrl: string | null
@@ -67,7 +67,17 @@ export type AdminProduct = {
 export type AdminStockItemModel = StockOverviewItem
 export type AdminSaleState = ProductSaleStatus
 export type AdminPreorderStage = PreorderSaleStatus
-export type AdminDisplayStatus = DisplayStatus
+/**
+ * 화면의 전시 상태. 서버의 공개 여부(visible)에 사전예약 접수 기간을 더한다 — 사전예약은
+ * 공개로 둬도 접수 기간(오픈~마감)에만 구매자에게 보인다(백엔드 합의, 2026-10-14).
+ * - SCHEDULED(공개 예정): 공개로 뒀고 오픈 전
+ * - ENDED(공개 종료): 공개로 뒀고 마감 뒤
+ */
+export type AdminDisplayStatus = DisplayStatus | 'SCHEDULED' | 'ENDED'
+
+/** 관리자가 공개로 둔 상태인지 — 접수 기간 밖이라 지금 안 보여도 공개 설정은 켜져 있다 */
+export const isPublicSetting = (status: AdminDisplayStatus) =>
+  status === 'PUBLISHED' || status === 'SCHEDULED' || status === 'ENDED'
 
 /** 상품 판매 상태 — 백엔드의 status를 그대로 쓴다 */
 export const saleStateLabel: Record<ProductSaleStatus, string> = {
@@ -99,9 +109,11 @@ export const preorderStageColor: Record<
   CLOSED: 'gray',
 }
 
-export const displayStatusLabel: Record<DisplayStatus, string> = {
+export const displayStatusLabel: Record<AdminDisplayStatus, string> = {
   DRAFT: '초안',
   PUBLISHED: '게시중',
+  SCHEDULED: '공개 예정',
+  ENDED: '공개 종료',
   HIDDEN: '숨김',
 }
 
@@ -113,19 +125,30 @@ export const displayStatusLabel: Record<DisplayStatus, string> = {
  * - 게시중: secondary + subtle(채움) — 지금 구매자에게 보이는 중
  * - 숨김:   secondary + outline(테두리) — 냈다가 내림
  * - 초안:   gray + outline — 아직 한 번도 낸 적 없어 브랜드 색을 줄 자리가 아니다
+ * - 공개 예정: primary + outline — 공개로 뒀지만 아직 안 보임(오픈 전)
+ * - 공개 종료: gray + subtle — 공개로 뒀지만 접수가 끝나 더는 안 보임
  */
-export const displayStatusColor: Record<DisplayStatus, 'gray' | 'secondary'> = {
+export const displayStatusColor: Record<
+  AdminDisplayStatus,
+  'gray' | 'secondary' | 'primary'
+> = {
   DRAFT: 'gray',
   PUBLISHED: 'secondary',
+  SCHEDULED: 'primary',
+  ENDED: 'gray',
   HIDDEN: 'secondary',
 }
 
-export const displayStatusVariant: Record<DisplayStatus, 'subtle' | 'outline'> =
-  {
-    DRAFT: 'outline',
-    PUBLISHED: 'subtle',
-    HIDDEN: 'outline',
-  }
+export const displayStatusVariant: Record<
+  AdminDisplayStatus,
+  'subtle' | 'outline'
+> = {
+  DRAFT: 'outline',
+  PUBLISHED: 'subtle',
+  SCHEDULED: 'outline',
+  ENDED: 'subtle',
+  HIDDEN: 'outline',
+}
 
 // 표의 전시 열 너비를 가장 긴 문구에 맞출 때 쓴다(Tag의 widthOptions).
 export const displayStatusLabels = Object.values(displayStatusLabel)
