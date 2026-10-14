@@ -15,8 +15,8 @@ import { enterDraw, getDraw, getDraws, getMyDrawEntry } from './draw'
 const AUTHORIZING_POLL_MS = 3_000
 // 마감 뒤 추첨은 30초 뒤부터 서버가 한다 — 결과가 나올 때까지 30초 이상 간격으로 묻는다(명세).
 const RESULT_POLL_MS = 30_000
-// ponytail: 목록은 첫 쪽(최대 100건)만 받는다 — 회차가 그보다 늘면 page를 이어 받는 훅으로 바꾼다.
-const FIRST_PAGE = { size: 100 }
+// ponytail: 목록은 첫 쪽(최대 20건)만 받는다 — 회차가 그보다 늘면 page를 이어 받는 훅으로 바꾼다.
+const FIRST_PAGE = { size: 20 }
 
 export const drawKeys = {
   all: ['draws'] as const,
