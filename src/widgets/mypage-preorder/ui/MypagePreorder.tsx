@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 
-import { BellOff, BellRing } from 'lucide-react'
+import { BellOff, BellRing, CalendarClock } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { HistoryCard } from '@entities/order'
@@ -21,7 +21,7 @@ import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, Button, Tag } from '@shared/ui'
+import { ActionButton, Button, InlineAlert, Tag } from '@shared/ui'
 
 import * as styles from './MypagePreorder.css'
 
@@ -255,7 +255,13 @@ export function MypagePreorder() {
             진행 중인 예약{' '}
             <span className={styles.count}>{inProgress.length}건</span>
           </h2>
-          {inProgress.map((reservation) => card(reservation))}
+          {inProgress.length === 0 ? (
+            <InlineAlert status="info" variant="big" icon={CalendarClock}>
+              진행 중인 예약이 없어요
+            </InlineAlert>
+          ) : (
+            inProgress.map((reservation) => card(reservation))
+          )}
         </section>
       )}
 
