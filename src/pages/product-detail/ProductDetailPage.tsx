@@ -240,11 +240,15 @@ export function ProductDetailPage() {
               rows={[
                 { label: '상품 금액', value: formatWon(totalPrice) },
                 { label: '수량', value: `${quantity}개` },
-                {
-                  label: `사전예약 혜택 (${PREORDER_BENEFIT_RATE * 100}%)`,
-                  value: `-${formatWon(benefitAmount)}`,
-                  accent: true,
-                },
+                ...(isPreorder
+                  ? [
+                      {
+                        label: `사전예약 혜택 (${PREORDER_BENEFIT_RATE * 100}%)`,
+                        value: `-${formatWon(benefitAmount)}`,
+                        accent: true,
+                      },
+                    ]
+                  : []),
               ]}
               total={{
                 label: '총 결제 금액',
