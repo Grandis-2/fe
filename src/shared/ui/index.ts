@@ -1,3 +1,5 @@
+export { ActionMenu } from './ActionMenu'
+export type { ActionMenuProps, ActionMenuItem } from './ActionMenu'
 export { Box } from './Box'
 export type { BoxProps } from './Box'
 export { Breadcrumb } from './Breadcrumb'

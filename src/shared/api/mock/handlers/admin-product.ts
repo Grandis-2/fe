@@ -17,6 +17,8 @@ import type {
   ProductEditRequest,
   ProductRegistrationRequest,
   ProductRegistrationResponse,
+  SaleStatusChangeRequest,
+  SaleStatusView,
   Variant,
   VariantAddRequest,
   VariantEditRequest,
@@ -32,6 +34,14 @@ const notFound = () =>
     retryable: false,
   })
 
+/*
+ * 판매 중지(PAUSED)한 상품. 저장소(예전 모양)엔 판매 상태 필드가 없어 따로 들고,
+ * 목록·상세가 여기서 읽는다.
+ */
+const pausedProducts = new Set<string>()
+const saleStatusOf = (productId: string) =>
+  pausedProducts.has(productId) ? ('PAUSED' as const) : ('ACTIVE' as const)
+
 // 저장된 상세에서 목록 한 줄을 만든다. 서버처럼 판매·전시를 한 필드로 주지 않는다 —
 // 사전예약 단계와 일반 상품 상태를 따로 싣고, 전시는 두 불리언으로 나눈다.
 const toListItem = (detail: AdminProductDetail): AdminProductListItem => ({
@@ -39,9 +49,8 @@ const toListItem = (detail: AdminProductDetail): AdminProductListItem => ({
   saleMode: detail.saleMode,
   title: detail.name,
   imageUrl: detail.thumbnailUrl,
-  // 판매 상태는 접수 단계와도, 숨김(공개 여부)과도 다른 축이다. 목업엔 판매 중지를
-  // 거는 경로가 없어 늘 판매 중이다 — '판매 중지' 뱃지는 스토리로 확인한다.
-  status: 'ACTIVE',
+  // 판매 상태는 접수 단계와도, 숨김(공개 여부)과도 다른 축이다.
+  status: saleStatusOf(detail.productId),
   visible: detail.displayStatus === 'PUBLISHED',
   registrationCompleted: detail.displayStatus !== 'DRAFT',
   optionCount: detail.variants.length,
@@ -193,8 +202,10 @@ function toAdminProductResponse(
       saleMode: detail.saleMode,
       title: detail.name,
       imageUrl: detail.thumbnailUrl,
-      status: 'ACTIVE',
-      sellable: detail.variants.some((variant) => variant.available),
+      status: saleStatusOf(detail.productId),
+      sellable:
+        !pausedProducts.has(detail.productId) &&
+        detail.variants.some((variant) => variant.available),
       soldOut: false,
       modelNumber: detail.modelNumber,
       categoryId: detail.categoryId ?? '',
@@ -862,6 +873,56 @@ export const adminProductHandlers: RequestHandler[] = [
       variant.available = body.status === 'ACTIVE'
       product.updatedAt = new Date().toISOString()
       return ok(toVariantView(product, variant))
+    },
+  ),
+
+  // 판매 상태. 사전예약 오픈 뒤 중지는 회차 취소다(사유 필수, 되돌릴 수 없음).
+  // 목업은 시각을 세지 않고 오픈 전/뒤로만 가른다(오픈 3분 전 잠금은 없다).
+  http.patch(
+    url('/api/v1/admin/products/:productId/sale-status'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product) return notFound()
+
+      const body = await readBody<SaleStatusChangeRequest>(request)
+      if (body?.status !== 'ACTIVE' && body?.status !== 'PAUSED') {
+        return invalid([{ field: 'status', message: 'ACTIVE 또는 PAUSED' }])
+      }
+      const reason = body.reason?.trim() ?? ''
+      const opened =
+        product.saleMode === 'PREORDER' && product.saleStatus !== 'BEFORE_OPEN'
+      const view = (cancelled: boolean, status = 202) =>
+        ok<SaleStatusView>(
+          {
+            productId: product.productId,
+            status: saleStatusOf(product.productId),
+            campaignCancellationRequested: cancelled,
+          },
+          cancelled ? status : 200,
+        )
+
+      if (!opened) {
+        if (reason) {
+          return invalid([
+            { field: 'reason', message: '오픈 뒤 중지에만 보냅니다.' },
+          ])
+        }
+        if (body.status === 'PAUSED') pausedProducts.add(product.productId)
+        else pausedProducts.delete(product.productId)
+        return view(false)
+      }
+
+      if (body.status === 'ACTIVE') {
+        return fail(409, {
+          code: 'STATE_CONFLICT',
+          message: '오픈 뒤에는 다시 판매할 수 없습니다.',
+        })
+      }
+      if (!reason || reason.length > 500) {
+        return invalid([{ field: 'reason', message: '1~500자여야 합니다.' }])
+      }
+      pausedProducts.add(product.productId)
+      return view(true)
     },
   ),
 

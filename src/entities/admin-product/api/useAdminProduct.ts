@@ -9,7 +9,10 @@ import {
 
 import { ApiRequestError } from '@shared/api/client'
 import { queryPolicy } from '@shared/api/queryPolicy'
-import type { ProductRegistrationRequest } from '@shared/api/types'
+import type {
+  ProductRegistrationRequest,
+  SaleStatusChangeRequest,
+} from '@shared/api/types'
 
 import { toRegistrationRequest } from '../model/registration'
 
@@ -17,6 +20,7 @@ import {
   getAdminProduct,
   getRegistrationStatus,
   registerAdminProduct,
+  setAdminProductSaleStatus,
   setAdminProductVisibility,
 } from './adminProduct'
 import { getAdminProductStock } from './adminStock'
@@ -132,6 +136,23 @@ export const useCreateAdminProduct = () => {
         keyRef.current = null
       }
     },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
+  })
+}
+
+/**
+ * 판매 상태를 바꾼다(판매 중지·재개·회차 취소). 자동 재시도하지 않는다 — 회차 취소는
+ * 두 번 보내도 서버가 한 번으로 보지만, 중지·재개는 순서가 꼬이면 반대 상태가 된다.
+ */
+export const useSetAdminProductSaleStatus = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      productId,
+      ...body
+    }: { productId: string } & SaleStatusChangeRequest) =>
+      setAdminProductSaleStatus(productId, body),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
   })

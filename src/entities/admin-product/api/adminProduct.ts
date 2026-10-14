@@ -10,6 +10,8 @@ import type {
   PreorderCampaignRequest,
   ProductRegistrationRequest,
   ProductRegistrationResponse,
+  SaleStatusChangeRequest,
+  SaleStatusView,
   ProductEditRequest,
   RegistrationStatusView,
   Variant,
@@ -113,6 +115,18 @@ export const putPreorderCampaign = (
     `/api/v1/admin/preorders/products/${productId}/campaign`,
     { method: 'PUT', body },
   )
+
+/**
+ * 판매 상태를 바꾼다. 사전예약 오픈 뒤 중지는 회차 취소다(사유 필수, 되돌릴 수 없음).
+ */
+export const setAdminProductSaleStatus = (
+  productId: string,
+  body: SaleStatusChangeRequest,
+) =>
+  apiClient.request<SaleStatusView>(`${BASE}/${productId}/sale-status`, {
+    method: 'PATCH',
+    body,
+  })
 
 /**
  * 공개 여부를 바꾼다. 사전예약 오픈 전후 언제든 되고, 되돌릴 수 있다 — 수정 잠금

@@ -172,6 +172,22 @@ export type VisibilityView = {
 }
 
 /**
+ * 상품 판매 상태 변경(PATCH /admin/products/{productId}/sale-status). 사전예약 오픈 뒤
+ * PAUSED는 회차 취소라 reason(1~500자)이 필수이고, 그 밖에 reason을 보내면 400이다.
+ */
+export type SaleStatusChangeRequest = {
+  status: ProductSaleStatus
+  reason?: string
+}
+
+export type SaleStatusView = {
+  productId: string
+  status: ProductSaleStatus
+  /** 회차 취소가 접수됐는지 — true면 202이고 예약 취소는 이어서 처리된다 */
+  campaignCancellationRequested: boolean
+}
+
+/**
  * 상품 수정(PATCH /admin/products/{productId}). 보낸 필드만 바뀐다 — 생략하면
  * 그대로 두고, 하나도 없으면 400이다. 응답은 관리자 상세와 같은 모양이다.
  */

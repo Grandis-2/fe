@@ -12,12 +12,13 @@ import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
 import type { AdminProductTab } from '@shared/config/routes'
 import { Breadcrumb, InlineAlert, SegmentedTabs } from '@shared/ui'
 import { AdminDispatchWindows } from '@widgets/admin/dispatch-windows'
+import {
+  AdminProductActions,
+  useProductSaleStatus,
+  useProductVisibility,
+} from '@widgets/admin/product-actions'
 import { AdminProductEditForm } from '@widgets/admin/product-form'
 import { AdminProductStockTable } from '@widgets/admin/product-stock'
-import {
-  AdminProductVisibility,
-  useProductVisibility,
-} from '@widgets/admin/product-visibility'
 
 import * as styles from './AdminProductDetailPage.css'
 
@@ -49,6 +50,7 @@ const defaultTabOf = (product: AdminProductDetailModel): AdminProductTab =>
 export function AdminProductDetailPage() {
   const navigate = useNavigate()
   const visibility = useProductVisibility()
+  const saleStatus = useProductSaleStatus()
   const { productId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const product = useAdminProduct(productId)
@@ -98,19 +100,28 @@ export function AdminProductDetailPage() {
         {/* 상태 뱃지끼리 붙여 둔다 — 판매와 전시는 둘 다 '지금 어떤 상태인가'다. */}
         <AdminProductDisplayTag status={displayStatus} />
         {/* 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 — 어느 탭에 있든
-            같은 자리에서 누를 수 있고, 저장 버튼과 섞이지 않는다. */}
-        <AdminProductVisibility
-          className={styles.visibility}
-          product={{ productId, name, displayStatus }}
-          pending={visibility.isPending}
+            같은 자리에서 누를 수 있고, 저장 버튼과 섞이지 않는다. 사전예약 오픈 3분
+            전부터 수정 폼이 잠겨도 이 메뉴는 열린다(회차 취소는 오픈 뒤에만 된다). */}
+        <AdminProductActions
+          className={styles.actions}
+          product={product.data}
+          pending={visibility.isPending || saleStatus.isPending}
           onPublish={visibility.confirmPublish}
           onHide={visibility.confirmHide}
+          onPause={saleStatus.confirmPause}
+          onResume={saleStatus.confirmResume}
+          onCancel={saleStatus.confirmCancel}
         />
       </div>
 
       {visibility.isError && (
         <InlineAlert status="error">
           {getErrorMessage(visibility.error, '전시 상태를 바꾸지 못했습니다.')}
+        </InlineAlert>
+      )}
+      {saleStatus.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(saleStatus.error, '판매 상태를 바꾸지 못했습니다.')}
         </InlineAlert>
       )}
 

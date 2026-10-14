@@ -6,6 +6,7 @@ export {
   useAdminProductDetails,
   useAdminProductStock,
   useCreateAdminProduct,
+  useSetAdminProductSaleStatus,
   useSetAdminProductVisibility,
 } from './api/useAdminProduct'
 export { useAdminProducts } from './api/useAdminProducts'
@@ -16,6 +17,8 @@ export type {
 } from './api/useSaveAdminProductEdits'
 export { editLockReason, editSectionLabel } from './model/edit'
 export { validateRegistration } from './model/registration'
+export { CANCEL_REASON_MAX, saleStatusActionOf } from './model/saleStatus'
+export type { SaleStatusAction } from './model/saleStatus'
 export type { EditSection } from './model/edit'
 export {
   useDispatchWindow,

@@ -35,6 +35,6 @@ export const notFound = style([
 ])
 
 // 제목 줄에서 판매 상태 태그와 떨어뜨려, 전시 전환이 다른 조치임을 드러낸다.
-export const visibility = style({
+export const actions = style({
   marginLeft: 'auto',
 })
