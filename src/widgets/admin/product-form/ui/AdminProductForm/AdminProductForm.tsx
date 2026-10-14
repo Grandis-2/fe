@@ -5,6 +5,7 @@ import { Eye } from 'lucide-react'
 import {
   createEmptyProductFormValue,
   getProductVariants,
+  MODEL_NAME_MAX,
   PRODUCT_BRANDS,
   withPresetOptionGroups,
   type AdminProductFormValue,
@@ -149,16 +150,17 @@ export function AdminProductForm({
           <Input
             label="모델명"
             required
-            // 등록에만 싣는다 — 수정 API(PATCH)가 모델명을 받는지는 아직 모른다.
-            disabled={editing}
+            // 서버가 1~40자만 받는다.
+            maxLength={MODEL_NAME_MAX}
             value={value.modelName}
             onChange={(event) => patch({ modelName: event.target.value })}
           />
         </FormSection>
 
         <FormSection title="브랜드 정보">
-          {/* 브랜드도 등록에만 싣는다. Dropdown은 disabled를 받지 않아 감싸서 막는다. */}
-          <fieldset className={styles.plainFieldset} disabled={editing}>
+          {/* Dropdown은 disabled를 받지 않아 fieldset으로 감싼다 — 잠금(lockReason)일 때
+              바깥 fieldset이 막는다. */}
+          <fieldset className={styles.plainFieldset}>
             <Dropdown
               label="브랜드 선택"
               size="medium"

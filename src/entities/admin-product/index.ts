@@ -38,6 +38,7 @@ export type { DispatchWaveDraft, DispatchWaveModel } from './model/dispatch'
 export {
   isPreorder,
   isPublicSetting,
+  MODEL_NAME_MAX,
   PRODUCT_BRANDS,
   productTypeLabel,
   productTypeLabels,

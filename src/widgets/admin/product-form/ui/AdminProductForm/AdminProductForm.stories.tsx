@@ -281,6 +281,9 @@ export const NoColorAppliesToEveryBlock: Story = {
 const savedProduct = {
   ...createEmptyProductFormValue(),
   name: '갤럭시 G999',
+  // 수정 화면은 서버 값으로 채워진다 — 모델명·브랜드는 늘 있다(필수 칸).
+  modelName: 'SM-G999',
+  brand: 'Samsung',
   basePrice: 1_200_000,
   colors: [
     { id: 'c-bk', name: '딥 블루', hex: '#3F4891', noColor: false, images: [] },
@@ -437,5 +440,34 @@ export const EditHasNoPublishOption: Story = {
   args: { mode: 'edit', defaultValue: createEmptyProductFormValue() },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText('공개 설정')).toBeNull()
+  },
+}
+
+/** 수정에서도 등록 때 넣은 모델명·브랜드가 채워져 나오고, 고칠 수 있다 */
+export const EditBrandAndModelName: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: {
+      ...createEmptyProductFormValue(),
+      name: '갤럭시 S30',
+      modelName: 'SM-S30',
+      brand: 'Samsung',
+    },
+  },
+  play: async ({ canvas, args }) => {
+    const modelName = canvas.getByLabelText(/모델명/)
+    await expect(modelName).toHaveValue('SM-S30')
+    await expect(modelName).toBeEnabled()
+    await expect(canvas.getByRole('button', { name: /Samsung/ })).toBeEnabled()
+
+    await userEvent.clear(modelName)
+    await userEvent.type(modelName, 'SM-S30U')
+    await userEvent.click(canvas.getByRole('button', { name: /Samsung/ }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Apple' }))
+    await userEvent.click(canvas.getByRole('button', { name: '수정하기' }))
+
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ modelName: 'SM-S30U', brand: 'Apple' }),
+    )
   },
 }

@@ -14,6 +14,7 @@ import type {
   PageResponse,
   PreorderCampaignRequest,
   PreorderSaleStatus,
+  ProductBrandCode,
   ProductEditRequest,
   ProductRegistrationRequest,
   ProductRegistrationResponse,
@@ -208,6 +209,9 @@ function toAdminProductResponse(
         detail.variants.some((variant) => variant.available),
       soldOut: false,
       modelNumber: detail.modelNumber,
+      // 저장소는 화면 이름(Samsung)이나 코드(SAMSUNG)를 들고 있다 — 대문자가 곧 코드다.
+      brand: detail.brand.toUpperCase() as ProductBrandCode,
+      modelName: detail.modelNumber,
       categoryId: detail.categoryId ?? '',
       description: detail.summary,
       visible: detail.displayStatus === 'PUBLISHED',
@@ -417,6 +421,7 @@ function createFromRegistration(
     productId,
     name: body.title,
     modelNumber: body.modelName,
+    brand: body.brand,
     categoryId: body.categoryId,
     summary: body.description ?? null,
     saleMode: body.saleMode,
@@ -611,7 +616,15 @@ export const adminProductHandlers: RequestHandler[] = [
       if (!product) return notFound()
 
       const body = await readBody<ProductEditRequest>(request)
-      const allowed = ['title', 'description', 'tags', 'basePrice', 'warranty']
+      const allowed = [
+        'title',
+        'description',
+        'tags',
+        'basePrice',
+        'warranty',
+        'brand',
+        'modelName',
+      ]
       // 서버는 모르는 필드를 400으로 막는다 — 예전 본문을 보내면 여기서 걸린다.
       const unknown = Object.keys(body ?? {}).find(
         (key) => !allowed.includes(key),
@@ -630,6 +643,20 @@ export const adminProductHandlers: RequestHandler[] = [
           return invalid([{ field: 'title', message: '1~100자여야 합니다.' }])
         }
         product.name = body.title
+      }
+      if (body.brand !== undefined) {
+        if (!['APPLE', 'SAMSUNG', 'LG'].includes(body.brand)) {
+          return invalid([{ field: 'brand', message: '형식이 맞지 않습니다.' }])
+        }
+        product.brand = body.brand
+      }
+      if (body.modelName !== undefined) {
+        if (!body.modelName.trim() || body.modelName.length > 40) {
+          return invalid([
+            { field: 'modelName', message: 'size must be between 1 and 40' },
+          ])
+        }
+        product.modelNumber = body.modelName
       }
       if (body.tags !== undefined) {
         // 빈 문자열이면 비운다.

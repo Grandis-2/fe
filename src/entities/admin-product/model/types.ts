@@ -2,6 +2,7 @@ import type {
   DisplayStatus,
   OptionAxis,
   PreorderSaleStatus,
+  ProductBrandCode,
   ProductDetailView,
   ProductSaleStatus,
   SaleMode,
@@ -30,6 +31,9 @@ export type AdminProductDetailModel = Pick<
   | 'categoryId'
 > & {
   name: string
+  /** 서버 코드(APPLE 등). 화면에 쓸 이름은 brandNameOf로 바꾼다 */
+  brand: ProductBrandCode
+  modelName: string
   displayStatus: AdminDisplayStatus
   /** 검색 태그. 서버는 콤마로 이은 문자열로 준다 */
   tags: string[]
@@ -208,3 +212,22 @@ export const productTypeLabels = [
  * ponytail: 브랜드 목록 API가 없어서 상수다. 생기면 응답으로 갈아 끼운다.
  */
 export const PRODUCT_BRANDS = ['Samsung', 'Apple', 'LG'] as const
+
+// 서버는 브랜드를 대문자 코드로 주고받는다. 화면(드롭다운)은 위 이름을 쓴다.
+const BRAND_CODE: Record<(typeof PRODUCT_BRANDS)[number], ProductBrandCode> = {
+  Samsung: 'SAMSUNG',
+  Apple: 'APPLE',
+  LG: 'LG',
+}
+
+/** 드롭다운 이름 → 서버 코드. 목록에 없는 이름이면 undefined */
+export const brandCodeOf = (name: string) =>
+  Object.entries(BRAND_CODE).find(([brand]) => brand === name)?.[1]
+
+/** 서버 코드 → 드롭다운 이름. 모르는 코드면 빈 문자열(아직 안 고른 상태) */
+export const brandNameOf = (code: ProductBrandCode | null | undefined) =>
+  Object.entries(BRAND_CODE).find(([, brandCode]) => brandCode === code)?.[0] ??
+  ''
+
+/** 모델명 길이 — 서버가 1~40자만 받는다 */
+export const MODEL_NAME_MAX = 40

@@ -154,8 +154,11 @@ export type RegistrationStatusView = {
 
 /** 관리자 상세(GET /api/v1/admin/products/{productId}) */
 export type AdminProductResponse = {
-  /** 회원 상세와 같은 모양이다. visible만 실제 값이고 회원 상세에선 늘 true다 */
-  product: ProductDetailView
+  /**
+   * 회원 상세와 같은 모양이다. visible만 실제 값이고 회원 상세에선 늘 true다.
+   * brand·modelName은 문서엔 없지만 실서버가 준다(2026-10-14 확인).
+   */
+  product: ProductDetailView & { brand: ProductBrandCode; modelName: string }
   /** 검색 키워드를 콤마로 이은 문자열. 없으면 null. 회원에게는 나가지 않는다 */
   tags: string | null
   registration: RegistrationStatusView
@@ -201,6 +204,10 @@ export type ProductEditRequest = {
   /** 바꾸면 모든 옵션 가격이 다시 계산된다 */
   basePrice?: number
   warranty?: { offered: boolean; surcharge?: number }
+  /** 문서엔 없지만 실서버가 받는다(2026-10-14 확인) — APPLE·SAMSUNG·LG */
+  brand?: ProductBrandCode
+  /** 1~40자. 문서엔 없지만 실서버가 받는다 */
+  modelName?: string
 }
 
 /** 옵션 값 하나 수정. 보낸 필드만 바뀌고 셋 다 없으면 400 */

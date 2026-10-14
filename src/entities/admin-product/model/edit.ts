@@ -12,6 +12,7 @@ import type {
 
 import { buildVariantKey, toIso, type AdminProductFormValue } from './form'
 import {
+  brandCodeOf,
   COLOR_GROUP_CODE,
   comparableValue,
   isStorageValue,
@@ -86,6 +87,10 @@ export function planBasic(
   const tags = value.tags.join(',')
   if (tags !== server.tags.join(',')) body.tags = tags
   if (value.basePrice !== server.basePrice) body.basePrice = value.basePrice
+  const modelName = value.modelName.trim()
+  if (modelName !== server.modelName) body.modelName = modelName
+  const brand = brandCodeOf(value.brand)
+  if (brand && brand !== server.brand) body.brand = brand
   return Object.keys(body).length > 0 ? body : null
 }
 

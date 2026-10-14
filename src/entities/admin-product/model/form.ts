@@ -3,6 +3,7 @@ import type { DateRange, UploadedImage } from '@shared/ui'
 
 import {
   axisValueName,
+  brandNameOf,
   COLOR_GROUP_CODE,
   type AdminProductDetailModel,
 } from './types'
@@ -269,8 +270,9 @@ export function toFormValue(
   return {
     ...createEmptyProductFormValue(),
     name: detail.name,
+    modelName: detail.modelName,
+    brand: brandNameOf(detail.brand),
     categoryId: detail.categoryId,
-    // 모델명·브랜드는 아직 서버에 필드가 없다 — 생기면 여기서 채운다.
     tags: detail.tags,
     isPreorder: detail.saleMode === 'PREORDER',
     openAt: toLocalInput(detail.campaign?.opensAt ?? null),

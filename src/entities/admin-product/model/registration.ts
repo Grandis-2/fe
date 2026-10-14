@@ -1,12 +1,17 @@
 import type {
-  ProductBrandCode,
   ProductRegistrationRequest,
   RegistrationCombination,
   RegistrationOptionAxis,
 } from '@shared/api/types'
 
 import { getProductVariants, toIso, type AdminProductFormValue } from './form'
-import { COLOR_GROUP_CODE, comparableValue, isStorageValue } from './types'
+import {
+  brandCodeOf,
+  COLOR_GROUP_CODE,
+  comparableValue,
+  isStorageValue,
+  MODEL_NAME_MAX,
+} from './types'
 
 /**
  * 상품 등록 본문. 등록은 한 번에 보낸다 — 사전예약은 회차·배송 차수까지, 일반 상품은
@@ -20,13 +25,6 @@ const axisKeyOf = (label: string, index: number) =>
   label.trim() === STORAGE_LABEL ? 'storage' : `option${index + 1}`
 
 const MIN_OPEN_LEAD_MS = 30 * 60 * 1000
-
-// 폼 드롭다운(PRODUCT_BRANDS)의 이름을 서버 코드로 바꾼다. 없는 이름이면 undefined.
-const BRAND_CODE: Partial<Record<string, ProductBrandCode>> = {
-  Apple: 'APPLE',
-  Samsung: 'SAMSUNG',
-  LG: 'LG',
-}
 
 /**
  * 폼을 등록 축으로 편다. 조합 표(getProductVariants)와 같은 규칙을 따른다 — '색상
@@ -82,8 +80,11 @@ export function validateRegistration(
 
   const title = value.name.trim()
   if (!title || title.length > 100) return '상품명은 1~100자로 적어 주세요.'
-  if (!value.modelName.trim()) return '모델명을 적어 주세요.'
-  if (!BRAND_CODE[value.brand]) return '브랜드를 골라 주세요.'
+  const modelName = value.modelName.trim()
+  if (!modelName || modelName.length > MODEL_NAME_MAX) {
+    return `모델명은 1~${MODEL_NAME_MAX}자로 적어 주세요.`
+  }
+  if (!brandCodeOf(value.brand)) return '브랜드를 골라 주세요.'
   if (value.tags.join(',').length > 500)
     return '태그는 모두 합쳐 500자까지입니다.'
 
@@ -171,7 +172,7 @@ export function toRegistrationRequest(
   const common = {
     categoryId: value.categoryId,
     // validateRegistration을 통과했으면 늘 있다.
-    brand: BRAND_CODE[value.brand] ?? 'APPLE',
+    brand: brandCodeOf(value.brand) ?? 'APPLE',
     modelName: value.modelName.trim(),
     title: value.name.trim(),
     // 사전예약은 공개로 보낸다 — 서버가 접수 기간(오픈~마감)에만 구매자에게 보여주므로

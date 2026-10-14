@@ -71,6 +71,8 @@ export const toAdminProductDetail = ({
 }: AdminProductResponse): AdminProductDetailModel => ({
   productId: product.productId,
   name: product.title,
+  brand: product.brand,
+  modelName: product.modelName,
   saleMode: product.saleMode,
   status: product.status,
   campaign: product.campaign,
