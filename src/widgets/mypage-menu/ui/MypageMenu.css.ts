@@ -77,8 +77,12 @@ export const nav = style({
   scrollbarWidth: 'none',
   '@media': {
     [breakpoint.desktop]: { flexDirection: 'column', overflowX: 'visible' },
+    // Container 좌우 패딩(모바일 16px) 안에서 스크롤하면 탭이 화면 끝 전에 잘려 보인다 —
+    // 패딩만큼 밖으로 넓히고 같은 만큼 안쪽 여백을 줘, 글자 자리는 그대로 두고 화면 끝까지 스크롤되게 한다.
     [breakpoint.mobile]: {
       gap: 0,
+      marginInline: `calc(-1 * ${spacing[16]})`,
+      paddingInline: spacing[16],
       boxShadow: `inset 0 -1px 0 ${color.border.subtle}`,
     },
   },
