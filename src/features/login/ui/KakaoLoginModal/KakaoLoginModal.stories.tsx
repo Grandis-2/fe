@@ -17,7 +17,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByRole('button', { name: '카카오로 로그인' }),
+      canvas.getByRole('button', { name: '카카오 로그인' }),
     ).toBeVisible()
   },
 }

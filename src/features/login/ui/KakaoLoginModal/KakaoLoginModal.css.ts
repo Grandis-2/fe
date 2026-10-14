@@ -14,6 +14,7 @@ export const kakaoButton = style({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
+  gap: spacing[8],
   height: '48px',
   border: 'none',
   borderRadius: '12px',
@@ -26,4 +27,11 @@ export const kakaoButton = style({
   selectors: {
     '&:hover': { opacity: 0.85 },
   },
+})
+
+// 심볼은 글자색(currentColor = 카카오 지정 #191919)을 그대로 칠한다.
+export const symbol = style({
+  width: '18px',
+  height: '18px',
+  fill: 'currentColor',
 })
