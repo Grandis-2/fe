@@ -44,6 +44,11 @@ export type AdminProductFormValue = {
   brand: string
   isPreorder: boolean
   /**
+   * 일반 상품을 등록하자마자 공개할지. 끄면 숨김으로 등록돼 상세에서 확인한 뒤 공개한다.
+   * 사전예약은 보지 않는다 — 늘 공개로 보내고 서버가 접수 기간에만 보여준다.
+   */
+  publishOnCreate: boolean
+  /**
    * 검색용 태그. 구매자 화면에는 나오지 않고 검색어로만 쓰인다.
    * 후보(TAG_PRESETS)에서 골라도 되고 직접 적어도 되므로 자유 문자열이다.
    */
@@ -107,6 +112,8 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     brand: '',
     tags: [],
     isPreorder: false,
+    // 기본은 숨김 — 옵션·가격을 확인하기 전에 구매자에게 보이지 않게.
+    publishOnCreate: false,
     openAt: '',
     closeAt: '',
     categoryId: '',

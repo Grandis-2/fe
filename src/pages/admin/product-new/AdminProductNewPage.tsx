@@ -15,9 +15,8 @@ import { AdminProductForm } from '@widgets/admin/product-form'
 import * as styles from './AdminProductNewPage.css'
 
 /**
- * 새 상품 등록. 일반 상품은 비공개로 들어가 상세 화면에서 따로 공개한다 — 옵션·가격을
- * 확인하기 전에 구매자에게 노출되지 않게. 사전예약은 공개로 들어가지만 접수 기간에만
- * 구매자에게 보인다.
+ * 새 상품 등록. 일반 상품은 등록 때 공개·숨김을 고른다(기본 숨김). 사전예약은 공개로
+ * 들어가지만 접수 기간에만 구매자에게 보인다.
  */
 const violationsOf = (caught: unknown) =>
   caught instanceof ApiRequestError

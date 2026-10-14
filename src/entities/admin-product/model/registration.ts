@@ -175,9 +175,9 @@ export function toRegistrationRequest(
     modelName: value.modelName.trim(),
     title: value.name.trim(),
     // 사전예약은 공개로 보낸다 — 서버가 접수 기간(오픈~마감)에만 구매자에게 보여주므로
-    // 오픈 시각에 관리자가 따로 공개하지 않아도 된다. 일반 상품은 바로 보이므로 비공개로
-    // 넣고 옵션·가격을 확인한 뒤 상세에서 공개한다.
-    visible: value.isPreorder,
+    // 오픈 시각에 관리자가 따로 공개하지 않아도 된다. 일반 상품은 등록하면 바로 보이니
+    // 관리자가 고른 대로 보낸다(기본 숨김).
+    visible: value.isPreorder || value.publishOnCreate,
     basePrice: value.basePrice,
     ...(tags && { tags }),
     ...(axes.length > 0 && { optionAxes: axes }),

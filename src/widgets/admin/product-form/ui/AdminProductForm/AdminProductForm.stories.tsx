@@ -400,3 +400,41 @@ export const EditPreorderHidesQuantity: Story = {
     await expect(canvas.getAllByRole('switch').length).toBeGreaterThan(0)
   },
 }
+
+/** 일반 상품은 등록 때 공개 여부를 고른다 — 기본은 숨김이다 */
+export const CreateChoosesPublish: Story = {
+  args: { mode: 'create' },
+  play: async ({ canvas, args }) => {
+    const publish = canvas.getByRole('checkbox', { name: /등록하자마자 공개/ })
+    await expect(publish).not.toBeChecked()
+
+    await userEvent.click(publish)
+    // 상품명·모델명은 필수라 비우면 브라우저가 제출을 막는다.
+    await userEvent.type(canvas.getByLabelText(/상품명/), '갤럭시 S30')
+    await userEvent.type(canvas.getByLabelText(/모델명/), 'SM-S30')
+    await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ publishOnCreate: true }),
+    )
+  },
+}
+
+/** 사전예약은 고를 게 없다 — 접수 기간에만 자동으로 보인다는 안내만 둔다 */
+export const CreatePreorderPublishHint: Story = {
+  args: { mode: 'create' },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByText('사전 예약으로 판매'))
+    await expect(
+      canvas.queryByRole('checkbox', { name: /등록하자마자 공개/ }),
+    ).toBeNull()
+    await expect(canvas.getByText(/접수 기간\(오픈 ~ 마감\)에만/)).toBeVisible()
+  },
+}
+
+/** 수정 화면엔 공개 설정이 없다 — 상세의 공개 전환 버튼으로 바꾼다 */
+export const EditHasNoPublishOption: Story = {
+  args: { mode: 'edit', defaultValue: createEmptyProductFormValue() },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText('공개 설정')).toBeNull()
+  },
+}

@@ -210,6 +210,38 @@ export function AdminProductForm({
           </div>
         </FormSection>
 
+        {/* 등록 때만 고른다 — 등록 뒤에는 상세의 공개 전환 버튼으로 바꾼다. */}
+        {!editing && (
+          <FormSection title="공개 설정">
+            <div className={styles.card}>
+              {value.isPreorder ? (
+                <span className={styles.hint}>
+                  사전예약은 접수 기간(오픈 ~ 마감)에만 구매자에게 자동으로
+                  보입니다.
+                </span>
+              ) : (
+                <label className={styles.checkboxRow}>
+                  <Checkbox
+                    checked={value.publishOnCreate}
+                    onChange={(event) =>
+                      patch({ publishOnCreate: event.target.checked })
+                    }
+                  />
+                  <span className={styles.checkboxTexts}>
+                    <span className={styles.checkboxLabel}>
+                      등록하자마자 공개
+                    </span>
+                    <span className={styles.hint}>
+                      끄면 숨김으로 등록됩니다. 상세에서 옵션·가격을 확인한 뒤
+                      공개할 수 있습니다.
+                    </span>
+                  </span>
+                </label>
+              )}
+            </div>
+          </FormSection>
+        )}
+
         <FormSection
           title="옵션"
           description={`고객이 옵션을 고르면 해당 이미지가 표시됩니다.
