@@ -140,14 +140,14 @@ export const logo = style([
     // Michroma는 줄 상자 위쪽 여백이 커서 글자가 아래로 처진다 — 대문자 높이만 남기고 잘라
     // 헤더의 세로 가운데 정렬이 글자 기준이 되게 한다(미지원 브라우저는 기존 그대로).
     textBox: 'trim-both cap alphabetic',
-    fontSize: fontSize[20],
+    fontSize: fontSize[18],
     color: color.primary.base,
     textDecoration: 'none',
     cursor: 'pointer',
     transition: `color ${motion.duration.fast} ${motion.easing.default}`,
     '@media': {
-      [breakpoint.mobile]: { fontSize: fontSize[18] },
-      ...webOnly({ fontSize: '22px' }),
+      [breakpoint.mobile]: { fontSize: fontSize[16] },
+      ...webOnly({ fontSize: fontSize[20] }),
     },
     selectors: {
       [`${onDark} &`]: { color: color.text.inverse },

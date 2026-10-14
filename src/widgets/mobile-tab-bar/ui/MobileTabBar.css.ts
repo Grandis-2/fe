@@ -42,7 +42,7 @@ export const root = style({
   alignItems: 'center',
   gap: spacing[2],
   height: TAB_BAR_HEIGHT,
-  padding: spacing[6],
+  padding: spacing[4],
   borderRadius: '999px',
   // 어두운 반투명 유리 — 어떤 페이지 위에서도 같은 색이다(사용자 페이지는 어두운 방향).
   background: `color-mix(in srgb, ${color.backgroundDark.surface} 78%, transparent)`,

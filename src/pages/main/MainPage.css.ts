@@ -16,13 +16,8 @@ export const hero = style({
   zIndex: 0,
   width: '100%',
   overflow: 'hidden',
-  // 위 배너(Banner)의 어두운 바탕을 이어받아 한 화면처럼 보이게 한다 — 빛 번짐은
-  // 배너 왼쪽 위에 있으니 여기선 오른쪽 아래에만 은은하게 둔다. 카테고리 줄까지 담아 구간이 길어서
-  // 높이를 %가 아니라 px로 고정한다 — %면 빛이 화면 절반을 덮는다.
-  background: [
-    `radial-gradient(ellipse 40% 240px at 100% 100%, color-mix(in srgb, ${color.primary.subtle} 18%, transparent), transparent 70%)`,
-    color.backgroundDark.base,
-  ].join(', '),
+  // 위 배너(Banner)의 어두운 바탕을 이어받아 한 화면처럼 보이게 한다.
+  background: color.backgroundDark.base,
 })
 
 // 많이 찾는 상품 TOP 10과 카테고리 줄을 같은 어두운 구간에 쌓는다.
