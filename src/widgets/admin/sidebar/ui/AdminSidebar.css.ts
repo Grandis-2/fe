@@ -8,7 +8,7 @@ export const root = style({
   flexDirection: 'column',
   // 묶음 사이를 띄워야 바로 위 메뉴와 아래 묶음 이름이 한 덩어리로 안 읽힌다.
   gap: spacing[24],
-  width: '300px',
+  width: '240px',
   flexShrink: 0,
   overflowY: 'auto',
   padding: `${spacing[20]} 0`,
