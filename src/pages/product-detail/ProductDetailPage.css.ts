@@ -29,10 +29,10 @@ export const root = style({
 
 export const content = style({
   boxSizing: 'border-box',
-  maxWidth: maxWidth.content,
+  maxWidth: '1600px',
   margin: '0 auto',
   // 헤더 바로 밑에 붙으면 시선이 화면 맨 위로 올라가야 해서 위를 넉넉히 비운다.
-  padding: `${spacing[80]} ${sidePadding} 72px`,
+  padding: `${spacing[80]} ${sidePadding} 90px`,
   '@media': {
     [breakpoint.mobile]: {
       padding: `${spacing[20]} ${spacing[16]} ${spacing[40]}`,
@@ -46,8 +46,7 @@ export const layout = style({
   gap: spacing[24],
   '@media': {
     [breakpoint.desktop]: {
-      // 옵션 패널을 고정 폭(420px)으로 두지 않고 이미지와 같은 비율로 같이 줄인다.
-      gridTemplateColumns: 'minmax(0, 3fr) minmax(0, 2fr)',
+      gridTemplateColumns: 'minmax(0, 2fr) minmax(340px, 1fr)',
       gap: spacing[40],
     },
   },
@@ -56,6 +55,7 @@ export const layout = style({
 // 옵션이 많아 오른쪽 컬럼이 더 길다 — 데스크톱에선 이미지가 헤더 밑에 멈춰 있고 옵션만 스크롤된다.
 // align-self: start가 없으면 칸이 행 높이만큼 늘어나 sticky가 움직일 여유가 없다.
 export const imageColumn = style({
+  width: '100%',
   '@media': {
     [breakpoint.desktop]: {
       position: 'sticky',
@@ -65,7 +65,9 @@ export const imageColumn = style({
   },
 })
 
+// 아래 actions가 화면 폭이 아니라 이 패널 폭을 보고 장바구니 버튼을 줄인다(2:1 그리드라 화면 폭과 비례하지 않음).
 export const optionPanel = style({
+  containerType: 'inline-size',
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[40],
@@ -112,11 +114,29 @@ export const quantityOption = style({
 export const quantityLabel = typography.title.mdSemibold
 
 // 장바구니(좁게) + 결제하기(넓게) 한 줄.
+// 패널이 좁아지면 장바구니는 요약바처럼 아이콘만 남기고 결제 버튼이 나머지 폭을 쓴다.
+const NARROW_PANEL = '(max-width: 420px)'
+
 export const actions = style({
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.6fr)',
   gap: spacing[10],
   marginTop: spacing[12],
+  '@container': {
+    [NARROW_PANEL]: { gridTemplateColumns: 'auto minmax(0, 1fr)' },
+  },
+})
+
+export const cartButton = style({
+  '@container': {
+    [NARROW_PANEL]: { aspectRatio: '1', padding: 0 },
+  },
+})
+
+export const cartLabel = style({
+  '@container': {
+    [NARROW_PANEL]: { display: 'none' },
+  },
 })
 
 // 사전예약은 장바구니가 없어 결제 버튼이 한 줄을 다 쓴다.

@@ -264,10 +264,12 @@ export function ProductDetailPage() {
                   <ActionButton
                     variant="cart"
                     fullWidth
+                    className={styles.cartButton}
+                    aria-label="장바구니"
                     onClick={handleAddToCart}
                     disabled={!isCheckoutReady || isAdding}
                   >
-                    장바구니
+                    <span className={styles.cartLabel}>장바구니</span>
                   </ActionButton>
                 )}
                 <ActionButton
