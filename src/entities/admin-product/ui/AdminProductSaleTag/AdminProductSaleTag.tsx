@@ -38,6 +38,7 @@ export function AdminProductSaleTag({
       {showSaleState && (
         <Tag
           size="medium"
+          variant="subtle"
           rounded={false}
           widthOptions={saleStateLabels}
           color={saleStateColor[status]}
@@ -48,7 +49,7 @@ export function AdminProductSaleTag({
       {stage && (
         <Tag
           size="medium"
-          variant="outline"
+          variant="subtle"
           rounded={false}
           widthOptions={preorderStageLabels}
           color={preorderStageColor[stage]}

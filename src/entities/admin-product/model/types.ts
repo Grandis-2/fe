@@ -75,9 +75,9 @@ export const saleStateLabel: Record<ProductSaleStatus, string> = {
   PAUSED: '판매 중지',
 }
 
-export const saleStateColor: Record<ProductSaleStatus, 'green' | 'yellow'> = {
+export const saleStateColor: Record<ProductSaleStatus, 'green' | 'gray'> = {
   ACTIVE: 'green',
-  PAUSED: 'yellow',
+  PAUSED: 'gray',
 }
 
 /**
