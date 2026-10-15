@@ -230,10 +230,19 @@ export function AdminShipmentBatches({ productId }: AdminShipmentBatchesProps) {
           </span>
 
           <div className={styles.actions}>
-            <Button variant="outline" color="cancel" onClick={close}>
+            <Button
+              variant="outline"
+              color="cancel"
+              size="small"
+              onClick={close}
+            >
               취소
             </Button>
-            <Button disabled={!!problem || save.isPending} onClick={submit}>
+            <Button
+              disabled={!!problem || save.isPending}
+              size="small"
+              onClick={submit}
+            >
               {save.isPending ? '저장 중…' : '저장하기'}
             </Button>
           </div>
