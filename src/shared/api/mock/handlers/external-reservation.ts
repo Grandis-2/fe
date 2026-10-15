@@ -59,32 +59,64 @@ const UPDATABLE = new Set<string>([
   'mixedResponses',
 ])
 
-/** 명세의 입력 규칙 중 화면에서 걸릴 만한 것만 본다. 어기면 그 이유를, 맞으면 null */
-function violation(body: Partial<MockConfigUpdate> & Record<string, unknown>) {
+const ALL_MIXED: MockConfig['mixedResponses'] = [
+  'HTTP_500',
+  'HTTP_500_NO_BODY',
+  'HTTP_502',
+  'HTTP_503',
+  'HTTP_504',
+]
+
+const isNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
+/**
+ * 명세의 입력 규칙 중 화면에서 걸릴 만한 것만 보고 적용할 값을 만든다. 어기면 이유(문자열)를
+ * 돌려준다. 통째 교체라 보내지 않은 선택 칸은 꼬리 없음·HTTP_5XX가 된다.
+ */
+function parseConfigUpdate(
+  body: Partial<MockConfigUpdate> & Record<string, unknown>,
+):
+  | (Omit<MockConfigUpdate, 'failureMode'> & Pick<MockConfig, 'failureMode'>)
+  | string {
   const unknown = Object.keys(body).find((key) => !UPDATABLE.has(key))
   if (unknown) return `알 수 없는 필드입니다: ${unknown}`
-  const { registerLatencyMs: latency, failureRate } = body
-  if (typeof latency !== 'number' || latency < 0 || latency > 60000) {
+  const { registerLatencyMs, failureRate, mixedResponses } = body
+  if (
+    !isNumber(registerLatencyMs) ||
+    registerLatencyMs < 0 ||
+    registerLatencyMs > 60000
+  ) {
     return 'registerLatencyMs 는 0~60000 입니다.'
   }
-  if (typeof failureRate !== 'number' || failureRate < 0 || failureRate > 1) {
+  if (!isNumber(failureRate) || failureRate < 0 || failureRate > 1) {
     return 'failureRate 는 0~1 입니다.'
   }
-  const tail = [
-    body.latencyTailRate,
-    body.latencyTailMinMs,
-    body.latencyTailMaxMs,
-  ]
-  const given = tail.filter((value) => value !== undefined).length
+  const {
+    latencyTailRate: rate,
+    latencyTailMinMs: min,
+    latencyTailMaxMs: max,
+  } = body
+  const given = [rate, min, max].filter((value) => value !== undefined).length
   if (given !== 0 && given !== 3) return '꼬리 세 칸은 함께 보내야 합니다.'
-  if (given === 3 && body.latencyTailMinMs! > body.latencyTailMaxMs!) {
-    return '꼬리 최소는 최대 이하입니다.'
-  }
-  if (body.mixedResponses && body.failureMode !== 'MIXED') {
+  const tail = isNumber(rate) && isNumber(min) && isNumber(max) && rate > 0
+  if (tail && min > max) return '꼬리 최소는 최대 이하입니다.'
+  const failureMode = body.failureMode ?? 'HTTP_5XX'
+  if (mixedResponses && failureMode !== 'MIXED') {
     return 'mixedResponses 는 MIXED 일 때만 보냅니다.'
   }
-  if (body.mixedResponses?.length === 0) return 'mixedResponses 가 비었습니다.'
-  return null
+  if (mixedResponses?.length === 0) return 'mixedResponses 가 비었습니다.'
+  return {
+    registerLatencyMs,
+    failureRate,
+    failureMode,
+    // 비율이 0이면 꼬리 없음으로 저장해 최소·최대도 0이다.
+    latencyTailRate: tail ? rate : 0,
+    latencyTailMinMs: tail ? min : 0,
+    latencyTailMaxMs: tail ? max : 0,
+    mixedResponses:
+      failureMode === 'MIXED' ? (mixedResponses ?? ALL_MIXED) : [],
+  }
 }
 
 function buildLedger(): ExternalLedgerRow[] {
@@ -185,30 +217,12 @@ export const externalReservationHandlers: RequestHandler[] = [
   http.put(url('/external/config'), async ({ request }) => {
     const body = (await request.json().catch(() => null)) as
       (Partial<MockConfigUpdate> & Record<string, unknown>) | null
-    const reason = body ? violation(body) : '본문이 필요합니다.'
-    if (reason || !body)
-      return invalid<MockConfig>(reason ?? '본문이 필요합니다.')
-    const tailRate = body.latencyTailRate ?? 0
-    const failureMode = body.failureMode ?? 'HTTP_5XX'
+    const update = body ? parseConfigUpdate(body) : '본문이 필요합니다.'
+    if (typeof update === 'string') return invalid<MockConfig>(update)
     config = {
       ...config,
-      registerLatencyMs: body.registerLatencyMs!,
-      failureRate: body.failureRate!,
-      failureMode,
-      latencyTailRate: tailRate,
-      latencyTailMinMs: tailRate > 0 ? body.latencyTailMinMs! : 0,
-      latencyTailMaxMs: tailRate > 0 ? body.latencyTailMaxMs! : 0,
-      bodyLatencyMs: body.registerLatencyMs!,
-      mixedResponses:
-        failureMode === 'MIXED'
-          ? (body.mixedResponses ?? [
-              'HTTP_500',
-              'HTTP_500_NO_BODY',
-              'HTTP_502',
-              'HTTP_503',
-              'HTTP_504',
-            ])
-          : [],
+      ...update,
+      bodyLatencyMs: update.registerLatencyMs,
       configVersion: config.configVersion + 1,
       appliedAt: new Date().toISOString(),
     }

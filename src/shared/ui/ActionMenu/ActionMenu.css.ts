@@ -69,7 +69,7 @@ export const item = style([
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: '2px',
+    gap: spacing[2],
     width: '100%',
     padding: `${spacing[8]} ${spacing[16]}`,
     border: 'none',
