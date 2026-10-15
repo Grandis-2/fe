@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 import { RefreshCw } from 'lucide-react'
 
 import * as styles from './RefreshStatus.css'
@@ -8,6 +10,8 @@ export type RefreshStatusProps = {
   onRefresh: () => void
   /** 갱신 규칙 안내(예: '10초마다 자동 갱신') */
   note?: string
+  /** 줄 끝에 붙일 조작(예: 갱신 간격 선택) */
+  children?: ReactNode
 }
 
 const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
@@ -25,6 +29,7 @@ export function RefreshStatus({
   updatedAt,
   onRefresh,
   note,
+  children,
 }: RefreshStatusProps) {
   return (
     <div className={styles.root}>
@@ -33,6 +38,7 @@ export function RefreshStatus({
         마지막 갱신 {updatedAt ? timeFormatter.format(updatedAt) : '—'}
       </button>
       {note && <span>{note}</span>}
+      {children}
     </div>
   )
 }

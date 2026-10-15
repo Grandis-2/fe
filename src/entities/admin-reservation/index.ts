@@ -34,6 +34,7 @@ export {
   reservationStateLabels,
   reservationStateOf,
 } from './model/types'
+export type { RefreshInterval } from './api/useAdminReservations'
 export type {
   AdminReservation,
   AdminReservationDetail,

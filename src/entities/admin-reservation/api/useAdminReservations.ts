@@ -21,25 +21,35 @@ const POLL_INTERVAL_MS = 10_000
 const reservationKey = (preorderId: string) =>
   [...RESERVATIONS_KEY, 'detail', preorderId] as const
 
-/**
- * 접수는 계속 들어오므로 주기적으로 다시 받는다. 조회가 실패하면 pollingInterval이
- * 간격을 40초로 늘려, 이미 힘든 서버를 10초마다 두드리지 않는다.
- */
-export const useAdminReservations = (params: AdminPreorderListParams = {}) =>
+/** 자동 갱신 간격(ms). false면 자동으로 다시 받지 않는다 */
+export type RefreshInterval = number | false
+
+// 조회가 실패하면 pollingInterval이 간격을 4배로 늘려, 이미 힘든 서버를 계속 두드리지 않는다.
+const refetchEvery = (intervalMs: RefreshInterval) =>
+  intervalMs === false ? false : pollingInterval(intervalMs)
+
+/** 접수는 계속 들어오므로 주기적으로 다시 받는다. 간격은 화면이 고른다 */
+export const useAdminReservations = (
+  params: AdminPreorderListParams = {},
+  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
+) =>
   useQuery({
     queryKey: [...RESERVATIONS_KEY, 'list', params] as const,
     queryFn: ({ signal }) => getAdminReservations(params, signal),
     ...queryPolicy.live,
-    refetchInterval: pollingInterval(POLL_INTERVAL_MS),
+    refetchInterval: refetchEvery(intervalMs),
   })
 
-/** 지표 카드용 집계. 서버가 5초까지 캐시하므로 목록과 같은 간격이면 충분하다 */
-export const useReservationStats = (productId?: string) =>
+/** 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다 */
+export const useReservationStats = (
+  productId?: string,
+  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
+) =>
   useQuery({
     queryKey: [...RESERVATIONS_KEY, 'stats', productId] as const,
     queryFn: ({ signal }) => getReservationStats(productId, signal),
     ...queryPolicy.live,
-    refetchInterval: pollingInterval(POLL_INTERVAL_MS),
+    refetchInterval: refetchEvery(intervalMs),
   })
 
 /**

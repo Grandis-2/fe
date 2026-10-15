@@ -24,6 +24,7 @@ import {
   useReprocessReservation,
   useReservationStats,
   type AdminReservation,
+  type RefreshInterval,
   type ReservationState,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
@@ -57,6 +58,15 @@ const statusFilters = [
 // 한 번에 받는 최근 예약 수(서버 상한). 표·탭·검색은 이 안에서 한다.
 const LIST_SIZE = 100
 
+// 집계는 서버가 5초 캐시해서 그보다 짧은 간격은 의미가 없다 — 직접 입력 대신 고르게 한다.
+const refreshOptions: DropdownOption<RefreshInterval>[] = [
+  { label: '5초마다', value: 5_000 },
+  { label: '10초마다', value: 10_000 },
+  { label: '30초마다', value: 30_000 },
+  { label: '1분마다', value: 60_000 },
+  { label: '자동 갱신 끄기', value: false },
+]
+
 type StatusFilter = (typeof statusFilters)[number]['value']
 
 /** 탭이 거르는 상태. 취소 탭은 곧 취소될 취소 중까지 함께 보여준다 */
@@ -75,6 +85,8 @@ export function AdminReservationsPage() {
   const [keyword, setKeyword] = useState('')
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const [productId, setProductId] = useState<string>()
+  const [refreshInterval, setRefreshInterval] =
+    useState<RefreshInterval>(10_000)
 
   const { data: products = [] } = useAdminProducts({
     saleMode: 'PREORDER',
@@ -99,10 +111,10 @@ export function AdminReservationsPage() {
     error,
     dataUpdatedAt,
     refetch,
-  } = useAdminReservations({ productId, size: LIST_SIZE })
+  } = useAdminReservations({ productId, size: LIST_SIZE }, refreshInterval)
   const reservations = page?.items
   // 아직 한 번도 못 받았으면 data가 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
-  const stats = useReservationStats(productId)
+  const stats = useReservationStats(productId, refreshInterval)
 
   const reprocess = useReprocessReservation()
 
@@ -285,11 +297,20 @@ export function AdminReservationsPage() {
         />
       </div>
 
-      <RefreshStatus
-        updatedAt={dataUpdatedAt}
-        onRefresh={refresh}
-        note="10초마다 자동 갱신"
-      />
+      <RefreshStatus updatedAt={dataUpdatedAt} onRefresh={refresh}>
+        <Dropdown
+          label="자동 갱신 간격"
+          size="small"
+          width="140px"
+          options={refreshOptions}
+          value={refreshInterval}
+          // 고르는 즉시 한 번 받는다 — 새 간격을 기다리지 않고 지금 값을 보여준다.
+          onSelect={(next) => {
+            setRefreshInterval(next)
+            refresh()
+          }}
+        />
+      </RefreshStatus>
 
       {/* 폴링이 실패해도 이미 받은 데이터는 남아 카드와 표에 그대로 보인다 —
           멈춘 숫자를 최신으로 읽으면 '실패를 0건으로 보여주기'와 똑같이 위험하다.
