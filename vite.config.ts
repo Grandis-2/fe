@@ -27,7 +27,7 @@ export default defineConfig({
   server: {
     proxy: {
       // ^ 로 시작하면 정규식 키 — /api 와 /external(외부 예약 Mock) 둘 다 백엔드로 보낸다
-      '^/(api|external)/': {
+      '^/(api|external)(/|$)': {
         target: 'https://api.grandis-nova.link',
         changeOrigin: true, // Host 를 api.grandis-nova.link 로
         cookieDomainRewrite: 'localhost', // 응답 쿠키(refresh_token)를 localhost 에 저장
