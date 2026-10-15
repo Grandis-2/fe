@@ -18,6 +18,7 @@ import { delay } from '@shared/lib/delay'
 import { toRegistrationRequest } from '../model/registration'
 
 import {
+  closePreorderCampaign,
   getAdminProduct,
   getRegistrationStatus,
   registerAdminProduct,
@@ -152,6 +153,16 @@ export const useSetAdminProductSaleStatus = () => {
       ...body
     }: { productId: string } & SaleStatusChangeRequest) =>
       setAdminProductSaleStatus(productId, body),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
+  })
+}
+
+/** 사전예약 접수를 조기 마감한다. 상세의 회차 상태가 바뀌어 다시 받는다 */
+export const useClosePreorderCampaign = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (productId: string) => closePreorderCampaign(productId),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
   })

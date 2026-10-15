@@ -111,6 +111,7 @@ export function AdminProductDetailPage() {
           onPause={saleStatus.confirmPause}
           onResume={saleStatus.confirmResume}
           onCancel={saleStatus.confirmCancel}
+          onCloseEarly={saleStatus.confirmCloseEarly}
         />
       </div>
 

@@ -1055,6 +1055,34 @@ export const adminProductHandlers: RequestHandler[] = [
     },
   ),
 
+  // 접수 조기 마감 — 새 접수만 막고 받은 예약은 남긴다. 이미 마감이면 그대로 200이다.
+  http.post(
+    url('/api/v1/admin/preorders/products/:productId/campaign/close'),
+    ({ params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product || product.saleMode !== 'PREORDER') return notFound()
+      if (product.saleStatus === 'BEFORE_OPEN') {
+        return fail(409, {
+          code: 'STATE_CONFLICT',
+          message: '아직 오픈 전이라 마감할 수 없습니다.',
+        })
+      }
+      if (product.saleStatus === 'OPEN') {
+        product.saleStatus = 'CLOSED'
+        product.sale.closeAt = new Date().toISOString()
+        product.updatedAt = product.sale.closeAt
+      }
+      return ok({
+        productId: product.productId,
+        opensAt: product.sale.openAt,
+        closesAt: product.sale.closeAt,
+        saleStatus: product.saleStatus,
+        issuedCount: 0,
+        openNotifiedAt: null,
+      })
+    },
+  ),
+
   // 사진 업로드 주소 발급 — 실서버와 같은 형식·크기 규칙으로 400을 준다.
   http.post(
     url('/api/v1/admin/products/image-uploads'),

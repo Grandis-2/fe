@@ -1,4 +1,5 @@
 import {
+  useClosePreorderCampaign,
   useSetAdminProductSaleStatus,
   type AdminProduct,
 } from '@entities/admin-product'
@@ -12,10 +13,12 @@ type SaleTarget = Pick<AdminProduct, 'productId' | 'name'>
 /**
  * 판매 상태를 바꾸는 흐름(확인 모달 → 요청 → 캐시 갱신)을 한곳에 모은다.
  * 중지·재개는 되돌릴 수 있어 한 번만 확인하고, 사전예약 오픈 뒤 중지(회차 취소)는
- * 되돌릴 수 없어 결과를 알리고 사유를 받는다.
+ * 되돌릴 수 없어 결과를 알리고 사유를 받는다. 접수 조기 마감도 판매를 멈추는 길이라
+ * 여기 둔다 — 회차 취소와 달리 받은 예약은 남는다.
  */
 export function useProductSaleStatus() {
   const saleStatus = useSetAdminProductSaleStatus()
+  const closeEarly = useClosePreorderCampaign()
 
   const run = (
     product: SaleTarget,
@@ -38,9 +41,18 @@ export function useProductSaleStatus() {
     )
   }
 
+  const runClose = (product: SaleTarget) => {
+    closeModal()
+    closeEarly.mutate(product.productId, {
+      onSuccess: () =>
+        showToast('접수를 마감했습니다. 받은 예약은 그대로입니다.'),
+    })
+  }
+
   // 지난 실패 문구가 남아 있으면 이번 시도의 결과처럼 보인다.
   const open = (content: Parameters<typeof openModal>[0]) => {
     saleStatus.reset()
+    closeEarly.reset()
     openModal({ theme: 'light', ...content })
   }
 
@@ -73,8 +85,17 @@ ${product.name}을(를) 다시 판매할 수 없습니다.`,
           />
         ),
       }),
-    isPending: saleStatus.isPending,
-    isError: saleStatus.isError,
-    error: saleStatus.error,
+    // 사전예약 접수 중 — 새 접수만 막고 받은 예약은 남긴다.
+    confirmCloseEarly: (product: SaleTarget) =>
+      open({
+        title: '접수를 지금 마감할까요?',
+        description: `${product.name}의 새 예약 접수가 바로 끝나고, 다시 열 수 없습니다.
+이미 받은 예약과 순번은 그대로입니다. 예약까지 취소하려면 판매 중지를 쓰세요.`,
+        confirmLabel: '접수 마감',
+        onConfirm: () => runClose(product),
+      }),
+    isPending: saleStatus.isPending || closeEarly.isPending,
+    isError: saleStatus.isError || closeEarly.isError,
+    error: saleStatus.error ?? closeEarly.error,
   }
 }

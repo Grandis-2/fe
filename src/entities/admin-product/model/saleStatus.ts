@@ -41,5 +41,17 @@ export function saleStatusActionOf(
   return status === 'ACTIVE' ? { kind: 'cancel' } : null
 }
 
+/**
+ * 접수 조기 마감(POST .../campaign/close)을 할 수 있는지. 접수 중인 회차만 된다 — 오픈
+ * 전은 일정 변경으로 마감 시각을 고치고(서버 409), 판매 중지로 회차가 취소됐으면 이미
+ * 접수가 끝났다.
+ */
+export const canClosePreorderEarly = (
+  product: Pick<AdminProductDetailModel, 'saleMode' | 'status' | 'campaign'>,
+) =>
+  product.saleMode === 'PREORDER' &&
+  product.campaign?.status === 'OPEN' &&
+  product.status === 'ACTIVE'
+
 /** 회차 취소 사유 길이(앞뒤 공백 제외) — 서버가 1~500자만 받는다 */
 export const CANCEL_REASON_MAX = 500

@@ -117,6 +117,16 @@ export const putPreorderCampaign = (
   )
 
 /**
+ * 접수 중인 회차를 지금 마감한다. 새 접수만 막히고 받은 예약과 순번은 그대로다.
+ * 다시 열 수 없다. 이미 마감됐으면 그대로 200, 오픈 전이면 409
+ */
+export const closePreorderCampaign = (productId: string) =>
+  apiClient.request<unknown>(
+    `/api/v1/admin/preorders/products/${productId}/campaign/close`,
+    { method: 'POST' },
+  )
+
+/**
  * 판매 상태를 바꾼다. 사전예약 오픈 뒤 중지는 회차 취소다(사유 필수, 되돌릴 수 없음).
  */
 export const setAdminProductSaleStatus = (

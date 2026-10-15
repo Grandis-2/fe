@@ -41,6 +41,7 @@ const meta = {
     onPause: fn(),
     onResume: fn(),
     onCancel: fn(),
+    onCloseEarly: fn(),
   },
 } satisfies Meta<typeof AdminProductActions>
 
@@ -137,11 +138,38 @@ export const PreorderLocked: Story = {
 export const PreorderOpenCancels: Story = {
   args: { product: preorder('OPEN', -60 * 60 * 1000) },
   play: async ({ canvas, args }) => {
-    const [, sale] = await openMenu(canvas)
+    const [, , sale] = await openMenu(canvas)
     await expect(sale).toHaveTextContent('판매 중지하기')
     await userEvent.click(sale)
     await expect(args.onCancel).toHaveBeenCalled()
     await expect(args.onPause).not.toHaveBeenCalled()
+  },
+}
+
+/** 접수 중이면 예약을 남기는 조기 마감을 판매 중지(회차 취소) 위에 둔다 */
+export const PreorderOpenClosesEarly: Story = {
+  args: { product: preorder('OPEN', -60 * 60 * 1000) },
+  play: async ({ canvas, args }) => {
+    const items = await openMenu(canvas)
+    await expect(items.map((item) => item.textContent)).toEqual([
+      '숨김으로 전환하기',
+      '접수 조기 마감하기',
+      '판매 중지하기',
+    ])
+    await userEvent.click(items[1])
+    await expect(args.onCloseEarly).toHaveBeenCalled()
+    await expect(args.onCancel).not.toHaveBeenCalled()
+  },
+}
+
+/** 마감한 회차는 다시 마감할 게 없다 */
+export const PreorderClosedNoCloseEarly: Story = {
+  args: { product: preorder('CLOSED', -2 * DAY) },
+  play: async ({ canvas }) => {
+    const items = await openMenu(canvas)
+    await expect(
+      items.some((item) => item.textContent === '접수 조기 마감하기'),
+    ).toBe(false)
   },
 }
 

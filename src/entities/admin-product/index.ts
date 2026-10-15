@@ -5,6 +5,7 @@ export {
   useAdminProduct,
   useAdminProductDetails,
   useAdminProductStock,
+  useClosePreorderCampaign,
   useCreateAdminProduct,
   useSetAdminProductSaleStatus,
   useSetAdminProductVisibility,
@@ -28,7 +29,11 @@ export { editLockReason, editSectionLabel } from './model/edit'
 export { validateRegistration } from './model/registration'
 export { serverIssuesOf, validateProductBasics } from './model/validation'
 export type { FormField, FormIssue } from './model/validation'
-export { CANCEL_REASON_MAX, saleStatusActionOf } from './model/saleStatus'
+export {
+  CANCEL_REASON_MAX,
+  canClosePreorderEarly,
+  saleStatusActionOf,
+} from './model/saleStatus'
 export type { SaleStatusAction } from './model/saleStatus'
 export type { EditSection } from './model/edit'
 export {
