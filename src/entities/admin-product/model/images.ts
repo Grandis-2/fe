@@ -48,9 +48,11 @@ const DETAIL_FIELDS = Object.keys(DETAIL_SECTIONS) as DetailImageField[]
 const hasNoColor = (value: Pick<AdminProductFormValue, 'colors'>) =>
   value.colors.some((color) => color.noColor)
 
-const allImages = (value: AdminProductFormValue) => [
-  ...value.colors.flatMap((color) => color.images),
-  ...value.noColorImages,
+/** 보낼 사진만 — '색상 없음'을 끄면 그 묶음은 화면에서 사라지고 보내지도 않는다 */
+const sentImages = (value: AdminProductFormValue) => [
+  ...(hasNoColor(value)
+    ? value.noColorImages
+    : value.colors.flatMap((color) => color.images)),
   ...DETAIL_FIELDS.flatMap((field) => value[field]),
 ]
 
@@ -63,7 +65,7 @@ const uploaded = (images: UploadedImage[]) =>
  * 주소(blob:)뿐이라 빠진 채로 저장된다 — 관리자는 넣었다고 생각한다.
  */
 export function imageUploadIssues(value: AdminProductFormValue): FormIssue[] {
-  const images = allImages(value)
+  const images = sentImages(value)
   if (images.some((image) => image.status === 'uploading')) {
     return [
       {

@@ -67,7 +67,11 @@ export function AdminProductActions({
                 onSelect: () => onCancel(product),
               }
             : {
-                label: '판매 중지하기',
+                // 잠금 구간에도 지금 상태 기준으로 적는다 — 이미 중지면 '재개'다.
+                label:
+                  product.status === 'ACTIVE'
+                    ? '판매 중지하기'
+                    : '판매 재개하기',
                 disabledReason: action.reason,
                 onSelect: () => undefined,
               }

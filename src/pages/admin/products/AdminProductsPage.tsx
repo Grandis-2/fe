@@ -104,11 +104,11 @@ export function AdminProductsPage() {
    * 오픈 시각이 없는 상품(일반 판매)은 뒤로 모은다 — 빈 값끼리는 순서를 바꾸지 않아
    * 서버가 준 등록 최신순이 남는다.
    */
-  const visibleProducts = products.toSorted((a, b) =>
-    sort === 'name'
-      ? a.name.localeCompare(b.name)
-      : (a.opensAt ?? '').localeCompare(b.opensAt ?? ''),
-  )
+  const visibleProducts = products.toSorted((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name)
+    if (!a.opensAt || !b.opensAt) return Number(!a.opensAt) - Number(!b.opensAt)
+    return a.opensAt.localeCompare(b.opensAt)
+  })
 
   const columns: TableColumn<AdminProduct>[] = [
     {
