@@ -1,6 +1,12 @@
 import { keyframes, style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import {
+  color,
+  motion,
+  shadow,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 
 // 다크 테마(사용자 페이지) — 토큰만 뒤집으면 강조 글자(primary.focus/base)가 어두운 바탕에
 // 묻힌다(Tag와 같은 이유). 글자는 text.primary/primary.subtle로, 바탕은 페이지보다 한 단계
@@ -58,7 +64,7 @@ export const menu = style({
   selectors: {
     [dark]: {
       background: color.background.surface,
-      boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+      boxShadow: shadow.mdDark,
     },
   },
 })
