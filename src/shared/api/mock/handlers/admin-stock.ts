@@ -7,8 +7,8 @@ import { url } from '../url'
 
 import type {
   AdminStockItem,
-  AdminStockPutRequest,
-  AdminStockResponse,
+  StockOverviewResponse,
+  StockRequest,
 } from '../../types'
 import type { RequestHandler } from 'msw'
 
@@ -30,11 +30,32 @@ const hasVariant = (productId: string, optionCode: string) =>
 export const adminStockHandlers: RequestHandler[] = [
   http.get(url('/api/v1/admin/products/:productId/stock'), ({ params }) => {
     const productId = String(params.productId)
-    if (!productExists(productId)) return notFound()
+    const product = adminProductStore.find(
+      (item) => item.productId === productId,
+    )
+    if (!product) return notFound()
 
-    return ok<AdminStockResponse>({
+    // 사전예약은 재고를 세지 않는다 — 오류 대신 tracked false와 빈 목록을 준다.
+    if (product.saleMode === 'PREORDER') {
+      return ok<StockOverviewResponse>({ productId, tracked: false, items: [] })
+    }
+
+    // 저장소(예전 모양)를 명세 모양으로 바꿔 내보낸다. 옵션 id는 상세 목업과 같은
+    // 옵션 코드를 쓴다. 재고를 아직 넣지 않은 옵션도 registered false와 0으로 나온다.
+    return ok<StockOverviewResponse>({
       productId,
-      items: adminStockStore.filter((item) => item.productId === productId),
+      tracked: true,
+      items: product.variants.map((variant) => {
+        const item = findStockItem(productId, variant.optionCode)
+        return {
+          optionId: variant.optionCode,
+          registered: !!item,
+          stockTotal: item?.initialQuantity ?? 0,
+          stockReserved: item?.reservedQuantity ?? 0,
+          stockSold: 0,
+          available: item?.availableQuantity ?? 0,
+        }
+      }),
     })
   }),
 
@@ -44,72 +65,93 @@ export const adminStockHandlers: RequestHandler[] = [
       const productId = String(params.productId)
       if (!productExists(productId)) return notFound()
 
-      const body = (await request.json()) as AdminStockPutRequest
+      const body = (await request
+        .json()
+        .catch(() => null)) as Partial<StockRequest> | null
+      const items = body?.items ?? []
+      if (items.length < 1 || items.length > 500) {
+        return fail(400, {
+          code: 'VALIDATION_FAILED',
+          message: '입력값을 확인해 주세요.',
+          violations: [{ field: 'items', message: '1~500개여야 합니다.' }],
+        })
+      }
 
-      const violations = [
-        !body.optionCode
-          ? { field: 'optionCode', message: '필수 항목입니다.' }
-          : null,
-        !Number.isInteger(body.initialQuantity) || body.initialQuantity < 0
-          ? { field: 'initialQuantity', message: '0 이상이어야 합니다.' }
-          : null,
-      ].filter((violation) => violation !== null)
-
+      const violations = items.flatMap((item, index) => [
+        ...(hasVariant(productId, item.optionId)
+          ? []
+          : [
+              {
+                field: `items[${index}].optionId`,
+                message: '상품의 옵션이 아닙니다.',
+              },
+            ]),
+        ...(Number.isInteger(item.stockTotal) && item.stockTotal >= 0
+          ? []
+          : [
+              {
+                field: `items[${index}].stockTotal`,
+                message: '0 이상 정수여야 합니다.',
+              },
+            ]),
+      ])
+      if (new Set(items.map((item) => item.optionId)).size !== items.length) {
+        violations.push({
+          field: 'items',
+          message: '같은 옵션이 두 번 왔습니다.',
+        })
+      }
       if (violations.length > 0) {
         return fail(400, {
           code: 'VALIDATION_FAILED',
           message: '입력값을 확인해 주세요.',
-          retryable: false,
           violations,
         })
       }
 
-      // PUT은 업서트다. 상품을 수정하면 variant 코드가 새로 생기는데, 그때
-      // 재고 행이 아직 없다고 거절하면 새 옵션에는 수량을 넣을 방법이 없다.
-      // 상품에 없는 옵션 코드일 때만 거절한다.
-      let item = findStockItem(productId, body.optionCode)
-      if (!item) {
-        if (!hasVariant(productId, body.optionCode)) return notFound()
-
-        item = {
-          productId,
-          optionCode: body.optionCode,
-          policy: 'LIMITED',
-          initialQuantity: 0,
-          availableQuantity: 0,
-          reservedQuantity: 0,
-          adjustmentsEnabled: true,
-          updatedAt: new Date().toISOString(),
-          updatedBy: null,
-        }
-        adminStockStore.push(item)
-      }
-
-      // 조정이 잠겼거나, 이미 확보된 수량보다 적게 줄이려 하면 거절한다.
-      if (
-        !item.adjustmentsEnabled ||
-        body.initialQuantity < item.reservedQuantity
-      ) {
+      // 전부 반영되거나 전부 안 된다 — 확보된 수량보다 적게 줄이는 옵션이 하나라도
+      // 있으면 아무것도 바꾸지 않는다.
+      const below = items.filter(
+        (item) =>
+          item.stockTotal <
+          (findStockItem(productId, item.optionId)?.reservedQuantity ?? 0),
+      )
+      if (below.length > 0) {
         return fail(409, {
-          code: 'STOCK_ADJUSTMENT_CONFLICT',
-          message: '현재 확보 수량 또는 조정 설정과 충돌합니다.',
-          retryable: false,
+          code: 'STOCK_BELOW_COMMITTED',
+          message: '이미 확보·판매된 수량보다 적게 줄일 수 없습니다.',
         })
       }
 
-      const updated: AdminStockItem = {
-        ...item,
-        policy: body.policy ?? item.policy,
-        initialQuantity: body.initialQuantity,
-        // 확보된 수량은 그대로 두고 남는 수량만 다시 계산한다.
-        availableQuantity: body.initialQuantity - item.reservedQuantity,
-        adjustmentsEnabled: body.adjustmentsEnabled ?? item.adjustmentsEnabled,
-        updatedAt: new Date().toISOString(),
-        updatedBy: 'admin',
-      }
-      adminStockStore[adminStockStore.indexOf(item)] = updated
+      const saved = items.map(({ optionId, stockTotal }) => {
+        const current = findStockItem(productId, optionId)
+        const next: AdminStockItem = {
+          productId,
+          optionCode: optionId,
+          policy: 'LIMITED',
+          initialQuantity: stockTotal,
+          reservedQuantity: current?.reservedQuantity ?? 0,
+          availableQuantity: stockTotal - (current?.reservedQuantity ?? 0),
+          adjustmentsEnabled: true,
+          updatedAt: new Date().toISOString(),
+          updatedBy: 'admin',
+        }
+        if (current) adminStockStore[adminStockStore.indexOf(current)] = next
+        else adminStockStore.push(next)
+        return next
+      })
 
-      return ok(updated)
+      return ok({
+        productId,
+        items: saved.map((item) => ({
+          optionId: item.optionCode,
+          stockTotal: item.initialQuantity,
+          stockReserved: item.reservedQuantity,
+          stockSold: 0,
+          available: item.availableQuantity,
+          created: false,
+        })),
+      })
     },
   ),
 ]

@@ -1,16 +1,13 @@
-import type {
-  AdminProductDetail,
-  AdminProductUpsertRequest,
-  DispatchWindowPutRequest,
-  AdminStockItem,
-  AdminStockPutRequest,
-  ProductOptionGroup as DtoOptionGroup,
-  ProductVariant as DtoVariant,
-} from '@shared/api/types'
-import type { UploadedImage } from '@shared/ui'
+import type { ProductImageBundle, StockOverviewItem } from '@shared/api/types'
+import type { DateRange, UploadedImage } from '@shared/ui'
 
-import { toDispatchWindowRequest } from './dispatch'
-import { COLOR_GROUP_CODE } from './types'
+import {
+  axisValueName,
+  brandNameOf,
+  COLOR_GROUP_CODE,
+  DETAIL_SECTIONS,
+  type AdminProductDetailModel,
+} from './types'
 
 /* ------------------------------------------------------------------ *
  * 폼이 편집하는 모양 — 서버 DTO와 형태가 달라서 별도로 둔다.
@@ -48,14 +45,29 @@ export type AdminProductFormValue = {
   /** PRODUCT_BRANDS 중 하나. 아직 고르지 않았으면 빈 문자열 */
   brand: string
   isPreorder: boolean
+  /**
+   * 일반 상품을 등록하자마자 공개할지. 끄면 숨김으로 등록돼 상세에서 확인한 뒤 공개한다.
+   * 사전예약은 보지 않는다 — 늘 공개로 보내고 서버가 접수 기간에만 보여준다.
+   */
+  publishOnCreate: boolean
+  /**
+   * 검색용 태그. 구매자 화면에는 나오지 않고 검색어로만 쓰인다.
+   * 후보(TAG_PRESETS)에서 골라도 되고 직접 적어도 되므로 자유 문자열이다.
+   */
+  tags: string[]
   /** datetime-local 형식 문자열 */
   openAt: string
   closeAt: string
   /**
-   * 1차 배송 예상일('YYYY-MM-DD'). 미정이면 빈 문자열.
-   * 등록할 때 1차 배송 차수를 미리 만드는 데 쓴다(toFirstWaveRequest).
+   * 고른 제품 종류의 카테고리 id. 등록에 필수다 — 종류를 고르면 카테고리 트리에서
+   * 찾아 채운다. 수정 화면에선 서버 값이고 바꿀 수 없다.
    */
-  firstDeliveryDate: string
+  categoryId: string
+  /**
+   * 1차 배송 예정 기간('YYYY-MM-DD'). 사전예약 등록에 필수다 — 서버가 차수마다 시작·
+   * 종료일을 둘 다 받는다(registration.ts).
+   */
+  firstDelivery: DateRange
   colors: ProductColorOption[]
   optionGroups: ProductOptionGroup[]
   basePrice: number
@@ -65,8 +77,20 @@ export type AdminProductFormValue = {
    * 색상이나 옵션을 추가·삭제해도 살아남은 조합의 입력값이 유지되게 한다.
    */
   quantities: Record<string, number>
-  detailImages: UploadedImage[]
-  specImages: UploadedImage[]
+  /**
+   * 판매 스위치를 끈 조합의 키(quantities와 같은 키).
+   * - 등록: 만들지 않는다(서버 excluded)
+   * - 수정: 이미 있는 조합은 판매 중지, 서버에 없는 조합(등록 때 뺀 것·새 값의 조합)은
+   *   만들지 않는다. 서버에 옵션을 지우는 API가 없어서 그만 팔 조합은 판매 중지로 둔다.
+   */
+  pausedKeys: string[]
+  /**
+   * '색상 없음' 상품의 상품 사진. 색상 축이 없으면 갤러리는 색상 없는 묶음 하나라
+   * 색상 칸(colors[].images)에 둘 수 없다. 색상이 있는 상품에서는 보내지 않는다.
+   */
+  noColorImages: UploadedImage[]
+  benefitImages: UploadedImage[]
+  infoImages: UploadedImage[]
   noticeImages: UploadedImage[]
 }
 
@@ -95,17 +119,23 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     name: '',
     modelName: '',
     brand: '',
+    tags: [],
     isPreorder: false,
+    // 기본은 숨김 — 옵션·가격을 확인하기 전에 구매자에게 보이지 않게.
+    publishOnCreate: false,
     openAt: '',
     closeAt: '',
-    firstDeliveryDate: '',
+    categoryId: '',
+    firstDelivery: { start: '', end: '' },
     // 색상은 최소 한 칸을 미리 열어둔다 (아직 아무것도 선택되지 않은 상태).
     colors: [createColorOption()],
     optionGroups: [],
     basePrice: 0,
     quantities: {},
-    detailImages: [],
-    specImages: [],
+    pausedKeys: [],
+    noColorImages: [],
+    benefitImages: [],
+    infoImages: [],
     noticeImages: [],
   }
 }
@@ -196,7 +226,7 @@ export function getProductVariants(
  * ------------------------------------------------------------------ */
 
 // datetime-local('2026-09-20T09:00')을 서버가 쓰는 ISO 문자열로 바꾼다.
-const toIso = (local: string) =>
+export const toIso = (local: string) =>
   local ? new Date(local).toISOString() : undefined
 
 // 반대로 ISO를 datetime-local이 읽는 형식으로 자른다(로컬 시각 기준).
@@ -207,285 +237,101 @@ function toLocalInput(iso: string | null) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-const colorCodeOf = (index: number) => `C${index + 1}`
-const optionGroupCodeOf = (index: number) => `opt${index + 1}`
-const optionValueCodeOf = (groupIndex: number, valueIndex: number) =>
-  `${optionGroupCodeOf(groupIndex)}-${valueIndex + 1}`
+const toUploadedImages = (bundle?: ProductImageBundle): UploadedImage[] =>
+  (bundle?.items ?? []).map((item) => ({
+    id: item.url,
+    url: item.url,
+    name: item.url.split('/').pop() ?? '',
+  }))
 
-type Combination = {
-  codes: Record<string, string>
-  labels: string[]
-  extraPrice: number
-}
-
-/** 옵션 그룹을 곱집합으로 펼치되 서버가 쓰는 코드까지 같이 만든다 */
-function buildCombinations(groups: ProductOptionGroup[]): Combination[] {
-  return groups.reduce<Combination[]>(
-    (acc, group, groupIndex) =>
-      acc.flatMap((combo) =>
-        group.values.map((optionValue, valueIndex) => ({
-          codes: {
-            ...combo.codes,
-            [optionGroupCodeOf(groupIndex)]: optionValueCodeOf(
-              groupIndex,
-              valueIndex,
-            ),
-          },
-          labels: [...combo.labels, optionValue.label],
-          extraPrice: combo.extraPrice + optionValue.extraPrice,
-        })),
-      ),
-    [{ codes: {}, labels: [], extraPrice: 0 }],
-  )
-}
-
-/**
- * 상세 응답의 variant마다 폼의 수량 맵 키를 계산해 optionCode와 짝지어 둔다.
- * 폼은 서버 옵션 코드를 들고 있지 않아서, 재고를 저장할 때 이 표로 되돌린다.
- */
-export function buildOptionCodeByQuantityKey(
-  detail: AdminProductDetail,
-): Record<string, string> {
-  const colorGroup = detail.optionGroups.find(
-    (group) => group.groupCode === COLOR_GROUP_CODE,
-  )
-  const otherGroups = detail.optionGroups.filter(
-    (group) => group.groupCode !== COLOR_GROUP_CODE,
-  )
-
-  return Object.fromEntries(
-    detail.variants.map((variant) => {
-      const colorName =
-        colorGroup?.values.find(
-          (value) => value.valueCode === variant.optionValues.color,
-        )?.name ?? ''
-      const labels = otherGroups.map(
-        (group) =>
-          group.values.find(
-            (value) =>
-              value.valueCode === variant.optionValues[group.groupCode],
-          )?.name ?? '',
-      )
-
-      return [buildVariantKey(colorName, labels), variant.optionCode]
-    }),
-  )
-}
-
-/**
- * 폼의 조합별 수량을 재고 API 요청들로 바꾼다.
- * 상품 등록/수정 본문(ProductUpsert)에는 수량 필드가 없어서 재고는 따로 보낸다.
- * 서버가 아직 옵션 코드를 발급하지 않은 조합(새로 추가한 옵션)은 건너뛴다.
- */
-export function toStockRequests(
-  value: AdminProductFormValue,
-  detail: AdminProductDetail,
-): AdminStockPutRequest[] {
-  const optionCodeByKey = buildOptionCodeByQuantityKey(detail)
-
-  return Object.entries(value.quantities).flatMap(
-    ([quantityKey, initialQuantity]) => {
-      const optionCode = optionCodeByKey[quantityKey]
-      return optionCode ? [{ optionCode, initialQuantity }] : []
-    },
-  )
-}
-
-/**
- * 폼 값을 등록/수정 요청 본문으로 바꾼다.
- *
- * ponytail: 조합별 수량(quantities)과 업로드 이미지는 스펙에 대응 필드가 없다.
- * 수량은 variants에 필드가 없고, 이미지는 업로드 엔드포인트가 정해지면 URL로 교체한다.
- */
-export function toUpsertRequest(
-  value: AdminProductFormValue,
-): AdminProductUpsertRequest {
-  const namedColors = value.colors.filter(
-    (colorOption) => !colorOption.noColor && colorOption.name.trim() !== '',
-  )
-  const groups = filledGroupsOf(value.optionGroups)
-
-  const optionGroups: DtoOptionGroup[] = [
-    ...(namedColors.length > 0
-      ? [
-          {
-            groupCode: COLOR_GROUP_CODE,
-            name: '색상',
-            sortOrder: 0,
-            values: namedColors.map((colorOption, index) => ({
-              valueCode: colorCodeOf(index),
-              name: colorOption.name,
-              colorHex: colorOption.hex || null,
-              imageUrl: colorOption.images[0]?.url ?? null,
-              sortOrder: index,
-            })),
-          },
-        ]
-      : []),
-    ...groups.map((group, groupIndex) => ({
-      groupCode: optionGroupCodeOf(groupIndex),
-      name: group.name,
-      sortOrder: groupIndex + 1,
-      values: group.values.map((optionValue, valueIndex) => ({
-        valueCode: optionValueCodeOf(groupIndex, valueIndex),
-        name: optionValue.label,
-        colorHex: null,
-        imageUrl: null,
-        sortOrder: valueIndex,
-      })),
-    })),
-  ]
-
-  // 조합을 코드까지 붙여 다시 펼친다 — 라벨만 있는 getProductVariants와 달리
-  // 서버는 optionValues를 코드로 받는다.
-  const combos = buildCombinations(groups)
-
-  const colorAxis =
-    namedColors.length > 0
-      ? namedColors.map((colorOption, index) => ({
-          code: colorCodeOf(index),
-          name: colorOption.name,
-        }))
-      : [null]
-
-  const variants: DtoVariant[] = colorAxis.flatMap((colorEntry, colorIndex) =>
-    combos.map((combo, comboIndex) => ({
-      optionCode: [colorEntry?.code, ...Object.values(combo.codes)]
-        .filter(Boolean)
-        .join('-'),
-      name: [colorEntry?.name, ...combo.labels].filter(Boolean).join(' '),
-      optionValues: colorEntry
-        ? { [COLOR_GROUP_CODE]: colorEntry.code, ...combo.codes }
-        : combo.codes,
-      price: value.basePrice + combo.extraPrice,
-      listPrice: null,
-      available: true,
-      sortOrder: colorIndex * combos.length + comboIndex,
-      images: [],
-    })),
-  )
-
-  return {
-    productId: value.modelName || null,
-    name: value.name,
-    // 안 골랐으면 키를 아예 빼서 수정 때 기존 브랜드를 빈 값으로 덮지 않는다.
-    brand: value.brand || undefined,
-    optionGroups,
-    variants,
-    images: value.detailImages.map((image, index) => ({
-      imageUrl: image.url,
-      alt: image.name,
-      sortOrder: index,
-      optionValueCode: null,
-    })),
-    openAt: toIso(value.openAt),
-    closeAt: toIso(value.closeAt) ?? null,
-    badges: value.isPreorder ? ['PREORDER'] : [],
-  }
-}
-
-/**
- * 옵션 값 하나의 추가금을 variant 가격에서 되돌린다.
- *
- * 서버 variant에는 추가금 필드가 없고 최종 가격만 있다. toUpsertRequest가
- * `가격 = 기본가 + 고른 값들의 추가금 합`으로 만들므로 그 역이 성립한다 —
- * 이 값을 가진 variant 중 가장 싼 것에서 기본가(최저가)를 빼면 된다.
- *
- * 되돌리지 않으면 수정 탭에서 아무것도 안 바꾸고 저장만 해도 모든 variant가
- * 최저가로 덮어써진다.
- */
-function extraPriceOf(
-  detail: AdminProductDetail,
-  groupCode: string,
-  valueCode: string,
-) {
-  const prices = detail.variants
-    .filter((variant) => variant.optionValues[groupCode] === valueCode)
-    .map((variant) => variant.price)
-
-  if (prices.length === 0) return 0
-  return Math.min(...prices) - detail.priceRange.min
-}
-
-/** 상세 응답을 폼이 편집할 수 있는 모양으로 되돌린다 */
+/** 상세를 폼이 편집할 수 있는 모양으로 되돌린다 */
 export function toFormValue(
-  detail: AdminProductDetail,
-  stockItems: AdminStockItem[] = [],
+  detail: AdminProductDetailModel,
+  stockItems: StockOverviewItem[] = [],
 ): AdminProductFormValue {
-  const colorGroup = detail.optionGroups.find(
-    (group) => group.groupCode === COLOR_GROUP_CODE,
+  const colorAxis = detail.optionAxes.find(
+    (axis) => axis.key === COLOR_GROUP_CODE,
   )
-  const otherGroups = detail.optionGroups.filter(
-    (group) => group.groupCode !== COLOR_GROUP_CODE,
+  const otherAxes = detail.optionAxes.filter(
+    (axis) => axis.key !== COLOR_GROUP_CODE,
   )
+  const detailBundle = (section: string) =>
+    detail.images.detail.find((bundle) => bundle.bundleKey === section)
+  // 색상 축이 없는 상품의 갤러리는 색상 없는 묶음('') 하나다.
+  const noColorBundle = colorAxis
+    ? undefined
+    : detail.images.gallery.find((bundle) => bundle.bundleKey === '')
+  // 조합은 축마다 정규화값을 들고 있다 — 폼의 키는 화면 이름으로 만든다.
+  const variantKeyOf = (variant: AdminProductDetailModel['variants'][number]) =>
+    buildVariantKey(
+      axisValueName(colorAxis, variant.selections[COLOR_GROUP_CODE]) ?? '',
+      otherAxes.map(
+        (axis) => axisValueName(axis, variant.selections[axis.key]) ?? '',
+      ),
+    )
 
-  return {
+  const value: AdminProductFormValue = {
     ...createEmptyProductFormValue(),
     name: detail.name,
-    modelName: detail.productId,
-    brand: detail.brand,
-    isPreorder: detail.badges.includes('PREORDER'),
-    openAt: toLocalInput(detail.sale.openAt),
-    closeAt: toLocalInput(detail.sale.closeAt),
-    colors: colorGroup?.values.map((value) => ({
-      id: value.valueCode,
-      name: value.name,
-      hex: value.colorHex ?? '',
-      noColor: false,
-      images: [],
-    })) ?? [createColorOption()],
-    optionGroups: otherGroups.map((group) => ({
-      id: group.groupCode,
-      name: group.name,
-      values: group.values.map((value) => ({
-        id: value.valueCode,
-        label: value.name,
-        extraPrice: extraPriceOf(detail, group.groupCode, value.valueCode),
+    modelName: detail.modelName,
+    brand: brandNameOf(detail.brand),
+    categoryId: detail.categoryId,
+    tags: detail.tags,
+    isPreorder: detail.saleMode === 'PREORDER',
+    openAt: toLocalInput(detail.campaign?.opensAt ?? null),
+    closeAt: toLocalInput(detail.campaign?.closesAt ?? null),
+    colors: colorAxis
+      ? colorAxis.values.map((value) => ({
+          id: value.valueId,
+          name: value.value,
+          hex: value.hex ?? '',
+          noColor: false,
+          // 갤러리는 색상 정규화값으로 묶여 온다.
+          images: toUploadedImages(
+            detail.images.gallery.find(
+              (bundle) => bundle.bundleKey === value.normalizedValue,
+            ),
+          ),
+        }))
+      : // 색상 축이 없는 상품(키보드 등)은 '색상 없음'으로 둔다 — 빈 색상 칸을 두면
+        // 조합이 하나도 안 만들어져 수량 표가 비어 보인다.
+        [{ ...createColorOption(), noColor: true }],
+    optionGroups: otherAxes.map((axis) => ({
+      id: axis.key,
+      name: axis.label,
+      values: axis.values.map((value) => ({
+        id: value.valueId,
+        label: value.value,
+        // 서버가 값마다 추가금을 준다 — 예전처럼 조합 가격에서 거꾸로 계산하지 않는다.
+        extraPrice: value.surcharge,
       })),
     })),
-    basePrice: detail.priceRange.min,
-    // 재고 응답의 optionCode를 폼의 수량 키(색상|옵션값)로 되돌린다.
+    basePrice: detail.basePrice,
+    pausedKeys: detail.variants
+      .filter((variant) => variant.status === 'PAUSED')
+      .map((variant) => variantKeyOf(variant)),
+    // 재고는 옵션 id(= variantId)로 온다. 폼의 수량 키(색상|옵션값)로 옮긴다.
     quantities: Object.fromEntries(
-      Object.entries(buildOptionCodeByQuantityKey(detail)).flatMap(
-        ([quantityKey, optionCode]) => {
-          const stock = stockItems.find(
-            (item) => item.optionCode === optionCode,
-          )
-          return stock ? [[quantityKey, stock.initialQuantity]] : []
-        },
-      ),
+      detail.variants.flatMap((variant) => {
+        const stock = stockItems.find(
+          (item) => item.optionId === variant.variantId,
+        )
+        return stock ? [[variantKeyOf(variant), stock.stockTotal]] : []
+      }),
     ),
+    noColorImages: toUploadedImages(noColorBundle),
+    benefitImages: toUploadedImages(
+      detailBundle(DETAIL_SECTIONS.benefitImages),
+    ),
+    infoImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.infoImages)),
+    noticeImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.noticeImages)),
   }
-}
 
-/**
- * 사전예약 상품을 등록할 때 1차 배송 차수를 미리 만든다.
- *
- * 끝 번호는 폼에서 받은 1차 배송 수량의 합이다 — 1차로 보낼 물량이 N개면 1~N번
- * 순번까지가 1차다. 2차 이후는 상세의 배송 구간 설정에서 이어 붙인다.
- *
- * 지금 있는 조합의 수량만 센다 — quantities는 색상·옵션을 지워도 키를 그대로
- * 들고 있다(살아남은 조합의 입력값을 지키려고 일부러 그런다). 그걸 다 합치면
- * 상품에 없는 물량까지 1차 구간에 들어간다.
- *
- * 사전예약이 아니거나 수량이 0이면 만들 게 없어 null을 돌려준다.
- */
-export function toFirstWaveRequest(
-  value: AdminProductFormValue,
-): DispatchWindowPutRequest | null {
-  if (!value.isPreorder) return null
-
-  const toSeq = getProductVariants(value).reduce(
-    (sum, variant) => sum + (value.quantities[variant.key] ?? 0),
-    0,
-  )
-  if (toSeq < 1) return null
-
-  return toDispatchWindowRequest([
-    {
-      id: crypto.randomUUID(),
-      toSeq,
-      estimatedDeliveryDate: value.firstDeliveryDate || null,
-    },
-  ])
+  // 축의 곱집합 중 서버에 없는 조합은 등록 때 뺀 것이다 — 스위치를 꺼서 보여준다.
+  // 켜 두면 판매 중인 것처럼 읽히는데 실제로는 없다.
+  const existing = new Set(detail.variants.map(variantKeyOf))
+  const missing = getProductVariants(value)
+    .map((variant) => variant.key)
+    .filter((key) => !existing.has(key))
+  return { ...value, pausedKeys: [...value.pausedKeys, ...missing] }
 }

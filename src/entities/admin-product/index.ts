@@ -3,41 +3,69 @@
 // 매퍼(toUpsertRequest 등)도 훅 안에서만 쓴다 — 화면이 DTO를 직접 만들면 안 된다.
 export {
   useAdminProduct,
+  useAdminProductDetails,
   useAdminProductStock,
+  useClosePreorderCampaign,
+  RegistrationUnconfirmedError,
   useCreateAdminProduct,
-  useHideAdminProduct,
-  usePublishAdminProduct,
-  useUpdateAdminProduct,
+  useSetAdminProductSaleStatus,
+  useSetAdminProductVisibility,
 } from './api/useAdminProduct'
 export { useAdminProducts } from './api/useAdminProducts'
+// 예외로 생 함수를 내보낸다 — 사진 업로드는 조회가 아니라 파일마다 한 번 보내는
+// 일이고, 진행·실패 상태는 업로더(ImageUploader)가 사진 칸마다 들고 있다. 화면은
+// 이 함수를 업로더의 upload로 넘기기만 한다(DTO는 밖으로 나가지 않는다).
+export { uploadProductImage } from './api/productImages'
 export {
-  useDispatchWindow,
-  useSaveDispatchWindow,
-} from './api/useDispatchWindow'
+  GALLERY_MAX,
+  imageUploadIssues,
+  PRODUCT_IMAGE_ACCEPT,
+} from './model/images'
+export { useSaveAdminProductEdits } from './api/useSaveAdminProductEdits'
+export type {
+  EditFailure,
+  EditSaveResult,
+} from './api/useSaveAdminProductEdits'
+export { editLockReason, editSectionLabel } from './model/edit'
+export { validateRegistration } from './model/registration'
+export { serverIssuesOf, validateProductBasics } from './model/validation'
+export type { FormField, FormIssue } from './model/validation'
 export {
-  createWaveDraft,
-  formatDeliveryDate,
-  formatSeqRange,
-  nextFromSeq,
-  toDispatchWindowRequest,
-  toWaveDrafts,
-  toWaves,
-  waveDraftProblem,
-} from './model/dispatch'
-export type { DispatchWaveDraft, DispatchWaveModel } from './model/dispatch'
+  CANCEL_REASON_MAX,
+  canClosePreorderEarly,
+  saleStatusActionOf,
+} from './model/saleStatus'
+export type { SaleStatusAction } from './model/saleStatus'
+export type { EditSection } from './model/edit'
 export {
-  HIDE_REASON_MAX_LENGTH,
-  HIDE_REASON_MIN_LENGTH,
+  useAdminShipmentBatches,
+  useSaveAdminShipmentBatches,
+} from './api/useShipmentBatches'
+export {
+  batchDraftProblem,
+  createBatchDraft,
+  formatPositionRange,
+  formatShipPeriod,
+  toBatchDrafts,
+  toBatches,
+  toShipmentBatchesRequest,
+} from './model/shipment'
+export type { AdminShipmentBatch, ShipmentBatchDraft } from './model/shipment'
+export {
   isPreorder,
+  isPublicSetting,
+  MODEL_NAME_MAX,
   PRODUCT_BRANDS,
   productTypeLabel,
   productTypeLabels,
-  saleStatusLabel,
+  preorderStageLabel,
+  saleStateLabel,
 } from './model/types'
 export type {
   AdminProduct,
   AdminProductDetailModel,
-  AdminSaleStatus,
+  AdminPreorderStage,
+  AdminSaleState,
 } from './model/types'
 export {
   createColorOption,
@@ -54,13 +82,12 @@ export type {
   ProductOptionValue,
   ProductVariant,
 } from './model/form'
-export { DeliveryDateField } from './ui/DeliveryDateField'
-export type { DeliveryDateFieldProps } from './ui/DeliveryDateField'
 export { AdminProductDisplayTag } from './ui/AdminProductDisplayTag'
 export type { AdminProductDisplayTagProps } from './ui/AdminProductDisplayTag'
 export { AdminProductSaleTag } from './ui/AdminProductSaleTag'
 export type { AdminProductSaleTagProps } from './ui/AdminProductSaleTag'
 export { OPTION_PRESETS, withPresetOptionGroups } from './model/optionPreset'
+export { recommendedTags, TAG_PRESETS } from './model/tagPreset'
 export type { ProductOptionPreset } from './model/optionPreset'
 export { getAdminProductStocks, getStockOptionGroups } from './model/stock'
 export type { AdminProductStock } from './model/stock'

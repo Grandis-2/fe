@@ -97,11 +97,36 @@ export const ADMIN_PROMOTION_NEW_PATH = '/admin/preorders/new'
 export const adminPromotionPath = (promotionId: string) =>
   `${ADMIN_PROMOTIONS_PATH}/${promotionId}`
 
-// 예약 현황은 목록 한 페이지뿐이다 — 상세 화면이 없어 개별 경로가 없다.
+/** 대기열 관리 — 입장 속도·상품별 상한·최대 대기·이탈 유예(바꾸면 바로 회원에게 반영) */
+export const ADMIN_WAITINGROOM_PATH = '/admin/waitingroom'
 export const ADMIN_RESERVATIONS_PATH = '/admin/orders'
+/** 예약 상세 */
+export const adminReservationPath = (preorderId: string) =>
+  `${ADMIN_RESERVATIONS_PATH}/${preorderId}`
 
-// 아직 기능 범위가 안 정해져 placeholder로만 열리는 메뉴들.
-export const ADMIN_CONSISTENCY_CHECK_PATH = '/admin/consistency-check'
+/**
+ * 상세로 들어갈 때 navigate state로 넘기는 '돌아갈 곳'. 예약 상세는 예약 현황 말고
+ * 외부 예약 대조에서도 들어오므로 들어온 화면으로 돌려보낸다.
+ */
+export type BackTo = { label: string; to: string }
+
+/** location.state에서 BackTo를 꺼낸다. 주소로 바로 열면 state가 없다 */
+export const readBackTo = (state: unknown): BackTo | undefined => {
+  const backTo = (state as { backTo?: Partial<BackTo> } | null)?.backTo
+  return typeof backTo?.label === 'string' && typeof backTo.to === 'string'
+    ? { label: backTo.label, to: backTo.to }
+    : undefined
+}
+
+/** 외부 예약 대조 — 우리 예약과 외부 예약 시스템 원장을 맞춰 본다 */
+export const ADMIN_RECONCILIATION_PATH = '/admin/reconciliation'
 export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'
+/** 이벤트 DLQ — 서버끼리 주고받는 메시지 중 처리에 실패해 멈춘 것(개발자 기능) */
+export const ADMIN_DEAD_LETTERS_PATH = '/admin/dead-letters'
+export const adminDeadLetterPath = (deadLetterId: string) =>
+  `${ADMIN_DEAD_LETTERS_PATH}/${deadLetterId}`
+// 아직 기능 범위가 안 정해져 placeholder로만 열리는 메뉴.
 export const ADMIN_NOTIFICATIONS_PATH = '/admin/notifications'
+// 관리자 로그인. 사이드바 없는 단독 화면이라 AdminLayout 밖에 둔다.
+export const ADMIN_LOGIN_PATH = '/admin/login'
 export const ADMIN_MOCK_SETTINGS_PATH = '/admin/mock-settings'

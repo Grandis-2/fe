@@ -27,6 +27,10 @@ export const queryPolicy = {
   // 대기열 순번 — 서버가 정한 간격(Retry-After)으로만 다시 묻는다. 마운트·포커스로 따로 묻지 않는다
   // (간격을 임의로 줄이면 안 된다). 간격은 쓰는 쪽이 refetchInterval로 응답에서 읽는다.
   polling: { staleTime: Infinity, retry: retryUpTo(2) },
+  // 외부 예약 대조용 전체 목록 — 받는 데 무거워 화면에 처음 들어올 때 한 번만 받고, 그 뒤엔
+  // 화면이 refetch로 다시 받을 때만 바뀐다(마운트·포커스·무효화로 저절로 다시 받지 않는다).
+  // 다른 화면에 다녀와도 30분은 지난 결과를 그대로 보여준다(새로 보려면 버튼).
+  snapshot: { staleTime: Infinity, gcTime: 30 * 60_000, retry: retryUpTo(1) },
 } as const
 
 /**

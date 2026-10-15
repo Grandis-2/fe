@@ -101,3 +101,13 @@ export const Stacked: Story = {
     await expect(canvas.getByPlaceholderText('동, 호수')).toBeVisible()
   },
 }
+
+/** 필수 누락 말고도 형식·길이 오류 문구를 그 칸에 붙인다 — 스크린리더도 같이 읽는다 */
+export const WithErrorMessage: Story = {
+  args: { label: '모델명', error: '모델명은 40자까지입니다.' },
+  play: async ({ canvas }) => {
+    const field = canvas.getByRole('textbox', { name: /모델명/ })
+    await expect(field).toHaveAttribute('aria-invalid', 'true')
+    await expect(field).toHaveAccessibleDescription('모델명은 40자까지입니다.')
+  },
+}

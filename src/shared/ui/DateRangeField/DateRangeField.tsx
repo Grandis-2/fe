@@ -19,6 +19,11 @@ export type DateRangeFieldProps = {
   value: DateRange
   onChange: (value: DateRange) => void
   placeholder?: string
+  /**
+   * 스크린리더가 읽을 칸 이름. 버튼 글자는 값(날짜)뿐이라, 없으면 무엇의 기간을
+   * 고르는 버튼인지 알 수 없다.
+   */
+  label?: string
   className?: string
 }
 
@@ -41,6 +46,7 @@ export function DateRangeField({
   value,
   onChange,
   placeholder = '기간을 선택해 주세요',
+  label: fieldLabel,
   className,
 }: DateRangeFieldProps) {
   const [open, setOpen] = useState(false)
@@ -92,6 +98,7 @@ export function DateRangeField({
         ref={triggerRef}
         className={start ? styles.trigger : styles.triggerEmpty}
         aria-expanded={open}
+        aria-label={fieldLabel ? `${fieldLabel} ${label}` : undefined}
         onClick={() => {
           measure()
           setOpen((prev) => !prev)

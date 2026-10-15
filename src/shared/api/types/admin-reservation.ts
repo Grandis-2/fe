@@ -1,167 +1,158 @@
-/** 예약 상태. 화면의 '처리 중'이 ACCEPTED다 */
-export type ReservationStatus = 'ACCEPTED' | 'CONFIRMED' | 'FAILED' | 'CANCELED'
+import type { Paged } from './common'
+import type {
+  PreorderDetail,
+  PreorderEvent,
+  PreorderStatus,
+  PreorderSummary,
+} from './preorder'
 
-/**
- * 명세의 실패 사유 enum. 다만 운영 규칙상 실제로 발생하지 않는 값이 섞여 있다 —
- * 예약 접수는 재고로 막지 않으므로 STOCK_EXHAUSTED는 나오지 않고, 등록 실패는
- * 자동 재시도 후 관리자 재처리로 풀리므로 DEADLINE_EXCEEDED도 쓰이지 않을 것으로
- * 보인다. 서버가 보낼 수 있는 값은 그대로 받아둔다.
- */
-export type ReservationFailureCode =
-  | 'BUSINESS_REJECTED'
-  | 'STOCK_EXHAUSTED'
-  | 'RETRY_EXHAUSTED'
-  | 'DEADLINE_EXCEEDED'
-  | 'INTEGRATION_ERROR'
+// 관리자 예약 API(preorder 서비스 — api-docs의 preorder.json, /api/v1/admin/preorders).
+// 회원 예약 모양(preorder.ts)에 관리자용 필드가 더 붙는다.
 
-export type CommandKind =
-  'REGISTER' | 'CANCEL_COMPENSATION' | 'REFUND' | 'NOTIFY'
+/** 외부 예약 시스템 연동 작업 상태. PROCESSING은 서버가 쓰지 않는 값이다 */
+export type SyncJobStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'RETRY_SCHEDULED'
+  | 'SUCCEEDED'
+  | 'DEAD_LETTER'
+  | 'CANCELED'
 
-export type CommandStatus =
-  'PENDING' | 'IN_PROGRESS' | 'DONE' | 'DEAD' | 'SKIPPED'
+/** REGISTER는 접수 때 외부 등록, CANCEL은 취소 때 외부 취소 */
+export type SyncJobType = 'REGISTER' | 'CANCEL'
 
-// ponytail: 명세 예시에 NOT_REQUIRED만 등장한다. 나머지 값은 추정이라
-// 실제 enum을 받으면 여기부터 고친다(뱃지 색이 이 값에 달려 있다).
-export type CleanupState = 'NOT_REQUIRED' | 'PENDING' | 'DONE' | 'FAILED'
-
-export type ActorType = 'USER' | 'ADMIN' | 'SYSTEM'
-
-// ponytail: 명세 예시에 TRANSIENT_FAILURE만 등장한다. 나머지는 추정이다.
-export type AttemptOutcome =
-  'SUCCESS' | 'TRANSIENT_FAILURE' | 'PERMANENT_FAILURE'
-
-/**
- * ponytail: 명세가 payment를 내려주는데 예시가 전부 null이라 스키마를 모른다.
- * "예약하면 예약은 확정되지만 24시간 안에 결제해야 하고, 미결제는 자동취소"라는
- * 운영 규칙을 운영자가 화면에서 보려면 상태와 기한이 필요해서 최소 필드만 임시로
- * 정했다. 실제 스키마가 나오면 여기와 목 픽스처를 함께 고친다.
- */
-export type PaymentStatus = 'PENDING' | 'PAID' | 'EXPIRED' | 'REFUNDED'
-
-export type ReservationPayment = {
-  status: PaymentStatus
-  /** 결제 기한 — 접수 시점 + 24시간 */
-  dueAt: string
-  paidAt: string | null
-  amount: number
+/** 관리자 목록 한 줄 */
+export type AdminPreorderSummary = PreorderSummary & {
+  customerId: string
+  /** 외부 등록 작업 상태. DEAD_LETTER면 재처리가 필요하다. 작업이 없으면 null */
+  registerJobStatus: SyncJobStatus | null
 }
 
-/** 종단 상태 이후 남은 뒷정리 — 셋 다 NOT_REQUIRED여야 완전히 끝난 것이다 */
-export type ReservationCleanup = {
-  externalCancel: CleanupState
-  refund: CleanupState
-  stockRestore: CleanupState
+/** 오프셋 페이지 — 관리자 예약 목록은 totalPages·hasNext 없이 total만 준다 */
+export type OffsetPage<TItem> = Pick<
+  Paged<TItem>,
+  'items' | 'page' | 'size' | 'total'
+>
+
+export type AdminPreorderListParams = {
+  status?: PreorderStatus
+  productId?: string
+  registerJobStatus?: SyncJobStatus
+  page?: number
+  /** 1~100(기본 20) */
+  size?: number
 }
 
-/** 목록과 상세가 공통으로 내려주는 예약 본문 */
-type ReservationBase = {
-  reservationId: string
-  productId: string
-  productName: string
-  optionCode: string
-  optionName: string
-  quantity: number
-  status: ReservationStatus
-  acceptSeq: number
-  // ponytail: 명세 예시가 null뿐이라 모양을 알 수 없다. 배송 차수 번호로 가정한다.
-  dispatch: number | null
-  externalReservationNo: string | null
-  acceptedAt: string
-  deadlineAt: string
-  finalizedAt: string | null
-  version: number
-  memberId: string
-  runId: string | null
-  cleanup: ReservationCleanup
-  /**
-   * ponytail: 명세는 상세에만 payment를 준다. 목록 표에 결제 상태 열이 필요해서
-   * 공통 본문으로 올렸다 — 목록 응답에도 내려달라고 백엔드에 요청해야 한다.
-   */
-  payment: ReservationPayment | null
+/** 외부 호출 한 번의 기록 */
+export type SyncAttempt = {
+  attemptNumber: number
+  /** SYSTEM은 자동 시도, ADMIN은 관리자 재처리 뒤의 시도 */
+  actor: 'SYSTEM' | 'ADMIN'
+  /** UNKNOWN은 응답을 못 받은 경우 */
+  result: string
+  httpStatus: number | null
+  errorCode: string | null
+  errorMessage: string | null
+  startedAt: string
+  finishedAt: string | null
 }
 
-export type ReservationSummary = ReservationBase & {
-  failureCode: ReservationFailureCode | null
-  /** ACCEPTED인데 deadlineAt을 넘긴 건 */
-  overdue: boolean
-  registerAttemptCount: number
-}
-
-// ponytail: 명세 예시가 null뿐이라 필드를 알 수 없다. 목록의 failureCode와
-// 이어지도록 code만 필수로 두고 나머지는 옵셔널로 받는다.
-export type ReservationFailure = {
-  code: ReservationFailureCode
-  message?: string | null
-  occurredAt?: string | null
-}
-
-export type ReservationCommand = {
-  commandId: number
-  kind: CommandKind
-  status: CommandStatus
-  reservationId: string
-  businessKey: string
-  targetExternalKey: string | null
-  targetExternalReservationNo: string | null
+/** 동기화 작업 요약(재처리 응답) */
+export type SyncJobSummary = {
+  syncJobId: string
+  preorderId: string
+  jobType: SyncJobType
+  status: SyncJobStatus
+  /** 외부 호출 시도 횟수. 재처리해도 이어서 센다 */
   attemptCount: number
-  manualReprocessCount: number
-  nextAttemptAt: string | null
-  leaseUntil: string | null
-  leaseOwner: string | null
-  leaseToken: string | null
-  reclaimCount: number
   lastErrorCode: string | null
-  lastError: string | null
+  deadLetteredAt: string | null
   createdAt: string
   updatedAt: string
 }
 
-export type ReservationHistoryEntry = {
-  historySeq: number
-  /** 'T1' 같은 전이 코드. 전체 목록이 명세에 없어 문자열로 받는다 */
-  transition: string
-  fromStatus: ReservationStatus | null
-  toStatus: ReservationStatus
-  actorType: ActorType
-  actorId: string | null
-  reasonCode: string | null
-  note: string | null
-  decidedAt: string
-  committedAt: string
-}
-
-export type ReservationDetail = ReservationBase & {
-  failure: ReservationFailure | null
-  cancelable: boolean
-  externalKey: string
-  memo: string | null
-  createdByActorType: ActorType
-  createdByActorId: string
-  commands: ReservationCommand[]
-  // ponytail: 명세 예시가 null뿐이라 스키마를 모른다.
-  stockReservation: unknown | null
-  history: ReservationHistoryEntry[]
-}
-
-export type AdminReservationListParams = {
-  status?: ReservationStatus
-  failureCode?: ReservationFailureCode
-  memberId?: string
-  productId?: string
-  from?: string
-  to?: string
-  overdueOnly?: boolean
-  cleanupPendingOnly?: boolean
-  runId?: string
+/** GET /admin/preorders/sync-jobs — 1~100건씩, 최신순 */
+export type AdminSyncJobListParams = {
+  jobType?: SyncJobType
+  status?: SyncJobStatus
+  preorderId?: string
+  groupByError?: boolean
   page?: number
   size?: number
 }
 
-// ponytail: 재처리 엔드포인트는 명세에 없다. 와이어프레임의 '재처리 시도'를
-// 만들려면 필요해서 같은 작명 규칙으로 임시 정의했다(handlers/admin-reservation.ts
-// 의 같은 주석 참고). 백엔드 계약이 나오면 함께 고친다.
+/** 마지막 시도 오류 코드별 작업 수(groupByError=true). 시도가 없거나 성공이면 errorCode가 null */
+export type SyncJobErrorGroup = { errorCode: string | null; count: number }
 
-/** 예약 응답에 회원 이름이 없어서, 표의 '예약자' 열이 memberId를 이름으로 바꿀 때 쓴다 */
+/** GET /admin/preorders/sync-jobs — groupByError=true일 때만 errorGroups가 배열이다 */
+export type SyncJobListResponse = OffsetPage<SyncJobSummary> & {
+  errorGroups: SyncJobErrorGroup[] | null
+}
+
+/** POST /admin/preorders/sync-jobs/reprocess-batch — 비우면 재처리할 수 있는 DEAD_LETTER 전체 */
+export type ReprocessBatchRequest = {
+  /** 최대 1000건 */
+  syncJobIds?: string[]
+  errorCodeFilter?: string
+  /** 초당 요청 건수 1~200(기본 20) */
+  ratePerSecond?: number
+}
+
+/** 일괄 재처리 시작 결과. 실제 재처리는 서버가 초당 ratePerSecond건씩 이어서 한다 */
+export type BatchReprocess = {
+  targetCount: number
+  /** 지정한 id 중 없거나 재처리 조건 밖이라 건너뛴 수 */
+  skippedCount: number
+  estimatedSeconds: number
+}
+
+/** 동기화 작업 상세 — 상세 응답에는 시도 기록이 붙는다 */
+export type SyncJob = SyncJobSummary & { attempts: SyncAttempt[] }
+
+/** 관리자 예약 상세. 회원용 상세에 회원 id, 내부 메모, 동기화 작업, 상태 이력이 붙는다 */
+export type AdminPreorderDetail = PreorderDetail & {
+  customerId: string
+  /** 회원에게 보이지 않는 관리자 메모(최대 1000자). 없으면 null */
+  internalNote: string | null
+  syncJobs: SyncJob[]
+  /** 상태 이력(번호 순) */
+  events: PreorderEvent[]
+}
+
+/** POST /admin/preorders/{id}/cancel — 사유 5~500자(앞뒤 공백 제외) */
+export type AdminCancelRequest = { reason: string }
+
+/** PATCH /admin/preorders/{id} — 메모만 바꾼다. null이면 지운다 */
+export type AdminNoteRequest = { internalNote: string | null }
+
+/** 진행 중인 동기화 작업 수 — 종류 아래 상태별로 온다 */
+type OpenSyncJobCounts = Record<
+  'PENDING' | 'PROCESSING' | 'RETRY_SCHEDULED' | 'DEAD_LETTER',
+  number
+>
+
+/**
+ * GET /admin/preorders/stats — 운영 현황. 최대 5초 늦을 수 있고, 0인 칸도 빠지지
+ * 않고 온다.
+ */
+export type PreorderStats = {
+  productId: string | null
+  /** 원장 상태별 예약 수 */
+  preorders: Record<PreorderStatus, number>
+  syncJobs: Record<SyncJobType, OpenSyncJobCounts>
+  /** 되돌리기를 기다리는 이벤트 DLQ 메시지 */
+  deadLetters: { waiting: number; oldestWaitingAt: string | null }
+  /** 결제 기한이 지났는데 아직 만료 처리 전인 예약 수 */
+  paymentOverdue: number
+  /** 외부 등록을 기다리는 예약 중 가장 오래된 접수 시각. 없으면 null */
+  oldestPendingSyncAt: string | null
+  countedAt: string
+}
+
+/**
+ * 예약 응답엔 회원 id만 있어 이름을 따로 받는다. 가입 때 입력한 실명이고, 비어 있으면
+ * 카카오 표시 이름이다(명세 예시는 '김**'처럼 가린 값이라 백엔드에 확인 중).
+ */
 export type AdminMember = {
   memberId: string
   name: string

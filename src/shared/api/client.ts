@@ -1,5 +1,7 @@
 import axios, { type AxiosResponse } from 'axios'
 
+import { delay } from '@shared/lib/delay'
+
 import { ApiRequestError, sentRequestId, toTransportError } from './errors'
 
 import type { ApiResponse } from './types'
@@ -37,8 +39,6 @@ const http = axios.create({
   timeout: TIMEOUT_MS,
   validateStatus: () => true,
 })
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // 서버 제약(영숫자·.·_·-, 64자 이하)을 만족하는 요청 ID.
 const requestId = () => crypto.randomUUID().replace(/-/g, '')

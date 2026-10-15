@@ -17,3 +17,9 @@ export const message = style([
     color: color.text.tertiary,
   },
 ])
+
+/** 저장하지 못한 섹션 목록 */
+export const failures = style({
+  margin: `${spacing[4]} 0 0`,
+  paddingLeft: spacing[16],
+})

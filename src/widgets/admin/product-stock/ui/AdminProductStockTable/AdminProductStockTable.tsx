@@ -1,7 +1,6 @@
 import {
   getAdminProductStocks,
   getStockOptionGroups,
-  isPreorder,
   useAdminProduct,
   useAdminProductStock,
   type AdminProductStock,
@@ -24,9 +23,9 @@ export function AdminProductStockTable({
   const product = useAdminProduct(productId)
   const stock = useAdminProductStock(productId)
 
-  // 열은 상품이 실제로 가진 옵션 그룹에서 만든다 — 상품마다 옵션 수가 달라서
+  // 열은 상품이 실제로 가진 옵션 축에서 만든다 — 상품마다 축 수가 달라서
   // (스마트폰은 용량 하나, 노트북은 크기·RAM·용량·칩) 고정할 수 없다.
-  const optionGroups = product.data ? getStockOptionGroups(product.data) : []
+  const optionAxes = product.data ? getStockOptionGroups(product.data) : []
 
   const columns: TableColumn<AdminProductStock>[] = [
     {
@@ -35,18 +34,12 @@ export function AdminProductStockTable({
       align: 'center',
       render: (row) => row.color,
     },
-    ...optionGroups.map((group, index) => ({
-      key: group.groupCode,
-      header: group.name,
+    ...optionAxes.map((axis, index) => ({
+      key: axis.key,
+      header: axis.label,
       align: 'center' as const,
       render: (row: AdminProductStock) => row.optionNames[index] ?? '-',
     })),
-    {
-      key: 'totalCount',
-      header: '총수량',
-      align: 'center',
-      render: (row) => formatNumber(row.totalCount),
-    },
     {
       key: 'price',
       header: '가격',
@@ -54,17 +47,30 @@ export function AdminProductStockTable({
       render: (row) => formatWon(row.price),
     },
     {
-      key: 'confirmedCount',
-      // 같은 reservedQuantity지만 일반 판매에는 '확정' 단계가 없어 팔린 수량으로 읽힌다.
-      header: product.data && isPreorder(product.data) ? '확정' : '판매',
+      key: 'total',
+      header: '전체 수량',
       align: 'center',
-      render: (row) => `${formatNumber(row.confirmedCount)}건`,
+      render: (row) => formatNumber(row.total),
     },
     {
-      key: 'remainingCount',
-      header: '잔여',
+      // 결제 대기는 주문은 했고 결제 전이라 잡아 둔 수량이다(장바구니에 담기만 해선 안
+      // 잡힌다) — 아직 팔린 게 아니라 판매 완료와 따로 센다.
+      key: 'reserved',
+      header: '결제 대기',
       align: 'center',
-      render: (row) => `${formatNumber(row.remainingCount)}건`,
+      render: (row) => formatNumber(row.reserved),
+    },
+    {
+      key: 'sold',
+      header: '판매 완료',
+      align: 'center',
+      render: (row) => formatNumber(row.sold),
+    },
+    {
+      key: 'available',
+      header: '남은 수량',
+      align: 'center',
+      render: (row) => formatNumber(row.available),
     },
   ]
 
@@ -87,7 +93,7 @@ export function AdminProductStockTable({
       <Table
         columns={columns}
         rows={rows}
-        rowKey={(row) => row.optionCode}
+        rowKey={(row) => row.optionId}
         pageSize={10}
         // 조회 실패를 '재고 없음'으로 보이면 운영 판단이 정반대가 된다.
         emptyMessage={

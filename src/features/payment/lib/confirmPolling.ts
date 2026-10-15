@@ -1,4 +1,5 @@
 import { isRetryableError } from '@shared/api/queryPolicy'
+import { delay } from '@shared/lib/delay'
 
 // 주문 결제와 럭키 드로우 응모비 결제가 같이 쓰는 승인 뒤처리.
 export type PaymentOutcome =
@@ -20,8 +21,6 @@ export const DECLINE_MESSAGE = {
 const POLL_MS = 3_000
 // 승인은 최대 70초쯤 걸릴 수 있다(명세) — 그보다 조금 더 기다린다.
 const POLL_LIMIT_MS = 80_000
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // 500·503·네트워크 오류면 승인이 진행 중일 수 있어, 결제 준비를 다시 부르지 않고 같은 값으로 한 번만 더 보낸다.
 // 두 번 다 응답을 못 받으면 null(호출부가 상태를 폴링한다). 409·404 같은 4xx는 그대로 던진다.

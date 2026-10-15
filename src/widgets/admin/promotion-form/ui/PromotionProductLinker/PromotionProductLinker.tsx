@@ -53,18 +53,23 @@ export function PromotionProductLinker({
                 <span className={styles.body}>
                   <span className={styles.name}>{product.name}</span>
                   <span className={styles.openAt}>{product.openAtLabel}</span>
-                  <span className={styles.optionRow}>
-                    <span className={styles.optionLabel}>색상</span>
-                    <span className={styles.optionValues}>
-                      {product.colors.join('  ')}
+                  {/* 옵션은 상세를 받아야 알 수 있고, 그 축이 없는 상품도 있다. */}
+                  {product.colors.length > 0 && (
+                    <span className={styles.optionRow}>
+                      <span className={styles.optionLabel}>색상</span>
+                      <span className={styles.optionValues}>
+                        {product.colors.join('  ')}
+                      </span>
                     </span>
-                  </span>
-                  <span className={styles.optionRow}>
-                    <span className={styles.optionLabel}>용량</span>
-                    <span className={styles.optionValues}>
-                      {product.storages.join('  ')}
+                  )}
+                  {product.storages.length > 0 && (
+                    <span className={styles.optionRow}>
+                      <span className={styles.optionLabel}>용량</span>
+                      <span className={styles.optionValues}>
+                        {product.storages.join('  ')}
+                      </span>
                     </span>
-                  </span>
+                  )}
                 </span>
               </button>
             )

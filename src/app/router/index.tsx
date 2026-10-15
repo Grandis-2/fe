@@ -2,6 +2,7 @@ import { createBrowserRouter, redirect } from 'react-router'
 
 import { AdminLayout } from '@app/layouts/AdminLayout'
 import { MainLayout } from '@app/layouts/MainLayout'
+import { RequireAdmin } from '@app/layouts/RequireAdmin'
 import { RequireLogin } from '@app/layouts/RequireLogin'
 import { RootLayout } from '@app/layouts/RootLayout'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
@@ -11,17 +12,22 @@ import {
 } from '@features/payment'
 import { ErrorPage } from '@pages/error/ErrorPage'
 import {
-  ADMIN_CONSISTENCY_CHECK_PATH,
   ADMIN_HOME_PATH,
+  ADMIN_DEAD_LETTERS_PATH,
   ADMIN_LOAD_TEST_PATH,
+  ADMIN_LOGIN_PATH,
   ADMIN_MOCK_SETTINGS_PATH,
   ADMIN_NOTIFICATIONS_PATH,
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTION_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
+  ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
+  ADMIN_WAITINGROOM_PATH,
   adminProductPath,
+  adminDeadLetterPath,
+  adminReservationPath,
   adminPromotionPath,
   DRAW_PATH,
   drawPath,
@@ -202,111 +208,148 @@ export const router = createBrowserRouter([
           },
         ],
       },
+      // 관리자 로그인은 헤더(로고)는 두고 사이드바는 없다 — AdminLayout·RequireAdmin
+      // 밖에 둔다. 헤더의 알림·로그아웃은 로그인 전이라 Header가 이 경로에서 숨긴다.
       {
-        element: <AdminLayout />,
+        path: ADMIN_LOGIN_PATH,
+        lazy: () =>
+          import('@pages/admin/login/AdminLoginPage').then((m) => ({
+            Component: m.AdminLoginPage,
+          })),
+        errorElement: <ErrorPage />,
+      },
+      {
+        element: <RequireAdmin />,
         children: [
           {
-            // 관리자 페이지도 사이드바는 남기고 본문 자리에만 에러 화면을 그린다.
-            errorElement: <ErrorPage />,
+            element: <AdminLayout />,
             children: [
-              // 홈은 다른 용도로 바꿀 예정이라 비워 둔다. 메뉴 목록은 사이드바 한 곳에만 둔다.
               {
-                path: ADMIN_HOME_PATH,
-                lazy: () =>
-                  import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                    (m) => ({
-                      element: <m.AdminPlaceholderPage title="관리자 홈" />,
-                    }),
-                  ),
-              },
-              // 홈을 제외한 나머지는 아직 기능 범위가 안 정해져서 전부 placeholder —
-              // 스코프가 정해지는 대로 각자 전용 페이지로 교체.
-              {
-                path: ADMIN_PRODUCTS_PATH,
-                lazy: () =>
-                  import('@pages/admin/products/AdminProductsPage').then(
-                    (m) => ({ Component: m.AdminProductsPage }),
-                  ),
-              },
-              {
-                path: ADMIN_PRODUCT_NEW_PATH,
-                lazy: () =>
-                  import('@pages/admin/product-new/AdminProductNewPage').then(
-                    (m) => ({ Component: m.AdminProductNewPage }),
-                  ),
-              },
-              {
-                path: adminProductPath(':productId'),
-                lazy: () =>
-                  import('@pages/admin/product-detail/AdminProductDetailPage').then(
-                    (m) => ({ Component: m.AdminProductDetailPage }),
-                  ),
-              },
-              {
-                path: ADMIN_PROMOTIONS_PATH,
-                lazy: () =>
-                  import('@pages/admin/promotions/AdminPromotionsPage').then(
-                    (m) => ({ Component: m.AdminPromotionsPage }),
-                  ),
-              },
-              {
-                path: ADMIN_PROMOTION_NEW_PATH,
-                lazy: () =>
-                  import('@pages/admin/promotion-new/AdminPromotionNewPage').then(
-                    (m) => ({ Component: m.AdminPromotionNewPage }),
-                  ),
-              },
-              {
-                path: adminPromotionPath(':promotionId'),
-                lazy: () =>
-                  import('@pages/admin/promotion-edit/AdminPromotionEditPage').then(
-                    (m) => ({ Component: m.AdminPromotionEditPage }),
-                  ),
-              },
-              {
-                path: ADMIN_RESERVATIONS_PATH,
-                lazy: () =>
-                  import('@pages/admin/reservations/AdminReservationsPage').then(
-                    (m) => ({ Component: m.AdminReservationsPage }),
-                  ),
-              },
-              {
-                path: ADMIN_CONSISTENCY_CHECK_PATH,
-                lazy: () =>
-                  import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                    (m) => ({
-                      element: <m.AdminPlaceholderPage title="정합성 대조" />,
-                    }),
-                  ),
-              },
-              {
-                path: ADMIN_LOAD_TEST_PATH,
-                lazy: () =>
-                  import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                    (m) => ({
-                      element: <m.AdminPlaceholderPage title="부하 검증" />,
-                    }),
-                  ),
-              },
-              {
-                path: ADMIN_NOTIFICATIONS_PATH,
-                lazy: () =>
-                  import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                    (m) => ({
-                      element: (
-                        <m.AdminPlaceholderPage title="관리자 알림 내역 확인" />
+                // 관리자 페이지도 사이드바는 남기고 본문 자리에만 에러 화면을 그린다.
+                errorElement: <ErrorPage />,
+                children: [
+                  // 홈은 다른 용도로 바꿀 예정이라 비워 둔다. 메뉴 목록은 사이드바 한 곳에만 둔다.
+                  {
+                    path: ADMIN_HOME_PATH,
+                    lazy: () =>
+                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
+                        (m) => ({
+                          element: <m.AdminPlaceholderPage title="관리자 홈" />,
+                        }),
                       ),
-                    }),
-                  ),
-              },
-              {
-                path: ADMIN_MOCK_SETTINGS_PATH,
-                lazy: () =>
-                  import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                    (m) => ({
-                      element: <m.AdminPlaceholderPage title="Mock 설정" />,
-                    }),
-                  ),
+                  },
+                  // 홈을 제외한 나머지는 아직 기능 범위가 안 정해져서 전부 placeholder —
+                  // 스코프가 정해지는 대로 각자 전용 페이지로 교체.
+                  {
+                    path: ADMIN_PRODUCTS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/products/AdminProductsPage').then(
+                        (m) => ({ Component: m.AdminProductsPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_PRODUCT_NEW_PATH,
+                    lazy: () =>
+                      import('@pages/admin/product-new/AdminProductNewPage').then(
+                        (m) => ({ Component: m.AdminProductNewPage }),
+                      ),
+                  },
+                  {
+                    path: adminProductPath(':productId'),
+                    lazy: () =>
+                      import('@pages/admin/product-detail/AdminProductDetailPage').then(
+                        (m) => ({ Component: m.AdminProductDetailPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_PROMOTIONS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/promotions/AdminPromotionsPage').then(
+                        (m) => ({ Component: m.AdminPromotionsPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_PROMOTION_NEW_PATH,
+                    lazy: () =>
+                      import('@pages/admin/promotion-new/AdminPromotionNewPage').then(
+                        (m) => ({ Component: m.AdminPromotionNewPage }),
+                      ),
+                  },
+                  {
+                    path: adminPromotionPath(':promotionId'),
+                    lazy: () =>
+                      import('@pages/admin/promotion-edit/AdminPromotionEditPage').then(
+                        (m) => ({ Component: m.AdminPromotionEditPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_RESERVATIONS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/reservations/AdminReservationsPage').then(
+                        (m) => ({ Component: m.AdminReservationsPage }),
+                      ),
+                  },
+                  {
+                    path: adminReservationPath(':preorderId'),
+                    lazy: () =>
+                      import('@pages/admin/reservation-detail/AdminReservationDetailPage').then(
+                        (m) => ({ Component: m.AdminReservationDetailPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_RECONCILIATION_PATH,
+                    lazy: () =>
+                      import('@pages/admin/reconciliation/AdminReconciliationPage').then(
+                        (m) => ({ Component: m.AdminReconciliationPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_DEAD_LETTERS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/dead-letters/AdminDeadLettersPage').then(
+                        (m) => ({ Component: m.AdminDeadLettersPage }),
+                      ),
+                  },
+                  {
+                    path: adminDeadLetterPath(':deadLetterId'),
+                    lazy: () =>
+                      import('@pages/admin/dead-letter-detail/AdminDeadLetterDetailPage').then(
+                        (m) => ({ Component: m.AdminDeadLetterDetailPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_WAITINGROOM_PATH,
+                    lazy: () =>
+                      import('@pages/admin/waitingroom/AdminWaitingroomPage').then(
+                        (m) => ({ Component: m.AdminWaitingroomPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_LOAD_TEST_PATH,
+                    lazy: () =>
+                      import('@pages/admin/load-test/AdminLoadTestPage').then(
+                        (m) => ({ Component: m.AdminLoadTestPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_NOTIFICATIONS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
+                        (m) => ({
+                          element: (
+                            <m.AdminPlaceholderPage title="관리자 알림 내역 확인" />
+                          ),
+                        }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_MOCK_SETTINGS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/mock-settings/AdminMockSettingsPage').then(
+                        (m) => ({ Component: m.AdminMockSettingsPage }),
+                      ),
+                  },
+                ],
               },
             ],
           },
