@@ -49,7 +49,7 @@ export function PreorderModelSheet({
   const { title, description } = COPY[status]
 
   const caption = {
-    live: `출시일 ${formatPreorderDate(releaseAt)}`,
+    live: releaseAt ? `출시일 ${formatPreorderDate(releaseAt)}` : '',
     soon: `예약 오픈 ${formatPreorderDate(opensAt)}`,
     done: '바로 구매 가능 · 1–2일 내 도착',
   }[status]

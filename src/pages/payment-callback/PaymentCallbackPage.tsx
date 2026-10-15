@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
+import { LoaderCircle } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { cartKeys } from '@entities/cart'
@@ -8,6 +9,7 @@ import { confirmTossPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { mypagePath, paymentPath, resultPath } from '@shared/config/routes'
 import { showToast } from '@shared/model/toastStore'
+import { Container, InlineAlert } from '@shared/ui'
 
 export function PaymentCallbackPage() {
   const [searchParams] = useSearchParams()
@@ -87,5 +89,11 @@ export function PaymentCallbackPage() {
       )
   }, [navigate, queryClient, searchParams])
 
-  return <div>결제를 확인하고 있습니다…</div>
+  return (
+    <Container>
+      <InlineAlert status="info" variant="big" icon={LoaderCircle}>
+        결제를 확인하고 있어요
+      </InlineAlert>
+    </Container>
+  )
 }

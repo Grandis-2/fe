@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import { markProfileComplete } from '@entities/auth'
 import { useProfile, useUpdateProfile } from '@entities/profile'
 import { ApiRequestError } from '@shared/api/client'
+import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { ActionButton } from '@shared/ui'
 
@@ -45,7 +46,7 @@ const FIELDS: {
     key: 'phoneNumber',
     label: 'PHONE',
     name: '휴대폰 번호',
-    placeholder: "'-'을 제외한 숫자만",
+    placeholder: '010-1234-5678',
     type: 'tel',
     autoComplete: 'tel',
   },
@@ -200,15 +201,16 @@ export function SignupForm({ onComplete, onFail }: SignupFormProps) {
                   aria-label={name}
                   aria-required
                   aria-invalid={isInvalid(key)}
-                  value={values[key]}
-                  // maxLength를 걸면 '-'까지 세어 붙여넣은 번호가 잘린다 — 숫자만 남긴 뒤 11자로 자른다.
+                  value={
+                    key === 'phoneNumber'
+                      ? formatPhoneInput(values[key])
+                      : values[key]
+                  }
                   onChange={(event) => {
                     const { value } = event.target
                     setValues({
                       [key]:
-                        key === 'phoneNumber'
-                          ? value.replace(/\D/g, '').slice(0, 11)
-                          : value,
+                        key === 'phoneNumber' ? toPhoneDigits(value) : value,
                     })
                   }}
                   onFocus={() => setFocused(key)}

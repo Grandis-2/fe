@@ -34,6 +34,17 @@ export function useSession() {
 export const markProfileComplete = () =>
   useSessionStore.getState().markProfileComplete()
 
+// 세션이 있다가 없어질 때(로그아웃·가입 취소·재발급 실패·다른 탭 로그아웃) 한 번 부른다.
+// 지우는 경로가 여럿이라 각자 챙기지 않고 스토어 변화 하나로 잡는다.
+export function onSessionCleared(listener: () => void) {
+  let hadSession = useSessionStore.getState().sessionToken !== null
+  return useSessionStore.subscribe(() => {
+    const hasSession = useSessionStore.getState().sessionToken !== null
+    if (hadSession && !hasSession) listener()
+    hadSession = hasSession
+  })
+}
+
 // 앱 시작 시 한 번 — 메모리에 세션이 없으면 리프레시 쿠키로 되살려 본다
 // (11-frontend-guide.md §4의 트리거 (b)). refreshCoordinator를 import하는 것만으로
 // shared/api/client에 인증 헤더/401 처리 훅이 등록된다.
@@ -48,14 +59,12 @@ export async function initAuth() {
 }
 
 export async function logout() {
-  try {
-    await deleteSession()
-  } finally {
-    // 로그아웃 응답은 항상 204다 — 실패해도 로컬 상태는 반드시 지운다.
-    useSessionStore.getState().clearSession()
-    // 다른 탭도 refreshCoordinator와 같은 프로토콜로 세션 해제를 알아야 한다.
-    broadcastSessionCleared()
-  }
+  // 서버가 리프레시 쿠키를 지운 뒤에만 로컬 세션을 지운다 — 요청이 실패했는데 먼저 지우면
+  // 쿠키가 남아 새로고침 때 세션이 되살아난다. 실패는 호출부가 안내하도록 그대로 던진다.
+  await deleteSession()
+  useSessionStore.getState().clearSession()
+  // 다른 탭도 refreshCoordinator와 같은 프로토콜로 세션 해제를 알아야 한다.
+  broadcastSessionCleared()
 }
 
 // 카카오 인가 코드로 로그인하고 세션을 메모리에 올린다. 호출부가 다음 화면을 고를 수 있게

@@ -1,6 +1,6 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 import {
   fontSize,
   fontWeight,
@@ -11,38 +11,6 @@ const divider = `1px solid ${color.border.subtle}`
 export const filters = style({
   display: 'flex',
   gap: spacing[8],
-})
-
-const chipBase = style({
-  height: '36px',
-  padding: `0 ${spacing[16]}`,
-  borderRadius: '18px',
-  fontSize: fontSize[14],
-  fontWeight: fontWeight.semibold,
-  cursor: 'pointer',
-  transition: [
-    `color ${motion.duration.fast} ${motion.easing.default}`,
-    `border-color ${motion.duration.fast} ${motion.easing.default}`,
-  ].join(', '),
-})
-
-export const chip = styleVariants({
-  active: [
-    chipBase,
-    {
-      border: `1px solid ${color.primary.base}`,
-      background: 'transparent',
-      color: color.text.primary,
-    },
-  ],
-  inactive: [
-    chipBase,
-    {
-      border: divider,
-      background: 'transparent',
-      color: color.text.tertiary,
-    },
-  ],
 })
 
 export const list = style({

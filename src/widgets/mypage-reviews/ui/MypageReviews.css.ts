@@ -18,25 +18,8 @@ export const title = style([
   typography.title.xxlSemibold,
   {
     margin: 0,
-    '@media': { [breakpoint.mobile]: { fontSize: fontSize[24] } },
-  },
-])
-
-export const chips = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: spacing[8],
-})
-
-// SelectButton small을 알약 모양 필터로 키운다(주문 내역 필터와 같은 모양).
-export const chip = style([
-  typography.body.subMedium,
-  {
-    height: '38px',
-    padding: `0 ${spacing[16]}`,
-    borderRadius: '19px',
-    border: `1.5px solid ${color.border.default}`,
-    color: color.text.secondary,
+    // 모바일은 헤더가 같은 제목을 띄운다(getMobileTitle).
+    '@media': { [breakpoint.mobile]: { display: 'none' } },
   },
 ])
 

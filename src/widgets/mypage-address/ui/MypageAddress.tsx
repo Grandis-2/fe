@@ -2,15 +2,19 @@ import { useState } from 'react'
 
 import { MapPin, Plus } from 'lucide-react'
 
-import { AddressCard, useDefaultAddress } from '@entities/address'
-import { ActionButton } from '@shared/ui'
+import {
+  AddressCard,
+  AddressCardSkeleton,
+  useDefaultAddress,
+} from '@entities/address'
+import { ActionButton, InlineAlert } from '@shared/ui'
 
 import { AddressForm } from './AddressForm'
 import * as styles from './MypageAddress.css'
 
 export function MypageAddress() {
   // 저장하면 useSaveDefaultAddress가 캐시를 갱신하므로 여기서 다시 조회하지 않는다.
-  const { data: address } = useDefaultAddress()
+  const { data: address, isPending, isError } = useDefaultAddress()
   const [editing, setEditing] = useState(false)
 
   return (
@@ -25,6 +29,11 @@ export function MypageAddress() {
 
       {editing ? (
         <AddressForm onClose={() => setEditing(false)} />
+      ) : isError ? (
+        // 조회 실패를 '등록된 배송지 없음'으로 보여 주면 이미 있는 배송지를 또 등록하게 된다.
+        <InlineAlert status="error">배송지를 불러오지 못했어요.</InlineAlert>
+      ) : isPending ? (
+        <AddressCardSkeleton />
       ) : address ? (
         <AddressCard address={address} onEdit={() => setEditing(true)} />
       ) : (

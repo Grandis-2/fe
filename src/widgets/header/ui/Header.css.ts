@@ -115,6 +115,30 @@ export const desktopOnly = style({
   },
 })
 
+export const mobileOnly = style({
+  '@media': {
+    [breakpoint.desktop]: { selectors: { '&&': { display: 'none' } } },
+  },
+})
+
+// 모바일 헤더의 '< 제목'. 화살표 칸을 왼쪽 여백 쪽으로 당겨 화살표가 여백 선에 붙게 한다.
+export const mobileTitle = style({
+  display: 'flex',
+  alignItems: 'center',
+  alignSelf: 'stretch',
+  gap: spacing[4],
+  marginLeft: `-${spacing[4]}`,
+})
+
+export const mobileTitleText = style([
+  typography.title.mdSemibold,
+  {
+    margin: 0,
+    color: color.text.inverse,
+    whiteSpace: 'nowrap',
+  },
+])
+
 // 메인페이지에서만 헤더가 sticky다(Header.tsx의 isStickyPage). 그 외 페이지는
 // root의 기본 position: relative를 그대로 쓴다 — 상품 상세엔 자체 sticky
 // 주문바/탭바가 있어 겹치면 안 되고, 마이페이지는 스크롤에 안 따라오게 한다.
@@ -140,14 +164,14 @@ export const logo = style([
     // Michroma는 줄 상자 위쪽 여백이 커서 글자가 아래로 처진다 — 대문자 높이만 남기고 잘라
     // 헤더의 세로 가운데 정렬이 글자 기준이 되게 한다(미지원 브라우저는 기존 그대로).
     textBox: 'trim-both cap alphabetic',
-    fontSize: fontSize[20],
+    fontSize: fontSize[18],
     color: color.primary.base,
     textDecoration: 'none',
     cursor: 'pointer',
     transition: `color ${motion.duration.fast} ${motion.easing.default}`,
     '@media': {
-      [breakpoint.mobile]: { fontSize: fontSize[18] },
-      ...webOnly({ fontSize: '22px' }),
+      [breakpoint.mobile]: { fontSize: fontSize[16] },
+      ...webOnly({ fontSize: fontSize[20] }),
     },
     selectors: {
       [`${onDark} &`]: { color: color.text.inverse },

@@ -2,7 +2,7 @@ import { expect, fn } from 'storybook/test'
 
 import { color } from '@shared/config/theme'
 
-import { AddressCard } from './AddressCard'
+import { AddressCard, AddressCardSkeleton } from './AddressCard'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
@@ -41,4 +41,8 @@ export const Default: Story = {
     await userEvent.click(canvas.getByRole('button', { name: '배송지 수정' }))
     await expect(args.onEdit).toHaveBeenCalled()
   },
+}
+
+export const Skeleton: StoryObj<typeof AddressCardSkeleton> = {
+  render: () => <AddressCardSkeleton />,
 }

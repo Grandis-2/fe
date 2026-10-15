@@ -12,7 +12,7 @@ import {
 import { OrderSummary } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
-import { cartPaymentPath, HOME_PATH } from '@shared/config/routes'
+import { cartPaymentPath, SEARCH_PATH } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { Button, Checkbox, InlineAlert } from '@shared/ui'
 
@@ -95,12 +95,12 @@ export function MypageCart() {
       <h1 className={styles.title}>장바구니</h1>
 
       {listMessage && (
-        <InlineAlert status={isError ? 'error' : 'info'}>
+        <InlineAlert variant="big" status={isError ? 'error' : 'info'}>
           {listMessage}
         </InlineAlert>
       )}
       {actionError && (
-        <InlineAlert status="error">
+        <InlineAlert variant="big" status="error">
           {getErrorMessage(actionError, '장바구니를 변경하지 못했어요.')}
         </InlineAlert>
       )}
@@ -111,7 +111,7 @@ export function MypageCart() {
           <Button
             variant="subtle"
             color="cancel"
-            onClick={() => navigate(HOME_PATH)}
+            onClick={() => navigate(SEARCH_PATH)}
           >
             쇼핑하러 가기
           </Button>

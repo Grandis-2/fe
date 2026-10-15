@@ -58,16 +58,20 @@ export const shape = {
   }),
 }
 
+// 다크 테마에선 subtler가 어두운 틴트로 뒤집혀 base 바탕 위 글자가 묻힌다 — base는 흰 글자
+// 대비(4.5:1)에 맞춘 색이라(semantic.css.ts 다크 토큰 주석) 글자를 흰색으로 바꾼다.
 export const solid = styleVariants({
   primary: {
     background: color.primary.base,
     borderColor: color.primary.base,
     color: color.primary.subtler,
+    selectors: { '[data-theme="dark"] &': { color: color.text.inverse } },
   },
   secondary: {
     background: color.secondary.base,
     borderColor: color.secondary.base,
     color: color.secondary.subtler,
+    selectors: { '[data-theme="dark"] &': { color: color.text.inverse } },
   },
   blue: {
     background: color.status.info,
