@@ -47,7 +47,6 @@ export const root = style({
   // 어두운 반투명 유리 — 어떤 페이지 위에서도 같은 색이다(사용자 페이지는 어두운 방향).
   background: `color-mix(in srgb, ${color.backgroundDark.surface} 78%, transparent)`,
   backdropFilter: 'blur(20px) saturate(140%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(140%)',
   border: `1px solid ${onDark(8)}`,
   boxShadow: '0 12px 32px rgba(0, 0, 0, 0.55)',
   '@media': {

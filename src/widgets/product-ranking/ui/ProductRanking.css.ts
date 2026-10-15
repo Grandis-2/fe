@@ -1,4 +1,5 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { fontFace, style, styleVariants } from '@vanilla-extract/css'
+import rankDigitsFont from 'pretendard/dist/web/static/woff2-dynamic-subset/Pretendard-ExtraBold.subset.91.woff2'
 
 import {
   bleedScrollRow,
@@ -78,6 +79,14 @@ export const visual = style({
   overflow: 'hidden',
 })
 
+// 가변 폰트는 획 윤곽이 겹친 채로 들어 있어 외곽선(text-stroke)만 그리면 "1"·"4" 안쪽에 겹친
+// 선이 비친다 — 겹침을 합친 정적 ExtraBold에서 숫자가 든 조각(~20kB)만 받아 쓴다.
+const rankDigits = fontFace({
+  src: `url(${rankDigitsFont}) format('woff2')`,
+  fontWeight: 800,
+  unicodeRange: 'U+30-39',
+})
+
 const rankBase = style({
   position: 'relative',
   left: '-10px',
@@ -87,7 +96,7 @@ const rankBase = style({
   zIndex: 0,
   flex: '0 0 auto',
   marginRight: `-${RANK_OVERLAP}px`,
-  fontFamily: fontFamily.pretendard,
+  fontFamily: `${rankDigits}, ${fontFamily.pretendard}`,
   fontSize: '160px',
   fontWeight: 800,
   lineHeight: 0.8,
