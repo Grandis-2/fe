@@ -1,20 +1,12 @@
-import { RefreshCw } from 'lucide-react'
 import { useParams } from 'react-router'
 
 import { useAdminReservation } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_RESERVATIONS_PATH } from '@shared/config/routes'
-import { Breadcrumb, InlineAlert } from '@shared/ui'
+import { Breadcrumb, InlineAlert, RefreshStatus } from '@shared/ui'
 import { AdminReservationDetail } from '@widgets/admin/reservation-detail'
 
 import * as styles from './AdminReservationDetailPage.css'
-
-const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-})
 
 /** 주소에서 예약을 읽어 상세 위젯에 넘긴다. 조회 실패·로딩·갱신 시각은 여기서 보여준다 */
 export function AdminReservationDetailPage() {
@@ -50,21 +42,13 @@ export function AdminReservationDetailPage() {
         ]}
       />
 
-      <div className={styles.refreshRow}>
-        <button
-          type="button"
-          className={styles.refreshButton}
-          onClick={() => void reservation.refetch()}
-        >
-          <RefreshCw className={styles.refreshIcon} aria-hidden="true" />
-          마지막 갱신 {timeFormatter.format(reservation.dataUpdatedAt)}
-        </button>
-        <span>
-          {polling
-            ? '10초마다 자동 갱신'
-            : '취소된 예약이라 자동 갱신하지 않음'}
-        </span>
-      </div>
+      <RefreshStatus
+        updatedAt={reservation.dataUpdatedAt}
+        onRefresh={() => void reservation.refetch()}
+        note={
+          polling ? '10초마다 자동 갱신' : '취소된 예약이라 자동 갱신하지 않음'
+        }
+      />
 
       {/* 갱신이 실패해도 이전 값은 남아 화면에 보인다 — 멈춘 값을 최신으로 읽지 않게 알린다. */}
       {reservation.isError && (

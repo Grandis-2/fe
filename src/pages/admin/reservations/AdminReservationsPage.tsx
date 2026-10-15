@@ -1,6 +1,5 @@
 import { useState } from 'react'
 
-import { RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { useAdminProducts } from '@entities/admin-product'
@@ -35,6 +34,7 @@ import {
   Dropdown,
   InlineAlert,
   Input,
+  RefreshStatus,
   SegmentedTabs,
   StatCard,
   Table,
@@ -58,13 +58,6 @@ const statusFilters = [
 const LIST_SIZE = 100
 
 type StatusFilter = (typeof statusFilters)[number]['value']
-
-const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-})
 
 /** 탭이 거르는 상태. 취소 탭은 곧 취소될 취소 중까지 함께 보여준다 */
 const matchesFilter = (state: ReservationState, filter: StatusFilter) =>
@@ -292,18 +285,11 @@ export function AdminReservationsPage() {
         />
       </div>
 
-      <div className={styles.refreshRow}>
-        <button
-          type="button"
-          className={styles.refreshButton}
-          onClick={refresh}
-        >
-          <RefreshCw className={styles.refreshIcon} aria-hidden="true" />
-          마지막 갱신{' '}
-          {dataUpdatedAt ? timeFormatter.format(dataUpdatedAt) : '—'}
-        </button>
-        <span>10초마다 자동 갱신</span>
-      </div>
+      <RefreshStatus
+        updatedAt={dataUpdatedAt}
+        onRefresh={refresh}
+        note="10초마다 자동 갱신"
+      />
 
       {/* 폴링이 실패해도 이미 받은 데이터는 남아 카드와 표에 그대로 보인다 —
           멈춘 숫자를 최신으로 읽으면 '실패를 0건으로 보여주기'와 똑같이 위험하다.
