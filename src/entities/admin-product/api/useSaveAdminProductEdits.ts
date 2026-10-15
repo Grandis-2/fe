@@ -12,6 +12,7 @@ import {
   type EditSection,
   type OptionsPlan,
 } from '../model/edit'
+import { hasImageChanges, planImages, type ImagesPlan } from '../model/images'
 
 import {
   addOptionValue,
@@ -28,6 +29,7 @@ import {
   adminProductKey,
   adminProductStockKey,
 } from './keys'
+import { addProductImage, removeProductImage } from './productImages'
 import { toAdminProductDetail } from './toAdminProduct'
 
 import type { AdminProductFormValue } from '../model/form'
@@ -62,8 +64,21 @@ async function applyOptions(productId: string, plan: OptionsPlan) {
 }
 
 /**
+ * 사진을 한 장씩 빼고 넣는다. 빼기를 먼저 한다 — 묶음 상한(10장)에 걸리지 않게.
+ * 한 상품에 동시에 보내면 서버가 충돌(409)로 거절할 수 있어 하나씩 보낸다.
+ */
+async function applyImages(productId: string, plan: ImagesPlan) {
+  for (const url of plan.removes) {
+    await removeProductImage(productId, url)
+  }
+  for (const body of plan.adds) {
+    await addProductImage(productId, body)
+  }
+}
+
+/**
  * 수정 화면의 저장. 버튼은 하나지만 요청은 섹션마다 따로 간다 — 기본 정보, 판매 일정,
- * 옵션, 재고. 바뀐 섹션만 보내고, 실패한 섹션은 모아서 돌려준다.
+ * 옵션, 재고, 사진. 바뀐 섹션만 보내고, 실패한 섹션은 모아서 돌려준다.
  *
  * 무엇이 성공했는지 기억하지 않는다. 비교 기준이 늘 방금 받은 서버 상세라서, 일부만
  * 반영됐어도 다시 저장하면 반영된 건 차이에서 빠지고 실패한 것만 다시 간다.
@@ -142,16 +157,20 @@ export const useSaveAdminProductEdits = (productId: string) => {
         await send('options', () => applyOptions(productId, options))
       }
 
-      // 재고는 옵션이 새로 만든 조합까지 맞춰야 해서, 옵션을 보낸 뒤 다시 받아 계산한다.
+      // 재고·사진은 옵션이 새로 만든 조합·색상까지 맞춰야 해서, 옵션을 보낸 뒤 다시 받아
+      // 계산한다(새 색상의 사진은 그 색상 값이 서버에 있어야 넣을 수 있다).
+      const fresh = await fetchDetail()
       if (server.saleMode === 'IN_STOCK') {
-        const [fresh, stockItems] = await Promise.all([
-          fetchDetail(),
-          fetchStock(),
-        ])
-        const stock = planStock(value, fresh, stockItems)
+        const stock = planStock(value, fresh, await fetchStock())
         if (stock) {
           await send('stock', () => putAdminProductStock(productId, stock))
         }
+      }
+
+      // 사진은 사전예약 수정 잠금과 상관없이 고칠 수 있다(서버 규칙).
+      const images = planImages(value, fresh)
+      if (hasImageChanges(images)) {
+        await send('images', () => applyImages(productId, images))
       }
 
       return { changed, failures }

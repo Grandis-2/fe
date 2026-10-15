@@ -5,6 +5,7 @@ import type {
 } from '@shared/api/types'
 
 import { getProductVariants, toIso, type AdminProductFormValue } from './form'
+import { imageUploadIssues, toRegistrationImages } from './images'
 import {
   brandCodeOf,
   COLOR_GROUP_CODE,
@@ -124,6 +125,8 @@ export function validateRegistration(
     add('variants', '판매할 조합을 하나 이상 남겨 주세요.')
   }
 
+  for (const issue of imageUploadIssues(value)) add(issue.field, issue.message)
+
   if (value.isPreorder) {
     const opensAt = toIso(value.openAt)
     const closesAt = toIso(value.closeAt)
@@ -185,6 +188,7 @@ export function toRegistrationRequest(
 ): ProductRegistrationRequest {
   const axes = registrationAxesOf(value)
   const tags = value.tags.join(',')
+  const images = toRegistrationImages(value)
 
   const common = {
     categoryId: value.categoryId,
@@ -199,6 +203,7 @@ export function toRegistrationRequest(
     basePrice: value.basePrice,
     ...(tags && { tags }),
     ...(axes.length > 0 && { optionAxes: axes }),
+    ...(images && { images }),
   }
 
   if (!value.isPreorder) {

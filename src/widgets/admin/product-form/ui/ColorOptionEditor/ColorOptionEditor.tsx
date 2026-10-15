@@ -1,3 +1,5 @@
+import { useLayoutEffect, useRef } from 'react'
+
 import { Plus, X } from 'lucide-react'
 
 import {
@@ -5,6 +7,7 @@ import {
   type ProductColorOption,
 } from '@entities/admin-product'
 import { Checkbox, ImageUploader, Input } from '@shared/ui'
+import type { UploadedImage } from '@shared/ui'
 
 import * as fields from '../fields.css'
 
@@ -19,8 +22,18 @@ export type ColorOptionEditorProps = {
    * 이번에 더한 색상은 아직 저장 전이라 지울 수 있다.
    */
   existingIds?: ReadonlySet<string>
-  /** 사진 칸을 막는다 — 사진을 올리거나 바꿀 곳(업로드 API)이 아직 없을 때 */
-  imagesLocked?: boolean
+  /**
+   * '색상 없음' 상품의 상품 사진. 색상 축이 없으면 갤러리가 색상 없는 묶음 하나라
+   * 색상 칸이 아니라 따로 받는다.
+   */
+  noColorImages: UploadedImage[]
+  onNoColorImagesChange: (images: UploadedImage[]) => void
+  /** 사진을 고르는 즉시 올린다(ImageUploader.upload) */
+  upload?: (file: File) => Promise<string>
+  /** 고를 수 있는 사진 형식 */
+  accept?: string
+  /** 색상(묶음)마다 담을 수 있는 사진 수 */
+  maxImages?: number
 }
 
 /**
@@ -31,7 +44,11 @@ export function ColorOptionEditor({
   colors,
   onChange,
   existingIds,
-  imagesLocked = false,
+  noColorImages,
+  onNoColorImagesChange,
+  upload,
+  accept,
+  maxImages,
 }: ColorOptionEditorProps) {
   const editing = existingIds !== undefined
   // '색상 없음'인 상품은 색상을 더 만들 수 없다.
@@ -43,12 +60,20 @@ export function ColorOptionEditor({
   const toggleNoColor = (noColor: boolean) =>
     onChange(colors.map((colorOption) => ({ ...colorOption, noColor })))
 
-  const patchColor = (id: string, partial: Partial<ProductColorOption>) =>
-    onChange(
-      colors.map((colorOption) =>
-        colorOption.id === id ? { ...colorOption, ...partial } : colorOption,
-      ),
+  // 색상마다 사진이 따로 올라가다 거의 동시에 끝나면, 렌더 때의 colors로 계산한 두 결과가
+  // 서로를 덮는다(한 색상 사진이 사라진다). 마지막으로 내보낸 목록을 들고 그 위에 고친다.
+  const latestRef = useRef(colors)
+  useLayoutEffect(() => {
+    latestRef.current = colors
+  }, [colors])
+
+  const patchColor = (id: string, partial: Partial<ProductColorOption>) => {
+    const next = latestRef.current.map((colorOption) =>
+      colorOption.id === id ? { ...colorOption, ...partial } : colorOption,
     )
+    latestRef.current = next
+    onChange(next)
+  }
 
   return (
     <div className={styles.root}>
@@ -123,13 +148,30 @@ export function ColorOptionEditor({
           <div className={hasNoColor ? styles.mutedArea : undefined}>
             <ImageUploader
               label="이미지"
-              disabled={hasNoColor || imagesLocked}
+              disabled={hasNoColor}
+              upload={upload}
+              accept={accept}
+              max={maxImages}
               value={colorOption.images}
               onChange={(images) => patchColor(colorOption.id, { images })}
             />
           </div>
         </div>
       ))}
+
+      {/* 색상이 없는 상품은 상품 사진을 색상 칸이 아니라 여기 한 묶음으로 받는다. */}
+      {hasNoColor && (
+        <div className={styles.colorBlock}>
+          <ImageUploader
+            label="상품 사진"
+            upload={upload}
+            accept={accept}
+            max={maxImages}
+            value={noColorImages}
+            onChange={onNoColorImagesChange}
+          />
+        </div>
+      )}
 
       <button
         type="button"

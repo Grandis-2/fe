@@ -183,6 +183,18 @@ export const axisValueName = (
  */
 export const COLOR_GROUP_CODE = 'color'
 
+/**
+ * 상세 사진 묶음의 영역 이름 — 서버는 images.detail[]을 영역 이름으로 나눈다. 폼은 세
+ * 칸으로 들고 있어서 이 이름으로 짝을 짓는다(등록 본문·수정 비교·폼 채우기가 함께 쓴다).
+ */
+export const DETAIL_SECTIONS = {
+  detailImages: '상세정보',
+  specImages: '제품사양',
+  noticeImages: '유의사항',
+} as const
+
+export type DetailImageField = keyof typeof DETAIL_SECTIONS
+
 /** 사전 예약 상품인지 — 목록·상세가 모두 saleMode로 알려 준다 */
 export const isPreorder = (product: { saleMode: SaleMode }) =>
   product.saleMode === 'PREORDER'

@@ -1,6 +1,14 @@
-import { http } from 'msw'
+import { HttpResponse, http } from 'msw'
 
 import { adminProductStore } from '../fixtures/admin-product'
+import {
+  imagesOf,
+  MOCK_CDN_ORIGIN,
+  MOCK_UPLOAD_ORIGIN,
+  mockUploadedFiles,
+  productImageStore,
+  toBundle,
+} from '../fixtures/admin-product-image'
 import { adminStockStore } from '../fixtures/admin-stock'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
@@ -9,12 +17,15 @@ import type {
   AdminProductDetail,
   AdminProductListItem,
   AdminProductResponse,
+  ImageUpload,
+  ImageUploadRequest,
   OptionValueAddRequest,
   OptionValueEditRequest,
   PageResponse,
   PreorderCampaignRequest,
   PreorderSaleStatus,
   ProductBrandCode,
+  ProductImageAddRequest,
   ProductEditRequest,
   ProductRegistrationRequest,
   ProductRegistrationResponse,
@@ -239,7 +250,10 @@ function toAdminProductResponse(
       variants: detail.variants.map((variant) =>
         toVariantView(detail, variant),
       ),
-      images: { gallery: [], detail: [] },
+      images: productImageStore.get(detail.productId) ?? {
+        gallery: [],
+        detail: [],
+      },
     },
     tags: detail.tags?.length ? detail.tags.join(',') : null,
     registration: {
@@ -597,6 +611,21 @@ export const adminProductHandlers: RequestHandler[] = [
 
     const created = createFromRegistration(body as ProductRegistrationRequest)
     adminProductStore.unshift(created)
+    // 갤러리는 색상 정규화값으로, 상세는 영역 이름으로 묶여 돌아온다(실서버와 같다).
+    productImageStore.set(created.productId, {
+      gallery: (body.images?.gallery ?? []).map((bundle) =>
+        toBundle(
+          normalize(bundle.color ?? ''),
+          bundle.items.map((item) => item.url),
+        ),
+      ),
+      detail: (body.images?.detail ?? []).map((bundle) =>
+        toBundle(
+          bundle.section,
+          bundle.items.map((item) => item.url),
+        ),
+      ),
+    })
     const record = {
       productId: created.productId,
       body: raw,
@@ -1019,6 +1048,135 @@ export const adminProductHandlers: RequestHandler[] = [
         issuedCount: 0,
         openNotifiedAt: null,
       })
+    },
+  ),
+
+  // 사진 업로드 주소 발급 — 실서버와 같은 형식·크기 규칙으로 400을 준다.
+  http.post(
+    url('/api/v1/admin/products/image-uploads'),
+    async ({ request }) => {
+      const body = await readBody<ImageUploadRequest>(request)
+      const contentType = body?.contentType ?? ''
+      const contentLength = body?.contentLength ?? 0
+      const types = ['image/jpeg', 'image/png', 'image/webp']
+      if (!types.includes(contentType)) {
+        return invalid([
+          {
+            field: 'contentType',
+            message: 'image/jpeg, image/png, image/webp만 됩니다.',
+          },
+        ])
+      }
+      if (
+        !Number.isInteger(contentLength) ||
+        contentLength < 1 ||
+        contentLength > 10 * 1024 * 1024
+      ) {
+        return invalid([
+          {
+            field: 'contentLength',
+            message: '1 ~ 10,485,760 바이트여야 합니다.',
+          },
+        ])
+      }
+      const ext = contentType.split('/')[1].replace('jpeg', 'jpg')
+      const key = `products/${crypto.randomUUID()}.${ext}`
+      return ok<ImageUpload>(
+        {
+          uploadUrl: `${MOCK_UPLOAD_ORIGIN}/${key}?X-Amz-Signature=mock`,
+          headers: { 'Content-Type': contentType },
+          imageUrl: `${MOCK_CDN_ORIGIN}/${key}`,
+          expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
+        },
+        201,
+      )
+    },
+  ),
+
+  // 가짜 S3 — 올린 파일을 메모리에 둔다. 응답은 봉투가 아니라 상태 코드뿐이다(실서버와 같다).
+  http.put(
+    `${MOCK_UPLOAD_ORIGIN}/products/:file`,
+    async ({ request, params }) => {
+      mockUploadedFiles.set(
+        `products/${String(params.file)}`,
+        await request.blob(),
+      )
+      return new HttpResponse(null, { status: 200 })
+    },
+  ),
+
+  // 가짜 CDN — 올린 파일을 그대로 돌려준다. 새로고침하면 메모리가 비어 404다.
+  http.get(`${MOCK_CDN_ORIGIN}/products/:file`, ({ params }) => {
+    const file = mockUploadedFiles.get(`products/${String(params.file)}`)
+    return file
+      ? new HttpResponse(file, { headers: { 'Content-Type': file.type } })
+      : new HttpResponse(null, { status: 404 })
+  }),
+
+  // 등록 뒤 사진 한 장 넣기 — 묶음 맨 뒤에 붙고, 없는 묶음이면 새로 만든다.
+  http.post(
+    url('/api/v1/admin/products/:productId/images'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product) return notFound()
+      const body = await readBody<ProductImageAddRequest>(request)
+      if (!body?.url || (body.kind !== 'GALLERY' && body.kind !== 'DETAIL')) {
+        return invalid([{ field: 'url', message: '필수입니다.' }])
+      }
+      const images = imagesOf(product.productId)
+      const all = [...images.gallery, ...images.detail].flatMap((bundle) =>
+        bundle.items.map((item) => item.url),
+      )
+      if (all.includes(body.url)) {
+        return invalid([{ field: 'url', message: '이미 있는 사진입니다.' }])
+      }
+      const bundles = body.kind === 'GALLERY' ? images.gallery : images.detail
+      const key =
+        body.kind === 'GALLERY'
+          ? normalize(body.bundle ?? '')
+          : (body.bundle ?? '')
+      const bundle = bundles.find((item) => item.bundleKey === key)
+      const urls = [...(bundle?.items.map((item) => item.url) ?? []), body.url]
+      if (body.kind === 'GALLERY' && urls.length > 10) {
+        return invalid([{ field: 'url', message: '묶음마다 10장까지입니다.' }])
+      }
+      const next = toBundle(key, urls)
+      if (bundle) bundles.splice(bundles.indexOf(bundle), 1, next)
+      else bundles.push(next)
+      return ok(toAdminProductResponse(product), 201)
+    },
+  ),
+
+  // 사진 한 장 빼기 — 빈 묶음은 함께 없어진다.
+  http.delete(
+    url('/api/v1/admin/products/:productId/images'),
+    ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product) return notFound()
+      const target = new URL(request.url).searchParams.get('url')
+      const images = imagesOf(product.productId)
+      const strip = (bundles: typeof images.gallery) =>
+        bundles
+          .map((bundle) =>
+            toBundle(
+              bundle.bundleKey,
+              bundle.items
+                .map((item) => item.url)
+                .filter((itemUrl) => itemUrl !== target),
+            ),
+          )
+          .filter((bundle) => bundle.items.length > 0)
+      const count = (bundles: typeof images.gallery) =>
+        bundles.reduce((sum, bundle) => sum + bundle.items.length, 0)
+      const had = count(images.gallery) + count(images.detail)
+      images.gallery = strip(images.gallery)
+      images.detail = strip(images.detail)
+      if (!target || count(images.gallery) + count(images.detail) === had) {
+        return invalid([
+          { field: 'url', message: '이 상품에 없는 사진입니다.' },
+        ])
+      }
+      return ok(toAdminProductResponse(product))
     },
   ),
 ]

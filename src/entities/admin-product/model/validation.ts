@@ -13,6 +13,7 @@ export type FormField =
   | 'options'
   | 'variants'
   | 'tags'
+  | 'images'
 
 export type FormIssue = { field: FormField; message: string }
 
@@ -71,6 +72,7 @@ const SERVER_FIELD: [prefix: string, field: FormField][] = [
   ['shipmentBatches', 'firstDelivery'],
   ['optionAxes', 'options'],
   ['combinations', 'variants'],
+  ['images', 'images'],
 ]
 
 /**

@@ -5,6 +5,7 @@ import {
   axisValueName,
   brandNameOf,
   COLOR_GROUP_CODE,
+  DETAIL_SECTIONS,
   type AdminProductDetailModel,
 } from './types'
 
@@ -83,6 +84,11 @@ export type AdminProductFormValue = {
    *   만들지 않는다. 서버에 옵션을 지우는 API가 없어서 그만 팔 조합은 판매 중지로 둔다.
    */
   pausedKeys: string[]
+  /**
+   * '색상 없음' 상품의 상품 사진. 색상 축이 없으면 갤러리는 색상 없는 묶음 하나라
+   * 색상 칸(colors[].images)에 둘 수 없다. 색상이 있는 상품에서는 보내지 않는다.
+   */
+  noColorImages: UploadedImage[]
   detailImages: UploadedImage[]
   specImages: UploadedImage[]
   noticeImages: UploadedImage[]
@@ -127,6 +133,7 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     basePrice: 0,
     quantities: {},
     pausedKeys: [],
+    noColorImages: [],
     detailImages: [],
     specImages: [],
     noticeImages: [],
@@ -230,16 +237,6 @@ function toLocalInput(iso: string | null) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-/**
- * 상세 이미지 묶음의 영역 이름 — 서버는 images.detail[]을 영역 이름으로 나눈다.
- * 폼은 세 칸으로 들고 있어서 이름으로 짝을 짓는다.
- */
-const DETAIL_SECTIONS = {
-  detailImages: '상세정보',
-  specImages: '제품사양',
-  noticeImages: '유의사항',
-} as const
-
 const toUploadedImages = (bundle?: ProductImageBundle): UploadedImage[] =>
   (bundle?.items ?? []).map((item) => ({
     id: item.url,
@@ -260,6 +257,10 @@ export function toFormValue(
   )
   const detailBundle = (section: string) =>
     detail.images.detail.find((bundle) => bundle.bundleKey === section)
+  // 색상 축이 없는 상품의 갤러리는 색상 없는 묶음('') 하나다.
+  const noColorBundle = colorAxis
+    ? undefined
+    : detail.images.gallery.find((bundle) => bundle.bundleKey === '')
   // 조합은 축마다 정규화값을 들고 있다 — 폼의 키는 화면 이름으로 만든다.
   const variantKeyOf = (variant: AdminProductDetailModel['variants'][number]) =>
     buildVariantKey(
@@ -318,6 +319,7 @@ export function toFormValue(
         return stock ? [[variantKeyOf(variant), stock.stockTotal]] : []
       }),
     ),
+    noColorImages: toUploadedImages(noColorBundle),
     detailImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.detailImages)),
     specImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.specImages)),
     noticeImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.noticeImages)),

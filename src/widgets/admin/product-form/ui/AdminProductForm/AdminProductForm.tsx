@@ -4,9 +4,12 @@ import { AlertCircle, Eye } from 'lucide-react'
 
 import {
   createEmptyProductFormValue,
+  GALLERY_MAX,
   getProductVariants,
   MODEL_NAME_MAX,
   PRODUCT_BRANDS,
+  PRODUCT_IMAGE_ACCEPT,
+  uploadProductImage,
   withPresetOptionGroups,
   type AdminProductFormValue,
   type FormField,
@@ -137,11 +140,15 @@ export function AdminProductForm({
   // 고치기 시작하면 서버 오류를 걷는다. 걷은 묶음을 기억해 새 오류가 오면 다시 보인다.
   const [dismissedServer, setDismissedServer] = useState<FormIssue[]>()
   const editing = mode === 'edit'
-  // 사진은 아직 올릴 곳이 없다 — 업로드(S3)가 준비되면 열고, 등록 뒤에는 바꾸는 API가
-  // 아예 없다. 칸을 열어 두면 고른 사진이 조용히 버려진다.
+  // 사진은 고르는 즉시 올리고(5분 서명 주소), 저장할 때 주소만 보낸다. 수정 화면은
+  // 저장할 때 사진 넣기·빼기 API로 한 장씩 반영한다.
   const imageNote = editing
-    ? '등록 뒤에는 사진을 바꿀 수 없습니다.'
-    : '사진 업로드를 준비하고 있습니다. 지금은 사진 없이 등록됩니다.'
+    ? "사진은 '수정하기'를 누르면 반영됩니다. JPG·PNG·WEBP, 10MB 이하."
+    : 'JPG·PNG·WEBP, 10MB 이하. 세로로 위에서부터 이어 붙습니다.'
+  const uploaderProps = {
+    upload: uploadProductImage,
+    accept: PRODUCT_IMAGE_ACCEPT,
+  }
   const { data: categoryTree } = useCategories()
   const [value, setValue] = useState(
     defaultValue ?? createEmptyProductFormValue(),
@@ -342,9 +349,9 @@ export function AdminProductForm({
           {/* 프리셋은 옵션 종류(축)를 새로 까는데, 등록 뒤에는 축을 만들 수 없다. */}
           {editing ? (
             <span className={styles.hint}>
-              등록 뒤에는 옵션 종류와 사진을 바꿀 수 없습니다. 값은
-              이름·추가금을 고치거나 새로 더할 수 있고, 그만 팔 조합은 아래
-              표에서 판매를 끕니다.
+              등록 뒤에는 옵션 종류를 바꿀 수 없습니다. 값은 이름·추가금을
+              고치거나 새로 더할 수 있고, 그만 팔 조합은 아래 표에서 판매를
+              끕니다. 사진은 넣고 뺄 수 있습니다.
             </span>
           ) : (
             // 색상은 별도 축이라 프리셋이 손대지 않는다 — 이미 올린 이미지가 날아간다.
@@ -368,7 +375,12 @@ export function AdminProductForm({
             <ColorOptionEditor
               colors={value.colors}
               existingIds={existingIds}
-              imagesLocked
+              {...uploaderProps}
+              maxImages={GALLERY_MAX}
+              noColorImages={value.noColorImages}
+              onNoColorImagesChange={(noColorImages) =>
+                patch({ noColorImages })
+              }
               onChange={(colors) => patch({ colors })}
             />
           </div>
@@ -443,9 +455,9 @@ export function AdminProductForm({
         <FormSection title="상세 이미지" description={imageNote}>
           <div className={styles.card}>
             <ImageUploader
+              {...uploaderProps}
               ratio="portrait"
               showCount={false}
-              disabled
               value={value.detailImages}
               onChange={(detailImages) => patch({ detailImages })}
             />
@@ -455,9 +467,9 @@ export function AdminProductForm({
         <FormSection title="제품 사양" description={imageNote}>
           <div className={styles.card}>
             <ImageUploader
+              {...uploaderProps}
               ratio="portrait"
               showCount={false}
-              disabled
               value={value.specImages}
               onChange={(specImages) => patch({ specImages })}
             />
@@ -467,14 +479,19 @@ export function AdminProductForm({
         <FormSection title="유의 사항" description={imageNote}>
           <div className={styles.card}>
             <ImageUploader
+              {...uploaderProps}
               ratio="portrait"
               showCount={false}
-              disabled
               value={value.noticeImages}
               onChange={(noticeImages) => patch({ noticeImages })}
             />
           </div>
         </FormSection>
+        {/* 올리는 중·실패한 사진이 있으면 저장을 막고 여기로 데려온다 — 어느 사진인지는
+            그 사진 칸이 빨갛게 보여준다. */}
+        <div {...fieldAttr('images')}>
+          <FieldError message={issueOf('images')} />
+        </div>
       </fieldset>
 
       <div className={styles.footer}>

@@ -245,8 +245,6 @@ export type VariantEditRequest = {
 /**
  * 상품 등록(POST /admin/products). Idempotency-Key 헤더가 필수다 — 같은 키로 다시
  * 보내면 새로 만들지 않고 처음 등록한 상품을 돌려준다. 모르는 필드는 400이다.
- *
- * 사진(images)은 아직 보내지 않는다 — 업로드(S3)가 준비되면 필드를 더한다.
  */
 /** 서버가 받는 브랜드 — 이 셋 말고는 400(형식 오류) */
 export type ProductBrandCode = 'APPLE' | 'SAMSUNG' | 'LG'
@@ -278,6 +276,53 @@ export type ProductRegistrationRequest = {
   campaign?: { opensAt: string; closesAt: string }
   /** 사전예약만, 필수(1~100개). 일반 상품이 보내면 400 */
   shipmentBatches?: RegistrationShipmentBatch[]
+  /** 갤러리·상세 사진. url은 업로드 URL 발급으로 받은 imageUrl(CDN)만 받는다 */
+  images?: RegistrationImages
+}
+
+export type RegistrationImage = {
+  /** https://cdn.grandis-nova.link/ 아래 주소만. 한 상품 안에서 한 번만 쓴다 */
+  url: string
+  /** 묶음당 하나까지. 갤러리는 생략하면 첫 장이 대표다 */
+  primary?: boolean
+}
+
+export type RegistrationImages = {
+  /** color 축이 있으면 색상별 묶음만(color 필수), 없으면 color 없는 묶음 하나만. 묶음당 1~10장 */
+  gallery?: { color?: string; items: RegistrationImage[] }[]
+  /** 상세 영역 묶음. 영역 이름(1~60자)은 중복할 수 없다. 영역당 1장 이상 */
+  detail?: { section: string; items: RegistrationImage[] }[]
+}
+
+/**
+ * 상품 사진 업로드 URL 발급(POST /admin/products/image-uploads). 파일 하나에 한 번씩
+ * 부른다. jpeg·png·webp, 1바이트~10MiB 밖이면 400.
+ */
+export type ImageUploadRequest = {
+  contentType: string
+  /** 실제 파일 바이트 수와 같아야 한다 — 다르면 올리기가 403이다 */
+  contentLength: number
+}
+
+export type ImageUpload = {
+  /** 파일을 PUT으로 올릴 서명 주소. 5분 동안만 쓸 수 있다 */
+  uploadUrl: string
+  /** 올리기 요청에 그대로 넣을 헤더(Content-Type) — 서명에 포함돼 있다 */
+  headers: Record<string, string>
+  /** 올린 뒤의 사진 주소(CDN). 화면 표시·등록·사진 넣기에는 이것만 쓴다 */
+  imageUrl: string
+  expiresAt: string
+}
+
+/**
+ * 등록 뒤 사진 한 장 넣기(POST /admin/products/{id}/images). 묶음 맨 뒤에 들어가고, 빈
+ * 묶음의 첫 장은 대표가 된다. 사전예약 수정 잠금과 상관없이 오픈 뒤에도 된다.
+ */
+export type ProductImageAddRequest = {
+  kind: 'GALLERY' | 'DETAIL'
+  /** GALLERY면 색상 값(color 축이 없으면 생략), DETAIL이면 영역 이름(없으면 새로 만든다) */
+  bundle?: string
+  url: string
 }
 
 export type RegistrationOptionAxis = {

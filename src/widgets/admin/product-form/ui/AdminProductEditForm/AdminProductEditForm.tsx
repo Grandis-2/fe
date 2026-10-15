@@ -3,6 +3,7 @@ import { useState } from 'react'
 import {
   editLockReason,
   editSectionLabel,
+  imageUploadIssues,
   toFormValue,
   useAdminProduct,
   useAdminProductStock,
@@ -107,7 +108,11 @@ export function AdminProductEditForm({
         submitting={save.isPending}
         waitingForNetwork={save.isPaused}
         // 상품명·모델명·브랜드는 비우면 서버가 400을 준다 — 보내기 전에 칸에서 알린다.
-        validate={validateProductBasics}
+        // 올리는 중·실패한 사진이 있으면 그 사진이 빠진 채 저장되니 막는다.
+        validate={(value) => [
+          ...validateProductBasics(value),
+          ...imageUploadIssues(value),
+        ]}
         // 위 알림은 버튼 자리에서 안 보인다 — 무엇이 실패했는지는 버튼 줄에도 적는다.
         submitError={
           save.isError

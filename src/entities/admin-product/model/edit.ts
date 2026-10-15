@@ -32,13 +32,14 @@ import {
  */
 
 /** 저장을 나누는 단위. 실패도 이 단위로 알린다 */
-export type EditSection = 'basic' | 'schedule' | 'options' | 'stock'
+export type EditSection = 'basic' | 'schedule' | 'options' | 'stock' | 'images'
 
 export const editSectionLabel: Record<EditSection, string> = {
   basic: '기본 정보',
   schedule: '판매 일정',
   options: '옵션',
   stock: '재고',
+  images: '사진',
 }
 
 /* ------------------------------------------------------------------ *
