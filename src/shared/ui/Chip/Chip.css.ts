@@ -16,6 +16,7 @@ export const root = style([
     height: '38px',
     boxSizing: 'border-box',
     whiteSpace: 'nowrap',
+    textDecoration: 'none',
     padding: `0 ${spacing[16]}`,
     borderRadius: '19px',
     border: `1.5px solid ${color.border.default}`,

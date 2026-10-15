@@ -172,9 +172,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
                 {Object.keys(brandMenus).map((category) => (
                   <li key={category}>
                     {/* 이동하면 경로가 바뀌어 오버레이는 스스로 닫힌다. */}
-                    <Chip onClick={() => navigate(searchPath({ category }))}>
-                      {category}
-                    </Chip>
+                    <Chip to={searchPath({ category })}>{category}</Chip>
                   </li>
                 ))}
               </ul>
