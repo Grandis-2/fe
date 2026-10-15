@@ -1,12 +1,12 @@
 import {
+  CANCEL_REASON_MAX,
   useClosePreorderCampaign,
   useSetAdminProductSaleStatus,
   type AdminProduct,
 } from '@entities/admin-product'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-
-import { CancelReasonForm } from '../ui/CancelReasonForm'
+import { ReasonForm } from '@shared/ui'
 
 type SaleTarget = Pick<AdminProduct, 'productId' | 'name'>
 
@@ -79,7 +79,11 @@ export function useProductSaleStatus() {
         description: `이미 받은 예약이 모두 취소되고, 되돌릴 수 없습니다.
 ${product.name}을(를) 다시 판매할 수 없습니다.`,
         children: (
-          <CancelReasonForm
+          <ReasonForm
+            label="중지 사유"
+            placeholder="예: 제조사 출시 일정 연기로 이번 회차를 취소합니다."
+            maxLength={CANCEL_REASON_MAX}
+            confirmLabel="판매 중지"
             onConfirm={(reason) => run(product, 'PAUSED', reason)}
             onCancel={closeModal}
           />
