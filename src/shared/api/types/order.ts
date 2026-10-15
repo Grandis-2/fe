@@ -107,7 +107,8 @@ export type PlaceOrderRequest =
   | {
       // 장바구니 일부 줄만 골라도 된다(1~50줄). 결제 안 된 장바구니 주문은 회원당 하나 —
       // 구성·가격·배송지가 같으면 기존 주문(reused), 다르면 새 주문을 만들고 앞 주문은 자동 취소된다.
-      source: 'CART'
+      // BUY_NOW(상품 상세의 바로 구매)는 Swagger에 아직 없다 — 백엔드 말로는 본문이 CART와 같다.
+      source: 'CART' | 'BUY_NOW'
       items: CartOrderItem[]
       shipTo: ShipToInput
     }

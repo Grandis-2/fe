@@ -112,7 +112,7 @@ const isCartDue = (order: OrderRecord) =>
 function expireCartOrders() {
   for (const order of orders) {
     if (
-      order.source === 'CART' &&
+      (order.source === 'CART' || order.source === 'BUY_NOW') &&
       order.status === 'AWAITING_PAYMENT' &&
       isCartDue(order)
     )
@@ -268,26 +268,31 @@ function toOrderItems(items: CartOrderItem[]): OrderItem[] {
 }
 
 // 장바구니 주문 만들기 — 실패하면 409·400 응답, 성공하면 주문.
+// 바로 구매(BUY_NOW)도 같은 본문·규칙으로 만든다 — 장바구니와 맞춰 보는 것만 빠진다.
+// ponytail: BUY_NOW는 Swagger에 아직 없어 CART와 같다고 가정 — 명세가 올라오면 다른 규칙만 고친다.
 function placeCartOrder(
   items: CartOrderItem[],
   shipTo: ShipTo,
+  source: 'CART' | 'BUY_NOW',
 ): Response | OrderRecord {
-  // 앞 장바구니 주문이 승인 결과를 기다리면 새 주문을 받지 않는다.
+  // 앞 주문이 승인 결과를 기다리면 새 주문을 받지 않는다.
   const authorizing = orders.find(
-    (it) => it.source === 'CART' && it.status === 'AUTHORIZING',
+    (it) => it.source === source && it.status === 'AUTHORIZING',
   )
   if (authorizing) return paymentInProgress()
 
   // 고른 줄의 옵션·보증 여부·수량이 지금 장바구니와 정확히 같아야 한다.
-  const changed = items.some(
-    (item) =>
-      !cartLines.some(
-        (line) =>
-          line.variantId === item.variantId &&
-          line.warranty === (item.warranty ?? false) &&
-          line.quantity === item.quantity,
-      ),
-  )
+  const changed =
+    source === 'CART' &&
+    items.some(
+      (item) =>
+        !cartLines.some(
+          (line) =>
+            line.variantId === item.variantId &&
+            line.warranty === (item.warranty ?? false) &&
+            line.quantity === item.quantity,
+        ),
+    )
   if (changed) {
     return fail(409, {
       code: 'CART_CHANGED',
@@ -347,7 +352,7 @@ function placeCartOrder(
   const totalAmount = orderItems.reduce((sum, row) => sum + row.lineAmount, 0)
   // 결제 전 장바구니 주문은 회원당 하나 — 구성·가격·배송지가 같고 기한 안이면 그 주문을 돌려준다.
   const pending = orders.filter(
-    (it) => it.source === 'CART' && it.status === 'AWAITING_PAYMENT',
+    (it) => it.source === source && it.status === 'AWAITING_PAYMENT',
   )
   const same = pending.find(
     (it) =>
@@ -375,7 +380,7 @@ function placeCartOrder(
       warranty: item.warranty ?? false,
     })),
     status: 'AWAITING_PAYMENT',
-    source: 'CART',
+    source,
     totalAmount,
     paymentDueAt: new Date(Date.now() + CART_PAYMENT_WINDOW_MS).toISOString(),
     items: orderItems,
@@ -500,7 +505,7 @@ export const orderHandlers: RequestHandler[] = [
     })
   }),
 
-  // 주문 생성 — 장바구니(CART) 또는 사전예약(PREORDER). 새 주문은 201, 기존 주문은 200(reused).
+  // 주문 생성 — 장바구니(CART)·바로 구매(BUY_NOW) 또는 사전예약(PREORDER). 새 주문은 201, 기존 주문은 200(reused).
   http.post(url('/api/v1/orders'), async ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     expireCartOrders()
@@ -523,7 +528,7 @@ export const orderHandlers: RequestHandler[] = [
         : {}
 
     const violations: ApiViolation[] = [
-      ...(source === 'BUY_NOW' || source === 'DRAW'
+      ...(source === 'DRAW'
         ? [{ field: 'source', message: '이 주문은 아직 받지 않습니다.' }]
         : []),
       ...(source === 'PREORDER' &&
@@ -534,14 +539,16 @@ export const orderHandlers: RequestHandler[] = [
       )
         ? [{ field: 'preorderId', message: '예약 토큰 형식이 아닙니다.' }]
         : []),
-      ...(source === 'CART' ? cartItemViolations(items) : []),
+      ...(source === 'CART' || source === 'BUY_NOW'
+        ? cartItemViolations(items)
+        : []),
       ...shipToViolations(address),
     ]
     if (violations.length > 0) return invalid(violations)
 
     const result =
-      source === 'CART'
-        ? placeCartOrder(items as CartOrderItem[], toShipTo(address))
+      source === 'CART' || source === 'BUY_NOW'
+        ? placeCartOrder(items as CartOrderItem[], toShipTo(address), source)
         : placePreorderOrder(preorderId as string, toShipTo(address))
     if (result instanceof Response) return result
 

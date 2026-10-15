@@ -111,7 +111,7 @@ export function ProductDetailPage() {
     requireLogin(() => addToCart(variant.variantId, quantity))
   }
 
-  // 결제·사전예약 화면이 같은 주문을 이어서 보여줄 수 있도록 선택 상태를 함께 넘긴다.
+  // 일반 상품은 고른 옵션·수량을 결제 화면에 넘기고, 결제 화면이 바로 구매(BUY_NOW) 주문을 만든다.
   const handleCheckout = () => {
     if (!product || !variant || !isCheckoutReady) return
     const purchasePayload: PurchaseDraft = {
