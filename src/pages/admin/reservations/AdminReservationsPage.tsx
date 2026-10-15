@@ -151,8 +151,7 @@ export function AdminReservationsPage() {
 
   const stageCounts = stats.data && countByStage(stats.data)
 
-  // 예약 한 건이 정확히 한 카드에만 들어간다 — 다섯 카드의 합이 전체 예약 수다.
-  // 누적 '접수'는 이 단계들과 겹쳐서 헷갈리므로 카드로 두지 않는다.
+  // 카드는 탭과 같은 칸이다 — 카드 숫자가 그 탭을 눌렀을 때의 건수다(표는 최근 100건).
   const cards = reservationStages.map((stage) => ({
     label: reservationStageLabel[stage],
     value: stageCounts?.[stage],
@@ -191,14 +190,14 @@ export function AdminReservationsPage() {
       key: 'seq',
       header: '순번',
       align: 'center',
-      render: (reservation) => (
-        <span className={styles.stackedCell}>
-          {reservation.queuePosition.toLocaleString('ko-KR')}
-          <span className={styles.subText}>
-            {reservation.shipmentBatch.batchNumber}차
-          </span>
-        </span>
-      ),
+      render: (reservation) =>
+        reservation.queuePosition.toLocaleString('ko-KR'),
+    },
+    {
+      key: 'batch',
+      header: '배송 차수',
+      align: 'center',
+      render: (reservation) => `${reservation.shipmentBatch.batchNumber}차`,
     },
     {
       key: 'status',

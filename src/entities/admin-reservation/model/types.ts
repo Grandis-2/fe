@@ -143,30 +143,28 @@ export function paymentDueLabel(
  * ------------------------------------------------------------------ */
 
 /**
- * 지표 카드가 나누는 단계. 예약 한 건은 정확히 한 단계에만 속해서, 다섯 카드를
- * 더하면 전체 예약 수가 된다.
- *
- * 확정은 결제까지 끝나야 진짜 확정이다 — 24시간 안에 결제하지 않으면 자동취소돼
- * 순번에서 빠진다. 그래서 결제 대기와 결제 완료로 나눈다.
+ * 지표 카드. 표 위 탭(전체·확정·처리 중·재처리 필요·취소)과 같은 칸이라, 카드 숫자가
+ * 그 탭을 눌렀을 때 나올 건수다. 확정은 결제 대기와 결제 완료를 합친 것이다 — 결제는
+ * 표의 결제 열이 따로 보여준다. 전체를 뺀 네 카드를 더하면 전체가 된다.
  */
 export type ReservationStage =
-  'PROCESSING' | 'PAYMENT_PENDING' | 'PAID' | 'REPROCESS_NEEDED' | 'CANCELED'
+  'ALL' | 'CONFIRMED' | 'PROCESSING' | 'REPROCESS_NEEDED' | 'CANCELED'
 
 export const reservationStageLabel: Record<ReservationStage, string> = {
+  ALL: '전체',
+  CONFIRMED: '확정',
   PROCESSING: '처리 중',
-  PAYMENT_PENDING: '결제 대기',
-  PAID: '결제 완료',
   REPROCESS_NEEDED: '재처리 필요',
   CANCELED: '취소',
 }
 
-// 객체 키 순서가 카드 순서다 — 정상 흐름(처리 중 → 결제 대기 → 결제 완료) 다음에 예외.
+// 객체 키 순서가 카드 순서다 — 탭 순서와 같다.
 export const reservationStages = Object.keys(
   reservationStageLabel,
 ) as ReservationStage[]
 
 /**
- * 집계 API로 단계별 건수를 만든다. 재처리 필요(REGISTER 작업 DEAD_LETTER) 예약은
+ * 집계 API로 카드별 건수를 만든다. 재처리 필요(REGISTER 작업 DEAD_LETTER) 예약은
  * 원장으로는 처리 중(PENDING_SYNC)이라, 처리 중에서 빼야 카드끼리 겹치지 않는다.
  * 취소 중(CANCELING)은 곧 취소되므로 취소에 넣는다.
  */
@@ -176,9 +174,9 @@ export function countByStage(
   const { preorders } = stats
   const reprocessNeeded = stats.syncJobs.REGISTER.DEAD_LETTER
   return {
+    ALL: Object.values(preorders).reduce((sum, count) => sum + count, 0),
+    CONFIRMED: preorders.REGISTERED + preorders.RESERVED,
     PROCESSING: Math.max(0, preorders.PENDING_SYNC - reprocessNeeded),
-    PAYMENT_PENDING: preorders.REGISTERED,
-    PAID: preorders.RESERVED,
     REPROCESS_NEEDED: reprocessNeeded,
     CANCELED: preorders.CANCELING + preorders.CANCELED,
   }
