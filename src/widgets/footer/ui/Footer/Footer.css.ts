@@ -46,17 +46,17 @@ export const inner = style({
 // 데스크톱: 왼쪽 궤도 + 오른쪽(브랜드·구분선·팀원 상세). 모바일: 브랜드 → 원형 궤도 → 상세.
 export const main = style({
   display: 'grid',
-  gridTemplateColumns: 'minmax(0, 3fr) minmax(220px, 1fr)',
-  gridTemplateRows: 'auto auto 1fr',
-  gridTemplateAreas: '"orbit brand" "orbit divider" "orbit detail"',
-  columnGap: spacing[40],
-  rowGap: fluid(20, 28),
+  gridTemplateColumns: 'minmax(0, 1fr)',
+  gridTemplateRows: 'auto',
+  gridTemplateAreas: '"brand" "orbitMobile" "detail"',
+  rowGap: spacing[24],
   '@media': {
-    [breakpoint.mobile]: {
-      gridTemplateColumns: 'minmax(0, 1fr)',
-      gridTemplateRows: 'auto',
-      gridTemplateAreas: '"brand" "orbitMobile" "detail"',
-      rowGap: spacing[24],
+    [breakpoint.desktop]: {
+      gridTemplateColumns: 'minmax(0, 3fr) minmax(220px, 1fr)',
+      gridTemplateRows: 'auto auto 1fr',
+      gridTemplateAreas: '"orbit brand" "orbit divider" "orbit detail"',
+      columnGap: spacing[40],
+      rowGap: fluid(20, 28),
     },
   },
 })
@@ -94,15 +94,7 @@ export const logo = style({
   '@media': { [breakpoint.mobile]: { fontSize: '20px' } },
 })
 
-export const tagline = style([
-  typography.body.caption,
-  {
-    fontSize: fluid(12, 13),
-    lineHeight: 1.6,
-    color: onDark(64),
-    '@media': { [breakpoint.mobile]: { fontSize: '13px' } },
-  },
-])
+export const tagline = style([typography.body.caption, { color: onDark(64) }])
 
 export const divider = style({
   gridArea: 'divider',
@@ -119,11 +111,8 @@ export const bottom = style({
   justifyContent: 'space-between',
   alignItems: 'center',
   gap: `${spacing[6]} ${spacing[32]}`,
-  padding: `${spacing[20]} 0 28px`,
+  padding: `${spacing[20]} 0 ${spacing[30]}`,
   borderTop: `1px solid ${onDark(8)}`,
 })
 
-export const note = style([
-  typography.body.caption,
-  { fontSize: '12px', color: onDark(45) },
-])
+export const note = style([typography.body.caption, { color: onDark(45) }])

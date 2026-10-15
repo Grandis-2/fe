@@ -140,7 +140,7 @@ export function FooterOrbit({ activeId, onHover, onToggle }: FooterOrbitProps) {
                   cx={x}
                   cy={y}
                   r={size}
-                  style={{ fill: onDark(90) }}
+                  className={styles.deco}
                 />
               ))}
             </g>

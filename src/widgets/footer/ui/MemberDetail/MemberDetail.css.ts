@@ -1,10 +1,15 @@
 import { style } from '@vanilla-extract/css'
 
-import { breakpoint, color, onDark, spacing } from '@shared/config/theme'
+import {
+  breakpoint,
+  color,
+  onDark,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 import {
   fontFamily,
   fontSize,
-  fontWeight,
 } from '@shared/config/theme/tokens/typography/base'
 
 import { fluid } from '../../lib/fluid'
@@ -23,7 +28,7 @@ export const root = style({
     '&[data-visible="false"]': { opacity: 0, transform: 'translateY(8px)' },
   },
   // 모바일은 한 줄로 쌓여 폭이 넉넉하다 — 시안 크기 그대로.
-  '@media': { [breakpoint.mobile]: { gap: '18px' } },
+  '@media': { [breakpoint.mobile]: { gap: spacing[20] } },
 })
 
 export const identity = style({
@@ -40,14 +45,14 @@ export const nameRow = style({
   selectors: { [hidden]: { opacity: 0, transform: 'translateX(-12px)' } },
 })
 
-export const name = style({
-  fontSize: fluid(20, 24),
-  fontWeight: fontWeight.bold,
-  letterSpacing: '-0.02em',
-  lineHeight: 1.25,
-  color: color.text.inverse,
-  '@media': { [breakpoint.mobile]: { fontSize: fontSize[24] } },
-})
+// 데스크톱은 궤도가 줄어드는 만큼 크기만 같이 줄인다(fluid).
+export const name = style([
+  typography.title.xlSemibold,
+  {
+    color: color.text.inverse,
+    '@media': { [breakpoint.desktop]: { fontSize: fluid(20, 24) } },
+  },
+])
 
 export const githubLink = style({
   display: 'flex',

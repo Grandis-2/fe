@@ -1,6 +1,6 @@
 import { keyframes, style } from '@vanilla-extract/css'
 
-import { color, onDark } from '@shared/config/theme'
+import { color, onDark, spacing, typography } from '@shared/config/theme'
 import {
   fontFamily,
   fontSize,
@@ -74,7 +74,23 @@ export const centered = style({
   borderRadius: '50%',
 })
 
-export const hitArea = style([centered, { width: '36px', height: '36px' }])
+// 버튼 자체는 크기 0이라 포커스 링은 누르는 영역에 그린다.
+export const hitArea = style([
+  centered,
+  {
+    width: '36px',
+    height: '36px',
+    selectors: {
+      'button:focus-visible > &': {
+        outline: `2px solid ${color.primary.subtle}`,
+        outlineOffset: '-4px',
+      },
+    },
+  },
+])
+
+// 궤도 위를 함께 도는 장식 점.
+export const deco = style({ fill: onDark(90) })
 
 // 고른 행성만 커지고 브랜드색으로 빛난다. 검은 링은 뒤의 궤도선을 끊어 행성을 띄운다.
 export const planet = style([
@@ -107,7 +123,7 @@ export const label = style({
   top: 0,
   display: 'flex',
   flexDirection: 'column',
-  gap: '1px',
+  gap: spacing[2],
   transformOrigin: '0 0',
   whiteSpace: 'nowrap',
   fontFamily: fontFamily.pretendard,
@@ -116,13 +132,13 @@ export const label = style({
   selectors: { '&[data-side="left"]': { alignItems: 'flex-end' } },
 })
 
-export const labelName = style({
-  fontSize: '13px',
-  fontWeight: fontWeight.semibold,
-  lineHeight: 1.3,
-  color: onDark(90),
-  selectors: { '[aria-pressed="true"] &': { color: color.text.inverse } },
-})
+export const labelName = style([
+  typography.body.subSemibold,
+  {
+    color: onDark(90),
+    selectors: { '[aria-pressed="true"] &': { color: color.text.inverse } },
+  },
+])
 
 export const labelHandle = style({
   fontSize: '11px',

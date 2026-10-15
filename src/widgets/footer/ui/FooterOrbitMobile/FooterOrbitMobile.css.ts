@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, onDark } from '@shared/config/theme'
+import { color, onDark, typography } from '@shared/config/theme'
 
 export const ORBIT_SIZE = 360
 
@@ -39,12 +39,10 @@ export const repoLabel = style({
   textShadow: `0 0 6px ${color.backgroundDark.base}, 0 0 2px ${color.backgroundDark.base}`,
 })
 
-export const repoName = style({
-  fontSize: '11px',
-  fontWeight: 600,
-  lineHeight: 1.3,
-  color: color.text.inverse,
-})
+export const repoName = style([
+  typography.body.captionMedium,
+  { color: color.text.inverse },
+])
 
 export const repoCaption = style({
   fontSize: '10px',

@@ -55,8 +55,8 @@ export function FooterOrbitMobile({
   onToggle,
 }: FooterOrbitMobileProps) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
-  // 360px 원을 화면 폭에 맞춰 240~360px로 줄인다.
-  const size = Math.min(SIZE, Math.max(240, width || SIZE))
+  // 360px 원을 칸 폭에 맞춰 줄인다 — 칸보다 넓으면 푸터(overflow: hidden)에 잘린다.
+  const size = Math.min(SIZE, width || SIZE)
   const scale = size / SIZE
   const repoSize = 48 / Math.max(scale, 0.8)
   const activeRadius = POSITIONS[activeId]?.[0]
@@ -112,7 +112,7 @@ export function FooterOrbitMobile({
                   cx={x}
                   cy={y}
                   r={dot}
-                  style={{ fill: onDark(90) }}
+                  className={orbitStyles.deco}
                 />
               ))}
             </g>
