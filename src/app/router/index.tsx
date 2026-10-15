@@ -24,6 +24,7 @@ import {
   ADMIN_PROMOTIONS_PATH,
   ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
+  ADMIN_WAITINGROOM_PATH,
   adminProductPath,
   adminDeadLetterPath,
   adminReservationPath,
@@ -317,12 +318,17 @@ export const router = createBrowserRouter([
                       ),
                   },
                   {
+                    path: ADMIN_WAITINGROOM_PATH,
+                    lazy: () =>
+                      import('@pages/admin/waitingroom/AdminWaitingroomPage').then(
+                        (m) => ({ Component: m.AdminWaitingroomPage }),
+                      ),
+                  },
+                  {
                     path: ADMIN_LOAD_TEST_PATH,
                     lazy: () =>
-                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                        (m) => ({
-                          element: <m.AdminPlaceholderPage title="부하 검증" />,
-                        }),
+                      import('@pages/admin/load-test/AdminLoadTestPage').then(
+                        (m) => ({ Component: m.AdminLoadTestPage }),
                       ),
                   },
                   {
@@ -339,10 +345,8 @@ export const router = createBrowserRouter([
                   {
                     path: ADMIN_MOCK_SETTINGS_PATH,
                     lazy: () =>
-                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                        (m) => ({
-                          element: <m.AdminPlaceholderPage title="Mock 설정" />,
-                        }),
+                      import('@pages/admin/mock-settings/AdminMockSettingsPage').then(
+                        (m) => ({ Component: m.AdminMockSettingsPage }),
                       ),
                   },
                 ],

@@ -13,7 +13,7 @@ import type {
   OffsetPage,
   PreorderStats,
   ReprocessBatchRequest,
-  SyncJobSummary,
+  SyncJobListResponse,
 } from '@shared/api/types'
 
 import type { AdminReservationDetail } from '../model/types'
@@ -101,7 +101,7 @@ const getAdminSyncJobs = (
   params: AdminSyncJobListParams,
   signal?: AbortSignal,
 ) =>
-  apiClient.request<OffsetPage<SyncJobSummary>>(
+  apiClient.request<SyncJobListResponse>(
     `${BASE}/sync-jobs${toQueryString(params)}`,
     { signal },
   )
@@ -141,6 +141,18 @@ export async function reprocessAdminReservations(preorderIds: string[]) {
       body: { syncJobIds } satisfies ReprocessBatchRequest,
     },
   )
+}
+
+/**
+ * 외부 등록 작업의 마지막 시도 오류 코드별 수. 성공했거나 시도 전인 작업은 errorCode가
+ * null이라 빼고, 지금 실패 중(재시도 대기·DEAD_LETTER)인 것만 남는다.
+ */
+export const getSyncJobErrorGroups = async (signal?: AbortSignal) => {
+  const { errorGroups } = await getAdminSyncJobs(
+    { jobType: 'REGISTER', groupByError: true, size: 1 },
+    signal,
+  )
+  return (errorGroups ?? []).filter((group) => group.errorCode !== null)
 }
 
 /** 회원 id를 이름으로 바꾼다. 한 번에 1~100개이고 ids 없이 부르면 400이다 */

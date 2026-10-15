@@ -11,6 +11,7 @@ import {
   getAdminReservations,
   getAllAdminReservations,
   getReservationStats,
+  getSyncJobErrorGroups,
   reprocessAdminReservation,
   reprocessAdminReservations,
   toAdminReservationDetail,
@@ -93,6 +94,15 @@ export const useReprocessReservation = () => {
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })
 }
+
+/** 외부 등록 실패를 오류 코드별로. 부하 시험 중 무엇 때문에 실패하는지 본다 */
+export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) =>
+  useQuery({
+    queryKey: [...RESERVATIONS_KEY, 'sync-job-errors'] as const,
+    queryFn: ({ signal }) => getSyncJobErrorGroups(signal),
+    ...queryPolicy.live,
+    refetchInterval: refetchEvery(intervalMs),
+  })
 
 /** 여러 예약 일괄 재처리. 응답은 시작한 건수뿐이라 결과는 다시 조회해 본다 */
 export const useReprocessReservations = () => {

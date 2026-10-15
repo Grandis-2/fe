@@ -20,6 +20,8 @@ import type {
   PreorderStatus,
   ReprocessBatchRequest,
   SyncJob,
+  SyncJobErrorGroup,
+  SyncJobListResponse,
   SyncJobSummary,
 } from '../../types'
 import type { RequestHandler } from 'msw'
@@ -104,6 +106,17 @@ function countStats(productId: string | null): PreorderStats {
         .toSorted()[0] ?? null,
     countedAt: new Date().toISOString(),
   }
+}
+
+/** 마지막 시도 오류 코드별 작업 수(많은 순) */
+function groupByError(jobs: SyncJobSummary[]): SyncJobErrorGroup[] {
+  const counts = new Map<string | null, number>()
+  for (const job of jobs) {
+    counts.set(job.lastErrorCode, (counts.get(job.lastErrorCode) ?? 0) + 1)
+  }
+  return [...counts]
+    .map(([errorCode, count]) => ({ errorCode, count }))
+    .toSorted((a, b) => b.count - a.count)
 }
 
 /**
@@ -200,11 +213,13 @@ export const adminReservationHandlers: RequestHandler[] = [
       .map(({ attempts: _attempts, ...summary }) => summary)
 
     const start = page * size
-    return ok<OffsetPage<SyncJobSummary>>({
+    return ok<SyncJobListResponse>({
       items: matched.slice(start, start + size),
       page,
       size,
       total: matched.length,
+      errorGroups:
+        query.get('groupByError') === 'true' ? groupByError(matched) : null,
     })
   }),
 

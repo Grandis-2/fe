@@ -10,6 +10,7 @@ export {
   useReprocessReservations,
   useReservationStats,
   useSaveReservationNote,
+  useSyncJobErrorGroups,
 } from './api/useAdminReservations'
 export {
   actorLabel,

@@ -76,8 +76,17 @@ export type AdminSyncJobListParams = {
   jobType?: SyncJobType
   status?: SyncJobStatus
   preorderId?: string
+  groupByError?: boolean
   page?: number
   size?: number
+}
+
+/** 마지막 시도 오류 코드별 작업 수(groupByError=true). 시도가 없거나 성공이면 errorCode가 null */
+export type SyncJobErrorGroup = { errorCode: string | null; count: number }
+
+/** GET /admin/preorders/sync-jobs — groupByError=true일 때만 errorGroups가 배열이다 */
+export type SyncJobListResponse = OffsetPage<SyncJobSummary> & {
+  errorGroups: SyncJobErrorGroup[] | null
 }
 
 /** POST /admin/preorders/sync-jobs/reprocess-batch — 비우면 재처리할 수 있는 DEAD_LETTER 전체 */
