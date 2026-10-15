@@ -76,7 +76,7 @@ export const isReprocessable = (
 
 /**
  * 원장 상태를 화면 상태로 묶는다. 결제 대기(REGISTERED)도 순번은 잡혔으니 '확정'이고,
- * 결제는 옆 열이 따로 말한다. 재처리 필요는 원장으로는 처리 중(PENDING_SYNC)이지만
+ * 결제는 옆 열이 따로 말한다. 외부 등록 실패는 원장으로는 처리 중(PENDING_SYNC)이지만
  * 관리자가 손대야 하는 건이라 따로 뺀다.
  */
 export type ReservationState =
@@ -85,7 +85,8 @@ export type ReservationState =
 export const reservationStateLabel: Record<ReservationState, string> = {
   PROCESSING: '처리 중',
   CONFIRMED: '확정',
-  REPROCESS_NEEDED: '재처리 필요',
+  // 버튼 이름은 '재처리' 그대로 — 무엇이 실패했는지를 상태로 말한다.
+  REPROCESS_NEEDED: '외부 등록 실패',
   CANCELING: '취소 중',
   CANCELED: '취소',
 }
@@ -200,7 +201,7 @@ export function paymentDueLabel(
  * ------------------------------------------------------------------ */
 
 /**
- * 지표 카드. 표 위 탭(전체·확정·처리 중·재처리 필요·취소)과 같은 칸이라, 카드 숫자가
+ * 지표 카드. 표 위 탭(전체·확정·처리 중·외부 등록 실패·취소)과 같은 칸이라, 카드 숫자가
  * 그 탭을 눌렀을 때 나올 건수다. 확정은 결제 대기와 결제 완료를 합친 것이다 — 결제는
  * 표의 결제 열이 따로 보여준다. 전체를 뺀 네 카드를 더하면 전체가 된다.
  */
@@ -211,7 +212,7 @@ export const reservationStageLabel: Record<ReservationStage, string> = {
   ALL: '전체',
   CONFIRMED: '확정',
   PROCESSING: '처리 중',
-  REPROCESS_NEEDED: '재처리 필요',
+  REPROCESS_NEEDED: '외부 등록 실패',
   CANCELED: '취소',
 }
 
@@ -221,7 +222,7 @@ export const reservationStages = Object.keys(
 ) as ReservationStage[]
 
 /**
- * 집계 API로 카드별 건수를 만든다. 재처리 필요(REGISTER 작업 DEAD_LETTER) 예약은
+ * 집계 API로 카드별 건수를 만든다. 외부 등록 실패(REGISTER 작업 DEAD_LETTER) 예약은
  * 원장으로는 처리 중(PENDING_SYNC)이라, 처리 중에서 빼야 카드끼리 겹치지 않는다.
  * 취소 중(CANCELING)은 곧 취소되므로 취소에 넣는다.
  */

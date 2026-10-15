@@ -12,8 +12,8 @@ import {
 } from '@features/payment'
 import { ErrorPage } from '@pages/error/ErrorPage'
 import {
-  ADMIN_CONSISTENCY_CHECK_PATH,
   ADMIN_HOME_PATH,
+  ADMIN_DEAD_LETTERS_PATH,
   ADMIN_LOAD_TEST_PATH,
   ADMIN_LOGIN_PATH,
   ADMIN_MOCK_SETTINGS_PATH,
@@ -22,8 +22,10 @@ import {
   ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTION_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
+  ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
   adminProductPath,
+  adminDeadLetterPath,
   adminReservationPath,
   adminPromotionPath,
   DRAW_PATH,
@@ -294,14 +296,24 @@ export const router = createBrowserRouter([
                       ),
                   },
                   {
-                    path: ADMIN_CONSISTENCY_CHECK_PATH,
+                    path: ADMIN_RECONCILIATION_PATH,
                     lazy: () =>
-                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                        (m) => ({
-                          element: (
-                            <m.AdminPlaceholderPage title="정합성 대조" />
-                          ),
-                        }),
+                      import('@pages/admin/reconciliation/AdminReconciliationPage').then(
+                        (m) => ({ Component: m.AdminReconciliationPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_DEAD_LETTERS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/dead-letters/AdminDeadLettersPage').then(
+                        (m) => ({ Component: m.AdminDeadLettersPage }),
+                      ),
+                  },
+                  {
+                    path: adminDeadLetterPath(':deadLetterId'),
+                    lazy: () =>
+                      import('@pages/admin/dead-letter-detail/AdminDeadLetterDetailPage').then(
+                        (m) => ({ Component: m.AdminDeadLetterDetailPage }),
                       ),
                   },
                   {

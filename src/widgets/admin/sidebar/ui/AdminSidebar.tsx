@@ -1,14 +1,16 @@
 import { Link, useLocation } from 'react-router'
 
 import {
-  ADMIN_CONSISTENCY_CHECK_PATH,
+  ADMIN_DEAD_LETTERS_PATH,
   ADMIN_HOME_PATH,
   ADMIN_LOAD_TEST_PATH,
   ADMIN_MOCK_SETTINGS_PATH,
   ADMIN_NOTIFICATIONS_PATH,
   ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTIONS_PATH,
+  ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
+  readBackTo,
 } from '@shared/config/routes'
 
 import * as styles from './AdminSidebar.css'
@@ -24,13 +26,14 @@ const navGroups = [
       { path: ADMIN_PRODUCTS_PATH, label: '상품 관리' },
       { path: ADMIN_PROMOTIONS_PATH, label: '사전예약 관리' },
       { path: ADMIN_RESERVATIONS_PATH, label: '예약 현황' },
-      { path: ADMIN_CONSISTENCY_CHECK_PATH, label: '정합성 대조' },
+      { path: ADMIN_RECONCILIATION_PATH, label: '외부 예약 대조' },
     ],
   },
   {
     label: '개발자 기능',
     items: [
       { path: ADMIN_LOAD_TEST_PATH, label: '부하 검증' },
+      { path: ADMIN_DEAD_LETTERS_PATH, label: '이벤트 DLQ' },
       { path: ADMIN_NOTIFICATIONS_PATH, label: '관리자 알림' },
       { path: ADMIN_MOCK_SETTINGS_PATH, label: 'Mock 설정' },
     ],
@@ -38,7 +41,10 @@ const navGroups = [
 ]
 
 export function AdminSidebar() {
-  const { pathname } = useLocation()
+  const location = useLocation()
+  // 다른 메뉴에서 넘어온 상세(외부 예약 대조 → 예약 상세)는 들어온 메뉴를 켜 둔다.
+  const pathname =
+    readBackTo(location.state)?.to.split('?')[0] ?? location.pathname
 
   return (
     <nav className={styles.root} aria-label="관리자 메뉴">

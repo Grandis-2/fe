@@ -1,4 +1,10 @@
 import {
+  deadLetterEventLabel,
+  useDeadLetters,
+  useRedriveDeadLetter,
+  type DeadLetter,
+} from '@entities/admin-dead-letter'
+import {
   formatShipPeriod,
   isReprocessable,
   paymentDueLabel,
@@ -26,6 +32,7 @@ import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import { Button, FormSection, InlineAlert, ReasonForm, Tag } from '@shared/ui'
 
+import { ReservationDeadLetters } from '../ReservationDeadLetters'
 import { ReservationNoteForm } from '../ReservationNoteForm'
 import { ReservationSyncJobs } from '../ReservationSyncJobs'
 import { ReservationTimeline } from '../ReservationTimeline'
@@ -50,6 +57,12 @@ export function AdminReservationDetail({
   const cancel = useCancelReservation()
   const saveNote = useSaveReservationNote()
   const { data: members } = useAdminMembers([reservation.customerId])
+  // 이 예약에 반영되지 못한 처리(이벤트 DLQ). 한 예약에 몇 건 안 돼 한 번에 받는다.
+  const deadLetters = useDeadLetters({
+    preorderId: reservation.preorderId,
+    size: 100,
+  })
+  const redrive = useRedriveDeadLetter()
 
   const state = reservationStateOf(reservation)
   const payment = paymentStateOf(reservation)
@@ -64,6 +77,23 @@ export function AdminReservationDetail({
   const resetErrors = () => {
     reprocess.reset()
     cancel.reset()
+    redrive.reset()
+  }
+
+  const confirmRedrive = (item: DeadLetter) => {
+    resetErrors()
+    openModal({
+      theme: 'light',
+      title: '다시 처리할까요?',
+      description: `${number}의 '${deadLetterEventLabel(item.eventType)}'을(를) 한 번 더 처리합니다. 결과는 조금 뒤에 반영됩니다.`,
+      confirmLabel: '다시 처리',
+      onConfirm: () => {
+        closeModal()
+        redrive.mutate(item.deadLetterId, {
+          onSuccess: () => showToast('다시 처리를 요청했습니다.'),
+        })
+      },
+    })
   }
 
   const confirmReprocess = () => {
@@ -125,7 +155,9 @@ export function AdminReservationDetail({
     { label: '외부 예약번호', value: reservation.externalReference ?? '—' },
   ]
 
-  const busy = reprocess.isPending || cancel.isPending
+  const busy = reprocess.isPending || cancel.isPending || redrive.isPending
+  // 0건과 조회 실패를 구분한다 — 실패를 '없음'으로 보이면 멈춘 결제를 놓친다.
+  const deadLetterItems = deadLetters.data?.items ?? []
 
   return (
     <div className={styles.root}>
@@ -180,6 +212,37 @@ export function AdminReservationDetail({
         <InlineAlert status="error">
           {getErrorMessage(cancel.error, '예약을 취소하지 못했습니다.')}
         </InlineAlert>
+      )}
+
+      {/* 결제했는데 반영이 안 된 것 같은 건이라 예약 정보보다 먼저 보인다. 없으면 숨긴다. */}
+      {(deadLetterItems.length > 0 || deadLetters.isError) && (
+        <FormSection
+          title="상태 반영 실패"
+          description="결제·기한 만료 같은 처리가 이 예약에 반영되지 않은 기록입니다. 다시 처리를 누르면 같은 처리를 한 번 더 시도합니다."
+        >
+          <div className={styles.card}>
+            {deadLetters.isError && (
+              <InlineAlert status="warning">
+                {getErrorMessage(
+                  deadLetters.error,
+                  '상태 반영 실패 기록을 불러오지 못했습니다.',
+                )}
+              </InlineAlert>
+            )}
+            {redrive.isError && (
+              <InlineAlert status="error">
+                {getErrorMessage(redrive.error, '다시 처리하지 못했습니다.')}
+              </InlineAlert>
+            )}
+            {deadLetterItems.length > 0 && (
+              <ReservationDeadLetters
+                items={deadLetterItems}
+                onRedrive={confirmRedrive}
+                busy={busy}
+              />
+            )}
+          </div>
+        </FormSection>
       )}
 
       <div className={styles.cards}>

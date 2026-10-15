@@ -71,6 +71,32 @@ export type SyncJobSummary = {
   updatedAt: string
 }
 
+/** GET /admin/preorders/sync-jobs — 1~100건씩, 최신순 */
+export type AdminSyncJobListParams = {
+  jobType?: SyncJobType
+  status?: SyncJobStatus
+  preorderId?: string
+  page?: number
+  size?: number
+}
+
+/** POST /admin/preorders/sync-jobs/reprocess-batch — 비우면 재처리할 수 있는 DEAD_LETTER 전체 */
+export type ReprocessBatchRequest = {
+  /** 최대 1000건 */
+  syncJobIds?: string[]
+  errorCodeFilter?: string
+  /** 초당 요청 건수 1~200(기본 20) */
+  ratePerSecond?: number
+}
+
+/** 일괄 재처리 시작 결과. 실제 재처리는 서버가 초당 ratePerSecond건씩 이어서 한다 */
+export type BatchReprocess = {
+  targetCount: number
+  /** 지정한 id 중 없거나 재처리 조건 밖이라 건너뛴 수 */
+  skippedCount: number
+  estimatedSeconds: number
+}
+
 /** 동기화 작업 상세 — 상세 응답에는 시도 기록이 붙는다 */
 export type SyncJob = SyncJobSummary & { attempts: SyncAttempt[] }
 
@@ -105,8 +131,12 @@ export type PreorderStats = {
   /** 원장 상태별 예약 수 */
   preorders: Record<PreorderStatus, number>
   syncJobs: Record<SyncJobType, OpenSyncJobCounts>
+  /** 되돌리기를 기다리는 이벤트 DLQ 메시지 */
+  deadLetters: { waiting: number; oldestWaitingAt: string | null }
   /** 결제 기한이 지났는데 아직 만료 처리 전인 예약 수 */
   paymentOverdue: number
+  /** 외부 등록을 기다리는 예약 중 가장 오래된 접수 시각. 없으면 null */
+  oldestPendingSyncAt: string | null
   countedAt: string
 }
 

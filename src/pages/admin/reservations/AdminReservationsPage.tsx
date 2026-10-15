@@ -24,10 +24,14 @@ import {
   useReprocessReservation,
   useReservationStats,
   type AdminReservation,
-  type RefreshInterval,
   type ReservationState,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
+import {
+  DEFAULT_REFRESH_INTERVAL,
+  refreshIntervalOptions,
+  type RefreshInterval,
+} from '@shared/config/refreshInterval'
 import { adminReservationPath } from '@shared/config/routes'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
@@ -51,21 +55,12 @@ const statusFilters = [
   { value: 'all', label: '전체' },
   { value: 'CONFIRMED', label: '확정' },
   { value: 'PROCESSING', label: '처리 중' },
-  { value: 'REPROCESS_NEEDED', label: '재처리 필요' },
+  { value: 'REPROCESS_NEEDED', label: '외부 등록 실패' },
   { value: 'CANCELED', label: '취소' },
 ] as const
 
 // 한 번에 받는 최근 예약 수(서버 상한). 표·탭·검색은 이 안에서 한다.
 const LIST_SIZE = 100
-
-// 집계는 서버가 5초 캐시해서 그보다 짧은 간격은 의미가 없다 — 직접 입력 대신 고르게 한다.
-const refreshOptions: DropdownOption<RefreshInterval>[] = [
-  { label: '5초마다', value: 5_000 },
-  { label: '10초마다', value: 10_000 },
-  { label: '30초마다', value: 30_000 },
-  { label: '1분마다', value: 60_000 },
-  { label: '자동 갱신 끄기', value: false },
-]
 
 type StatusFilter = (typeof statusFilters)[number]['value']
 
@@ -85,8 +80,9 @@ export function AdminReservationsPage() {
   const [keyword, setKeyword] = useState('')
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const [productId, setProductId] = useState<string>()
-  const [refreshInterval, setRefreshInterval] =
-    useState<RefreshInterval>(10_000)
+  const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(
+    DEFAULT_REFRESH_INTERVAL,
+  )
 
   const { data: products = [] } = useAdminProducts({
     saleMode: 'PREORDER',
@@ -163,10 +159,15 @@ export function AdminReservationsPage() {
   const stageCounts = stats.data && countByStage(stats.data)
 
   // 카드는 탭과 같은 칸이다 — 카드 숫자가 그 탭을 눌렀을 때의 건수다(표는 최근 100건).
-  const cards = reservationStages.map((stage) => ({
-    label: reservationStageLabel[stage],
-    value: stageCounts?.[stage],
-  }))
+  // 마지막 '상태 반영 실패'만 탭이 없다 — 예약 상태가 아니라 서버 안에서 멈춘 처리(이벤트
+  // DLQ) 수라서, 해당 예약 상세의 '상태 반영 실패'에서 다시 처리한다.
+  const cards = [
+    ...reservationStages.map((stage) => ({
+      label: reservationStageLabel[stage],
+      value: stageCounts?.[stage],
+    })),
+    { label: '상태 반영 실패', value: stats.data?.deadLetters.waiting },
+  ]
 
   const columns: TableColumn<AdminReservation>[] = [
     {
@@ -302,7 +303,7 @@ export function AdminReservationsPage() {
           label="자동 갱신 간격"
           size="small"
           width="140px"
-          options={refreshOptions}
+          options={refreshIntervalOptions}
           value={refreshInterval}
           // 고르는 즉시 한 번 받는다 — 새 간격을 기다리지 않고 지금 값을 보여준다.
           onSelect={(next) => {

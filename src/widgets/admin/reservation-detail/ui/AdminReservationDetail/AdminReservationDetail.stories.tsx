@@ -86,7 +86,7 @@ export const ReprocessNeeded: Story = {
     },
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getAllByText('재처리 필요')[0]).toBeVisible()
+    await expect(canvas.getAllByText('외부 등록 실패')[0]).toBeVisible()
     await expect(canvas.getByRole('button', { name: '재처리' })).toBeVisible()
   },
 }

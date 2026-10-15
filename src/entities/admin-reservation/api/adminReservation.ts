@@ -1,4 +1,5 @@
 import { ApiRequestError, apiClient } from '@shared/api/client'
+import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
 import { toQueryString } from '@shared/api/queryString'
 import type {
   AdminCancelRequest,
@@ -7,8 +8,12 @@ import type {
   AdminPreorderDetail,
   AdminPreorderListParams,
   AdminPreorderSummary,
+  AdminSyncJobListParams,
+  BatchReprocess,
   OffsetPage,
   PreorderStats,
+  ReprocessBatchRequest,
+  SyncJobSummary,
 } from '@shared/api/types'
 
 import type { AdminReservationDetail } from '../model/types'
@@ -23,6 +28,12 @@ export const getAdminReservations = (
   apiClient.request<OffsetPage<AdminPreorderSummary>>(
     `${BASE}${toQueryString(params)}`,
     { signal },
+  )
+
+/** 모든 예약을 끝까지 이어 받는다 — 외부 원장과 한 건씩 맞춰 볼 때만 쓴다(무겁다) */
+export const getAllAdminReservations = (signal?: AbortSignal) =>
+  fetchAllPages((page) =>
+    getAdminReservations({ page, size: PAGE_SIZE_MAX }, signal),
   )
 
 /** 상태별 예약 수와 동기화 작업 수. productId를 빼면 전체를 센다 */
@@ -83,6 +94,52 @@ export async function reprocessAdminReservation(preorderId: string) {
   return apiClient.request<unknown>(
     `${BASE}/sync-jobs/${job.syncJobId}/reprocess`,
     { method: 'POST' },
+  )
+}
+
+const getAdminSyncJobs = (
+  params: AdminSyncJobListParams,
+  signal?: AbortSignal,
+) =>
+  apiClient.request<OffsetPage<SyncJobSummary>>(
+    `${BASE}/sync-jobs${toQueryString(params)}`,
+    { signal },
+  )
+
+/**
+ * 여러 예약의 외부 등록을 한 번에 다시 시도한다. 일괄 재처리는 작업 id를 받는데 예약
+ * 목록엔 없어서, 재처리 대기(DEAD_LETTER) REGISTER 작업을 받아 예약 id로 골라 보낸다.
+ * 서버는 대상 수만 바로 주고 실제 재처리는 이어서 한다.
+ */
+export async function reprocessAdminReservations(preorderIds: string[]) {
+  const wanted = new Set(preorderIds)
+  const deadJobs = await fetchAllPages((page) =>
+    getAdminSyncJobs({
+      jobType: 'REGISTER',
+      status: 'DEAD_LETTER',
+      page,
+      size: PAGE_SIZE_MAX,
+    }),
+  )
+  const syncJobIds = deadJobs
+    .filter((job) => wanted.has(job.preorderId))
+    .map((job) => job.syncJobId)
+  if (syncJobIds.length === 0) {
+    throw new ApiRequestError(
+      {
+        code: 'NOTHING_TO_REPROCESS',
+        message: '재처리할 작업이 없습니다. 대조를 다시 실행해 확인해 주세요.',
+        details: null,
+      },
+      409,
+    )
+  }
+  return apiClient.request<BatchReprocess>(
+    `${BASE}/sync-jobs/reprocess-batch`,
+    {
+      method: 'POST',
+      body: { syncJobIds } satisfies ReprocessBatchRequest,
+    },
   )
 }
 

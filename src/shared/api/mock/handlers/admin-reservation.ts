@@ -1,5 +1,6 @@
 import { http } from 'msw'
 
+import { deadLetterStore } from '../fixtures/admin-dead-letter'
 import {
   findReservation,
   mockMembers,
@@ -13,9 +14,12 @@ import type {
   AdminNoteRequest,
   AdminPreorderDetail,
   AdminPreorderSummary,
+  BatchReprocess,
   OffsetPage,
   PreorderStats,
   PreorderStatus,
+  ReprocessBatchRequest,
+  SyncJob,
   SyncJobSummary,
 } from '../../types'
 import type { RequestHandler } from 'msw'
@@ -46,6 +50,20 @@ const OPEN_JOB_STATES = [
   'DEAD_LETTER',
 ] as const
 
+// 상품을 고르면 그 상품 예약에 묶인 메시지만 센다.
+function countWaiting(preorderIds: ReadonlySet<string> | null) {
+  const waiting = deadLetterStore.filter(
+    (item) =>
+      item.status === 'OPEN' &&
+      (!preorderIds || (item.preorderId && preorderIds.has(item.preorderId))),
+  )
+  return {
+    waiting: waiting.length,
+    oldestWaitingAt:
+      waiting.map((item) => item.createdAt).toSorted()[0] ?? null,
+  }
+}
+
 function countStats(productId: string | null): PreorderStats {
   const matched = reservationStore.filter(
     (detail) => !productId || detail.productId === productId,
@@ -73,11 +91,60 @@ function countStats(productId: string | null): PreorderStats {
     productId,
     preorders,
     syncJobs: { REGISTER: countJobs('REGISTER'), CANCEL: countJobs('CANCEL') },
+    deadLetters: countWaiting(
+      productId ? new Set(matched.map((detail) => detail.preorderId)) : null,
+    ),
     paymentOverdue: matched.filter(
       (detail) => detail.displayStatus === 'PAYMENT_EXPIRED',
     ).length,
+    oldestPendingSyncAt:
+      matched
+        .filter((detail) => detail.status === 'PENDING_SYNC')
+        .map((detail) => detail.createdAt)
+        .toSorted()[0] ?? null,
     countedAt: new Date().toISOString(),
   }
+}
+
+/**
+ * DEAD_LETTER 작업을 되돌린다. 실서버는 다시 등록을 보내는데, 목은 결과를 기다리지
+ * 않고 바로 등록된 것으로 둔다.
+ */
+function markReprocessed(detail: AdminPreorderDetail, job: SyncJob) {
+  const at = new Date().toISOString()
+  job.attempts.push({
+    attemptNumber: job.attempts.length + 1,
+    actor: 'ADMIN',
+    result: 'SUCCEEDED',
+    httpStatus: 200,
+    errorCode: null,
+    errorMessage: null,
+    startedAt: at,
+    finishedAt: at,
+  })
+  Object.assign(job, {
+    status: 'SUCCEEDED',
+    attemptCount: job.attempts.length,
+    lastErrorCode: null,
+    deadLetteredAt: null,
+    updatedAt: at,
+  })
+  detail.events.push({
+    eventSequence: detail.events.length + 1,
+    fromStatus: 'PENDING_SYNC',
+    toStatus: 'REGISTERED',
+    actor: 'SYSTEM',
+    reason: null,
+    createdAt: at,
+  })
+  Object.assign(detail, {
+    status: 'REGISTERED',
+    displayStatus: 'PAYABLE',
+    payableFrom: at,
+    paymentDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    externalReference: `R-${detail.preorderId.slice(-6)}`,
+    version: detail.version + 1,
+  })
 }
 
 export const adminReservationHandlers: RequestHandler[] = [
@@ -112,7 +179,35 @@ export const adminReservationHandlers: RequestHandler[] = [
     })
   }),
 
-  // 경로 :preorderId보다 먼저 잡혀야 한다.
+  // sync-jobs·stats는 경로 :preorderId보다 먼저 잡혀야 한다.
+  http.get(url(`${BASE}/sync-jobs`), ({ request }) => {
+    const query = new URL(request.url).searchParams
+    const size = Number(query.get('size') ?? 20)
+    if (!Number.isInteger(size) || size < 1 || size > 100) {
+      return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
+    }
+    const page = Number(query.get('page') ?? 0)
+    const matched = reservationStore
+      .flatMap((detail) => detail.syncJobs)
+      .filter(
+        (job) =>
+          (!query.get('jobType') || job.jobType === query.get('jobType')) &&
+          (!query.get('status') || job.status === query.get('status')) &&
+          (!query.get('preorderId') ||
+            job.preorderId === query.get('preorderId')),
+      )
+      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(({ attempts: _attempts, ...summary }) => summary)
+
+    const start = page * size
+    return ok<OffsetPage<SyncJobSummary>>({
+      items: matched.slice(start, start + size),
+      page,
+      size,
+      total: matched.length,
+    })
+  }),
+
   http.get(url(`${BASE}/stats`), ({ request }) =>
     ok(countStats(new URL(request.url).searchParams.get('productId'))),
   ),
@@ -127,8 +222,43 @@ export const adminReservationHandlers: RequestHandler[] = [
         })
   }),
 
-  // DEAD_LETTER인 REGISTER 작업만 되돌린다. 실서버는 다시 등록을 보내는데, 목은 결과를
-  // 기다리지 않고 바로 등록된 것으로 둔다.
+  // 실서버는 대상 수만 주고 초당 ratePerSecond건씩 이어서 하는데, 목은 바로 끝낸다.
+  http.post(url(`${BASE}/sync-jobs/reprocess-batch`), async ({ request }) => {
+    const body = (await request
+      .json()
+      .catch(() => null)) as ReprocessBatchRequest | null
+    if (!body)
+      return invalid([{ field: 'body', message: '본문이 필요합니다.' }])
+    const ids = new Set(body.syncJobIds ?? [])
+    if (ids.size > 1000) {
+      return invalid([{ field: 'syncJobIds', message: '최대 1000건입니다.' }])
+    }
+
+    const targets = reservationStore.flatMap((detail) =>
+      detail.syncJobs
+        .filter(
+          (job) =>
+            job.jobType === 'REGISTER' &&
+            job.status === 'DEAD_LETTER' &&
+            (ids.size === 0 || ids.has(job.syncJobId)) &&
+            detail.status !== 'CANCELING' &&
+            detail.status !== 'CANCELED',
+        )
+        .map((job) => [detail, job] as const),
+    )
+    for (const [detail, job] of targets) markReprocessed(detail, job)
+    const rate = body.ratePerSecond ?? 20
+    return ok<BatchReprocess>(
+      {
+        targetCount: targets.length,
+        skippedCount: ids.size === 0 ? 0 : ids.size - targets.length,
+        estimatedSeconds: Math.ceil(targets.length / rate),
+      },
+      202,
+    )
+  }),
+
+  // DEAD_LETTER인 REGISTER 작업만 되돌린다.
   http.post(url(`${BASE}/sync-jobs/:syncJobId/reprocess`), ({ params }) => {
     const detail = reservationStore.find((item) =>
       item.syncJobs.some((job) => job.syncJobId === params.syncJobId),
@@ -149,40 +279,7 @@ export const adminReservationHandlers: RequestHandler[] = [
       })
     }
 
-    const at = new Date().toISOString()
-    job.attempts.push({
-      attemptNumber: job.attempts.length + 1,
-      actor: 'ADMIN',
-      result: 'SUCCEEDED',
-      httpStatus: 200,
-      errorCode: null,
-      errorMessage: null,
-      startedAt: at,
-      finishedAt: at,
-    })
-    Object.assign(job, {
-      status: 'SUCCEEDED',
-      attemptCount: job.attempts.length,
-      lastErrorCode: null,
-      deadLetteredAt: null,
-      updatedAt: at,
-    })
-    detail.events.push({
-      eventSequence: detail.events.length + 1,
-      fromStatus: 'PENDING_SYNC',
-      toStatus: 'REGISTERED',
-      actor: 'SYSTEM',
-      reason: null,
-      createdAt: at,
-    })
-    Object.assign(detail, {
-      status: 'REGISTERED',
-      displayStatus: 'PAYABLE',
-      payableFrom: at,
-      paymentDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-      externalReference: `R-${detail.preorderId.slice(-6)}`,
-      version: detail.version + 1,
-    })
+    markReprocessed(detail, job)
     // 응답은 되돌린 직후의 작업 요약이다(시도 기록 없이).
     const { attempts: _attempts, ...summary } = job
     return ok({ ...summary, status: 'PENDING', deadLetteredAt: null }, 202)

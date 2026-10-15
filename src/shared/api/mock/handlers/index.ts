@@ -1,4 +1,5 @@
 import { addressHandlers } from './address'
+import { adminDeadLetterHandlers } from './admin-dead-letter'
 import { adminProductHandlers } from './admin-product'
 import { adminPromotionHandlers } from './admin-promotion'
 import { adminReservationHandlers } from './admin-reservation'
@@ -7,6 +8,7 @@ import { adminStockHandlers } from './admin-stock'
 import { authHandlers } from './auth'
 import { cartHandlers } from './cart'
 import { drawHandlers } from './draw'
+import { externalReservationHandlers } from './external-reservation'
 import { forceErrorHandler } from './forceError'
 import { notificationHandlers } from './notification'
 import { orderHandlers } from './order'
@@ -28,7 +30,10 @@ export const pendingBackendHandlers: RequestHandler[] = [
 export const handlers: RequestHandler[] = [
   // 맨 앞에 둬야 ?mock=500일 때 다른 핸들러보다 먼저 응답한다.
   forceErrorHandler,
+  // /admin/preorders/dead-letters가 예약 상세(/admin/preorders/:preorderId)보다 먼저 잡혀야 한다.
+  ...adminDeadLetterHandlers,
   ...adminReservationHandlers,
+  ...externalReservationHandlers,
   ...adminShipmentHandlers,
   ...adminStockHandlers,
   ...adminProductHandlers,

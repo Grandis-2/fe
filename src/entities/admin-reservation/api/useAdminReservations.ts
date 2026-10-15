@@ -2,14 +2,17 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { pollingInterval, queryPolicy } from '@shared/api/queryPolicy'
 import type { AdminPreorderListParams } from '@shared/api/types'
+import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
   cancelAdminReservation,
   getAdminMembers,
   getAdminReservation,
   getAdminReservations,
+  getAllAdminReservations,
   getReservationStats,
   reprocessAdminReservation,
+  reprocessAdminReservations,
   toAdminReservationDetail,
   updateAdminReservationNote,
 } from './adminReservation'
@@ -20,9 +23,6 @@ const POLL_INTERVAL_MS = 10_000
 // 목록·집계와 같은 접두사 아래라, 재처리·취소 뒤 한 번에 무효화된다.
 const reservationKey = (preorderId: string) =>
   [...RESERVATIONS_KEY, 'detail', preorderId] as const
-
-/** 자동 갱신 간격(ms). false면 자동으로 다시 받지 않는다 */
-export type RefreshInterval = number | false
 
 // 조회가 실패하면 pollingInterval이 간격을 4배로 늘려, 이미 힘든 서버를 계속 두드리지 않는다.
 const refetchEvery = (intervalMs: RefreshInterval) =>
@@ -38,6 +38,20 @@ export const useAdminReservations = (
     queryFn: ({ signal }) => getAdminReservations(params, signal),
     ...queryPolicy.live,
     refetchInterval: refetchEvery(intervalMs),
+  })
+
+/**
+ * 모든 예약. 외부 원장과 맞춰 보는 데만 쓴다. 무거워서 화면에 처음 들어올 때 한 번만
+ * 받고, 그 뒤엔 '대조 실행'의 refetch로만 다시 받는다. 상품은 받은 뒤 화면이 거른다 —
+ * 상품을 바꿀 때마다 다시 받지 않으려고.
+ */
+export const useAllAdminReservations = () =>
+  useQuery({
+    // 재처리·취소 뒤 무효화(RESERVATIONS_KEY)에 끌려 혼자 다시 받으면 외부 원장과 받은
+    // 시점이 어긋난다 — 접두사 밖에 둔다.
+    queryKey: ['admin', 'reservations-snapshot'] as const,
+    queryFn: ({ signal }) => getAllAdminReservations(signal),
+    ...queryPolicy.snapshot,
   })
 
 /** 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다 */
@@ -75,6 +89,16 @@ export const useReprocessReservation = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: reprocessAdminReservation,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/** 여러 예약 일괄 재처리. 응답은 시작한 건수뿐이라 결과는 다시 조회해 본다 */
+export const useReprocessReservations = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: reprocessAdminReservations,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })

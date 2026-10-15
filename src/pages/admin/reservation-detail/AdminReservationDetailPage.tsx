@@ -1,8 +1,8 @@
-import { useParams } from 'react-router'
+import { useLocation, useParams } from 'react-router'
 
 import { useAdminReservation } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
-import { ADMIN_RESERVATIONS_PATH } from '@shared/config/routes'
+import { ADMIN_RESERVATIONS_PATH, readBackTo } from '@shared/config/routes'
 import { Breadcrumb, InlineAlert, RefreshStatus } from '@shared/ui'
 import { AdminReservationDetail } from '@widgets/admin/reservation-detail'
 
@@ -12,6 +12,11 @@ import * as styles from './AdminReservationDetailPage.css'
 export function AdminReservationDetailPage() {
   const { preorderId = '' } = useParams()
   const reservation = useAdminReservation(preorderId)
+  // 외부 예약 대조에서 들어왔으면 그 화면(고른 상품·탭 그대로)으로 돌아간다.
+  const backTo = readBackTo(useLocation().state) ?? {
+    label: '예약 현황',
+    to: ADMIN_RESERVATIONS_PATH,
+  }
 
   if (!reservation.data) {
     return (
@@ -22,7 +27,7 @@ export function AdminReservationDetailPage() {
             : '불러오는 중입니다.'}
           <Breadcrumb
             items={[
-              { label: '예약 현황으로 돌아가기', to: ADMIN_RESERVATIONS_PATH },
+              { label: `${backTo.label} 화면으로 돌아가기`, to: backTo.to },
             ]}
           />
         </div>
@@ -37,7 +42,7 @@ export function AdminReservationDetailPage() {
     <div className={styles.root}>
       <Breadcrumb
         items={[
-          { label: '예약 현황', to: ADMIN_RESERVATIONS_PATH },
+          { label: backTo.label, to: backTo.to },
           { label: reservation.data.productTitle },
         ]}
       />
