@@ -76,20 +76,23 @@ export const row = style([
 
 export const accent = style({ color: color.primary.subtle })
 
+// 카드가 좁으면 금액을 글자 중간에서 꺾지 않고 통째로 다음 줄 오른쪽으로 내린다.
 export const total = style([
   typography.body.defaultMedium,
   {
     display: 'flex',
+    flexWrap: 'wrap',
     alignItems: 'baseline',
     justifyContent: 'space-between',
     gap: spacing[8],
     marginTop: spacing[6],
+    whiteSpace: 'nowrap',
   },
 ])
 
 export const totalValue = style([
   typography.title.xlSemibold,
-  { fontWeight: fontWeight.bold },
+  { fontWeight: fontWeight.bold, marginLeft: 'auto' },
 ])
 
 export const note = style([

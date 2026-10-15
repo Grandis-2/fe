@@ -45,7 +45,13 @@ export function DaumPostcodeSearch({
 
   if (isDesktop) {
     return (
-      <Modal open={open} onClose={() => onOpenChange(false)} title="주소 검색">
+      // 다음 우편번호 화면이 흰 바탕이라 모달도 밝게 띄운다(모바일 바텀시트와 같은 색).
+      <Modal
+        theme="light"
+        open={open}
+        onClose={() => onOpenChange(false)}
+        title="주소 검색"
+      >
         <div className={styles.modalEmbed}>
           <div ref={containerRef} className={styles.embed} />
         </div>

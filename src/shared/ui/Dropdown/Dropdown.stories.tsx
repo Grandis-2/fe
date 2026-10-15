@@ -35,6 +35,19 @@ export const Open: Story = {
   },
 }
 
+/** 사용자 페이지(data-theme="dark") — 마이페이지 주문 내역의 기간 선택과 같은 small 크기 */
+export const Dark: Story = {
+  args: {
+    label: '기간',
+    options,
+    open: true,
+    value: 'GYEONGGI',
+    size: 'small',
+    width: '120px',
+  },
+  parameters: { dark: true },
+}
+
 /** 열림 상태를 안 넘기면 컴포넌트가 직접 들고 여닫는다 */
 export const Uncontrolled: Story = {
   args: { label: '지역 선택', options },

@@ -68,7 +68,8 @@ export const email = style([
   },
 ])
 
-// 좁은 화면에선 가로 탭 — 넘치면 옆으로 스크롤한다.
+// 좁은 화면에선 가로 밑줄 탭 — 넘치면 옆으로 스크롤한다. 바닥선은 inset 그림자로
+// 그려 선택된 탭의 밑줄(역시 inset)이 그 위에 겹쳐 보이게 한다.
 export const nav = style({
   display: 'flex',
   gap: spacing[4],
@@ -76,6 +77,14 @@ export const nav = style({
   scrollbarWidth: 'none',
   '@media': {
     [breakpoint.desktop]: { flexDirection: 'column', overflowX: 'visible' },
+    // Container 좌우 패딩(모바일 16px) 안에서 스크롤하면 탭이 화면 끝 전에 잘려 보인다 —
+    // 패딩만큼 밖으로 넓히고 같은 만큼 안쪽 여백을 줘, 글자 자리는 그대로 두고 화면 끝까지 스크롤되게 한다.
+    [breakpoint.mobile]: {
+      gap: 0,
+      marginInline: `calc(-1 * ${spacing[16]})`,
+      paddingInline: spacing[16],
+      boxShadow: `inset 0 -1px 0 ${color.border.subtle}`,
+    },
   },
 })
 
@@ -110,5 +119,46 @@ export const link = style([
         fontWeight: fontWeight.bold,
       },
     },
+    '@media': {
+      [breakpoint.mobile]: {
+        padding: `0 ${spacing[12]}`,
+        borderRadius: 0,
+        selectors: {
+          '&:hover': { background: 'transparent' },
+          '&[aria-current="page"], &[aria-current="page"]:hover': {
+            background: 'transparent',
+            boxShadow: `inset 0 -2px 0 ${color.primary.subtle}`,
+          },
+        },
+      },
+    },
   },
 ])
+
+// 프로필 줄 오른쪽 끝의 아이콘 버튼.
+export const logout = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  width: '36px',
+  height: '36px',
+  marginLeft: 'auto',
+  border: 'none',
+  borderRadius: '50%',
+  background: 'transparent',
+  color: color.text.tertiary,
+  cursor: 'pointer',
+  transition: [
+    `background-color ${motion.duration.fast} ${motion.easing.default}`,
+    `color ${motion.duration.fast} ${motion.easing.default}`,
+  ].join(', '),
+  selectors: {
+    '&:hover:not(:disabled)': {
+      background: color.background.surface,
+      color: color.text.primary,
+    },
+    // 로그아웃 요청 중 — 두 번 보내지 않게 막는다.
+    '&:disabled': { cursor: 'progress', opacity: 0.5 },
+  },
+})

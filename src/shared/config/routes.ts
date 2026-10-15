@@ -49,6 +49,15 @@ export const MYPAGE_TABS = [
   'draw',
 ] as const
 export type MypageTab = (typeof MYPAGE_TABS)[number]
+// 마이페이지 메뉴와 모바일 헤더 제목이 같은 이름을 쓴다.
+export const MYPAGE_TAB_LABELS: Record<MypageTab, string> = {
+  history: '주문 내역',
+  'preorder-check': '예약 내역',
+  draw: '럭키드로우',
+  cart: '장바구니',
+  'address-manage': '배송지 관리',
+  reviews: '내 리뷰',
+}
 
 export const MYPAGE_PATH = '/mypage'
 export const mypagePath = (tab: MypageTab) => `${MYPAGE_PATH}?state=${tab}`

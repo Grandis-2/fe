@@ -1,20 +1,29 @@
-import { Bell, CircleUser, LogOut, ShoppingCart } from 'lucide-react'
+import {
+  Bell,
+  ChevronLeft,
+  CircleUser,
+  LogOut,
+  ShoppingCart,
+} from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router'
 
-import { logout } from '@entities/auth'
+import { logout, useSession } from '@entities/auth'
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
 import { useMyReservations } from '@entities/preorder'
-import { openLoginModal } from '@features/login'
+import { KAKAO_CALLBACK_PATH, openLoginModal } from '@features/login'
+import { getErrorMessage } from '@shared/api/client'
 import {
   ADMIN_HOME_PATH,
   ADMIN_LOGIN_PATH,
   HOME_PATH,
   mypagePath,
 } from '@shared/config/routes'
+import { showToast } from '@shared/model/toastStore'
 import { Button, Logo } from '@shared/ui'
 import { CategoryNav } from '@widgets/category-nav'
 
+import { getMobileTitle } from '../lib/getMobileTitle'
 import { useHeaderTheme } from '../lib/useHeaderTheme'
 
 import * as styles from './Header.css'
@@ -22,19 +31,27 @@ import { HeaderNotification } from './HeaderNotification'
 import { HeaderSearch } from './HeaderSearch'
 
 export type HeaderProps = {
-  isMember?: boolean
   onSearchClick?: () => void
   onNotificationClick?: () => void
   className?: string
 }
 
 export function Header({
-  isMember = false,
   onSearchClick,
   onNotificationClick,
   className,
 }: HeaderProps) {
-  const { pathname } = useLocation()
+  const { pathname, search, key } = useLocation()
+  const navigate = useNavigate()
+  // 모바일은 홈을 뺀 화면에서 로고 대신 '< 제목'을 띄운다 — 데스크톱은 그대로 로고.
+  const mobileTitle = getMobileTitle(pathname, search)
+  // 주소로 바로 들어와 돌아갈 곳이 없으면(첫 진입의 key는 'default') 홈으로 보낸다.
+  const goBack = () => (key === 'default' ? navigate(HOME_PATH) : navigate(-1))
+  // 카카오 인증만 마친 가입 진행 중 사용자는 세션이 있어도 회원이 아니다 — isLoggedIn만 본다.
+  const { isLoggedIn: isMember, isAuthReady } = useSession()
+  // 새로고침 직후 세션 복구 중이거나 카카오 콜백에서 세션을 받는 중엔 회원인지 아직 모른다 —
+  // 로그인 버튼을 잠깐 보였다가 회원 아이콘으로 바꾸지 않도록 둘 다 그리지 않는다.
+  const isSessionUnknown = !isAuthReady || pathname === KAKAO_CALLBACK_PATH
   const isMainPage = pathname === HOME_PATH
   // 어드민은 쇼핑 내비게이션이 필요 없다 — 로고/이동 경로를 바꾸고 알림만 남긴다.
   const isAdminPage = pathname.startsWith(ADMIN_HOME_PATH)
@@ -46,14 +63,18 @@ export function Header({
   // 어드민을 뺀 헤더는 늘 어두운 디자인이다. 뒤가 어두운 구간이면 바탕만 투명하게 둔다.
   const isDark = !isAdminPage
   const { headerRef, isOnDark } = useHeaderTheme(pathname)
-  const navigate = useNavigate()
 
-  // 세션을 지우고 로그인 화면으로. 서버 응답이 실패해도 로컬 세션은 비워지므로
-  // (logout의 finally) 어느 쪽이든 보낸다 — 관리자 화면에 남겨 두면 다음 요청마다
-  // 401을 맞는다. 그래서 실패를 잡는 이유가 '문구 표시'가 아니라 '화면 이동'이다.
+  // 서버가 세션을 지운 뒤에만 로그인 화면으로 간다 — 실패하면 세션이 남아 있으니
+  // 관리자 화면에 두고 다시 누르게 한다(마이페이지 로그아웃과 같은 규칙).
   const handleLogout = async () => {
-    await logout().catch(() => undefined)
-    navigate(ADMIN_LOGIN_PATH, { replace: true })
+    try {
+      await logout()
+      navigate(ADMIN_LOGIN_PATH, { replace: true })
+    } catch (caught) {
+      showToast(
+        getErrorMessage(caught, '로그아웃하지 못했어요. 다시 시도해 주세요.'),
+      )
+    }
   }
   // 개수 배지는 회원 쇼핑 화면에서만 — 어드민 종 아이콘은 관리자 알림이라 대상이 다르다.
   const showCounts = isMember && !isAdminPage
@@ -98,9 +119,26 @@ export function Header({
     >
       <div className={styles.content}>
         <div className={styles.leftGroup}>
+          {mobileTitle && (
+            <div className={[styles.mobileTitle, styles.mobileOnly].join(' ')}>
+              <button
+                type="button"
+                className={styles.iconButton}
+                aria-label="뒤로 가기"
+                onClick={goBack}
+              >
+                <ChevronLeft className={styles.icon} aria-hidden="true" />
+              </button>
+              <span className={styles.mobileTitleText}>{mobileTitle}</span>
+            </div>
+          )}
           <Link
             to={isAdminPage ? ADMIN_HOME_PATH : HOME_PATH}
-            className={[styles.logo, isMember && !isDark && styles.logoMember]
+            className={[
+              styles.logo,
+              isMember && !isDark && styles.logoMember,
+              mobileTitle && styles.desktopOnly,
+            ]
               .filter(Boolean)
               .join(' ')}
           >
@@ -177,16 +215,18 @@ export function Header({
                   </Link>
                 </>
               ) : (
-                // 흰 바탕이라 메인 배너(어두운 구간) 위에서도 그대로 보인다.
-                <Button
-                  variant="outline"
-                  size="small"
-                  rounded
-                  className={styles.desktopOnly}
-                  onClick={() => openLoginModal()}
-                >
-                  로그인
-                </Button>
+                !isSessionUnknown && (
+                  // 흰 바탕이라 메인 배너(어두운 구간) 위에서도 그대로 보인다.
+                  <Button
+                    variant="outline"
+                    size="small"
+                    rounded
+                    className={styles.desktopOnly}
+                    onClick={() => openLoginModal()}
+                  >
+                    로그인
+                  </Button>
+                )
               )}
             </>
           )}

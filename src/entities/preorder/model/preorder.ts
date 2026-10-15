@@ -14,21 +14,24 @@ export type PreorderModel = {
 }
 
 // 날짜는 모두 'YYYY-MM-DD'(로컬 날짜). 상태(진행 중·오픈 예정·마감)는 날짜로 계산한다.
+// 사전예약 상품 하나(catalog의 saleMode=PREORDER)가 사전예약 하나다 — toPreorder 참고.
 export type Preorder = {
   id: string
+  /** 상품 사진이 없으면 빈 문자열 — 화면은 사진 없이 그린다. */
   imageSrc: string
   imageAlt?: string
   title: string
-  /** 카드에 한 줄로 보이는 대표 혜택 */
-  benefit: string
+  /** 카드에 한 줄로 보이는 대표 혜택. 혜택 API가 없어 지금은 비어 온다. */
+  benefit?: string
   opensAt: string
   /** 'HH:mm' — 오픈일의 오픈 시각(카운트다운 기준) */
   openTime: string
   /** 이 날까지 예약할 수 있다. */
   closesAt: string
-  /** 결제·물량 배정이 끝나는 날(마감 다음 날부터 시작) */
-  paymentEndsAt: string
-  releaseAt: string
+  /** 결제·물량 배정이 끝나는 날(마감 다음 날부터 시작). 명세에 없어 비어 오면 일정에서 뺀다. */
+  paymentEndsAt?: string
+  /** 1차 배송 시작 예정일(배송 차수 API). 차수가 없으면 비어 온다. */
+  releaseAt?: string
   benefits: PreorderBenefit[]
   models: PreorderModel[]
 }

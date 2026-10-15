@@ -21,7 +21,7 @@ import { DRAW_PATH, drawPath, mypagePath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, Button, InlineAlert, SelectButton } from '@shared/ui'
+import { ActionButton, Button, Chip, InlineAlert } from '@shared/ui'
 
 import * as styles from './MypageDraw.css'
 
@@ -74,17 +74,14 @@ export function MypageDraw() {
 
       <div className={styles.chips}>
         {FILTERS.map((name) => (
-          <SelectButton
+          <Chip
             key={name}
-            className={styles.chip}
             selected={name === filter}
+            count={name === '당첨' ? won.length : entries.length}
             onClick={() => setFilter(name)}
           >
-            {name}{' '}
-            <span className={styles.count}>
-              {name === '당첨' ? won.length : entries.length}
-            </span>
-          </SelectButton>
+            {name}
+          </Chip>
         ))}
       </div>
 

@@ -5,6 +5,7 @@ import {
   color,
   motion,
   lineClamp,
+  skeleton,
   spacing,
   typography,
 } from '@shared/config/theme'
@@ -12,8 +13,6 @@ import {
   fontSize,
   fontWeight,
 } from '@shared/config/theme/tokens/typography/base'
-
-import { skeleton } from '../ProductTile/ProductTile.css'
 
 // 모바일은 검색 페이지처럼 2열로 놓이는 작은 카드라서(폭 ≈ 170px) 모서리·여백·글자를 줄인다.
 // 데스크톱 값은 그대로 두고 아래 '@media'의 mobile 블록에서만 덮어쓴다.
@@ -57,14 +56,12 @@ export const media = style({
 // height:100%를 Slider(Swiper)까지 퍼센트로 내려보내면 aspect-ratio(media) + flex(swiper-wrapper) 조합에서
 // 순환 계산이 발생해 크롬이 LayoutUnit 상한값(약 33554432px)으로 튀는 버그가 있었다 — absolute + inset:0으로
 // media의 padding box에 기하학적으로 고정시켜 퍼센트 순환 자체를 피한다.
+// 이미지 칸의 왼쪽 위 모서리에 붙여 아래 이름·가격과 왼쪽 선을 맞춘다.
 export const badge = style({
   position: 'absolute',
-  top: spacing[12],
-  left: spacing[12],
+  top: 0,
+  left: 0,
   zIndex: 1,
-  '@media': {
-    [breakpoint.mobile]: { top: spacing[8], left: spacing[8] },
-  },
 })
 
 export const sliderFill = style({
@@ -72,13 +69,16 @@ export const sliderFill = style({
   inset: 0,
 })
 
-// 아래 페이지네이션 점(Slider)이 이미지에 겹치지 않게 아래쪽을 더 비운다.
+// 위는 사전예약 태그 높이만큼, 아래는 페이지네이션 점(Slider)만큼 비워 둘에 이미지가 겹치지 않게 한다.
 export const image = style({
   position: 'absolute',
-  inset: `${spacing[12]} ${spacing[12]} ${spacing[30]}`,
-  width: `calc(100% - ${spacing[12]} * 2)`,
-  height: `calc(100% - ${spacing[12]} - ${spacing[30]})`,
+  inset: `${spacing[24]} 0 ${spacing[30]}`,
+  width: '100%',
+  height: `calc(100% - ${spacing[24]} - ${spacing[30]})`,
   objectFit: 'contain',
+  // ponytail: 상품 PNG에 투명 여백이 좌우 20%씩 있어 키워서 여백을 칸 밖으로 잘라낸다(랭킹 카드와 같은 이유) —
+  // 여백 없이 꽉 찬 이미지가 들어오면 가장자리가 잘리니 그때는 scale을 뺀다.
+  transform: 'scale(1.4)',
 })
 
 export const content = style({

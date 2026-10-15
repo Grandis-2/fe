@@ -6,7 +6,6 @@ import { onDark, spacing, typography } from '@shared/config/theme'
 // 글자·선은 onDark로 흰색 투명도만 바꾼다.
 export const label = onDark(64)
 export const divider = `1px solid ${onDark(8)}`
-export const chipBorder = `1px solid ${onDark(18)}`
 export const cardBorder = `1px solid ${onDark(10)}`
 
 export const section = style({

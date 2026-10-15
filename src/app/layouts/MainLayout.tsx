@@ -11,11 +11,15 @@ import {
   SEARCH_RESULTS_PATH,
   SIGNUP_PATH,
 } from '@shared/config/routes'
+import { Footer } from '@widgets/footer'
 
+import { isCallbackPath } from './callbackPaths'
 import * as styles from './MainLayout.css'
 
 export function MainLayout() {
   const { pathname } = useLocation()
+  // 콜백 화면은 헤더·탭바가 없다(RootLayout) — 그 높이를 빼지 않고 화면을 다 채운다.
+  const isCallback = isCallbackPath(pathname)
   // 메인, 사전예약·럭키드로우 목록·상세, 상품 상세, 검색(카테고리·키워드), 결제, 마이페이지는 어두운 페이지다 — 모바일 하단 탭바 여백까지 같은 색으로 채운다.
   const isDarkBackground =
     pathname === HOME_PATH ||
@@ -27,7 +31,8 @@ export function MainLayout() {
     pathname === SEARCH_PATH ||
     pathname === SEARCH_RESULTS_PATH ||
     pathname === PAYMENT_PATH ||
-    pathname === MYPAGE_PATH
+    pathname === MYPAGE_PATH ||
+    isCallback
   // 회원가입은 화면에 고정된 배경 레이어(z-index -1)를 쓴다 — 여기서 바탕을 칠하면 그 위를 덮는다.
   const isTransparentBackground = pathname === SIGNUP_PATH
   const isBaseBackground =
@@ -44,11 +49,15 @@ export function MainLayout() {
         isBaseBackground && styles.baseBackground,
         isDarkBackground && styles.darkBackground,
         isTransparentBackground && styles.transparentBackground,
+        isCallback && styles.withoutHeader,
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      <Outlet />
+      <div className={styles.content}>
+        <Outlet />
+      </div>
+      {!isCallback && <Footer />}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
+import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
 import { queryPolicy } from '@shared/api/queryPolicy'
 
 import { getDrawPhase } from '../lib/drawSchedule'
@@ -15,8 +16,6 @@ import { enterDraw, getDraw, getDraws, getMyDrawEntry } from './draw'
 const AUTHORIZING_POLL_MS = 3_000
 // 마감 뒤 추첨은 30초 뒤부터 서버가 한다 — 결과가 나올 때까지 30초 이상 간격으로 묻는다(명세).
 const RESULT_POLL_MS = 30_000
-// ponytail: 목록은 첫 쪽(최대 100건)만 받는다 — 회차가 그보다 늘면 page를 이어 받는 훅으로 바꾼다.
-const FIRST_PAGE = { size: 100 }
 
 export const drawKeys = {
   all: ['draws'] as const,
@@ -26,10 +25,15 @@ export const drawKeys = {
 }
 
 // 회차는 한 번 만들면 값이 바뀌지 않아 catalog 정책이다. 새 회차가 열리는 건 몇 분 늦어도 된다.
+// 목록·상태별 건수가 전체 회차 기준이라 쪽을 끝까지 이어 받는다.
 export const useDraws = () =>
   useQuery({
     queryKey: drawKeys.list,
-    queryFn: ({ signal }) => getDraws(FIRST_PAGE, signal),
+    queryFn: async ({ signal }) => ({
+      items: await fetchAllPages((page) =>
+        getDraws({ page, size: PAGE_SIZE_MAX }, signal),
+      ),
+    }),
     ...queryPolicy.catalog,
   })
 

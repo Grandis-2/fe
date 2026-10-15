@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css'
+import { globalStyle, style } from '@vanilla-extract/css'
 
 import {
   fontFamily,
@@ -9,6 +9,10 @@ import {
 } from './base'
 
 const face = { fontFamily: fontFamily.pretendard }
+
+// 모든 페이지의 기본 서체 — typography 토큰을 안 쓴 글자(InlineAlert big 제목 등)가 브라우저
+// 기본값(명조)으로 떨어지지 않게 한다. 색상 쪽 body 기본값(color/semantic.css.ts)과 짝.
+globalStyle('body', face)
 
 export const title = {
   xxlSemibold: style({

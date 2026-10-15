@@ -81,9 +81,13 @@ export function ProductCard({
           <Link to={productPath(productId)} className={styles.name}>
             {name}
           </Link>
-          <div className={[typography.body.sub, styles.modelNumber].join(' ')}>
-            {modelNumber}
-          </div>
+          {modelNumber && (
+            <div
+              className={[typography.body.sub, styles.modelNumber].join(' ')}
+            >
+              {modelNumber}
+            </div>
+          )}
         </div>
         <ProductColorSwatches
           colorName={colorName}

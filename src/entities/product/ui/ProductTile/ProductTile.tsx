@@ -56,7 +56,7 @@ export function ProductTile({
 export function ProductTileSkeleton() {
   return (
     <div className={styles.tile} aria-hidden>
-      <div className={[styles.media, styles.skeleton].join(' ')} />
+      <div className={[styles.media, styles.mediaSkeleton].join(' ')} />
       <div className={styles.lineSkeleton} style={{ width: '70%' }} />
       <div className={styles.lineSkeleton} style={{ width: '40%' }} />
     </div>

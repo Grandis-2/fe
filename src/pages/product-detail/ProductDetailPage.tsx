@@ -147,7 +147,7 @@ export function ProductDetailPage() {
     activeTab,
     handleTabChange,
     registerPanelRef,
-  } = useProductDetailScroll(productId)
+  } = useProductDetailScroll(productId, product !== undefined)
 
   if (!product) {
     return (
@@ -240,11 +240,15 @@ export function ProductDetailPage() {
               rows={[
                 { label: '상품 금액', value: formatWon(totalPrice) },
                 { label: '수량', value: `${quantity}개` },
-                {
-                  label: `사전예약 혜택 (${PREORDER_BENEFIT_RATE * 100}%)`,
-                  value: `-${formatWon(benefitAmount)}`,
-                  accent: true,
-                },
+                ...(isPreorder
+                  ? [
+                      {
+                        label: `사전예약 혜택 (${PREORDER_BENEFIT_RATE * 100}%)`,
+                        value: `-${formatWon(benefitAmount)}`,
+                        accent: true,
+                      },
+                    ]
+                  : []),
               ]}
               total={{
                 label: '총 결제 금액',
@@ -260,10 +264,12 @@ export function ProductDetailPage() {
                   <ActionButton
                     variant="cart"
                     fullWidth
+                    className={styles.cartButton}
+                    aria-label="장바구니"
                     onClick={handleAddToCart}
                     disabled={!isCheckoutReady || isAdding}
                   >
-                    장바구니
+                    <span className={styles.cartLabel}>장바구니</span>
                   </ActionButton>
                 )}
                 <ActionButton
@@ -347,10 +353,6 @@ export function ProductDetailPage() {
             </section>
           ))}
       </div>
-      <div
-        className={styles.orderBarSpacer}
-        style={{ height: orderBarHeight }}
-      />
     </div>
   )
 }
