@@ -277,7 +277,10 @@ export function MypagePreorder() {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>
           알림 신청한 사전예약{' '}
-          <span className={styles.count}>{openAlerts.length}건</span>
+          {/* 끈 알림도 다시 켤 수 있게 목록엔 남기고, 건수는 켜진 것만 센다. */}
+          <span className={styles.count}>
+            {openAlerts.filter((alert) => !alertOffIds.has(alert.id)).length}건
+          </span>
         </h2>
         <ul className={styles.alerts}>
           {openAlerts.map((alert) => {
