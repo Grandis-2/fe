@@ -1,7 +1,4 @@
-import type { AdminProductDetailModel } from './types'
-
-/** 서버가 오픈 직전 판매 상태 변경을 막는 구간(오픈 3분 전부터) */
-const LOCK_LEAD_MS = 3 * 60 * 1000
+import { PREORDER_LOCK_LEAD_MS, type AdminProductDetailModel } from './types'
 
 /**
  * 지금 이 상품에 할 수 있는 판매 상태 동작. 서버 규칙(PATCH .../sale-status)을 그대로
@@ -31,7 +28,7 @@ export function saleStatusActionOf(
   }
 
   if (campaign.status === 'BEFORE_OPEN') {
-    if (now < Date.parse(campaign.opensAt) - LOCK_LEAD_MS) {
+    if (now < Date.parse(campaign.opensAt) - PREORDER_LOCK_LEAD_MS) {
       return { kind: status === 'ACTIVE' ? 'pause' : 'resume' }
     }
     return {

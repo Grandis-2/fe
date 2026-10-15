@@ -196,6 +196,12 @@ export const DETAIL_SECTIONS = {
 
 export type DetailImageField = keyof typeof DETAIL_SECTIONS
 
+/**
+ * 사전예약은 오픈 3분 전부터 상품 정보·옵션·판매 상태를 바꿀 수 없다(서버 409).
+ * 수정 잠금(edit.ts)과 판매 상태 동작(saleStatus.ts)이 같은 구간을 쓴다.
+ */
+export const PREORDER_LOCK_LEAD_MS = 3 * 60 * 1000
+
 /** 사전 예약 상품인지 — 목록·상세가 모두 saleMode로 알려 준다 */
 export const isPreorder = (product: { saleMode: SaleMode }) =>
   product.saleMode === 'PREORDER'

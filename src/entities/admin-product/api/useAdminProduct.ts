@@ -13,6 +13,7 @@ import type {
   ProductRegistrationRequest,
   SaleStatusChangeRequest,
 } from '@shared/api/types'
+import { delay } from '@shared/lib/delay'
 
 import { toRegistrationRequest } from '../model/registration'
 
@@ -67,8 +68,6 @@ export const useAdminProductStock = (productId: string) =>
     select: (response) => response.items,
     ...queryPolicy.live,
   })
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // 같은 키 요청이 처리 중(409 REGISTRATION_IN_PROGRESS)이면 잠시 뒤 같은 키로 다시
 // 보낸다 — 명세가 그렇게 하라고 한다. 다른 실패는 그대로 던진다.

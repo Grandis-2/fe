@@ -11,7 +11,6 @@ import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
 import type { AdminProductTab } from '@shared/config/routes'
 import { Breadcrumb, InlineAlert, SegmentedTabs } from '@shared/ui'
-import { AdminDispatchWindows } from '@widgets/admin/dispatch-windows'
 import {
   AdminProductActions,
   useProductSaleStatus,
@@ -19,6 +18,7 @@ import {
 } from '@widgets/admin/product-actions'
 import { AdminProductEditForm } from '@widgets/admin/product-form'
 import { AdminProductStockTable } from '@widgets/admin/product-stock'
+import { AdminShipmentBatches } from '@widgets/admin/shipment-batches'
 
 import * as styles from './AdminProductDetailPage.css'
 
@@ -134,11 +134,11 @@ export function AdminProductDetailPage() {
           productId={productId}
           onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
           onPreview={() => navigate(productPath(productId))}
-          onEditDispatchWindow={() => setTab('shipping')}
+          onEditShipmentBatches={() => setTab('shipping')}
         />
       )}
 
-      {tab === 'shipping' && <AdminDispatchWindows productId={productId} />}
+      {tab === 'shipping' && <AdminShipmentBatches productId={productId} />}
     </div>
   )
 }

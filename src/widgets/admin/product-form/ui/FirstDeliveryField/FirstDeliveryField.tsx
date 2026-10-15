@@ -10,7 +10,7 @@ export type FirstDeliveryFieldProps = {
   /** 등록할 때만 고를 수 있다 — 아래 설명 참고 */
   editable: boolean
   /** 배송 구간 설정으로 보낸다. 안 주면 버튼이 안 나온다 */
-  onEditDispatchWindow?: () => void
+  onEditShipmentBatches?: () => void
 }
 
 /**
@@ -27,7 +27,7 @@ export function FirstDeliveryField({
   value,
   onChange,
   editable,
-  onEditDispatchWindow,
+  onEditShipmentBatches,
 }: FirstDeliveryFieldProps) {
   return (
     <div className={styles.root}>
@@ -45,13 +45,13 @@ export function FirstDeliveryField({
           <span className={styles.hint}>
             등록 후에는 배송 구간 설정 탭에서 배송 차수 수정이 가능합니다.
           </span>
-          {onEditDispatchWindow && (
+          {onEditShipmentBatches && (
             <Button
               type="button"
               size="small"
               variant="solid"
               color="primary"
-              onClick={onEditDispatchWindow}
+              onClick={onEditShipmentBatches}
             >
               배송 구간 설정으로 이동
             </Button>

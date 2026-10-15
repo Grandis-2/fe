@@ -1,5 +1,6 @@
 import { ApiRequestError, configureApiAuth } from '@shared/api/client'
 import type { Session } from '@shared/api/types'
+import { delay } from '@shared/lib/delay'
 
 import { refreshSession } from '../api/auth'
 
@@ -13,8 +14,6 @@ const LOCK_NAME = 'nova-auth-refresh'
 const CROSS_TAB_FRESH_WINDOW_MS = 5000
 // retryable 401(서버 일시 장애)을 다시 보내기까지 기다리는 시간.
 const RETRY_DELAY_MS = 1000
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 type BroadcastMessage =
   { type: 'session-updated'; session: Session } | { type: 'session-cleared' }

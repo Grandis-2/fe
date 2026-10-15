@@ -54,7 +54,7 @@ export type AdminProductFormProps = {
    * 배송 구간 설정으로 보낸다. 수정 화면에서만 주며, 주지 않으면 버튼이 안 나온다 —
    * 같은 페이지의 탭 전환이라 어디로 갈지는 페이지가 정한다.
    */
-  onEditDispatchWindow?: () => void
+  onEditShipmentBatches?: () => void
   /**
    * 수정 화면에서 서버에 이미 있는 옵션 종류(축 키)·값 id. 등록 뒤에는 축을 만들거나
    * 지울 수 없고 있던 값도 지울 수 없어서(지우는 API가 없다) 그 칸들의 삭제를 막는다.
@@ -126,7 +126,7 @@ export function AdminProductForm({
   onCancel,
   onPreview,
   submitting = false,
-  onEditDispatchWindow,
+  onEditShipmentBatches,
   existingIds,
   lockReason,
   validate,
@@ -300,7 +300,7 @@ export function AdminProductForm({
                     editable={mode === 'create'}
                     value={value.firstDelivery}
                     onChange={(firstDelivery) => patch({ firstDelivery })}
-                    onEditDispatchWindow={onEditDispatchWindow}
+                    onEditShipmentBatches={onEditShipmentBatches}
                   />
                   <FieldError message={issueOf('firstDelivery')} />
                 </div>

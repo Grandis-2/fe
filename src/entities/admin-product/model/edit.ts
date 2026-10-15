@@ -16,6 +16,7 @@ import {
   COLOR_GROUP_CODE,
   comparableValue,
   isStorageValue,
+  PREORDER_LOCK_LEAD_MS,
   type AdminProductDetailModel,
 } from './types'
 
@@ -46,8 +47,6 @@ export const editSectionLabel: Record<EditSection, string> = {
  * 잠금
  * ------------------------------------------------------------------ */
 
-const LOCK_LEAD_MS = 3 * 60 * 1000
-
 /**
  * 수정할 수 없는 이유. 수정할 수 있으면 null.
  *
@@ -64,7 +63,7 @@ export function editLockReason(
 
   const locked =
     campaign.status !== 'BEFORE_OPEN' ||
-    now >= Date.parse(campaign.opensAt) - LOCK_LEAD_MS
+    now >= Date.parse(campaign.opensAt) - PREORDER_LOCK_LEAD_MS
   return locked
     ? '사전예약은 오픈 3분 전부터 상품 내용을 바꿀 수 없습니다. 공개 전환과 판매 중지는 오른쪽 위 ⋮ 메뉴에서 합니다.'
     : null

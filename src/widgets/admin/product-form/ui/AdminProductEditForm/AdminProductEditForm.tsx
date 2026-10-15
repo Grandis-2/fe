@@ -24,7 +24,7 @@ export type AdminProductEditFormProps = {
   onCancel: () => void
   onPreview: () => void
   /** 배송 구간 설정 탭으로 보낸다 — 1차 배송일은 거기서 고친다 */
-  onEditDispatchWindow?: () => void
+  onEditShipmentBatches?: () => void
 }
 
 /**
@@ -41,7 +41,7 @@ export function AdminProductEditForm({
   productId,
   onCancel,
   onPreview,
-  onEditDispatchWindow,
+  onEditShipmentBatches,
 }: AdminProductEditFormProps) {
   const product = useAdminProduct(productId)
   const stock = useAdminProductStock(productId)
@@ -143,7 +143,7 @@ export function AdminProductEditForm({
         }}
         onCancel={onCancel}
         onPreview={onPreview}
-        onEditDispatchWindow={onEditDispatchWindow}
+        onEditShipmentBatches={onEditShipmentBatches}
       />
     </div>
   )

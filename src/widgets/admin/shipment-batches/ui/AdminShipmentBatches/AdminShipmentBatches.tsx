@@ -20,9 +20,9 @@ import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { Button, DateRangeField, InlineAlert, Input, Table } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
-import * as styles from './AdminDispatchWindows.css'
+import * as styles from './AdminShipmentBatches.css'
 
-export type AdminDispatchWindowsProps = {
+export type AdminShipmentBatchesProps = {
   productId: string
 }
 
@@ -38,7 +38,7 @@ const OPEN_END_NOTE = '마지막 차수는 그 뒤 순번 전부입니다.'
  * 저장은 전체 교체다. 오픈 이후에는 잠긴다 — 이미 배정된 순번의 배송 약속을 뒤에서
  * 바꾸면 안 되고, 서버도 409로 막는다.
  */
-export function AdminDispatchWindows({ productId }: AdminDispatchWindowsProps) {
+export function AdminShipmentBatches({ productId }: AdminShipmentBatchesProps) {
   const product = useAdminProduct(productId)
   const shipmentBatches = useAdminShipmentBatches(productId)
   const save = useSaveAdminShipmentBatches(productId)

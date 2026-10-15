@@ -17,7 +17,7 @@ const meta = {
     onSubmit: fn(),
     onCancel: fn(),
     onPreview: fn(),
-    onEditDispatchWindow: fn(),
+    onEditShipmentBatches: fn(),
   },
 } satisfies Meta<typeof AdminProductForm>
 
@@ -78,7 +78,7 @@ export const Edit: Story = {
     await userEvent.click(
       canvas.getByRole('button', { name: '배송 구간 설정으로 이동' }),
     )
-    await expect(args.onEditDispatchWindow).toHaveBeenCalled()
+    await expect(args.onEditShipmentBatches).toHaveBeenCalled()
 
     await userEvent.click(canvas.getByRole('button', { name: '취소' }))
     await expect(args.onCancel).toHaveBeenCalled()

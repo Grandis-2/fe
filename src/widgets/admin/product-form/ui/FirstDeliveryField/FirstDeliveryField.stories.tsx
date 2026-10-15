@@ -7,7 +7,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: FirstDeliveryField,
   tags: ['ai-generated'],
-  args: { onChange: fn(), onEditDispatchWindow: fn() },
+  args: { onChange: fn(), onEditShipmentBatches: fn() },
 } satisfies Meta<typeof FirstDeliveryField>
 
 export default meta
@@ -63,13 +63,13 @@ export const Locked: Story = {
     await userEvent.click(
       canvas.getByRole('button', { name: '배송 구간 설정으로 이동' }),
     )
-    await expect(args.onEditDispatchWindow).toHaveBeenCalled()
+    await expect(args.onEditShipmentBatches).toHaveBeenCalled()
   },
 }
 
 /** 이동 버튼은 콜백을 받았을 때만 나온다 — 등록 화면 등에서는 갈 곳이 없다. */
 export const LockedWithoutLink: Story = {
-  args: { editable: false, value: EMPTY, onEditDispatchWindow: undefined },
+  args: { editable: false, value: EMPTY, onEditShipmentBatches: undefined },
   play: async ({ canvas }) => {
     await expect(canvas.getByText(/배송 차수 수정이/)).toBeVisible()
     await expect(canvas.queryAllByRole('button')).toHaveLength(0)
