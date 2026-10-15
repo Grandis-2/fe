@@ -1,4 +1,4 @@
-import { HttpResponse, http } from 'msw'
+import { HttpResponse, http, type JsonBodyType, RequestHandler } from 'msw'
 
 import { reservationStore } from '../fixtures/admin-reservation'
 import { url } from '../url'
@@ -7,8 +7,12 @@ import type {
   ExternalErrorResponse,
   ExternalLedgerPage,
   ExternalLedgerRow,
+  MockConfig,
+  MockConfigUpdate,
+  MockFaultRequest,
+  MockFaultResponse,
+  MockResetResponse,
 } from '../../types'
-import type { RequestHandler } from 'msw'
 
 /*
  * 외부 예약 시스템(Mock 서버) 원장 목업. 우리 예약 목에서 만들되, 대조 화면에서 종류별
@@ -17,15 +21,74 @@ import type { RequestHandler } from 'msw'
 const ORPHAN_KEY = '0f0e0d0c-4a5b-4c7d-8e9f-00000000dead'
 
 // 성공·실패 응답 모양이 달라 핸들러의 응답 타입을 합쳐 둔다.
-type LedgerResponse = ExternalLedgerPage | ExternalErrorResponse
+type Reply<TSuccess extends JsonBodyType> = TSuccess | ExternalErrorResponse
 
-const invalid = (message: string) =>
-  HttpResponse.json<LedgerResponse>(
+const invalid = <TSuccess extends JsonBodyType>(message: string) =>
+  HttpResponse.json<Reply<TSuccess>>(
     { errorCode: 'INVALID_REQUEST', errorMessage: message },
     { status: 400 },
   )
 
+// ponytail: 메모리 상태라 새로고침하면 설정·초기화가 처음으로 돌아간다(실서버는 재기동 때).
+const DEFAULT_CONFIG: MockConfig = {
+  registerLatencyMs: 500,
+  latencyJitter: 0.4,
+  latencyTailRate: 0,
+  latencyTailMinMs: 0,
+  latencyTailMaxMs: 0,
+  bodyLatencyMs: 500,
+  failureRate: 0.05,
+  failureMode: 'HTTP_5XX',
+  mixedResponses: [],
+  configVersion: 0,
+  appliedAt: new Date().toISOString(),
+  timeoutHoldMs: 7000,
+  workerReadTimeoutMs: 5000,
+}
+let config: MockConfig = DEFAULT_CONFIG
+// 초기화하면 원장이 빈다 — 목은 우리 예약에서 원장을 만들어서, 초기화 뒤엔 비워 둔다.
+let ledgerCleared = false
+
+const UPDATABLE = new Set<string>([
+  'registerLatencyMs',
+  'failureRate',
+  'failureMode',
+  'latencyTailRate',
+  'latencyTailMinMs',
+  'latencyTailMaxMs',
+  'mixedResponses',
+])
+
+/** 명세의 입력 규칙 중 화면에서 걸릴 만한 것만 본다. 어기면 그 이유를, 맞으면 null */
+function violation(body: Partial<MockConfigUpdate> & Record<string, unknown>) {
+  const unknown = Object.keys(body).find((key) => !UPDATABLE.has(key))
+  if (unknown) return `알 수 없는 필드입니다: ${unknown}`
+  const { registerLatencyMs: latency, failureRate } = body
+  if (typeof latency !== 'number' || latency < 0 || latency > 60000) {
+    return 'registerLatencyMs 는 0~60000 입니다.'
+  }
+  if (typeof failureRate !== 'number' || failureRate < 0 || failureRate > 1) {
+    return 'failureRate 는 0~1 입니다.'
+  }
+  const tail = [
+    body.latencyTailRate,
+    body.latencyTailMinMs,
+    body.latencyTailMaxMs,
+  ]
+  const given = tail.filter((value) => value !== undefined).length
+  if (given !== 0 && given !== 3) return '꼬리 세 칸은 함께 보내야 합니다.'
+  if (given === 3 && body.latencyTailMinMs! > body.latencyTailMaxMs!) {
+    return '꼬리 최소는 최대 이하입니다.'
+  }
+  if (body.mixedResponses && body.failureMode !== 'MIXED') {
+    return 'mixedResponses 는 MIXED 일 때만 보냅니다.'
+  }
+  if (body.mixedResponses?.length === 0) return 'mixedResponses 가 비었습니다.'
+  return null
+}
+
 function buildLedger(): ExternalLedgerRow[] {
+  if (ledgerCleared) return []
   const registered = reservationStore.filter(
     (item) => item.status === 'REGISTERED' || item.status === 'RESERVED',
   )
@@ -95,10 +158,13 @@ export const externalReservationHandlers: RequestHandler[] = [
     const unknown = [...query.keys()].find(
       (key) => key !== 'cursor' && key !== 'size',
     )
-    if (unknown) return invalid(`알 수 없는 파라미터입니다: ${unknown}`)
+    if (unknown)
+      return invalid<ExternalLedgerPage>(
+        `알 수 없는 파라미터입니다: ${unknown}`,
+      )
     const size = Number(query.get('size') ?? 500)
     if (!Number.isInteger(size) || size < 1 || size > 1000) {
-      return invalid('size 는 1~1000 정수입니다.')
+      return invalid<ExternalLedgerPage>('size 는 1~1000 정수입니다.')
     }
 
     const cursor = query.get('cursor')
@@ -106,10 +172,91 @@ export const externalReservationHandlers: RequestHandler[] = [
       (row) => !cursor || row.externalKey > cursor,
     )
     const items = rest.slice(0, size)
-    return HttpResponse.json<LedgerResponse>({
+    return HttpResponse.json<Reply<ExternalLedgerPage>>({
       items,
       nextCursor:
         rest.length > size ? items[items.length - 1].externalKey : null,
     })
+  }),
+
+  http.get(url('/external/config'), () => HttpResponse.json(config)),
+
+  // 통째 교체 — 보내지 않은 선택 칸은 꼬리 없음·HTTP_5XX로 돌아간다.
+  http.put(url('/external/config'), async ({ request }) => {
+    const body = (await request.json().catch(() => null)) as
+      (Partial<MockConfigUpdate> & Record<string, unknown>) | null
+    const reason = body ? violation(body) : '본문이 필요합니다.'
+    if (reason || !body)
+      return invalid<MockConfig>(reason ?? '본문이 필요합니다.')
+    const tailRate = body.latencyTailRate ?? 0
+    const failureMode = body.failureMode ?? 'HTTP_5XX'
+    config = {
+      ...config,
+      registerLatencyMs: body.registerLatencyMs!,
+      failureRate: body.failureRate!,
+      failureMode,
+      latencyTailRate: tailRate,
+      latencyTailMinMs: tailRate > 0 ? body.latencyTailMinMs! : 0,
+      latencyTailMaxMs: tailRate > 0 ? body.latencyTailMaxMs! : 0,
+      bodyLatencyMs: body.registerLatencyMs!,
+      mixedResponses:
+        failureMode === 'MIXED'
+          ? (body.mixedResponses ?? [
+              'HTTP_500',
+              'HTTP_500_NO_BODY',
+              'HTTP_502',
+              'HTTP_503',
+              'HTTP_504',
+            ])
+          : [],
+      configVersion: config.configVersion + 1,
+      appliedAt: new Date().toISOString(),
+    }
+    return HttpResponse.json<Reply<MockConfig>>(config)
+  }),
+
+  http.post(url('/external/reset'), async ({ request }) => {
+    const body = (await request.json().catch(() => null)) as {
+      confirm?: string
+    } | null
+    if (body?.confirm !== 'RESET') {
+      return invalid<MockResetResponse>('confirm 에 RESET 을 넣어 주세요.')
+    }
+    const deletedCount = buildLedger().length
+    ledgerCleared = true
+    return HttpResponse.json<Reply<MockResetResponse>>({ deletedCount })
+  }),
+
+  http.post(url('/external/faults'), async ({ request }) => {
+    const body = (await request
+      .json()
+      .catch(() => null)) as Partial<MockFaultRequest> | null
+    if (!body?.externalKey || !/^[\w.-]{1,100}$/.test(body.externalKey)) {
+      return invalid<MockFaultResponse>('externalKey 형식이 틀렸습니다.')
+    }
+    if (body.faultType === 'SLOW_SUCCESS') {
+      if (!body.delayMs || body.delayMs < 1 || body.delayMs > 60000) {
+        return invalid<MockFaultResponse>(
+          'SLOW_SUCCESS 는 delayMs(1~60000)가 필요합니다.',
+        )
+      }
+    } else if (body.faultType === 'RESPONSE_LOST_AFTER_COMMIT') {
+      if (body.delayMs !== undefined) {
+        return invalid<MockFaultResponse>(
+          'RESPONSE_LOST_AFTER_COMMIT 에는 delayMs 를 보내지 않습니다.',
+        )
+      }
+    } else {
+      return invalid<MockFaultResponse>('faultType 이 틀렸습니다.')
+    }
+    return HttpResponse.json<Reply<MockFaultResponse>>(
+      {
+        externalKey: body.externalKey,
+        faultType: body.faultType,
+        delayMs: body.delayMs ?? null,
+        createdAt: new Date().toISOString(),
+      },
+      { status: 201 },
+    )
   }),
 ]
