@@ -32,20 +32,19 @@ export { CANCEL_REASON_MAX, saleStatusActionOf } from './model/saleStatus'
 export type { SaleStatusAction } from './model/saleStatus'
 export type { EditSection } from './model/edit'
 export {
-  useDispatchWindow,
-  useSaveDispatchWindow,
-} from './api/useDispatchWindow'
+  useAdminShipmentBatches,
+  useSaveAdminShipmentBatches,
+} from './api/useShipmentBatches'
 export {
-  createWaveDraft,
-  formatDeliveryDate,
-  formatSeqRange,
-  nextFromSeq,
-  toDispatchWindowRequest,
-  toWaveDrafts,
-  toWaves,
-  waveDraftProblem,
-} from './model/dispatch'
-export type { DispatchWaveDraft, DispatchWaveModel } from './model/dispatch'
+  batchDraftProblem,
+  createBatchDraft,
+  formatPositionRange,
+  formatShipPeriod,
+  toBatchDrafts,
+  toBatches,
+  toShipmentBatchesRequest,
+} from './model/shipment'
+export type { AdminShipmentBatch, ShipmentBatchDraft } from './model/shipment'
 export {
   isPreorder,
   isPublicSetting,
@@ -77,8 +76,6 @@ export type {
   ProductOptionValue,
   ProductVariant,
 } from './model/form'
-export { DeliveryDateField } from './ui/DeliveryDateField'
-export type { DeliveryDateFieldProps } from './ui/DeliveryDateField'
 export { AdminProductDisplayTag } from './ui/AdminProductDisplayTag'
 export type { AdminProductDisplayTagProps } from './ui/AdminProductDisplayTag'
 export { AdminProductSaleTag } from './ui/AdminProductSaleTag'

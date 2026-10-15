@@ -1,3 +1,4 @@
+import type { ShipmentBatch } from './preorder'
 import type {
   PreorderSaleStatus,
   ProductDetailView,
@@ -344,17 +345,16 @@ export type RegistrationCombination = {
 
 /**
  * 배송 차수. 첫 차수는 1번부터, 다음 차수는 앞 차수 positionTo + 1부터 이어 붙고,
- * 마지막 차수 하나만 positionTo가 null(상한 없음)이다.
+ * 마지막 차수 하나만 positionTo가 null(상한 없음)이다. 등록 본문과 차수 교체 API가
+ * 같은 모양을 쓴다.
  */
-export type RegistrationShipmentBatch = {
-  batchNumber: number
-  positionFrom: number
-  positionTo: number | null
-  /** YYYY-MM-DD */
-  estimatedShipStart: string
-  /** YYYY-MM-DD, 시작일 이후 */
-  estimatedShipEnd: string
-}
+export type RegistrationShipmentBatch = ShipmentBatch
+
+/**
+ * PUT /admin/preorders/products/{productId}/shipment-batches — 차수 전체를 통째로
+ * 바꾼다. 응답은 조회와 같은 ShipmentBatchListResponse다.
+ */
+export type ShipmentBatchesRequest = { batches: ShipmentBatch[] }
 
 /**
  * 등록 응답. 201(새로 등록)에만 product가 있고, 같은 키 재전송(200·202)은 null이다 —

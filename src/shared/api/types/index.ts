@@ -1,4 +1,3 @@
-export type * from './admin-dispatch'
 export type * from './admin-product'
 export type * from './admin-promotion'
 export type * from './admin-reservation'

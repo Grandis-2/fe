@@ -8,11 +8,6 @@ export const root = style({
   gap: spacing[16],
 })
 
-export const toolbar = style({
-  display: 'flex',
-  justifyContent: 'flex-end',
-})
-
 export const actions = style({
   display: 'flex',
   justifyContent: 'flex-end',
@@ -76,10 +71,7 @@ export const editFooter = style({
   flexWrap: 'wrap',
 })
 
-export const undeterminedNote = style([
-  typography.body.sub,
-  { color: color.text.tertiary },
-])
+export const note = style([typography.body.sub, { color: color.text.tertiary }])
 
 export const seqRow = style({
   display: 'flex',
@@ -112,4 +104,10 @@ export const toSeqField = style({
 export const problem = style([
   typography.body.sub,
   { color: color.status.danger },
+])
+
+/** 마지막 차수는 끝 번호를 받지 않는다 — 입력칸 자리에 '끝까지'를 둔다 */
+export const openEnd = style([
+  typography.body.sub,
+  { width: '120px', color: color.text.tertiary },
 ])

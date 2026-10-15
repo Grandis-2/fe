@@ -1,8 +1,8 @@
 import { addressHandlers } from './address'
-import { adminDispatchHandlers } from './admin-dispatch'
 import { adminProductHandlers } from './admin-product'
 import { adminPromotionHandlers } from './admin-promotion'
 import { adminReservationHandlers } from './admin-reservation'
+import { adminShipmentHandlers } from './admin-shipment'
 import { adminStockHandlers } from './admin-stock'
 import { authHandlers } from './auth'
 import { cartHandlers } from './cart'
@@ -29,7 +29,7 @@ export const handlers: RequestHandler[] = [
   // 맨 앞에 둬야 ?mock=500일 때 다른 핸들러보다 먼저 응답한다.
   forceErrorHandler,
   ...adminReservationHandlers,
-  ...adminDispatchHandlers,
+  ...adminShipmentHandlers,
   ...adminStockHandlers,
   ...adminProductHandlers,
   ...pendingBackendHandlers,

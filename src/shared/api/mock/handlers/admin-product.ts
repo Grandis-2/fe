@@ -9,6 +9,7 @@ import {
   productImageStore,
   toBundle,
 } from '../fixtures/admin-product-image'
+import { shipmentBatchStore } from '../fixtures/admin-shipment'
 import { adminStockStore } from '../fixtures/admin-stock'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
@@ -626,6 +627,9 @@ export const adminProductHandlers: RequestHandler[] = [
         ),
       ),
     })
+    if (body.shipmentBatches) {
+      shipmentBatchStore.set(created.productId, body.shipmentBatches)
+    }
     const record = {
       productId: created.productId,
       body: raw,
