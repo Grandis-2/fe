@@ -89,8 +89,8 @@ export type AdminProductFormValue = {
    * 색상 칸(colors[].images)에 둘 수 없다. 색상이 있는 상품에서는 보내지 않는다.
    */
   noColorImages: UploadedImage[]
-  detailImages: UploadedImage[]
-  specImages: UploadedImage[]
+  benefitImages: UploadedImage[]
+  infoImages: UploadedImage[]
   noticeImages: UploadedImage[]
 }
 
@@ -134,8 +134,8 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     quantities: {},
     pausedKeys: [],
     noColorImages: [],
-    detailImages: [],
-    specImages: [],
+    benefitImages: [],
+    infoImages: [],
     noticeImages: [],
   }
 }
@@ -320,8 +320,10 @@ export function toFormValue(
       }),
     ),
     noColorImages: toUploadedImages(noColorBundle),
-    detailImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.detailImages)),
-    specImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.specImages)),
+    benefitImages: toUploadedImages(
+      detailBundle(DETAIL_SECTIONS.benefitImages),
+    ),
+    infoImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.infoImages)),
     noticeImages: toUploadedImages(detailBundle(DETAIL_SECTIONS.noticeImages)),
   }
 

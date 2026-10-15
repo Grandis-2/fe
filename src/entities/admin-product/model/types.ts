@@ -186,11 +186,12 @@ export const COLOR_GROUP_CODE = 'color'
 /**
  * 상세 사진 묶음의 영역 이름 — 서버는 images.detail[]을 영역 이름으로 나눈다. 폼은 세
  * 칸으로 들고 있어서 이 이름으로 짝을 짓는다(등록 본문·수정 비교·폼 채우기가 함께 쓴다).
+ * 구매자 상세의 탭 이름(ProductDetailPage의 SECTION_LABELS)과 같게 둔다.
  */
 export const DETAIL_SECTIONS = {
-  detailImages: '상세정보',
-  specImages: '제품사양',
-  noticeImages: '유의사항',
+  benefitImages: '구매 혜택',
+  infoImages: '모델 정보',
+  noticeImages: '유의 사항',
 } as const
 
 export type DetailImageField = keyof typeof DETAIL_SECTIONS

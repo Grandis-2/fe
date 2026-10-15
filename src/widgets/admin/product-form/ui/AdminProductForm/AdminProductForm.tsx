@@ -452,26 +452,26 @@ export function AdminProductForm({
           </div>
         </FormSection>
 
-        <FormSection title="상세 이미지" description={imageNote}>
+        <FormSection title="구매 혜택" description={imageNote}>
           <div className={styles.card}>
             <ImageUploader
               {...uploaderProps}
               ratio="portrait"
               showCount={false}
-              value={value.detailImages}
-              onChange={(detailImages) => patch({ detailImages })}
+              value={value.benefitImages}
+              onChange={(benefitImages) => patch({ benefitImages })}
             />
           </div>
         </FormSection>
 
-        <FormSection title="제품 사양" description={imageNote}>
+        <FormSection title="모델 정보" description={imageNote}>
           <div className={styles.card}>
             <ImageUploader
               {...uploaderProps}
               ratio="portrait"
               showCount={false}
-              value={value.specImages}
-              onChange={(specImages) => patch({ specImages })}
+              value={value.infoImages}
+              onChange={(infoImages) => patch({ infoImages })}
             />
           </div>
         </FormSection>
