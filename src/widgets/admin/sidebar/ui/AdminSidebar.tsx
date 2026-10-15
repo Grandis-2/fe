@@ -54,7 +54,11 @@ export function AdminSidebar() {
             <div className={styles.groupLabel}>{group.label}</div>
           )}
           {group.items.map(({ path, label }) => {
-            const isActive = path === pathname
+            // 상세·등록 같은 하위 화면에서도 그 메뉴를 켜 둔다. 홈(/admin)은 모든 경로의
+            // 앞부분이라 정확히 같을 때만 켠다.
+            const isActive =
+              path === pathname ||
+              (path !== ADMIN_HOME_PATH && pathname.startsWith(`${path}/`))
             return (
               <Link
                 key={path}
