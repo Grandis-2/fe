@@ -2,8 +2,6 @@ import { useState } from 'react'
 
 import { expect, waitFor } from 'storybook/test'
 
-import { color } from '@shared/config/theme'
-
 import { Dropdown } from './Dropdown'
 
 import type { DropdownOption, DropdownProps } from './Dropdown'
@@ -47,16 +45,7 @@ export const Dark: Story = {
     size: 'small',
     width: '120px',
   },
-  decorators: [
-    (Story) => (
-      <div
-        data-theme="dark"
-        style={{ padding: 24, height: 180, background: color.background.page }}
-      >
-        <Story />
-      </div>
-    ),
-  ],
+  parameters: { dark: true },
 }
 
 /** 열림 상태를 안 넘기면 컴포넌트가 직접 들고 여닫는다 */

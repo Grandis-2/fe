@@ -20,8 +20,15 @@ const signIn = () => {
   return () => useSessionStore.getState().clearSession()
 }
 
+// 세션 확인 전엔 로그인 버튼을 숨기므로, 비회원 스토리는 확인이 끝난 비회원 상태로 시작한다.
+const signOut = () => {
+  useSessionStore.getState().clearSession()
+  useSessionStore.getState().markAuthReady()
+}
+
 export const Guest: Story = {
   args: { onSearchClick: fn() },
+  beforeEach: signOut,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: '검색' }))
     await expect(args.onSearchClick).toHaveBeenCalledOnce()

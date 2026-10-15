@@ -1,7 +1,5 @@
 import { expect, fn } from 'storybook/test'
 
-import { color } from '@shared/config/theme'
-
 import { Chip } from './Chip'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
@@ -11,16 +9,7 @@ const meta = {
   tags: ['ai-generated'],
   args: { children: '사전예약', onClick: fn() },
   // 사용자 페이지(마이페이지)는 늘 어둡다.
-  decorators: [
-    (Story) => (
-      <div
-        data-theme="dark"
-        style={{ padding: 24, background: color.background.page }}
-      >
-        <Story />
-      </div>
-    ),
-  ],
+  parameters: { dark: true },
 } satisfies Meta<typeof Chip>
 
 export default meta
