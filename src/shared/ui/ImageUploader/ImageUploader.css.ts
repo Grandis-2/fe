@@ -126,7 +126,7 @@ export const overlay = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'rgba(255, 255, 255, 0.6)',
+  background: `color-mix(in srgb, ${color.background.base} 60%, transparent)`,
 })
 
 export const overlayError = style({

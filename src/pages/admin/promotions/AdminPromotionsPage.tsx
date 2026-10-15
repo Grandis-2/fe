@@ -10,7 +10,6 @@ import {
   promotionStatusLabel,
   promotionStatusLabels,
   type AdminPromotion,
-  type PromotionStatus,
   useAdminPromotions,
 } from '@entities/admin-promotion'
 import { getErrorMessage } from '@shared/api/client'
@@ -45,9 +44,7 @@ export function AdminPromotionsPage() {
   const preorderProducts = useAdminProducts({ saleMode: 'PREORDER', size: 1 })
 
   const visiblePromotions = (promotions.data ?? []).filter(
-    (promotion) =>
-      statusFilter === 'all' ||
-      promotion.status === (statusFilter as PromotionStatus),
+    (promotion) => statusFilter === 'all' || promotion.status === statusFilter,
   )
 
   const openDetail = (promotion: AdminPromotion) =>
