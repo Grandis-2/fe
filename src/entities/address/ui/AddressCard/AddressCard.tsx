@@ -65,3 +65,39 @@ export function AddressCard({ address, onEdit, className }: AddressCardProps) {
     </article>
   )
 }
+
+// 수정 버튼 자리까지 같이 그려 응답이 와도 높이가 튀지 않게 한다.
+export function AddressCardSkeleton({
+  className,
+}: Pick<AddressCardProps, 'className'>) {
+  return (
+    <div
+      className={[styles.root, className].filter(Boolean).join(' ')}
+      aria-hidden
+    >
+      <div className={styles.header}>
+        <div
+          className={styles.skeletonLine}
+          style={{ height: '24px', width: '96px' }}
+        />
+      </div>
+      <div className={styles.rows}>
+        {['40%', '32%', '72%'].map((width) => (
+          <div key={width} className={styles.row}>
+            <div
+              className={[styles.rowLabel, styles.skeletonLine].join(' ')}
+              style={{ height: '20px', width: '56px' }}
+            />
+            <div
+              className={styles.skeletonLine}
+              style={{ height: '20px', width }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className={styles.footer}>
+        <div className={styles.skeletonButton} />
+      </div>
+    </div>
+  )
+}

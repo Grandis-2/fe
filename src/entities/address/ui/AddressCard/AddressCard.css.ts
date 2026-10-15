@@ -1,6 +1,12 @@
 import { style } from '@vanilla-extract/css'
 
-import { breakpoint, color, spacing, typography } from '@shared/config/theme'
+import {
+  breakpoint,
+  color,
+  skeleton,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 const divider = `1px solid ${color.border.subtle}`
@@ -79,3 +85,11 @@ export const footer = style([
 ])
 
 export const action = style({ width: '100%' })
+
+// 불러오는 동안 같은 자리를 차지하는 뼈대 — 줄 높이는 위 글자 크기에 맞춘다.
+export const skeletonLine = style([skeleton, { borderRadius: '6px' }])
+
+export const skeletonButton = style([
+  skeleton,
+  { width: '100%', height: '44px', borderRadius: '10px' },
+])

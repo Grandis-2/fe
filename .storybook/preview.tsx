@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router'
 
+import { darkCanvas } from './preview.css'
+
 import type { Preview } from '@storybook/react-vite'
 import '../src/app/styles/index.css'
 import '../src/shared/config/theme'
@@ -25,6 +27,15 @@ const preview: Preview = {
         <Story />
       </MemoryRouter>
     ),
+    // 사용자 페이지(늘 어두움)에 놓이는 컴포넌트는 parameters: { dark: true } 로 어두운 바탕에 그린다.
+    (Story, { parameters }) =>
+      parameters.dark ? (
+        <div data-theme="dark" className={darkCanvas}>
+          <Story />
+        </div>
+      ) : (
+        <Story />
+      ),
   ],
   parameters: {
     controls: {

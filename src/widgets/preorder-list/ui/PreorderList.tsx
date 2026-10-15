@@ -1,13 +1,15 @@
-import { Package } from 'lucide-react'
+import { Info, Package } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import {
   getPreorderSchedule,
   PreorderCard,
+  usePreorders,
   type PreorderCardData,
   type PreorderStatus,
 } from '@entities/preorder'
-import { InlineAlert } from '@shared/ui'
+import { getErrorMessage } from '@shared/api/client'
+import { Chip, InlineAlert } from '@shared/ui'
 
 import * as styles from './PreorderList.css'
 
@@ -17,14 +19,11 @@ const TABS: { value: PreorderStatus; label: string }[] = [
   { value: 'done', label: '마감' },
 ]
 
-export type PreorderListProps = {
-  preorders: PreorderCardData[]
-}
-
-// 사전예약 제목 + 상태 탭(개수) + 카드 그리드. 고른 탭은 URL(?status=)에 남겨
+// 사전예약 제목 + 그 아래 상태 칩(개수) + 카드 그리드. 고른 탭은 URL(?status=)에 남겨
 // 새로고침·뒤로 가기·공유해도 유지된다. 상태는 카드와 같은 규칙(날짜)으로 나눈다.
-export function PreorderList({ preorders }: PreorderListProps) {
+export function PreorderList() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const { data: preorders = [], isPending, error } = usePreorders()
   const active =
     TABS.find(({ value }) => value === searchParams.get('status'))?.value ??
     'live'
@@ -49,23 +48,35 @@ export function PreorderList({ preorders }: PreorderListProps) {
     <div className={styles.root}>
       <div className={styles.header}>
         <h1 className={styles.title}>사전예약</h1>
-        <div className={styles.tabs} role="group" aria-label="사전예약 상태">
+        {/* 페이지는 어둡지만 테마 밖이라 Chip이 어두운 토큰을 쓰도록 여기서 켠다. */}
+        <div
+          className={styles.tabs}
+          role="group"
+          aria-label="사전예약 상태"
+          data-theme="dark"
+        >
           {TABS.map(({ value, label }) => (
-            <button
+            <Chip
               key={value}
-              type="button"
-              className={styles.tab[value === active ? 'active' : 'inactive']}
-              aria-pressed={value === active}
+              selected={value === active}
+              count={count(value)}
               onClick={() => select(value)}
             >
               {label}
-              <span className={styles.count}>{count(value)}</span>
-            </button>
+            </Chip>
           ))}
         </div>
       </div>
 
-      {visible.length === 0 ? (
+      {error ? (
+        <InlineAlert status="error" variant="big">
+          {getErrorMessage(error, '사전예약을 불러오지 못했어요.')}
+        </InlineAlert>
+      ) : isPending ? (
+        <InlineAlert status="info" variant="big" icon={Info}>
+          사전예약을 불러오는 중이에요.
+        </InlineAlert>
+      ) : visible.length === 0 ? (
         <InlineAlert status="info" variant="big" icon={Package}>
           해당하는 사전예약이 없어요
         </InlineAlert>

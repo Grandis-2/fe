@@ -12,7 +12,7 @@ import {
 } from '@entities/draw'
 import { getErrorMessage } from '@shared/api/client'
 import { drawPath } from '@shared/config/routes'
-import { InlineAlert, Tag, type TagProps } from '@shared/ui'
+import { Chip, InlineAlert, Tag, type TagProps } from '@shared/ui'
 
 import * as styles from './MobileLuckyPanel.css'
 
@@ -53,15 +53,13 @@ export function MobileLuckyPanel({ onClose }: MobileLuckyPanelProps) {
     <>
       <div className={styles.filters} role="group" aria-label="럭키드로우 상태">
         {FILTERS.map(({ value, label }) => (
-          <button
+          <Chip
             key={value}
-            type="button"
-            className={styles.chip[value === filter ? 'active' : 'inactive']}
-            aria-pressed={value === filter}
+            selected={value === filter}
             onClick={() => setFilter(value)}
           >
             {label}
-          </button>
+          </Chip>
         ))}
       </div>
 

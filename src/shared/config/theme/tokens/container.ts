@@ -11,3 +11,7 @@ export const maxWidth = {
 export const TAB_BAR_HEIGHT = '60px'
 // 화면 아래 끝에서 띄우는 간격. iOS 홈 인디케이터 영역만큼 더 띄운다.
 export const TAB_BAR_OFFSET = `calc(${spacing[12]} + env(safe-area-inset-bottom))`
+
+// 탭바보다 높은 하단 고정 바(상품 상세 결제 바)가 자기 높이를 적어 두는 CSS 변수.
+// 레이아웃이 맨 아래(푸터 밑)를 이만큼 비워 바가 푸터를 가리지 않게 한다.
+export const FIXED_BOTTOM_BAR_VAR = '--fixed-bottom-bar-height'

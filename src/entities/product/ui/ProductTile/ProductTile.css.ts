@@ -1,6 +1,6 @@
-import { keyframes, style } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
-import { color, motion, onDark, spacing } from '@shared/config/theme'
+import { color, motion, onDark, skeleton, spacing } from '@shared/config/theme'
 
 export const tile = style({
   display: 'flex',
@@ -39,20 +39,7 @@ export const name = style({
   textOverflow: 'ellipsis',
 })
 
-// ProductRanking과 같은 흐르는 빛 스켈레톤.
-const shimmer = keyframes({
-  '0%': { backgroundPosition: '100% 0' },
-  '100%': { backgroundPosition: '-100% 0' },
-})
-
-export const skeleton = style({
-  background: `linear-gradient(90deg, ${onDark(6)} 0%, ${onDark(6)} 35%, ${onDark(12)} 50%, ${onDark(6)} 65%, ${onDark(6)} 100%)`,
-  backgroundSize: '200% 100%',
-  animation: `${shimmer} 1.4s linear infinite`,
-  '@media': {
-    '(prefers-reduced-motion: reduce)': { animation: 'none' },
-  },
-})
+export const mediaSkeleton = style([skeleton])
 
 export const lineSkeleton = style([
   skeleton,

@@ -128,12 +128,14 @@ export function ProductPurchaseBar({
                   <dt>수량</dt>
                   <dd>{quantity}개</dd>
                 </div>
-                <div className={styles.breakdownRow}>
-                  <dt>사전예약 혜택 ({PREORDER_BENEFIT_RATE * 100}%)</dt>
-                  <dd className={styles.discount}>
-                    -{formatWon(benefitAmount)}
-                  </dd>
-                </div>
+                {isPreorder && (
+                  <div className={styles.breakdownRow}>
+                    <dt>사전예약 혜택 ({PREORDER_BENEFIT_RATE * 100}%)</dt>
+                    <dd className={styles.discount}>
+                      -{formatWon(benefitAmount)}
+                    </dd>
+                  </div>
+                )}
                 <div className={styles.breakdownTotal}>
                   <dt>합계</dt>
                   <dd>{priceLabel}</dd>

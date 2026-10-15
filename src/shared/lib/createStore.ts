@@ -8,6 +8,7 @@ type Setter<T> = (partial: Partial<T> | ((state: T) => Partial<T>)) => void
 type Store<T> = (<Selected>(selector: (state: T) => Selected) => Selected) & {
   getState: () => T
   setState: Setter<T>
+  subscribe: (listener: () => void) => () => void
 }
 
 export function createStore<T>(
@@ -35,6 +36,7 @@ export function createStore<T>(
 
   useStore.getState = getState
   useStore.setState = setState
+  useStore.subscribe = subscribe
 
   return useStore
 }

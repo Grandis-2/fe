@@ -36,13 +36,15 @@ export function PreorderCard({ data, className }: PreorderCardProps) {
         .filter(Boolean)
         .join(' ')}
     >
-      <img src={imageSrc} alt={imageAlt} className={styles.image} />
+      {imageSrc && (
+        <img src={imageSrc} alt={imageAlt} className={styles.image} />
+      )}
       <span className={[styles.dday, styles.ddayColor[status]].join(' ')}>
         {ddayLabel}
       </span>
       <div className={styles.body}>
         <span className={styles.title}>{title}</span>
-        <span className={styles.benefit}>{benefit}</span>
+        {benefit && <span className={styles.benefit}>{benefit}</span>}
         <span className={styles.meta}>
           예약 기간 {formatPreorderDate(opensAt)} ~{' '}
           {formatPreorderDate(closesAt)}

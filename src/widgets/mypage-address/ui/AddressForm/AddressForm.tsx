@@ -5,13 +5,14 @@ import {
   useSaveDefaultAddress,
   type DefaultAddress,
 } from '@entities/address'
-import { getProfile } from '@entities/profile'
+import { useProfile, type Profile } from '@entities/profile'
 import {
   AddressFields,
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@features/address-search'
 import { getErrorMessage } from '@shared/api/client'
+import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { ActionButton, Button, InlineAlert, Input } from '@shared/ui'
 
@@ -19,24 +20,29 @@ import * as styles from './AddressForm.css'
 
 const GENERIC_ERROR = '배송지를 저장하지 못했습니다. 다시 시도해 주세요.'
 
-const emptyForm = {
-  label: '',
-  postcode: '',
-  address: '',
-  addressDetail: '',
-}
+// 서버(PUT /me/default-address)가 받는 다섯 칸을 그대로 고친다 — 상세 주소만 선택이다.
+const REQUIRED_KEYS = ['name', 'phone', 'postcode', 'address'] as const
 
-const REQUIRED_KEYS = ['label', 'postcode', 'address'] as const
-
-const toForm = (saved: DefaultAddress | null | undefined) =>
+// 저장된 배송지가 없으면(추가) 수령인 칸만 회원 프로필로 채워 둔다.
+const toForm = (
+  saved: DefaultAddress | null | undefined,
+  profile: Profile | undefined,
+) =>
   saved
     ? {
-        label: saved.label ?? '',
+        name: saved.name,
+        phone: saved.phone,
         postcode: saved.postalCode,
         address: saved.line1,
         addressDetail: saved.line2 ?? '',
       }
-    : emptyForm
+    : {
+        name: profile?.name ?? '',
+        phone: profile?.phoneNumber ?? '',
+        postcode: '',
+        address: '',
+        addressDetail: '',
+      }
 
 export type AddressFormProps = {
   /** 저장했거나 취소해서 폼을 닫을 때 */
@@ -48,8 +54,9 @@ export type AddressFormProps = {
 // 입력하던 값은 닫으면 버려진다.
 export function AddressForm({ onClose }: AddressFormProps) {
   const { data: saved } = useDefaultAddress()
+  const { data: profile } = useProfile()
   const { mutateAsync: saveAddress } = useSaveDefaultAddress()
-  const form = useFormFields(toForm(saved), REQUIRED_KEYS)
+  const form = useFormFields(toForm(saved, profile), REQUIRED_KEYS)
   const [addressSearchOpen, setAddressSearchOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -70,16 +77,12 @@ export function AddressForm({ onClose }: AddressFormProps) {
 
     setSaving(true)
     try {
-      // 배송지는 주소만 물어본다 — 수령인은 항상 로그인한 회원 본인이라 그
-      // 이름/전화번호를 그대로 가져다 쓴다(폼에 다시 입력받지 않는다).
-      const profile = await getProfile()
       await saveAddress({
-        name: profile.name ?? '',
-        phone: profile.phoneNumber ?? '',
+        name: form.values.name,
+        phone: form.values.phone,
         postalCode: form.values.postcode,
         line1: form.values.address,
         line2: form.values.addressDetail || null,
-        label: form.values.label,
       })
       onClose()
     } catch (caught) {
@@ -98,9 +101,20 @@ export function AddressForm({ onClose }: AddressFormProps) {
         <div className={styles.body}>
           {error && <InlineAlert status="error">{error}</InlineAlert>}
           <Input
-            {...form.field('label', '배송지명')}
+            {...form.field('name', '받는 분')}
             variant="stacked"
-            placeholder="예: 집, 회사"
+            placeholder="이름"
+            maxLength={50}
+          />
+          <Input
+            {...form.field('phone', '연락처')}
+            value={formatPhoneInput(form.values.phone)}
+            onChange={(event) =>
+              form.setValues({ phone: toPhoneDigits(event.target.value) })
+            }
+            variant="stacked"
+            placeholder="010-1234-5678"
+            inputMode="numeric"
           />
           <AddressFields
             field={form.field}

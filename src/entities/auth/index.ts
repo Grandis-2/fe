@@ -4,5 +4,6 @@ export {
   loginWithKakao,
   logout,
   markProfileComplete,
+  onSessionCleared,
   useSession,
 } from './model/session'

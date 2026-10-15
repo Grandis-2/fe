@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { Search, X } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router'
 
 import { useBrandMenus, useProducts } from '@entities/product'
@@ -20,7 +20,7 @@ import {
   searchResultsPath,
 } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
-import { Highlight } from '@shared/ui'
+import { Chip, Highlight } from '@shared/ui'
 
 import * as styles from './SearchOverlay.css'
 
@@ -126,24 +126,16 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
                     전체 삭제
                   </button>
                 </div>
-                <ul className={styles.chips}>
+                <ul className={styles.chips} data-theme="dark">
                   {recent.map((label) => (
-                    <li key={label} className={styles.recentChip}>
-                      <button
-                        type="button"
-                        className={styles.recentLabel}
+                    <li key={label}>
+                      <Chip
                         onClick={() => pick(label)}
+                        onRemove={() => remove(label)}
+                        removeLabel={`${label} 삭제`}
                       >
                         {label}
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.recentRemove}
-                        aria-label={`${label} 삭제`}
-                        onClick={() => remove(label)}
-                      >
-                        <X size={12} aria-hidden="true" />
-                      </button>
+                      </Chip>
                     </li>
                   ))}
                 </ul>
@@ -176,15 +168,11 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
 
             <section className={shared.section}>
               <h2 className={shared.sectionTitle}>카테고리</h2>
-              <ul className={styles.chips}>
+              <ul className={styles.chips} data-theme="dark">
                 {Object.keys(brandMenus).map((category) => (
                   <li key={category}>
-                    <Link
-                      to={searchPath({ category })}
-                      className={styles.categoryChip}
-                    >
-                      {category}
-                    </Link>
+                    {/* 이동하면 경로가 바뀌어 오버레이는 스스로 닫힌다. */}
+                    <Chip to={searchPath({ category })}>{category}</Chip>
                   </li>
                 ))}
               </ul>

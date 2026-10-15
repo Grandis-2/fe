@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { typography, spacing } from '@shared/config/theme'
+import { breakpoint, typography, spacing } from '@shared/config/theme'
 
 export const title = style([
   typography.title.xlSemibold,
@@ -8,6 +8,8 @@ export const title = style([
     marginBottom: spacing[30],
     // ReviewCard의 좌우 padding과 맞춰 제목과 썸네일 왼쪽 선을 일치시킨다.
     padding: `0 ${spacing[20]}`,
+    // 모바일은 헤더가 같은 제목을 띄운다(getMobileTitle).
+    '@media': { [breakpoint.mobile]: { display: 'none' } },
   },
 ])
 

@@ -1,5 +1,7 @@
 import { expect, fn } from 'storybook/test'
 
+import { useSessionStore } from '@entities/auth/model/sessionStore'
+
 import { Header } from './Header'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
@@ -12,8 +14,21 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
+// 헤더가 세션 스토어를 직접 읽으므로 회원 스토리는 스토어에 세션을 넣고, 끝나면 지운다.
+const signIn = () => {
+  useSessionStore.setState({ sessionToken: 'story-session' })
+  return () => useSessionStore.getState().clearSession()
+}
+
+// 세션 확인 전엔 로그인 버튼을 숨기므로, 비회원 스토리는 확인이 끝난 비회원 상태로 시작한다.
+const signOut = () => {
+  useSessionStore.getState().clearSession()
+  useSessionStore.getState().markAuthReady()
+}
+
 export const Guest: Story = {
-  args: { isMember: false, onSearchClick: fn() },
+  args: { onSearchClick: fn() },
+  beforeEach: signOut,
   play: async ({ canvas, userEvent, args }) => {
     await userEvent.click(canvas.getByRole('button', { name: '검색' }))
     await expect(args.onSearchClick).toHaveBeenCalledOnce()
@@ -27,7 +42,7 @@ export const Guest: Story = {
 }
 
 export const Member: Story = {
-  args: { isMember: true },
+  beforeEach: signIn,
   play: async ({ canvas }) => {
     await expect(canvas.getByRole('button', { name: /알림/ })).toBeVisible()
     await expect(canvas.getByRole('link', { name: /장바구니/ })).toBeVisible()
@@ -38,7 +53,7 @@ export const Member: Story = {
 
 // 회원으로 들어가도 어드민 헤더는 알림 하나만 남는다.
 export const Admin: Story = {
-  args: { isMember: true },
+  beforeEach: signIn,
   parameters: { initialEntries: ['/admin/products'] },
   play: async ({ canvas }) => {
     await expect(

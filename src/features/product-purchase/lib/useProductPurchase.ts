@@ -109,8 +109,10 @@ export function useProductPurchase(product: PurchaseProduct | undefined) {
     basePrice +
       selectedValues.reduce((sum, value) => sum + (value.extraPrice ?? 0), 0)
   const totalPrice = unitPrice * quantity
-  // 결제 화면(PaymentPage)과 같은 비율로 할인해서 두 화면의 합계가 맞는다.
-  const benefitAmount = Math.round(totalPrice * PREORDER_BENEFIT_RATE)
+  // 할인은 사전예약에만 붙는다 — 일반 상품은 정가 그대로 결제한다.
+  const benefitAmount = isPreorder
+    ? Math.round(totalPrice * PREORDER_BENEFIT_RATE)
+    : 0
   // 할인까지 뺀, 실제로 결제할 금액.
   const payAmount = totalPrice - benefitAmount
   const priceLabel = formatWon(payAmount)
