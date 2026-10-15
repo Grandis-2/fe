@@ -1,3 +1,5 @@
+import type { ApiViolation } from '@shared/api/types'
+
 import { brandCodeOf, MODEL_NAME_MAX } from './types'
 
 import type { AdminProductFormValue } from './form'
@@ -15,7 +17,7 @@ export type FormField =
   | 'tags'
   | 'images'
 
-export type FormIssue = { field: FormField; message: string }
+export type FormIssue = Omit<ApiViolation, 'field'> & { field: FormField }
 
 const TITLE_MAX = 100
 const TAGS_MAX = 500
@@ -79,9 +81,7 @@ const SERVER_FIELD: [prefix: string, field: FormField][] = [
  * 서버가 준 칸별 오류(violations)를 폼 칸에 붙인다. 짝이 없는 것은 rest로 돌려준다 —
  * 화면은 그것만 요약으로 보여준다.
  */
-export function serverIssuesOf(
-  violations: { field: string; message: string }[],
-) {
+export function serverIssuesOf(violations: ApiViolation[]) {
   const issues: FormIssue[] = []
   const rest: string[] = []
   for (const { field, message } of violations) {
