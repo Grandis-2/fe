@@ -1,12 +1,16 @@
+import { useState } from 'react'
+
 import { LogOut, Orbit } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { logout } from '@entities/auth'
+import { getErrorMessage } from '@shared/api/client'
 import {
   HOME_PATH,
   MYPAGE_TAB_LABELS,
   type MypageTab,
 } from '@shared/config/routes'
+import { showToast } from '@shared/model/toastStore'
 
 import * as styles from './MypageMenu.css'
 
@@ -41,11 +45,20 @@ export function MypageMenu({
 }: MypageMenuProps) {
   const navigate = useNavigate()
 
-  // 홈으로 먼저 나간다 — 마이페이지에 남은 채 세션이 지워지면 RequireLogin이
-  // 비회원 진입으로 보고 로그인 모달을 띄운다.
-  const handleLogout = () => {
-    navigate(HOME_PATH)
-    void logout()
+  // 서버가 세션을 지운 뒤에만 홈으로 나간다 — 실패하면 마이페이지에 남아 다시 누를 수 있다.
+  // 세션이 먼저 지워져도 RequireLogin이 로그아웃으로 보고 로그인 모달 없이 홈으로 보낸다.
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await logout()
+      navigate(HOME_PATH)
+    } catch (caught) {
+      showToast(
+        getErrorMessage(caught, '로그아웃하지 못했어요. 다시 시도해 주세요.'),
+      )
+      setIsLoggingOut(false)
+    }
   }
 
   return (
@@ -63,6 +76,7 @@ export function MypageMenu({
           className={styles.logout}
           aria-label="로그아웃"
           title="로그아웃"
+          disabled={isLoggingOut}
           onClick={handleLogout}
         >
           <LogOut size={18} aria-hidden="true" />

@@ -154,9 +154,11 @@ export const logout = style({
     `color ${motion.duration.fast} ${motion.easing.default}`,
   ].join(', '),
   selectors: {
-    '&:hover': {
+    '&:hover:not(:disabled)': {
       background: color.background.surface,
       color: color.text.primary,
     },
+    // 로그아웃 요청 중 — 두 번 보내지 않게 막는다.
+    '&:disabled': { cursor: 'progress', opacity: 0.5 },
   },
 })

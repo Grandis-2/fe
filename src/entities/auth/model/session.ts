@@ -59,13 +59,12 @@ export async function initAuth() {
 }
 
 export async function logout() {
-  // 요청부터 출발시킨다 — 인증 헤더는 보내는 순간 읽으므로 바로 아래에서 세션을 지워도 실린다.
-  const request = deleteSession()
-  // 로그아웃 응답은 항상 204다 — 기다리지 않고 로컬 상태부터 지워 헤더 등 화면이 바로 바뀌게 한다.
+  // 서버가 리프레시 쿠키를 지운 뒤에만 로컬 세션을 지운다 — 요청이 실패했는데 먼저 지우면
+  // 쿠키가 남아 새로고침 때 세션이 되살아난다. 실패는 호출부가 안내하도록 그대로 던진다.
+  await deleteSession()
   useSessionStore.getState().clearSession()
   // 다른 탭도 refreshCoordinator와 같은 프로토콜로 세션 해제를 알아야 한다.
   broadcastSessionCleared()
-  await request
 }
 
 // 카카오 인가 코드로 로그인하고 세션을 메모리에 올린다. 호출부가 다음 화면을 고를 수 있게
