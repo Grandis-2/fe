@@ -5,6 +5,7 @@ import { deleteSession, postAdminSession, postKakaoCallback } from '../api/auth'
 
 import {
   broadcastSessionCleared,
+  broadcastSessionUpdated,
   ensureFreshSession,
 } from './refreshCoordinator'
 import { useSessionStore, type SessionState } from './sessionStore'
@@ -121,5 +122,8 @@ export async function loginWithKakao(
 ): Promise<Pick<SessionState, 'profileComplete'>> {
   const session = await postKakaoCallback(body)
   useSessionStore.getState().setSession(session)
+  // 가입 진행 중 세션은 알리지 않는다 — 받은 탭은 /signup 밖이라 RootLayout이 가입 취소로
+  // 보고 로그아웃시켜 버린다.
+  if (session.profileComplete) broadcastSessionUpdated(session)
   return { profileComplete: session.profileComplete }
 }
