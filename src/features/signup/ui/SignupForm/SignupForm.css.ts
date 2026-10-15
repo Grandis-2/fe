@@ -66,7 +66,6 @@ export const card = style({
   borderRadius: '19px',
   background: mix(color.backgroundDark.base, 72),
   backdropFilter: 'blur(18px) saturate(140%)',
-  WebkitBackdropFilter: 'blur(18px) saturate(140%)',
 })
 
 export const row = style({

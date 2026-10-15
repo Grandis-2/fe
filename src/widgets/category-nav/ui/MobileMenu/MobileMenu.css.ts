@@ -41,7 +41,6 @@ export const top = style({
   zIndex: 1,
   background: `color-mix(in srgb, ${color.backgroundDark.base} 72%, transparent)`,
   backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
 })
 
 export const titleRow = style({

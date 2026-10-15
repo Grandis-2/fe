@@ -43,7 +43,6 @@ export const root = style({
   position: 'relative',
   background: 'transparent',
   backdropFilter: 'blur(12px)',
-  WebkitBackdropFilter: 'blur(12px)',
   transition: `background-color ${motion.duration.fast} ${motion.easing.default}`,
   // 메뉴가 닫힐 때 패널·딤과 같은 지연으로 움직여야 한다(CategoryNav.css) — 헤더만
   // 먼저 투명해지면 아직 떠 있는 흰 패널이 헤더에서 떨어져 나온 것처럼 보인다.
