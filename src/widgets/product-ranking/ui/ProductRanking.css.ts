@@ -8,7 +8,10 @@ import {
   skeleton,
   spacing,
 } from '@shared/config/theme'
-import { fontSize } from '@shared/config/theme/tokens/typography/base'
+import {
+  fontFamily,
+  fontSize,
+} from '@shared/config/theme/tokens/typography/base'
 
 // 순위 숫자 칸 폭 — 두 자리(10위)는 숫자가 넓어 칸도 넓힌다. 이미지 타일(204px)은 같다.
 const RANK_WIDTH = { single: 96, double: 168 }
@@ -42,8 +45,9 @@ export const title = style({
 })
 
 // 1위 숫자 칸은 오른쪽 정렬이라 좁은 "1" 글자 왼쪽이 이만큼 빈다 — 시작 패딩에서 빼서
-// 칸이 아니라 "1"의 획이 타이틀 시작선에 맞게 한다. 숫자 폰트·크기가 바뀌면 다시 잰다.
-const FIRST_RANK_GAP = '40px'
+// 칸이 아니라 "1"의 획이 타이틀 시작선에 맞게 한다. 숫자 폰트·크기가 바뀌면 다시 잰다
+// (Pretendard 800 160px 기준: 칸 왼쪽~획 36px, 칸을 왼쪽으로 민 10px을 빼서 26px).
+const FIRST_RANK_GAP = '26px'
 
 export const row = style({
   ...bleedScrollRow(FIRST_RANK_GAP),
@@ -77,10 +81,13 @@ export const visual = style({
 const rankBase = style({
   position: 'relative',
   left: '-10px',
-  bottom: '-10px',
+  // 숫자 바닥(기준선)이 이미지 아래 선보다 살짝(2px) 위에 오게 둔다 — 더 내리면 외곽선(2px) 바닥 획이
+  // 아래 칸(overflow: hidden)에 잘린다. 기준선 위치는 서체마다 달라 fontFamily를 고정한다.
+  bottom: '-5px',
   zIndex: 0,
   flex: '0 0 auto',
   marginRight: `-${RANK_OVERLAP}px`,
+  fontFamily: fontFamily.pretendard,
   fontSize: '160px',
   fontWeight: 800,
   lineHeight: 0.8,
