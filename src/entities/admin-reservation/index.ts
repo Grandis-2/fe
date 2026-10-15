@@ -4,21 +4,23 @@ export {
   useAdminMembers,
   useAdminReservations,
   useReprocessReservation,
+  useReservationStats,
 } from './api/useAdminReservations'
 export {
   countByStage,
-  failureLabelOf,
   isReprocessable,
   paymentDueLabel,
-  paymentStatusColor,
-  paymentStatusLabel,
-  paymentStatusLabels,
-  paymentStatusVariant,
+  paymentStateColor,
+  paymentStateLabel,
+  paymentStateLabels,
+  paymentStateOf,
+  paymentStateVariant,
   reservationNo,
   reservationStageLabel,
   reservationStages,
-  reservationStatusColor,
-  reservationStatusLabel,
-  reservationStatusLabels,
+  reservationStateColor,
+  reservationStateLabel,
+  reservationStateLabels,
+  reservationStateOf,
 } from './model/types'
-export type { AdminReservation, AdminReservationStatus } from './model/types'
+export type { AdminReservation, ReservationState } from './model/types'

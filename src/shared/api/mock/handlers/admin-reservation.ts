@@ -5,159 +5,185 @@ import {
   mockMembers,
   reservationStore,
 } from '../fixtures/admin-reservation'
-import { fail, ok } from '../response'
+import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
-import type { Paged, ReservationDetail, ReservationSummary } from '../../types'
+import type {
+  AdminPreorderDetail,
+  AdminPreorderSummary,
+  OffsetPage,
+  PreorderStats,
+  PreorderStatus,
+  SyncJobSummary,
+} from '../../types'
 import type { RequestHandler } from 'msw'
 
-const notFound = () =>
-  fail(404, {
-    code: 'RESERVATION_NOT_FOUND',
-    message: '대상을 찾을 수 없습니다.',
-    retryable: false,
-  })
+const BASE = '/api/v1/admin/preorders'
 
-/** 상세에는 목록 전용 필드(overdue 등)가 없어 여기서 파생시킨다 */
-function toSummary(detail: ReservationDetail, now: number): ReservationSummary {
-  const register = detail.commands.find(
-    (command) => command.kind === 'REGISTER',
+/** 상세에서 목록 한 줄을 만든다 — 목록은 상세 일부에 REGISTER 작업 상태가 붙는다 */
+function toSummary(detail: AdminPreorderDetail): AdminPreorderSummary {
+  // 상세에만 있는 필드는 목록 응답에 싣지 않는다 — 목이 곧 응답 계약이다.
+  const {
+    externalReference: _externalReference,
+    cancelable: _cancelable,
+    internalNote: _internalNote,
+    syncJobs,
+    ...summary
+  } = detail
+  return {
+    ...summary,
+    registerJobStatus:
+      syncJobs.find((job) => job.jobType === 'REGISTER')?.status ?? null,
+  }
+}
+
+const OPEN_JOB_STATES = [
+  'PENDING',
+  'PROCESSING',
+  'RETRY_SCHEDULED',
+  'DEAD_LETTER',
+] as const
+
+function countStats(productId: string | null): PreorderStats {
+  const matched = reservationStore.filter(
+    (detail) => !productId || detail.productId === productId,
   )
+  const preorders: Record<PreorderStatus, number> = {
+    PENDING_SYNC: 0,
+    REGISTERED: 0,
+    RESERVED: 0,
+    CANCELING: 0,
+    CANCELED: 0,
+  }
+  for (const detail of matched) preorders[detail.status] += 1
+
+  const jobs = matched.flatMap((detail) => detail.syncJobs)
+  const countJobs = (jobType: SyncJobSummary['jobType']) =>
+    Object.fromEntries(
+      OPEN_JOB_STATES.map((state) => [
+        state,
+        jobs.filter((job) => job.jobType === jobType && job.status === state)
+          .length,
+      ]),
+    ) as PreorderStats['syncJobs']['REGISTER']
 
   return {
-    reservationId: detail.reservationId,
-    productId: detail.productId,
-    productName: detail.productName,
-    optionCode: detail.optionCode,
-    optionName: detail.optionName,
-    quantity: detail.quantity,
-    status: detail.status,
-    acceptSeq: detail.acceptSeq,
-    dispatch: detail.dispatch,
-    externalReservationNo: detail.externalReservationNo,
-    acceptedAt: detail.acceptedAt,
-    deadlineAt: detail.deadlineAt,
-    finalizedAt: detail.finalizedAt,
-    version: detail.version,
-    memberId: detail.memberId,
-    runId: detail.runId,
-    cleanup: detail.cleanup,
-    payment: detail.payment,
-    failureCode: detail.failure?.code ?? null,
-    overdue:
-      detail.status === 'ACCEPTED' && Date.parse(detail.deadlineAt) < now,
-    registerAttemptCount: register?.attemptCount ?? 0,
+    productId,
+    preorders,
+    syncJobs: { REGISTER: countJobs('REGISTER'), CANCEL: countJobs('CANCEL') },
+    paymentOverdue: matched.filter(
+      (detail) => detail.displayStatus === 'PAYMENT_EXPIRED',
+    ).length,
+    countedAt: new Date().toISOString(),
   }
 }
 
 export const adminReservationHandlers: RequestHandler[] = [
-  http.get(url('/api/v1/admin/reservations'), ({ request }) => {
+  http.get(url(BASE), ({ request }) => {
     const query = new URL(request.url).searchParams
-    const now = Date.now()
-
     const status = query.get('status')
-    const failureCode = query.get('failureCode')
-    const memberId = query.get('memberId')
     const productId = query.get('productId')
-    const from = query.get('from')
-    const to = query.get('to')
-    const overdueOnly = query.get('overdueOnly') === 'true'
-    const cleanupPendingOnly = query.get('cleanupPendingOnly') === 'true'
+    const registerJobStatus = query.get('registerJobStatus')
+    const size = Number(query.get('size') ?? 20)
+    if (!Number.isInteger(size) || size < 1 || size > 100) {
+      return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
+    }
+    const page = Number(query.get('page') ?? 0)
 
     const matched = reservationStore
-      .map((detail) => toSummary(detail, now))
-      .filter((item) => {
-        if (status && item.status !== status) return false
-        if (failureCode && item.failureCode !== failureCode) return false
-        if (memberId && item.memberId !== memberId) return false
-        if (productId && item.productId !== productId) return false
-        if (from && item.acceptedAt < from) return false
-        if (to && item.acceptedAt > to) return false
-        if (overdueOnly && !item.overdue) return false
-        if (
-          cleanupPendingOnly &&
-          Object.values(item.cleanup).every((state) => state === 'NOT_REQUIRED')
-        ) {
-          return false
-        }
-        return true
-      })
-      // 최근 접수가 위로 온다 — 명세에 정렬 파라미터가 없어 서버 기본값을 가정한다.
-      .toSorted((a, b) => b.acceptSeq - a.acceptSeq)
+      .map(toSummary)
+      .filter(
+        (item) =>
+          (!status || item.status === status) &&
+          (!productId || item.productId === productId) &&
+          (!registerJobStatus || item.registerJobStatus === registerJobStatus),
+      )
+      // 최신 접수가 위로 온다.
+      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
 
-    const page = Number(query.get('page') ?? 0)
-    const size = Number(query.get('size') ?? 20)
     const start = page * size
-
-    return ok<Paged<ReservationSummary>>({
+    return ok<OffsetPage<AdminPreorderSummary>>({
       items: matched.slice(start, start + size),
       page,
       size,
       total: matched.length,
-      totalPages: Math.max(1, Math.ceil(matched.length / size)),
-      hasNext: start + size < matched.length,
     })
   }),
 
-  http.get(url('/api/v1/admin/reservations/:reservationId'), ({ params }) => {
-    const detail = findReservation(String(params.reservationId))
-    return detail ? ok(detail) : notFound()
-  }),
-
-  // ponytail: 재처리 핸들러는 명세에 없는 임시 계약이다. 와이어프레임의 '재처리
-  // 시도'를 붙이려면 필요해서 기존 명세의 작명 규칙을 따라 임의로 정했다.
-  http.post(
-    url('/api/v1/admin/reservations/:reservationId/reprocess'),
-    ({ params }) => {
-      const detail = findReservation(String(params.reservationId))
-      if (!detail) return notFound()
-      if (detail.status !== 'FAILED') {
-        return fail(409, {
-          code: 'RESERVATION_NOT_REPROCESSABLE',
-          message: '등록 실패 상태에서만 재처리할 수 있습니다.',
-          retryable: false,
-        })
-      }
-
-      const at = new Date().toISOString()
-      detail.status = 'ACCEPTED'
-      detail.failure = null
-      detail.finalizedAt = null
-      detail.version += 1
-      for (const command of detail.commands) {
-        if (command.kind !== 'REGISTER') continue
-        command.status = 'PENDING'
-        command.manualReprocessCount += 1
-        command.updatedAt = at
-      }
-      detail.history.push({
-        historySeq: detail.history.length,
-        transition: 'T6',
-        fromStatus: 'FAILED',
-        toStatus: 'ACCEPTED',
-        actorType: 'ADMIN',
-        actorId: 'admin',
-        reasonCode: 'MANUAL_REPROCESS',
-        note: '재처리 시도',
-        decidedAt: at,
-        committedAt: at,
-      })
-
-      return ok(detail)
-    },
+  // 경로 :preorderId보다 먼저 잡혀야 한다.
+  http.get(url(`${BASE}/stats`), ({ request }) =>
+    ok(countStats(new URL(request.url).searchParams.get('productId'))),
   ),
 
-  // ponytail: 회원 이름을 주는 API가 명세에 없다. 예약 응답에 이름이 없어서
-  // 표의 '예약자' 열이 memberId를 이름으로 바꾸려면 필요해 목에만 둔다.
-  http.get(url('/api/v1/admin/members'), ({ request }) => {
-    const keyword = new URL(request.url).searchParams.get('q')?.trim() ?? ''
-    const items = keyword
-      ? mockMembers.filter(
-          (member) =>
-            member.name.includes(keyword) || member.memberId.includes(keyword),
-        )
-      : mockMembers
+  http.get(url(`${BASE}/:preorderId`), ({ params }) => {
+    const detail = findReservation(String(params.preorderId))
+    return detail
+      ? ok(detail)
+      : fail(404, {
+          code: 'PREORDER_NOT_FOUND',
+          message: '예약을 찾을 수 없습니다.',
+        })
+  }),
 
-    return ok({ items })
+  // DEAD_LETTER인 REGISTER 작업만 되돌린다. 실서버는 다시 등록을 보내는데, 목은 결과를
+  // 기다리지 않고 바로 등록된 것으로 둔다.
+  http.post(url(`${BASE}/sync-jobs/:syncJobId/reprocess`), ({ params }) => {
+    const detail = reservationStore.find((item) =>
+      item.syncJobs.some((job) => job.syncJobId === params.syncJobId),
+    )
+    const job = detail?.syncJobs.find(
+      (item) => item.syncJobId === params.syncJobId,
+    )
+    if (!detail || !job) {
+      return fail(404, {
+        code: 'SYNC_JOB_NOT_FOUND',
+        message: '작업을 찾을 수 없습니다.',
+      })
+    }
+    if (job.status !== 'DEAD_LETTER') {
+      return fail(409, {
+        code: 'STATE_CONFLICT',
+        message: '재처리할 수 없는 작업입니다.',
+      })
+    }
+
+    const at = new Date().toISOString()
+    Object.assign(job, {
+      status: 'SUCCEEDED',
+      attemptCount: job.attemptCount + 1,
+      lastErrorCode: null,
+      deadLetteredAt: null,
+      updatedAt: at,
+    })
+    Object.assign(detail, {
+      status: 'REGISTERED',
+      displayStatus: 'PAYABLE',
+      payableFrom: at,
+      paymentDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      externalReference: `R-${detail.preorderId.slice(-6)}`,
+      version: detail.version + 1,
+    })
+    return ok(
+      {
+        ...job,
+        status: 'PENDING',
+        deadLetteredAt: null,
+      },
+      202,
+    )
+  }),
+
+  // 보이는 id만 이름으로 바꾼다. 없는 회원은 빠진다(실서버와 같다).
+  http.get(url('/api/v1/admin/members'), ({ request }) => {
+    const ids = new URL(request.url).searchParams
+      .getAll('ids')
+      .flatMap((value) => value.split(','))
+      .filter(Boolean)
+    if (ids.length < 1 || ids.length > 100) {
+      return invalid([{ field: 'ids', message: '1~100개여야 합니다.' }])
+    }
+    return ok({
+      items: mockMembers.filter((member) => ids.includes(member.memberId)),
+    })
   }),
 ]

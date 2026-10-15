@@ -98,8 +98,3 @@ export const dueText = style([
   typography.body.caption,
   { color: color.primary.base },
 ])
-
-export const attemptText = style([
-  typography.body.caption,
-  { color: color.text.secondary },
-])
