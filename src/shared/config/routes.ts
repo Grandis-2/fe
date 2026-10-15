@@ -97,6 +97,8 @@ export const ADMIN_PROMOTION_NEW_PATH = '/admin/preorders/new'
 export const adminPromotionPath = (promotionId: string) =>
   `${ADMIN_PROMOTIONS_PATH}/${promotionId}`
 
+/** 대기열 관리 — 입장 속도·상품별 상한·최대 대기·이탈 유예(바꾸면 바로 회원에게 반영) */
+export const ADMIN_WAITINGROOM_PATH = '/admin/waitingroom'
 export const ADMIN_RESERVATIONS_PATH = '/admin/orders'
 /** 예약 상세 */
 export const adminReservationPath = (preorderId: string) =>
@@ -116,7 +118,6 @@ export const readBackTo = (state: unknown): BackTo | undefined => {
     : undefined
 }
 
-// 아직 기능 범위가 안 정해져 placeholder로만 열리는 메뉴들.
 /** 외부 예약 대조 — 우리 예약과 외부 예약 시스템 원장을 맞춰 본다 */
 export const ADMIN_RECONCILIATION_PATH = '/admin/reconciliation'
 export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'
@@ -124,6 +125,7 @@ export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'
 export const ADMIN_DEAD_LETTERS_PATH = '/admin/dead-letters'
 export const adminDeadLetterPath = (deadLetterId: string) =>
   `${ADMIN_DEAD_LETTERS_PATH}/${deadLetterId}`
+// 아직 기능 범위가 안 정해져 placeholder로만 열리는 메뉴.
 export const ADMIN_NOTIFICATIONS_PATH = '/admin/notifications'
 // 관리자 로그인. 사이드바 없는 단독 화면이라 AdminLayout 밖에 둔다.
 export const ADMIN_LOGIN_PATH = '/admin/login'

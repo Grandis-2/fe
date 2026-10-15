@@ -10,6 +10,7 @@ import {
   ADMIN_PROMOTIONS_PATH,
   ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
+  ADMIN_WAITINGROOM_PATH,
   readBackTo,
 } from '@shared/config/routes'
 
@@ -25,6 +26,7 @@ const navGroups = [
     items: [
       { path: ADMIN_PRODUCTS_PATH, label: '상품 관리' },
       { path: ADMIN_PROMOTIONS_PATH, label: '사전예약 관리' },
+      { path: ADMIN_WAITINGROOM_PATH, label: '대기열 관리' },
       { path: ADMIN_RESERVATIONS_PATH, label: '예약 현황' },
       { path: ADMIN_RECONCILIATION_PATH, label: '외부 예약 대조' },
     ],
