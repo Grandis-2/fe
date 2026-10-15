@@ -5,10 +5,12 @@ import type {
   AdminMember,
   AdminPreorderDetail,
   PreorderDisplayStatus,
+  PreorderEvent,
   PreorderStatus,
   ShipmentBatch,
+  SyncAttempt,
+  SyncJob,
   SyncJobStatus,
-  SyncJobSummary,
 } from '../../types'
 
 /** 예약 응답엔 회원 id만 있어 이름은 회원 이름 조회로 받는다 */
@@ -117,17 +119,64 @@ function buildReservation(
         ? Date.now() + ((index % 20) + 1) * 60 * 60 * 1000
         : payableFromMs + PAYMENT_WINDOW_MS
 
-  const register: SyncJobSummary = {
+  // 성공한 등록은 한 번에, 실패 중인 등록은 503을 세 번 맞은 기록을 둔다.
+  const failedTries = registerStatus === 'SUCCEEDED' ? 0 : 3
+  const attempts: SyncAttempt[] = Array.from(
+    { length: Math.max(1, failedTries) },
+    (_, attempt) => ({
+      attemptNumber: attempt + 1,
+      actor: 'SYSTEM',
+      result: failedTries ? 'FAILED' : 'SUCCEEDED',
+      httpStatus: failedTries ? 503 : 200,
+      errorCode: failedTries ? 'HTTP_503' : null,
+      errorMessage: failedTries ? 'Service Unavailable' : null,
+      startedAt: iso(createdAtMs + 1_000 + attempt * 20_000),
+      finishedAt: iso(createdAtMs + 1_500 + attempt * 20_000),
+    }),
+  )
+  const register: SyncJob = {
     syncJobId: seededId('7b2e3f4a', index),
     preorderId,
     jobType: 'REGISTER',
     status: registerStatus,
-    attemptCount: registerStatus === 'SUCCEEDED' ? 1 : 3,
-    lastErrorCode: registerStatus === 'SUCCEEDED' ? null : 'HTTP_503',
+    attemptCount: attempts.length,
+    lastErrorCode: failedTries ? 'HTTP_503' : null,
     deadLetteredAt:
       registerStatus === 'DEAD_LETTER' ? iso(createdAtMs + 60_000) : null,
     createdAt: iso(createdAtMs),
     updatedAt: iso(createdAtMs + 60_000),
+    attempts,
+  }
+
+  // 상태가 지나온 길을 이력으로 남긴다: 접수 → 결제 대기 → 확정 / 취소.
+  const event = (
+    eventSequence: number,
+    fromStatus: PreorderStatus | null,
+    toStatus: PreorderStatus,
+    actor: PreorderEvent['actor'],
+    atMs: number,
+  ): PreorderEvent => ({
+    eventSequence,
+    fromStatus,
+    toStatus,
+    actor,
+    reason: null,
+    createdAt: iso(atMs),
+  })
+  const events = [event(1, null, 'PENDING_SYNC', 'USER', createdAtMs)]
+  if (registered) {
+    events.push(event(2, 'PENDING_SYNC', 'REGISTERED', 'SYSTEM', payableFromMs))
+  }
+  if (status === 'RESERVED') {
+    events.push(
+      event(3, 'REGISTERED', 'RESERVED', 'SYSTEM', payableFromMs + 42 * 60_000),
+    )
+  }
+  if (status === 'CANCELED') {
+    events.push(
+      event(3, 'REGISTERED', 'CANCELING', 'USER', payableFromMs + 60_000),
+      event(4, 'CANCELING', 'CANCELED', 'SYSTEM', payableFromMs + 70_000),
+    )
   }
 
   return {
@@ -149,8 +198,10 @@ function buildReservation(
     externalReference: registered ? `R-${20_000 + index}` : null,
     cancelable: status !== 'CANCELING' && status !== 'CANCELED',
     customerId: member.memberId,
-    internalNote: null,
+    internalNote:
+      index % 7 === 0 ? 'VIP 고객 — 배송 일정 문의 이력 있음' : null,
     syncJobs: [register],
+    events,
   }
 }
 

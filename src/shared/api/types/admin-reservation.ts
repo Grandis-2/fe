@@ -1,6 +1,7 @@
 import type { Paged } from './common'
 import type {
   PreorderDetail,
+  PreorderEvent,
   PreorderStatus,
   PreorderSummary,
 } from './preorder'
@@ -42,7 +43,21 @@ export type AdminPreorderListParams = {
   size?: number
 }
 
-/** 동기화 작업. 상세에만 시도 기록(attempts)이 붙지만 화면은 쓰지 않는다 */
+/** 외부 호출 한 번의 기록 */
+export type SyncAttempt = {
+  attemptNumber: number
+  /** SYSTEM은 자동 시도, ADMIN은 관리자 재처리 뒤의 시도 */
+  actor: 'SYSTEM' | 'ADMIN'
+  /** UNKNOWN은 응답을 못 받은 경우 */
+  result: string
+  httpStatus: number | null
+  errorCode: string | null
+  errorMessage: string | null
+  startedAt: string
+  finishedAt: string | null
+}
+
+/** 동기화 작업 요약(재처리 응답) */
 export type SyncJobSummary = {
   syncJobId: string
   preorderId: string
@@ -56,12 +71,24 @@ export type SyncJobSummary = {
   updatedAt: string
 }
 
-/** 관리자 예약 상세. 화면은 재처리할 REGISTER 작업을 찾는 데만 쓴다 */
+/** 동기화 작업 상세 — 상세 응답에는 시도 기록이 붙는다 */
+export type SyncJob = SyncJobSummary & { attempts: SyncAttempt[] }
+
+/** 관리자 예약 상세. 회원용 상세에 회원 id, 내부 메모, 동기화 작업, 상태 이력이 붙는다 */
 export type AdminPreorderDetail = PreorderDetail & {
   customerId: string
+  /** 회원에게 보이지 않는 관리자 메모(최대 1000자). 없으면 null */
   internalNote: string | null
-  syncJobs: SyncJobSummary[]
+  syncJobs: SyncJob[]
+  /** 상태 이력(번호 순) */
+  events: PreorderEvent[]
 }
+
+/** POST /admin/preorders/{id}/cancel — 사유 5~500자(앞뒤 공백 제외) */
+export type AdminCancelRequest = { reason: string }
+
+/** PATCH /admin/preorders/{id} — 메모만 바꾼다. null이면 지운다 */
+export type AdminNoteRequest = { internalNote: string | null }
 
 /** 진행 중인 동기화 작업 수 — 종류 아래 상태별로 온다 */
 type OpenSyncJobCounts = Record<

@@ -97,8 +97,10 @@ export const ADMIN_PROMOTION_NEW_PATH = '/admin/preorders/new'
 export const adminPromotionPath = (promotionId: string) =>
   `${ADMIN_PROMOTIONS_PATH}/${promotionId}`
 
-// 예약 현황은 목록 한 페이지뿐이다 — 상세 화면이 없어 개별 경로가 없다.
 export const ADMIN_RESERVATIONS_PATH = '/admin/orders'
+/** 예약 상세 */
+export const adminReservationPath = (preorderId: string) =>
+  `${ADMIN_RESERVATIONS_PATH}/${preorderId}`
 
 // 아직 기능 범위가 안 정해져 placeholder로만 열리는 메뉴들.
 export const ADMIN_CONSISTENCY_CHECK_PATH = '/admin/consistency-check'

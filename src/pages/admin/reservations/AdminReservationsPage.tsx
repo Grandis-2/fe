@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
 import { RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router'
 
 import { useAdminProducts } from '@entities/admin-product'
 import {
@@ -27,6 +28,7 @@ import {
   type ReservationState,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
+import { adminReservationPath } from '@shared/config/routes'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
@@ -75,6 +77,7 @@ const matchesFilter = (state: ReservationState, filter: StatusFilter) =>
  * 걸 수 있다. 카드는 집계 API로 전체를 세고, 표는 최근 예약을 보여준다.
  */
 export function AdminReservationsPage() {
+  const navigate = useNavigate()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [keyword, setKeyword] = useState('')
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
@@ -116,6 +119,9 @@ export function AdminReservationsPage() {
   )
   const memberName = (memberId: string) =>
     members.find((member) => member.memberId === memberId)?.name ?? '—'
+
+  const openDetail = (reservation: AdminReservation) =>
+    navigate(adminReservationPath(reservation.preorderId))
 
   const refresh = () => {
     void refetch()
@@ -256,7 +262,14 @@ export function AdminReservationsPage() {
       width: '120px',
       render: (reservation) =>
         isReprocessable(reservation) ? (
-          <Button size="small" onClick={() => confirmReprocess(reservation)}>
+          <Button
+            size="small"
+            onClick={(event) => {
+              // 행 전체가 상세로 가는 버튼이라, 재처리만 하고 머문다.
+              event.stopPropagation()
+              confirmReprocess(reservation)
+            }}
+          >
             재처리
           </Button>
         ) : (
@@ -364,6 +377,12 @@ export function AdminReservationsPage() {
         columns={columns}
         rows={visibleReservations}
         rowKey={(reservation) => reservation.preorderId}
+        onRowClick={openDetail}
+        rowAction={{
+          label: (reservation) =>
+            `${reservationNo(reservation.preorderId)} 상세 보기`,
+          onClick: openDetail,
+        }}
         pageSize={10}
         emptyMessage={
           isError

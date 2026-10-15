@@ -24,6 +24,7 @@ import {
   ADMIN_PROMOTIONS_PATH,
   ADMIN_RESERVATIONS_PATH,
   adminProductPath,
+  adminReservationPath,
   adminPromotionPath,
   DRAW_PATH,
   drawPath,
@@ -283,6 +284,13 @@ export const router = createBrowserRouter([
                     lazy: () =>
                       import('@pages/admin/reservations/AdminReservationsPage').then(
                         (m) => ({ Component: m.AdminReservationsPage }),
+                      ),
+                  },
+                  {
+                    path: adminReservationPath(':preorderId'),
+                    lazy: () =>
+                      import('@pages/admin/reservation-detail/AdminReservationDetailPage').then(
+                        (m) => ({ Component: m.AdminReservationDetailPage }),
                       ),
                   },
                   {

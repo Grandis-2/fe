@@ -1,13 +1,17 @@
 import { ApiRequestError, apiClient } from '@shared/api/client'
 import { toQueryString } from '@shared/api/queryString'
 import type {
+  AdminCancelRequest,
   AdminMemberListResponse,
+  AdminNoteRequest,
   AdminPreorderDetail,
   AdminPreorderListParams,
   AdminPreorderSummary,
   OffsetPage,
   PreorderStats,
 } from '@shared/api/types'
+
+import type { AdminReservationDetail } from '../model/types'
 
 const BASE = '/api/v1/admin/preorders'
 
@@ -28,8 +32,32 @@ export const getReservationStats = (productId?: string, signal?: AbortSignal) =>
     { signal },
   )
 
-const getAdminReservation = (preorderId: string) =>
-  apiClient.request<AdminPreorderDetail>(`${BASE}/${preorderId}`)
+/** 예약 상세 — 회원, 내부 메모, 동기화 작업, 상태 이력까지 */
+export const getAdminReservation = (preorderId: string, signal?: AbortSignal) =>
+  apiClient.request<AdminPreorderDetail>(`${BASE}/${preorderId}`, { signal })
+
+/**
+ * 관리자가 예약을 취소한다. 사유는 이력에 남는다. 이미 취소 중·완료면 지금 상태로
+ * 202, 배송이 시작됐으면 409 PREORDER_NOT_CANCELABLE
+ */
+export const cancelAdminReservation = (
+  preorderId: string,
+  body: AdminCancelRequest,
+) =>
+  apiClient.request<unknown>(`${BASE}/${preorderId}/cancel`, {
+    method: 'POST',
+    body,
+  })
+
+/** 내부 메모만 바꾼다. 이력·version은 그대로이고, 응답은 바뀐 뒤의 상세다 */
+export const updateAdminReservationNote = (
+  preorderId: string,
+  body: AdminNoteRequest,
+) =>
+  apiClient.request<AdminPreorderDetail>(`${BASE}/${preorderId}`, {
+    method: 'PATCH',
+    body,
+  })
 
 /**
  * 외부 등록을 다시 시도한다. 재처리는 예약이 아니라 그 예약의 REGISTER 작업에 거는데,
@@ -64,3 +92,12 @@ export const getAdminMembers = (ids: string[], signal?: AbortSignal) =>
     `/api/v1/admin/members${toQueryString({ ids: ids.join(',') })}`,
     { signal },
   )
+
+/** 상세에 REGISTER 작업 상태를 붙인다 — 목록 한 줄과 같은 판단 함수를 쓰려고 */
+export const toAdminReservationDetail = (
+  detail: AdminPreorderDetail,
+): AdminReservationDetail => ({
+  ...detail,
+  registerJobStatus:
+    detail.syncJobs.find((job) => job.jobType === 'REGISTER')?.status ?? null,
+})

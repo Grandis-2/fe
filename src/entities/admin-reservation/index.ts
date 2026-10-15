@@ -2,12 +2,23 @@
 // 내보내면 signal 취소·폴링 백오프·4xx 재시도 차단을 건너뛰는 길이 열린다.
 export {
   useAdminMembers,
+  useAdminReservation,
   useAdminReservations,
+  useCancelReservation,
   useReprocessReservation,
   useReservationStats,
+  useSaveReservationNote,
 } from './api/useAdminReservations'
 export {
+  actorLabel,
   countByStage,
+  formatShipPeriod,
+  preorderStatusLabel,
+  RESERVATION_CANCEL_REASON_MAX,
+  RESERVATION_CANCEL_REASON_MIN,
+  RESERVATION_NOTE_MAX,
+  syncJobStatusLabel,
+  syncJobTypeLabel,
   isReprocessable,
   paymentDueLabel,
   paymentStateColor,
@@ -23,4 +34,10 @@ export {
   reservationStateLabels,
   reservationStateOf,
 } from './model/types'
-export type { AdminReservation, ReservationState } from './model/types'
+export type {
+  AdminReservation,
+  AdminReservationDetail,
+  ReservationEvent,
+  ReservationState,
+  ReservationSyncJob,
+} from './model/types'

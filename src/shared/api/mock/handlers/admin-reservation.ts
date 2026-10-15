@@ -9,6 +9,8 @@ import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
 import type {
+  AdminCancelRequest,
+  AdminNoteRequest,
   AdminPreorderDetail,
   AdminPreorderSummary,
   OffsetPage,
@@ -148,12 +150,30 @@ export const adminReservationHandlers: RequestHandler[] = [
     }
 
     const at = new Date().toISOString()
+    job.attempts.push({
+      attemptNumber: job.attempts.length + 1,
+      actor: 'ADMIN',
+      result: 'SUCCEEDED',
+      httpStatus: 200,
+      errorCode: null,
+      errorMessage: null,
+      startedAt: at,
+      finishedAt: at,
+    })
     Object.assign(job, {
       status: 'SUCCEEDED',
-      attemptCount: job.attemptCount + 1,
+      attemptCount: job.attempts.length,
       lastErrorCode: null,
       deadLetteredAt: null,
       updatedAt: at,
+    })
+    detail.events.push({
+      eventSequence: detail.events.length + 1,
+      fromStatus: 'PENDING_SYNC',
+      toStatus: 'REGISTERED',
+      actor: 'SYSTEM',
+      reason: null,
+      createdAt: at,
     })
     Object.assign(detail, {
       status: 'REGISTERED',
@@ -163,14 +183,81 @@ export const adminReservationHandlers: RequestHandler[] = [
       externalReference: `R-${detail.preorderId.slice(-6)}`,
       version: detail.version + 1,
     })
+    // 응답은 되돌린 직후의 작업 요약이다(시도 기록 없이).
+    const { attempts: _attempts, ...summary } = job
+    return ok({ ...summary, status: 'PENDING', deadLetteredAt: null }, 202)
+  }),
+
+  // 관리자 취소 — 사유는 이력에 남는다. 목은 외부 취소를 기다리지 않고 바로 끝낸다.
+  http.post(url(`${BASE}/:preorderId/cancel`), async ({ request, params }) => {
+    const detail = findReservation(String(params.preorderId))
+    if (!detail) {
+      return fail(404, {
+        code: 'PREORDER_NOT_FOUND',
+        message: '예약을 찾을 수 없습니다.',
+      })
+    }
+    const body = (await request
+      .json()
+      .catch(() => null)) as Partial<AdminCancelRequest> | null
+    const reason = body?.reason?.trim()
+    if (!reason || reason.length < 5 || reason.length > 500) {
+      return invalid([{ field: 'reason', message: '5~500자여야 합니다.' }])
+    }
+    if (detail.status !== 'CANCELING' && detail.status !== 'CANCELED') {
+      const at = new Date().toISOString()
+      detail.events.push({
+        eventSequence: detail.events.length + 1,
+        fromStatus: detail.status,
+        toStatus: 'CANCELED',
+        actor: 'ADMIN',
+        reason,
+        createdAt: at,
+      })
+      Object.assign(detail, {
+        status: 'CANCELED',
+        displayStatus: 'CANCELED',
+        paymentDueAt: null,
+        cancelable: false,
+        version: detail.version + 1,
+      })
+    }
     return ok(
       {
-        ...job,
-        status: 'PENDING',
-        deadLetteredAt: null,
+        preorderId: detail.preorderId,
+        status: detail.status,
+        version: detail.version,
       },
       202,
     )
+  }),
+
+  // 내부 메모만 바꾼다. 다른 키가 섞이면 409(실서버와 같다).
+  http.patch(url(`${BASE}/:preorderId`), async ({ request, params }) => {
+    const detail = findReservation(String(params.preorderId))
+    if (!detail) {
+      return fail(404, {
+        code: 'PREORDER_NOT_FOUND',
+        message: '예약을 찾을 수 없습니다.',
+      })
+    }
+    const body = (await request
+      .json()
+      .catch(() => null)) as Partial<AdminNoteRequest> | null
+    if (!body || Object.keys(body).some((key) => key !== 'internalNote')) {
+      return fail(409, {
+        code: 'PREORDER_FIELD_IMMUTABLE',
+        message: '내부 메모만 바꿀 수 있습니다.',
+      })
+    }
+    const note = body.internalNote ?? null
+    if (note !== null && note.length > 1000) {
+      return invalid([
+        { field: 'internalNote', message: '1000자 이하여야 합니다.' },
+      ])
+    }
+    detail.internalNote = note
+    return ok(detail)
   }),
 
   // 보이는 id만 이름으로 바꾼다. 없는 회원은 빠진다(실서버와 같다).

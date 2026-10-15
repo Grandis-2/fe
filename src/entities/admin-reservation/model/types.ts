@@ -1,12 +1,69 @@
 import type {
+  AdminPreorderDetail,
   AdminPreorderSummary,
+  PreorderEvent,
   PreorderStats,
   PreorderStatus,
+  SyncJob,
+  SyncJobStatus,
 } from '@shared/api/types'
 
 // 서버 응답과 화면이 쓰는 모양이 같아서 매퍼 없이 그대로 재노출한다.
 // 화면(pages/widgets)은 DTO를 직접 import할 수 없어 여기가 통로가 된다.
 export type AdminReservation = AdminPreorderSummary
+export type ReservationEvent = PreorderEvent
+export type ReservationSyncJob = SyncJob
+
+/**
+ * 예약 상세. 목록 한 줄처럼 REGISTER 작업 상태를 붙여 둔다 — 상태 태그·재처리 판단을
+ * 목록과 같은 함수로 하려고(toAdminReservationDetail).
+ */
+export type AdminReservationDetail = AdminPreorderDetail &
+  Pick<AdminPreorderSummary, 'registerJobStatus'>
+
+/** 내부 메모 최대 길이 — 넘으면 서버가 400 */
+export const RESERVATION_NOTE_MAX = 1000
+/** 관리자 취소 사유 길이(앞뒤 공백 제외) — 서버가 5~500자만 받는다 */
+export const RESERVATION_CANCEL_REASON_MIN = 5
+export const RESERVATION_CANCEL_REASON_MAX = 500
+
+/** 이력의 원장 상태 문구 */
+export const preorderStatusLabel: Record<PreorderStatus, string> = {
+  PENDING_SYNC: '접수',
+  REGISTERED: '결제 대기',
+  RESERVED: '예약 확정',
+  CANCELING: '취소 중',
+  CANCELED: '취소',
+}
+
+export const actorLabel: Record<PreorderEvent['actor'], string> = {
+  USER: '회원',
+  ADMIN: '관리자',
+  SYSTEM: '시스템',
+}
+
+export const syncJobTypeLabel: Record<SyncJob['jobType'], string> = {
+  REGISTER: '외부 등록',
+  CANCEL: '외부 취소',
+}
+
+export const syncJobStatusLabel: Record<SyncJobStatus, string> = {
+  PENDING: '대기',
+  PROCESSING: '처리 중',
+  RETRY_SCHEDULED: '재시도 대기',
+  SUCCEEDED: '성공',
+  DEAD_LETTER: '재처리 필요',
+  CANCELED: '무효',
+}
+
+/** '2026.11.02 ~ 2026.11.06', 하루면 날짜 하나 */
+export const formatShipPeriod = ({
+  estimatedShipStart: start,
+  estimatedShipEnd: end,
+}: AdminReservation['shipmentBatch']) => {
+  const dot = (date: string) => date.replaceAll('-', '.')
+  return start === end ? dot(start) : `${dot(start)} ~ ${dot(end)}`
+}
 
 /** 외부 등록이 재시도까지 다 실패해 관리자 재처리를 기다리는 예약 */
 export const isReprocessable = (

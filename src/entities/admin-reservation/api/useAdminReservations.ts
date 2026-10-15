@@ -4,14 +4,22 @@ import { pollingInterval, queryPolicy } from '@shared/api/queryPolicy'
 import type { AdminPreorderListParams } from '@shared/api/types'
 
 import {
+  cancelAdminReservation,
   getAdminMembers,
+  getAdminReservation,
   getAdminReservations,
   getReservationStats,
   reprocessAdminReservation,
+  toAdminReservationDetail,
+  updateAdminReservationNote,
 } from './adminReservation'
 
 const RESERVATIONS_KEY = ['admin', 'reservations'] as const
 const POLL_INTERVAL_MS = 10_000
+
+// 목록·집계와 같은 접두사 아래라, 재처리·취소 뒤 한 번에 무효화된다.
+const reservationKey = (preorderId: string) =>
+  [...RESERVATIONS_KEY, 'detail', preorderId] as const
 
 /**
  * 접수는 계속 들어오므로 주기적으로 다시 받는다. 조회가 실패하면 pollingInterval이
@@ -59,5 +67,53 @@ export const useReprocessReservation = () => {
     mutationFn: reprocessAdminReservation,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/**
+ * 예약 상세. 목록처럼 10초마다 다시 받는다 — 결제 대기 중 결제·기한 만료, 결제 뒤
+ * 취소처럼 회원·서버가 상태를 바꾸므로. 취소가 끝난 예약만 더 바뀔 게 없어 멈춘다.
+ */
+export const useAdminReservation = (preorderId: string) =>
+  useQuery({
+    queryKey: reservationKey(preorderId),
+    queryFn: ({ signal }) => getAdminReservation(preorderId, signal),
+    select: toAdminReservationDetail,
+    ...queryPolicy.live,
+    refetchInterval: (query) =>
+      query.state.data?.status === 'CANCELED'
+        ? false
+        : pollingInterval(POLL_INTERVAL_MS)(query),
+  })
+
+/** 관리자 예약 취소. 상태가 취소 중으로 바뀌어 목록·집계·상세를 다시 받는다 */
+export const useCancelReservation = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      preorderId,
+      reason,
+    }: {
+      preorderId: string
+      reason: string
+    }) => cancelAdminReservation(preorderId, { reason }),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/** 내부 메모 저장. 응답이 바뀐 뒤의 상세라 다시 받지 않고 캐시를 바로 바꾼다 */
+export const useSaveReservationNote = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      preorderId,
+      internalNote,
+    }: {
+      preorderId: string
+      internalNote: string | null
+    }) => updateAdminReservationNote(preorderId, { internalNote }),
+    onSuccess: (saved) =>
+      queryClient.setQueryData(reservationKey(saved.preorderId), saved),
   })
 }
