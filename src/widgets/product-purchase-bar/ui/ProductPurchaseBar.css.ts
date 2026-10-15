@@ -65,7 +65,6 @@ export const orderBar = style({
   // 페이지 바탕(backgroundDark.base)과 같은 색을 섞어야 바 경계에 띠가 안 생긴다.
   background: `color-mix(in srgb, ${color.backgroundDark.base} 42%, transparent)`,
   backdropFilter: 'blur(24px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
   '@media': {
     // 모바일 탭바가 바 아래쪽에 떠 있으므로 그만큼 바 배경을 늘려 버튼이 가리지 않게 한다.
     [breakpoint.mobile]: {
