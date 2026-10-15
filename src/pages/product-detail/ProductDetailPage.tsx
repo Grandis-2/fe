@@ -353,10 +353,6 @@ export function ProductDetailPage() {
             </section>
           ))}
       </div>
-      <div
-        className={styles.orderBarSpacer}
-        style={{ height: orderBarHeight }}
-      />
     </div>
   )
 }

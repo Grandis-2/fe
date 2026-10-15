@@ -213,8 +213,3 @@ export const reviewList = style({
   flexDirection: 'column',
   gap: spacing[20],
 })
-
-// 모바일 하단 고정 바에 마지막 섹션이 가리지 않도록 그만큼 여백을 띄운다.
-export const orderBarSpacer = style({
-  '@media': { [breakpoint.desktop]: { display: 'none' } },
-})
