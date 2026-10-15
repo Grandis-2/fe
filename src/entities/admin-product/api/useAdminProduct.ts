@@ -115,30 +115,58 @@ async function waitUntilReady(key: string) {
  * 장애로 실패하면 이미 등록됐을 수 있어서, 다시 누르면 같은 키를 보낸다 — 서버는 같은
  * 키면 새로 만들지 않고 처음 상품을 돌려준다. 서버가 본문을 보고 거절한 400만 고쳐서
  * 새로 보내는 것이라 키를 버린다.
+ *
+ * 결과를 모르는 채 본문을 고쳐 다시 내면 같은 키로는 거절되고(409), 새 키로 보내면 이전
+ * 등록이 반영됐을 때 상품이 둘이 된다. 그래서 보내지 않고 RegistrationUnconfirmedError를
+ * 던진다 — 화면이 관리자에게 확인받은 뒤 startOver()로 키를 버리고 다시 보낸다.
  */
 export const useCreateAdminProduct = () => {
   const queryClient = useQueryClient()
-  const keyRef = useRef<string | null>(null)
+  const pendingRef = useRef<{ key: string; body: string } | null>(null)
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async (value: AdminProductFormValue) => {
-      keyRef.current ??= crypto.randomUUID()
-      const key = keyRef.current
-      const { registration } = await register(key, toRegistrationRequest(value))
+      const request = toRegistrationRequest(value)
+      const body = JSON.stringify(request)
+      const pending = pendingRef.current
+      if (pending && pending.body !== body) {
+        throw new RegistrationUnconfirmedError()
+      }
+      const key = pending?.key ?? crypto.randomUUID()
+      pendingRef.current = { key, body }
+      const { registration } = await register(key, request)
       // 등록은 끝났다 — 다음 등록은 새 키로 한다.
-      keyRef.current = null
+      pendingRef.current = null
 
       const ready = registration.completed || (await waitUntilReady(key))
       return { productId: registration.productId, ready }
     },
     onError: (caught) => {
       if (caught instanceof ApiRequestError && caught.status === 400) {
-        keyRef.current = null
+        pendingRef.current = null
       }
     },
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
   })
+
+  return {
+    ...mutation,
+    /** 이전 등록 결과를 확인했다 — 다음 제출은 새 키로 보낸다 */
+    startOver: () => {
+      pendingRef.current = null
+    },
+  }
+}
+
+/** 이전 등록의 결과를 모르는데 본문이 바뀌었다 — 새로 보낼지 관리자가 정해야 한다 */
+export class RegistrationUnconfirmedError extends Error {
+  constructor() {
+    super(
+      '이전 등록 요청의 결과를 확인하지 못했습니다. 상품 목록에서 이미 등록됐는지 확인해 주세요.',
+    )
+    this.name = 'RegistrationUnconfirmedError'
+  }
 }
 
 /**

@@ -6,6 +6,7 @@ export {
   useAdminProductDetails,
   useAdminProductStock,
   useClosePreorderCampaign,
+  RegistrationUnconfirmedError,
   useCreateAdminProduct,
   useSetAdminProductSaleStatus,
   useSetAdminProductVisibility,
