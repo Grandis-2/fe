@@ -48,15 +48,24 @@ export function broadcastSessionCleared() {
   } satisfies BroadcastMessage)
 }
 
+// 로그인으로 받은 세션도 다른 탭에 알린다 — 안 알리면 로그아웃 상태로 열려 있던 탭은
+// 새로고침해야(재발급) 로그인이 반영된다.
+export function broadcastSessionUpdated(session: Session) {
+  lastRefreshedAt = Date.now()
+  getChannel()?.postMessage({
+    type: 'session-updated',
+    session,
+  } satisfies BroadcastMessage)
+}
+
 async function performRefresh(retried = false): Promise<boolean> {
+  // 재발급이 도는 사이 로그인으로 새 세션이 들어올 수 있다(카카오 콜백 페이지에선 부팅
+  // 재발급과 로그인 요청이 같이 나간다) — 그 세션은 이 재발급의 실패로 지우면 안 된다.
+  const tokenAtStart = useSessionStore.getState().sessionToken
   try {
     const session = await refreshSession()
     useSessionStore.getState().setSession(session)
-    lastRefreshedAt = Date.now()
-    getChannel()?.postMessage({
-      type: 'session-updated',
-      session,
-    } satisfies BroadcastMessage)
+    broadcastSessionUpdated(session)
     return true
   } catch (caught) {
     // 인증이 실제로 끊긴 경우(401)만 세션을 지운다 — 일시적 네트워크 오류까지
@@ -75,6 +84,7 @@ async function performRefresh(retried = false): Promise<boolean> {
       return performRefresh(true)
     }
 
+    if (useSessionStore.getState().sessionToken !== tokenAtStart) return false
     useSessionStore.getState().clearSession()
     broadcastSessionCleared()
     return false

@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react'
+
 import { useSubmitPreorder, type PreorderAccepted } from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { showToast } from '@shared/model/toastStore'
@@ -6,6 +8,8 @@ import {
   joinPreorderQueue,
   usePreorderQueueStore,
 } from '../model/preorderQueueStore'
+
+import { waitForRegistration } from './waitForRegistration'
 
 // 이 입장권은 더 쓸 수 없다 — 지우고 다음에 누를 때 다시 줄을 선다.
 const TICKET_ERRORS = [
@@ -23,14 +27,20 @@ type SubmitTarget = {
 }
 
 // 사전예약하기 — 이 상품의 입장권이 살아 있으면 접수하고, 없거나 만료됐으면 대기열에 선다.
+// 접수되면 외부 등록을 최대 5초 기다려 등록됐는지(registered)와 함께 onSuccess를 부른다.
 export function usePreorderSubmit() {
   const admission = usePreorderQueueStore((state) => state.admission)
   const clearAdmission = usePreorderQueueStore((state) => state.clearAdmission)
   const submit = useSubmitPreorder()
+  const [isWaiting, setIsWaiting] = useState(false)
+  const waitRef = useRef<AbortController>(null)
+
+  // 기다리는 중에 화면을 떠나면 묻기를 멈추고, 늦게 끝나도 다른 화면으로 끌고 가지 않는다.
+  useEffect(() => () => waitRef.current?.abort(), [])
 
   const submitPreorder = (
     { productId, productName, optionId, returnTo }: SubmitTarget,
-    onSuccess: (accepted: PreorderAccepted) => void,
+    onSuccess: (accepted: PreorderAccepted, registered: boolean) => void,
   ) => {
     if (
       !admission ||
@@ -48,9 +58,18 @@ export function usePreorderSubmit() {
         idempotencyKey: admission.idempotencyKey,
       },
       {
-        onSuccess: (accepted) => {
+        onSuccess: async (accepted) => {
           clearAdmission()
-          onSuccess(accepted)
+          const controller = new AbortController()
+          waitRef.current = controller
+          setIsWaiting(true)
+          const registered = await waitForRegistration(
+            accepted.preorderId,
+            controller.signal,
+          )
+          if (controller.signal.aborted) return
+          setIsWaiting(false)
+          onSuccess(accepted, registered)
         },
         onError: (caught) => {
           if (
@@ -64,5 +83,5 @@ export function usePreorderSubmit() {
     )
   }
 
-  return { submitPreorder, isPending: submit.isPending }
+  return { submitPreorder, isPending: submit.isPending || isWaiting }
 }

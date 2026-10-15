@@ -18,6 +18,7 @@ export {
   useReservation,
   useReservationHistory,
 } from './api/useReservations'
+export { getReservation } from './api/reservation'
 export { reservationStatusTag } from './model/reservation'
 export type {
   Reservation,

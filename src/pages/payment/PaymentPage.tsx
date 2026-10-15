@@ -2,7 +2,13 @@ import { useState } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router'
 
 import { useDefaultAddress, type DefaultAddress } from '@entities/address'
 import { cartKeys, useCartLines, type CartLine } from '@entities/cart'
@@ -29,7 +35,12 @@ import {
 } from '@features/product-purchase'
 import { terms, TermsAgreement } from '@features/terms-agreement'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
-import { drawPath, mypagePath, resultPath } from '@shared/config/routes'
+import {
+  drawPath,
+  HOME_PATH,
+  mypagePath,
+  resultPath,
+} from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
 import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
@@ -76,7 +87,21 @@ const toCartOrderItem = (line: CartLine): CartOrderItem => ({
   ...(line.warranty ? { expectedWarrantyPrice: line.warrantyPrice ?? 0 } : {}),
 })
 
-// 결제할 대상 하나 — 사전예약 하나 또는 장바구니에서 고른 줄. 화면은 이 모양만 본다.
+// 상품 상세의 바로 구매가 history state로 넘긴 옵션·수량. 주소로 직접 오면 없다.
+const readBuyNowItems = (state: unknown): PurchaseDraft[] | undefined =>
+  Array.isArray(state) && state.length > 0
+    ? (state as PurchaseDraft[])
+    : undefined
+
+// 바로 구매 줄을 주문 요청 줄로 — 상세에서 보여 준 가격을 그대로 옮긴다(다르면 서버가 PRICE_CHANGED).
+const toBuyNowOrderItem = (item: PurchaseDraft): CartOrderItem => ({
+  variantId: item.variantId,
+  quantity: item.quantity,
+  warranty: false,
+  expectedUnitPrice: item.unitPrice,
+})
+
+// 결제할 대상 하나 — 사전예약 하나, 장바구니에서 고른 줄, 바로 구매. 화면은 이 모양만 본다.
 type Checkout = {
   items: PurchaseDraft[]
   totalAmount: number
@@ -114,9 +139,8 @@ const REQUIRED_KEYS = [
   'addressDetail',
 ] as const
 
-// 사전예약 하나(?preorderId=) 또는 장바구니에서 고른 줄(?cart=)을 결제한다(order 명세: 주문 생성 → 결제 준비 →
-// 토스 결제창 → 승인). 바로 구매는 아직 주문 API가 없어 둘 다 없이 들어오면 안내만 보인다.
-// 일반 구매·장바구니 결제는 아직 주문 API가 없어 예약 id 없이 들어오면 안내만 보인다.
+// 사전예약 하나(?preorderId=), 장바구니에서 고른 줄(?cart=), 상품 상세의 바로 구매(history state)를 결제한다
+// (order 명세: 주문 생성 → 결제 준비 → 토스 결제창 → 승인). 결제할 대상 없이 들어오면 홈으로 보낸다.
 export function PaymentPage() {
   const [searchParams] = useSearchParams()
   const preorderId = searchParams.get('preorderId') ?? ''
@@ -125,6 +149,11 @@ export function PaymentPage() {
     .filter(Boolean)
   const drawId = searchParams.get('drawId') ?? ''
   const isCart = !preorderId && !drawId && cartItemIds.length > 0
+  const location = useLocation()
+  const buyNowItems =
+    !preorderId && !drawId && !isCart
+      ? readBuyNowItems(location.state)
+      : undefined
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const reservation = useReservation(preorderId)
@@ -206,7 +235,17 @@ export function PaymentPage() {
                   : null,
             dueRow: '주문 후 10분 안에 결제',
           }
-        : null
+        : buyNowItems
+          ? {
+              items: buyNowItems,
+              totalAmount: buyNowItems.reduce(
+                (sum, item) => sum + item.unitPrice * item.quantity,
+                0,
+              ),
+              blockedReason: null,
+              dueRow: null,
+            }
+          : null
   const payable = checkout !== null && checkout.blockedReason === null
   const totalAmount = checkout?.totalAmount ?? 0
   const isPaying = placeOrder.isPending || enterDraw.isPending || isStarting
@@ -277,7 +316,13 @@ export function PaymentPage() {
               items: cartLines.map(toCartOrderItem),
               shipTo,
             }
-          : { source: 'PREORDER', preorderId, shipTo },
+          : buyNowItems
+            ? {
+                source: 'BUY_NOW',
+                items: buyNowItems.map(toBuyNowOrderItem),
+                shipTo,
+              }
+            : { source: 'PREORDER', preorderId, shipTo },
       )
       // 기존 주문이 이미 결제됐으면 결제 단계로 가지 않고 결과를 보여 준다.
       if (order.status === 'AUTHORIZING') {
@@ -287,7 +332,7 @@ export function PaymentPage() {
         return
       }
       if (PAID_ORDER_STATUSES.includes(order.status)) {
-        navigate(resultPath(cartLines ? 'paid' : 'preorder-paid'), {
+        navigate(resultPath(preorderId ? 'preorder-paid' : 'paid'), {
           replace: true,
           state: { orderId: order.orderId },
         })
@@ -301,7 +346,7 @@ export function PaymentPage() {
       setIsStarting(true)
       await startOrderPayment({
         orderId: order.orderId,
-        preorderId: cartLines ? undefined : preorderId,
+        preorderId: preorderId || undefined,
         customerName: form.values.name,
         customerEmail: form.values.email || undefined,
       })
@@ -317,32 +362,28 @@ export function PaymentPage() {
     }
   }
 
-  // 결제할 대상 없이 들어왔거나(바로 구매) 예약·장바구니를 아직 못 받았으면 안내만 보인다.
+  if (!preorderId && !isCart && !drawId && !buyNowItems)
+    return <Navigate to={HOME_PATH} replace />
+
+  // 예약·장바구니·회차를 아직 못 받았으면 안내만 보인다.
   const loadQuery = drawId ? draw : isCart ? cart : reservation
   if (!checkout) {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
         <Container>
           <div className={styles.title}>주문 / 결제</div>
-          {!preorderId && !isCart && !drawId ? (
-            <InlineAlert status="info">
-              바로 구매는 아직 준비 중이에요. 장바구니에 담아 결제해 주세요.{' '}
-              <Link to={mypagePath('cart')}>장바구니로 가기</Link>
-            </InlineAlert>
-          ) : (
-            <InlineAlert status={loadQuery.isError ? 'error' : 'info'}>
-              {loadQuery.isError
-                ? getErrorMessage(
-                    loadQuery.error,
-                    drawId
-                      ? '럭키드로우를 불러오지 못했어요.'
-                      : isCart
-                        ? '장바구니를 불러오지 못했어요.'
-                        : '예약을 불러오지 못했어요.',
-                  )
-                : '주문할 상품을 불러오는 중이에요.'}
-            </InlineAlert>
-          )}
+          <InlineAlert status={loadQuery.isError ? 'error' : 'info'}>
+            {loadQuery.isError
+              ? getErrorMessage(
+                  loadQuery.error,
+                  drawId
+                    ? '럭키드로우를 불러오지 못했어요.'
+                    : isCart
+                      ? '장바구니를 불러오지 못했어요.'
+                      : '예약을 불러오지 못했어요.',
+                )
+              : '주문할 상품을 불러오는 중이에요.'}
+          </InlineAlert>
         </Container>
       </div>
     )

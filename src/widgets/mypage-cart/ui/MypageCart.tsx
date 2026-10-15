@@ -55,11 +55,9 @@ export function MypageCart() {
       return next
     })
 
-  // 최종 수량을 보내므로 응답 전에 또 눌러도 결과는 같지만, 요청이 쌓이지 않게 진행 중엔 무시한다.
-  const changeQuantity = (cartItemId: string, quantity: number) => {
-    if (updateQuantity.isPending) return
+  // 화면은 바로 바뀌고(낙관적) 최종 수량을 보내므로, 응답 전에 또 눌러도 막지 않는다.
+  const changeQuantity = (cartItemId: string, quantity: number) =>
     updateQuantity.mutate({ cartItemId, quantity })
-  }
 
   const removeLine = (cartItemId: string) => {
     if (removeCartItem.isPending) return
