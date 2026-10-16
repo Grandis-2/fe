@@ -146,4 +146,60 @@ async function requestWithHeaders<TData>(
   return { data: unwrap(response), headers: { ...response.headers } }
 }
 
-export const apiClient = { request, requestWithHeaders }
+// SSE 연결(알림 배지 등) — axios는 브라우저에서 이어지는 본문을 못 읽어 fetch로 연다. 열리면 본문 스트림을 주고,
+// 연결 전 실패는 다른 API처럼 ApiRequestError로 던진다(401은 재발급 뒤 한 번 다시 연다). 취소는 그대로 던진다.
+async function openStream(
+  path: string,
+  signal: AbortSignal,
+  retried = false,
+): Promise<ReadableStream<Uint8Array>> {
+  const sentId = requestId()
+  let response: Response
+  try {
+    response = await fetch(path, {
+      headers: {
+        Accept: 'text/event-stream',
+        'X-Request-Id': sentId,
+        ...getAuthHeaders(),
+      },
+      credentials: 'include',
+      signal,
+    })
+  } catch (caught) {
+    if (signal.aborted) throw caught
+    throw new ApiRequestError(
+      {
+        code: 'NETWORK_ERROR',
+        message: '네트워크 연결을 확인해 주세요.',
+        details: null,
+      },
+      0,
+      sentId,
+    )
+  }
+  if (response.ok && response.body) return response.body
+  if (
+    response.status === 401 &&
+    !retried &&
+    onUnauthorized &&
+    (await onUnauthorized())
+  )
+    return openStream(path, signal, true)
+
+  const json = (await response
+    .json()
+    .catch(() => null)) as ApiResponse<unknown> | null
+  throw new ApiRequestError(
+    json && !json.success
+      ? json.error
+      : {
+          code: 'INVALID_RESPONSE',
+          message: '서버 응답을 처리할 수 없습니다.',
+          details: null,
+        },
+    response.status,
+    json?.traceId ?? response.headers.get('x-request-id') ?? sentId,
+  )
+}
+
+export const apiClient = { request, requestWithHeaders, openStream }
