@@ -4,6 +4,7 @@ import type {
   RegistrationCombination,
   RegistrationOptionAxis,
 } from '@shared/api/types'
+import { comparableValue } from '@shared/lib/comparableValue'
 
 import { getProductVariants, toIso, type AdminProductFormValue } from './form'
 import {
@@ -11,12 +12,7 @@ import {
   toPreviewImages,
   toRegistrationImages,
 } from './images'
-import {
-  brandCodeOf,
-  COLOR_GROUP_CODE,
-  comparableValue,
-  isStorageValue,
-} from './types'
+import { brandCodeOf, COLOR_GROUP_CODE, isStorageValue } from './types'
 import { validateProductBasics, type FormIssue } from './validation'
 
 /**

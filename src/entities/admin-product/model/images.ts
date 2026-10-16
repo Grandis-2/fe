@@ -4,11 +4,11 @@ import type {
   ProductImageBundle,
   RegistrationImages,
 } from '@shared/api/types'
+import { comparableValue } from '@shared/lib/comparableValue'
 import type { UploadedImage } from '@shared/ui'
 
 import {
   COLOR_GROUP_CODE,
-  comparableValue,
   DETAIL_SECTIONS,
   type AdminProductDetailModel,
   type DetailImageField,

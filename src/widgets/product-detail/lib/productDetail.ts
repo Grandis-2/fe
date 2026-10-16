@@ -1,8 +1,7 @@
 import type { Product, ShipmentBatch } from '@entities/product'
+import { comparableValue } from '@shared/lib/comparableValue'
 
-// 서버는 대소문자·공백만 다른 이름을 같은 값으로 본다. 관리자 미리보기는 저장 전 사진을
-// 색상 이름 그대로 묶어 넘기므로, 정규화값과 이 규칙으로 맞춘다.
-const comparable = (value: string) => value.replace(/\s+/g, '').toLowerCase()
+// 관리자 미리보기는 저장 전 사진을 색상 이름 그대로 묶어 넘기므로, 서버 정규화 규칙(comparableValue)으로 맞춘다.
 
 // 고른 색상의 사진 묶음 — 색상 묶음이 없으면 기본 묶음(''), 그것도 없으면 첫 묶음.
 export function galleryImages(
@@ -14,7 +13,7 @@ export function galleryImages(
     gallery.find(
       ({ bundleKey }) =>
         colorValue !== undefined &&
-        comparable(bundleKey) === comparable(colorValue),
+        comparableValue(bundleKey) === comparableValue(colorValue),
     ) ??
     gallery.find(({ bundleKey }) => bundleKey === '') ??
     gallery[0]
@@ -36,7 +35,7 @@ export function detailImages(
   section: DetailSection,
 ) {
   const bundle = product.images.detail.find(
-    ({ bundleKey }) => comparable(bundleKey) === comparable(section),
+    ({ bundleKey }) => comparableValue(bundleKey) === comparableValue(section),
   )
   return [...(bundle?.items ?? [])]
     .sort((a, b) => a.position - b.position)
