@@ -35,3 +35,15 @@ export const Unknown: Story = {
     })
   },
 }
+
+/** 불러오는 중엔 값 자리에 회색 막대 — 0건이나 '조회 실패'와 섞이지 않는다 */
+export const Loading: Story = {
+  args: { label: '접수', value: '조회 실패', loading: true },
+  play: async ({ canvas, canvasElement }) => {
+    await expect(canvas.queryByText('조회 실패')).toBeNull()
+    await expect(canvasElement.firstElementChild).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
+  },
+}

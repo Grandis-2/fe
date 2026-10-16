@@ -21,12 +21,14 @@ import {
   ADMIN_RECONCILIATION_PATH,
   ADMIN_WAITINGROOM_PATH,
 } from '@shared/config/routes'
+import { srOnly } from '@shared/config/theme'
 import {
   Button,
   Dropdown,
   FormSection,
   InlineAlert,
   RefreshStatus,
+  Skeleton,
   Sparkline,
   StatCard,
   Table,
@@ -371,7 +373,10 @@ export function AdminLoadTest() {
               {' · '}설정 버전 {mock.data.configVersion}
             </div>
           ) : (
-            <div className={styles.mockSummary}>불러오는 중입니다.</div>
+            <div role="status" aria-busy="true">
+              <span className={srOnly}>불러오는 중입니다.</span>
+              <Skeleton width="60%" height={20} />
+            </div>
           )}
         </div>
       </FormSection>

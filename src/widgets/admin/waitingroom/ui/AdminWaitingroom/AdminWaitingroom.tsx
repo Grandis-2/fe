@@ -22,6 +22,7 @@ import {
   refreshIntervalOptions,
   type RefreshInterval,
 } from '@shared/config/refreshInterval'
+import { srOnly } from '@shared/config/theme'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import {
@@ -30,6 +31,7 @@ import {
   FormSection,
   InlineAlert,
   RefreshStatus,
+  Skeleton,
   StatCard,
   Table,
   Tag,
@@ -355,7 +357,17 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
         )}
         <div className={styles.card}>
           {rates.isPending && (
-            <div className={styles.subText}>불러오는 중입니다.</div>
+            // 운영값 줄 모양을 먼저 깐다 — 다 오면 같은 자리에 값이 들어온다.
+            <div role="status" aria-busy="true">
+              <span className={srOnly}>불러오는 중입니다.</span>
+              {[0, 1, 2].map((row) => (
+                <Skeleton
+                  key={row}
+                  height={24}
+                  className={styles.skeletonRow}
+                />
+              ))}
+            </div>
           )}
           {settings.map((row) => (
             <div key={row.key} className={styles.settingRow}>

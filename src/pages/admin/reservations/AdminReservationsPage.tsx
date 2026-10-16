@@ -337,12 +337,11 @@ export function AdminReservationsPage() {
               key={label}
               label={label}
               muted={unknown}
+              loading={unknown && stats.isPending}
               value={
                 value !== undefined
                   ? `${value.toLocaleString('ko-KR')}건`
-                  : stats.isPending
-                    ? '불러오는 중'
-                    : '조회 실패'
+                  : '조회 실패'
               }
             />
           )

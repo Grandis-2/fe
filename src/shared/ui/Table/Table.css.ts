@@ -132,11 +132,4 @@ export const skeletonBar = style([
   },
 ])
 
-export const srOnly = style({
-  position: 'absolute',
-  width: '1px',
-  height: '1px',
-  overflow: 'hidden',
-  clip: 'rect(0 0 0 0)',
-  whiteSpace: 'nowrap',
-})
+export { srOnly } from '@shared/config/theme'
