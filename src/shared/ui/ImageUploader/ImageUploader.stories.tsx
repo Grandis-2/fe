@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { expect, userEvent } from 'storybook/test'
+import { expect, fireEvent, userEvent } from 'storybook/test'
 
 import { ImageUploader, type UploadedImage } from './ImageUploader'
 
@@ -133,5 +133,51 @@ export const FailsThenRetries: Story = {
     await userEvent.click(canvas.getByLabelText('b.png 다시 올리기'))
     await expect(canvas.queryByRole('alert')).toBeNull()
     await expect(canvas.getByAltText('b.png')).toBeVisible()
+  },
+}
+
+const altOrder = (canvas: { getAllByRole: (role: 'img') => HTMLElement[] }) =>
+  canvas.getAllByRole('img').map((img) => img.getAttribute('alt'))
+
+/** 사진을 끌어 순서를 바꾼다. 포커스한 사진은 ←/→로도 옮긴다. */
+export const Reorder: Story = {
+  args: { value: makeImages(3), onChange: () => {}, label: '이미지' },
+  play: async ({ canvas }) => {
+    const tiles = canvas.getAllByRole('group')
+    fireEvent.dragStart(tiles[0], { dataTransfer: new DataTransfer() })
+    fireEvent.dragOver(tiles[2], { dataTransfer: new DataTransfer() })
+    fireEvent.dragEnd(tiles[0])
+    await expect(altOrder(canvas)).toEqual(['이미지 2', '이미지 3', '이미지 1'])
+
+    canvas.getByRole('group', { name: /^3번째/ }).focus()
+    await userEvent.keyboard('{ArrowLeft}')
+    await expect(altOrder(canvas)).toEqual(['이미지 2', '이미지 1', '이미지 3'])
+  },
+}
+
+/** 파일을 끌어다 놓으면 올린다. 받지 않는 형식은 거르고 남은 칸만큼만 담는다. */
+export const DropFiles: Story = {
+  args: {
+    value: makeImages(1),
+    onChange: () => {},
+    accept: 'image/png',
+    max: 2,
+    label: '이미지',
+  },
+  play: async ({ canvas }) => {
+    // fireEvent는 DataTransfer의 파일을 옮겨 담지 못해 브라우저 이벤트를 직접 보낸다.
+    const dataTransfer = new DataTransfer()
+    dataTransfer.items.add(new File(['x'], 'memo.txt', { type: 'text/plain' }))
+    dataTransfer.items.add(pngFile('drop-1.png'))
+    dataTransfer.items.add(pngFile('drop-2.png'))
+    canvas.getByText('1 / 2').dispatchEvent(
+      new DragEvent('drop', {
+        bubbles: true,
+        cancelable: true,
+        dataTransfer,
+      }),
+    )
+    await expect(await canvas.findByText('2 / 2')).toBeVisible()
+    await expect(canvas.getByAltText('drop-1.png')).toBeInTheDocument()
   },
 }
