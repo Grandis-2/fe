@@ -226,6 +226,8 @@ export function VariantTable({
                       <label className={styles.groupToggle}>
                         이 색상 전체 판매
                         <Toggle
+                          // 색상마다 같은 문구라 어느 색상인지 이름에 담는다.
+                          aria-label={`${colorName} 전체 판매`}
                           checked={allSelling}
                           onChange={() =>
                             onPausedChange(

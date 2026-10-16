@@ -23,7 +23,8 @@ export function useNumberDraft(
 
   const handleInput = (raw: string) => {
     // 숫자 외 문자(콤마 포함)는 버리고, 다 지우면 빈 칸으로 둔 채 0으로 취급한다.
-    const digits = raw.replace(/\D/g, '')
+    // 15자리까지만 받는다 — 넘으면 Number가 정밀도를 잃어 칸에 보이는 값이 바뀐다.
+    const digits = raw.replace(/\D/g, '').slice(0, 15)
     const next = Number(digits) || 0
     setDraft(digits === '' ? '' : formatNumber(next))
     setLastValue(next)
