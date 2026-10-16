@@ -104,8 +104,9 @@ export const PreorderToggle: Story = {
     await waitFor(() =>
       expect(canvas.getByRole('button', { name: '달력 열기' })).toBeVisible(),
     )
+    // 등록에선 수량 칸이 1차 배송 수량으로 바뀐다.
     await expect(canvas.queryByLabelText('수량')).toBeNull()
-    await expect(canvas.queryByLabelText('1차 배송 수량')).toBeNull()
+    await expect(canvas.getByLabelText('1차 배송 수량')).toBeVisible()
 
     // 1차 배송 기간은 등록할 때만 고를 수 있다 — 이 기간으로 1차 차수가 만들어진다.
     await expect(

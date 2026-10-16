@@ -417,10 +417,9 @@ export function AdminProductForm({
               onQuantitiesChange={(changes) =>
                 patch({ quantities: { ...value.quantities, ...changes } })
               }
-              // 사전예약은 재고를 세지 않는다(서버가 stock을 받지 않는다). 등록 때 1차 배송
-              // 차수는 끝이 열린 채로만 보낼 수 있어서 1차 물량도 실을 곳이 없다 —
-              // 물량 경계는 배송 구간 설정에서 2차를 더할 때 정한다.
-              hideQuantity={value.isPreorder}
+              // 사전예약 등록은 수량 칸을 '1차 배송 수량'으로 받는다. 수정 화면에선 1차 배송
+              // 수량을 배송 구간 설정에서 고치므로 숨긴다.
+              hideQuantity={editing && value.isPreorder}
               // 등록에선 끈 조합을 만들지 않고, 수정에선 판매 중지로 둔다.
               pausedKeys={value.pausedKeys}
               excludeOnPause={!editing}
