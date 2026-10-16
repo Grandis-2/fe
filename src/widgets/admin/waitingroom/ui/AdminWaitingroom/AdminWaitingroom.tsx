@@ -425,12 +425,11 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
           columns={productColumns}
           rows={view?.products ?? []}
           rowKey={(product) => product.productId}
+          loading={status.isPending}
           emptyMessage={
-            status.isPending
-              ? '불러오는 중입니다.'
-              : status.isError && !view
-                ? '대기열 현황을 불러오지 못했습니다.'
-                : '대기열에 올라온 상품이 없습니다.'
+            status.isError && !view
+              ? '대기열 현황을 불러오지 못했습니다.'
+              : '대기열에 올라온 상품이 없습니다.'
           }
         />
       </FormSection>

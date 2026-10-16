@@ -163,15 +163,14 @@ export function AdminPromotionsPage() {
           onClick: openDetail,
           icon: SquarePen,
         }}
+        loading={promotions.isPending}
         emptyMessage={
           promotions.isError
             ? getErrorMessage(
                 promotions.error,
                 '사전예약을 불러오지 못했습니다.',
               )
-            : promotions.isPending
-              ? '불러오는 중입니다.'
-              : '조건에 맞는 사전예약이 없습니다.'
+            : '조건에 맞는 사전예약이 없습니다.'
         }
       />
     </div>

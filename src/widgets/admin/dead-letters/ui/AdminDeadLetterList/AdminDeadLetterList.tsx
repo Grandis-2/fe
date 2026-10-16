@@ -356,12 +356,11 @@ export function AdminDeadLetterList() {
         rowKey={(item) => item.deadLetterId}
         pageSize={20}
         onRowClick={openDetail}
+        loading={deadLetters.isPending}
         emptyMessage={
-          deadLetters.isPending
-            ? '불러오는 중입니다.'
-            : deadLetters.isError
-              ? '메시지를 불러오지 못했습니다.'
-              : '조건에 맞는 메시지가 없습니다.'
+          deadLetters.isError
+            ? '메시지를 불러오지 못했습니다.'
+            : '조건에 맞는 메시지가 없습니다.'
         }
       />
       {deadLetters.data && deadLetters.data.total > PAGE_SIZE && (

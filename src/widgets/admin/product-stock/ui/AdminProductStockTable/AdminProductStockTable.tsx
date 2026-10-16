@@ -96,12 +96,11 @@ export function AdminProductStockTable({
         rowKey={(row) => row.optionId}
         pageSize={10}
         // 조회 실패를 '재고 없음'으로 보이면 운영 판단이 정반대가 된다.
+        loading={!failed && (product.isPending || stock.isPending)}
         emptyMessage={
           failed
             ? getErrorMessage(failed, '재고를 불러오지 못했습니다.')
-            : product.isPending || stock.isPending
-              ? '불러오는 중입니다.'
-              : '등록된 재고가 없습니다.'
+            : '등록된 재고가 없습니다.'
         }
       />
     </div>

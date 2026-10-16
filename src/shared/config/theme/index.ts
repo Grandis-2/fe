@@ -11,7 +11,7 @@ export {
 export { shadow } from './tokens/shadow'
 export * as typography from './tokens/typography/semantic.css'
 export * as motion from './tokens/motion'
-export { skeleton } from './skeleton.css'
+export { skeleton, skeletonOnLight } from './skeleton.css'
 export { sprinkles } from './sprinkles.css'
 export type { Sprinkles } from './sprinkles.css'
 export {

@@ -333,11 +333,9 @@ export function AdminLoadTest() {
           columns={errorColumns}
           rows={failures}
           rowKey={(group) => group.errorCode ?? 'none'}
-          emptyMessage={
-            errors.isPending
-              ? '불러오는 중입니다.'
-              : '실패 중인 작업이 없습니다.'
-          }
+          loading={errors.isPending}
+          loadingRows={3}
+          emptyMessage="실패 중인 작업이 없습니다."
         />
       </FormSection>
 

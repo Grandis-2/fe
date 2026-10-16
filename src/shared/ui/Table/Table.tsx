@@ -39,10 +39,18 @@ export type TableProps<T> = {
    * 행 전체가 눌린다는 걸 모르는 사용자를 위한 눈에 보이는 진입점이다.
    */
   rowAction?: TableRowAction<T>
+  /**
+   * 불러오는 중 — 행 자리에 회색 줄을 깐다. 빈 문구(emptyMessage)로 '불러오는 중'을 쓰면
+   * 0건과 구별이 안 되고, 다 오면 표 높이가 갑자기 바뀐다.
+   */
+  loading?: boolean
+  /** 로딩 줄 수. 안 주면 pageSize, 그것도 없으면 5줄 */
+  loadingRows?: number
   className?: string
 }
 
 const ACTION_COLUMN_KEY = 'table-row-action'
+const DEFAULT_LOADING_ROWS = 5
 
 export function Table<T>({
   columns,
@@ -52,6 +60,8 @@ export function Table<T>({
   pageSize,
   onRowClick,
   rowAction,
+  loading = false,
+  loadingRows,
   className,
 }: TableProps<T>) {
   const [page, setPage] = useState(1)
@@ -98,7 +108,7 @@ export function Table<T>({
   return (
     <div className={[styles.wrapper, className].filter(Boolean).join(' ')}>
       <div className={styles.root}>
-        <table className={styles.table}>
+        <table className={styles.table} aria-busy={loading || undefined}>
           <thead>
             <tr>
               {allColumns.map(({ key, header, align = 'left', width }) => (
@@ -114,7 +124,29 @@ export function Table<T>({
             </tr>
           </thead>
           <tbody>
-            {visibleRows.length === 0 ? (
+            {loading ? (
+              Array.from(
+                { length: loadingRows ?? pageSize ?? DEFAULT_LOADING_ROWS },
+                (_, index) => (
+                  <tr key={index} className={styles.row}>
+                    {allColumns.map(({ key, align = 'left' }) => (
+                      <td key={key} className={styles.cell[align]}>
+                        <span
+                          className={styles.skeletonBar}
+                          aria-hidden="true"
+                        />
+                        {/* 스크린리더엔 한 번만 알린다. */}
+                        {index === 0 && key === allColumns[0].key && (
+                          <span className={styles.srOnly}>
+                            불러오는 중입니다.
+                          </span>
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                ),
+              )
+            ) : visibleRows.length === 0 ? (
               <tr>
                 <td className={styles.emptyCell} colSpan={allColumns.length}>
                   {emptyMessage}
@@ -140,7 +172,7 @@ export function Table<T>({
           </tbody>
         </table>
       </div>
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <Navigator
           className={styles.navigator}
           totalPages={totalPages}

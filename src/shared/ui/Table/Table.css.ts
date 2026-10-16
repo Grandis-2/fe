@@ -1,6 +1,12 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import {
+  color,
+  motion,
+  skeletonOnLight,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 
 export const wrapper = style({
   display: 'flex',
@@ -111,4 +117,26 @@ export const actionButton = style({
 export const actionIcon = style({
   width: '18px',
   height: '18px',
+})
+
+// 로딩 줄의 회색 막대 — 칸 정렬을 따르도록 inline-block으로 둔다.
+export const skeletonBar = style([
+  skeletonOnLight,
+  {
+    display: 'inline-block',
+    width: '70%',
+    maxWidth: '160px',
+    height: '20px',
+    borderRadius: '6px',
+    verticalAlign: 'middle',
+  },
+])
+
+export const srOnly = style({
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
 })
