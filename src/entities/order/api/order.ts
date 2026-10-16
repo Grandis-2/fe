@@ -34,7 +34,12 @@ export const getOrder = (orderId: string, signal?: AbortSignal) =>
 export const placeOrder = ({
   idempotencyKey,
   ...body
-}: PlaceOrderRequest & { idempotencyKey?: string }) =>
+}:
+  | (PlaceOrderRequest & {
+      source: 'CART' | 'PREORDER'
+      idempotencyKey?: never
+    })
+  | (PlaceOrderRequest & { source: 'BUY_NOW'; idempotencyKey: string })) =>
   apiClient.request<PlacedOrder>('/api/v1/orders', {
     method: 'POST',
     body,

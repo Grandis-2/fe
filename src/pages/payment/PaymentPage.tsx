@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
@@ -25,7 +25,12 @@ import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@features/address-search'
-import { startDrawEntryPayment, startOrderPayment } from '@features/payment'
+import {
+  buyNowKeyFor,
+  resetBuyNowKey,
+  startDrawEntryPayment,
+  startOrderPayment,
+} from '@features/payment'
 import {
   cartLineToDraft,
   drawToDraft,
@@ -274,16 +279,6 @@ export function PaymentPage() {
   const toggleAllAgree = (checked: boolean) =>
     setAgreedIds(checked ? new Set(terms.map((term) => term.id)) : new Set())
 
-  // 바로 구매의 Idempotency-Key — 같은 내용으로 다시 누르면(응답을 못 받았거나 결제창을 닫음) 같은 키로 보내
-  // 기존 주문을 돌려받고, 배송지를 고쳐 내용이 바뀌면 새 키로 새 주문을 만든다(같은 키에 다른 내용은 422).
-  const buyNowKey = useRef({ payload: '', key: '' })
-  const buyNowKeyFor = (body: object) => {
-    const payload = JSON.stringify(body)
-    if (buyNowKey.current.payload !== payload)
-      buyNowKey.current = { payload, key: crypto.randomUUID() }
-    return buyNowKey.current.key
-  }
-
   // ① 주문 생성(같은 예약이면 기존 주문) → ② 결제 준비(tossOrderId·금액·주문명) → ③ 토스 결제창(카드).
   // 정상 진행되면 브라우저가 successUrl/failUrl로 이동하므로, catch는 결제창이 뜨기 전 오류만 잡는다.
   const handlePayment = async () => {
@@ -343,6 +338,7 @@ export function PaymentPage() {
         return
       }
       if (PAID_ORDER_STATUSES.includes(order.status)) {
+        if (buyNow) resetBuyNowKey()
         navigate(resultPath(preorderId ? 'preorder-paid' : 'paid'), {
           replace: true,
           state: { orderId: order.orderId },
@@ -372,7 +368,7 @@ export function PaymentPage() {
         caught instanceof ApiRequestError &&
         caught.error.code === 'KEY_PAYLOAD_MISMATCH'
       )
-        buyNowKey.current.payload = ''
+        resetBuyNowKey()
       setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
     } finally {
       setIsStarting(false)
