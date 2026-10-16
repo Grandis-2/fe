@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
@@ -274,6 +274,16 @@ export function PaymentPage() {
   const toggleAllAgree = (checked: boolean) =>
     setAgreedIds(checked ? new Set(terms.map((term) => term.id)) : new Set())
 
+  // 바로 구매의 Idempotency-Key — 같은 내용으로 다시 누르면(응답을 못 받았거나 결제창을 닫음) 같은 키로 보내
+  // 기존 주문을 돌려받고, 배송지를 고쳐 내용이 바뀌면 새 키로 새 주문을 만든다(같은 키에 다른 내용은 422).
+  const buyNowKey = useRef({ payload: '', key: '' })
+  const buyNowKeyFor = (body: object) => {
+    const payload = JSON.stringify(body)
+    if (buyNowKey.current.payload !== payload)
+      buyNowKey.current = { payload, key: crypto.randomUUID() }
+    return buyNowKey.current.key
+  }
+
   // ① 주문 생성(같은 예약이면 기존 주문) → ② 결제 준비(tossOrderId·금액·주문명) → ③ 토스 결제창(카드).
   // 정상 진행되면 브라우저가 successUrl/failUrl로 이동하므로, catch는 결제창이 뜨기 전 오류만 잡는다.
   const handlePayment = async () => {
@@ -309,6 +319,11 @@ export function PaymentPage() {
         })
         return
       }
+      const buyNow = buyNowItems && {
+        source: 'BUY_NOW' as const,
+        items: buyNowItems.map(toBuyNowOrderItem),
+        shipTo,
+      }
       const order = await placeOrder.mutateAsync(
         cartLines
           ? {
@@ -316,12 +331,8 @@ export function PaymentPage() {
               items: cartLines.map(toCartOrderItem),
               shipTo,
             }
-          : buyNowItems
-            ? {
-                source: 'BUY_NOW',
-                items: buyNowItems.map(toBuyNowOrderItem),
-                shipTo,
-              }
+          : buyNow
+            ? { ...buyNow, idempotencyKey: buyNowKeyFor(buyNow) }
             : { source: 'PREORDER', preorderId, shipTo },
       )
       // 기존 주문이 이미 결제됐으면 결제 단계로 가지 않고 결과를 보여 준다.
@@ -356,6 +367,12 @@ export function PaymentPage() {
         CART_REFRESH_CODES.includes(caught.error.code)
       )
         void queryClient.invalidateQueries({ queryKey: cartKeys.all })
+      // 같은 키의 처음 주문과 내용이 다르다 — 다음 시도는 새 키로 보낸다.
+      if (
+        caught instanceof ApiRequestError &&
+        caught.error.code === 'KEY_PAYLOAD_MISMATCH'
+      )
+        buyNowKey.current.payload = ''
       setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
     } finally {
       setIsStarting(false)

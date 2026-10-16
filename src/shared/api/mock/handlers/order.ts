@@ -84,6 +84,10 @@ const windowExpired = () =>
     message: '결제 기한이 지났습니다.',
   })
 
+// 바로 구매 Idempotency-Key → 처음 만든 주문 id.
+// ponytail: 메모리에만 둔다 — 새로고침하면 같은 키도 새 주문이 된다. 재현이 필요해지면 order DB에 같이 저장한다.
+const buyNowKeys = new Map<string, string>()
+
 const findOrder = (orderId: unknown) =>
   orders.find((it) => it.orderId === orderId)
 
@@ -189,6 +193,21 @@ const sameShipTo = (a: ShipTo, b: ShipTo) =>
     (key) => a[key] === b[key],
   )
 
+// 옵션·보증 여부·수량·배송지가 같은 주문인지(가격은 보지 않는다).
+const sameOrderContent = (
+  order: OrderRecord,
+  items: CartOrderItem[],
+  shipTo: ShipTo,
+) =>
+  sameShipTo(order.shipTo, shipTo) &&
+  order.cartItems?.length === items.length &&
+  items.every((item) =>
+    order.cartItems?.some(
+      (prev) =>
+        lineKey(prev) === lineKey(item) && prev.quantity === item.quantity,
+    ),
+  )
+
 const lineKey = ({ variantId, warranty = false }: CartOrderItem) =>
   `${variantId}:${warranty}`
 
@@ -268,17 +287,17 @@ function toOrderItems(items: CartOrderItem[]): OrderItem[] {
 }
 
 // 장바구니 주문 만들기 — 실패하면 409·400 응답, 성공하면 주문.
-// 바로 구매(BUY_NOW)도 같은 본문·규칙으로 만든다 — 장바구니와 맞춰 보는 것만 빠진다.
-// ponytail: BUY_NOW는 Swagger에 아직 없어 CART와 같다고 가정 — 명세가 올라오면 다른 규칙만 고친다.
+// 바로 구매(BUY_NOW)도 가격·판매 상태·재고 규칙은 같고, 장바구니와 무관해 대조·승인 대기·회원당 하나 규칙만 빠진다
+// (기존 주문은 Idempotency-Key로만 돌려받는다 — 아래 핸들러).
 function placeCartOrder(
   items: CartOrderItem[],
   shipTo: ShipTo,
   source: 'CART' | 'BUY_NOW',
 ): Response | OrderRecord {
-  // 앞 주문이 승인 결과를 기다리면 새 주문을 받지 않는다.
-  const authorizing = orders.find(
-    (it) => it.source === source && it.status === 'AUTHORIZING',
-  )
+  // 앞 장바구니 주문이 승인 결과를 기다리면 새 주문을 받지 않는다.
+  const authorizing =
+    source === 'CART' &&
+    orders.find((it) => it.source === 'CART' && it.status === 'AUTHORIZING')
   if (authorizing) return paymentInProgress()
 
   // 고른 줄의 옵션·보증 여부·수량이 지금 장바구니와 정확히 같아야 한다.
@@ -351,25 +370,20 @@ function placeCartOrder(
 
   const totalAmount = orderItems.reduce((sum, row) => sum + row.lineAmount, 0)
   // 결제 전 장바구니 주문은 회원당 하나 — 구성·가격·배송지가 같고 기한 안이면 그 주문을 돌려준다.
-  const pending = orders.filter(
-    (it) => it.source === source && it.status === 'AWAITING_PAYMENT',
-  )
-  const same = pending.find(
-    (it) =>
-      !isCartDue(it) &&
-      it.totalAmount === totalAmount &&
-      sameShipTo(it.shipTo, shipTo) &&
-      it.cartItems?.length === items.length &&
-      items.every((item) =>
-        it.cartItems?.some(
-          (prev) =>
-            lineKey(prev) === lineKey(item) && prev.quantity === item.quantity,
-        ),
-      ),
-  )
-  if (same) return same
-  for (const previous of pending)
-    moveOrder(previous, 'CANCELED', 'SYSTEM', 'REPLACED_BY_NEW_ORDER')
+  if (source === 'CART') {
+    const pending = orders.filter(
+      (it) => it.source === 'CART' && it.status === 'AWAITING_PAYMENT',
+    )
+    const same = pending.find(
+      (it) =>
+        !isCartDue(it) &&
+        it.totalAmount === totalAmount &&
+        sameOrderContent(it, items, shipTo),
+    )
+    if (same) return same
+    for (const previous of pending)
+      moveOrder(previous, 'CANCELED', 'SYSTEM', 'REPLACED_BY_NEW_ORDER')
+  }
 
   const createdAt = new Date().toISOString()
   return {
@@ -542,19 +556,56 @@ export const orderHandlers: RequestHandler[] = [
       ...(source === 'CART' || source === 'BUY_NOW'
         ? cartItemViolations(items)
         : []),
+      ...(source === 'BUY_NOW' &&
+      Array.isArray(items) &&
+      new Set(items.map((item: CartOrderItem) => item.variantId)).size > 1
+        ? [
+            {
+              field: 'items',
+              message: '바로 구매는 옵션 하나만 주문할 수 있습니다.',
+            },
+          ]
+        : []),
       ...shipToViolations(address),
     ]
     if (violations.length > 0) return invalid(violations)
 
+    // 바로 구매는 Idempotency-Key 필수 — 같은 키·같은 내용이면 처음 주문을 지금 상태 그대로 돌려준다.
+    const idempotencyKey = request.headers.get('Idempotency-Key')
+    if (source === 'BUY_NOW' && !idempotencyKey)
+      return fail(400, {
+        code: 'IDEMPOTENCY_KEY_REQUIRED',
+        message: 'Idempotency-Key 헤더가 필요합니다.',
+      })
+    if (source === 'BUY_NOW' && !isUuid(idempotencyKey as string))
+      return invalid([
+        { field: 'Idempotency-Key', message: 'UUID 형식이어야 합니다.' },
+      ])
+    const keyed =
+      source === 'BUY_NOW'
+        ? findOrder(buyNowKeys.get(idempotencyKey as string))
+        : undefined
+    if (
+      keyed &&
+      !sameOrderContent(keyed, items as CartOrderItem[], toShipTo(address))
+    )
+      return fail(422, {
+        code: 'KEY_PAYLOAD_MISMATCH',
+        message: '이전 요청과 내용이 다릅니다. 새 주문으로 다시 시도해 주세요.',
+      })
+
     const result =
-      source === 'CART' || source === 'BUY_NOW'
+      keyed ??
+      (source === 'CART' || source === 'BUY_NOW'
         ? placeCartOrder(items as CartOrderItem[], toShipTo(address), source)
-        : placePreorderOrder(preorderId as string, toShipTo(address))
+        : placePreorderOrder(preorderId as string, toShipTo(address)))
     if (result instanceof Response) return result
 
     const reused = orders.includes(result)
     if (!reused) {
       orders.push(result)
+      if (source === 'BUY_NOW')
+        buyNowKeys.set(idempotencyKey as string, result.orderId)
       saveOrderDb()
     }
     const response = ok<PlaceOrderResponse>(
