@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router'
 
 import {
   ADMIN_DEAD_LETTERS_PATH,
+  ADMIN_DRAWS_PATH,
   ADMIN_HOME_PATH,
   ADMIN_LOAD_TEST_PATH,
   ADMIN_MOCK_SETTINGS_PATH,
@@ -26,6 +27,7 @@ const navGroups = [
     items: [
       { path: ADMIN_PRODUCTS_PATH, label: '상품 관리' },
       { path: ADMIN_PROMOTIONS_PATH, label: '사전예약 관리' },
+      { path: ADMIN_DRAWS_PATH, label: '럭키드로우 관리' },
       { path: ADMIN_WAITINGROOM_PATH, label: '대기열 관리' },
       { path: ADMIN_RESERVATIONS_PATH, label: '예약 현황' },
       { path: ADMIN_RECONCILIATION_PATH, label: '외부 예약 대조' },

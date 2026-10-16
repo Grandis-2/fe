@@ -97,6 +97,11 @@ export const ADMIN_PROMOTION_NEW_PATH = '/admin/preorders/new'
 export const adminPromotionPath = (promotionId: string) =>
   `${ADMIN_PROMOTIONS_PATH}/${promotionId}`
 
+export const ADMIN_DRAWS_PATH = '/admin/draws'
+export const ADMIN_DRAW_NEW_PATH = '/admin/draws/new'
+/** 럭키 드로우 회차 상세(응모·추첨 진행) */
+export const adminDrawPath = (drawId: string) => `${ADMIN_DRAWS_PATH}/${drawId}`
+
 /** 대기열 관리 — 입장 속도·상품별 상한·최대 대기·이탈 유예(바꾸면 바로 회원에게 반영) */
 export const ADMIN_WAITINGROOM_PATH = '/admin/waitingroom'
 export const ADMIN_RESERVATIONS_PATH = '/admin/orders'

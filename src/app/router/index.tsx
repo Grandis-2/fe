@@ -17,6 +17,8 @@ import {
   ADMIN_LOAD_TEST_PATH,
   ADMIN_LOGIN_PATH,
   ADMIN_MOCK_SETTINGS_PATH,
+  ADMIN_DRAW_NEW_PATH,
+  ADMIN_DRAWS_PATH,
   ADMIN_NOTIFICATIONS_PATH,
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PRODUCTS_PATH,
@@ -29,6 +31,7 @@ import {
   adminDeadLetterPath,
   adminReservationPath,
   adminPromotionPath,
+  adminDrawPath,
   DRAW_PATH,
   drawPath,
   HOME_PATH,
@@ -280,6 +283,27 @@ export const router = createBrowserRouter([
                     lazy: () =>
                       import('@pages/admin/promotion-edit/AdminPromotionEditPage').then(
                         (m) => ({ Component: m.AdminPromotionEditPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_DRAWS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/draws/AdminDrawsPage').then((m) => ({
+                        Component: m.AdminDrawsPage,
+                      })),
+                  },
+                  {
+                    path: ADMIN_DRAW_NEW_PATH,
+                    lazy: () =>
+                      import('@pages/admin/draw-new/AdminDrawNewPage').then(
+                        (m) => ({ Component: m.AdminDrawNewPage }),
+                      ),
+                  },
+                  {
+                    path: adminDrawPath(':drawId'),
+                    lazy: () =>
+                      import('@pages/admin/draw-detail/AdminDrawDetailPage').then(
+                        (m) => ({ Component: m.AdminDrawDetailPage }),
                       ),
                   },
                   {
