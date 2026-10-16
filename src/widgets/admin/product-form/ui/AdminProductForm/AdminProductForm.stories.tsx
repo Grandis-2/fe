@@ -154,7 +154,7 @@ export const VariantCombination: Story = {
     ).toBeVisible()
 
     // 먼저 입력한 수량은 그대로 남아 있어야 한다
-    await expect(canvas.getAllByLabelText('수량')[0]).toHaveValue('1500')
+    await expect(canvas.getAllByLabelText('수량')[0]).toHaveValue('1,500')
   },
 }
 
