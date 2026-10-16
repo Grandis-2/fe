@@ -84,10 +84,6 @@ const windowExpired = () =>
     message: '결제 기한이 지났습니다.',
   })
 
-// 바로 구매 Idempotency-Key → 처음 만든 주문 id.
-// ponytail: 메모리에만 둔다 — 새로고침하면 같은 키도 새 주문이 된다. 재현이 필요해지면 order DB에 같이 저장한다.
-const buyNowKeys = new Map<string, string>()
-
 const findOrder = (orderId: unknown) =>
   orders.find((it) => it.orderId === orderId)
 
@@ -127,6 +123,7 @@ function expireCartOrders() {
 const toOrder = ({
   preorderId: _preorderId,
   cartItems: _cartItems,
+  idempotencyKey: _idempotencyKey,
   events: _events,
   ...order
 }: OrderRecord): Order => order
@@ -586,7 +583,7 @@ export const orderHandlers: RequestHandler[] = [
       ])
     const keyed =
       source === 'BUY_NOW'
-        ? findOrder(buyNowKeys.get(idempotencyKey as string))
+        ? orders.find((it) => it.idempotencyKey === idempotencyKey)
         : undefined
     if (
       keyed &&
@@ -607,8 +604,7 @@ export const orderHandlers: RequestHandler[] = [
     const reused = orders.includes(result)
     if (!reused) {
       orders.push(result)
-      if (source === 'BUY_NOW')
-        buyNowKeys.set(idempotencyKey as string, result.orderId)
+      if (source === 'BUY_NOW') result.idempotencyKey = idempotencyKey as string
       saveOrderDb()
     }
     const response = ok<PlaceOrderResponse>(
