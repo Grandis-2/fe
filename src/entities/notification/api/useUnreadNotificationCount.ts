@@ -33,11 +33,19 @@ export const useUnreadNotificationCount = (enabled: boolean) => {
       let failures = 0
       while (!signal.aborted) {
         try {
-          await streamUnreadNotificationCount((count) => {
-            failures = 0
-            setIsLive(true)
-            queryClient.setQueryData(queryKey, count)
-          }, signal)
+          await streamUnreadNotificationCount(
+            (count) => {
+              // 먼저 보낸 조회 응답이 늦게 와서 이 수를 덮지 않게 끊는다.
+              void queryClient.cancelQueries({ queryKey })
+              queryClient.setQueryData(queryKey, count)
+            },
+            // 이벤트가 없어도 연결이 살아 있으면 주기 조회를 멈춘다.
+            () => {
+              failures = 0
+              setIsLive(true)
+            },
+            signal,
+          )
         } catch (caught) {
           if (signal.aborted) return
           // 관리자 토큰(403)은 알림 대상이 아니다 — 다시 열지 않는다.

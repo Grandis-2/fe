@@ -12,16 +12,18 @@ export const getUnreadNotificationCount = async (signal?: AbortSignal) => {
 export const getNotifications = (signal?: AbortSignal) =>
   apiClient.request<NotificationList>('/api/v1/notifications', { signal })
 
-// 안 읽은 수 실시간 연결(SSE). `unread` 이벤트마다 onCount를 부르고, 서버가 닫으면 끝난다(다시 여는 건 호출부).
+// 안 읽은 수 실시간 연결(SSE). 열리면 onOpen, `unread` 이벤트마다 onCount를 부르고, 서버가 닫으면 끝난다(다시 여는 건 호출부).
 // 이벤트는 빈 줄로 끝나고, `:`로 시작하는 줄(25초마다 오는 연결 유지용 주석)은 무시한다.
 export async function streamUnreadNotificationCount(
   onCount: (count: number) => void,
+  onOpen: () => void,
   signal: AbortSignal,
 ) {
   const body = await apiClient.openStream(
     '/api/v1/notifications/stream',
     signal,
   )
+  onOpen()
   const reader = body.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
@@ -42,14 +44,14 @@ export async function streamUnreadNotificationCount(
         else if (line.startsWith('data:')) data.push(value)
       }
       if (type !== 'unread' || data.length === 0) continue
-      let count: number
+      // 깨진 이벤트 하나로 연결을 끊지 않고 그 이벤트만 버린다.
+      let parsed: Partial<CountResponse> | null
       try {
-        count = (JSON.parse(data.join('\n')) as CountResponse).count
+        parsed = JSON.parse(data.join('\n')) as Partial<CountResponse> | null
       } catch {
-        // 깨진 이벤트 하나로 연결을 끊지 않고 그 이벤트만 버린다.
         continue
       }
-      onCount(count)
+      if (typeof parsed?.count === 'number') onCount(parsed.count)
     }
   }
 }
