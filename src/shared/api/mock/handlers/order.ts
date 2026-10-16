@@ -193,7 +193,7 @@ const sameShipTo = (a: ShipTo, b: ShipTo) =>
     (key) => a[key] === b[key],
   )
 
-// 옵션·보증 여부·수량·배송지가 같은 주문인지(가격은 보지 않는다).
+// 옵션·보증 여부·수량·화면에 보여 준 가격·배송지가 같은 주문인지.
 const sameOrderContent = (
   order: OrderRecord,
   items: CartOrderItem[],
@@ -204,7 +204,10 @@ const sameOrderContent = (
   items.every((item) =>
     order.cartItems?.some(
       (prev) =>
-        lineKey(prev) === lineKey(item) && prev.quantity === item.quantity,
+        lineKey(prev) === lineKey(item) &&
+        prev.quantity === item.quantity &&
+        prev.expectedUnitPrice === item.expectedUnitPrice &&
+        prev.expectedWarrantyPrice === item.expectedWarrantyPrice,
     ),
   )
 
