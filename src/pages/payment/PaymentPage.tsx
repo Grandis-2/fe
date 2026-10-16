@@ -27,7 +27,8 @@ import {
 } from '@features/address-search'
 import {
   buyNowKeyFor,
-  resetBuyNowKey,
+  forgetBuyNowKey,
+  linkBuyNowOrder,
   startDrawEntryPayment,
   startOrderPayment,
 } from '@features/payment'
@@ -286,6 +287,7 @@ export function PaymentPage() {
     setPaymentError(null)
     if (!form.requiredFilled || !payable) return
 
+    let buyNowKey: string | undefined
     try {
       const shipTo = {
         name: form.values.name,
@@ -319,6 +321,7 @@ export function PaymentPage() {
         items: buyNowItems.map(toBuyNowOrderItem),
         shipTo,
       }
+      buyNowKey = buyNow ? buyNowKeyFor(buyNow) : undefined
       const order = await placeOrder.mutateAsync(
         cartLines
           ? {
@@ -326,10 +329,11 @@ export function PaymentPage() {
               items: cartLines.map(toCartOrderItem),
               shipTo,
             }
-          : buyNow
-            ? { ...buyNow, idempotencyKey: buyNowKeyFor(buyNow) }
+          : buyNow && buyNowKey
+            ? { ...buyNow, idempotencyKey: buyNowKey }
             : { source: 'PREORDER', preorderId, shipTo },
       )
+      if (buyNowKey) linkBuyNowOrder(buyNowKey, order.orderId)
       // 기존 주문이 이미 결제됐으면 결제 단계로 가지 않고 결과를 보여 준다.
       if (order.status === 'AUTHORIZING') {
         setPaymentError(
@@ -338,7 +342,7 @@ export function PaymentPage() {
         return
       }
       if (PAID_ORDER_STATUSES.includes(order.status)) {
-        if (buyNow) resetBuyNowKey()
+        if (buyNowKey) forgetBuyNowKey({ key: buyNowKey })
         navigate(resultPath(preorderId ? 'preorder-paid' : 'paid'), {
           replace: true,
           state: { orderId: order.orderId },
@@ -347,6 +351,14 @@ export function PaymentPage() {
       }
       // 결제 대기만 결제 단계로 간다 — 그사이 취소가 시작됐거나 모르는 상태면 결제 완료로 보이지 않게 막는다.
       if (order.status !== 'AWAITING_PAYMENT') {
+        // 같은 키의 바로 구매 주문이 취소됐거나 기한이 지났다 — 다음 시도는 새 키로 새 주문을 만든다.
+        if (buyNowKey && order.status === 'CANCELED') {
+          forgetBuyNowKey({ key: buyNowKey })
+          setPaymentError(
+            '이전 주문이 취소됐어요. 다시 결제하면 새로 주문해요.',
+          )
+          return
+        }
         setPaymentError('결제할 수 없는 주문이에요. 주문 내역을 확인해 주세요.')
         return
       }
@@ -366,9 +378,10 @@ export function PaymentPage() {
       // 같은 키의 처음 주문과 내용이 다르다 — 다음 시도는 새 키로 보낸다.
       if (
         caught instanceof ApiRequestError &&
-        caught.error.code === 'KEY_PAYLOAD_MISMATCH'
+        caught.error.code === 'KEY_PAYLOAD_MISMATCH' &&
+        buyNowKey
       )
-        resetBuyNowKey()
+        forgetBuyNowKey({ key: buyNowKey })
       setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
     } finally {
       setIsStarting(false)

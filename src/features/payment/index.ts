@@ -4,7 +4,7 @@ export {
   requestTossPayment,
 } from './lib/requestTossPayment'
 export { startOrderPayment } from './lib/startOrderPayment'
-export { buyNowKeyFor, resetBuyNowKey } from './lib/buyNowKey'
+export { buyNowKeyFor, forgetBuyNowKey, linkBuyNowOrder } from './lib/buyNowKey'
 export { startDrawEntryPayment } from './lib/startDrawEntryPayment'
 export { confirmTossPayment } from './lib/confirmTossPayment'
 export { confirmDrawEntryPayment } from './lib/confirmDrawEntryPayment'
