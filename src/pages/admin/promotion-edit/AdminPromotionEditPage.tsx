@@ -92,6 +92,7 @@ export function AdminPromotionEditPage() {
         key={promotionId}
         mode="edit"
         products={linkable.products ?? []}
+        productsLoading={linkable.isPending}
         defaultValue={toPromotionFormValue(promotion.data)}
         submitting={update.isPending}
         onSubmit={(value) =>

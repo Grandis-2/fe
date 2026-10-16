@@ -45,6 +45,7 @@ export function AdminPromotionNewPage() {
       <AdminPromotionForm
         mode="create"
         products={linkable.products ?? []}
+        productsLoading={linkable.isPending}
         submitting={create.isPending}
         onSubmit={(value) =>
           create.mutate(value, {

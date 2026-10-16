@@ -314,6 +314,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
         <StatCard
           label="총 대기 인원"
           muted={!view}
+          loading={!view && status.isPending}
           value={
             view
               ? count(
@@ -326,16 +327,19 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
         <StatCard
           label="실제 입장 속도"
           muted={!view}
+          loading={!view && status.isPending}
           value={count(view?.globalCredit ?? null, '명/초')}
         />
         <StatCard
           label="브레이크 배율"
           muted={!view}
+          loading={!view && status.isPending}
           value={view?.brakeFactor ?? '—'}
         />
         <StatCard
           label="대기열 서버"
           muted={!view}
+          loading={!view && status.isPending}
           value={count(view?.gateways ?? null, '대')}
         />
       </div>

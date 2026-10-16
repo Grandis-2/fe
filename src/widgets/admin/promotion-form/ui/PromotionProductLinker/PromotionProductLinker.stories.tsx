@@ -63,3 +63,17 @@ export const Empty: Story = {
     await expect(args.onAddProduct).toHaveBeenCalled()
   },
 }
+
+/** 상품을 받는 중엔 '상품 없음' 대신 카드 모양을 먼저 깐다 */
+export const Loading: Story = {
+  args: { products: [], loading: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('status')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
+    await expect(
+      canvas.queryByText('사전예약으로 등록된 상품이 없습니다.'),
+    ).not.toBeInTheDocument()
+  },
+}
