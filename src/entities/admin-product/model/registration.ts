@@ -1,17 +1,18 @@
 import type {
+  ProductDetailView,
   ProductRegistrationRequest,
   RegistrationCombination,
   RegistrationOptionAxis,
 } from '@shared/api/types'
+import { comparableValue } from '@shared/lib/comparableValue'
 
 import { getProductVariants, toIso, type AdminProductFormValue } from './form'
-import { imageUploadIssues, toRegistrationImages } from './images'
 import {
-  brandCodeOf,
-  COLOR_GROUP_CODE,
-  comparableValue,
-  isStorageValue,
-} from './types'
+  imageUploadIssues,
+  toPreviewImages,
+  toRegistrationImages,
+} from './images'
+import { brandCodeOf, COLOR_GROUP_CODE, isStorageValue } from './types'
 import { validateProductBasics, type FormIssue } from './validation'
 
 /**
@@ -236,5 +237,80 @@ export function toRegistrationRequest(
         estimatedShipEnd: value.firstDelivery.end,
       },
     ],
+  }
+}
+
+/**
+ * 미리보기에 그릴 상품 — 폼 값만으로 구매자 상세 응답 모양을 만든다. 저장 전 값도, 상품
+ * id가 없는 등록 전에도 그대로 보인다. 축·조합은 등록 본문과 같은 규칙으로 펴고, 정규화값은
+ * 서버처럼 대소문자·공백을 무시한다. 판매를 끈 조합은 판매 중지로 보인다.
+ */
+export function toPreviewProduct(
+  value: AdminProductFormValue,
+): ProductDetailView {
+  const axes = registrationAxesOf(value)
+  const formVariants = getProductVariants(value)
+  const images = toPreviewImages(value)
+  // toCombinations는 getProductVariants와 같은 순서로 조합을 낸다.
+  const variants = toCombinations(value, axes).map(
+    (combo, index): ProductDetailView['variants'][number] => {
+      const { key, colorName, optionLabels, price } = formVariants[index]
+      return {
+        variantId: key,
+        sku: key,
+        title:
+          [colorName, ...optionLabels]
+            .map((name) => name.trim())
+            .filter(Boolean)
+            .join(' / ') || value.name,
+        price,
+        filterAttributes: {},
+        selections: Object.fromEntries(
+          Object.entries(combo.selections).map(([axisKey, name]) => [
+            axisKey,
+            comparableValue(name),
+          ]),
+        ),
+        status: combo.excluded ? 'PAUSED' : 'ACTIVE',
+        // 사전예약은 재고 제한이 없다(null).
+        availableQuantity: combo.stock ?? null,
+      }
+    },
+  )
+
+  return {
+    productId: 'preview',
+    saleMode: value.isPreorder ? 'PREORDER' : 'IN_STOCK',
+    title: value.name,
+    imageUrl: images.gallery[0]?.items[0]?.url ?? null,
+    status: 'ACTIVE',
+    sellable: variants.some((variant) => variant.status === 'ACTIVE'),
+    soldOut: false,
+    modelNumber: value.modelName,
+    categoryId: value.categoryId,
+    description: null,
+    visible: true,
+    basePrice: value.basePrice,
+    warranty: { offered: false, surcharge: 0 },
+    campaign: value.isPreorder
+      ? {
+          opensAt: toIso(value.openAt) ?? '',
+          closesAt: toIso(value.closeAt) ?? '',
+          status: 'BEFORE_OPEN',
+        }
+      : null,
+    optionAxes: axes.map((axis) => ({
+      key: axis.key,
+      label: axis.label,
+      values: axis.values.map((axisValue, index) => ({
+        valueId: `${axis.key}-${index}`,
+        value: axisValue.value,
+        normalizedValue: comparableValue(axisValue.value),
+        hex: axisValue.hex ?? null,
+        surcharge: axisValue.surcharge ?? 0,
+      })),
+    })),
+    variants,
+    images,
   }
 }

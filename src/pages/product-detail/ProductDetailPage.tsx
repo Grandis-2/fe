@@ -3,22 +3,11 @@ import type { CSSProperties } from 'react'
 import { MessageSquare } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
-import {
-  ProductColorSwatches,
-  ProductOptionSelector,
-  useProduct,
-  useShipmentBatches,
-  type Product,
-  type ShipmentBatch,
-} from '@entities/product'
+import { useProduct, useShipmentBatches } from '@entities/product'
 import { ReviewCard, useProductReviews } from '@entities/review'
 import { useRequireLogin } from '@features/login'
 import { usePreorderSubmit } from '@features/preorder-queue'
-import { ProductGallery } from '@features/product-gallery'
 import {
-  PREORDER_BENEFIT_RATE,
-  PurchaseSummary,
-  QuantityControl,
   useAddToCart,
   useProductPurchase,
   type PurchaseDraft,
@@ -29,8 +18,12 @@ import {
   productPath,
   resultPath,
 } from '@shared/config/routes'
-import { formatWon } from '@shared/lib/formatNumber'
-import { ActionButton, InlineAlert } from '@shared/ui'
+import { InlineAlert } from '@shared/ui'
+import {
+  ProductDetailImages,
+  ProductOverview,
+  shipmentStartLabel,
+} from '@widgets/product-detail'
 import { ProductPageTab } from '@widgets/product-page-tab'
 import type { ProductPageTabKey } from '@widgets/product-page-tab'
 import { ProductPurchaseBar } from '@widgets/product-purchase-bar'
@@ -38,35 +31,14 @@ import { ProductPurchaseBar } from '@widgets/product-purchase-bar'
 import * as styles from './ProductDetailPage.css'
 import { useProductDetailScroll } from './useProductDetailScroll'
 
-const SECTION_LABELS: Record<ProductPageTabKey, string> = {
+// 후기 말고는 관리자가 올린 영역 사진을 그린다 — 라벨이 곧 사진 묶음 이름이다.
+const SECTION_LABELS = {
   benefits: '구매 혜택',
   info: '모델 정보',
   notice: '유의 사항',
   review: '구매 후기',
-}
-
-// 고른 색상의 사진 묶음 — 색상 묶음이 없으면 기본 묶음(''), 그것도 없으면 첫 묶음.
-function galleryImages(product: Product, colorValue: string | undefined) {
-  const { gallery } = product.images
-  const bundle =
-    gallery.find(({ bundleKey }) => bundleKey === colorValue) ??
-    gallery.find(({ bundleKey }) => bundleKey === '') ??
-    gallery[0]
-  return [...(bundle?.items ?? [])]
-    .sort((a, b) => a.position - b.position)
-    .map(({ url }) => url)
-}
-
-// 구매자는 자기 순번(몇 번째 차수인지)을 접수 전엔 모르므로, 차수별 안내 대신 가장 빠른 출고 시작일만 보여 준다.
-function shipmentStartLabel(batches: ShipmentBatch[] | undefined) {
-  const first = batches
-    ?.map(({ estimatedShipStart }) => estimatedShipStart)
-    .sort()[0]
-  if (!first) return undefined
-  // 'YYYY-MM-DD'를 Date로 바꾸면 시간대에 따라 하루가 밀릴 수 있어 글자로 자른다.
-  const [, month, day] = first.split('-').map(Number)
-  return `${month}월 ${day}일 출고시작`
-}
+} as const satisfies Record<ProductPageTabKey, string>
+const SECTION_TABS = Object.keys(SECTION_LABELS) as ProductPageTabKey[]
 
 export function ProductDetailPage() {
   const navigate = useNavigate()
@@ -86,20 +58,12 @@ export function ProductDetailPage() {
   const preorderSubmit = usePreorderSubmit()
   const { addToCart, isAdding } = useAddToCart()
   const {
-    selections,
-    select,
-    colorAxis,
-    optionAxes,
     variant,
     unavailableReason,
     quantity,
-    setQuantity,
     colorLabel,
     optionLabel,
     unitPrice,
-    totalPrice,
-    benefitAmount,
-    payAmount,
   } = purchase
   // 조회가 끝나지 않았거나 실패했거나, 고른 조합을 살 수 없거나, 접수 중이면 결제/사전예약을 막는다.
   const isCheckoutReady =
@@ -169,127 +133,21 @@ export function ProductDetailPage() {
     )
   }
 
-  const { title, modelNumber } = product
-  const selectedColor = colorAxis?.values.find(
-    ({ normalizedValue }) => normalizedValue === selections[colorAxis.key],
-  )
+  const { title } = product
 
   return (
     <div className={styles.root} data-theme="dark" data-header-theme="dark">
       <div className={styles.content}>
-        <div className={styles.layout} ref={layoutRef}>
-          <div className={styles.imageColumn}>
-            <ProductGallery
-              images={galleryImages(product, selectedColor?.normalizedValue)}
-              productName={title}
-            />
-          </div>
-          <div className={styles.optionPanel}>
-            <div className={styles.titleGroup}>
-              <h1 className={styles.title}>{title}</h1>
-              {modelNumber && (
-                <div className={styles.modelNumber}>{modelNumber}</div>
-              )}
-            </div>
-            {colorAxis && (
-              <ProductColorSwatches
-                colorName={colorAxis.label}
-                size="medium"
-                colors={colorAxis.values.map((value) => ({
-                  hex: value.hex ?? '',
-                  label: value.value,
-                  selected: value === selectedColor,
-                }))}
-                onSelect={(index) =>
-                  select(colorAxis.key, colorAxis.values[index].normalizedValue)
-                }
-              />
-            )}
-            {optionAxes.map((axis) => (
-              <ProductOptionSelector
-                key={axis.key}
-                label={axis.label}
-                options={axis.values.map((value) => ({
-                  label: value.value,
-                  extraPrice: value.surcharge,
-                  selected: value.normalizedValue === selections[axis.key],
-                }))}
-                onSelect={(index) =>
-                  select(axis.key, axis.values[index].normalizedValue)
-                }
-              />
-            ))}
-            {/* 웹에서는 수량도 옵션처럼 제목과 스테퍼를 한 줄에 놓는다(모바일은 하단 구매 바에 있다). */}
-            <div className={styles.quantityOption}>
-              <div className={styles.quantityLabel}>수량</div>
-              <QuantityControl
-                isPreorder={isPreorder}
-                quantity={quantity}
-                onQuantityChange={setQuantity}
-                stepperLabel={title}
-                stepperSize="medium"
-              />
-            </div>
-            <PurchaseSummary
-              options={[
-                ...(selectedColor
-                  ? [{ label: colorLabel, hex: selectedColor.hex ?? undefined }]
-                  : []),
-                ...optionAxes.flatMap((axis) => {
-                  const value = axis.values.find(
-                    ({ normalizedValue }) =>
-                      normalizedValue === selections[axis.key],
-                  )
-                  return value ? [{ label: value.value }] : []
-                }),
-              ]}
-              rows={[
-                { label: '상품 금액', value: formatWon(totalPrice) },
-                { label: '수량', value: `${quantity}개` },
-                ...(isPreorder
-                  ? [
-                      {
-                        label: `사전예약 혜택 (${PREORDER_BENEFIT_RATE * 100}%)`,
-                        value: `-${formatWon(benefitAmount)}`,
-                        accent: true,
-                      },
-                    ]
-                  : []),
-              ]}
-              total={{
-                label: '총 결제 금액',
-                value: formatWon(payAmount),
-              }}
-              note={isPreorder ? shipmentLabel : undefined}
-            >
-              {unavailableReason && (
-                <InlineAlert status="info">{unavailableReason}</InlineAlert>
-              )}
-              <div className={styles.actions}>
-                {!isPreorder && (
-                  <ActionButton
-                    variant="cart"
-                    fullWidth
-                    className={styles.cartButton}
-                    aria-label="장바구니"
-                    onClick={handleAddToCart}
-                    disabled={!isCheckoutReady || isAdding}
-                  >
-                    <span className={styles.cartLabel}>장바구니</span>
-                  </ActionButton>
-                )}
-                <ActionButton
-                  fullWidth
-                  className={isPreorder ? styles.checkoutFull : undefined}
-                  onClick={handleCheckout}
-                  disabled={!isCheckoutReady}
-                >
-                  {isPreorder ? '사전예약하기' : '결제하기'}
-                </ActionButton>
-              </div>
-            </PurchaseSummary>
-          </div>
-        </div>
+        <ProductOverview
+          ref={layoutRef}
+          product={product}
+          purchase={purchase}
+          shipmentLabel={shipmentLabel}
+          onCheckout={handleCheckout}
+          checkoutDisabled={!isCheckoutReady}
+          onAddToCart={handleAddToCart}
+          addToCartDisabled={!isCheckoutReady || isAdding}
+        />
       </div>
       <ProductPurchaseBar
         isPreorder={isPreorder}
@@ -319,15 +177,14 @@ export function ProductDetailPage() {
         />
       </div>
       <div className={styles.sections}>
-        {Object.entries(SECTION_LABELS)
-          .filter(([tab]) => !isPreorder || tab !== 'review')
-          .map(([tab, label]) => (
+        {SECTION_TABS.filter((tab) => !isPreorder || tab !== 'review').map(
+          (tab) => (
             <section
               key={tab}
-              ref={registerPanelRef(tab as ProductPageTabKey)}
+              ref={registerPanelRef(tab)}
               className={styles.section}
             >
-              <h2 className={styles.sectionTitle}>{label}</h2>
+              <h2 className={styles.sectionTitle}>{SECTION_LABELS[tab]}</h2>
               {tab === 'review' ? (
                 <div className={styles.reviewList}>
                   {reviews.isError ? (
@@ -354,10 +211,14 @@ export function ProductDetailPage() {
                   )}
                 </div>
               ) : (
-                <div className={styles.placeholder}>{label} 상세 이미지</div>
+                <ProductDetailImages
+                  product={product}
+                  section={SECTION_LABELS[tab]}
+                />
               )}
             </section>
-          ))}
+          ),
+        )}
       </div>
     </div>
   )

@@ -1,10 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 import { useNavigate } from 'react-router'
 
 import {
   RegistrationUnconfirmedError,
   serverIssuesOf,
+  toPreviewProduct,
   useCreateAdminProduct,
   validateRegistration,
   type AdminProductFormValue,
@@ -15,6 +16,7 @@ import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import { Breadcrumb } from '@shared/ui'
 import { AdminProductForm } from '@widgets/admin/product-form'
+import { ProductDetailPreviewModal } from '@widgets/product-detail'
 
 import * as styles from './AdminProductNewPage.css'
 
@@ -28,6 +30,8 @@ import * as styles from './AdminProductNewPage.css'
 export function AdminProductNewPage() {
   const navigate = useNavigate()
   const create = useCreateAdminProduct()
+  // 미리보기는 폼에 지금 있는 값으로 그린다 — 등록 전이라 상품 id 없이도 보인다.
+  const [previewValue, setPreviewValue] = useState<AdminProductFormValue>()
 
   // 서버 400의 칸별 오류는 그 칸에 붙이고, 짝이 없는 것과 다른 실패는 버튼 줄에 둔다.
   const failure = useMemo(() => {
@@ -100,8 +104,26 @@ export function AdminProductNewPage() {
         waitingForNetwork={create.isPaused}
         onSubmit={submit}
         onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
-        // 등록 전에는 볼 상세 페이지가 없어 목록으로만 돌려보낸다.
-        onPreview={() => navigate(ADMIN_PRODUCTS_PATH)}
+        onPreview={setPreviewValue}
+      />
+
+      <ProductDetailPreviewModal
+        product={previewValue && toPreviewProduct(previewValue)}
+        // 등록 때는 1차 배송 하나만 있다 — 출고 안내는 그 시작일로 보인다.
+        shipmentBatches={
+          previewValue?.isPreorder && previewValue.firstDelivery.start
+            ? [
+                {
+                  batchNumber: 1,
+                  positionFrom: 1,
+                  positionTo: null,
+                  estimatedShipStart: previewValue.firstDelivery.start,
+                  estimatedShipEnd: previewValue.firstDelivery.end,
+                },
+              ]
+            : undefined
+        }
+        onClose={() => setPreviewValue(undefined)}
       />
     </div>
   )
