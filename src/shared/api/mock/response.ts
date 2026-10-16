@@ -23,12 +23,24 @@ export function fail(
     retryable?: boolean
     // 429에서만. 서버는 같은 값을 Retry-After 헤더로도 주므로 아래에서 같이 싣는다.
     retryAfterSeconds?: number
+    // 409 ORDER_STEP_NOT_ALLOWED에서만 — 주문의 지금 상태.
+    status?: string
   },
 ) {
-  const { code, message, violations, retryable, retryAfterSeconds } = error
+  const {
+    code,
+    message,
+    violations,
+    retryable,
+    retryAfterSeconds,
+    status: currentStatus,
+  } = error
   const details =
-    violations || retryable !== undefined || retryAfterSeconds !== undefined
-      ? { violations, retryable, retryAfterSeconds }
+    violations ||
+    retryable !== undefined ||
+    retryAfterSeconds !== undefined ||
+    currentStatus !== undefined
+      ? { violations, retryable, retryAfterSeconds, status: currentStatus }
       : null
 
   return HttpResponse.json<ApiResponse<never>>(

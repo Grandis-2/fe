@@ -1,6 +1,7 @@
 import { addressHandlers } from './address'
 import { adminDeadLetterHandlers } from './admin-dead-letter'
 import { adminDrawHandlers } from './admin-draw'
+import { adminOrderHandlers } from './admin-order'
 import { adminProductHandlers } from './admin-product'
 import { adminPromotionHandlers } from './admin-promotion'
 import { adminReservationHandlers } from './admin-reservation'
@@ -41,6 +42,7 @@ export const handlers: RequestHandler[] = [
   ...adminWaitingroomHandlers,
   ...adminProductHandlers,
   ...adminDrawHandlers,
+  ...adminOrderHandlers,
   ...pendingBackendHandlers,
   ...productHandlers,
   ...reviewHandlers,
