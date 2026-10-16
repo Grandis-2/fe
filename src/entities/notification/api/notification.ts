@@ -32,15 +32,24 @@ export async function streamUnreadNotificationCount(
     const events = buffer.split('\n\n')
     buffer = events.pop() ?? ''
     for (const event of events) {
-      const fields = new Map(
-        event.split('\n').map((line) => {
-          const colon = line.indexOf(':')
-          return [line.slice(0, colon), line.slice(colon + 1).trimStart()]
-        }),
-      )
-      const data = fields.get('data')
-      if (fields.get('event') === 'unread' && data)
-        onCount((JSON.parse(data) as CountResponse).count)
+      let type = ''
+      // data 줄이 여러 개면 줄바꿈으로 잇는다(SSE 명세).
+      const data: string[] = []
+      for (const line of event.split('\n')) {
+        const colon = line.indexOf(':')
+        const value = line.slice(colon + 1).trimStart()
+        if (line.startsWith('event:')) type = value
+        else if (line.startsWith('data:')) data.push(value)
+      }
+      if (type !== 'unread' || data.length === 0) continue
+      let count: number
+      try {
+        count = (JSON.parse(data.join('\n')) as CountResponse).count
+      } catch {
+        // 깨진 이벤트 하나로 연결을 끊지 않고 그 이벤트만 버린다.
+        continue
+      }
+      onCount(count)
     }
   }
 }
