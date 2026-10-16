@@ -1,3 +1,5 @@
+import { Link } from 'react-router'
+
 import {
   drawStageLabel,
   drawStageOf,
@@ -7,6 +9,7 @@ import {
 } from '@entities/admin-draw'
 import { getErrorMessage } from '@shared/api/client'
 import { DEFAULT_REFRESH_INTERVAL } from '@shared/config/refreshInterval'
+import { adminPurchasesPath } from '@shared/config/routes'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
 import { showToast } from '@shared/model/toastStore'
@@ -151,6 +154,12 @@ export function AdminDrawDetail({ draw, fetchedAt }: AdminDrawDetailProps) {
             }
           />
         </div>
+        {p && p.winners > 0 && (
+          // 주문엔 회차 id가 없어 회차별로는 못 거른다 — 당첨 주문 전체로 보낸다.
+          <Link className={styles.link} to={adminPurchasesPath('DRAW')}>
+            당첨 주문 배송 처리하기(모든 회차의 당첨 주문)
+          </Link>
+        )}
       </FormSection>
 
       <div className={styles.columns}>

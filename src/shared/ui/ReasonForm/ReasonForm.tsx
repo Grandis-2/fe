@@ -9,6 +9,8 @@ export type ReasonFormProps = {
   /** 입력칸 이름. 위에 '(필수)'를 붙여 보여준다 */
   label: string
   placeholder?: string
+  /** 처음 채워 둘 문구 — 정해진 말로 충분한 조치는 확인만 눌러도 되게 한다 */
+  defaultValue?: string
   /** 앞뒤 공백을 뺀 최소 글자 수. 서버 규칙에 맞춘다 */
   minLength?: number
   maxLength: number
@@ -24,13 +26,14 @@ export type ReasonFormProps = {
 export function ReasonForm({
   label,
   placeholder,
+  defaultValue = '',
   minLength = 1,
   maxLength,
   confirmLabel,
   onConfirm,
   onCancel,
 }: ReasonFormProps) {
-  const [reason, setReason] = useState('')
+  const [reason, setReason] = useState(defaultValue)
   // 서버는 앞뒤 공백을 뺀 길이를 본다.
   const trimmed = reason.trim()
 

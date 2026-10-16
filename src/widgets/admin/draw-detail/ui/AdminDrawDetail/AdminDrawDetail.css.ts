@@ -94,3 +94,13 @@ export const value = style([
   typography.body.defaultRegular,
   { margin: 0, color: color.text.primary, wordBreak: 'break-all' },
 ])
+
+export const link = style([
+  typography.body.subMedium,
+  {
+    alignSelf: 'flex-start',
+    marginTop: spacing[12],
+    color: color.primary.base,
+    textDecoration: 'underline',
+  },
+])

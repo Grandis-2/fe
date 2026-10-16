@@ -24,6 +24,7 @@ import {
   ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTION_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
+  ADMIN_PURCHASES_PATH,
   ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
   ADMIN_WAITINGROOM_PATH,
@@ -32,6 +33,7 @@ import {
   adminReservationPath,
   adminPromotionPath,
   adminDrawPath,
+  adminPurchasePath,
   DRAW_PATH,
   drawPath,
   HOME_PATH,
@@ -304,6 +306,20 @@ export const router = createBrowserRouter([
                     lazy: () =>
                       import('@pages/admin/draw-detail/AdminDrawDetailPage').then(
                         (m) => ({ Component: m.AdminDrawDetailPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_PURCHASES_PATH,
+                    lazy: () =>
+                      import('@pages/admin/purchases/AdminPurchasesPage').then(
+                        (m) => ({ Component: m.AdminPurchasesPage }),
+                      ),
+                  },
+                  {
+                    path: adminPurchasePath(':orderId'),
+                    lazy: () =>
+                      import('@pages/admin/purchase-detail/AdminPurchaseDetailPage').then(
+                        (m) => ({ Component: m.AdminPurchaseDetailPage }),
                       ),
                   },
                   {

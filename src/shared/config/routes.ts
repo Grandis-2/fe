@@ -110,6 +110,19 @@ export const adminReservationPath = (preorderId: string) =>
   `${ADMIN_RESERVATIONS_PATH}/${preorderId}`
 
 /**
+ * 주문 관리 — 모든 회원의 주문과 배송 단계. 예약 현황(ADMIN_RESERVATIONS_PATH = '/admin/orders')이
+ * 이미 '/admin/orders'를 쓰고 있어 경로를 따로 둔다.
+ */
+export const ADMIN_PURCHASES_PATH = '/admin/purchases'
+/** 출처를 걸러서 연다(럭키드로우 회차 → 당첨 주문) */
+export const adminPurchasesPath = (
+  source?: 'CART' | 'BUY_NOW' | 'PREORDER' | 'DRAW',
+) =>
+  source ? `${ADMIN_PURCHASES_PATH}?source=${source}` : ADMIN_PURCHASES_PATH
+export const adminPurchasePath = (orderId: string) =>
+  `${ADMIN_PURCHASES_PATH}/${orderId}`
+
+/**
  * 상세로 들어갈 때 navigate state로 넘기는 '돌아갈 곳'. 예약 상세는 예약 현황 말고
  * 외부 예약 대조에서도 들어오므로 들어온 화면으로 돌려보낸다.
  */
