@@ -35,15 +35,14 @@ export const useUnreadNotificationCount = (enabled: boolean) => {
         try {
           await streamUnreadNotificationCount(
             (count) => {
+              // 이벤트를 받았으면 제대로 이어진 연결이다 — 그때만 실패 횟수를 되돌린다.
+              failures = 0
               // 먼저 보낸 조회 응답이 늦게 와서 이 수를 덮지 않게 끊는다.
               void queryClient.cancelQueries({ queryKey })
               queryClient.setQueryData(queryKey, count)
             },
             // 이벤트가 없어도 연결이 살아 있으면 주기 조회를 멈춘다.
-            () => {
-              failures = 0
-              setIsLive(true)
-            },
+            () => setIsLive(true),
             signal,
           )
         } catch (caught) {
@@ -53,8 +52,9 @@ export const useUnreadNotificationCount = (enabled: boolean) => {
             setIsLive(false)
             return
           }
-          failures += 1
         }
+        // 열리자마자 닫히는 것도 실패로 센다 — 안 그러면 재연결 간격이 늘지 않는다.
+        failures += 1
         setIsLive(false)
         await delay(
           Math.random() *
