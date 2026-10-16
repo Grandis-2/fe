@@ -16,7 +16,7 @@ const openAtLabel = (opensAt: string | null) => {
 
 /**
  * 프로모션에 연결할 수 있는 상품 — 등록된 사전예약 상품 전부. 색상·용량은 목록에
- * 없어 상품마다 상세를 받아 채운다(받기 전엔 비어 있다).
+ * 없어 상품마다 상세를 받아 채운다. 상세까지 와야 카드가 완성되므로 그때까지 pending이다.
  */
 export function useLinkableProducts() {
   const list = useAdminProducts({ saleMode: 'PREORDER', size: PAGE_SIZE })
@@ -39,5 +39,9 @@ export function useLinkableProducts() {
     },
   )
 
-  return { products, isPending: list.isPending, isError: list.isError }
+  return {
+    products,
+    isPending: list.isPending || details.some((detail) => detail.isPending),
+    isError: list.isError,
+  }
 }

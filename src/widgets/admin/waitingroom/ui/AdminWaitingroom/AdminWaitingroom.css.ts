@@ -59,3 +59,10 @@ export const subText = style([
   typography.body.sub,
   { color: color.text.tertiary },
 ])
+
+// 불러오는 동안의 줄 — 줄 사이를 실제 설정 줄과 비슷하게 띄운다.
+export const skeletonRows = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[16],
+})

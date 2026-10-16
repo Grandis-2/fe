@@ -337,12 +337,11 @@ export function AdminReservationsPage() {
               key={label}
               label={label}
               muted={unknown}
+              loading={stats.isPending}
               value={
                 value !== undefined
                   ? `${value.toLocaleString('ko-KR')}건`
-                  : stats.isPending
-                    ? '불러오는 중'
-                    : '조회 실패'
+                  : '조회 실패'
               }
             />
           )
@@ -392,12 +391,11 @@ export function AdminReservationsPage() {
           onClick: openDetail,
         }}
         pageSize={10}
+        loading={isPending}
         emptyMessage={
           isError
             ? getErrorMessage(error, '예약을 불러오지 못했습니다.')
-            : isPending
-              ? '불러오는 중입니다.'
-              : '조건에 맞는 예약이 없습니다.'
+            : '조건에 맞는 예약이 없습니다.'
         }
       />
     </div>

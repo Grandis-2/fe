@@ -15,7 +15,15 @@ import { getErrorMessage } from '@shared/api/client'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-import { Button, Dropdown, FormSection, InlineAlert, Input } from '@shared/ui'
+import {
+  Button,
+  Dropdown,
+  FormSection,
+  InlineAlert,
+  Input,
+  Skeleton,
+  SkeletonGroup,
+} from '@shared/ui'
 import type { DropdownOption } from '@shared/ui'
 
 import { MockConfigForm } from '../MockConfigForm'
@@ -134,7 +142,12 @@ export function AdminMockSettings() {
       <FormSection title="지연·실패 설정">
         <div className={styles.card}>
           {config.isPending && (
-            <div className={styles.subText}>불러오는 중입니다.</div>
+            // 설정 줄 모양을 먼저 깐다 — 다 오면 같은 자리에 값이 들어온다.
+            <SkeletonGroup className={styles.skeletonRows}>
+              {[0, 1, 2].map((row) => (
+                <Skeleton key={row} height={24} />
+              ))}
+            </SkeletonGroup>
           )}
           {config.isError && (
             <InlineAlert status="error">

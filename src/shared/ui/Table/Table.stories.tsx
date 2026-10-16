@@ -94,3 +94,26 @@ export const WithoutPagination: Story = {
     await expect(canvas.queryByLabelText('pagination')).toBeNull()
   },
 }
+
+/**
+ * 불러오는 중에는 행 자리에 회색 줄을 깐다 — 0건 문구와 섞이지 않고, 다 와도 표 높이가
+ * 크게 바뀌지 않는다. 스크린리더엔 한 번만 알리고 쪽 번호는 숨긴다.
+ */
+export const Loading: Story = {
+  args: {
+    columns,
+    rows: [],
+    rowKey: (row: Row) => row.id,
+    loading: true,
+    loadingRows: 4,
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('table')).toHaveAttribute('aria-busy', 'true')
+    // 헤더 1줄 + 로딩 4줄
+    await expect(canvas.getAllByRole('row')).toHaveLength(5)
+    await expect(canvas.getByRole('status')).toHaveTextContent(
+      '불러오는 중입니다.',
+    )
+    await expect(canvas.queryByText('데이터가 없습니다.')).toBeNull()
+  },
+}

@@ -269,6 +269,9 @@ export function AdminShipmentBatches({ productId }: AdminShipmentBatchesProps) {
         rows={batches}
         rowKey={(batch) => String(batch.batchNumber)}
         // 조회 실패를 '차수 없음'으로 보이면 운영 판단이 정반대가 된다.
+        // 회차가 없으면 조회를 안 해 계속 pending이다 — 그때는 로딩이 아니라 안내를 띄운다.
+        loading={!noCampaign && shipmentBatches.isPending}
+        loadingRows={3}
         emptyMessage={
           noCampaign
             ? '사전예약 회차가 아직 없어 배송 차수를 정할 수 없습니다. 판매 일정을 먼저 저장해 주세요.'
@@ -277,9 +280,7 @@ export function AdminShipmentBatches({ productId }: AdminShipmentBatchesProps) {
                   shipmentBatches.error,
                   '배송 차수를 불러오지 못했습니다.',
                 )
-              : shipmentBatches.isPending
-                ? '불러오는 중입니다.'
-                : '설정된 배송 차수가 없습니다.'
+              : '설정된 배송 차수가 없습니다.'
         }
       />
 

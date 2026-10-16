@@ -14,7 +14,7 @@ import {
   ADMIN_PROMOTIONS_PATH,
 } from '@shared/config/routes'
 import { showToast } from '@shared/model/toastStore'
-import { Breadcrumb, InlineAlert, Tag } from '@shared/ui'
+import { Breadcrumb, InlineAlert, PageSkeleton, Tag } from '@shared/ui'
 import {
   AdminPromotionForm,
   useLinkableProducts,
@@ -30,12 +30,18 @@ export function AdminPromotionEditPage() {
   const update = useUpdateAdminPromotion(promotionId)
 
   if (!promotion.data) {
+    // 불러오는 중이면 화면 모양을 먼저 깐다 — 실패일 때만 안내와 돌아갈 길을 보인다.
+    if (!promotion.isError) {
+      return (
+        <div className={styles.root}>
+          <PageSkeleton sections={3} fieldsPerSection={1} />
+        </div>
+      )
+    }
     return (
       <div className={styles.notFound}>
         <div>
-          {promotion.isError
-            ? getErrorMessage(promotion.error, '사전예약을 찾을 수 없습니다.')
-            : '불러오는 중입니다.'}
+          {getErrorMessage(promotion.error, '사전예약을 찾을 수 없습니다.')}
         </div>
         <Breadcrumb
           items={[
@@ -86,6 +92,7 @@ export function AdminPromotionEditPage() {
         key={promotionId}
         mode="edit"
         products={linkable.products ?? []}
+        productsLoading={linkable.isPending}
         defaultValue={toPromotionFormValue(promotion.data)}
         submitting={update.isPending}
         onSubmit={(value) =>

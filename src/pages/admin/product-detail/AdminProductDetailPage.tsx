@@ -10,7 +10,12 @@ import {
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
 import type { AdminProductTab } from '@shared/config/routes'
-import { Breadcrumb, InlineAlert, SegmentedTabs } from '@shared/ui'
+import {
+  Breadcrumb,
+  InlineAlert,
+  PageSkeleton,
+  SegmentedTabs,
+} from '@shared/ui'
 import {
   AdminProductActions,
   useProductSaleStatus,
@@ -56,12 +61,18 @@ export function AdminProductDetailPage() {
   const product = useAdminProduct(productId)
 
   if (!product.data) {
+    // 불러오는 중이면 화면 모양을 먼저 깐다 — 실패일 때만 안내와 돌아갈 길을 보인다.
+    if (!product.isError) {
+      return (
+        <div className={styles.root}>
+          <PageSkeleton sections={2} fieldsPerSection={3} />
+        </div>
+      )
+    }
     return (
       <div className={styles.root}>
         <div className={styles.notFound}>
-          {product.isError
-            ? getErrorMessage(product.error, '상품을 불러오지 못했습니다.')
-            : '불러오는 중입니다.'}
+          {getErrorMessage(product.error, '상품을 불러오지 못했습니다.')}
           <Breadcrumb
             items={[{ label: '상품 관리로 돌아가기', to: ADMIN_PRODUCTS_PATH }]}
           />

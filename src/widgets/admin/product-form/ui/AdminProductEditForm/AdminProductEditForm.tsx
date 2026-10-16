@@ -13,7 +13,7 @@ import {
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { showToast } from '@shared/model/toastStore'
-import { InlineAlert } from '@shared/ui'
+import { InlineAlert, PageSkeleton } from '@shared/ui'
 
 import { AdminProductForm } from '../AdminProductForm'
 
@@ -60,7 +60,7 @@ export function AdminProductEditForm({
   }
   // 폼은 처음 값으로만 채워지므로, 둘 다 받은 뒤에 그린다.
   if (!product.data || !stock.data) {
-    return <div className={styles.message}>불러오는 중입니다.</div>
+    return <PageSkeleton title={false} sections={4} fieldsPerSection={2} />
   }
 
   // 서버에 이미 있는 옵션 종류·값 — 등록 뒤에는 이것들을 지울 수 없다.
