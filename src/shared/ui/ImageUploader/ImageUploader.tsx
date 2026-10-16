@@ -59,6 +59,7 @@ const FALLBACK_ERROR = '사진을 올리지 못했습니다.'
 // 끌어다 놓은 파일은 선택 창의 accept 거름망을 거치지 않으니 같은 규칙으로 직접 거른다.
 // 규칙은 MIME 형식(image/png, image/*)이나 확장자(.png)다.
 const matchesAccept = (file: File, accept: string) =>
+  !accept.trim() ||
   accept.split(',').some((raw) => {
     const rule = raw.trim().toLowerCase()
     if (rule.startsWith('.')) return file.name.toLowerCase().endsWith(rule)
@@ -98,6 +99,8 @@ export function ImageUploader({
   const [draggingId, setDraggingId] = useState<string | null>(null)
   // 바깥 파일을 업로더 위로 끌고 왔는지(놓을 수 있는 자리를 강조한다)
   const [isFileOver, setIsFileOver] = useState(false)
+  // 형식이 맞지 않아 담지 않은 파일 — 말없이 빠지지 않게 이름을 알린다.
+  const [rejected, setRejected] = useState<string[]>([])
   const { create, release } = useObjectUrls()
   const isFull = value.length >= max
 
@@ -155,7 +158,13 @@ export function ImageUploader({
   const addFiles = (files: FileList | File[] | null) => {
     if (!files) return
     const room = max - latestRef.current.length
-    const added = Array.from(files)
+    const all = Array.from(files)
+    setRejected(
+      all
+        .filter((file) => !matchesAccept(file, accept))
+        .map((file) => file.name),
+    )
+    const added = all
       .filter((file) => matchesAccept(file, accept))
       .slice(0, room)
       .map((file) => {
@@ -372,6 +381,12 @@ export function ImageUploader({
         />
       </div>
 
+      {rejected.length > 0 && (
+        <div className={styles.errorText} role="alert">
+          <AlertCircle className={styles.errorIcon} aria-hidden="true" />
+          {rejected.join(', ')}은(는) 올릴 수 없는 형식입니다.
+        </div>
+      )}
       {firstError && (
         <div className={styles.errorText} role="alert">
           <AlertCircle className={styles.errorIcon} aria-hidden="true" />
