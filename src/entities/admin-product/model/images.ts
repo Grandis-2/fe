@@ -147,7 +147,10 @@ export function toPreviewImages(
   })
   const gallery = hasNoColor(value)
     ? [toBundle('', value.noColorImages)]
-    : value.colors.map((color) => toBundle(color.name.trim(), color.images))
+    : // 이름 없는 색상 줄은 등록에서도 빠진다.
+      value.colors
+        .filter((color) => color.name.trim() !== '')
+        .map((color) => toBundle(color.name.trim(), color.images))
   return {
     gallery: gallery.filter((bundle) => bundle.items.length > 0),
     detail: DETAIL_FIELDS.map((field) =>
