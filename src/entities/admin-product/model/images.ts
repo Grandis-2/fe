@@ -24,8 +24,10 @@ export const PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 /** 파일 선택 창에서 고를 수 있는 형식 — 위와 같게 둔다 */
 export const PRODUCT_IMAGE_ACCEPT = PRODUCT_IMAGE_TYPES.join(',')
 const MAX_BYTES = 10 * 1024 * 1024
-/** 갤러리는 묶음(색상)마다 10장까지다 */
-export const GALLERY_MAX = 10
+/** 갤러리는 묶음(색상)마다 5장까지 받는다 — 서버 상한(10장)보다 좁게 둔다 */
+export const GALLERY_MAX = 5
+/** 상세 이미지(구매 혜택·모델 정보·유의 사항)는 묶음마다 3장까지다 */
+export const DETAIL_IMAGE_MAX = 3
 
 /** 올릴 수 없는 파일이면 그 이유. 올릴 수 있으면 null */
 export function productImageFileProblem(file: File): string | null {

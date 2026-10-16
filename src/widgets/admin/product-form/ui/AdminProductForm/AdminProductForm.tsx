@@ -4,6 +4,7 @@ import { AlertCircle, Eye } from 'lucide-react'
 
 import {
   createEmptyProductFormValue,
+  DETAIL_IMAGE_MAX,
   GALLERY_MAX,
   getProductVariants,
   MODEL_NAME_MAX,
@@ -143,8 +144,8 @@ export function AdminProductForm({
   // 사진은 고르는 즉시 올리고(5분 서명 주소), 저장할 때 주소만 보낸다. 수정 화면은
   // 저장할 때 사진 넣기·빼기 API로 한 장씩 반영한다.
   const imageNote = editing
-    ? "사진은 '수정하기'를 누르면 반영됩니다. JPG·PNG·WEBP, 10MB 이하."
-    : 'JPG·PNG·WEBP, 10MB 이하. 세로로 위에서부터 이어 붙습니다.'
+    ? `사진은 '수정하기'를 누르면 반영됩니다. 최대 ${DETAIL_IMAGE_MAX}장, JPG·PNG·WEBP, 10MB 이하.`
+    : `최대 ${DETAIL_IMAGE_MAX}장, JPG·PNG·WEBP, 10MB 이하. 세로로 위에서부터 이어 붙습니다.`
   const uploaderProps = {
     upload: uploadProductImage,
     accept: PRODUCT_IMAGE_ACCEPT,
@@ -344,7 +345,7 @@ export function AdminProductForm({
         <FormSection
           title="옵션"
           description={`고객이 옵션을 고르면 해당 이미지가 표시됩니다.
-옵션당 최대 10장, 첫 장이 대표 이미지입니다.`}
+옵션당 최대 ${GALLERY_MAX}장, 첫 장이 대표 이미지입니다.`}
         >
           {/* 프리셋은 옵션 종류(축)를 새로 까는데, 등록 뒤에는 축을 만들 수 없다. */}
           {editing ? (
@@ -457,6 +458,7 @@ export function AdminProductForm({
             <ImageUploader
               {...uploaderProps}
               ratio="portrait"
+              max={DETAIL_IMAGE_MAX}
               showCount={false}
               value={value.benefitImages}
               onChange={(benefitImages) => patch({ benefitImages })}
@@ -469,6 +471,7 @@ export function AdminProductForm({
             <ImageUploader
               {...uploaderProps}
               ratio="portrait"
+              max={DETAIL_IMAGE_MAX}
               showCount={false}
               value={value.infoImages}
               onChange={(infoImages) => patch({ infoImages })}
@@ -481,6 +484,7 @@ export function AdminProductForm({
             <ImageUploader
               {...uploaderProps}
               ratio="portrait"
+              max={DETAIL_IMAGE_MAX}
               showCount={false}
               value={value.noticeImages}
               onChange={(noticeImages) => patch({ noticeImages })}

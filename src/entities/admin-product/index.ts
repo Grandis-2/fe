@@ -17,6 +17,7 @@ export { useAdminProducts } from './api/useAdminProducts'
 // 이 함수를 업로더의 upload로 넘기기만 한다(DTO는 밖으로 나가지 않는다).
 export { uploadProductImage } from './api/productImages'
 export {
+  DETAIL_IMAGE_MAX,
   GALLERY_MAX,
   imageUploadIssues,
   PRODUCT_IMAGE_ACCEPT,
