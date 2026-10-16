@@ -111,7 +111,9 @@ export const Loading: Story = {
     await expect(canvas.getByRole('table')).toHaveAttribute('aria-busy', 'true')
     // 헤더 1줄 + 로딩 4줄
     await expect(canvas.getAllByRole('row')).toHaveLength(5)
-    await expect(canvas.getByText('불러오는 중입니다.')).toBeInTheDocument()
+    await expect(canvas.getByRole('status')).toHaveTextContent(
+      '불러오는 중입니다.',
+    )
     await expect(canvas.queryByText('데이터가 없습니다.')).toBeNull()
   },
 }

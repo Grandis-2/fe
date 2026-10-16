@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 
+import { srOnly } from '@shared/config/theme'
+
 import { Skeleton } from '../Skeleton'
 
 import * as styles from './StatCard.css'
@@ -31,7 +33,11 @@ export function StatCard({
     >
       <div className={styles.label}>{label}</div>
       {loading ? (
-        <Skeleton width={72} height={30} />
+        // 카드마다 live 영역을 두면 여러 장이 한꺼번에 읽힌다 — 값 자리의 글자로만 둔다.
+        <div>
+          <Skeleton width={72} height={30} />
+          <span className={srOnly}>불러오는 중</span>
+        </div>
       ) : (
         <div className={muted ? styles.valueMuted : styles.value}>{value}</div>
       )}

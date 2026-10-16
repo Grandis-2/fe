@@ -109,6 +109,10 @@ export function Table<T>({
 
   return (
     <div className={[styles.wrapper, className].filter(Boolean).join(' ')}>
+      {/* 표 밖의 live 영역 — 늘 두고 글자만 바꿔야 스크린리더가 바뀐 걸 알린다. */}
+      <div className={srOnly} role="status" aria-live="polite">
+        {loading ? '불러오는 중입니다.' : ''}
+      </div>
       <div className={styles.root}>
         <table className={styles.table} aria-busy={loading || undefined}>
           <thead>
@@ -131,16 +135,12 @@ export function Table<T>({
                 { length: loadingRows ?? pageSize ?? DEFAULT_LOADING_ROWS },
                 (_, index) => (
                   <tr key={index} className={styles.row}>
-                    {allColumns.map(({ key, align = 'left' }, column) => (
+                    {allColumns.map(({ key, align = 'left' }) => (
                       <td key={key} className={styles.cell[align]}>
                         <span
                           className={styles.skeletonBar}
                           aria-hidden="true"
                         />
-                        {/* 스크린리더엔 한 번만 알린다. */}
-                        {index === 0 && column === 0 && (
-                          <span className={srOnly}>불러오는 중입니다.</span>
-                        )}
                       </td>
                     ))}
                   </tr>

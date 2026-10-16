@@ -41,6 +41,7 @@ export const Loading: Story = {
   args: { label: '접수', value: '조회 실패', loading: true },
   play: async ({ canvas, canvasElement }) => {
     await expect(canvas.queryByText('조회 실패')).toBeNull()
+    await expect(canvas.getByText('불러오는 중')).toBeInTheDocument()
     await expect(canvasElement.firstElementChild).toHaveAttribute(
       'aria-busy',
       'true',
