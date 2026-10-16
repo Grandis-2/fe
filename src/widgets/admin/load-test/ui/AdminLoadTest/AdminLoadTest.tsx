@@ -21,7 +21,6 @@ import {
   ADMIN_RECONCILIATION_PATH,
   ADMIN_WAITINGROOM_PATH,
 } from '@shared/config/routes'
-import { srOnly } from '@shared/config/theme'
 import {
   Button,
   Dropdown,
@@ -29,6 +28,7 @@ import {
   InlineAlert,
   RefreshStatus,
   Skeleton,
+  SkeletonGroup,
   Sparkline,
   StatCard,
   Table,
@@ -224,7 +224,7 @@ export function AdminLoadTest() {
           <StatCard
             label="총 대기 인원"
             muted={!q}
-            loading={!q && queue.isPending}
+            loading={queue.isPending}
             value={
               <Trend
                 value={
@@ -238,7 +238,7 @@ export function AdminLoadTest() {
           <StatCard
             label="실제 입장 속도"
             muted={!q}
-            loading={!q && queue.isPending}
+            loading={queue.isPending}
             value={
               <Trend
                 value={
@@ -252,7 +252,7 @@ export function AdminLoadTest() {
           <StatCard
             label="브레이크 배율"
             muted={!q}
-            loading={!q && queue.isPending}
+            loading={queue.isPending}
             value={
               <Trend
                 value={q?.brakeFactor ?? '—'}
@@ -265,7 +265,7 @@ export function AdminLoadTest() {
           <StatCard
             label="대기열 서버"
             muted={!q}
-            loading={!q && queue.isPending}
+            loading={queue.isPending}
             value={q?.gateways != null ? fmt(q.gateways, '대') : '—'}
           />
         </div>
@@ -284,7 +284,7 @@ export function AdminLoadTest() {
           <StatCard
             label="초당 확정"
             muted={confirmRates.length === 0}
-            loading={!s && stats.isPending}
+            loading={stats.isPending}
             value={
               <Trend
                 value={
@@ -300,7 +300,7 @@ export function AdminLoadTest() {
           <StatCard
             label="처리 중 적체"
             muted={!s}
-            loading={!s && stats.isPending}
+            loading={stats.isPending}
             value={
               <Trend
                 value={s ? fmt(s.preorders.PENDING_SYNC, '건') : '—'}
@@ -312,19 +312,19 @@ export function AdminLoadTest() {
           <StatCard
             label="가장 오래 처리 중"
             muted={!s}
-            loading={!s && stats.isPending}
+            loading={stats.isPending}
             value={s ? ageOf(s.oldestPendingSyncAt, stats.dataUpdatedAt) : '—'}
           />
           <StatCard
             label="외부 등록 실패"
             muted={!s}
-            loading={!s && stats.isPending}
+            loading={stats.isPending}
             value={s ? fmt(s.syncJobs.REGISTER.DEAD_LETTER, '건') : '—'}
           />
           <StatCard
             label="상태 반영 실패"
             muted={!s}
-            loading={!s && stats.isPending}
+            loading={stats.isPending}
             value={s ? fmt(s.deadLetters.waiting, '건') : '—'}
           />
         </div>
@@ -382,10 +382,9 @@ export function AdminLoadTest() {
               {' · '}설정 버전 {mock.data.configVersion}
             </div>
           ) : (
-            <div role="status" aria-busy="true">
-              <span className={srOnly}>불러오는 중입니다.</span>
+            <SkeletonGroup>
               <Skeleton width="60%" height={20} />
-            </div>
+            </SkeletonGroup>
           )}
         </div>
       </FormSection>

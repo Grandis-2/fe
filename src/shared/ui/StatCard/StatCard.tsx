@@ -12,7 +12,7 @@ export type StatCardProps = {
    * 흐린 글씨로 보여 0건과 구분된다.
    */
   muted?: boolean
-  /** 불러오는 중 — 값 자리에 회색 막대를 깐다(value는 스크린리더용으로만 읽힌다) */
+  /** 불러오는 중 — value 대신 회색 막대를 깐다('—'·'조회 실패'와 섞이지 않게) */
   loading?: boolean
   className?: string
 }

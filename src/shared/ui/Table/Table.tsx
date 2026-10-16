@@ -2,6 +2,8 @@ import { useState, type ReactNode } from 'react'
 
 import { ChevronRight } from 'lucide-react'
 
+import { srOnly } from '@shared/config/theme'
+
 import { Navigator } from '../Navigator'
 
 import * as styles from './Table.css'
@@ -129,17 +131,15 @@ export function Table<T>({
                 { length: loadingRows ?? pageSize ?? DEFAULT_LOADING_ROWS },
                 (_, index) => (
                   <tr key={index} className={styles.row}>
-                    {allColumns.map(({ key, align = 'left' }) => (
+                    {allColumns.map(({ key, align = 'left' }, column) => (
                       <td key={key} className={styles.cell[align]}>
                         <span
                           className={styles.skeletonBar}
                           aria-hidden="true"
                         />
                         {/* 스크린리더엔 한 번만 알린다. */}
-                        {index === 0 && key === allColumns[0].key && (
-                          <span className={styles.srOnly}>
-                            불러오는 중입니다.
-                          </span>
+                        {index === 0 && column === 0 && (
+                          <span className={srOnly}>불러오는 중입니다.</span>
                         )}
                       </td>
                     ))}

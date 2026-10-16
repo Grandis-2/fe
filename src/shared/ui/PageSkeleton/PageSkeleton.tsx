@@ -1,6 +1,5 @@
-import { srOnly } from '@shared/config/theme'
-
 import { Skeleton } from '../Skeleton'
+import { SkeletonGroup } from '../SkeletonGroup'
 
 import * as styles from './PageSkeleton.css'
 
@@ -16,7 +15,7 @@ export type PageSkeletonProps = {
 
 /**
  * 상세 화면·폼을 불러오는 동안의 자리. '불러오는 중입니다.' 글자 대신 모양을 먼저 깔아
- * 다 왔을 때 화면이 덜 튄다. 스크린리더엔 한 번만 알린다(role="status").
+ * 다 왔을 때 화면이 덜 튄다.
  */
 export function PageSkeleton({
   title = true,
@@ -25,12 +24,9 @@ export function PageSkeleton({
   className,
 }: PageSkeletonProps) {
   return (
-    <div
+    <SkeletonGroup
       className={[styles.root, className].filter(Boolean).join(' ')}
-      role="status"
-      aria-busy="true"
     >
-      <span className={srOnly}>불러오는 중입니다.</span>
       {title && (
         <div className={styles.titleRow}>
           <Skeleton width={240} height={30} radius={8} />
@@ -46,6 +42,6 @@ export function PageSkeleton({
           ))}
         </div>
       ))}
-    </div>
+    </SkeletonGroup>
   )
 }

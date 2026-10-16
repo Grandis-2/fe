@@ -22,7 +22,6 @@ import {
   refreshIntervalOptions,
   type RefreshInterval,
 } from '@shared/config/refreshInterval'
-import { srOnly } from '@shared/config/theme'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import {
@@ -32,6 +31,7 @@ import {
   InlineAlert,
   RefreshStatus,
   Skeleton,
+  SkeletonGroup,
   StatCard,
   Table,
   Tag,
@@ -314,7 +314,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
         <StatCard
           label="총 대기 인원"
           muted={!view}
-          loading={!view && status.isPending}
+          loading={status.isPending}
           value={
             view
               ? count(
@@ -327,19 +327,19 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
         <StatCard
           label="실제 입장 속도"
           muted={!view}
-          loading={!view && status.isPending}
+          loading={status.isPending}
           value={count(view?.globalCredit ?? null, '명/초')}
         />
         <StatCard
           label="브레이크 배율"
           muted={!view}
-          loading={!view && status.isPending}
+          loading={status.isPending}
           value={view?.brakeFactor ?? '—'}
         />
         <StatCard
           label="대기열 서버"
           muted={!view}
-          loading={!view && status.isPending}
+          loading={status.isPending}
           value={count(view?.gateways ?? null, '대')}
         />
       </div>
@@ -362,16 +362,11 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
         <div className={styles.card}>
           {rates.isPending && (
             // 운영값 줄 모양을 먼저 깐다 — 다 오면 같은 자리에 값이 들어온다.
-            <div role="status" aria-busy="true">
-              <span className={srOnly}>불러오는 중입니다.</span>
+            <SkeletonGroup className={styles.skeletonRows}>
               {[0, 1, 2].map((row) => (
-                <Skeleton
-                  key={row}
-                  height={24}
-                  className={styles.skeletonRow}
-                />
+                <Skeleton key={row} height={24} />
               ))}
-            </div>
+            </SkeletonGroup>
           )}
           {settings.map((row) => (
             <div key={row.key} className={styles.settingRow}>

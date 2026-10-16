@@ -131,5 +131,3 @@ export const skeletonBar = style([
     verticalAlign: 'middle',
   },
 ])
-
-export { srOnly } from '@shared/config/theme'

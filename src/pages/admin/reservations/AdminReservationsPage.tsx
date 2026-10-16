@@ -337,7 +337,7 @@ export function AdminReservationsPage() {
               key={label}
               label={label}
               muted={unknown}
-              loading={unknown && stats.isPending}
+              loading={stats.isPending}
               value={
                 value !== undefined
                   ? `${value.toLocaleString('ko-KR')}건`

@@ -12,7 +12,6 @@ import {
   type MockFaultType,
 } from '@entities/external-reservation'
 import { getErrorMessage } from '@shared/api/client'
-import { srOnly } from '@shared/config/theme'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
@@ -23,6 +22,7 @@ import {
   InlineAlert,
   Input,
   Skeleton,
+  SkeletonGroup,
 } from '@shared/ui'
 import type { DropdownOption } from '@shared/ui'
 
@@ -143,16 +143,11 @@ export function AdminMockSettings() {
         <div className={styles.card}>
           {config.isPending && (
             // 설정 줄 모양을 먼저 깐다 — 다 오면 같은 자리에 값이 들어온다.
-            <div role="status" aria-busy="true">
-              <span className={srOnly}>불러오는 중입니다.</span>
+            <SkeletonGroup className={styles.skeletonRows}>
               {[0, 1, 2].map((row) => (
-                <Skeleton
-                  key={row}
-                  height={24}
-                  className={styles.skeletonRow}
-                />
+                <Skeleton key={row} height={24} />
               ))}
-            </div>
+            </SkeletonGroup>
           )}
           {config.isError && (
             <InlineAlert status="error">

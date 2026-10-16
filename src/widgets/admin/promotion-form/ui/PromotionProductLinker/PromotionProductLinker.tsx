@@ -1,6 +1,5 @@
 import type { PromotionLinkableProduct } from '@entities/admin-promotion'
-import { srOnly } from '@shared/config/theme'
-import { Button, Checkbox, Skeleton } from '@shared/ui'
+import { Button, Checkbox, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './PromotionProductLinker.css'
 
@@ -37,15 +36,14 @@ export function PromotionProductLinker({
       </div>
 
       {loading ? (
-        <div className={styles.list} role="status" aria-busy="true">
-          <span className={srOnly}>불러오는 중입니다.</span>
+        <SkeletonGroup className={styles.list}>
           {[0, 1].map((row) => (
             <div key={row} className={styles.skeletonCard}>
               <Skeleton width="40%" height={22} />
               <Skeleton width={120} height={18} />
             </div>
           ))}
-        </div>
+        </SkeletonGroup>
       ) : products.length === 0 ? (
         <div className={styles.empty}>사전예약으로 등록된 상품이 없습니다.</div>
       ) : (
