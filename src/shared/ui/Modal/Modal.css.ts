@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css'
+import { style, styleVariants } from '@vanilla-extract/css'
 
 import {
   color,
@@ -72,10 +72,38 @@ export const content = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[16],
-  width: '400px',
   maxWidth: '100%',
   padding: `${spacing[32]} ${spacing[24]} ${spacing[24]}`,
   boxSizing: 'border-box',
+})
+
+// wide는 화면을 통째로 담는 모달(상품 상세 미리보기)용 — 구매자 상세의 웹 폭과 맞춘다.
+// 높이를 dialog의 UA 최대 높이(100% - 2em - 6px, 테두리 2px 제외)에 맞춰 dialog 자체는 스크롤되지
+// 않게 하고, 본문(scrollBody)만 스크롤한다 — 제목·닫기 버튼이 따라 올라가지 않고, 스크롤바가
+// 둥근 모서리에 걸치지 않는다.
+export const size = styleVariants({
+  default: { width: '400px' },
+  wide: {
+    width: '1200px',
+    maxHeight: 'calc(100dvh - 2em - 8px)',
+    paddingRight: spacing[8],
+  },
+})
+
+// 오른쪽 여백을 content 대신 여기서 남겨, 스크롤바가 내용과 모서리 사이 여백 안에 놓이게 한다.
+export const scrollBody = style({
+  flex: 1,
+  minHeight: 0,
+  overflowY: 'auto',
+  overscrollBehavior: 'contain',
+  paddingRight: spacing[8],
+  // 제목 밑·모달 바닥에서 내용이 칼같이 잘리지 않게 가장자리를 흐린다. 같은 폭만큼 위아래를
+  // 비워 둬서, 스크롤하지 않은 상태에선 내용이 흐려지지 않는다.
+  paddingBlock: spacing[16],
+  maskImage: `linear-gradient(transparent, black ${spacing[16]}, black calc(100% - ${spacing[16]}), transparent)`,
+  scrollbarWidth: 'thin',
+  scrollbarColor: `${color.border.hover} transparent`,
+  scrollbarGutter: 'stable',
 })
 
 // 한글은 기본값이면 글자 단위로 끊겨 '시도합니 / 다'처럼 단어 중간에서 줄이 바뀐다.

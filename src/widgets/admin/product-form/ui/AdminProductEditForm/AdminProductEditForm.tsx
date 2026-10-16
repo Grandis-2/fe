@@ -9,6 +9,7 @@ import {
   useAdminProductStock,
   useSaveAdminProductEdits,
   validateProductBasics,
+  type AdminProductFormValue,
   type EditSaveResult,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
@@ -22,7 +23,8 @@ import * as styles from './AdminProductEditForm.css'
 export type AdminProductEditFormProps = {
   productId: string
   onCancel: () => void
-  onPreview: () => void
+  /** 폼에 지금 있는 값 — 저장 전 사진도 미리보기에 보이게 넘긴다 */
+  onPreview: (value: AdminProductFormValue) => void
   /** 배송 구간 설정 탭으로 보낸다 — 1차 배송일은 거기서 고친다 */
   onEditShipmentBatches?: () => void
 }

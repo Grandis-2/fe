@@ -28,7 +28,7 @@ export type {
   EditSaveResult,
 } from './api/useSaveAdminProductEdits'
 export { editLockReason, editSectionLabel } from './model/edit'
-export { validateRegistration } from './model/registration'
+export { toPreviewProduct, validateRegistration } from './model/registration'
 export { serverIssuesOf, validateProductBasics } from './model/validation'
 export type { FormField, FormIssue } from './model/validation'
 export {

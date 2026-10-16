@@ -1,4 +1,5 @@
 import type {
+  ProductDetailView,
   ProductImageAddRequest,
   ProductImageBundle,
   RegistrationImages,
@@ -124,6 +125,35 @@ export function toRegistrationImages(
     return undefined
   }
   return images
+}
+
+/**
+ * 미리보기에 그릴 사진 — 폼에 지금 있는 사진을 상세 응답의 images 모양으로 바꾼다. 저장 전이어도,
+ * 아직 올라가는 중이어도 화면용 주소(previewUrl)로 보인다. 올리지 못한 사진만 뺀다.
+ * 갤러리 묶음 키는 색상 이름이다 — 화면이 색상의 정규화값과 공백·대소문자를 무시하고 맞춘다.
+ */
+export function toPreviewImages(
+  value: AdminProductFormValue,
+): ProductDetailView['images'] {
+  const toBundle = (bundleKey: string, images: UploadedImage[]) => ({
+    bundleKey,
+    items: images
+      .filter((image) => image.status !== 'error')
+      .map((image, position) => ({
+        url: image.previewUrl ?? image.url,
+        position,
+        primary: position === 0,
+      })),
+  })
+  const gallery = hasNoColor(value)
+    ? [toBundle('', value.noColorImages)]
+    : value.colors.map((color) => toBundle(color.name.trim(), color.images))
+  return {
+    gallery: gallery.filter((bundle) => bundle.items.length > 0),
+    detail: DETAIL_FIELDS.map((field) =>
+      toBundle(DETAIL_SECTIONS[field], value[field]),
+    ).filter((bundle) => bundle.items.length > 0),
+  }
 }
 
 /* ------------------------------------------------------------------ *
