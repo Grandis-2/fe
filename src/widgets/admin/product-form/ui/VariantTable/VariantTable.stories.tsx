@@ -40,7 +40,7 @@ const meta = {
     colors,
     optionGroups,
     quantities: { '블랙|256GB': 10 },
-    onQuantityChange: fn(),
+    onQuantitiesChange: fn(),
   },
 } satisfies Meta<typeof VariantTable>
 
@@ -53,7 +53,22 @@ export const Default: Story = {
     await expect(
       canvas.getAllByRole('columnheader', { name: '수량' }),
     ).toHaveLength(1)
-    await expect(canvas.getAllByText('블랙')).toHaveLength(2)
+    // 색상은 컬럼이 아니라 묶음 머리줄에 한 번만 나온다.
+    await expect(canvas.getAllByText('블랙')).toHaveLength(1)
+    await expect(canvas.getByText(/2개 조합 · 수량 합계 10/)).toBeVisible()
+    await expect(canvas.getByText('수량 0인 조합 1개')).toBeVisible()
+  },
+}
+
+/** 일괄 입력 — 한 번에 모든 조합의 수량을 채운다 */
+export const BulkQuantity: Story = {
+  play: async ({ canvas, args, userEvent }) => {
+    await userEvent.type(canvas.getByLabelText('수량 일괄 입력'), '30')
+    await userEvent.click(canvas.getByRole('button', { name: '전체에 적용' }))
+    await expect(args.onQuantitiesChange).toHaveBeenCalledWith({
+      '블랙|256GB': 30,
+      '블랙|512GB': 30,
+    })
   },
 }
 
@@ -76,7 +91,16 @@ export const Paused: Story = {
   },
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.click(canvas.getByLabelText('블랙 256GB 판매'))
-    await expect(args.onPausedChange).toHaveBeenCalledWith('블랙|256GB', true)
+    await expect(args.onPausedChange).toHaveBeenCalledWith(['블랙|256GB'], true)
+
+    // 끈 조합은 만들지 않으니 이 색상 일괄 적용에서도 빠진다.
+    await userEvent.type(canvas.getByLabelText('블랙 수량'), '5')
+    await userEvent.click(
+      canvas.getByRole('button', { name: '이 색상에 적용' }),
+    )
+    await expect(args.onQuantitiesChange).toHaveBeenCalledWith({
+      '블랙|256GB': 5,
+    })
   },
 }
 
@@ -87,5 +111,32 @@ export const HideQuantity: Story = {
     await expect(
       canvas.queryByRole('columnheader', { name: '수량' }),
     ).not.toBeInTheDocument()
+  },
+}
+
+const manyColors = [
+  { id: 'c-1', name: '블랙', hex: '#111111', noColor: false, images: [] },
+  { id: 'c-2', name: '실버', hex: '#D9D9DC', noColor: false, images: [] },
+  { id: 'c-3', name: '골드', hex: '#E8D3B0', noColor: false, images: [] },
+]
+
+/** 여러 색상 — 색상별로 접히고 첫 색상만 펼쳐진다 */
+export const ManyColors: Story = {
+  args: {
+    colors: manyColors,
+    variants: manyColors.flatMap(({ name }) =>
+      variants.map((variant) => ({
+        ...variant,
+        key: `${name}|${variant.optionLabels[0]}`,
+        colorName: name,
+      })),
+    ),
+    quantities: { '블랙|256GB': 10, '블랙|512GB': 10, '실버|256GB': 5 },
+    pausedKeys: [],
+    onPausedChange: fn(),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByRole('table')).toHaveLength(3)
+    await expect(canvas.getByText('수량 0인 조합 2개')).toBeVisible()
   },
 }

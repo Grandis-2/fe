@@ -414,8 +414,8 @@ export function AdminProductForm({
               colors={value.colors}
               optionGroups={value.optionGroups}
               quantities={value.quantities}
-              onQuantityChange={(key, quantity) =>
-                patch({ quantities: { ...value.quantities, [key]: quantity } })
+              onQuantitiesChange={(changes) =>
+                patch({ quantities: { ...value.quantities, ...changes } })
               }
               // 사전예약은 재고를 세지 않는다(서버가 stock을 받지 않는다). 등록 때 1차 배송
               // 차수는 끝이 열린 채로만 보낼 수 있어서 1차 물량도 실을 곳이 없다 —
@@ -424,11 +424,11 @@ export function AdminProductForm({
               // 등록에선 끈 조합을 만들지 않고, 수정에선 판매 중지로 둔다.
               pausedKeys={value.pausedKeys}
               excludeOnPause={!editing}
-              onPausedChange={(key, paused) =>
+              onPausedChange={(keys, paused) =>
                 patch({
                   pausedKeys: paused
-                    ? [...value.pausedKeys, key]
-                    : value.pausedKeys.filter((item) => item !== key),
+                    ? [...new Set([...value.pausedKeys, ...keys])]
+                    : value.pausedKeys.filter((item) => !keys.includes(item)),
                 })
               }
             />
