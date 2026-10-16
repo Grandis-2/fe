@@ -17,6 +17,7 @@ import {
   type ProductOptionPreset,
 } from '@entities/admin-product'
 import { findCategoryId, useCategories } from '@entities/product'
+import type { DropdownOption } from '@shared/ui'
 import {
   Button,
   Checkbox,
@@ -25,11 +26,10 @@ import {
   ImageUploader,
   InlineAlert,
   Input,
+  FieldError,
 } from '@shared/ui'
-import type { DropdownOption } from '@shared/ui'
 
 import { ColorOptionEditor } from '../ColorOptionEditor'
-import { FieldError } from '../FieldError'
 import { FirstDeliveryField } from '../FirstDeliveryField'
 import { NumberField } from '../NumberField'
 import { OptionGroupEditor } from '../OptionGroupEditor'
