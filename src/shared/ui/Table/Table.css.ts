@@ -126,8 +126,8 @@ export const skeletonBar = style([
     display: 'inline-block',
     width: '70%',
     maxWidth: '160px',
-    height: '20px',
-    borderRadius: '6px',
+    height: '28px',
+    borderRadius: '4px',
     verticalAlign: 'middle',
   },
 ])
