@@ -59,7 +59,7 @@ export const tileMovable = style({
   selectors: {
     '&:focus-visible': {
       outline: `2px solid ${color.primary.base}`,
-      outlineOffset: '2px',
+      outlineOffset: spacing[2],
     },
   },
 })

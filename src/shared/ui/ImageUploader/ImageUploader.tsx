@@ -57,13 +57,14 @@ export type ImageUploaderProps = {
 const FALLBACK_ERROR = '사진을 올리지 못했습니다.'
 
 // 끌어다 놓은 파일은 선택 창의 accept 거름망을 거치지 않으니 같은 규칙으로 직접 거른다.
-// accept는 MIME 형식(image/png, image/*)만 쓴다고 본다 — 확장자(.png) 규칙은 보지 않는다.
+// 규칙은 MIME 형식(image/png, image/*)이나 확장자(.png)다.
 const matchesAccept = (file: File, accept: string) =>
-  accept.split(',').some((rule) => {
-    const type = rule.trim()
-    return type.endsWith('/*')
-      ? file.type.startsWith(type.slice(0, -1))
-      : file.type === type
+  accept.split(',').some((raw) => {
+    const rule = raw.trim().toLowerCase()
+    if (rule.startsWith('.')) return file.name.toLowerCase().endsWith(rule)
+    return rule.endsWith('/*')
+      ? file.type.startsWith(rule.slice(0, -1))
+      : file.type === rule
   })
 
 // 바깥에서 파일을 끌고 왔는지 — 타일 순서를 바꾸는 끌기와 구분한다.
@@ -114,6 +115,11 @@ export function ImageUploader({
       mountedRef.current = false
     }
   }, [])
+
+  // 바깥 fieldset이 잠기면 버튼은 브라우저가 막지만, 타일(div)의 끌기·화살표 키와 파일 놓기는
+  // 막지 못한다 — 그때도 바뀌지 않게 직접 확인한다.
+  const isLocked = () =>
+    disabled || !!tilesRef.current?.closest('fieldset:disabled')
 
   const commit = (next: UploadedImage[]) => {
     latestRef.current = next
@@ -186,6 +192,7 @@ export function ImageUploader({
   // 첫 장이 대표 이미지라 순서가 곧 의미다. 놓을 때가 아니라 지나갈 때마다 옮겨서 놓일
   // 자리를 미리 보여준다.
   const moveImage = (id: string, toIndex: number) => {
+    if (isLocked()) return
     const list = latestRef.current
     const fromIndex = list.findIndex((image) => image.id === id)
     if (fromIndex === -1 || fromIndex === toIndex) return
@@ -217,7 +224,7 @@ export function ImageUploader({
         .filter(Boolean)
         .join(' ')}
       onDragOver={(event) => {
-        if (!isFileDrag(event) || !canDropFiles) return
+        if (!isFileDrag(event) || !canDropFiles || isLocked()) return
         event.preventDefault()
         event.dataTransfer.dropEffect = 'copy'
         setIsFileOver(true)
@@ -231,7 +238,7 @@ export function ImageUploader({
         if (!isFileDrag(event)) return
         event.preventDefault()
         setIsFileOver(false)
-        if (canDropFiles) addFiles(event.dataTransfer.files)
+        if (canDropFiles && !isLocked()) addFiles(event.dataTransfer.files)
       }}
     >
       {(label || showCount) && (
@@ -277,6 +284,10 @@ export function ImageUploader({
               }
             }}
             onDragStart={(event) => {
+              if (isLocked()) {
+                event.preventDefault()
+                return
+              }
               setDraggingId(image.id)
               event.dataTransfer.effectAllowed = 'move'
               // Firefox는 데이터를 넣지 않으면 끌기를 시작하지 않는다.
