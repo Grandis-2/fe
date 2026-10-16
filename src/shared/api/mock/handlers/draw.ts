@@ -34,7 +34,7 @@ const hasToken = (request: Request) =>
 const unauthenticated = () =>
   fail(401, { code: 'UNAUTHENTICATED', message: '로그인이 필요합니다.' })
 
-const drawNotFound = () =>
+export const drawNotFound = () =>
   fail(404, { code: 'DRAW_NOT_FOUND', message: '회차를 찾을 수 없습니다.' })
 
 const entryNotFound = () =>
@@ -56,13 +56,16 @@ const notPayable = () =>
   })
 
 // 서버 시각으로 단계를 정한다 — 시작 시각부터 응모 중, 마감 시각부터 마감.
-const phaseOf = ({ opensAt, closesAt }: DrawRecord): DrawPhase => {
+export const phaseOf = ({ opensAt, closesAt }: DrawRecord): DrawPhase => {
   const now = Date.now()
   if (now < Date.parse(opensAt)) return 'SCHEDULED'
   return now < Date.parse(closesAt) ? 'OPEN' : 'CLOSED'
 }
 
-const toDraw = (draw: DrawRecord): Draw => ({ ...draw, phase: phaseOf(draw) })
+export const toDraw = (draw: DrawRecord): Draw => ({
+  ...draw,
+  phase: phaseOf(draw),
+})
 
 const toEntry = (entry: DrawEntryRecord): DrawEntry => ({
   ...entry,
