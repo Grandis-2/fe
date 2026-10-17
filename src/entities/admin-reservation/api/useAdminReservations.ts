@@ -78,7 +78,7 @@ export const useAdminMembers = (memberIds: string[]) => {
     queryFn: ({ signal }) => getAdminMembers(ids, signal),
     select: (response) => response.items,
     enabled: ids.length > 0,
-    ...queryPolicy.account,
+    ...queryPolicy.catalog,
   })
 }
 
