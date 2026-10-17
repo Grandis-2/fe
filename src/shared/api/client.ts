@@ -29,6 +29,8 @@ export type ApiRequestOptions = {
   skipAuthRefresh?: boolean
   // 쿼리 키가 바뀌거나 화면을 떠날 때 이전 요청을 취소한다.
   signal?: AbortSignal
+  // 결제 승인처럼 서버 처리가 긴 요청만 늘린다. 기본은 TIMEOUT_MS.
+  timeout?: number
 }
 
 const TIMEOUT_MS = 10_000
@@ -47,7 +49,7 @@ type RawResponse<TData> = AxiosResponse<ApiResponse<TData> | string>
 
 async function send<TData>(
   path: string,
-  { body, method = 'GET', headers, signal }: ApiRequestOptions,
+  { body, method = 'GET', headers, signal, timeout }: ApiRequestOptions,
 ): Promise<RawResponse<TData>> {
   try {
     return await http.request<ApiResponse<TData> | string>({
@@ -55,6 +57,7 @@ async function send<TData>(
       method,
       data: body,
       signal,
+      timeout,
       headers: {
         'X-Request-Id': requestId(),
         ...getAuthHeaders(),

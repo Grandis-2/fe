@@ -60,6 +60,7 @@ export const createPaymentAttempt = (orderId: string) =>
 
 // ③ 결제 승인 — successUrl 쿼리(orderId=tossOrderId, paymentKey, amount)를 옮겨 보낸다. 최대 70초 걸릴 수 있다.
 // 500·503·네트워크 오류면 결제 준비를 다시 부르지 말고 같은 값으로 한 번 더 보낸 뒤 주문 상세를 폴링한다.
+// 기본 타임아웃(10초)으로는 승인 중에 끊겨 재전송이 409로 돌아오므로 70초보다 길게 기다린다.
 export const confirmOrderPayment = ({
   orderId,
   tossOrderId,
@@ -67,5 +68,5 @@ export const confirmOrderPayment = ({
 }: ConfirmPaymentRequest & { orderId: string; tossOrderId: string }) =>
   apiClient.request<OrderPaymentResult>(
     `${path(orderId)}/payment-attempts/${encodeURIComponent(tossOrderId)}/confirm`,
-    { method: 'POST', body },
+    { method: 'POST', body, timeout: 80_000 },
   )
