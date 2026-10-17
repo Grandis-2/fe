@@ -8,6 +8,7 @@ import { cartKeys } from '@entities/cart'
 import { confirmTossPayment, forgetBuyNowKey } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { mypagePath, paymentPath, resultPath } from '@shared/config/routes'
+import { useUnmountSignal } from '@shared/lib/useUnmountSignal'
 import { showToast } from '@shared/model/toastStore'
 import { Container, InlineAlert } from '@shared/ui'
 
@@ -17,6 +18,8 @@ export function PaymentCallbackPage() {
   const queryClient = useQueryClient()
   // StrictMode에서 effect가 두 번 실행돼도 승인을 두 번 보내지 않도록 막는다.
   const started = useRef(false)
+  // 결과를 기다리는 중에 화면을 떠나면 폴링을 멈추고, 늦게 나온 결과로 다른 화면에 끌고 가지 않는다.
+  const signal = useUnmountSignal()
 
   useEffect(() => {
     if (started.current) return
@@ -50,20 +53,27 @@ export function PaymentCallbackPage() {
       return
     }
 
-    confirmTossPayment({
-      orderId: orderToken,
-      tossOrderId,
-      paymentKey,
-      amount: Number(amount),
-    })
+    confirmTossPayment(
+      {
+        orderId: orderToken,
+        tossOrderId,
+        paymentKey,
+        amount: Number(amount),
+      },
+      signal,
+    )
       .then((outcome) => {
+        if (outcome.kind === 'approved') {
+          // 이 주문이 바로 구매였다면 그 키를 버린다 — 같은 상품을 다시 사면 새 주문이어야 한다.
+          forgetBuyNowKey({ orderId: orderToken })
+          // 장바구니 주문은 승인되면 산 수량만큼 장바구니에서 빠진다 — 헤더 배지를 다시 받는다.
+          if (!preorderId)
+            void queryClient.invalidateQueries({ queryKey: cartKeys.all })
+        }
+        // 화면을 떠났으면 승인 결과는 위에서 반영만 하고, 이동·안내는 하지 않는다.
+        if (signal.aborted) return
         switch (outcome.kind) {
           case 'approved':
-            // 이 주문이 바로 구매였다면 그 키를 버린다 — 같은 상품을 다시 사면 새 주문이어야 한다.
-            forgetBuyNowKey({ orderId: orderToken })
-            // 장바구니 주문은 승인되면 산 수량만큼 장바구니에서 빠진다 — 헤더 배지를 다시 받는다.
-            if (!preorderId)
-              void queryClient.invalidateQueries({ queryKey: cartKeys.all })
             navigate(resultPath(preorderId ? 'preorder-paid' : 'paid'), {
               replace: true,
               state: { orderId: orderToken },
@@ -86,10 +96,11 @@ export function PaymentCallbackPage() {
             navigate(mypagePath('history'), { replace: true })
         }
       })
-      .catch((caught: unknown) =>
-        fail(getErrorMessage(caught, '결제 승인 중 문제가 발생했어요.')),
-      )
-  }, [navigate, queryClient, searchParams])
+      .catch((caught: unknown) => {
+        if (signal.aborted) return
+        fail(getErrorMessage(caught, '결제 승인 중 문제가 발생했어요.'))
+      })
+  }, [navigate, queryClient, searchParams, signal])
 
   return (
     <Container>

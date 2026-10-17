@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from 'react-router'
 import { confirmDrawEntryPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { DRAW_PATH, drawPath } from '@shared/config/routes'
+import { useUnmountSignal } from '@shared/lib/useUnmountSignal'
 import { showToast } from '@shared/model/toastStore'
 import { Container, InlineAlert } from '@shared/ui'
 
@@ -16,6 +17,8 @@ export function DrawPaymentCallbackPage() {
   const navigate = useNavigate()
   // StrictMode에서 effect가 두 번 실행돼도 승인을 두 번 보내지 않도록 막는다.
   const started = useRef(false)
+  // 결과를 기다리는 중에 화면을 떠나면 폴링을 멈추고, 늦게 나온 결과로 다른 화면에 끌고 가지 않는다.
+  const signal = useUnmountSignal()
 
   useEffect(() => {
     if (started.current) return
@@ -47,13 +50,17 @@ export function DrawPaymentCallbackPage() {
       return
     }
 
-    confirmDrawEntryPayment({
-      drawId,
-      tossOrderId,
-      paymentKey,
-      amount: Number(amount),
-    })
+    confirmDrawEntryPayment(
+      {
+        drawId,
+        tossOrderId,
+        paymentKey,
+        amount: Number(amount),
+      },
+      signal,
+    )
       .then((outcome) => {
+        if (signal.aborted) return
         switch (outcome.kind) {
           case 'approved':
             back('응모가 완료됐어요.')
@@ -70,10 +77,11 @@ export function DrawPaymentCallbackPage() {
             )
         }
       })
-      .catch((caught: unknown) =>
-        back(getErrorMessage(caught, '응모비 결제 중 문제가 발생했어요.')),
-      )
-  }, [navigate, searchParams])
+      .catch((caught: unknown) => {
+        if (signal.aborted) return
+        back(getErrorMessage(caught, '응모비 결제 중 문제가 발생했어요.'))
+      })
+  }, [navigate, searchParams, signal])
 
   return (
     <Container>

@@ -1,5 +1,5 @@
 import { isRetryableError } from '@shared/api/queryPolicy'
-import { delay } from '@shared/lib/delay'
+import { pollUntil } from '@shared/lib/pollUntil'
 
 // 주문 결제와 럭키 드로우 응모비 결제가 같이 쓰는 승인 뒤처리.
 export type PaymentOutcome =
@@ -36,17 +36,17 @@ export const sendConfirmWithRetry = <TResult>(
   })
 
 // 승인 결과가 나올 때까지 check로 상태를 다시 묻는다. check가 null을 주면 아직 모르는 것이다.
-export async function pollOutcome(
+// 5xx·네트워크 오류도 아직 모르는 것으로 보고 다음 차례에 다시 묻고, 4xx는 던진다.
+// signal이 끊기면(화면을 떠나면) 멈추고 pending을 준다 — 호출부는 끊겼으면 결과를 쓰지 않는다.
+export const pollOutcome = async (
   check: () => Promise<PaymentOutcome | null>,
-): Promise<PaymentOutcome> {
-  const deadline = Date.now() + POLL_LIMIT_MS
-  while (Date.now() < deadline) {
-    const outcome = await check().catch((caught: unknown) => {
-      if (isRetryableError(caught)) return null
-      throw caught
-    })
-    if (outcome) return outcome
-    await delay(POLL_MS)
-  }
-  return { kind: 'pending' }
-}
+  signal: AbortSignal,
+): Promise<PaymentOutcome> =>
+  (await pollUntil(
+    () =>
+      check().catch((caught: unknown) => {
+        if (isRetryableError(caught)) return null
+        throw caught
+      }),
+    { intervalMs: POLL_MS, timeoutMs: POLL_LIMIT_MS, signal },
+  )) ?? { kind: 'pending' }
