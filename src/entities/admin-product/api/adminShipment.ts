@@ -8,6 +8,7 @@ import type {
 const shipmentPath = (productId: string) =>
   `/api/v1/admin/preorders/products/${productId}/shipment-batches`
 
+// [preorder] GET /api/v1/admin/preorders/products/{productId}/shipment-batches — 배송 차수 조회(관리자)
 /** 배송 차수를 batchNumber 순으로 준다. 아직 정하지 않았으면 빈 배열, 회차가 없으면 404 */
 export const getAdminShipmentBatches = (
   productId: string,
@@ -17,6 +18,7 @@ export const getAdminShipmentBatches = (
     .request<ShipmentBatchListResponse>(shipmentPath(productId), { signal })
     .then((response) => response.items)
 
+// [preorder] PUT /api/v1/admin/preorders/products/{productId}/shipment-batches — 배송 차수 전체 교체
 /**
  * 배송 차수 전체를 보낸 목록으로 바꾼다. 구간이 어긋나면 400 SHIPMENT_BATCH_INVALID,
  * 회차가 없으면 404, 오픈 뒤면 409 PRODUCT_ALREADY_OPEN

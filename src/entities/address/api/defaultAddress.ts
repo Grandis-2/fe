@@ -5,6 +5,7 @@ import type { DefaultAddress } from '../model/defaultAddress'
 
 const PATH = '/api/v1/me/default-address'
 
+// [member] GET /api/v1/me/default-address — 기본 배송지 조회
 // 서버는 { shippingAddress } 봉투로 내려준다 — 화면은 주소 하나(없으면 null)만 본다.
 export const getDefaultAddress = async (
   signal?: AbortSignal,
@@ -16,6 +17,7 @@ export const getDefaultAddress = async (
   return shippingAddress
 }
 
+// [member] PUT /api/v1/me/default-address — 기본 배송지 저장
 // 모든 칸을 항상 통째로 보낸다 — 부분 수정 없음.
 export const putDefaultAddress = async (
   body: DefaultAddress,

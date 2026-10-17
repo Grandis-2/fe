@@ -19,6 +19,7 @@ const readRetryAfter = (headers: Record<string, unknown>) => {
   return Number.isFinite(seconds) && seconds > 0 ? seconds : null
 }
 
+// [waitingroom] POST /api/v1/preorders/queue — 대기열 진입
 // 진입 — 예약 페이지에 들어올 때 한 번. 다시 불러도 자리는 하나만 잡힌다(본문 없음).
 export const enterQueue = async (productId: string): Promise<QueueEntry> => {
   const { data, headers } =
@@ -29,6 +30,7 @@ export const enterQueue = async (productId: string): Promise<QueueEntry> => {
   return { ...data, retryAfter: readRetryAfter(headers) }
 }
 
+// [waitingroom] GET /api/v1/preorders/queue — 대기 순서 조회
 // 조회 — 진입 202에서 받은 queueToken을 Queue-Token 헤더에 담아 Retry-After초마다 부른다.
 export const getQueueStatus = async (
   productId: string,
@@ -43,6 +45,7 @@ export const getQueueStatus = async (
   return { ...data, retryAfter: readRetryAfter(headers) }
 }
 
+// [waitingroom → preorder] POST /api/v1/preorders — 사전예약 접수(대기열 게이트웨이를 거쳐 preorder로 간다)
 // 접수 — 입장권(X-Admission-Ticket)을 확인한 뒤 preorder로 넘어간다. 수량은 1개 고정.
 // 재전송은 같은 Idempotency-Key·같은 입장권·같은 본문으로 보내야 중복 예약이 생기지 않는다.
 export const submitPreorder = ({

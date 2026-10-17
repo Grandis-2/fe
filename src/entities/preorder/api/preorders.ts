@@ -11,6 +11,7 @@ import { toPreorder, toPreorderCard } from './toPreorder'
 
 import type { PreorderCardData } from '../ui/PreorderCard'
 
+// [catalog] GET /api/v1/products?saleMode=PREORDER — 상품 목록과 검색(쪽을 끝까지 이어 받음)
 // 사전예약 프로모션 전용 API는 없다 — catalog의 사전예약 상품(saleMode=PREORDER)이 곧 사전예약이다.
 export const getPreorders = async (
   signal?: AbortSignal,
@@ -24,6 +25,8 @@ export const getPreorders = async (
   return items.flatMap((item) => toPreorderCard(item) ?? [])
 }
 
+// [catalog] GET /api/v1/products/{productId} — 상품 상세
+// + [preorder] GET /api/v1/preorders/products/{productId}/shipment-batches — 배송 차수 조회(로그인 불필요)
 // 상품 상세 + 배송 차수(출시일). 사전예약 상품이 아니거나 회차가 없으면 null.
 export const getPreorder = async (productId: string, signal?: AbortSignal) => {
   const id = encodeURIComponent(productId)
