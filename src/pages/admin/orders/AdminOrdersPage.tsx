@@ -132,7 +132,9 @@ export function AdminOrdersPage() {
     searchParams.get('status'),
     adminOrderStatuses,
   )
-  const page = Math.max(1, Number(searchParams.get('page')) || 1)
+  // 손으로 고친 주소(?page=1.5, ?page=Infinity)도 첫 쪽으로 — 정수가 아니면 서버가 400을 준다.
+  const pageParam = Number(searchParams.get('page'))
+  const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1
 
   const orders = useAdminOrders({
     source,

@@ -20,6 +20,7 @@ import { getErrorMessage } from '@shared/api/client'
 import { mypagePath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
+import { shortId } from '@shared/lib/shortId'
 import { showToast } from '@shared/model/toastStore'
 import { ActionButton, Button, Chip, Dropdown, InlineAlert } from '@shared/ui'
 
@@ -189,7 +190,7 @@ export function MypageHistory() {
             highlight={awaitingPayment}
             preorder={order.source === 'PREORDER'}
             orderDate={formatDotDate(order.createdAt)}
-            orderNumber={order.orderId.slice(0, 8).toUpperCase()}
+            orderNumber={shortId(order.orderId)}
             items={toItems(order)}
             renderItem={renderItem}
             footer={

@@ -191,7 +191,13 @@ export function AdminLoadTest({
   const [test, setTest] = useState<TestRun | null>(null)
 
   // 새 응답이 오면 그 자리에서 표본을 쌓는다(렌더 중 갱신 — 같은 응답이면 건너뛴다).
-  if (queue.data && queue.dataUpdatedAt !== waitingHistory.at(-1)?.at) {
+  // 시험 중엔 시작 전에 받아 둔 응답을 넣지 않는다 — 넣으면 첫 구간이 시험 밖까지 걸쳐 속도가 틀어진다.
+  const inTest = (at: number) => !test || at >= test.startedAt
+  if (
+    queue.data &&
+    inTest(queue.dataUpdatedAt) &&
+    queue.dataUpdatedAt !== waitingHistory.at(-1)?.at
+  ) {
     setWaitingHistory((prev) =>
       appendSample(prev, {
         at: queue.dataUpdatedAt,
@@ -201,7 +207,11 @@ export function AdminLoadTest({
       }),
     )
   }
-  if (stats.data && stats.dataUpdatedAt !== statsHistory.at(-1)?.at) {
+  if (
+    stats.data &&
+    inTest(stats.dataUpdatedAt) &&
+    stats.dataUpdatedAt !== statsHistory.at(-1)?.at
+  ) {
     const { preorders } = stats.data
     // 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 — 둘의 차이가 적체다.
     const received = sum(preorders)
@@ -276,6 +286,8 @@ export function AdminLoadTest({
         eventFailures: s.deadLetters.waiting,
       },
     })
+    // 시작 뒤 첫 표본을 다음 자동 갱신까지 기다리지 않고 바로 받는다.
+    refresh()
   }
   const endTest = () =>
     setTest((prev) => prev && { ...prev, endedAt: Date.now() })

@@ -12,6 +12,7 @@ import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
 import { DEFAULT_REFRESH_INTERVAL } from '@shared/config/refreshInterval'
 import { adminOrdersPath } from '@shared/config/routes'
+import { copyText } from '@shared/lib/copyText'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
 import { showToast } from '@shared/model/toastStore'
@@ -54,8 +55,7 @@ export function AdminDrawDetail({ draw, fetchedAt }: AdminDrawDetailProps) {
 
   // 클립보드는 권한·비보안 컨텍스트(http)에서 거절될 수 있어 실패도 알린다.
   const copyId = () =>
-    void navigator.clipboard
-      .writeText(draw.drawId)
+    void copyText(draw.drawId)
       .then(() => showToast('회차 id를 복사했습니다.'))
       .catch(() => showToast('회차 id를 복사하지 못했습니다.'))
 
