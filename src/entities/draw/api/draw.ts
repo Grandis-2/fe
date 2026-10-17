@@ -58,6 +58,7 @@ export const createEntryPaymentAttempt = (drawId: string) =>
 
 // [order] POST /api/v1/draws/{drawId}/entries/me/payment-attempts/{tossOrderId}/confirm — 응모비 결제 승인
 // ③ 응모비 결제 승인 — successUrl 쿼리(orderId=tossOrderId, paymentKey, amount)를 옮겨 보낸다. 최대 70초 걸릴 수 있다.
+// 기본 타임아웃(10초)으로는 승인 중에 끊겨 재전송이 409로 돌아오므로 70초보다 길게 기다린다.
 export const confirmEntryPayment = ({
   drawId,
   tossOrderId,
@@ -65,5 +66,5 @@ export const confirmEntryPayment = ({
 }: ConfirmPaymentRequest & { drawId: string; tossOrderId: string }) =>
   apiClient.request<DrawPaymentResult>(
     `${path(drawId)}/entries/me/payment-attempts/${encodeURIComponent(tossOrderId)}/confirm`,
-    { method: 'POST', body },
+    { method: 'POST', body, timeout: 80_000 },
   )
