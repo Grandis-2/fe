@@ -24,15 +24,15 @@ if (import.meta.env.PROD && url && import.meta.env.VITE_USE_MSW !== 'true') {
       version: __APP_VERSION__,
       environment: 'production',
     },
-    sessionTracking: { samplingRate: 1 },
+    sessionTracking: { samplingRate: 0.1 },
     beforeSend,
     // 화면을 떠나며 취소한 요청은 오류가 아니다
     ignoreErrors: [/CanceledError/, /AbortError/, /ResizeObserver loop/],
     instrumentations: [
       // 이미지 같은 리소스마다 기록이 생겨 양이 많다. 웹 바이탈·페이지 이동은 그대로 남는다
       ...getWebInstrumentations({ enablePerformanceInstrumentation: false }),
-      // 빼면 샘플에서 빠진 세션이 "기록하지 않음" traceparent를 붙여 보내고,
-      // 백엔드가 그걸 따라 그 세션의 서버 트레이스·요청 지표를 버린다.
+      // 빼면 샘플에서 빠진 90% 세션이 "기록하지 않음" traceparent를 붙여 보내고,
+      // 백엔드가 그걸 따라 서버 트레이스·요청 지표의 90%를 버린다.
       new TracingInstrumentation({
         omitTraceContextForUnsampledSessions: true,
       }),
