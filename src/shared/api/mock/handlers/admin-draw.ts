@@ -1,8 +1,14 @@
 import { http } from 'msw'
 
+import {
+  DRAW_REQUEST_DELAY_MS,
+  DRAW_SETTLE_DELAY_MS,
+  memberEntryCounts,
+  settleDueDraws,
+} from '../drawSettlement'
 import { adminProductStore } from '../fixtures/admin-product'
 import { findStockItem } from '../fixtures/admin-stock'
-import { draws } from '../fixtures/draw'
+import { draws, saveDrawDb } from '../fixtures/draw'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 import { isUuid, readPaging, toPage, uuidViolation } from '../validate'
@@ -19,12 +25,9 @@ import type { DrawRecord } from '../fixtures/draw'
 import type { RequestHandler } from 'msw'
 
 // 관리자 럭키 드로우. 회차는 회원용 목업과 같은 저장소(draws)를 써서 여기서 만든 회차가
-// 회원 목록에도 바로 보인다. 진행(progress)은 실제 응모를 세지 않고 회차 id와 시각으로 흉내 낸다.
+// 회원 목록에도 바로 보인다. 진행(progress)은 회차 id와 시각으로 흉내 낸 다른 회원 숫자에 목업 회원의
+// 실제 응모를 더한다. 결과 반영 시각은 회원 응모 결과·당첨 주문과 같다(drawSettlement).
 
-const SECOND = 1000
-// 마감 30초 뒤부터 추첨하고(명세), 목업은 그 10초 뒤 결과를 반영한다.
-const DRAW_DELAY_MS = 30 * SECOND
-const SETTLE_DELAY_MS = 40 * SECOND
 const MAX_FEE = 999_999_999_999
 
 // 같은 Idempotency-Key면 처음 만든 회차를 돌려준다(본문은 비교하지 않는다 — 명세).
@@ -49,37 +52,43 @@ function progressOf(draw: DrawRecord): DrawProgress {
   if (now < opensAt) return idle
 
   const seed = seedOf(draw.drawId)
+  const mine = memberEntryCounts(draw.drawId)
   // 응모 기간이 지난 만큼 늘어난다. 회차마다 당첨 인원의 0.5~2.5배까지 모인다.
   const elapsed = Math.min(1, (now - opensAt) / (closesAt - opensAt))
-  const paidEntries = Math.round(
+  const othersPaid = Math.round(
     draw.winnerCount * (0.5 + (seed % 5) * 0.5) * elapsed,
   )
-  const awaitingEntries = Math.round(paidEntries * 0.08)
+  const paidEntries = othersPaid + mine.paid
+  const awaitingEntries = Math.round(othersPaid * 0.08) + mine.awaiting
 
   if (now < closesAt) {
     return {
       ...idle,
       paidEntries,
       awaitingEntries,
-      authorizingEntries: seed % 7,
+      authorizingEntries: (seed % 7) + mine.authorizing,
     }
   }
   // 마감 직후엔 결제 확인 중인 응모가 남아 있다가 풀린다.
   const authorizingEntries =
-    now < closesAt + DRAW_DELAY_MS ? Math.max(1, seed % 4) : 0
-  const settled = now >= closesAt + SETTLE_DELAY_MS
+    (now < closesAt + DRAW_REQUEST_DELAY_MS ? Math.max(1, seed % 4) : 0) +
+    mine.authorizing
+  const settled = now >= closesAt + DRAW_SETTLE_DELAY_MS
   return {
     paidEntries,
     authorizingEntries,
     awaitingEntries,
-    winners: settled ? Math.min(paidEntries, draw.winnerCount) : 0,
+    // 목업 회원의 결제한 응모는 모두 당첨이다(drawSettlement).
+    winners: settled
+      ? Math.max(mine.won, Math.min(paidEntries, draw.winnerCount))
+      : 0,
     // 결제 완료가 당첨 인원 이하면 추첨 없이 모두 당첨이라 요청 시각이 없다.
     drawRequestedAt:
       settled && paidEntries > draw.winnerCount
-        ? new Date(closesAt + DRAW_DELAY_MS).toISOString()
+        ? new Date(closesAt + DRAW_REQUEST_DELAY_MS).toISOString()
         : null,
     settledAt: settled
-      ? new Date(closesAt + SETTLE_DELAY_MS).toISOString()
+      ? new Date(closesAt + DRAW_SETTLE_DELAY_MS).toISOString()
       : null,
   }
 }
@@ -198,6 +207,7 @@ export const adminDrawHandlers: RequestHandler[] = [
       createdAt: new Date().toISOString(),
     }
     draws.push(created)
+    saveDrawDb()
     createdByKey.set(key, created.drawId)
     return ok(toDraw(created), 201)
   }),
@@ -213,6 +223,8 @@ export const adminDrawHandlers: RequestHandler[] = [
     if (!isUuid(String(params.drawId)))
       return invalid([uuidViolation('drawId')])
     const draw = findDraw(params.drawId)
-    return draw ? ok(progressOf(draw)) : drawNotFound()
+    if (!draw) return drawNotFound()
+    settleDueDraws()
+    return ok(progressOf(draw))
   }),
 ]

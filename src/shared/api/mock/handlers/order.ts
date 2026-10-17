@@ -1,5 +1,6 @@
 import { delay, http } from 'msw'
 
+import { settleDueDraws } from '../drawSettlement'
 import {
   cartLines,
   orders,
@@ -131,8 +132,8 @@ function approveOrder(order: OrderRecord) {
 const isCartDue = (order: OrderRecord) =>
   order.paymentDueAt !== null && Date.now() > Date.parse(order.paymentDueAt)
 
-// 결제 기한이 지난 장바구니 주문은 서버가 곧 취소한다 — 읽을 때 흉내 낸다.
-function expireCartOrders() {
+// 결제 기한이 지난 장바구니 주문은 서버가 곧 취소한다 — 읽을 때 흉내 낸다(관리자 주문 목록도 부른다).
+export function expireCartOrders() {
   for (const order of orders) {
     if (
       (order.source === 'CART' || order.source === 'BUY_NOW') &&
@@ -520,6 +521,8 @@ export const orderHandlers: RequestHandler[] = [
   http.get(url('/api/v1/orders'), ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     expireCartOrders()
+    // 결과 반영이 지난 럭키드로우 당첨 주문도 내 주문에 나온다.
+    settleDueDraws()
     const params = new URL(request.url).searchParams
     const size = Number(params.get('size') ?? 20)
     if (!Number.isInteger(size) || size < 1 || size > 100)
