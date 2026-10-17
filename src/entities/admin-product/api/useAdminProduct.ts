@@ -1,5 +1,3 @@
-import { useRef } from 'react'
-
 import {
   useMutation,
   useQueries,
@@ -14,6 +12,7 @@ import type {
   SaleStatusChangeRequest,
 } from '@shared/api/types'
 import { delay } from '@shared/lib/delay'
+import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
 
 import { toRegistrationRequest } from '../model/registration'
 
@@ -125,28 +124,23 @@ async function waitUntilReady(key: string) {
  */
 export const useCreateAdminProduct = () => {
   const queryClient = useQueryClient()
-  const pendingRef = useRef<{ key: string; body: string } | null>(null)
+  const idempotency = useIdempotencyKey()
 
   const mutation = useMutation({
     mutationFn: async (value: AdminProductFormValue) => {
       const request = toRegistrationRequest(value)
-      const body = JSON.stringify(request)
-      const pending = pendingRef.current
-      if (pending && pending.body !== body) {
-        throw new RegistrationUnconfirmedError()
-      }
-      const key = pending?.key ?? crypto.randomUUID()
-      pendingRef.current = { key, body }
+      const key = idempotency.keyFor(request)
+      if (key === null) throw new RegistrationUnconfirmedError()
       const { registration } = await register(key, request)
       // 등록은 끝났다 — 다음 등록은 새 키로 한다.
-      pendingRef.current = null
+      idempotency.forget()
 
       const ready = registration.completed || (await waitUntilReady(key))
       return { productId: registration.productId, ready }
     },
     onError: (caught) => {
       if (caught instanceof ApiRequestError && caught.status === 400) {
-        pendingRef.current = null
+        idempotency.forget()
       }
     },
     onSuccess: () =>
@@ -156,9 +150,7 @@ export const useCreateAdminProduct = () => {
   return {
     ...mutation,
     /** 이전 등록 결과를 확인했다 — 다음 제출은 새 키로 보낸다 */
-    startOver: () => {
-      pendingRef.current = null
-    },
+    startOver: idempotency.forget,
   }
 }
 

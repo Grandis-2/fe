@@ -1,11 +1,10 @@
-import { useRef } from 'react'
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
 import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
 import { pollingInterval, queryPolicy } from '@shared/api/queryPolicy'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
+import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
 
 import { toCreateDrawRequest, type AdminDrawFormValue } from '../model/form'
 import { isDrawSettled } from '../model/stage'
@@ -73,33 +72,28 @@ const isRejected = (caught: unknown) =>
  */
 export const useCreateAdminDraw = () => {
   const queryClient = useQueryClient()
-  const pendingRef = useRef<{ key: string; body: string } | null>(null)
+  const idempotency = useIdempotencyKey()
 
   const mutation = useMutation({
     mutationFn: (value: AdminDrawFormValue) => {
       const request = toCreateDrawRequest(value)
-      const body = JSON.stringify(request)
-      const pending = pendingRef.current
-      if (pending && pending.body !== body) throw new DrawUnconfirmedError()
-      const key = pending?.key ?? crypto.randomUUID()
-      pendingRef.current = { key, body }
+      const key = idempotency.keyFor(request)
+      if (key === null) throw new DrawUnconfirmedError()
       return createAdminDraw(key, request)
     },
     onSuccess: () => {
-      pendingRef.current = null
+      idempotency.forget()
       return queryClient.invalidateQueries({ queryKey: ADMIN_DRAWS_KEY })
     },
     onError: (caught) => {
-      if (isRejected(caught)) pendingRef.current = null
+      if (isRejected(caught)) idempotency.forget()
     },
   })
 
   return {
     ...mutation,
     /** 이전 요청 결과를 확인했다 — 다음 제출은 새 키로 보낸다 */
-    startOver: () => {
-      pendingRef.current = null
-    },
+    startOver: idempotency.forget,
   }
 }
 
