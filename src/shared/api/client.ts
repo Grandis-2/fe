@@ -3,6 +3,7 @@ import axios, { type AxiosResponse } from 'axios'
 import { delay } from '@shared/lib/delay'
 
 import { ApiRequestError, sentRequestId, toTransportError } from './errors'
+import { logRequest } from './requestLog'
 
 import type { ApiResponse } from './types'
 
@@ -61,8 +62,14 @@ async function send<TData>(
     withCredentials,
   }: ApiRequestOptions,
 ): Promise<RawResponse<TData>> {
+  const logged = logRequest({
+    method,
+    path,
+    body,
+    idempotencyKey: headers?.['Idempotency-Key'],
+  })
   try {
-    return await http.request<ApiResponse<TData> | string>({
+    const response = await http.request<ApiResponse<TData> | string>({
       url: path,
       method,
       data: body,
@@ -75,9 +82,20 @@ async function send<TData>(
         ...headers,
       },
     })
+    logged({ status: response.status, retryAfter: retryAfterOf(response) })
+    return response
   } catch (caught) {
-    throw toTransportError(caught)
+    const error = toTransportError(caught)
+    // 취소는 실패가 아니라 그대로 던져진다(ApiRequestError가 아니다).
+    logged({ status: error instanceof ApiRequestError ? error.status : null })
+    throw error
   }
+}
+
+// 명세는 초 단위로만 준다 — 날짜 형식 등 숫자가 아니면 없는 것으로 본다.
+const retryAfterOf = (response: RawResponse<unknown>) => {
+  const seconds = Number(response.headers['retry-after'])
+  return Number.isFinite(seconds) ? seconds : 0
 }
 
 // 봉투를 벗겨 data만 돌려주고, 실패는 ApiRequestError로 던진다.
@@ -88,9 +106,7 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
       ? headerTraceId
       : sentRequestId(response.config)
 
-  // 명세는 초 단위로만 준다 — 날짜 형식 등 숫자가 아니면 없는 것으로 본다.
-  const retryAfter = Number(response.headers['retry-after'])
-  const retryAfterSeconds = Number.isFinite(retryAfter) ? retryAfter : 0
+  const retryAfterSeconds = retryAfterOf(response)
 
   // 로그아웃 등 204 No Content는 파싱할 본문이 없다.
   if (response.status === 204) return undefined as TData
