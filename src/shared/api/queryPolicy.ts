@@ -1,3 +1,5 @@
+import { replaceEqualDeep } from '@tanstack/react-query'
+
 import { ApiRequestError } from './client'
 
 // 다시 보내도 결과가 같은 실패(4xx — 인증·검증·없음)는 재시도하지 않는다.
@@ -46,6 +48,18 @@ export const pollingInterval =
   // Query 제네릭과 엮이지 않게 필요한 필드만 받는다.
   (query: { state: { status: 'pending' | 'error' | 'success' } }) =>
     query.state.status === 'error' ? failedMs : baseMs
+
+/**
+ * 폴링 응답이 지금 캐시보다 옛것이면 버린다(useQuery의 structuralSharing에 넣는다).
+ * 요청은 한 키에 하나씩 나가지만, 서버 인스턴스마다 캐시·복제 시점이 달라 나중 응답이
+ * 더 옛 값일 수 있다 — 명세가 version·countedAt으로 거르라고 한다. 같으면 받는다.
+ */
+export const keepNewer =
+  <T>(orderOf: (data: T) => number) =>
+  (prev: unknown, next: unknown) =>
+    prev !== undefined && orderOf(next as T) < orderOf(prev as T)
+      ? prev
+      : replaceEqualDeep(prev, next)
 
 // QueryClient 기본값 — 정책을 고르지 않은 쿼리도 4xx를 헛되이 재시도하지 않게 한다.
 // 변경(mutation)은 같은 요청이 두 번 반영될 수 있어 자동 재시도하지 않는다.
