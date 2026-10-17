@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { pollingInterval, queryPolicy } from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { DeadLetterListParams } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
@@ -27,21 +27,28 @@ const IN_FLIGHT_POLL_MS = 3_000
 export const useDeadLetters = (
   params: DeadLetterListParams = {},
   intervalMs?: RefreshInterval,
-) =>
-  useQuery({
-    queryKey: [...DEAD_LETTERS_KEY, 'list', params] as const,
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...DEAD_LETTERS_KEY, 'list', params] as const
+  // 보여 줄 목록이 아직 없으면 폴링 중이 아니다(첫 조회는 한 번만 다시 묻는다).
+  const pollMs = (
+    data: Awaited<ReturnType<typeof getDeadLetters>> | undefined,
+  ) => {
+    if (!data) return null
+    if (intervalMs !== undefined)
+      return intervalMs === false ? null : intervalMs
+    return data.items.some((item) => isRedriveInFlight(item.status))
+      ? IN_FLIGHT_POLL_MS
+      : null
+  }
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getDeadLetters(params, signal),
     ...queryPolicy.live,
-    refetchInterval: (query) => {
-      if (intervalMs !== undefined) {
-        return intervalMs === false ? false : pollingInterval(intervalMs)(query)
-      }
-      const waiting = query.state.data?.items.some((item) =>
-        isRedriveInFlight(item.status),
-      )
-      return waiting ? IN_FLIGHT_POLL_MS : false
-    },
+    refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
+    ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
   })
+}
 
 /** 메시지 상세. 되돌리기 결과를 기다리는 동안만 다시 받는다 */
 export const useDeadLetter = (deadLetterId: string) =>

@@ -26,6 +26,7 @@ import {
   type AdminReservationDetail as Reservation,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
@@ -215,16 +216,16 @@ export function AdminReservationDetail({
       )}
 
       {/* 결제했는데 반영이 안 된 것 같은 건이라 예약 정보보다 먼저 보인다. 없으면 숨긴다. */}
-      {(deadLetterItems.length > 0 || deadLetters.isError) && (
+      {(deadLetterItems.length > 0 || pollingError(deadLetters) !== null) && (
         <FormSection
           title="상태 반영 실패"
           description="결제·기한 만료 같은 처리가 이 예약에 반영되지 않은 기록입니다. 다시 처리를 누르면 같은 처리를 한 번 더 시도합니다."
         >
           <div className={styles.card}>
-            {deadLetters.isError && (
+            {pollingError(deadLetters) !== null && (
               <InlineAlert status="warning">
                 {getErrorMessage(
-                  deadLetters.error,
+                  pollingError(deadLetters),
                   '상태 반영 실패 기록을 불러오지 못했습니다.',
                 )}
               </InlineAlert>

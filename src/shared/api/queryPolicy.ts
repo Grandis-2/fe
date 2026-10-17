@@ -1,4 +1,8 @@
-import { replaceEqualDeep } from '@tanstack/react-query'
+import {
+  replaceEqualDeep,
+  type QueryClient,
+  type QueryKey,
+} from '@tanstack/react-query'
 
 import { ApiRequestError } from './client'
 
@@ -37,20 +41,6 @@ export const queryPolicy = {
   // 다른 화면에 다녀와도 30분은 지난 결과를 그대로 보여준다(새로 보려면 버튼).
   snapshot: { staleTime: Infinity, gcTime: 30 * 60_000, retry: retryUpTo(1) },
 } as const
-
-/**
- * 폴링 간격. 마지막 조회가 끝내 실패했으면 간격을 늘려, 이미 힘든 서버를 원래 주기로
- * 계속 두드리지 않는다. 다음 조회가 성공하면 바로 원래 간격으로 돌아온다.
- *
- * 실패 횟수에 따라 두 배씩 늘리는 방식은 쓰지 않는다 — TanStack Query는 새 fetch를
- * 시작할 때 fetchFailureCount를 0으로 되돌려서(query-core의 fetchState), 그 값으로는
- * '연속 몇 주기째 실패인지'를 셀 수 없다. 한 주기 안의 재시도 횟수만 들어 있다.
- */
-export const pollingInterval =
-  (baseMs: number, failedMs = baseMs * 4) =>
-  // Query 제네릭과 엮이지 않게 필요한 필드만 받는다.
-  (query: { state: { status: 'pending' | 'error' | 'success' } }) =>
-    query.state.status === 'error' ? failedMs : baseMs
 
 // 실패가 이어져도 이보다 길게 기다리지 않는다 — 요청 타임아웃(10초)을 더해도 한 번에 약 55초라,
 // 대기열이 250초 안에 4번 이상 다시 묻는다. 평소 간격이 더 길면 그 간격이 상한이다.
@@ -104,6 +94,24 @@ export const pollingRetry = (
   },
   retryDelay: (failureCount: number, error: unknown) =>
     backoffDelay(pollMs() ?? FIRST_RETRY_MS, failureCount, error),
+})
+
+/**
+ * 정해진 간격으로 다시 받는 폴링(관리자 자동 갱신). intervalMs가 false면 자동 갱신을 끈 것이다.
+ * 실패하면 그 간격에서 백오프하며 계속 다시 묻는다 — 관리자 화면은 제한 시간을 두지 않는다.
+ * 보여 줄 값이 아직 없으면(첫 조회) 프리셋처럼 한 번만 다시 묻는다.
+ */
+export const pollEvery = (
+  queryClient: QueryClient,
+  queryKey: QueryKey,
+  intervalMs: number | false,
+) => ({
+  refetchInterval: intervalMs,
+  ...pollingRetry(() =>
+    intervalMs === false || queryClient.getQueryData(queryKey) === undefined
+      ? null
+      : intervalMs,
+  ),
 })
 
 /**
