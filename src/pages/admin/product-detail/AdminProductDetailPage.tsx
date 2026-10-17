@@ -1,14 +1,18 @@
+import { useState } from 'react'
+
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
   AdminProductDisplayTag,
   AdminProductSaleTag,
   isPreorder,
+  toPreviewProduct,
   useAdminProduct,
+  useAdminShipmentBatches,
   type AdminProductDetailModel,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
-import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
+import { ADMIN_PRODUCTS_PATH } from '@shared/config/routes'
 import type { AdminProductTab } from '@shared/config/routes'
 import {
   Breadcrumb,
@@ -24,6 +28,7 @@ import {
 import { AdminProductEditForm } from '@widgets/admin/product-form'
 import { AdminProductStockTable } from '@widgets/admin/product-stock'
 import { AdminShipmentBatches } from '@widgets/admin/shipment-batches'
+import { ProductDetailPreviewModal } from '@widgets/product-detail'
 
 import * as styles from './AdminProductDetailPage.css'
 
@@ -59,6 +64,13 @@ export function AdminProductDetailPage() {
   const { productId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const product = useAdminProduct(productId)
+  // 미리보기는 폼에 지금 있는 값으로 그린다 — 저장 전에 어떻게 보이는지 확인하려고 누른다.
+  // 열려 있는 동안만 값이 있다. 배송 차수는 폼에 없어(배송 구간 탭) 저장된 것을 받는다.
+  const [previewProduct, setPreviewProduct] =
+    useState<ReturnType<typeof toPreviewProduct>>()
+  const shipmentBatches = useAdminShipmentBatches(productId, {
+    enabled: previewProduct?.saleMode === 'PREORDER',
+  })
 
   if (!product.data) {
     // 불러오는 중이면 화면 모양을 먼저 깐다 — 실패일 때만 안내와 돌아갈 길을 보인다.
@@ -145,12 +157,18 @@ export function AdminProductDetailPage() {
         <AdminProductEditForm
           productId={productId}
           onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
-          onPreview={() => navigate(productPath(productId))}
+          onPreview={(value) => setPreviewProduct(toPreviewProduct(value))}
           onEditShipmentBatches={() => setTab('shipping')}
         />
       )}
 
       {tab === 'shipping' && <AdminShipmentBatches productId={productId} />}
+
+      <ProductDetailPreviewModal
+        product={previewProduct}
+        shipmentBatches={shipmentBatches.data}
+        onClose={() => setPreviewProduct(undefined)}
+      />
     </div>
   )
 }

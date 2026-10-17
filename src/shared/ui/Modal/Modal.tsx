@@ -25,6 +25,8 @@ export type ModalProps = {
   children?: ReactNode
   /** 전역 모달은 페이지 테마(data-theme) 밖에 뜨므로 직접 정한다 — 사용자 화면은 어둡고, 관리자 화면만 'light'. */
   theme?: 'dark' | 'light'
+  /** 기본은 확인 창 폭(400px). 화면 하나를 담을 땐 wide. */
+  size?: 'default' | 'wide'
 } & Partial<ModalActionsProps>
 
 // 확인/취소 버튼 줄. onConfirm을 넘기면 Modal이 직접 그리고, 버튼이 내용의 상태(입력값)에
@@ -56,6 +58,7 @@ export function Modal({
   description,
   children,
   theme = 'dark',
+  size = 'default',
   onConfirm,
   onCancel = onClose,
   ...actions
@@ -97,12 +100,17 @@ export function Modal({
       {/* 여백/레이아웃은 dialog가 아니라 이 래퍼에 둔다 — dialog 자신에 display:flex 같은
           스타일이 붙으면 [open] 여부와 무관하게 항상 적용돼 닫힌 상태를 가릴 방법이
           없어진다(예전에 겪은 버그). */}
-      <div className={styles.content}>
+      <div className={`${styles.content} ${styles.size[size]}`}>
         <h2 id={titleId} className={styles.title}>
           {title}
         </h2>
         {description && <div className={styles.description}>{description}</div>}
-        {children}
+        {/* 기본 모달은 children을 그대로 둔다 — 감싸면 여러 자식 사이의 gap이 사라진다. */}
+        {size === 'wide' ? (
+          <div className={styles.scrollBody}>{children}</div>
+        ) : (
+          children
+        )}
         {onConfirm && (
           <ModalActions
             onConfirm={onConfirm}

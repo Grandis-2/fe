@@ -5,7 +5,7 @@ import { LoaderCircle } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { cartKeys } from '@entities/cart'
-import { confirmTossPayment } from '@features/payment'
+import { confirmTossPayment, forgetBuyNowKey } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { mypagePath, paymentPath, resultPath } from '@shared/config/routes'
 import { showToast } from '@shared/model/toastStore'
@@ -59,6 +59,8 @@ export function PaymentCallbackPage() {
       .then((outcome) => {
         switch (outcome.kind) {
           case 'approved':
+            // 이 주문이 바로 구매였다면 그 키를 버린다 — 같은 상품을 다시 사면 새 주문이어야 한다.
+            forgetBuyNowKey({ orderId: orderToken })
             // 장바구니 주문은 승인되면 산 수량만큼 장바구니에서 빠진다 — 헤더 배지를 다시 받는다.
             if (!preorderId)
               void queryClient.invalidateQueries({ queryKey: cartKeys.all })

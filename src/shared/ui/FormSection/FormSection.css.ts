@@ -8,9 +8,10 @@ export const root = style({
   gap: spacing[16],
 })
 
+// 섹션을 나누는 제목이라 본문(입력칸 라벨·설명)보다 진하게 둔다.
 export const title = style([
-  typography.title.mdMedium,
-  { color: color.text.tertiary },
+  typography.title.mdSemibold,
+  { color: color.text.primary },
 ])
 
 export const description = style([

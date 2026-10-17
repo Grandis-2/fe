@@ -1,4 +1,11 @@
-import { useEffect, useId, useLayoutEffect, useRef } from 'react'
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type DragEvent,
+} from 'react'
 
 import { AlertCircle, Loader2, Plus, RotateCw, X } from 'lucide-react'
 
@@ -49,6 +56,22 @@ export type ImageUploaderProps = {
 
 const FALLBACK_ERROR = '사진을 올리지 못했습니다.'
 
+// 끌어다 놓은 파일은 선택 창의 accept 거름망을 거치지 않으니 같은 규칙으로 직접 거른다.
+// 규칙은 MIME 형식(image/png, image/*)이나 확장자(.png)다.
+const matchesAccept = (file: File, accept: string) =>
+  !accept.trim() ||
+  accept.split(',').some((raw) => {
+    const rule = raw.trim().toLowerCase()
+    if (rule.startsWith('.')) return file.name.toLowerCase().endsWith(rule)
+    return rule.endsWith('/*')
+      ? file.type.startsWith(rule.slice(0, -1))
+      : file.type === rule
+  })
+
+// 바깥에서 파일을 끌고 왔는지 — 타일 순서를 바꾸는 끌기와 구분한다.
+const isFileDrag = (event: DragEvent) =>
+  event.dataTransfer.types.includes('Files')
+
 /**
  * 이미지 여러 장을 담는 업로더. upload를 주면 고르는 즉시 한 장씩 올리고, 칸마다
  * 올리는 중·실패를 보여준다.
@@ -70,7 +93,14 @@ export function ImageUploader({
   className,
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const tilesRef = useRef<HTMLDivElement>(null)
   const inputId = useId()
+  // 순서를 바꾸려고 끌고 있는 사진
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  // 바깥 파일을 업로더 위로 끌고 왔는지(놓을 수 있는 자리를 강조한다)
+  const [isFileOver, setIsFileOver] = useState(false)
+  // 형식이 맞지 않아 담지 않은 파일 — 말없이 빠지지 않게 이름을 알린다.
+  const [rejected, setRejected] = useState<string[]>([])
   const { create, release } = useObjectUrls()
   const isFull = value.length >= max
 
@@ -88,6 +118,11 @@ export function ImageUploader({
       mountedRef.current = false
     }
   }, [])
+
+  // 바깥 fieldset이 잠기면 버튼은 브라우저가 막지만, 타일(div)의 끌기·화살표 키와 파일 놓기는
+  // 막지 못한다 — 그때도 바뀌지 않게 직접 확인한다.
+  const isLocked = () =>
+    disabled || !!tilesRef.current?.closest('fieldset:disabled')
 
   const commit = (next: UploadedImage[]) => {
     latestRef.current = next
@@ -120,10 +155,17 @@ export function ImageUploader({
     )
   }
 
-  const addFiles = (files: FileList | null) => {
+  const addFiles = (files: FileList | File[] | null) => {
     if (!files) return
     const room = max - latestRef.current.length
-    const added = Array.from(files)
+    const all = Array.from(files)
+    setRejected(
+      all
+        .filter((file) => !matchesAccept(file, accept))
+        .map((file) => file.name),
+    )
+    const added = all
+      .filter((file) => matchesAccept(file, accept))
       .slice(0, room)
       .map((file) => {
         const preview = create(file)
@@ -156,10 +198,58 @@ export function ImageUploader({
     commit(latestRef.current.filter((image) => image.id !== target.id))
   }
 
+  // 첫 장이 대표 이미지라 순서가 곧 의미다. 놓을 때가 아니라 지나갈 때마다 옮겨서 놓일
+  // 자리를 미리 보여준다.
+  const moveImage = (id: string, toIndex: number) => {
+    if (isLocked()) return
+    const list = latestRef.current
+    const fromIndex = list.findIndex((image) => image.id === id)
+    if (fromIndex === -1 || fromIndex === toIndex) return
+    const next = [...list]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    commit(next)
+  }
+
+  // 키보드로 옮긴 뒤에도 같은 사진에 포커스를 둔다 — 자리를 옮기며 DOM이 다시 끼워지면
+  // 포커스가 풀릴 수 있다.
+  const moveByKey = (id: string, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= latestRef.current.length) return
+    moveImage(id, toIndex)
+    requestAnimationFrame(() =>
+      tilesRef.current
+        ?.querySelector<HTMLElement>(`[data-image-id="${CSS.escape(id)}"]`)
+        ?.focus(),
+    )
+  }
+
+  const canDropFiles = !disabled && !isFull
+
   const firstError = value.find((image) => image.status === 'error')?.error
 
   return (
-    <div className={[styles.root, className].filter(Boolean).join(' ')}>
+    <div
+      className={[styles.root, isFileOver && styles.rootFileOver, className]
+        .filter(Boolean)
+        .join(' ')}
+      onDragOver={(event) => {
+        if (!isFileDrag(event) || !canDropFiles || isLocked()) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+        setIsFileOver(true)
+      }}
+      onDragLeave={(event) => {
+        // 안쪽 타일로 넘어갈 때도 leave가 오므로 업로더 밖으로 나갔을 때만 끈다.
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+          setIsFileOver(false)
+      }}
+      onDrop={(event) => {
+        if (!isFileDrag(event)) return
+        event.preventDefault()
+        setIsFileOver(false)
+        if (canDropFiles && !isLocked()) addFiles(event.dataTransfer.files)
+      }}
+    >
       {(label || showCount) && (
         <div className={styles.header}>
           {label && (
@@ -175,13 +265,59 @@ export function ImageUploader({
         </div>
       )}
 
-      <div className={styles.tiles}>
-        {value.map((image) => (
-          <div key={image.id} className={styles.tile[ratio]}>
+      <div ref={tilesRef} className={styles.tiles}>
+        {value.map((image, index) => (
+          <div
+            key={image.id}
+            data-image-id={image.id}
+            className={[
+              styles.tile[ratio],
+              !disabled && styles.tileMovable,
+              draggingId === image.id && styles.tileDragging,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            draggable={!disabled}
+            // 끌기를 못 쓰는 사용자를 위해 포커스한 사진은 ←/→로 옮긴다.
+            tabIndex={disabled ? undefined : 0}
+            role="group"
+            aria-label={`${index + 1}번째 사진, 좌우 화살표로 순서 바꾸기`}
+            onKeyDown={(event) => {
+              if (event.target !== event.currentTarget) return
+              if (event.key === 'ArrowLeft') {
+                event.preventDefault()
+                moveByKey(image.id, index - 1)
+              } else if (event.key === 'ArrowRight') {
+                event.preventDefault()
+                moveByKey(image.id, index + 1)
+              }
+            }}
+            onDragStart={(event) => {
+              if (isLocked()) {
+                event.preventDefault()
+                return
+              }
+              setDraggingId(image.id)
+              event.dataTransfer.effectAllowed = 'move'
+              // Firefox는 데이터를 넣지 않으면 끌기를 시작하지 않는다.
+              event.dataTransfer.setData('text/plain', image.id)
+            }}
+            onDragOver={(event) => {
+              if (!draggingId || draggingId === image.id) return
+              event.preventDefault()
+              moveImage(draggingId, index)
+            }}
+            onDrop={(event) => {
+              if (draggingId) event.preventDefault()
+            }}
+            onDragEnd={() => setDraggingId(null)}
+          >
             <img
               className={styles.thumbnail}
               src={image.previewUrl ?? image.url}
               alt={image.name}
+              // 타일을 끌어야 하는데 이미지만 따로 끌려 나가지 않게 한다.
+              draggable={false}
             />
             {image.status === 'uploading' && (
               <div className={styles.overlay} role="status">
@@ -245,6 +381,12 @@ export function ImageUploader({
         />
       </div>
 
+      {rejected.length > 0 && (
+        <div className={styles.errorText} role="alert">
+          <AlertCircle className={styles.errorIcon} aria-hidden="true" />
+          {rejected.join(', ')}은(는) 올릴 수 없는 형식입니다.
+        </div>
+      )}
       {firstError && (
         <div className={styles.errorText} role="alert">
           <AlertCircle className={styles.errorIcon} aria-hidden="true" />

@@ -41,7 +41,7 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
   ...overrides,
 })
 
-// 일반 구매(BUY_NOW)는 아직 생기지 않지만 종류 필터를 확인하려고 한 건 둔다.
+// 일반 구매(BUY_NOW) 한 건 — 종류 필터 확인용.
 const orders = {
   items: [
     order('8d3f5a2c-1e4b-4c7d-9a6f-2b8e0c4d1f73', {}),

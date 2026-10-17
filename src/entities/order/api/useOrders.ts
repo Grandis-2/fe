@@ -50,7 +50,7 @@ export const usePlaceOrder = () => {
 export const useCreatePaymentAttempt = () =>
   useMutation({ mutationFn: createPaymentAttempt })
 
-// 결제 전 장바구니 주문 취소 — 서버 확인 뒤 주문 목록·상세를 다시 받는다.
+// 결제 전 장바구니·바로 구매 주문 취소 — 서버 확인 뒤 주문 목록·상세를 다시 받는다.
 export const useCancelOrder = () => {
   const queryClient = useQueryClient()
   return useMutation({

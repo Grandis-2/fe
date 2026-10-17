@@ -1,13 +1,14 @@
 import type {
+  ProductDetailView,
   ProductImageAddRequest,
   ProductImageBundle,
   RegistrationImages,
 } from '@shared/api/types'
+import { comparableValue } from '@shared/lib/comparableValue'
 import type { UploadedImage } from '@shared/ui'
 
 import {
   COLOR_GROUP_CODE,
-  comparableValue,
   DETAIL_SECTIONS,
   type AdminProductDetailModel,
   type DetailImageField,
@@ -24,8 +25,10 @@ export const PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 /** 파일 선택 창에서 고를 수 있는 형식 — 위와 같게 둔다 */
 export const PRODUCT_IMAGE_ACCEPT = PRODUCT_IMAGE_TYPES.join(',')
 const MAX_BYTES = 10 * 1024 * 1024
-/** 갤러리는 묶음(색상)마다 10장까지다 */
-export const GALLERY_MAX = 10
+/** 갤러리는 묶음(색상)마다 5장까지 받는다 — 서버 상한(10장)보다 좁게 둔다 */
+export const GALLERY_MAX = 5
+/** 상세 이미지(구매 혜택·모델 정보·유의 사항)는 묶음마다 3장까지다 */
+export const DETAIL_IMAGE_MAX = 3
 
 /** 올릴 수 없는 파일이면 그 이유. 올릴 수 있으면 null */
 export function productImageFileProblem(file: File): string | null {
@@ -122,6 +125,38 @@ export function toRegistrationImages(
     return undefined
   }
   return images
+}
+
+/**
+ * 미리보기에 그릴 사진 — 폼에 지금 있는 사진을 상세 응답의 images 모양으로 바꾼다. 저장 전이어도,
+ * 아직 올라가는 중이어도 화면용 주소(previewUrl)로 보인다. 올리지 못한 사진만 뺀다.
+ * 갤러리 묶음 키는 색상 이름이다 — 화면이 색상의 정규화값과 공백·대소문자를 무시하고 맞춘다.
+ */
+export function toPreviewImages(
+  value: AdminProductFormValue,
+): ProductDetailView['images'] {
+  const toBundle = (bundleKey: string, images: UploadedImage[]) => ({
+    bundleKey,
+    items: images
+      .filter((image) => image.status !== 'error')
+      .map((image, position) => ({
+        url: image.previewUrl ?? image.url,
+        position,
+        primary: position === 0,
+      })),
+  })
+  const gallery = hasNoColor(value)
+    ? [toBundle('', value.noColorImages)]
+    : // 이름 없는 색상 줄은 등록에서도 빠진다.
+      value.colors
+        .filter((color) => color.name.trim() !== '')
+        .map((color) => toBundle(color.name.trim(), color.images))
+  return {
+    gallery: gallery.filter((bundle) => bundle.items.length > 0),
+    detail: DETAIL_FIELDS.map((field) =>
+      toBundle(DETAIL_SECTIONS[field], value[field]),
+    ).filter((bundle) => bundle.items.length > 0),
+  }
 }
 
 /* ------------------------------------------------------------------ *

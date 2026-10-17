@@ -2,7 +2,7 @@ import type { CursorPage } from './common'
 
 // 주문·결제 API(order 서비스 — api-docs의 order.json). 회원용 모양이 기준이고, 관리자 주문(/admin/orders)은 맨 아래에 회원 모양에서 파생한다.
 // 재고·럭키 드로우 API는 다루지 않는다.
-// 주문은 장바구니에서 고른 줄(CART)이나 결제 가능해진 사전예약(PREORDER)으로 만들고 토스로 결제한다.
+// 주문은 장바구니에서 고른 줄(CART), 상품 상세의 바로 구매(BUY_NOW), 결제 가능해진 사전예약(PREORDER)으로 만들고 토스로 결제한다.
 // 화면과 경로의 주문 id는 주문 토큰(orderId)이다. 토스 결제창의 orderId는 tossOrderId라 다른 값이다.
 
 // 표 순서대로 한 단계씩 진행한다. 승인이 거절되면 AUTHORIZING에서 AWAITING_PAYMENT로 돌아온다.
@@ -17,7 +17,7 @@ export type OrderStatus =
   | 'CANCELING'
   | 'CANCELED'
 
-// CART(장바구니), PREORDER(사전예약), DRAW(럭키 드로우 당첨 — 서버가 0원으로 만든다). BUY_NOW는 아직 생기지 않는다.
+// CART(장바구니), BUY_NOW(상품 상세의 바로 구매), PREORDER(사전예약), DRAW(럭키 드로우 당첨 — 서버가 0원으로 만든다).
 export type OrderSource = 'PREORDER' | 'BUY_NOW' | 'CART' | 'DRAW'
 
 // 주문상품 한 줄(옵션마다 한 줄). 이름·단가·보증가는 주문 당시 값(사전예약은 예약 접수 당시)이다.
@@ -54,7 +54,7 @@ export type Order = {
   source: OrderSource
   // 결제할 금액(원) — items의 lineAmount 합. 드로우 당첨 주문은 0.
   totalAmount: number
-  // 장바구니 주문의 결제 기한(만든 때부터 10분). 사전예약(예약 상세의 paymentDueAt을 본다)·드로우는 null.
+  // 장바구니·바로 구매 주문의 결제 기한(만든 때부터 10분). 사전예약(예약 상세의 paymentDueAt을 본다)·드로우는 null.
   paymentDueAt: string | null
   items: OrderItem[]
   shipTo: ShipTo
@@ -102,13 +102,14 @@ export type CartOrderItem = {
   expectedWarrantyPrice?: number
 }
 
-// POST /api/v1/orders — 금액은 보내지 않는다(서버가 계산한다). Idempotency-Key는 쓰지 않는다 —
-// 503·네트워크 오류는 같은 본문으로 다시 보내면 기존 주문을 돌려받는다.
+// POST /api/v1/orders — 금액은 보내지 않는다(서버가 계산한다). 503·네트워크 오류는 같은 본문으로 다시 보내면
+// 기존 주문을 돌려받는다. 바로 구매는 Idempotency-Key 헤더(UUID)가 필수다(없으면 400 IDEMPOTENCY_KEY_REQUIRED).
 export type PlaceOrderRequest =
   | {
       // 장바구니 일부 줄만 골라도 된다(1~50줄). 결제 안 된 장바구니 주문은 회원당 하나 —
       // 구성·가격·배송지가 같으면 기존 주문(reused), 다르면 새 주문을 만들고 앞 주문은 자동 취소된다.
-      // BUY_NOW(상품 상세의 바로 구매)는 Swagger에 아직 없다 — 백엔드 말로는 본문이 CART와 같다.
+      // 바로 구매(BUY_NOW)는 본문 모양이 같지만 옵션 하나(보증 미포함·포함 최대 두 줄)만 받고, 장바구니와 무관하다
+      // (CART_CHANGED·PAYMENT_IN_PROGRESS 없음, 다른 주문을 취소하지 않음). 기존 주문은 같은 키로만 돌려받는다.
       source: 'CART' | 'BUY_NOW'
       items: CartOrderItem[]
       shipTo: ShipToInput
@@ -126,7 +127,7 @@ export type PlaceOrderResponse = Order & {
   reused: boolean
 }
 
-// POST /api/v1/orders/{orderToken}/cancel(본문 없음) — 결제하지 않은 장바구니 주문만. status는 늘 CANCELED.
+// POST /api/v1/orders/{orderToken}/cancel(본문 없음) — 결제하지 않은 장바구니·바로 구매 주문만. status는 늘 CANCELED.
 // 사전예약 주문은 예약 취소로, 결제된 주문·드로우 당첨 주문은 취소할 수 없다(409 STATE_CONFLICT).
 export type CancelOrderResponse = Pick<Order, 'orderId' | 'status'>
 

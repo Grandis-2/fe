@@ -84,7 +84,7 @@ const renderItem = (product: ProductPaymentCardItem) => (
   <ProductPaymentCard product={product} />
 )
 
-// 결제 대기 주문 — 장바구니 주문은 여기서 결제(기한 10분 안)·취소하고, 사전예약 주문은 예약 내역에서 결제·취소한다
+// 결제 대기 주문 — 장바구니·바로 구매 주문은 여기서 결제(기한 10분 안)·취소하고, 사전예약 주문은 예약 내역에서 결제·취소한다
 // (주문 응답엔 예약 id가 없고, 사전예약 주문 취소는 예약 취소로 한다).
 export function MypageHistory() {
   const navigate = useNavigate()
@@ -211,7 +211,7 @@ export function MypageHistory() {
                   </div>
                 )}
                 {awaitingPayment &&
-                  (order.source === 'CART' ? (
+                  (order.source === 'CART' || order.source === 'BUY_NOW' ? (
                     <div className={styles.actions}>
                       <Button
                         variant="subtle"

@@ -6,6 +6,16 @@ export const root = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[8],
+  borderRadius: '8px',
+  outline: '2px dashed transparent',
+  outlineOffset: spacing[4],
+  transition: `outline-color ${motion.duration.fast} ${motion.easing.default}`,
+})
+
+// 파일을 끌고 와 놓을 수 있는 동안
+export const rootFileOver = style({
+  outlineColor: color.primary.base,
+  background: color.primary.subtler,
 })
 
 export const header = style({
@@ -42,6 +52,21 @@ const tileBase = style({
 export const tile = styleVariants({
   square: [tileBase, { width: '80px', height: '80px' }],
   portrait: [tileBase, { width: '80px', height: '160px' }],
+})
+
+export const tileMovable = style({
+  cursor: 'grab',
+  selectors: {
+    '&:focus-visible': {
+      outline: `2px solid ${color.primary.base}`,
+      outlineOffset: spacing[2],
+    },
+  },
+})
+
+// 끌고 있는 사진은 놓일 자리를 보여주는 빈칸처럼 흐리게 둔다.
+export const tileDragging = style({
+  opacity: 0.4,
 })
 
 export const thumbnail = style({

@@ -9,12 +9,12 @@ import type {
   StockRequest,
   VariantAddRequest,
 } from '@shared/api/types'
+import { comparableValue } from '@shared/lib/comparableValue'
 
 import { buildVariantKey, toIso, type AdminProductFormValue } from './form'
 import {
   brandCodeOf,
   COLOR_GROUP_CODE,
-  comparableValue,
   isStorageValue,
   PREORDER_LOCK_LEAD_MS,
   type AdminProductDetailModel,
