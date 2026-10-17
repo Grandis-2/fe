@@ -13,9 +13,11 @@ import {
 import { notificationKeys } from './useNotifications'
 
 const queryKey = notificationKeys.unreadCount
-// SSE가 끊겨 있는 동안만 주기적으로 묻는다(명세: 503이면 unread-count 주기 조회로 돌아간다).
+// SSE가 끊겨 있는 동안은 60초마다 묻는다(명세: 503이면 unread-count 주기 조회로 돌아간다).
 // 조회가 실패하면 pollingInterval이 간격을 4배로 늘린다.
 const POLL_INTERVAL_MS = 60_000
+// 연결된 동안에도 실시간으로 오지 못한 알림이 드물게 있어 5분마다 한 번 맞춘다(명세).
+const LIVE_SYNC_MS = 5 * 60_000
 // 닫히면 0~5초 사이 무작위로 기다렸다 다시 연다. 연달아 실패하면 상한을 두 배씩(최대 1분) 늘린다.
 const RECONNECT_MS = 5_000
 const RECONNECT_MAX_MS = 60_000
@@ -75,6 +77,6 @@ export const useUnreadNotificationCount = (enabled: boolean) => {
     queryFn: ({ signal }) => getUnreadNotificationCount(signal),
     enabled,
     ...queryPolicy.live,
-    refetchInterval: isLive ? false : pollingInterval(POLL_INTERVAL_MS),
+    refetchInterval: isLive ? LIVE_SYNC_MS : pollingInterval(POLL_INTERVAL_MS),
   })
 }
