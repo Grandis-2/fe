@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 
 import {
+  drawStageDescription,
   drawStageLabel,
   drawStageOf,
   isDrawSettled,
@@ -102,8 +103,7 @@ export function AdminDrawDetail({ draw, fetchedAt }: AdminDrawDetailProps) {
       )}
       {stage === 'STUCK' && (
         <InlineAlert status="error">
-          마감 뒤 1시간이 넘도록 결과가 반영되지 않았습니다. 회차 id를 개발팀에
-          알려 주세요.
+          {drawStageDescription.STUCK}
           <Button
             size="small"
             variant="outline"

@@ -16,7 +16,7 @@ import {
 import { getErrorMessage } from '@shared/api/client'
 import { adminPurchasePath } from '@shared/config/routes'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
-import { formatWon } from '@shared/lib/formatNumber'
+import { formatNumber, formatWon } from '@shared/lib/formatNumber'
 import {
   Dropdown,
   InlineAlert,
@@ -168,7 +168,7 @@ export function AdminPurchasesPage() {
         />
         {orders.data && (
           <span className={styles.count}>
-            전체 {orders.data.total.toLocaleString('ko-KR')}건
+            전체 {formatNumber(orders.data.total)}건
           </span>
         )}
       </div>

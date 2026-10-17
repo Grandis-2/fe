@@ -30,7 +30,7 @@ export type AdminOrderDetailProps = {
 }
 
 const isOrderStatus = (value: unknown): value is AdminOrderStatus =>
-  typeof value === 'string' && value in adminOrderStatusLabel
+  typeof value === 'string' && Object.hasOwn(adminOrderStatusLabel, value)
 
 /** 배송을 못 옮긴 까닭. 409면 서버가 알려 준 지금 상태로 말한다 */
 function stepFailureMessage(caught: unknown) {

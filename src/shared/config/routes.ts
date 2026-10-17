@@ -1,6 +1,8 @@
 // 여러 레이어가 같이 참조하는 경로. 페이지끼리 서로 import하지 않도록 shared에 둔다.
 // 라우터는 동적 세그먼트를 함수에 ':id' 문자열로 넘겨 패턴을 만든다(productPath(':productId')).
 // 카카오·토스 콜백 경로는 SDK 호출과 짝이라 각 feature(login, payment)가 소유한다.
+import type { OrderSource } from '@shared/api/types'
+
 export const HOME_PATH = '/'
 export const SIGNUP_PATH = '/signup'
 export const PAYMENT_PATH = '/payment'
@@ -115,9 +117,7 @@ export const adminReservationPath = (preorderId: string) =>
  */
 export const ADMIN_PURCHASES_PATH = '/admin/purchases'
 /** 출처를 걸러서 연다(럭키드로우 회차 → 당첨 주문) */
-export const adminPurchasesPath = (
-  source?: 'CART' | 'BUY_NOW' | 'PREORDER' | 'DRAW',
-) =>
+export const adminPurchasesPath = (source?: OrderSource) =>
   source ? `${ADMIN_PURCHASES_PATH}?source=${source}` : ADMIN_PURCHASES_PATH
 export const adminPurchasePath = (orderId: string) =>
   `${ADMIN_PURCHASES_PATH}/${orderId}`

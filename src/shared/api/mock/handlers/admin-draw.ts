@@ -9,7 +9,12 @@ import { isUuid, readPaging, toPage, uuidViolation } from '../validate'
 
 import { drawNotFound, toDraw } from './draw'
 
-import type { ApiViolation, CreateDrawRequest, DrawProgress } from '../../types'
+import type {
+  ApiViolation,
+  CreateDrawRequest,
+  DrawPage,
+  DrawProgress,
+} from '../../types'
 import type { DrawRecord } from '../fixtures/draw'
 import type { RequestHandler } from 'msw'
 
@@ -129,7 +134,7 @@ export const adminDrawHandlers: RequestHandler[] = [
       b.createdAt.localeCompare(a.createdAt),
     )
     const { items, total } = toPage(sorted, page, size)
-    return ok({ items: items.map(toDraw), page, size, total })
+    return ok<DrawPage>({ items: items.map(toDraw), page, size, total })
   }),
 
   http.post(url('/api/v1/admin/draws'), async ({ request }) => {

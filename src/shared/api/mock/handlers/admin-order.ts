@@ -10,6 +10,7 @@ import { codePointLength, readPaging, toPage } from '../validate'
 
 import type {
   AdminOrderDetail,
+  AdminOrderPage,
   AdminOrderSummary,
   AdvanceShippingRequest,
   OrderEvent,
@@ -211,7 +212,12 @@ export const adminOrderHandlers: RequestHandler[] = [
       .filter((it) => !source || it.source === source)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     const { items, total } = toPage(filtered, page, size)
-    return ok({ items: items.map(toSummary), page, size, total })
+    return ok<AdminOrderPage>({
+      items: items.map(toSummary),
+      page,
+      size,
+      total,
+    })
   }),
 
   http.get(url('/api/v1/admin/orders/:orderId'), ({ params }) => {
