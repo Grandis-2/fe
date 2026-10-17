@@ -1,6 +1,16 @@
-import { Orbit } from 'lucide-react'
+import { useState } from 'react'
 
-import type { MypageTab } from '@shared/config/routes'
+import { LogOut, Orbit } from 'lucide-react'
+import { useNavigate } from 'react-router'
+
+import { logout } from '@entities/auth'
+import { getErrorMessage } from '@shared/api/client'
+import {
+  HOME_PATH,
+  MYPAGE_TAB_LABELS,
+  type MypageTab,
+} from '@shared/config/routes'
+import { showToast } from '@shared/model/toastStore'
 
 import * as styles from './MypageMenu.css'
 
@@ -15,15 +25,17 @@ export type MypageMenuProps = {
   className?: string
 }
 
-const links: { link: MypageMenuLink; label: string }[] = [
-  { link: 'history', label: '주문 내역' },
-  { link: 'preorder-check', label: '예약 내역' },
-  { link: 'cart', label: '장바구니' },
-  { link: 'address-manage', label: '배송지 관리' },
-  { link: 'reviews', label: '내 리뷰' },
+const links: MypageMenuLink[] = [
+  'history',
+  'preorder-check',
+  'draw',
+  'cart',
+  'address-manage',
+  'reviews',
 ]
 
-// 넓은 화면에선 왼쪽 세로 메뉴, 좁은 화면에선 프로필 아래 가로로 스크롤되는 탭이 된다.
+// 넓은 화면에선 왼쪽 세로 메뉴, 좁은 화면에선 프로필 아래 가로로 스크롤되는 밑줄 탭이 된다.
+// 로그아웃은 탭이 아니라 동작이라 메뉴 줄에 섞지 않고 프로필 옆에 둔다.
 export function MypageMenu({
   userName,
   email,
@@ -31,6 +43,24 @@ export function MypageMenu({
   onLinkClick,
   className,
 }: MypageMenuProps) {
+  const navigate = useNavigate()
+
+  // 서버가 세션을 지운 뒤에만 홈으로 나간다 — 실패하면 마이페이지에 남아 다시 누를 수 있다.
+  // 세션이 먼저 지워져도 RequireLogin이 로그아웃으로 보고 로그인 모달 없이 홈으로 보낸다.
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await logout()
+      navigate(HOME_PATH)
+    } catch (caught) {
+      showToast(
+        getErrorMessage(caught, '로그아웃하지 못했어요. 다시 시도해 주세요.'),
+      )
+      setIsLoggingOut(false)
+    }
+  }
+
   return (
     <aside className={[styles.root, className].filter(Boolean).join(' ')}>
       <div className={styles.profile}>
@@ -41,9 +71,19 @@ export function MypageMenu({
           {userName && <span className={styles.userName}>{userName} 님</span>}
           {email && <span className={styles.email}>{email}</span>}
         </div>
+        <button
+          type="button"
+          className={styles.logout}
+          aria-label="로그아웃"
+          title="로그아웃"
+          disabled={isLoggingOut}
+          onClick={handleLogout}
+        >
+          <LogOut size={18} aria-hidden="true" />
+        </button>
       </div>
       <nav className={styles.nav} aria-label="마이페이지">
-        {links.map(({ link, label }) => (
+        {links.map((link) => (
           <button
             key={link}
             type="button"
@@ -51,7 +91,7 @@ export function MypageMenu({
             aria-current={link === activeLink ? 'page' : undefined}
             onClick={() => onLinkClick?.(link)}
           >
-            {label}
+            {MYPAGE_TAB_LABELS[link]}
           </button>
         ))}
       </nav>

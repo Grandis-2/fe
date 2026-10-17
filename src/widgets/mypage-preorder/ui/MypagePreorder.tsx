@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 
+import { BellOff, BellRing, CalendarClock } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { HistoryCard } from '@entities/order'
@@ -18,15 +19,9 @@ import { getErrorMessage } from '@shared/api/client'
 import { paymentPath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
+import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-import {
-  ActionButton,
-  Button,
-  ConfirmDialog,
-  Modal,
-  SelectButton,
-  Tag,
-} from '@shared/ui'
+import { ActionButton, Button, InlineAlert, Tag } from '@shared/ui'
 
 import * as styles from './MypagePreorder.css'
 
@@ -97,7 +92,6 @@ export function MypagePreorder() {
   const navigate = useNavigate()
   const { data, isPending, isError, error } = useMyReservations()
   const cancel = useCancelReservation()
-  const [cancelTarget, setCancelTarget] = useState<Reservation | null>(null)
   // ponytail: 알림 신청 API가 없어 화면 안에서만 켜고 끈다.
   const [alertOffIds, setAlertOffIds] = useState<Set<number>>(new Set())
 
@@ -134,18 +128,24 @@ export function MypagePreorder() {
     })
 
   // 취소는 비동기로 끝난다 — 응답은 보통 '취소 중'이고, 목록을 다시 받아 상태를 맞춘다.
-  const confirmCancel = () => {
-    if (!cancelTarget) return
-    cancel.mutate(
-      { preorderId: cancelTarget.preorderId },
-      {
-        onSuccess: () => showToast('예약 취소를 요청했어요.'),
-        onError: (caught) =>
-          showToast(getErrorMessage(caught, '예약을 취소하지 못했어요.')),
+  const confirmCancel = (reservation: Reservation) =>
+    openModal({
+      title: '예약을 취소할까요?',
+      description: `${reservation.productTitle} · ${reservation.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.`,
+      confirmLabel: '예약 취소',
+      cancelLabel: '닫기',
+      onConfirm: () => {
+        closeModal()
+        cancel.mutate(
+          { preorderId: reservation.preorderId },
+          {
+            onSuccess: () => showToast('예약 취소를 요청했어요.'),
+            onError: (caught) =>
+              showToast(getErrorMessage(caught, '예약을 취소하지 못했어요.')),
+          },
+        )
       },
-    )
-    setCancelTarget(null)
-  }
+    })
 
   const cancelButton = (reservation: Reservation) =>
     CANCELABLE.includes(reservation.status) && (
@@ -153,7 +153,7 @@ export function MypagePreorder() {
         variant="subtle"
         color="cancel"
         disabled={cancel.isPending}
-        onClick={() => setCancelTarget(reservation)}
+        onClick={() => confirmCancel(reservation)}
       >
         예약 취소
       </Button>
@@ -253,23 +253,35 @@ export function MypagePreorder() {
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
             진행 중인 예약{' '}
-            <span className={styles.count}>{inProgress.length}</span>
+            <span className={styles.count}>{inProgress.length}건</span>
           </h2>
-          {inProgress.map((reservation) => card(reservation))}
+          {inProgress.length === 0 ? (
+            <InlineAlert status="info" variant="big" icon={CalendarClock}>
+              진행 중인 예약이 없어요
+            </InlineAlert>
+          ) : (
+            inProgress.map((reservation) => card(reservation))
+          )}
         </section>
       )}
 
       {ended.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>
-            지난 예약 <span className={styles.count}>{ended.length}</span>
+            지난 예약 <span className={styles.count}>{ended.length}건</span>
           </h2>
           {ended.map((reservation) => card(reservation))}
         </section>
       )}
 
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>알림 신청한 사전예약</h2>
+        <h2 className={styles.sectionTitle}>
+          알림 신청한 사전예약{' '}
+          {/* 끈 알림도 다시 켤 수 있게 목록엔 남기고, 건수는 켜진 것만 센다. */}
+          <span className={styles.count}>
+            {openAlerts.filter((alert) => !alertOffIds.has(alert.id)).length}건
+          </span>
+        </h2>
         <ul className={styles.alerts}>
           {openAlerts.map((alert) => {
             const on = !alertOffIds.has(alert.id)
@@ -288,34 +300,26 @@ export function MypagePreorder() {
                   <span className={styles.alertTitle}>{alert.title}</span>
                   <span className={styles.alertDate}>{alert.opensAt} 오픈</span>
                 </div>
-                <SelectButton
+                {/* 테두리 없이 아이콘만 보인다. 켜짐/꺼짐은 aria-pressed가 알려 주므로 이름은 고정한다. */}
+                <button
+                  type="button"
                   className={styles.alertToggle}
-                  selected={on}
+                  aria-pressed={on}
+                  aria-label={`${alert.title} 오픈 알림`}
+                  title={on ? '알림 받는 중' : '알림 받기'}
                   onClick={() => toggleAlert(alert.id)}
                 >
-                  {on ? '알림 받는 중' : '알림 받기'}
-                </SelectButton>
+                  {on ? (
+                    <BellRing size={22} aria-hidden="true" />
+                  ) : (
+                    <BellOff size={22} aria-hidden="true" />
+                  )}
+                </button>
               </li>
             )
           })}
         </ul>
       </section>
-
-      {/* 어두운 페이지 안에서 띄워야 다이얼로그도 어둡다(전역 모달은 밝게 뜬다). */}
-      <Modal open={cancelTarget !== null} onClose={() => setCancelTarget(null)}>
-        <ConfirmDialog
-          title="예약을 취소할까요?"
-          description={
-            cancelTarget
-              ? `${cancelTarget.productTitle} · ${cancelTarget.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.`
-              : undefined
-          }
-          confirmLabel="예약 취소"
-          cancelLabel="닫기"
-          onConfirm={confirmCancel}
-          onCancel={() => setCancelTarget(null)}
-        />
-      </Modal>
     </div>
   )
 }

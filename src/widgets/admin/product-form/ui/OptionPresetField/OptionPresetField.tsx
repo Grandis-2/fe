@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 import {
   OPTION_PRESETS,
   type ProductOptionPreset,
@@ -10,6 +8,12 @@ import type { DropdownOption } from '@shared/ui'
 import * as styles from './OptionPresetField.css'
 
 export type OptionPresetFieldProps = {
+  /**
+   * 지금 고른 종류. 태그 추천도 같이 보므로 폼이 들고 있다.
+   * 아직 안 골랐으면 undefined지만 받기는 반드시 받는다 — 안 넘기면 고른 값이
+   * 화면에 남지 않는다(Dropdown은 내부 상태가 없다).
+   */
+  value: ProductOptionPreset | undefined
   onSelect: (preset: ProductOptionPreset) => void
 }
 
@@ -23,21 +27,19 @@ const options: DropdownOption<string>[] = OPTION_PRESETS.map((preset) => ({
 /**
  * 제품 종류를 고르면 그 종류가 흔히 쓰는 옵션을 미리 깔아 준다.
  *
- * 고른 값은 저장되지 않는다 — 입력을 덜어 주는 장치일 뿐이라, 깔린 옵션을 지우거나
- * 고르지 않고 직접 적어도 된다. 그래서 값을 폼이 아니라 여기서 들고 있는다.
+ * 고른 값은 서버로 가지 않는다 — 입력을 덜어 주는 장치일 뿐이라, 깔린 옵션을 지우거나
+ * 고르지 않고 직접 적어도 된다. 다만 검색 태그 추천(TagField)이 같은 값을 보기 때문에
+ * 폼 쪽에 둔다.
  */
-export function OptionPresetField({ onSelect }: OptionPresetFieldProps) {
-  const [picked, setPicked] = useState<string>()
-
+export function OptionPresetField({ value, onSelect }: OptionPresetFieldProps) {
   return (
     <div className={styles.root}>
       <Dropdown
         label="제품 카테고리 선택"
         width="220px"
         options={options}
-        value={picked}
+        value={value?.name}
         onSelect={(name) => {
-          setPicked(name)
           const preset = OPTION_PRESETS.find((item) => item.name === name)
           if (preset) onSelect(preset)
         }}

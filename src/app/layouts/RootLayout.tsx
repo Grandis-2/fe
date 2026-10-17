@@ -12,10 +12,13 @@ import { Modal, ToastViewport } from '@shared/ui'
 import { Header } from '@widgets/header'
 import { MobileTabBar } from '@widgets/mobile-tab-bar'
 
+import { isCallbackPath } from './callbackPaths'
+
 export function RootLayout() {
-  const { isLoggedIn, isSignupPending } = useSession()
+  const { isSignupPending } = useSession()
   const isModalOpen = useModalStore((state) => state.isOpen)
   const modalContent = useModalStore((state) => state.content)
+  const modalOpenCount = useModalStore((state) => state.openCount)
   const closeModal = useModalStore((state) => state.close)
   const toasts = useToastStore((state) => state.toasts)
   const dismissToast = useToastStore((state) => state.dismiss)
@@ -24,6 +27,7 @@ export function RootLayout() {
   const admitQueue = usePreorderQueueStore((state) => state.admit)
   const location = useLocation()
   const navigate = useNavigate()
+  const isCallbackPage = isCallbackPath(location.pathname)
 
   // react-router는 페이지 이동 시 스크롤 위치를 유지한다 — 목록 스크롤 후 상세로
   // 들어가면 새 페이지가 그 위치에서 시작해 버리므로 경로가 바뀔 때마다 맨 위로 올린다.
@@ -49,12 +53,17 @@ export function RootLayout() {
 
   return (
     <>
-      <Header isMember={isLoggedIn} />
+      {!isCallbackPage && <Header />}
       <Outlet />
-      <MobileTabBar />
-      <Modal open={isModalOpen} onClose={closeModal}>
-        {modalContent}
-      </Modal>
+      {!isCallbackPage && <MobileTabBar />}
+      {modalContent && (
+        <Modal
+          key={modalOpenCount}
+          {...modalContent}
+          open={isModalOpen}
+          onClose={closeModal}
+        />
+      )}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
       {queueTicket && (
         <PreorderQueue

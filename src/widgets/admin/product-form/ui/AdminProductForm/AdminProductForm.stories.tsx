@@ -1,6 +1,10 @@
 import { expect, fn, userEvent, waitFor } from 'storybook/test'
 
-import { createEmptyProductFormValue } from '@entities/admin-product'
+import {
+  createEmptyProductFormValue,
+  validateProductBasics,
+  validateRegistration,
+} from '@entities/admin-product'
 
 import { AdminProductForm } from './AdminProductForm'
 
@@ -9,7 +13,12 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: AdminProductForm,
   tags: ['ai-generated'],
-  args: { onSubmit: fn(), onCancel: fn(), onPreview: fn() },
+  args: {
+    onSubmit: fn(),
+    onCancel: fn(),
+    onPreview: fn(),
+    onEditShipmentBatches: fn(),
+  },
 } satisfies Meta<typeof AdminProductForm>
 
 export default meta
@@ -61,20 +70,48 @@ export const Edit: Story = {
       ),
     ).toBeVisible()
 
+    // 1차 배송 기간은 등록 때만 받는다 — 여기서는 어디서 고치는지 알려주고 보내준다.
+    await expect(canvas.getByText('1차 배송 기간')).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /미정/ })).toBeNull()
+    await expect(canvas.getByText(/배송 차수 수정이/)).toBeVisible()
+
+    await userEvent.click(
+      canvas.getByRole('button', { name: '배송 구간 설정으로 이동' }),
+    )
+    await expect(args.onEditShipmentBatches).toHaveBeenCalled()
+
     await userEvent.click(canvas.getByRole('button', { name: '취소' }))
     await expect(args.onCancel).toHaveBeenCalled()
   },
 }
 
-/** 사전 예약을 끄면 오픈/마감 일시 입력이 사라진다. */
+/**
+ * 사전 예약을 켜면 오픈/마감 일시와 1차 배송 기간을 받는다. 수량 칸은 사라진다 —
+ * 서버가 사전예약 재고를 받지 않고, 등록 때 1차 차수는 끝이 열린 채로만 만들어진다.
+ */
 export const PreorderToggle: Story = {
   args: { mode: 'create' },
   play: async ({ canvas }) => {
     await expect(canvas.queryByText('오픈 / 마감 일시')).toBeNull()
+
+    // 조합이 하나는 있어야 수량 칸이 그려진다.
+    await userEvent.type(canvas.getByLabelText('색상 입력'), '딥 블루')
+    await waitFor(async () =>
+      expect(canvas.getByLabelText('수량')).toBeVisible(),
+    )
+
     await userEvent.click(canvas.getByText('사전 예약으로 판매'))
     await waitFor(() =>
       expect(canvas.getByRole('button', { name: '달력 열기' })).toBeVisible(),
     )
+    // 등록에선 수량 칸이 1차 배송 수량으로 바뀐다.
+    await expect(canvas.queryByLabelText('수량')).toBeNull()
+    await expect(canvas.getByLabelText('1차 배송 수량')).toBeVisible()
+
+    // 1차 배송 기간은 등록할 때만 고를 수 있다 — 이 기간으로 1차 차수가 만들어진다.
+    await expect(
+      canvas.getByRole('button', { name: /1차 배송 기간/ }),
+    ).toBeVisible()
   },
 }
 
@@ -118,7 +155,7 @@ export const VariantCombination: Story = {
     ).toBeVisible()
 
     // 먼저 입력한 수량은 그대로 남아 있어야 한다
-    await expect(canvas.getAllByLabelText('수량')[0]).toHaveValue('1500')
+    await expect(canvas.getAllByLabelText('수량')[0]).toHaveValue('1,500')
   },
 }
 
@@ -241,6 +278,312 @@ export const NoColorAppliesToEveryBlock: Story = {
     await userEvent.click(canvas.getAllByLabelText('색상 없음')[0])
     await waitFor(async () =>
       expect(canvas.getAllByLabelText('색상 입력')[0]).toHaveValue('딥 블루'),
+    )
+  },
+}
+
+// 수정 화면 공통 — 서버에 이미 있는 색상 두 개, 용량 두 개.
+const savedProduct = {
+  ...createEmptyProductFormValue(),
+  name: '갤럭시 G999',
+  // 수정 화면은 서버 값으로 채워진다 — 모델명·브랜드는 늘 있다(필수 칸).
+  modelName: 'SM-G999',
+  brand: 'Samsung',
+  basePrice: 1_200_000,
+  colors: [
+    { id: 'c-bk', name: '딥 블루', hex: '#3F4891', noColor: false, images: [] },
+    { id: 'c-sv', name: '실버', hex: '#C7C9D1', noColor: false, images: [] },
+  ],
+  optionGroups: [
+    {
+      id: 'storage',
+      name: '용량',
+      values: [
+        { id: 's-256', label: '256GB', extraPrice: 0 },
+        { id: 's-512', label: '512GB', extraPrice: 250_000 },
+      ],
+    },
+  ],
+}
+const savedIds = new Set(['color', 'c-bk', 'c-sv', 'storage', 's-256', 's-512'])
+
+/**
+ * 등록 뒤에는 서버에 옵션을 지우는 API도, 축을 만드는 API도 없다. 있던 색상·값은
+ * 지울 수 없고 옵션 종류(축)는 손댈 수 없다. 새로 더한 값은 저장 전이라 지울 수 있다.
+ */
+export const EditKeepsSavedOptions: Story = {
+  args: { mode: 'edit', defaultValue: savedProduct, existingIds: savedIds },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.queryByRole('button', { name: /색상 \d+ 삭제/ }),
+    ).toBeNull()
+    await expect(
+      canvas.queryByRole('button', { name: /용량 값 \d+ 삭제/ }),
+    ).toBeNull()
+    await expect(
+      canvas.queryByRole('button', { name: '옵션 1 삭제' }),
+    ).toBeNull()
+    await expect(canvas.getByLabelText('옵션 이름')).toBeDisabled()
+    await expect(canvas.queryByRole('button', { name: '옵션 추가' })).toBeNull()
+    // '색상 없음'은 색상 축 자체를 만들거나 없애는 일이라 잠근다.
+    for (const box of canvas.getAllByLabelText('색상 없음')) {
+      await expect(box).toBeDisabled()
+    }
+    // 프리셋은 축을 새로 깔아서 등록 뒤에는 보여주지 않는다.
+    await expect(canvas.queryByText('제품 카테고리 선택')).toBeNull()
+
+    // 값은 더할 수 있고, 더한 값은 저장 전이라 지울 수 있다.
+    await userEvent.click(
+      canvas.getByRole('button', { name: /옵션 타입 추가/ }),
+    )
+    await expect(
+      canvas.getByRole('button', { name: '용량 값 3 삭제' }),
+    ).toBeVisible()
+  },
+}
+
+/** 그만 팔 조합은 지우지 않고 판매를 끈다 — 끈 조합이 저장 값에 실린다 */
+export const EditPausesVariant: Story = {
+  args: { mode: 'edit', defaultValue: savedProduct, existingIds: savedIds },
+  play: async ({ canvas, args }) => {
+    const toggle = canvas.getByRole('switch', { name: '딥 블루 256GB 판매' })
+    await expect(toggle).toBeChecked()
+    await userEvent.click(toggle)
+    await expect(toggle).not.toBeChecked()
+
+    await userEvent.click(canvas.getByRole('button', { name: '수정하기' }))
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ pausedKeys: ['딥 블루|256GB'] }),
+    )
+  },
+}
+
+/**
+ * 등록에서도 조합마다 판매 스위치가 있다 — 끈 조합은 만들지 않는다(서버 excluded).
+ * 일반 상품이면 끈 조합의 수량 칸도 막는다(만들지 않으니 재고가 없다).
+ */
+export const CreateExcludesVariant: Story = {
+  args: { mode: 'create', defaultValue: savedProduct },
+  play: async ({ canvas, args }) => {
+    const toggle = canvas.getByRole('switch', { name: '딥 블루 256GB 판매' })
+    await expect(toggle).toBeChecked()
+    await userEvent.click(toggle)
+    await expect(toggle).not.toBeChecked()
+
+    const row = toggle.closest('tr')
+    await expect(row?.querySelector('input')).toBeDisabled()
+
+    await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ pausedKeys: ['딥 블루|256GB'] }),
+    )
+  },
+}
+
+/**
+ * 사전예약 오픈 3분 전부터는 공개 여부 말고는 서버가 409로 거절한다 — 폼 전체를 읽기
+ * 전용으로 두고 이유를 알린다. 취소·미리보기는 눌려야 한다.
+ */
+export const EditLocked: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: { ...savedProduct, isPreorder: true },
+    existingIds: savedIds,
+    lockReason:
+      '사전예약은 오픈 3분 전부터 상품 내용을 바꿀 수 없습니다. 공개 전환과 판매 중지는 오른쪽 위 ⋮ 메뉴에서 합니다.',
+  },
+  play: async ({ canvas, args }) => {
+    await expect(
+      canvas.getByText(/오픈 3분 전부터 상품 내용을 바꿀 수 없습니다/),
+    ).toBeVisible()
+    await expect(canvas.getByLabelText(/상품명/)).toBeDisabled()
+    await expect(
+      canvas.getByRole('button', { name: '수정하기' }),
+    ).toBeDisabled()
+
+    await userEvent.click(canvas.getByRole('button', { name: '취소' }))
+    await expect(args.onCancel).toHaveBeenCalled()
+  },
+}
+
+/** 사전예약 수정 화면은 수량 칸이 없다 — 재고를 세지 않고 1차 물량은 배송 탭에서 고친다 */
+export const EditPreorderHidesQuantity: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: { ...savedProduct, isPreorder: true },
+    existingIds: savedIds,
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.queryByRole('columnheader', { name: '1차 배송 수량' }),
+    ).toBeNull()
+    await expect(canvas.getAllByRole('switch').length).toBeGreaterThan(0)
+  },
+}
+
+/** 일반 상품은 등록 때 공개 여부를 고른다 — 기본은 숨김이다 */
+export const CreateChoosesPublish: Story = {
+  args: { mode: 'create' },
+  play: async ({ canvas, args }) => {
+    const publish = canvas.getByRole('checkbox', { name: /등록하자마자 공개/ })
+    await expect(publish).not.toBeChecked()
+
+    await userEvent.click(publish)
+    // 상품명·모델명은 필수라 비우면 브라우저가 제출을 막는다.
+    await userEvent.type(canvas.getByLabelText(/상품명/), '갤럭시 S30')
+    await userEvent.type(canvas.getByLabelText(/모델명/), 'SM-S30')
+    await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ publishOnCreate: true }),
+    )
+  },
+}
+
+/** 사전예약은 고를 게 없다 — 접수 기간에만 자동으로 보인다는 안내만 둔다 */
+export const CreatePreorderPublishHint: Story = {
+  args: { mode: 'create' },
+  play: async ({ canvas }) => {
+    await userEvent.click(canvas.getByText('사전 예약으로 판매'))
+    await expect(
+      canvas.queryByRole('checkbox', { name: /등록하자마자 공개/ }),
+    ).toBeNull()
+    await expect(canvas.getByText(/접수 기간\(오픈 ~ 마감\)에만/)).toBeVisible()
+  },
+}
+
+/** 수정 화면엔 공개 설정이 없다 — 상세의 공개 전환 버튼으로 바꾼다 */
+export const EditHasNoPublishOption: Story = {
+  args: { mode: 'edit', defaultValue: createEmptyProductFormValue() },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText('공개 설정')).toBeNull()
+  },
+}
+
+/** 수정에서도 등록 때 넣은 모델명·브랜드가 채워져 나오고, 고칠 수 있다 */
+export const EditBrandAndModelName: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: {
+      ...createEmptyProductFormValue(),
+      name: '갤럭시 S30',
+      modelName: 'SM-S30',
+      brand: 'Samsung',
+    },
+  },
+  play: async ({ canvas, args }) => {
+    const modelName = canvas.getByLabelText(/모델명/)
+    await expect(modelName).toHaveValue('SM-S30')
+    await expect(modelName).toBeEnabled()
+    await expect(canvas.getByRole('button', { name: /Samsung/ })).toBeEnabled()
+
+    await userEvent.clear(modelName)
+    await userEvent.type(modelName, 'SM-S30U')
+    await userEvent.click(canvas.getByRole('button', { name: /Samsung/ }))
+    await userEvent.click(canvas.getByRole('button', { name: 'Apple' }))
+    await userEvent.click(canvas.getByRole('button', { name: '수정하기' }))
+
+    await expect(args.onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ modelName: 'SM-S30U', brand: 'Apple' }),
+    )
+  },
+}
+
+/**
+ * 필수 칸을 비우고 누르면 보내지 않는다 — 칸마다 문구를 붙이고, 버튼 줄에 몇 개인지
+ * 알리고, 첫 칸(상품명)에 포커스를 둔다.
+ */
+export const CreateShowsIssues: Story = {
+  args: { mode: 'create', validate: validateRegistration },
+  play: async ({ canvas, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
+
+    await expect(args.onSubmit).not.toHaveBeenCalled()
+    await expect(canvas.getByText('상품명을 적어 주세요.')).toBeVisible()
+    await expect(canvas.getByText('모델명을 적어 주세요.')).toBeVisible()
+    await expect(canvas.getByText('브랜드를 골라 주세요.')).toBeVisible()
+    await expect(canvas.getByText('제품 카테고리를 골라 주세요.')).toBeVisible()
+    await expect(canvas.getByRole('alert')).toHaveTextContent(
+      /확인이 필요한 항목 \d+개/,
+    )
+    await expect(canvas.getByLabelText(/상품명/)).toHaveFocus()
+
+    // 한 번 누른 뒤에는 고치는 즉시 그 문구가 사라진다.
+    await userEvent.type(canvas.getByLabelText(/상품명/), '갤럭시 S30')
+    await expect(canvas.queryByText('상품명을 적어 주세요.')).toBeNull()
+  },
+}
+
+/** 처음부터 빨간 문구를 띄우지 않는다 — 누르기 전엔 검사하지 않는다 */
+export const NoIssuesBeforeSubmit: Story = {
+  args: { mode: 'create', validate: validateRegistration },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText('상품명을 적어 주세요.')).toBeNull()
+    await expect(canvas.getByRole('alert')).toBeEmptyDOMElement()
+  },
+}
+
+/** 수정도 상품명·모델명·브랜드를 비우면 보내지 않는다 */
+export const EditRequiresBasics: Story = {
+  args: {
+    mode: 'edit',
+    validate: validateProductBasics,
+    defaultValue: { ...savedProduct, modelName: '', brand: '' },
+  },
+  play: async ({ canvas, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: '수정하기' }))
+    await expect(args.onSubmit).not.toHaveBeenCalled()
+    await expect(canvas.getByText('모델명을 적어 주세요.')).toBeVisible()
+    await expect(canvas.getByText('브랜드를 골라 주세요.')).toBeVisible()
+    await expect(canvas.getByLabelText(/모델명/)).toHaveFocus()
+  },
+}
+
+/** 서버가 준 칸별 오류(400)는 그 칸에 붙고, 고치기 시작하면 걷힌다 */
+export const ServerIssues: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: savedProduct,
+    serverIssues: [
+      { field: 'modelName', message: 'size must be between 1 and 40' },
+    ],
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByText('size must be between 1 and 40'),
+    ).toBeVisible()
+    await userEvent.type(canvas.getByLabelText(/모델명/), 'X')
+    await expect(canvas.queryByText('size must be between 1 and 40')).toBeNull()
+  },
+}
+
+/** 칸에 붙일 수 없는 실패는 버튼 줄에 보인다 — 버튼이 화면 아래라 위 알림은 안 보인다 */
+export const SubmitError: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: savedProduct,
+    submitError: '저장하지 못한 항목: 옵션 — 위 안내를 확인해 주세요.',
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('alert')).toHaveTextContent(
+      '저장하지 못한 항목: 옵션',
+    )
+  },
+}
+
+/** 오프라인이라 요청이 멈춰 있으면 '저장 중…'에서 멈춘 게 아니라 기다리는 중이라고 알린다 */
+export const WaitingForNetwork: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: savedProduct,
+    submitting: true,
+    waitingForNetwork: true,
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole('button', { name: '연결 대기 중…' }),
+    ).toBeDisabled()
+    await expect(canvas.getByRole('alert')).toHaveTextContent(
+      '인터넷 연결이 끊겼습니다',
     )
   },
 }

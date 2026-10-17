@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
@@ -19,37 +19,6 @@ export const title = style([
   typography.title.xlSemibold,
   { color: color.text.primary },
 ])
-
-export const refreshRow = style([
-  typography.body.sub,
-  {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacing[8],
-    color: color.text.tertiary,
-  },
-])
-
-export const refreshButton = style({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: spacing[4],
-  padding: 0,
-  border: 'none',
-  background: 'transparent',
-  color: 'inherit',
-  font: 'inherit',
-  cursor: 'pointer',
-  transition: `color ${motion.duration.fast} ${motion.easing.default}`,
-  selectors: {
-    '&:hover': { color: color.primary.base },
-  },
-})
-
-export const refreshIcon = style({
-  width: '16px',
-  height: '16px',
-})
 
 export const cards = style({
   display: 'grid',
@@ -97,9 +66,4 @@ export const subText = style([
 export const dueText = style([
   typography.body.caption,
   { color: color.primary.base },
-])
-
-export const attemptText = style([
-  typography.body.caption,
-  { color: color.text.secondary },
 ])

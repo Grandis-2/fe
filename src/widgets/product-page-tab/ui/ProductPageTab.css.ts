@@ -9,9 +9,9 @@ import {
 
 // 반투명 유리 바탕은 화면 끝까지, 탭은 본문 폭(1184px) 안에서 4등분한다.
 export const root = style({
-  background: `color-mix(in srgb, ${color.background.base} 42%, transparent)`,
+  // 페이지 바탕(backgroundDark.base)과 같은 색을 섞어야 바 경계에 띠가 안 생긴다.
+  background: `color-mix(in srgb, ${color.backgroundDark.base} 42%, transparent)`,
   backdropFilter: 'blur(24px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
   borderBottom: `1px solid ${color.border.subtle}`,
 })
 

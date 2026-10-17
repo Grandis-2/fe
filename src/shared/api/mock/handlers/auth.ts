@@ -6,6 +6,7 @@ import { codePointLength } from '../validate'
 
 import type {
   AdminLoginRequest,
+  AdminSessionResponse,
   ApiViolation,
   KakaoCallbackRequest,
   ProfileInfo,
@@ -65,6 +66,8 @@ const MOCK_USER: SessionRecord = {
 // 로컬 개발용 관리자 계정. 실제 값이 아니다.
 const ADMIN_USERNAME = 'admin'
 const ADMIN_PASSWORD = 'admin1234'
+// 이 아이디로 로그인하면 429(시도 제한)가 온다 — 카운트다운 화면 확인용.
+const LOCKED_USERNAME = 'locked'
 const MOCK_ADMIN: SessionRecord = {
   displayName: '관리자',
   role: 'ADMIN',
@@ -218,10 +221,14 @@ export const authHandlers: RequestHandler[] = [
     // API의 의도된 제약 — SW가 쿠키를 훔쳐볼 수 없게 막는다. 실서버는 이 제약이 없다).
     // 이 핸들러는 페이지 컨텍스트에서 실행되므로 document.cookie로 직접 읽는다.
     const cookies = parseCookies(document.cookie)
-    // 재발급은 회원 쿠키를 먼저 본다(11-frontend-guide.md §6).
+    // 재발급은 회원 쿠키를 먼저 본다(11-frontend-guide.md §6). 다만 쓸 수 없는
+    // 토큰이면 다음 쿠키로 넘어간다 — 관리자로 로그인하면 회원 토큰이 버려지는데
+    // document.cookie로는 HttpOnly 쿠키를 지울 수 없어 이름만 남는다.
     const refreshToken =
-      cookies[REFRESH_COOKIE.USER] ?? cookies[REFRESH_COOKIE.ADMIN]
-    const record = refreshToken ? refreshTokens.get(refreshToken) : undefined
+      [REFRESH_COOKIE.USER, REFRESH_COOKIE.ADMIN]
+        .map((name) => cookies[name])
+        .find((token) => refreshTokens.has(token)) ?? ''
+    const record = refreshTokens.get(refreshToken)
 
     if (!record) {
       return fail(401, {
@@ -253,6 +260,15 @@ export const authHandlers: RequestHandler[] = [
     const token = readSessionToken(request)
     const record = token ? sessions.get(token) : undefined
     if (token) sessions.delete(token)
+
+    // 서버는 두 역할의 리프레시 쿠키를 모두 지운다. 목은 X-Mock-Set-Cookie로 한 줄만
+    // 내릴 수 있어, 지우지 못하는 쪽은 리프레시 토큰을 버려 같은 결과를 만든다 —
+    // 남겨 두면 로그아웃한 뒤 새로고침에서 그 세션이 되살아난다.
+    const cookies = parseCookies(document.cookie)
+    for (const name of Object.values(REFRESH_COOKIE)) {
+      const refreshToken = cookies[name]
+      if (refreshToken) refreshTokens.delete(refreshToken)
+    }
     saveDB()
 
     const cookieName = REFRESH_COOKIE[record?.role ?? 'USER']
@@ -269,15 +285,53 @@ export const authHandlers: RequestHandler[] = [
       .json()
       .catch(() => null)) as Partial<AdminLoginRequest> | null
 
-    if (body?.username !== ADMIN_USERNAME || body.password !== ADMIN_PASSWORD) {
-      return fail(401, {
-        code: 'INVALID_CREDENTIALS',
-        message: '아이디 또는 비밀번호가 올바르지 않습니다.',
+    // 서버는 비거나 공백뿐이면 400이고, 이건 시도 횟수에 세지 않는다.
+    if (!body?.username?.trim() || !body.password?.trim()) {
+      return fail(400, {
+        code: 'VALIDATION_FAILED',
+        message: '요청 값이 올바르지 않습니다.',
+        violations: [
+          ...(body?.username?.trim()
+            ? []
+            : [{ field: 'username', message: '공백일 수 없습니다' }]),
+          ...(body?.password?.trim()
+            ? []
+            : [{ field: 'password', message: '공백일 수 없습니다' }]),
+        ],
       })
     }
 
+    // 시도 제한 화면을 볼 수 있게 둔다 — 맞는 비밀번호여도 거절된다(429).
+    if (body.username === LOCKED_USERNAME) {
+      return fail(429, {
+        code: 'TOO_MANY_LOGIN_ATTEMPTS',
+        message: '로그인 시도가 너무 많습니다. 잠시 후 다시 시도해 주세요.',
+        retryAfterSeconds: 5,
+      })
+    }
+
+    if (body.username !== ADMIN_USERNAME || body.password !== ADMIN_PASSWORD) {
+      // 어느 쪽이 틀렸는지는 알려 주지 않는다.
+      return fail(401, {
+        code: 'INVALID_CREDENTIALS',
+        message: '로그인 정보를 확인해 주세요.',
+      })
+    }
+
+    // 실서버는 관리자 로그인에서 회원 쿠키를 지운다 — 한 브라우저에서 둘을 같이 쓸 수
+    // 없다. 목은 쿠키를 지울 수 없으니 회원 리프레시 토큰을 버려 같은 결과를 만든다.
+    const memberToken = parseCookies(document.cookie)[REFRESH_COOKIE.USER]
+    if (memberToken) {
+      refreshTokens.delete(memberToken)
+      saveDB()
+    }
+
     const { sessionToken, cookie } = issueSession(MOCK_ADMIN)
-    const response = ok<Session>({ sessionToken, ...MOCK_ADMIN })
+    // 응답에는 sessionToken과 role만 담는다 — displayName·profileComplete는 없다.
+    const response = ok<AdminSessionResponse>({
+      sessionToken,
+      role: MOCK_ADMIN.role,
+    })
     response.headers.set('X-Mock-Set-Cookie', cookie)
     return response
   }),

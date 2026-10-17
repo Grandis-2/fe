@@ -9,7 +9,7 @@ import {
   typography,
 } from '@shared/config/theme'
 
-const { chipBorder, divider, label, list, roundButton } = searchStyles
+const { divider, label, list } = searchStyles
 
 // 열 때 마운트되므로 첫 프레임부터 재생되는 keyframes로 충분하다(@starting-style 불필요).
 const fadeIn = keyframes({ from: { opacity: 0 } })
@@ -92,36 +92,6 @@ export const chips = style([
   { display: 'flex', flexWrap: 'wrap', gap: spacing[8] },
 ])
 
-export const recentChip = style({
-  display: 'flex',
-  alignItems: 'center',
-  height: '36px',
-  borderRadius: '18px',
-  border: chipBorder,
-  overflow: 'hidden',
-})
-
-export const recentLabel = style([
-  typography.body.sub,
-  {
-    height: '100%',
-    padding: `0 ${spacing[6]} 0 ${spacing[14]}`,
-    border: 'none',
-    background: 'transparent',
-    color: onDark(90),
-    cursor: 'pointer',
-  },
-])
-
-export const recentRemove = style([
-  roundButton,
-  {
-    height: '100%',
-    padding: `0 ${spacing[12]} 0 ${spacing[4]}`,
-    color: onDark(55),
-  },
-])
-
 export const popular = style([
   list,
   {
@@ -162,26 +132,6 @@ export const popularRank = styleVariants(
 export const popularLabel = style([
   typography.body.defaultRegular,
   { overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' },
-])
-
-export const categoryChip = style([
-  typography.body.subMedium,
-  {
-    display: 'flex',
-    alignItems: 'center',
-    height: '40px',
-    padding: `0 18px`,
-    boxSizing: 'border-box',
-    borderRadius: '20px',
-    border: chipBorder,
-    background: color.backgroundDark.surface,
-    color: 'inherit',
-    textDecoration: 'none',
-    transition: `border-color ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { borderColor: color.primary.subtle },
-    },
-  },
 ])
 
 export const suggestions = style([

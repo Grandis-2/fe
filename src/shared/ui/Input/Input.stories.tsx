@@ -27,7 +27,8 @@ export const Focused: Story = {
 
     const label = canvas.getByText('이름')
     await waitFor(() => expect(label).toHaveStyle({ fontSize: '12px' }))
-    await expect(label).toHaveStyle({ color: 'rgb(143, 143, 148)' }) // text.tertiary
+    // 포커스하면 라벨도 포커스 색으로 올라온다(Input.css.ts의 :focus-within).
+    await expect(label).toHaveStyle({ color: 'rgb(63, 72, 145)' }) // primary.base
   },
 }
 
@@ -98,5 +99,15 @@ export const Stacked: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText('상세 주소 *')).toBeVisible()
     await expect(canvas.getByPlaceholderText('동, 호수')).toBeVisible()
+  },
+}
+
+/** 필수 누락 말고도 형식·길이 오류 문구를 그 칸에 붙인다 — 스크린리더도 같이 읽는다 */
+export const WithErrorMessage: Story = {
+  args: { label: '모델명', error: '모델명은 40자까지입니다.' },
+  play: async ({ canvas }) => {
+    const field = canvas.getByRole('textbox', { name: /모델명/ })
+    await expect(field).toHaveAttribute('aria-invalid', 'true')
+    await expect(field).toHaveAccessibleDescription('모델명은 40자까지입니다.')
   },
 }

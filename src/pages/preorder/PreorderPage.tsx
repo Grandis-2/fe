@@ -1,4 +1,3 @@
-import { MOCK_PREORDERS } from '@entities/preorder'
 import { Container } from '@shared/ui'
 import { PreorderList } from '@widgets/preorder-list'
 
@@ -10,7 +9,7 @@ export function PreorderPage() {
   return (
     <div className={styles.root} data-header-theme="dark">
       <Container>
-        <PreorderList preorders={MOCK_PREORDERS} />
+        <PreorderList />
       </Container>
     </div>
   )

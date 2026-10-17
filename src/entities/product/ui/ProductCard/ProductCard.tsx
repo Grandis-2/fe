@@ -81,9 +81,13 @@ export function ProductCard({
           <Link to={productPath(productId)} className={styles.name}>
             {name}
           </Link>
-          <div className={[typography.body.sub, styles.modelNumber].join(' ')}>
-            {modelNumber}
-          </div>
+          {modelNumber && (
+            <div
+              className={[typography.body.sub, styles.modelNumber].join(' ')}
+            >
+              {modelNumber}
+            </div>
+          )}
         </div>
         <ProductColorSwatches
           colorName={colorName}
@@ -108,6 +112,46 @@ export function ProductCard({
             {priceUnit}부터
           </span>
         </div>
+      </div>
+    </div>
+  )
+}
+
+export function ProductCardSkeleton({
+  className,
+}: Pick<ProductCardProps, 'className'>) {
+  return (
+    <div
+      data-theme="dark"
+      className={[styles.root, className].filter(Boolean).join(' ')}
+      aria-hidden
+    >
+      <div className={styles.skeletonMedia} />
+      <div className={styles.skeletonDots}>
+        {[0, 1, 2, 3].map((i) => (
+          <span key={i} className={styles.skeletonDot} />
+        ))}
+      </div>
+      <div className={styles.content}>
+        <div className={styles.nameGroup}>
+          <div
+            className={styles.skeletonLine}
+            style={{ height: '20px', width: '72%' }}
+          />
+          <div
+            className={styles.skeletonLine}
+            style={{ height: '14px', width: '38%' }}
+          />
+        </div>
+        <div className={styles.skeletonSwatches}>
+          {[0, 1, 2, 3].map((i) => (
+            <span key={i} className={styles.skeletonSwatch} />
+          ))}
+        </div>
+        <div
+          className={styles.skeletonLine}
+          style={{ height: '24px', width: '52%', marginTop: '6px' }}
+        />
       </div>
     </div>
   )

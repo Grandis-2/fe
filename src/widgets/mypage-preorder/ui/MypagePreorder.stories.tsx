@@ -94,8 +94,9 @@ export const Default: Story = {
     await expect(countdowns[0].textContent).not.toBe(countdowns[1].textContent)
 
     // 오픈 알림은 눌러서 끄고 켤 수 있다.
-    const [firstAlert] = canvas.getAllByRole('button', { name: '알림 받는 중' })
+    const [firstAlert] = canvas.getAllByRole('button', { name: /오픈 알림$/ })
+    await expect(firstAlert).toHaveAttribute('aria-pressed', 'true')
     await userEvent.click(firstAlert)
-    await expect(firstAlert).toHaveTextContent('알림 받기')
+    await expect(firstAlert).toHaveAttribute('aria-pressed', 'false')
   },
 }

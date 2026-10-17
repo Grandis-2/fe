@@ -1,3 +1,13 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://api.grandis-nova.link/api/:path*"
+    },
+    {
+      "source": "/external/:path*",
+      "destination": "https://api.grandis-nova.link/external/:path*"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

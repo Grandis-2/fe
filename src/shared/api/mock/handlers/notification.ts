@@ -1,4 +1,4 @@
-import { http } from 'msw'
+import { http, sse } from 'msw'
 
 import { mypagePath, PREORDER_PATH } from '@shared/config/routes'
 
@@ -79,6 +79,18 @@ export const notificationHandlers: RequestHandler[] = [
     ok<CountResponse>({
       count: currentNotifications().filter((item) => !item.read).length,
     }),
+  ),
+  // 연결하면 지금 수를 한 번 보낸다(목록이 고정이라 그 뒤로는 오지 않는다).
+  sse<{ unread: CountResponse }>(
+    url('/api/v1/notifications/stream'),
+    ({ client }) => {
+      client.send({
+        event: 'unread',
+        data: {
+          count: currentNotifications().filter((item) => !item.read).length,
+        },
+      })
+    },
   ),
   http.get(url('/api/v1/notifications'), () =>
     ok<NotificationList>({ items: currentNotifications() }),

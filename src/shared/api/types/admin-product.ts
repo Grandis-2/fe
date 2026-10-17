@@ -1,4 +1,10 @@
-import type { SaleMode } from './product'
+import type { ShipmentBatch } from './preorder'
+import type {
+  PreorderSaleStatus,
+  ProductDetailView,
+  ProductSaleStatus,
+  SaleMode,
+} from './product'
 
 // 관리자 상품 API가 아직 쓰는 이전(프론트 제안) 상품 모양. 구매자 화면은 백엔드 계약(product.ts)으로 옮겼고,
 // 관리자 상품을 백엔드(AdminProductController)에 맞출 때 이 블록도 같이 걷어낸다.
@@ -101,18 +107,282 @@ type ProductDetail = ProductSummary & {
 
 export type DisplayStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN'
 
-// 관리자 목록은 구매자용 요약(ProductSummary)에 운영 정보가 더 붙는다.
-export type AdminProductSummary = ProductSummary & {
-  displayStatus: DisplayStatus
-  variantCount: number
-  activeDispatchWindowVersion: number | null
-  firstAcceptSeqIssuedAt: string | null
-  updatedAt: string
-  updatedBy: string | null
+/**
+ * 관리자 상품 목록 한 줄(GET /api/v1/admin/products). 노출 규칙 없이 비공개·준비 전·
+ * 판매 중지·마감 상품까지 모두 나오고, 등록 최신순으로만 정렬된다.
+ *
+ * 판매 상태와 전시 상태가 한 필드로 오지 않는다 — 사전예약은 preorderStatus,
+ * 일반 상품은 status를 보고, 전시는 visible과 registrationCompleted를 같이 본다.
+ * 화면이 쓰는 한 값으로 바꾸는 건 entities/admin-product/api의 매퍼가 한다.
+ */
+export type AdminProductListItem = {
+  productId: string
+  saleMode: SaleMode
+  title: string
+  /** 대표 사진. 없으면 null */
+  imageUrl: string | null
+  /** 상품 판매 상태 */
+  status: ProductSaleStatus
+  /** 관리자가 고른 공개 여부. 회원에게 보이려면 준비 완료도 필요하다 */
+  visible: boolean
+  /** false면 서버가 아직 준비(사전예약 회차·일반 상품 재고)를 끝내지 않았다 */
+  registrationCompleted: boolean
+  /** 판매 중지를 포함한 전체 옵션 수 */
+  optionCount: number
+  /** 판매 중인 옵션의 최저가(원). 없으면 null */
+  minPrice: number | null
+  sellable: boolean
+  /** 일반 상품 품절 여부. 사전예약은 늘 false */
+  soldOut: boolean
+  /** 사전예약 접수 단계. 일반 상품이거나 회차가 없으면 null */
+  preorderStatus: PreorderSaleStatus | null
+  /** 사전예약 오픈 시각(ISO-8601 UTC). 없으면 null */
+  opensAt: string | null
+  closesAt: string | null
 }
 
-// 관리자 상세도 마찬가지로 구매자용 상세에 운영 정보가 더 붙는다.
+/** 등록 상태 — 등록 상태 조회(GET /admin/products/registrations/{key})와 같은 모양 */
+export type RegistrationStatusView = {
+  productId: string
+  /** 등록 때 받은 멱등 키. 등록 API 도입 전 상품은 null */
+  idempotencyKey: string | null
+  /**
+   * 준비 완료 — 사전예약은 회차, 일반 상품은 재고가 만들어지면 true.
+   * false인 동안은 공개로 골라 뒀어도 회원에게 보이지 않는다.
+   */
+  completed: boolean
+}
+
+/** 관리자 상세(GET /api/v1/admin/products/{productId}) */
+export type AdminProductResponse = {
+  /**
+   * 회원 상세와 같은 모양이다. visible만 실제 값이고 회원 상세에선 늘 true다.
+   * brand·modelName은 문서엔 없지만 실서버가 준다(2026-10-14 확인).
+   */
+  product: ProductDetailView & { brand: ProductBrandCode; modelName: string }
+  /** 검색 키워드를 콤마로 이은 문자열. 없으면 null. 회원에게는 나가지 않는다 */
+  tags: string | null
+  registration: RegistrationStatusView
+}
+
+/** 공개 여부 전환(PATCH .../visibility). boolean만 받는다 — "true"·1은 400 */
+export type VisibilityChangeRequest = {
+  visible: boolean
+}
+
+export type VisibilityView = {
+  productId: string
+  visible: boolean
+}
+
+/**
+ * 상품 판매 상태 변경(PATCH /admin/products/{productId}/sale-status). 사전예약 오픈 뒤
+ * PAUSED는 회차 취소라 reason(1~500자)이 필수이고, 그 밖에 reason을 보내면 400이다.
+ */
+export type SaleStatusChangeRequest = {
+  status: ProductSaleStatus
+  reason?: string
+}
+
+export type SaleStatusView = {
+  productId: string
+  status: ProductSaleStatus
+  /** 회차 취소가 접수됐는지 — true면 202이고 예약 취소는 이어서 처리된다 */
+  campaignCancellationRequested: boolean
+}
+
+/**
+ * 상품 수정(PATCH /admin/products/{productId}). 보낸 필드만 바뀐다 — 생략하면
+ * 그대로 두고, 하나도 없으면 400이다. 응답은 관리자 상세와 같은 모양이다.
+ */
+export type ProductEditRequest = {
+  /** 1~100자, 공백만은 불가 */
+  title?: string
+  /** 5,000자 이하. 빈 문자열이면 비운다 */
+  description?: string
+  /** 콤마로 이은 검색 키워드 500자 이하. 빈 문자열이면 비운다 */
+  tags?: string
+  /** 바꾸면 모든 옵션 가격이 다시 계산된다 */
+  basePrice?: number
+  warranty?: { offered: boolean; surcharge?: number }
+  /** 문서엔 없지만 실서버가 받는다(2026-10-14 확인) — APPLE·SAMSUNG·LG */
+  brand?: ProductBrandCode
+  /** 1~40자. 문서엔 없지만 실서버가 받는다 */
+  modelName?: string
+}
+
+/** 옵션 값 하나 수정. 보낸 필드만 바뀌고 셋 다 없으면 400 */
+export type OptionValueEditRequest = {
+  /** 1~60자. 바꾸면 그 값을 고른 옵션의 이름·selections도 함께 바뀐다 */
+  value?: string
+  /** 이 값을 고른 옵션만 가격이 다시 계산된다 */
+  surcharge?: number
+  /** color 축만. 빈 문자열이면 지운다 */
+  hex?: string
+}
+
+/** 기존 축에 값 하나 추가. 새 축은 만들 수 없다 */
+export type OptionValueAddRequest = {
+  axisKey: string
+  /** 1~60자, 같은 축 중복 불가, storage는 숫자+단위 */
+  value: string
+  surcharge?: number
+  hex?: string
+}
+
+/** 아직 없는 조합 하나를 옵션으로 만든다. 새 옵션은 바로 판매 중이다 */
+export type VariantAddRequest = {
+  /** 축 키별 값 — 모든 축을 넣는다. 축이 없는 상품은 {} */
+  selections: Record<string, string>
+  /** 비우면 서버 기본값 */
+  sku?: string
+}
+
+/** 옵션 하나를 판매 중지하거나 다시 판다. 이미 받은 주문·예약은 그대로다 */
+export type VariantEditRequest = {
+  status: ProductSaleStatus
+}
+
+/**
+ * 상품 등록(POST /admin/products). Idempotency-Key 헤더가 필수다 — 같은 키로 다시
+ * 보내면 새로 만들지 않고 처음 등록한 상품을 돌려준다. 모르는 필드는 400이다.
+ */
+/** 서버가 받는 브랜드 — 이 셋 말고는 400(형식 오류) */
+export type ProductBrandCode = 'APPLE' | 'SAMSUNG' | 'LG'
+
+export type ProductRegistrationRequest = {
+  /** 상위·하위 모두 가능. 없는 카테고리는 400 */
+  categoryId: string
+  /*
+   * brand·modelName은 문서(api-docs)에 아직 없지만 서버가 필수로 받는다 — 빠지면 400
+   * (brand must not be null, modelName must not be blank). 2026-10-14 실서버로 확인.
+   */
+  brand: ProductBrandCode
+  modelName: string
+  /** 등록 뒤 바꿀 수 없다 */
+  saleMode: SaleMode
+  /** 1~100자 */
+  title: string
+  description?: string
+  /** 콤마로 이은 검색 키워드 500자 이하 */
+  tags?: string
+  /** 준비가 끝나야 실제로 보인다 */
+  visible: boolean
+  basePrice: number
+  /** 생략하면 서버가 모든 조합을 만든다 */
+  optionAxes?: RegistrationOptionAxis[]
+  /** 조합별 조정(제외·SKU·재고). 생략한 조합도 만들어진다 */
+  combinations?: RegistrationCombination[]
+  /** 사전예약만, 필수. 일반 상품이 보내면 400 */
+  campaign?: { opensAt: string; closesAt: string }
+  /** 사전예약만, 필수(1~100개). 일반 상품이 보내면 400 */
+  shipmentBatches?: RegistrationShipmentBatch[]
+  /** 갤러리·상세 사진. url은 업로드 URL 발급으로 받은 imageUrl(CDN)만 받는다 */
+  images?: RegistrationImages
+}
+
+export type RegistrationImage = {
+  /** https://cdn.grandis-nova.link/ 아래 주소만. 한 상품 안에서 한 번만 쓴다 */
+  url: string
+  /** 묶음당 하나까지. 갤러리는 생략하면 첫 장이 대표다 */
+  primary?: boolean
+}
+
+export type RegistrationImages = {
+  /** color 축이 있으면 색상별 묶음만(color 필수), 없으면 color 없는 묶음 하나만. 묶음당 1~10장 */
+  gallery?: { color?: string; items: RegistrationImage[] }[]
+  /** 상세 영역 묶음. 영역 이름(1~60자)은 중복할 수 없다. 영역당 1장 이상 */
+  detail?: { section: string; items: RegistrationImage[] }[]
+}
+
+/**
+ * 상품 사진 업로드 URL 발급(POST /admin/products/image-uploads). 파일 하나에 한 번씩
+ * 부른다. jpeg·png·webp, 1바이트~10MiB 밖이면 400.
+ */
+export type ImageUploadRequest = {
+  contentType: string
+  /** 실제 파일 바이트 수와 같아야 한다 — 다르면 올리기가 403이다 */
+  contentLength: number
+}
+
+export type ImageUpload = {
+  /** 파일을 PUT으로 올릴 서명 주소. 5분 동안만 쓸 수 있다 */
+  uploadUrl: string
+  /** 올리기 요청에 그대로 넣을 헤더(Content-Type) — 서명에 포함돼 있다 */
+  headers: Record<string, string>
+  /** 올린 뒤의 사진 주소(CDN). 화면 표시·등록·사진 넣기에는 이것만 쓴다 */
+  imageUrl: string
+  expiresAt: string
+}
+
+/**
+ * 등록 뒤 사진 한 장 넣기(POST /admin/products/{id}/images). 묶음 맨 뒤에 들어가고, 빈
+ * 묶음의 첫 장은 대표가 된다. 사전예약 수정 잠금과 상관없이 오픈 뒤에도 된다.
+ */
+export type ProductImageAddRequest = {
+  kind: 'GALLERY' | 'DETAIL'
+  /** GALLERY면 색상 값(color 축이 없으면 생략), DETAIL이면 영역 이름(없으면 새로 만든다) */
+  bundle?: string
+  url: string
+}
+
+export type RegistrationOptionAxis = {
+  /** 소문자 1~40자, 상품 안에서 유일. 목록 필터는 color·storage만 쓴다 */
+  key: string
+  label: string
+  /** 1~20개. 입력 순서가 화면 순서다 */
+  values: { value: string; surcharge?: number; hex?: string }[]
+}
+
+export type RegistrationCombination = {
+  /** 축 키별 값 — 모든 축을 하나씩. optionAxes에 쓴 값과 같은 글자로 */
+  selections: Record<string, string>
+  excluded?: boolean
+  sku?: string
+  /** 일반 상품은 필수(0이면 품절). 사전예약은 0이어도 보내면 400 */
+  stock?: number
+}
+
+/**
+ * 배송 차수. 첫 차수는 1번부터, 다음 차수는 앞 차수 positionTo + 1부터 이어 붙고,
+ * 마지막 차수 하나만 positionTo가 null(상한 없음)이다. 등록 본문과 차수 교체 API가
+ * 같은 모양을 쓴다.
+ */
+export type RegistrationShipmentBatch = ShipmentBatch
+
+/**
+ * PUT /admin/preorders/products/{productId}/shipment-batches — 차수 전체를 통째로
+ * 바꾼다. 응답은 조회와 같은 ShipmentBatchListResponse다.
+ */
+export type ShipmentBatchesRequest = { batches: ShipmentBatch[] }
+
+/**
+ * 등록 응답. 201(새로 등록)에만 product가 있고, 같은 키 재전송(200·202)은 null이다 —
+ * 그때는 registration.productId로 상세를 본다.
+ */
+export type ProductRegistrationResponse = {
+  registration: RegistrationStatusView
+  product: ProductDetailView | null
+}
+
+/**
+ * 사전예약 모집 일정 생성·변경(PUT /admin/preorders/products/{productId}/campaign).
+ * 바꿀 때 오픈은 지금부터 10분 뒤 이후여야 하고, 이미 오픈한 회차는 409다.
+ */
+export type PreorderCampaignRequest = {
+  opensAt: string
+  closesAt: string
+}
+
+/**
+ * 예전 상세 모양(프론트 제안). 목업 저장소가 아직 이 모양이라 남겨 둔다 — 조회·
+ * 등록·수정은 명세 모양으로 옮겼다.
+ */
 export type AdminProductDetail = ProductDetail & {
+  // 관리자가 달아 둔 검색 태그. 아직 스펙에 없어 필드가 올 때까지는 비어 온다 —
+  // 그래서 반영 전에는 수정 폼을 다시 열면 골라 뒀던 태그가 비어 보인다.
+  // 백엔드 스펙에 반영 요청할 것.
+  tags?: string[]
   displayStatus: DisplayStatus
   hiddenReason: string | null
   firstAcceptSeqIssuedAt: string | null
@@ -122,35 +392,13 @@ export type AdminProductDetail = ProductDetail & {
   updatedBy: string | null
 }
 
-/**
- * 등록(POST)과 수정(PATCH)이 같은 본문을 쓴다.
- * 스펙에 required가 없어 전 필드가 선택이다 — 최소 필드가 확정되면 좁힌다.
- */
-export type AdminProductUpsertRequest = {
-  productId?: string | null
-  name?: string
-  brand?: string
-  categoryId?: string | null
-  summary?: string | null
-  descriptionHtml?: string | null
-  images?: ProductImage[]
-  specs?: ProductSpecGroup[]
-  optionGroups?: ProductOptionGroup[]
-  variants?: ProductVariant[]
-  openAt?: string
-  closeAt?: string | null
-  badges?: ProductBadge[]
-}
-
 export type AdminProductListParams = {
-  displayStatus?: DisplayStatus
-  saleStatus?: SaleStatus
+  /** 상품명과 태그에서 대소문자 없이 부분 일치. 비우면 무시한다 */
   q?: string
+  saleMode?: SaleMode
+  status?: ProductSaleStatus
   /** 0부터 시작한다 */
   page?: number
+  /** 1~100(기본 20) */
   size?: number
-}
-
-export type AdminProductHideRequest = {
-  reason: string
 }

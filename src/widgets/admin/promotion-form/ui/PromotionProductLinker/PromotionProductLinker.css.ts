@@ -91,3 +91,13 @@ export const empty = style([
     textAlign: 'center',
   },
 ])
+
+// 불러오는 동안의 카드 — 실제 카드와 같은 틀에 이름·오픈 일시 줄만 깐다.
+export const skeletonCard = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[8],
+  padding: spacing[20],
+  border: `1px solid ${color.border.default}`,
+  borderRadius: '12px',
+})

@@ -1,3 +1,5 @@
+import { MessageSquare } from 'lucide-react'
+
 import { ReviewCard, useReviews } from '@entities/review'
 import { Container, InlineAlert } from '@shared/ui'
 
@@ -14,7 +16,9 @@ export function ReviewsPage() {
       ) : isPending ? (
         <InlineAlert status="info">후기를 불러오는 중이에요.</InlineAlert>
       ) : data.items.length === 0 ? (
-        <InlineAlert status="info">아직 등록된 후기가 없어요.</InlineAlert>
+        <InlineAlert status="info" variant="big" icon={MessageSquare}>
+          아직 등록된 후기가 없어요
+        </InlineAlert>
       ) : (
         <div className={styles.list}>
           {data.items.map((review) => (

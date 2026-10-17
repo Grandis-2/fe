@@ -16,6 +16,7 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
   status: 'AWAITING_PAYMENT',
   source: 'PREORDER',
   totalAmount: 2399000,
+  paymentDueAt: null,
   items: [
     {
       productId: '20000000-0000-4000-8000-000000000015',
@@ -24,6 +25,9 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
       optionTitle: '실버 섀도우 / 512GB',
       unitPrice: 2399000,
       quantity: 1,
+      warrantyQuantity: 0,
+      warrantyUnitPrice: 0,
+      lineAmount: 2399000,
     },
   ],
   shipTo: {
@@ -37,7 +41,7 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
   ...overrides,
 })
 
-// 일반 구매(BUY_NOW)는 아직 생기지 않지만 종류 필터를 확인하려고 한 건 둔다.
+// 일반 구매(BUY_NOW) 한 건 — 종류 필터 확인용.
 const orders = {
   items: [
     order('8d3f5a2c-1e4b-4c7d-9a6f-2b8e0c4d1f73', {}),

@@ -5,6 +5,7 @@ import { MYPAGE_TABS } from '@shared/config/routes'
 import { Container } from '@shared/ui'
 import { MypageAddress } from '@widgets/mypage-address'
 import { MypageCart } from '@widgets/mypage-cart'
+import { MypageDraw } from '@widgets/mypage-draw'
 import { MypageHistory } from '@widgets/mypage-history'
 import { MypageMenu, type MypageMenuLink } from '@widgets/mypage-menu'
 import { MypagePreorder } from '@widgets/mypage-preorder'
@@ -26,6 +27,8 @@ function renderContent(activeLink: MypageMenuLink) {
       return <MypageAddress />
     case 'reviews':
       return <MypageReviews />
+    case 'draw':
+      return <MypageDraw />
   }
 }
 

@@ -9,10 +9,7 @@ import {
   TAB_BAR_OFFSET,
   typography,
 } from '@shared/config/theme'
-import {
-  fontSize,
-  fontWeight,
-} from '@shared/config/theme/tokens/typography/base'
+import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 const divider = `1px solid ${color.border.subtle}`
 
@@ -44,7 +41,6 @@ export const top = style({
   zIndex: 1,
   background: `color-mix(in srgb, ${color.backgroundDark.base} 72%, transparent)`,
   backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
 })
 
 export const titleRow = style({
@@ -180,48 +176,4 @@ export const brandTile = style([
     height: '52px',
     fontWeight: fontWeight.bold,
   },
-])
-
-export const eventCard = style({
-  display: 'flex',
-  flexDirection: 'column',
-  overflow: 'hidden',
-  borderRadius: '18px',
-  border: divider,
-  background: color.background.base,
-  color: color.text.primary,
-  textDecoration: 'none',
-})
-
-export const eventImage = style({
-  display: 'block',
-  width: '100%',
-  height: '180px',
-  objectFit: 'cover',
-  background: color.background.surface,
-})
-
-export const eventTexts = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[6],
-  padding: spacing[16],
-})
-
-// Tag small(10px)은 카드 제목 옆에서 작다 — 12px로 키운다(HistoryCard 태그와 같음).
-export const eventTag = style({
-  alignSelf: 'flex-start',
-  fontSize: fontSize[12],
-  fontWeight: fontWeight.bold,
-  padding: `${spacing[3]} ${spacing[8]}`,
-})
-
-export const eventTitle = style([
-  typography.body.defaultMedium,
-  { fontWeight: fontWeight.bold, textWrap: 'pretty' },
-])
-
-export const eventPeriod = style([
-  typography.body.sub,
-  { color: color.text.tertiary },
 ])

@@ -36,8 +36,11 @@ export type ProductPurchaseBarProps = {
   shipmentLabel?: string
   onCheckout: () => void
   // 상품 조회가 안 끝났거나 실패한 동안 결제/사전예약을 막는다(ProductDetailPage의
-  // isCheckoutReady 참고). 장바구니 버튼은 결제로 이어지지 않으니 그대로 둔다.
+  // isCheckoutReady 참고).
   checkoutDisabled?: boolean
+  // 일반 상품의 장바구니 담기(사전예약은 장바구니가 없다).
+  onAddToCart: () => void
+  addToCartDisabled?: boolean
 }
 
 // 하단 고정 주문바(데스크톱은 스크롤 시 나타나는 상단 바)를 그린다. 모바일 바는 수량/가격 줄과
@@ -63,6 +66,8 @@ export function ProductPurchaseBar({
   shipmentLabel,
   onCheckout,
   checkoutDisabled,
+  onAddToCart,
+  addToCartDisabled,
 }: ProductPurchaseBarProps) {
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false)
   const breakdownId = useId()
@@ -123,12 +128,14 @@ export function ProductPurchaseBar({
                   <dt>수량</dt>
                   <dd>{quantity}개</dd>
                 </div>
-                <div className={styles.breakdownRow}>
-                  <dt>사전예약 혜택 ({PREORDER_BENEFIT_RATE * 100}%)</dt>
-                  <dd className={styles.discount}>
-                    -{formatWon(benefitAmount)}
-                  </dd>
-                </div>
+                {isPreorder && (
+                  <div className={styles.breakdownRow}>
+                    <dt>사전예약 혜택 ({PREORDER_BENEFIT_RATE * 100}%)</dt>
+                    <dd className={styles.discount}>
+                      -{formatWon(benefitAmount)}
+                    </dd>
+                  </div>
+                )}
                 <div className={styles.breakdownTotal}>
                   <dt>합계</dt>
                   <dd>{priceLabel}</dd>
@@ -169,6 +176,8 @@ export function ProductPurchaseBar({
                   size="md"
                   iconOnly
                   aria-label="장바구니"
+                  onClick={onAddToCart}
+                  disabled={addToCartDisabled}
                 />
               )}
               <ActionButton

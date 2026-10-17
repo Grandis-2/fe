@@ -8,6 +8,8 @@ export type ApiViolation = {
 export type ApiErrorDetails = {
   violations?: ApiViolation[]
   retryable?: boolean
+  // 429에서만 온다. Retry-After 헤더와 같은 값(초, 최소 1)이다.
+  retryAfterSeconds?: number
 }
 
 export type ApiError = {

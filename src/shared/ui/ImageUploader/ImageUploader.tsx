@@ -1,6 +1,13 @@
-import { useId, useRef } from 'react'
+import {
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type DragEvent,
+} from 'react'
 
-import { Plus, X } from 'lucide-react'
+import { AlertCircle, Loader2, Plus, RotateCw, X } from 'lucide-react'
 
 import { useObjectUrls } from '@shared/lib/useObjectUrls'
 
@@ -8,14 +15,30 @@ import * as styles from './ImageUploader.css'
 
 export type UploadedImage = {
   id: string
-  /** 미리보기용 URL */
+  /** 저장·전송할 주소. upload가 있으면 올리기가 끝난 뒤 서버 주소로 바뀐다 */
   url: string
   name: string
+  /**
+   * 화면에만 쓰는 미리보기(objectURL). 올리기가 끝나도 남겨 둬서 서버 주소로 바꿀 때
+   * 사진이 깜빡이지 않는다. 서버에서 받아 온 사진에는 없다.
+   */
+  previewUrl?: string
+  /** 'uploading'·'error'면 아직 url이 서버 주소가 아니다 — 보내면 안 된다 */
+  status?: 'uploading' | 'error'
+  /** status가 'error'일 때 보여줄 이유 */
+  error?: string
 }
 
 export type ImageUploaderProps = {
   value: UploadedImage[]
   onChange: (images: UploadedImage[]) => void
+  /**
+   * 고른 파일을 바로 올리고 서버 주소를 돌려준다. 실패하면 메시지를 담아 던진다 — 그
+   * 사진 칸에 보여주고 다시 시도할 수 있게 한다. 없으면 미리보기만 만든다.
+   */
+  upload?: (file: File) => Promise<string>
+  /** 파일 선택 창에서 고를 수 있는 형식 */
+  accept?: string
   /** 담을 수 있는 최대 장수 */
   max?: number
   /** 타일 비율 — 옵션 이미지는 square, 상세/사양 이미지는 portrait */
@@ -31,13 +54,37 @@ export type ImageUploaderProps = {
   className?: string
 }
 
+const FALLBACK_ERROR = '사진을 올리지 못했습니다.'
+
+// 끌어다 놓은 파일은 선택 창의 accept 거름망을 거치지 않으니 같은 규칙으로 직접 거른다.
+// 규칙은 MIME 형식(image/png, image/*)이나 확장자(.png)다.
+const matchesAccept = (file: File, accept: string) =>
+  !accept.trim() ||
+  accept.split(',').some((raw) => {
+    const rule = raw.trim().toLowerCase()
+    if (rule.startsWith('.')) return file.name.toLowerCase().endsWith(rule)
+    return rule.endsWith('/*')
+      ? file.type.startsWith(rule.slice(0, -1))
+      : file.type === rule
+  })
+
+// 바깥에서 파일을 끌고 왔는지 — 타일 순서를 바꾸는 끌기와 구분한다.
+const isFileDrag = (event: DragEvent) =>
+  event.dataTransfer.types.includes('Files')
+
 /**
- * 이미지 여러 장을 담는 업로더. 업로드 API가 아직 없어 objectURL로 미리보기만
- * 만들고, 목록에서 빠질 때 해제한다.
+ * 이미지 여러 장을 담는 업로더. upload를 주면 고르는 즉시 한 장씩 올리고, 칸마다
+ * 올리는 중·실패를 보여준다.
+ *
+ * 올리기는 비동기라 끝나는 시점의 목록에 반영해야 한다. 렌더 때의 value로 계산하면 여러
+ * 장이 거의 동시에 끝날 때 앞서 끝난 결과를 덮어쓴다 — 그래서 마지막으로 내보낸 목록을
+ * ref에 들고, 내보낼 때마다 바로 갱신한다.
  */
 export function ImageUploader({
   value,
   onChange,
+  upload,
+  accept = 'image/*',
   max = 10,
   ratio = 'square',
   label,
@@ -46,33 +93,163 @@ export function ImageUploader({
   className,
 }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const tilesRef = useRef<HTMLDivElement>(null)
   const inputId = useId()
-  // 업로드 API가 아직 없어서 objectURL로 미리보기만 만든다.
-  // 실제 API가 붙으면 여기서 업로드하고 응답 URL을 넣는다.
+  // 순서를 바꾸려고 끌고 있는 사진
+  const [draggingId, setDraggingId] = useState<string | null>(null)
+  // 바깥 파일을 업로더 위로 끌고 왔는지(놓을 수 있는 자리를 강조한다)
+  const [isFileOver, setIsFileOver] = useState(false)
+  // 형식이 맞지 않아 담지 않은 파일 — 말없이 빠지지 않게 이름을 알린다.
+  const [rejected, setRejected] = useState<string[]>([])
   const { create, release } = useObjectUrls()
   const isFull = value.length >= max
 
-  const addFiles = (files: FileList | null) => {
+  const latestRef = useRef(value)
+  useLayoutEffect(() => {
+    latestRef.current = value
+  }, [value])
+  // 다시 시도할 때 쓸 원본 파일. 다 올라가면 버린다.
+  const filesRef = useRef(new Map<string, File>())
+  // 언마운트 뒤 끝난 올리기는 반영하지 않는다(색상 칸을 지운 경우 등).
+  const mountedRef = useRef(false)
+  useEffect(() => {
+    mountedRef.current = true
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
+
+  // 바깥 fieldset이 잠기면 버튼은 브라우저가 막지만, 타일(div)의 끌기·화살표 키와 파일 놓기는
+  // 막지 못한다 — 그때도 바뀌지 않게 직접 확인한다.
+  const isLocked = () =>
+    disabled || !!tilesRef.current?.closest('fieldset:disabled')
+
+  const commit = (next: UploadedImage[]) => {
+    latestRef.current = next
+    onChange(next)
+  }
+
+  const patchImage = (id: string, partial: Partial<UploadedImage>) => {
+    if (!mountedRef.current) return
+    // 올리는 중에 지운 사진이면 반영할 곳이 없다.
+    if (!latestRef.current.some((image) => image.id === id)) return
+    commit(
+      latestRef.current.map((image) =>
+        image.id === id ? { ...image, ...partial } : image,
+      ),
+    )
+  }
+
+  const startUpload = (id: string, file: File) => {
+    if (!upload) return
+    upload(file).then(
+      (url) => {
+        filesRef.current.delete(id)
+        patchImage(id, { url, status: undefined, error: undefined })
+      },
+      (caught: unknown) =>
+        patchImage(id, {
+          status: 'error',
+          error: caught instanceof Error ? caught.message : FALLBACK_ERROR,
+        }),
+    )
+  }
+
+  const addFiles = (files: FileList | File[] | null) => {
     if (!files) return
-    const room = max - value.length
-    const added = Array.from(files)
+    const room = max - latestRef.current.length
+    const all = Array.from(files)
+    setRejected(
+      all
+        .filter((file) => !matchesAccept(file, accept))
+        .map((file) => file.name),
+    )
+    const added = all
+      .filter((file) => matchesAccept(file, accept))
       .slice(0, room)
-      .map((file) => ({
-        id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
-        url: create(file),
-        name: file.name,
-      }))
-    onChange([...value, ...added])
+      .map((file) => {
+        const preview = create(file)
+        const image: UploadedImage = {
+          id: `${file.name}-${file.lastModified}-${crypto.randomUUID()}`,
+          url: preview,
+          name: file.name,
+          ...(upload && { previewUrl: preview, status: 'uploading' as const }),
+        }
+        return { image, file }
+      })
+    commit([...latestRef.current, ...added.map(({ image }) => image)])
+    for (const { image, file } of added) {
+      filesRef.current.set(image.id, file)
+      startUpload(image.id, file)
+    }
+  }
+
+  const retry = (target: UploadedImage) => {
+    const file = filesRef.current.get(target.id)
+    if (!file) return
+    patchImage(target.id, { status: 'uploading', error: undefined })
+    startUpload(target.id, file)
   }
 
   const removeImage = (target: UploadedImage) => {
     // 목록에서 빠지면 다시 참조할 일이 없으니 여기서 해제해야 샌다.
-    release(target.url)
-    onChange(value.filter((image) => image.id !== target.id))
+    release(target.previewUrl ?? target.url)
+    filesRef.current.delete(target.id)
+    commit(latestRef.current.filter((image) => image.id !== target.id))
   }
 
+  // 첫 장이 대표 이미지라 순서가 곧 의미다. 놓을 때가 아니라 지나갈 때마다 옮겨서 놓일
+  // 자리를 미리 보여준다.
+  const moveImage = (id: string, toIndex: number) => {
+    if (isLocked()) return
+    const list = latestRef.current
+    const fromIndex = list.findIndex((image) => image.id === id)
+    if (fromIndex === -1 || fromIndex === toIndex) return
+    const next = [...list]
+    const [moved] = next.splice(fromIndex, 1)
+    next.splice(toIndex, 0, moved)
+    commit(next)
+  }
+
+  // 키보드로 옮긴 뒤에도 같은 사진에 포커스를 둔다 — 자리를 옮기며 DOM이 다시 끼워지면
+  // 포커스가 풀릴 수 있다.
+  const moveByKey = (id: string, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= latestRef.current.length) return
+    moveImage(id, toIndex)
+    requestAnimationFrame(() =>
+      tilesRef.current
+        ?.querySelector<HTMLElement>(`[data-image-id="${CSS.escape(id)}"]`)
+        ?.focus(),
+    )
+  }
+
+  const canDropFiles = !disabled && !isFull
+
+  const firstError = value.find((image) => image.status === 'error')?.error
+
   return (
-    <div className={[styles.root, className].filter(Boolean).join(' ')}>
+    <div
+      className={[styles.root, isFileOver && styles.rootFileOver, className]
+        .filter(Boolean)
+        .join(' ')}
+      onDragOver={(event) => {
+        if (!isFileDrag(event) || !canDropFiles || isLocked()) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = 'copy'
+        setIsFileOver(true)
+      }}
+      onDragLeave={(event) => {
+        // 안쪽 타일로 넘어갈 때도 leave가 오므로 업로더 밖으로 나갔을 때만 끈다.
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null))
+          setIsFileOver(false)
+      }}
+      onDrop={(event) => {
+        if (!isFileDrag(event)) return
+        event.preventDefault()
+        setIsFileOver(false)
+        if (canDropFiles && !isLocked()) addFiles(event.dataTransfer.files)
+      }}
+    >
       {(label || showCount) && (
         <div className={styles.header}>
           {label && (
@@ -88,14 +265,82 @@ export function ImageUploader({
         </div>
       )}
 
-      <div className={styles.tiles}>
-        {value.map((image) => (
-          <div key={image.id} className={styles.tile[ratio]}>
+      <div ref={tilesRef} className={styles.tiles}>
+        {value.map((image, index) => (
+          <div
+            key={image.id}
+            data-image-id={image.id}
+            className={[
+              styles.tile[ratio],
+              !disabled && styles.tileMovable,
+              draggingId === image.id && styles.tileDragging,
+            ]
+              .filter(Boolean)
+              .join(' ')}
+            draggable={!disabled}
+            // 끌기를 못 쓰는 사용자를 위해 포커스한 사진은 ←/→로 옮긴다.
+            tabIndex={disabled ? undefined : 0}
+            role="group"
+            aria-label={`${index + 1}번째 사진, 좌우 화살표로 순서 바꾸기`}
+            onKeyDown={(event) => {
+              if (event.target !== event.currentTarget) return
+              if (event.key === 'ArrowLeft') {
+                event.preventDefault()
+                moveByKey(image.id, index - 1)
+              } else if (event.key === 'ArrowRight') {
+                event.preventDefault()
+                moveByKey(image.id, index + 1)
+              }
+            }}
+            onDragStart={(event) => {
+              if (isLocked()) {
+                event.preventDefault()
+                return
+              }
+              setDraggingId(image.id)
+              event.dataTransfer.effectAllowed = 'move'
+              // Firefox는 데이터를 넣지 않으면 끌기를 시작하지 않는다.
+              event.dataTransfer.setData('text/plain', image.id)
+            }}
+            onDragOver={(event) => {
+              if (!draggingId || draggingId === image.id) return
+              event.preventDefault()
+              moveImage(draggingId, index)
+            }}
+            onDrop={(event) => {
+              if (draggingId) event.preventDefault()
+            }}
+            onDragEnd={() => setDraggingId(null)}
+          >
             <img
               className={styles.thumbnail}
-              src={image.url}
+              src={image.previewUrl ?? image.url}
               alt={image.name}
+              // 타일을 끌어야 하는데 이미지만 따로 끌려 나가지 않게 한다.
+              draggable={false}
             />
+            {image.status === 'uploading' && (
+              <div className={styles.overlay} role="status">
+                <Loader2 className={styles.spinner} aria-hidden="true" />
+                <span className={styles.srOnly}>{image.name} 올리는 중</span>
+              </div>
+            )}
+            {image.status === 'error' && (
+              <div
+                className={[styles.overlay, styles.overlayError].join(' ')}
+                title={image.error}
+              >
+                <button
+                  type="button"
+                  className={styles.retryButton}
+                  aria-label={`${image.name} 다시 올리기`}
+                  disabled={disabled}
+                  onClick={() => retry(image)}
+                >
+                  <RotateCw className={styles.retryIcon} aria-hidden="true" />
+                </button>
+              </div>
+            )}
             <button
               type="button"
               className={styles.removeButton}
@@ -125,7 +370,7 @@ export function ImageUploader({
           ref={inputRef}
           className={styles.fileInput}
           type="file"
-          accept="image/*"
+          accept={accept}
           multiple
           disabled={disabled}
           onChange={(event) => {
@@ -135,6 +380,19 @@ export function ImageUploader({
           }}
         />
       </div>
+
+      {rejected.length > 0 && (
+        <div className={styles.errorText} role="alert">
+          <AlertCircle className={styles.errorIcon} aria-hidden="true" />
+          {rejected.join(', ')}은(는) 올릴 수 없는 형식입니다.
+        </div>
+      )}
+      {firstError && (
+        <div className={styles.errorText} role="alert">
+          <AlertCircle className={styles.errorIcon} aria-hidden="true" />
+          {firstError} 실패한 사진의 ↻ 버튼으로 다시 올릴 수 있습니다.
+        </div>
+      )}
     </div>
   )
 }

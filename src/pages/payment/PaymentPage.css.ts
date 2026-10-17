@@ -8,7 +8,6 @@ import {
   spacing,
   typography,
 } from '@shared/config/theme'
-import { fontSize } from '@shared/config/theme/tokens/typography/base'
 import { headerHeight } from '@widgets/header'
 
 // 어두운 페이지 — 헤더 높이만큼 끌어올려 헤더 뒤까지 빛이 이어지게 한다(data-header-theme="dark").
@@ -24,13 +23,13 @@ export const root = style({
   },
 })
 
-// 모바일은 title.xlSemibold 크기로 한 단계 줄인다.
 export const title = style([
   typography.title.xxlSemibold,
   {
     marginBottom: spacing[40],
+    // 모바일은 헤더가 같은 제목을 띄운다(getMobileTitle).
     '@media': {
-      [breakpoint.mobile]: { fontSize: fontSize[24] },
+      [breakpoint.mobile]: { display: 'none' },
     },
   },
 ])

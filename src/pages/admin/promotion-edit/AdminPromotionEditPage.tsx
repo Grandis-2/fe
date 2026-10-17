@@ -1,73 +1,108 @@
 import { useNavigate, useParams } from 'react-router'
 
 import {
-  findMockPromotion,
-  mockLinkableProducts,
   promotionStatusColor,
   promotionStatusLabel,
   promotionStatusLabels,
   toPromotionFormValue,
-  type AdminPromotionFormValue,
+  useAdminPromotion,
+  useUpdateAdminPromotion,
 } from '@entities/admin-promotion'
+import { getErrorMessage } from '@shared/api/client'
 import {
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
 } from '@shared/config/routes'
-import { Tag, Breadcrumb } from '@shared/ui'
-import { AdminPromotionForm } from '@widgets/admin/promotion-form'
+import { showToast } from '@shared/model/toastStore'
+import { Breadcrumb, InlineAlert, PageSkeleton, Tag } from '@shared/ui'
+import {
+  AdminPromotionForm,
+  useLinkableProducts,
+} from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionEditPage.css'
 
-/** 사전예약 프로모션 수정. ponytail: API가 없어 목 데이터로 화면만 맞춰 둔다 */
 export function AdminPromotionEditPage() {
   const navigate = useNavigate()
   const { promotionId = '' } = useParams()
-  const promotion = findMockPromotion(promotionId)
+  const promotion = useAdminPromotion(promotionId)
+  const linkable = useLinkableProducts()
+  const update = useUpdateAdminPromotion(promotionId)
 
-  if (!promotion) {
+  if (!promotion.data) {
+    // 불러오는 중이면 화면 모양을 먼저 깐다 — 실패일 때만 안내와 돌아갈 길을 보인다.
+    if (!promotion.isError) {
+      return (
+        <div className={styles.root}>
+          <PageSkeleton sections={3} fieldsPerSection={1} />
+        </div>
+      )
+    }
     return (
       <div className={styles.notFound}>
-        <div>프로모션을 찾을 수 없습니다.</div>
+        <div>
+          {getErrorMessage(promotion.error, '사전예약을 찾을 수 없습니다.')}
+        </div>
         <Breadcrumb
           items={[
-            { label: '사전 예약 관리로 돌아가기', to: ADMIN_PROMOTIONS_PATH },
+            { label: '사전예약 관리로 돌아가기', to: ADMIN_PROMOTIONS_PATH },
           ]}
         />
       </div>
     )
   }
 
-  // API가 아직 없어서 저장은 목록으로 돌아가는 것까지만 한다.
-  const submit = (_value: AdminPromotionFormValue) =>
-    navigate(ADMIN_PROMOTIONS_PATH)
+  const { name, status } = promotion.data
 
   return (
     <div className={styles.root}>
       <Breadcrumb
         items={[
-          { label: '사전 예약 관리', to: ADMIN_PROMOTIONS_PATH },
-          { label: promotion.name },
+          { label: '사전예약 관리', to: ADMIN_PROMOTIONS_PATH },
+          { label: name },
         ]}
       />
 
       <div className={styles.titleRow}>
-        <h1 className={styles.title}>{promotion.name}</h1>
+        <h1 className={styles.title}>{name}</h1>
         <Tag
           variant="subtle"
           size="medium"
           rounded={false}
           widthOptions={promotionStatusLabels}
-          color={promotionStatusColor[promotion.status]}
+          color={promotionStatusColor[status]}
         >
-          {promotionStatusLabel[promotion.status]}
+          {promotionStatusLabel[status]}
         </Tag>
       </div>
 
+      {linkable.isError && (
+        <InlineAlert status="error">
+          연결할 상품을 불러오지 못했습니다.
+        </InlineAlert>
+      )}
+      {update.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(update.error, '사전예약을 수정하지 못했습니다.')}
+        </InlineAlert>
+      )}
+
       <AdminPromotionForm
+        // 다른 프로모션으로 옮겨 가면 폼을 새 값으로 다시 연다.
+        key={promotionId}
         mode="edit"
-        products={mockLinkableProducts}
-        defaultValue={toPromotionFormValue(promotion)}
-        onSubmit={submit}
+        products={linkable.products ?? []}
+        productsLoading={linkable.isPending}
+        defaultValue={toPromotionFormValue(promotion.data)}
+        submitting={update.isPending}
+        onSubmit={(value) =>
+          update.mutate(value, {
+            onSuccess: () => {
+              showToast('사전예약을 수정했습니다.')
+              navigate(ADMIN_PROMOTIONS_PATH)
+            },
+          })
+        }
         onCancel={() => navigate(ADMIN_PROMOTIONS_PATH)}
         onAddProduct={() => navigate(ADMIN_PRODUCT_NEW_PATH)}
       />

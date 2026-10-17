@@ -24,11 +24,10 @@ export const title = style([
   typography.title.xxlSemibold,
   {
     margin: 0,
-    '@media': { [breakpoint.mobile]: { fontSize: fontSize[24] } },
+    // 모바일은 헤더가 같은 제목을 띄운다(getMobileTitle).
+    '@media': { [breakpoint.mobile]: { display: 'none' } },
   },
 ])
-
-export const count = style({ color: color.primary.subtle })
 
 // 상태별 건수 네 칸 — 칸 사이만 세로선으로 가른다.
 export const summary = style([
@@ -83,18 +82,6 @@ export const chips = style({
   flexWrap: 'wrap',
   gap: spacing[8],
 })
-
-// SelectButton small을 알약 모양 필터로 키운다 — 고르기 전에도 테두리가 보인다.
-export const chip = style([
-  typography.body.subMedium,
-  {
-    height: '38px',
-    padding: `0 ${spacing[16]}`,
-    borderRadius: '19px',
-    border: `1.5px solid ${color.border.default}`,
-    color: color.text.secondary,
-  },
-])
 
 export const empty = style([
   card,

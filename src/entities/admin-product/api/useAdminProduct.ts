@@ -1,23 +1,37 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-
-import { queryPolicy } from '@shared/api/queryPolicy'
-import type { AdminProductDetail } from '@shared/api/types'
-
-import { toStockRequests, toUpsertRequest } from '../model/form'
+import { useRef } from 'react'
 
 import {
-  createAdminProduct,
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
+
+import { ApiRequestError } from '@shared/api/client'
+import { queryPolicy } from '@shared/api/queryPolicy'
+import type {
+  ProductRegistrationRequest,
+  SaleStatusChangeRequest,
+} from '@shared/api/types'
+import { delay } from '@shared/lib/delay'
+
+import { toRegistrationRequest } from '../model/registration'
+
+import {
+  closePreorderCampaign,
   getAdminProduct,
-  hideAdminProduct,
-  publishAdminProduct,
-  updateAdminProduct,
+  getRegistrationStatus,
+  registerAdminProduct,
+  setAdminProductSaleStatus,
+  setAdminProductVisibility,
 } from './adminProduct'
-import { getAdminProductStock, putAdminProductStock } from './adminStock'
+import { getAdminProductStock } from './adminStock'
 import {
   ADMIN_PRODUCTS_KEY,
   adminProductKey,
   adminProductStockKey,
 } from './keys'
+import { toAdminProductDetail } from './toAdminProduct'
 
 import type { AdminProductFormValue } from '../model/form'
 
@@ -28,7 +42,23 @@ export const useAdminProduct = (productId: string) =>
   useQuery({
     queryKey: adminProductKey(productId),
     queryFn: ({ signal }) => getAdminProduct(productId, signal),
+    select: toAdminProductDetail,
     ...queryPolicy.live,
+  })
+
+/**
+ * 여러 상품의 상세를 한 번에 받는다 — 목록에 없는 옵션(색상·용량)이 필요할 때.
+ * 상세 화면과 키가 같아 이미 받은 상품은 다시 부르지 않고 캐시를 쓴다.
+ */
+export const useAdminProductDetails = (productIds: string[]) =>
+  useQueries({
+    queries: productIds.map((productId) => ({
+      queryKey: adminProductKey(productId),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        getAdminProduct(productId, signal),
+      select: toAdminProductDetail,
+      ...queryPolicy.live,
+    })),
   })
 
 /** 조합별 재고 수량. 옵션 이름·가격은 상품 상세에 있어 둘을 합쳐 써야 한다 */
@@ -40,81 +70,148 @@ export const useAdminProductStock = (productId: string) =>
     ...queryPolicy.live,
   })
 
-/** 상품을 초안으로 등록한다. 응답을 상세 캐시에 넣어 등록 직후 상세 화면이 다시 조회하지 않게 한다 */
+// 같은 키 요청이 처리 중(409 REGISTRATION_IN_PROGRESS)이면 잠시 뒤 같은 키로 다시
+// 보낸다 — 명세가 그렇게 하라고 한다. 다른 실패는 그대로 던진다.
+const IN_PROGRESS_RETRIES = 4
+const IN_PROGRESS_DELAY_MS = 1000
+
+async function register(key: string, body: ProductRegistrationRequest) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await registerAdminProduct(key, body)
+    } catch (caught) {
+      const inProgress =
+        caught instanceof ApiRequestError &&
+        caught.error.code === 'REGISTRATION_IN_PROGRESS'
+      if (!inProgress || attempt >= IN_PROGRESS_RETRIES) throw caught
+      await delay(IN_PROGRESS_DELAY_MS)
+    }
+  }
+}
+
+// 준비(사전예약 회차·일반 재고 생성)가 끝날 때까지 몇 초 간격으로 확인한다.
+const READY_POLL_MS = 1500
+const READY_POLL_TRIES = 20
+
+/**
+ * 준비가 끝났는지 기다린다. 여기서 나는 실패는 삼킨다 — 상품은 이미 등록됐는데 확인
+ * 요청이 실패했다고 등록 실패로 보이면, 관리자가 다시 눌러 같은 상품을 또 만든다.
+ * 끝내 확인이 안 되면 준비 중으로 둔다(상세에서 '초안'으로 보인다).
+ */
+async function waitUntilReady(key: string) {
+  for (let attempt = 0; attempt < READY_POLL_TRIES; attempt += 1) {
+    await delay(READY_POLL_MS)
+    const status = await getRegistrationStatus(key).catch(() => null)
+    if (status?.completed) return true
+  }
+  return false
+}
+
+/**
+ * 상품을 등록한다. 사전예약은 회차·1차 배송 차수까지, 일반 상품은 조합별 재고까지
+ * 한 번에 보낸다.
+ *
+ * 등록 키는 응답을 받을 때까지 유지한다. 응답을 못 받았거나(네트워크·타임아웃) 서버
+ * 장애로 실패하면 이미 등록됐을 수 있어서, 다시 누르면 같은 키를 보낸다 — 서버는 같은
+ * 키면 새로 만들지 않고 처음 상품을 돌려준다. 서버가 본문을 보고 거절한 400만 고쳐서
+ * 새로 보내는 것이라 키를 버린다.
+ *
+ * 결과를 모르는 채 본문을 고쳐 다시 내면 같은 키로는 거절되고(409), 새 키로 보내면 이전
+ * 등록이 반영됐을 때 상품이 둘이 된다. 그래서 보내지 않고 RegistrationUnconfirmedError를
+ * 던진다 — 화면이 관리자에게 확인받은 뒤 startOver()로 키를 버리고 다시 보낸다.
+ */
 export const useCreateAdminProduct = () => {
   const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (value: AdminProductFormValue) =>
-      createAdminProduct(toUpsertRequest(value)),
-    onSuccess: (created) =>
-      queryClient.setQueryData(adminProductKey(created.productId), created),
-  })
-}
+  const pendingRef = useRef<{ key: string; body: string } | null>(null)
 
-/**
- * 상품 본문과 조합별 재고를 함께 저장한다. 등록/수정 본문에는 수량 필드가 없어서
- * 재고는 재고 API로 옵션마다 따로 보낸다.
- *
- * 본문 저장(PATCH)이 성공한 뒤 재고 일부가 실패할 수 있다 — 한 번에 저장하는 API가
- * 없어서 되돌릴 수 없다. 그래서 throw하지 않고 실패 건수를 돌려줘, 화면이 "상품은
- * 저장됐고 재고 N건은 실패"를 구분해서 알리게 한다. 본문 저장 실패는 그대로 throw한다.
- */
-export const useUpdateAdminProduct = (productId: string) => {
-  const queryClient = useQueryClient()
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async (value: AdminProductFormValue) => {
-      const updated = await updateAdminProduct(
-        productId,
-        toUpsertRequest(value),
-      )
-      queryClient.setQueryData(adminProductKey(productId), updated)
+      const request = toRegistrationRequest(value)
+      const body = JSON.stringify(request)
+      const pending = pendingRef.current
+      if (pending && pending.body !== body) {
+        throw new RegistrationUnconfirmedError()
+      }
+      const key = pending?.key ?? crypto.randomUUID()
+      pendingRef.current = { key, body }
+      const { registration } = await register(key, request)
+      // 등록은 끝났다 — 다음 등록은 새 키로 한다.
+      pendingRef.current = null
 
-      // PATCH가 옵션 코드를 새로 만들므로, 재고는 반드시 그 응답 기준으로 보낸다.
-      // 수정 전 상세의 코드로 보내면 새 옵션에 재고가 붙지 않는다.
-      const results = await Promise.allSettled(
-        toStockRequests(value, updated).map((body) =>
-          putAdminProductStock(productId, body),
-        ),
-      )
-      void queryClient.invalidateQueries({
-        queryKey: adminProductStockKey(productId),
-      })
-
-      return {
-        failedStockCount: results.filter(
-          (result) => result.status === 'rejected',
-        ).length,
+      const ready = registration.completed || (await waitUntilReady(key))
+      return { productId: registration.productId, ready }
+    },
+    onError: (caught) => {
+      if (caught instanceof ApiRequestError && caught.status === 400) {
+        pendingRef.current = null
       }
     },
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
+  })
+
+  return {
+    ...mutation,
+    /** 이전 등록 결과를 확인했다 — 다음 제출은 새 키로 보낸다 */
+    startOver: () => {
+      pendingRef.current = null
+    },
+  }
+}
+
+/** 이전 등록의 결과를 모르는데 본문이 바뀌었다 — 새로 보낼지 관리자가 정해야 한다 */
+export class RegistrationUnconfirmedError extends Error {
+  constructor() {
+    super(
+      '이전 등록 요청의 결과를 확인하지 못했습니다. 상품 목록에서 이미 등록됐는지 확인해 주세요.',
+    )
+    this.name = 'RegistrationUnconfirmedError'
+  }
+}
+
+/**
+ * 판매 상태를 바꾼다(판매 중지·재개·회차 취소). 자동 재시도하지 않는다 — 회차 취소는
+ * 두 번 보내도 서버가 한 번으로 보지만, 중지·재개는 순서가 꼬이면 반대 상태가 된다.
+ */
+export const useSetAdminProductSaleStatus = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      productId,
+      ...body
+    }: { productId: string } & SaleStatusChangeRequest) =>
+      setAdminProductSaleStatus(productId, body),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
+  })
+}
+
+/** 사전예약 접수를 조기 마감한다. 상세의 회차 상태가 바뀌어 다시 받는다 */
+export const useClosePreorderCampaign = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (productId: string) => closePreorderCampaign(productId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
   })
 }
 
 /**
- * 전시 상태를 바꾼다(게시 ↔ 숨김). 상세 캐시는 응답으로 바로 갱신하고, 목록은
- * 무효화해 다시 받는다 — 목록 행에도 전시 상태가 보여서 같이 바뀌어야 한다.
+ * 공개 여부를 바꾼다. 응답은 공개 여부뿐이라 다시 받는다 — 목록 행에도 전시 상태가
+ * 보여서 상세와 같이 바뀌어야 한다.
  */
-const useDisplayStatusMutation = <TVariables>(
-  mutationFn: (variables: TVariables) => Promise<AdminProductDetail>,
-) => {
+export const useSetAdminProductVisibility = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn,
-    onSuccess: (updated) => {
-      queryClient.setQueryData(adminProductKey(updated.productId), updated)
-      return queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY })
-    },
+    mutationFn: ({
+      productId,
+      visible,
+    }: {
+      productId: string
+      visible: boolean
+    }) => setAdminProductVisibility(productId, { visible }),
+    // 목록·상세가 모두 이 접두사 아래라 한 번에 다시 받는다(keys.ts).
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
   })
 }
-
-/** 초안·숨김 → 게시중. 사유를 받지 않는다 */
-export const usePublishAdminProduct = () =>
-  useDisplayStatusMutation((productId: string) =>
-    publishAdminProduct(productId),
-  )
-
-/** 게시중 → 숨김. 서버가 5자 이상의 사유를 요구한다 */
-export const useHideAdminProduct = () =>
-  useDisplayStatusMutation(
-    ({ productId, reason }: { productId: string; reason: string }) =>
-      hideAdminProduct(productId, { reason }),
-  )

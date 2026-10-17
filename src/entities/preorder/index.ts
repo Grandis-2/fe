@@ -5,7 +5,7 @@ export type { PreorderModelSummaryProps } from './ui/PreorderModelSummary'
 export { getPreorderSchedule, formatPreorderDate } from './lib/preorderSchedule'
 export type { PreorderStatus, PreorderSchedule } from './lib/preorderSchedule'
 export type { Preorder, PreorderBenefit, PreorderModel } from './model/preorder'
-export { MOCK_PREORDERS, findMockPreorder } from './model/mockPreorders'
+export { usePreorder, usePreorders } from './api/usePreorders'
 export {
   useEnterQueue,
   useQueueStatus,
@@ -18,6 +18,7 @@ export {
   useReservation,
   useReservationHistory,
 } from './api/useReservations'
+export { getReservation } from './api/reservation'
 export { reservationStatusTag } from './model/reservation'
 export type {
   Reservation,

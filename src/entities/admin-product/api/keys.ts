@@ -24,6 +24,6 @@ export const adminProductKey = (productId: string) =>
 export const adminProductStockKey = (productId: string) =>
   [...adminProductKey(productId), 'stock'] as const
 
-/** 배송 차수 구성. 상세 아래에 두어 상품을 무효화하면 차수도 같이 받는다 */
-export const adminDispatchWindowKey = (productId: string) =>
-  [...adminProductKey(productId), 'dispatch-window'] as const
+/** 배송 차수. 상세 아래에 두어 상품을 무효화하면 차수도 같이 받는다 */
+export const adminShipmentBatchesKey = (productId: string) =>
+  [...adminProductKey(productId), 'shipment-batches'] as const

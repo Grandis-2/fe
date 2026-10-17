@@ -4,9 +4,15 @@
 export const HOME_PATH = '/'
 export const SIGNUP_PATH = '/signup'
 export const PAYMENT_PATH = '/payment'
-// 결제는 사전예약 하나 단위다(order 명세: 결제 가능해진 예약으로 주문을 만든다). 새로고침해도 남도록 쿼리에 싣는다.
+// 결제는 사전예약 하나, 또는 장바구니에서 고른 줄 단위다(order 명세). 새로고침해도 남도록 쿼리에 싣는다.
 export const paymentPath = (preorderId: string) =>
   `${PAYMENT_PATH}?${new URLSearchParams({ preorderId })}`
+// 럭키 드로우 응모 — 배송지를 받고 응모한 뒤 응모비를 결제한다.
+export const drawPaymentPath = (drawId: string) =>
+  `${PAYMENT_PATH}?${new URLSearchParams({ drawId })}`
+// 장바구니에서 고른 줄(cartItemId)을 결제한다.
+export const cartPaymentPath = (cartItemIds: string[]) =>
+  `${PAYMENT_PATH}?${new URLSearchParams({ cart: cartItemIds.join(',') })}`
 export const REVIEWS_PATH = '/reviews'
 // 헤더·탭바 없이 전체 화면으로 뜨는 사전예약 안내(RootLayout 밖).
 export const ONBOARDING_PATH = '/onboarding'
@@ -16,6 +22,10 @@ export const EVENTS_PATH = '/events'
 export const PREORDER_PATH = '/preorder'
 export const preorderPath = (preorderId: string | number) =>
   `${PREORDER_PATH}/${preorderId}`
+
+// 럭키 드로우 — 회차 목록과 회차 상세(응모).
+export const DRAW_PATH = '/draws'
+export const drawPath = (drawId: string) => `${DRAW_PATH}/${drawId}`
 
 export const PRODUCTS_PATH = '/products'
 export const productPath = (productId: string | number) =>
@@ -36,8 +46,18 @@ export const MYPAGE_TABS = [
   'history',
   'address-manage',
   'reviews',
+  'draw',
 ] as const
 export type MypageTab = (typeof MYPAGE_TABS)[number]
+// 마이페이지 메뉴와 모바일 헤더 제목이 같은 이름을 쓴다.
+export const MYPAGE_TAB_LABELS: Record<MypageTab, string> = {
+  history: '주문 내역',
+  'preorder-check': '예약 내역',
+  draw: '럭키드로우',
+  cart: '장바구니',
+  'address-manage': '배송지 관리',
+  reviews: '내 리뷰',
+}
 
 export const MYPAGE_PATH = '/mypage'
 export const mypagePath = (tab: MypageTab) => `${MYPAGE_PATH}?state=${tab}`
@@ -77,11 +97,36 @@ export const ADMIN_PROMOTION_NEW_PATH = '/admin/preorders/new'
 export const adminPromotionPath = (promotionId: string) =>
   `${ADMIN_PROMOTIONS_PATH}/${promotionId}`
 
-// 예약 현황은 목록 한 페이지뿐이다 — 상세 화면이 없어 개별 경로가 없다.
+/** 대기열 관리 — 입장 속도·상품별 상한·최대 대기·이탈 유예(바꾸면 바로 회원에게 반영) */
+export const ADMIN_WAITINGROOM_PATH = '/admin/waitingroom'
 export const ADMIN_RESERVATIONS_PATH = '/admin/orders'
+/** 예약 상세 */
+export const adminReservationPath = (preorderId: string) =>
+  `${ADMIN_RESERVATIONS_PATH}/${preorderId}`
 
-// 아직 기능 범위가 안 정해져 placeholder로만 열리는 메뉴들.
-export const ADMIN_CONSISTENCY_CHECK_PATH = '/admin/consistency-check'
+/**
+ * 상세로 들어갈 때 navigate state로 넘기는 '돌아갈 곳'. 예약 상세는 예약 현황 말고
+ * 외부 예약 대조에서도 들어오므로 들어온 화면으로 돌려보낸다.
+ */
+export type BackTo = { label: string; to: string }
+
+/** location.state에서 BackTo를 꺼낸다. 주소로 바로 열면 state가 없다 */
+export const readBackTo = (state: unknown): BackTo | undefined => {
+  const backTo = (state as { backTo?: Partial<BackTo> } | null)?.backTo
+  return typeof backTo?.label === 'string' && typeof backTo.to === 'string'
+    ? { label: backTo.label, to: backTo.to }
+    : undefined
+}
+
+/** 외부 예약 대조 — 우리 예약과 외부 예약 시스템 원장을 맞춰 본다 */
+export const ADMIN_RECONCILIATION_PATH = '/admin/reconciliation'
 export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'
+/** 이벤트 DLQ — 서버끼리 주고받는 메시지 중 처리에 실패해 멈춘 것(개발자 기능) */
+export const ADMIN_DEAD_LETTERS_PATH = '/admin/dead-letters'
+export const adminDeadLetterPath = (deadLetterId: string) =>
+  `${ADMIN_DEAD_LETTERS_PATH}/${deadLetterId}`
+// 아직 기능 범위가 안 정해져 placeholder로만 열리는 메뉴.
 export const ADMIN_NOTIFICATIONS_PATH = '/admin/notifications'
+// 관리자 로그인. 사이드바 없는 단독 화면이라 AdminLayout 밖에 둔다.
+export const ADMIN_LOGIN_PATH = '/admin/login'
 export const ADMIN_MOCK_SETTINGS_PATH = '/admin/mock-settings'

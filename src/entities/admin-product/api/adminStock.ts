@@ -1,26 +1,16 @@
 import { apiClient } from '@shared/api/client'
-import type {
-  AdminStockItem,
-  AdminStockPutRequest,
-  AdminStockResponse,
-} from '@shared/api/types'
+import type { StockOverviewResponse, StockRequest } from '@shared/api/types'
 
 const stockPath = (productId: string) =>
   `/api/v1/admin/products/${productId}/stock`
 
-/** 옵션별 재고 현황을 조회한다 */
+/** 옵션별 재고 현황. 사전예약 상품은 재고를 세지 않아 tracked false와 빈 목록이 온다 */
 export const getAdminProductStock = (productId: string, signal?: AbortSignal) =>
-  apiClient.request<AdminStockResponse>(stockPath(productId), { signal })
+  apiClient.request<StockOverviewResponse>(stockPath(productId), { signal })
 
 /**
- * 지정 옵션의 초기 수량·조정 설정을 반영한다.
- * 이미 확보된 수량보다 줄이면 409 STOCK_ADJUSTMENT_CONFLICT가 온다.
+ * 요청한 옵션의 총량을 덮어쓴다. 전부 반영되거나 전부 안 된다 — 한 옵션이라도 총량이
+ * 이미 확보·판매된 수량보다 작으면 409(STOCK_BELOW_COMMITTED)다.
  */
-export const putAdminProductStock = (
-  productId: string,
-  body: AdminStockPutRequest,
-) =>
-  apiClient.request<AdminStockItem>(stockPath(productId), {
-    method: 'PUT',
-    body,
-  })
+export const putAdminProductStock = (productId: string, body: StockRequest) =>
+  apiClient.request<unknown>(stockPath(productId), { method: 'PUT', body })

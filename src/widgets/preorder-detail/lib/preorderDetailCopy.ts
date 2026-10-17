@@ -42,11 +42,15 @@ export function getScheduleSteps(
     label: '사전예약',
     date: range(toDate(opensAt), toDate(closesAt)),
   }
-  const paymentStep = {
+  // 결제 마감일·출시일은 비어 올 수 있다(명세에 없거나 배송 차수 전) — 없으면 그 단계를 뺀다.
+  const paymentStep = paymentEndsAt && {
     label: '결제 · 물량 배정',
     date: range(addDays(closesAt, 1), toDate(paymentEndsAt)),
   }
-  const releaseStep = { label: '출시 · 배송', date: shortOf(releaseAt) }
+  const releaseStep = releaseAt && {
+    label: '출시 · 배송',
+    date: shortOf(releaseAt),
+  }
 
   if (status === 'soon') {
     return [
@@ -56,10 +60,12 @@ export function getScheduleSteps(
         isCurrent: true,
       },
       { ...preorderStep, isCurrent: false },
-      { ...releaseStep, isCurrent: false },
+      ...(releaseStep ? [{ ...releaseStep, isCurrent: false }] : []),
     ]
   }
-  const steps = [preorderStep, paymentStep, releaseStep]
+  const steps = [preorderStep, paymentStep, releaseStep].filter(
+    (step) => !!step,
+  )
   if (status === 'done') {
     return steps.map((step) => ({
       ...step,

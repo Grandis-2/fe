@@ -1,7 +1,7 @@
 export const fontFamily = {
   pretendard:
-    '"Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
-  michroma: '"Michroma", "Pretendard", sans-serif',
+    '"Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif',
+  michroma: '"Michroma", "Pretendard Variable", sans-serif',
 } as const
 
 export const fontWeight = {

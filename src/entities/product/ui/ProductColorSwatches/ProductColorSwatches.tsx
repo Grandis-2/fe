@@ -32,6 +32,9 @@ export function ProductColorSwatches({
   onSelect,
   className,
 }: ProductColorSwatchesProps) {
+  // 색상이 없는 상품은 칸 자체를 그리지 않는다 — 빈 줄이 카드·상세의 간격(gap)만 차지한다.
+  if (colors.length === 0) return null
+
   const selectedLabel = colors.find((item) => item.selected)?.label ?? colorName
 
   return (

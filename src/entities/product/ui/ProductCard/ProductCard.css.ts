@@ -5,6 +5,7 @@ import {
   color,
   motion,
   lineClamp,
+  skeleton,
   spacing,
   typography,
 } from '@shared/config/theme'
@@ -55,14 +56,12 @@ export const media = style({
 // height:100%를 Slider(Swiper)까지 퍼센트로 내려보내면 aspect-ratio(media) + flex(swiper-wrapper) 조합에서
 // 순환 계산이 발생해 크롬이 LayoutUnit 상한값(약 33554432px)으로 튀는 버그가 있었다 — absolute + inset:0으로
 // media의 padding box에 기하학적으로 고정시켜 퍼센트 순환 자체를 피한다.
+// 이미지 칸의 왼쪽 위 모서리에 붙여 아래 이름·가격과 왼쪽 선을 맞춘다.
 export const badge = style({
   position: 'absolute',
-  top: spacing[12],
-  left: spacing[12],
+  top: 0,
+  left: 0,
   zIndex: 1,
-  '@media': {
-    [breakpoint.mobile]: { top: spacing[8], left: spacing[8] },
-  },
 })
 
 export const sliderFill = style({
@@ -70,13 +69,16 @@ export const sliderFill = style({
   inset: 0,
 })
 
-// 아래 페이지네이션 점(Slider)이 이미지에 겹치지 않게 아래쪽을 더 비운다.
+// 위는 사전예약 태그 높이만큼, 아래는 페이지네이션 점(Slider)만큼 비워 둘에 이미지가 겹치지 않게 한다.
 export const image = style({
   position: 'absolute',
-  inset: `${spacing[12]} ${spacing[12]} ${spacing[30]}`,
-  width: `calc(100% - ${spacing[12]} * 2)`,
-  height: `calc(100% - ${spacing[12]} - ${spacing[30]})`,
+  inset: `${spacing[24]} 0 ${spacing[30]}`,
+  width: '100%',
+  height: `calc(100% - ${spacing[24]} - ${spacing[30]})`,
   objectFit: 'contain',
+  // ponytail: 상품 PNG에 투명 여백이 좌우 20%씩 있어 키워서 여백을 칸 밖으로 잘라낸다(랭킹 카드와 같은 이유) —
+  // 여백 없이 꽉 찬 이미지가 들어오면 가장자리가 잘리니 그때는 scale을 뺀다.
+  transform: 'scale(1.4)',
 })
 
 export const content = style({
@@ -145,3 +147,28 @@ export const priceUnit = style({
     [breakpoint.mobile]: { fontSize: fontSize[12] },
   },
 })
+
+// 스켈레톤 — 실제 카드와 같은 root·media·content 뼈대를 쓰고 안쪽만 셔머 블록으로 채워 로딩이 끝나도 레이아웃이 튀지 않게 한다.
+export const skeletonMedia = style([media, skeleton, { borderRadius: '12px' }])
+
+export const skeletonDots = style({
+  display: 'flex',
+  justifyContent: 'center',
+  gap: spacing[6],
+  marginTop: spacing[10],
+  width: '100%',
+})
+
+export const skeletonDot = style([
+  skeleton,
+  { width: '5px', height: '5px', borderRadius: '50%' },
+])
+
+export const skeletonLine = style([skeleton, { borderRadius: '6px' }])
+
+export const skeletonSwatches = style({ display: 'flex', gap: spacing[8] })
+
+export const skeletonSwatch = style([
+  skeleton,
+  { width: '18px', height: '18px', borderRadius: '50%' },
+])

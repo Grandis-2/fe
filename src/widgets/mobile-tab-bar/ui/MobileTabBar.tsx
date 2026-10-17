@@ -5,12 +5,13 @@ import {
   CircleUser,
   House,
   LayoutGrid,
+  Rocket,
   Search,
 } from 'lucide-react'
 import { Link, useLocation } from 'react-router'
 
 import { useSession } from '@entities/auth'
-import { KakaoLoginModal } from '@features/login'
+import { KAKAO_CALLBACK_PATH, openLoginModal } from '@features/login'
 import {
   HOME_PATH,
   MYPAGE_PATH,
@@ -18,7 +19,6 @@ import {
   PREORDER_PATH,
   SEARCH_PATH,
 } from '@shared/config/routes'
-import { useModalStore } from '@shared/model/modalStore'
 import { MobileMenu } from '@widgets/category-nav'
 import { SearchOverlay } from '@widgets/search'
 
@@ -63,8 +63,9 @@ export function MobileTabBar() {
   const { pathname } = useLocation()
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [isSearchOpen, setIsSearchOpen] = useState(false)
-  const { isLoggedIn } = useSession()
-  const openModal = useModalStore((state) => state.open)
+  const { isLoggedIn, isAuthReady } = useSession()
+  // 세션 복구 중·카카오 콜백 처리 중엔 회원인지 아직 모른다 — 헤더와 같은 기준(Header.tsx).
+  const isSessionUnknown = !isAuthReady || pathname === KAKAO_CALLBACK_PATH
   // MobileMenu의 Esc 리스너가 렌더마다 다시 걸리지 않게 같은 함수를 넘긴다.
   const closeMenu = useCallback(() => setIsCategoryOpen(false), [])
 
@@ -79,14 +80,7 @@ export function MobileTabBar() {
         className={styles.tab}
         aria-current={active ? 'page' : undefined}
         // 메뉴가 열린 채 다른 탭으로 가면 메뉴를 닫는다.
-        onClick={(event) => {
-          setIsCategoryOpen(false)
-          // 비회원은 마이페이지 대신 로그인 모달을 연다(헤더 마이페이지 아이콘과 같은 규칙).
-          if (!isLoggedIn && to.startsWith(MYPAGE_PATH)) {
-            event.preventDefault()
-            openModal(<KakaoLoginModal />)
-          }
-        }}
+        onClick={() => setIsCategoryOpen(false)}
       >
         <Icon className={styles.icon} aria-hidden="true" />
         <span className={styles.label}>{label}</span>
@@ -125,7 +119,27 @@ export function MobileTabBar() {
           <LayoutGrid className={styles.icon} aria-hidden="true" />
           <span className={styles.label}>메뉴</span>
         </button>
-        {tabs.map(renderTab)}
+        {/* 비회원에겐 마이페이지 탭 대신 로그인 모달을 여는 탭을 보여 준다. */}
+        {tabs
+          .filter((tab) => isLoggedIn || !tab.to.startsWith(MYPAGE_PATH))
+          .map(renderTab)}
+        {/* 모르는 동안엔 로그인·마이페이지 대신 빈 칸으로 자리만 잡아 다른 탭 폭이 흔들리지 않게 한다. */}
+        {isSessionUnknown && !isLoggedIn && (
+          <span className={styles.tab} aria-hidden="true" />
+        )}
+        {!isSessionUnknown && !isLoggedIn && (
+          <button
+            type="button"
+            className={styles.tab}
+            onClick={() => {
+              setIsCategoryOpen(false)
+              openLoginModal()
+            }}
+          >
+            <Rocket className={styles.icon} aria-hidden="true" />
+            <span className={styles.label}>로그인</span>
+          </button>
+        )}
       </nav>
       {isCategoryOpen && <MobileMenu onClose={closeMenu} />}
       {isSearchOpen && <SearchOverlay onClose={() => setIsSearchOpen(false)} />}

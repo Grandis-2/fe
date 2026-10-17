@@ -1,14 +1,23 @@
 import { useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { Settings } from 'lucide-react'
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import {
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router'
 
 import { useDefaultAddress, type DefaultAddress } from '@entities/address'
+import { cartKeys, useCartLines, type CartLine } from '@entities/cart'
+import { getDrawPhase, useDraw, useEnterDraw } from '@entities/draw'
 import {
   OrderSummary,
   PAID_ORDER_STATUSES,
-  useCreatePaymentAttempt,
   usePlaceOrder,
+  type CartOrderItem,
 } from '@entities/order'
 import { useReservation, type ReservationDetail } from '@entities/preorder'
 import { useProfile } from '@entities/profile'
@@ -16,13 +25,32 @@ import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@features/address-search'
-import { requestTossPayment } from '@features/payment'
-import { OrderItemList, reservationToDraft } from '@features/product-purchase'
+import {
+  buyNowKeyFor,
+  forgetBuyNowKey,
+  linkBuyNowOrder,
+  startDrawEntryPayment,
+  startOrderPayment,
+} from '@features/payment'
+import {
+  cartLineToDraft,
+  drawToDraft,
+  OrderItemList,
+  reservationToDraft,
+  type PurchaseDraft,
+} from '@features/product-purchase'
 import { terms, TermsAgreement } from '@features/terms-agreement'
-import { getErrorMessage } from '@shared/api/client'
-import { mypagePath, resultPath } from '@shared/config/routes'
+import { ApiRequestError, getErrorMessage } from '@shared/api/client'
+import {
+  drawPath,
+  HOME_PATH,
+  mypagePath,
+  resultPath,
+} from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
+import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
+import { showToast } from '@shared/model/toastStore'
 import { ActionButton, Container, Input, InlineAlert } from '@shared/ui'
 
 import * as styles from './PaymentPage.css'
@@ -46,6 +74,46 @@ const UNPAYABLE_MESSAGE: Partial<
   RESERVED: '이미 결제가 끝난 예약이에요.',
   CANCELING: '취소 중인 예약이라 결제할 수 없어요.',
   CANCELED: '취소된 예약이라 결제할 수 없어요.',
+}
+
+// 장바구니 주문이 이 코드로 거절되면 장바구니가 바뀐 것이다 — 다시 받아 지금 값·상태를 보여 준다.
+const CART_REFRESH_CODES = [
+  'CART_CHANGED',
+  'PRICE_CHANGED',
+  'STATE_CONFLICT',
+  'INSUFFICIENT_STOCK',
+]
+
+// 고른 장바구니 줄을 주문 요청 줄로 — 화면에 보여 준 가격을 그대로 옮긴다(다르면 서버가 PRICE_CHANGED).
+const toCartOrderItem = (line: CartLine): CartOrderItem => ({
+  variantId: line.variantId,
+  quantity: line.quantity,
+  warranty: line.warranty,
+  expectedUnitPrice: line.unitPrice ?? 0,
+  ...(line.warranty ? { expectedWarrantyPrice: line.warrantyPrice ?? 0 } : {}),
+})
+
+// 상품 상세의 바로 구매가 history state로 넘긴 옵션·수량. 주소로 직접 오면 없다.
+const readBuyNowItems = (state: unknown): PurchaseDraft[] | undefined =>
+  Array.isArray(state) && state.length > 0
+    ? (state as PurchaseDraft[])
+    : undefined
+
+// 바로 구매 줄을 주문 요청 줄로 — 상세에서 보여 준 가격을 그대로 옮긴다(다르면 서버가 PRICE_CHANGED).
+const toBuyNowOrderItem = (item: PurchaseDraft): CartOrderItem => ({
+  variantId: item.variantId,
+  quantity: item.quantity,
+  warranty: false,
+  expectedUnitPrice: item.unitPrice,
+})
+
+// 결제할 대상 하나 — 사전예약 하나, 장바구니에서 고른 줄, 바로 구매. 화면은 이 모양만 본다.
+type Checkout = {
+  items: PurchaseDraft[]
+  totalAmount: number
+  // 결제할 수 없으면 그 이유. null이면 결제할 수 있다.
+  blockedReason: string | null
+  dueRow: string | null
 }
 
 const formatDueAt = (iso: string) =>
@@ -77,15 +145,29 @@ const REQUIRED_KEYS = [
   'addressDetail',
 ] as const
 
-// 사전예약 하나를 결제한다(order 명세: 결제 가능해진 예약 → 주문 생성 → 결제 준비 → 토스 결제창 → 승인).
-// 일반 구매·장바구니 결제는 아직 주문 API가 없어 예약 id 없이 들어오면 안내만 보인다.
+// 사전예약 하나(?preorderId=), 장바구니에서 고른 줄(?cart=), 상품 상세의 바로 구매(history state)를 결제한다
+// (order 명세: 주문 생성 → 결제 준비 → 토스 결제창 → 승인). 결제할 대상 없이 들어오면 홈으로 보낸다.
 export function PaymentPage() {
   const [searchParams] = useSearchParams()
   const preorderId = searchParams.get('preorderId') ?? ''
+  const cartItemIds = (searchParams.get('cart') ?? '')
+    .split(',')
+    .filter(Boolean)
+  const drawId = searchParams.get('drawId') ?? ''
+  const isCart = !preorderId && !drawId && cartItemIds.length > 0
+  const location = useLocation()
+  const buyNowItems =
+    !preorderId && !drawId && !isCart
+      ? readBuyNowItems(location.state)
+      : undefined
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const reservation = useReservation(preorderId)
+  const cart = useCartLines({ enabled: isCart })
+  const draw = useDraw(drawId)
+  const enterDraw = useEnterDraw()
   const placeOrder = usePlaceOrder()
-  const createAttempt = useCreatePaymentAttempt()
+  const [isStarting, setIsStarting] = useState(false)
   const { data: profile } = useProfile()
   const { data: savedAddress } = useDefaultAddress()
   const [agreedIds, setAgreedIds] = useState<Set<string>>(new Set())
@@ -119,10 +201,60 @@ export function PaymentPage() {
     .join(' ')
 
   const detail = reservation.data
-  const payable = detail ? PAYABLE.includes(detail.displayStatus) : false
-  // 결제 금액은 서버가 정한다 — 예약 접수 당시 단가 그대로(수량 1).
-  const totalAmount = detail?.unitPrice ?? 0
-  const isPaying = placeOrder.isPending || createAttempt.isPending
+  const drawData = draw.data
+  const cartLines = isCart
+    ? cart.data?.filter(({ cartItemId }) => cartItemIds.includes(cartItemId))
+    : undefined
+  // 결제 금액은 서버가 정한다 — 사전예약은 예약 접수 당시 단가(수량 1), 장바구니는 지금 가격의 줄 금액 합.
+  const checkout: Checkout | null = drawData
+    ? {
+        items: [drawToDraft(drawData)],
+        totalAmount: drawData.entryFee,
+        blockedReason:
+          getDrawPhase(drawData) === 'OPEN' ? null : '응모 기간이 아니에요.',
+        dueRow: `${formatDueAt(drawData.closesAt)}까지`,
+      }
+    : detail
+      ? {
+          items: [reservationToDraft(detail)],
+          totalAmount: detail.unitPrice,
+          blockedReason: PAYABLE.includes(detail.displayStatus)
+            ? null
+            : (UNPAYABLE_MESSAGE[detail.displayStatus] ??
+              '결제할 수 있는 예약이 아니에요.'),
+          dueRow: detail.paymentDueAt
+            ? `${formatDueAt(detail.paymentDueAt)}까지`
+            : null,
+        }
+      : cartLines
+        ? {
+            items: cartLines.map(cartLineToDraft),
+            totalAmount: cartLines.reduce(
+              (sum, line) => sum + (line.lineAmount ?? 0),
+              0,
+            ),
+            blockedReason:
+              cartLines.length !== cartItemIds.length
+                ? '장바구니가 바뀌었어요. 장바구니에서 다시 골라 주세요.'
+                : cartLines.some(({ purchasable }) => !purchasable)
+                  ? '지금 살 수 없는 상품이 있어요. 장바구니에서 확인해 주세요.'
+                  : null,
+            dueRow: '주문 후 10분 안에 결제',
+          }
+        : buyNowItems
+          ? {
+              items: buyNowItems,
+              totalAmount: buyNowItems.reduce(
+                (sum, item) => sum + item.unitPrice * item.quantity,
+                0,
+              ),
+              blockedReason: null,
+              dueRow: null,
+            }
+          : null
+  const payable = checkout !== null && checkout.blockedReason === null
+  const totalAmount = checkout?.totalAmount ?? 0
+  const isPaying = placeOrder.isPending || enterDraw.isPending || isStarting
 
   const requiredAgreed = terms.every(
     (term) => !term.required || agreedIds.has(term.id),
@@ -155,18 +287,53 @@ export function PaymentPage() {
     setPaymentError(null)
     if (!form.requiredFilled || !payable) return
 
+    let buyNowKey: string | undefined
     try {
-      const order = await placeOrder.mutateAsync({
-        source: 'PREORDER',
-        preorderId,
-        shipTo: {
-          name: form.values.name,
-          phone: form.values.phone,
-          postalCode: form.values.postcode,
-          line1: form.values.address,
-          line2: form.values.addressDetail || null,
-        },
-      })
+      const shipTo = {
+        name: form.values.name,
+        phone: form.values.phone,
+        postalCode: form.values.postcode,
+        line1: form.values.address,
+        line2: form.values.addressDetail || null,
+      }
+      // 럭키 드로우 — 응모(배송지 저장) → 응모비 결제 준비 → 토스 결제창. 이미 응모한 회차면 서버가 기존 응모를 돌려준다.
+      if (drawId) {
+        const entry = await enterDraw.mutateAsync({ drawId, shipTo })
+        if (entry.status !== 'AWAITING_PAYMENT') {
+          showToast(
+            entry.status === 'PAID'
+              ? '이미 응모한 회차예요.'
+              : '응모비 결제를 확인하고 있어요.',
+          )
+          navigate(drawPath(drawId), { replace: true })
+          return
+        }
+        setIsStarting(true)
+        await startDrawEntryPayment({
+          drawId,
+          customerName: form.values.name,
+          customerEmail: form.values.email || undefined,
+        })
+        return
+      }
+      const buyNow = buyNowItems && {
+        source: 'BUY_NOW' as const,
+        items: buyNowItems.map(toBuyNowOrderItem),
+        shipTo,
+      }
+      buyNowKey = buyNow ? buyNowKeyFor(buyNow) : undefined
+      const order = await placeOrder.mutateAsync(
+        cartLines
+          ? {
+              source: 'CART',
+              items: cartLines.map(toCartOrderItem),
+              shipTo,
+            }
+          : buyNow && buyNowKey
+            ? { ...buyNow, idempotencyKey: buyNowKey }
+            : { source: 'PREORDER', preorderId, shipTo },
+      )
+      if (buyNowKey) linkBuyNowOrder(buyNowKey, order.orderId)
       // 기존 주문이 이미 결제됐으면 결제 단계로 가지 않고 결과를 보여 준다.
       if (order.status === 'AUTHORIZING') {
         setPaymentError(
@@ -175,7 +342,8 @@ export function PaymentPage() {
         return
       }
       if (PAID_ORDER_STATUSES.includes(order.status)) {
-        navigate(resultPath('preorder-paid'), {
+        if (buyNowKey) forgetBuyNowKey({ key: buyNowKey })
+        navigate(resultPath(preorderId ? 'preorder-paid' : 'paid'), {
           replace: true,
           state: { orderId: order.orderId },
         })
@@ -183,46 +351,65 @@ export function PaymentPage() {
       }
       // 결제 대기만 결제 단계로 간다 — 그사이 취소가 시작됐거나 모르는 상태면 결제 완료로 보이지 않게 막는다.
       if (order.status !== 'AWAITING_PAYMENT') {
+        // 같은 키의 바로 구매 주문이 취소됐거나 기한이 지났다 — 다음 시도는 새 키로 새 주문을 만든다.
+        if (buyNowKey && order.status === 'CANCELED') {
+          forgetBuyNowKey({ key: buyNowKey })
+          setPaymentError(
+            '이전 주문이 취소됐어요. 다시 결제하면 새로 주문해요.',
+          )
+          return
+        }
         setPaymentError('결제할 수 없는 주문이에요. 주문 내역을 확인해 주세요.')
         return
       }
-      const attempt = await createAttempt.mutateAsync(order.orderId)
-      await requestTossPayment({
-        tossOrderId: attempt.tossOrderId,
-        amount: attempt.amount,
-        orderName: attempt.orderName,
-        orderToken: order.orderId,
-        preorderId,
+      setIsStarting(true)
+      await startOrderPayment({
+        orderId: order.orderId,
+        preorderId: preorderId || undefined,
         customerName: form.values.name,
         customerEmail: form.values.email || undefined,
       })
     } catch (caught) {
+      if (
+        caught instanceof ApiRequestError &&
+        CART_REFRESH_CODES.includes(caught.error.code)
+      )
+        void queryClient.invalidateQueries({ queryKey: cartKeys.all })
+      // 같은 키의 처음 주문과 내용이 다르다 — 다음 시도는 새 키로 보낸다.
+      if (
+        caught instanceof ApiRequestError &&
+        caught.error.code === 'KEY_PAYLOAD_MISMATCH' &&
+        buyNowKey
+      )
+        forgetBuyNowKey({ key: buyNowKey })
       setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
+    } finally {
+      setIsStarting(false)
     }
   }
 
-  // 예약 id 없이 들어왔거나(일반 구매·장바구니) 예약을 아직 못 받았으면 안내만 보인다.
-  if (!detail) {
+  if (!preorderId && !isCart && !drawId && !buyNowItems)
+    return <Navigate to={HOME_PATH} replace />
+
+  // 예약·장바구니·회차를 아직 못 받았으면 안내만 보인다.
+  const loadQuery = drawId ? draw : isCart ? cart : reservation
+  if (!checkout) {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
         <Container>
           <div className={styles.title}>주문 / 결제</div>
-          {!preorderId ? (
-            <InlineAlert status="info">
-              지금은 사전예약 결제만 할 수 있어요. 일반 구매·장바구니 결제는
-              준비 중이에요.{' '}
-              <Link to={mypagePath('preorder-check')}>예약 내역으로 가기</Link>
-            </InlineAlert>
-          ) : (
-            <InlineAlert status={reservation.isError ? 'error' : 'info'}>
-              {reservation.isError
-                ? getErrorMessage(
-                    reservation.error,
-                    '예약을 불러오지 못했어요.',
-                  )
-                : '예약을 불러오는 중이에요.'}
-            </InlineAlert>
-          )}
+          <InlineAlert status={loadQuery.isError ? 'error' : 'info'}>
+            {loadQuery.isError
+              ? getErrorMessage(
+                  loadQuery.error,
+                  drawId
+                    ? '럭키드로우를 불러오지 못했어요.'
+                    : isCart
+                      ? '장바구니를 불러오지 못했어요.'
+                      : '예약을 불러오지 못했어요.',
+                )
+              : '주문할 상품을 불러오는 중이에요.'}
+          </InlineAlert>
         </Container>
       </div>
     )
@@ -231,22 +418,21 @@ export function PaymentPage() {
   return (
     <div className={styles.root} data-theme="dark" data-header-theme="dark">
       <Container>
-        <div className={styles.title}>주문 / 결제</div>
+        <div className={styles.title}>
+          {drawId ? '응모 / 결제' : '주문 / 결제'}
+        </div>
 
         {paymentError && (
           <InlineAlert status="error">{paymentError}</InlineAlert>
         )}
-        {!payable && (
-          <InlineAlert status="info">
-            {UNPAYABLE_MESSAGE[detail.displayStatus] ??
-              '결제할 수 있는 예약이 아니에요.'}
-          </InlineAlert>
+        {checkout.blockedReason && (
+          <InlineAlert status="info">{checkout.blockedReason}</InlineAlert>
         )}
 
         <div className={styles.layout}>
           <div className={styles.form}>
             <section className={styles.section}>
-              <OrderItemList items={[reservationToDraft(detail)]} />
+              <OrderItemList items={checkout.items} />
             </section>
 
             <section className={styles.section}>
@@ -258,9 +444,13 @@ export function PaymentPage() {
                   placeholder="이름"
                 />
                 <Input
-                  {...field('phone', "휴대폰 ('-'을 제외한 숫자만)")}
+                  {...field('phone', '휴대폰')}
+                  value={formatPhoneInput(form.values.phone)}
+                  onChange={(event) =>
+                    form.setValues({ phone: toPhoneDigits(event.target.value) })
+                  }
                   variant="stacked"
-                  placeholder="01012345678"
+                  placeholder="010-1234-5678"
                   inputMode="numeric"
                 />
               </div>
@@ -317,13 +507,19 @@ export function PaymentPage() {
           <OrderSummary
             className={styles.summary}
             rows={[
-              { label: '상품 수', value: '1개' },
-              { label: '주문 금액', value: formatWon(totalAmount) },
-              ...(detail.paymentDueAt
+              {
+                label: drawId ? '증정품' : '상품 수',
+                value: `${checkout.items.reduce((sum, item) => sum + item.quantity, 0)}개`,
+              },
+              {
+                label: drawId ? '응모비' : '주문 금액',
+                value: formatWon(totalAmount),
+              },
+              ...(checkout.dueRow
                 ? [
                     {
-                      label: '결제 기한',
-                      value: `${formatDueAt(detail.paymentDueAt)}까지`,
+                      label: drawId ? '응모 마감' : '결제 기한',
+                      value: checkout.dueRow,
                       highlight: true,
                     },
                   ]
@@ -331,7 +527,7 @@ export function PaymentPage() {
             ]}
             totalLabel="결제 예정 금액"
             totalValue={formatWon(totalAmount)}
-            actionLabel={`${formatWon(totalAmount)} 결제하기`}
+            actionLabel={`${formatWon(totalAmount)} ${drawId ? '결제하고 응모하기' : '결제하기'}`}
             actionDisabled={!requiredAgreed || !payable || isPaying}
             darkAction
             onAction={() => void handlePayment()}

@@ -19,23 +19,44 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const Open: Story = {
-  args: { status: 'OPEN' },
+/** 일반 상품은 판매 상태만 있다 */
+export const Active: Story = {
+  args: { status: 'ACTIVE' },
   play: async ({ canvas }) => {
     await expect(visibleLabel(canvas, '판매 중')).toBeVisible()
+    await expect(canvas.queryByText('접수 중')).toBeNull()
   },
 }
 
-export const BeforeOpen: Story = {
-  args: { status: 'BEFORE_OPEN' },
+export const Paused: Story = {
+  args: { status: 'PAUSED' },
   play: async ({ canvas }) => {
-    await expect(visibleLabel(canvas, '판매 예정')).toBeVisible()
+    await expect(visibleLabel(canvas, '판매 중지')).toBeVisible()
   },
 }
 
-export const Closed: Story = {
-  args: { status: 'CLOSED' },
+/** 사전예약은 판매 중이면 접수 단계만 보인다 — '판매 중'이 오픈한 것처럼 읽히지 않게 */
+export const PreorderOpen: Story = {
+  args: { status: 'ACTIVE', stage: 'OPEN' },
   play: async ({ canvas }) => {
-    await expect(visibleLabel(canvas, '판매 종료')).toBeVisible()
+    await expect(visibleLabel(canvas, '접수 중')).toBeVisible()
+    await expect(canvas.queryByText('판매 중')).toBeNull()
+  },
+}
+
+export const PreorderBeforeOpen: Story = {
+  args: { status: 'ACTIVE', stage: 'BEFORE_OPEN' },
+  play: async ({ canvas }) => {
+    await expect(visibleLabel(canvas, '오픈 전')).toBeVisible()
+    await expect(canvas.queryByText('판매 중')).toBeNull()
+  },
+}
+
+/** 판매 중지(회차 취소)는 접수 단계와 같이 보인다 — 놓치면 안 되는 상태다 */
+export const PreorderPaused: Story = {
+  args: { status: 'PAUSED', stage: 'BEFORE_OPEN' },
+  play: async ({ canvas }) => {
+    await expect(visibleLabel(canvas, '판매 중지')).toBeVisible()
+    await expect(visibleLabel(canvas, '오픈 전')).toBeVisible()
   },
 }

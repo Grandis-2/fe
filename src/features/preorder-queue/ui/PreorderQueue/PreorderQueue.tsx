@@ -15,7 +15,9 @@ export type PreorderQueueProps = {
   onFail: (message: string) => void
 }
 
-// 대기열 한 번(줄 서기 → 대기 → 이동/나가기). 마운트되는 순간 줄을 서고 모달이 열린다 —
+// 대기열 한 번(줄 서기 → 대기 → 이동/나가기). 전역 모달(useModalStore)을 쓰지 않고 자기 Modal을
+// 띄운다 — 모달을 닫아도 계속 도는 과정이고, 순번이 바뀔 때마다 내용을 다시 그려야 한다.
+// 마운트되는 순간 줄을 서고 모달이 열린다 —
 // 새로 줄을 세우려면 여는 쪽이 key를 바꿔 다시 마운트한다.
 // 모달을 닫아도(나가기 X) 순번 조회는 계속되고 그동안 QueuePill이 떠 있다.
 export function PreorderQueue({
@@ -28,8 +30,18 @@ export function PreorderQueue({
 
   return (
     <>
-      <Modal open={queue.isOpen} onClose={queue.close}>
-        <PreorderQueueCard productName={productName} queue={queue} />
+      <Modal
+        open={queue.isOpen}
+        onClose={queue.close}
+        title={
+          <>
+            조금만 기다려주세요,
+            <br />곧 예약 페이지로 이동합니다.
+          </>
+        }
+        description={productName}
+      >
+        <PreorderQueueCard queue={queue} />
       </Modal>
       {!queue.isOpen && !queue.hasLeft && (
         <QueuePill productName={productName} queue={queue} />

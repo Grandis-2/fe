@@ -1,9 +1,16 @@
 export {
+  useAdminPromotion,
+  useAdminPromotions,
+  useCreateAdminPromotion,
+  useUpdateAdminPromotion,
+} from './api/useAdminPromotions'
+export {
   createEmptyPromotionFormValue,
   formatPromotionPeriod,
   promotionStatusColor,
   promotionStatusLabel,
   promotionStatusLabels,
+  toPromotionFormValue,
 } from './model/types'
 export type {
   AdminPromotion,
@@ -11,9 +18,3 @@ export type {
   PromotionLinkableProduct,
   PromotionStatus,
 } from './model/types'
-export {
-  findMockPromotion,
-  mockLinkableProducts,
-  mockPromotions,
-  toPromotionFormValue,
-} from './model/mock'

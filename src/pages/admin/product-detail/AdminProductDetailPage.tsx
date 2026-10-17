@@ -1,23 +1,34 @@
+import { useState } from 'react'
+
 import { useNavigate, useParams, useSearchParams } from 'react-router'
 
 import {
   AdminProductDisplayTag,
   AdminProductSaleTag,
   isPreorder,
+  toPreviewProduct,
   useAdminProduct,
+  useAdminShipmentBatches,
   type AdminProductDetailModel,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
-import { ADMIN_PRODUCTS_PATH, productPath } from '@shared/config/routes'
+import { ADMIN_PRODUCTS_PATH } from '@shared/config/routes'
 import type { AdminProductTab } from '@shared/config/routes'
-import { Breadcrumb, InlineAlert, SegmentedTabs } from '@shared/ui'
-import { AdminDispatchWindows } from '@widgets/admin/dispatch-windows'
+import {
+  Breadcrumb,
+  InlineAlert,
+  PageSkeleton,
+  SegmentedTabs,
+} from '@shared/ui'
+import {
+  AdminProductActions,
+  useProductSaleStatus,
+  useProductVisibility,
+} from '@widgets/admin/product-actions'
 import { AdminProductEditForm } from '@widgets/admin/product-form'
 import { AdminProductStockTable } from '@widgets/admin/product-stock'
-import {
-  AdminProductVisibility,
-  useProductVisibility,
-} from '@widgets/admin/product-visibility'
+import { AdminShipmentBatches } from '@widgets/admin/shipment-batches'
+import { ProductDetailPreviewModal } from '@widgets/product-detail'
 
 import * as styles from './AdminProductDetailPage.css'
 
@@ -27,11 +38,19 @@ const tabs: { value: AdminProductTab; label: string }[] = [
   { value: 'shipping', label: '배송 구간 설정' },
 ]
 
-const DEFAULT_TAB: AdminProductTab = 'stock'
-
-// 배송 차수는 사전 예약에만 있다 — 일반 판매는 순번도 차수도 없다.
+/**
+ * 판매 방식에 따라 탭이 갈린다. 배송 차수는 사전예약에만 있고(일반 판매는 순번도
+ * 차수도 없다), 재고는 일반 상품만 센다(사전예약은 재고 API가 tracked false와 빈
+ * 목록을 주고, 명세가 그때 재고 탭을 숨기라고 한다).
+ */
 const tabsOf = (product: AdminProductDetailModel) =>
-  isPreorder(product) ? tabs : tabs.filter((item) => item.value !== 'shipping')
+  tabs.filter((item) =>
+    isPreorder(product) ? item.value !== 'stock' : item.value !== 'shipping',
+  )
+
+// 일반 상품은 재고 조회가, 사전예약은 재고 탭이 없어 수정이 처음 화면이다.
+const defaultTabOf = (product: AdminProductDetailModel): AdminProductTab =>
+  isPreorder(product) ? 'edit' : 'stock'
 
 /**
  * 주소에서 상품과 탭만 읽고 화면을 조립한다. 데이터 조회·저장·에러 표시는
@@ -41,17 +60,31 @@ const tabsOf = (product: AdminProductDetailModel) =>
 export function AdminProductDetailPage() {
   const navigate = useNavigate()
   const visibility = useProductVisibility()
+  const saleStatus = useProductSaleStatus()
   const { productId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const product = useAdminProduct(productId)
+  // 미리보기는 폼에 지금 있는 값으로 그린다 — 저장 전에 어떻게 보이는지 확인하려고 누른다.
+  // 열려 있는 동안만 값이 있다. 배송 차수는 폼에 없어(배송 구간 탭) 저장된 것을 받는다.
+  const [previewProduct, setPreviewProduct] =
+    useState<ReturnType<typeof toPreviewProduct>>()
+  const shipmentBatches = useAdminShipmentBatches(productId, {
+    enabled: previewProduct?.saleMode === 'PREORDER',
+  })
 
   if (!product.data) {
+    // 불러오는 중이면 화면 모양을 먼저 깐다 — 실패일 때만 안내와 돌아갈 길을 보인다.
+    if (!product.isError) {
+      return (
+        <div className={styles.root}>
+          <PageSkeleton sections={2} fieldsPerSection={3} />
+        </div>
+      )
+    }
     return (
       <div className={styles.root}>
         <div className={styles.notFound}>
-          {product.isError
-            ? getErrorMessage(product.error, '상품을 불러오지 못했습니다.')
-            : '불러오는 중입니다.'}
+          {getErrorMessage(product.error, '상품을 불러오지 못했습니다.')}
           <Breadcrumb
             items={[{ label: '상품 관리로 돌아가기', to: ADMIN_PRODUCTS_PATH }]}
           />
@@ -61,10 +94,10 @@ export function AdminProductDetailPage() {
   }
 
   const visibleTabs = tabsOf(product.data)
-  // 일반 판매 상품에 ?tab=shipping으로 들어와도 기본 탭으로 보낸다.
+  // 그 상품에 없는 탭(?tab=shipping인 일반 상품 등)으로 들어와도 기본 탭으로 보낸다.
   const tab =
     visibleTabs.find((item) => item.value === searchParams.get('tab'))?.value ??
-    DEFAULT_TAB
+    defaultTabOf(product.data)
 
   const setTab = (next: AdminProductTab) => {
     const params = new URLSearchParams(searchParams)
@@ -73,7 +106,7 @@ export function AdminProductDetailPage() {
     setSearchParams(params, { replace: true })
   }
 
-  const { name, saleStatus, displayStatus } = product.data
+  const { name, status, campaign, displayStatus } = product.data
 
   return (
     <div className={styles.root}>
@@ -86,23 +119,33 @@ export function AdminProductDetailPage() {
 
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{name}</h1>
-        <AdminProductSaleTag status={saleStatus} />
+        <AdminProductSaleTag status={status} stage={campaign?.status} />
         {/* 상태 뱃지끼리 붙여 둔다 — 판매와 전시는 둘 다 '지금 어떤 상태인가'다. */}
         <AdminProductDisplayTag status={displayStatus} />
         {/* 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 — 어느 탭에 있든
-            같은 자리에서 누를 수 있고, 저장 버튼과 섞이지 않는다. */}
-        <AdminProductVisibility
-          className={styles.visibility}
-          product={{ productId, name, displayStatus }}
-          pending={visibility.isPending}
+            같은 자리에서 누를 수 있고, 저장 버튼과 섞이지 않는다. 사전예약 오픈 3분
+            전부터 수정 폼이 잠겨도 이 메뉴는 열린다(회차 취소는 오픈 뒤에만 된다). */}
+        <AdminProductActions
+          className={styles.actions}
+          product={product.data}
+          pending={visibility.isPending || saleStatus.isPending}
           onPublish={visibility.confirmPublish}
           onHide={visibility.confirmHide}
+          onPause={saleStatus.confirmPause}
+          onResume={saleStatus.confirmResume}
+          onCancel={saleStatus.confirmCancel}
+          onCloseEarly={saleStatus.confirmCloseEarly}
         />
       </div>
 
       {visibility.isError && (
         <InlineAlert status="error">
           {getErrorMessage(visibility.error, '전시 상태를 바꾸지 못했습니다.')}
+        </InlineAlert>
+      )}
+      {saleStatus.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(saleStatus.error, '판매 상태를 바꾸지 못했습니다.')}
         </InlineAlert>
       )}
 
@@ -113,13 +156,19 @@ export function AdminProductDetailPage() {
       {tab === 'edit' && (
         <AdminProductEditForm
           productId={productId}
-          onSaved={() => navigate(ADMIN_PRODUCTS_PATH)}
           onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
-          onPreview={() => navigate(productPath(productId))}
+          onPreview={(value) => setPreviewProduct(toPreviewProduct(value))}
+          onEditShipmentBatches={() => setTab('shipping')}
         />
       )}
 
-      {tab === 'shipping' && <AdminDispatchWindows productId={productId} />}
+      {tab === 'shipping' && <AdminShipmentBatches productId={productId} />}
+
+      <ProductDetailPreviewModal
+        product={previewProduct}
+        shipmentBatches={shipmentBatches.data}
+        onClose={() => setPreviewProduct(undefined)}
+      />
     </div>
   )
 }

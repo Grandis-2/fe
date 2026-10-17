@@ -1,4 +1,4 @@
-import { brandMenus } from '@entities/product'
+import { useBrandMenus } from '@entities/product'
 import { Container } from '@shared/ui'
 import { Banner } from '@widgets/banner'
 import { CategoryProducts } from '@widgets/category-products'
@@ -7,6 +7,7 @@ import { ProductRanking } from '@widgets/product-ranking'
 import * as styles from './MainPage.css'
 
 export function MainPage() {
+  const brandMenus = useBrandMenus()
   return (
     <>
       {/* data-header-theme="dark": 헤더가 이 구간 위에 있는 동안 흰 글자로 바뀐다(Header.tsx). */}
