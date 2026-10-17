@@ -27,11 +27,14 @@ describe('requestLog', () => {
       status: 200,
     })
     logRequest({ method: 'GET', path: '/api/v1/orders/1' })({ status: 200 })
+    logRequest({ method: 'GET', path: '/api/v1/orders' })({ status: 200 })
     expect(requestLog.getSnapshot()).toHaveLength(0)
 
     const topics = [
       { method: 'GET', path: QUEUE },
       { method: 'POST', path: '/api/v1/preorders?productId=1' },
+      { method: 'POST', path: '/api/v1/orders' },
+      { method: 'POST', path: '/api/v1/draws/1/entries' },
       { method: 'POST', path: '/api/v1/orders/1/payment-attempts/t/confirm' },
       {
         method: 'GET',
@@ -43,7 +46,15 @@ describe('requestLog', () => {
       logRequest(request)({ status: 200 })
       return last()?.topic
     })
-    expect(topics).toEqual(['대기열', '사전예약', '결제', '결제', '알림'])
+    expect(topics).toEqual([
+      '대기열',
+      '사전예약',
+      '결제',
+      '결제',
+      '결제',
+      '결제',
+      '알림',
+    ])
   })
 
   it('실패한 같은 요청을 다시 보내면 repeat로 남긴다', () => {

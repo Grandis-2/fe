@@ -75,9 +75,20 @@ export const paymentCheckSignal = (signal: AbortSignal) => {
 }
 
 // 모니터에 보일 흐름. 관리자 API(/api/v1/admin/…)와 상품·장바구니 같은 나머지는 null — 남기지 않는다.
-const topicOf = (path: string, signal?: AbortSignal): Topic | null => {
+const topicOf = (
+  method: string,
+  path: string,
+  signal?: AbortSignal,
+): Topic | null => {
   if (path.startsWith('/api/v1/preorders/queue')) return '대기열'
+  // 결제 준비·승인, 그 앞 단계인 주문 생성·응모와 결제 전 주문 취소, 승인 결과 확인.
   if (path.includes('/payment-attempts')) return '결제'
+  if (
+    method === 'POST' &&
+    (path.startsWith('/api/v1/orders') ||
+      /^\/api\/v1\/draws\/[^/]+\/entries$/.test(path))
+  )
+    return '결제'
   if (signal && paymentCheckSignals.has(signal)) return '결제'
   if (path.startsWith('/api/v1/preorders')) return '사전예약'
   if (path.startsWith('/api/v1/notifications')) return '알림'
@@ -101,7 +112,7 @@ export function logRequest(request: {
   signal?: AbortSignal
   sse?: boolean
 }): (result: { status: number | null; retryAfter?: number }) => void {
-  const topic = topicOf(request.path, request.signal)
+  const topic = topicOf(request.method, request.path, request.signal)
   if (!topic) return noop
   const signature = `${request.method} ${request.path} ${request.idempotencyKey ?? bodyKey(request.body)}`
   const previous = entries
