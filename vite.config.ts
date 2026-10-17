@@ -2,6 +2,7 @@
 import { fileURLToPath, URL } from 'node:url'
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
 import react from '@vitejs/plugin-react'
+import { visualizer } from 'rollup-plugin-visualizer'
 import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
@@ -11,8 +12,14 @@ import { playwright } from '@vitest/browser-playwright'
 const dirname = import.meta.dirname
 
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
-export default defineConfig({
-  plugins: [react(), vanillaExtractPlugin()],
+export default defineConfig(({ mode }) => ({
+  plugins: [
+    react(),
+    vanillaExtractPlugin(),
+    // npm run analyze — 빌드 결과를 dist/stats.html 트리맵으로 열어 청크별 크기(gzip 포함)를 본다.
+    mode === 'analyze' &&
+      visualizer({ filename: 'dist/stats.html', gzipSize: true, open: true }),
+  ],
   resolve: {
     alias: {
       // FSD 레이어별 별칭 — tsconfig.app.json의 paths와 같이 고친다.
@@ -85,4 +92,4 @@ export default defineConfig({
       },
     ],
   },
-})
+}))
