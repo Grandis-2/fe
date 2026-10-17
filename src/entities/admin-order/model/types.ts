@@ -37,13 +37,14 @@ export const adminOrderStatusLabel: Record<OrderStatus, string> = {
 
 export const adminOrderStatusColor: Record<
   OrderStatus,
-  'yellow' | 'primary' | 'blue' | 'green' | 'gray' | 'red'
+  'yellow' | 'primary' | 'secondary' | 'blue' | 'green' | 'gray'
 > = {
   AWAITING_PAYMENT: 'yellow',
   AUTHORIZING: 'yellow',
-  AWAITING_CONFIRMATION: 'red',
-  PREPARING_ITEMS: 'primary',
-  READY_TO_SHIP: 'primary',
+  // 배송을 시작해야 하는 주문 — 오류처럼 보이지 않게 빨강 대신 강조색으로 둔다.
+  AWAITING_CONFIRMATION: 'primary',
+  PREPARING_ITEMS: 'secondary',
+  READY_TO_SHIP: 'secondary',
   SHIPPED: 'blue',
   DELIVERED: 'green',
   CANCELING: 'gray',
