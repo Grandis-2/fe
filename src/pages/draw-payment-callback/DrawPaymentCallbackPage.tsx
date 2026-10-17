@@ -73,7 +73,7 @@ export function DrawPaymentCallbackPage() {
             return
           case 'pending':
             back(
-              '결제를 확인하는 데 시간이 걸리고 있어요. 잠시 뒤 응모 상태를 확인해 주세요.',
+              '결제 결과를 확인하지 못했어요. 응모 내역에서 확인해 주세요. 다시 결제하지 마세요.',
             )
         }
       })
