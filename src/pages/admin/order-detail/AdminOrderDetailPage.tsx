@@ -2,7 +2,7 @@ import { useParams } from 'react-router'
 
 import { orderNo, useAdminOrder } from '@entities/admin-order'
 import { getErrorMessage } from '@shared/api/client'
-import { ADMIN_PURCHASES_PATH } from '@shared/config/routes'
+import { ADMIN_ORDERS_PATH } from '@shared/config/routes'
 import {
   Breadcrumb,
   InlineAlert,
@@ -11,10 +11,10 @@ import {
 } from '@shared/ui'
 import { AdminOrderDetail } from '@widgets/admin/order-detail'
 
-import * as styles from './AdminPurchaseDetailPage.css'
+import * as styles from './AdminOrderDetailPage.css'
 
 /** 주소에서 주문을 읽어 상세 위젯에 넘긴다. 조회 실패·로딩·갱신 시각은 여기서 보여준다 */
-export function AdminPurchaseDetailPage() {
+export function AdminOrderDetailPage() {
   const { orderId = '' } = useParams()
   const order = useAdminOrder(orderId)
 
@@ -32,9 +32,7 @@ export function AdminPurchaseDetailPage() {
         <div className={styles.notFound}>
           {getErrorMessage(order.error, '주문을 불러오지 못했습니다.')}
           <Breadcrumb
-            items={[
-              { label: '주문 관리로 돌아가기', to: ADMIN_PURCHASES_PATH },
-            ]}
+            items={[{ label: '주문 관리로 돌아가기', to: ADMIN_ORDERS_PATH }]}
           />
         </div>
       </div>
@@ -45,7 +43,7 @@ export function AdminPurchaseDetailPage() {
     <div className={styles.root}>
       <Breadcrumb
         items={[
-          { label: '주문 관리', to: ADMIN_PURCHASES_PATH },
+          { label: '주문 관리', to: ADMIN_ORDERS_PATH },
           { label: `주문 ${orderNo(order.data.orderId)}` },
         ]}
       />

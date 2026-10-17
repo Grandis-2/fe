@@ -106,21 +106,18 @@ export const adminDrawPath = (drawId: string) => `${ADMIN_DRAWS_PATH}/${drawId}`
 
 /** 대기열 관리 — 입장 속도·상품별 상한·최대 대기·이탈 유예(바꾸면 바로 회원에게 반영) */
 export const ADMIN_WAITINGROOM_PATH = '/admin/waitingroom'
-export const ADMIN_RESERVATIONS_PATH = '/admin/orders'
+export const ADMIN_RESERVATIONS_PATH = '/admin/reservations'
 /** 예약 상세 */
 export const adminReservationPath = (preorderId: string) =>
   `${ADMIN_RESERVATIONS_PATH}/${preorderId}`
 
-/**
- * 주문 관리 — 모든 회원의 주문과 배송 단계. 예약 현황(ADMIN_RESERVATIONS_PATH = '/admin/orders')이
- * 이미 '/admin/orders'를 쓰고 있어 경로를 따로 둔다.
- */
-export const ADMIN_PURCHASES_PATH = '/admin/purchases'
+/** 주문 관리 — 모든 회원의 주문과 배송 단계 */
+export const ADMIN_ORDERS_PATH = '/admin/orders'
 /** 출처를 걸러서 연다(럭키드로우 회차 → 당첨 주문) */
-export const adminPurchasesPath = (source?: OrderSource) =>
-  source ? `${ADMIN_PURCHASES_PATH}?source=${source}` : ADMIN_PURCHASES_PATH
-export const adminPurchasePath = (orderId: string) =>
-  `${ADMIN_PURCHASES_PATH}/${orderId}`
+export const adminOrdersPath = (source?: OrderSource) =>
+  source ? `${ADMIN_ORDERS_PATH}?source=${source}` : ADMIN_ORDERS_PATH
+export const adminOrderPath = (orderId: string) =>
+  `${ADMIN_ORDERS_PATH}/${orderId}`
 
 /**
  * 상세로 들어갈 때 navigate state로 넘기는 '돌아갈 곳'. 예약 상세는 예약 현황 말고

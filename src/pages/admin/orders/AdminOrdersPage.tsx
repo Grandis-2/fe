@@ -1,3 +1,5 @@
+import { useState, type FormEvent } from 'react'
+
 import { useNavigate, useSearchParams } from 'react-router'
 
 import {
@@ -14,12 +16,14 @@ import {
   useAdminOrders,
 } from '@entities/admin-order'
 import { getErrorMessage } from '@shared/api/client'
-import { adminPurchasePath } from '@shared/config/routes'
+import { adminOrderPath } from '@shared/config/routes'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
 import {
+  Button,
   Dropdown,
   InlineAlert,
+  Input,
   Navigator,
   SegmentedTabs,
   Table,
@@ -27,9 +31,12 @@ import {
 } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
-import * as styles from './AdminPurchasesPage.css'
+import * as styles from './AdminOrdersPage.css'
 
 const PAGE_SIZE = 20
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const SHORT_NO_PATTERN = /^[0-9a-f]{8}$/i
 const ALL = 'all'
 
 const sourceTabs = [
@@ -114,7 +121,7 @@ const columns: TableColumn<AdminOrder>[] = [
  * 모든 회원의 주문. 출처·상태·쪽은 주소에 둬서 상세에 들어갔다 돌아와도 보던 자리가
  * 남는다. 배송을 시작할 수 있는 건 '결제 완료' 주문이다.
  */
-export function AdminPurchasesPage() {
+export function AdminOrdersPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const source = pick<AdminOrderSource>(
@@ -134,6 +141,23 @@ export function AdminPurchasesPage() {
     size: PAGE_SIZE,
   })
   const totalPages = orders.data ? Math.ceil(orders.data.total / PAGE_SIZE) : 0
+
+  // 목록 API에 검색 조건이 없어(상태·출처·쪽뿐) 전체 주문 id로만 바로 연다.
+  const [lookup, setLookup] = useState('')
+  const [lookupError, setLookupError] = useState<string>()
+  const openByOrderId = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const orderId = lookup.trim()
+    if (UUID_PATTERN.test(orderId)) {
+      navigate(adminOrderPath(orderId.toLowerCase()))
+      return
+    }
+    setLookupError(
+      SHORT_NO_PATTERN.test(orderId)
+        ? '주문번호(8자리)로는 아직 찾을 수 없습니다. 전체 주문 id를 넣어 주세요.'
+        : '주문 id 형식이 아닙니다.',
+    )
+  }
 
   // 필터를 바꾸면 첫 쪽부터 본다.
   const setParam = (key: 'source' | 'status' | 'page', value: string) =>
@@ -171,6 +195,21 @@ export function AdminPurchasesPage() {
             전체 {formatNumber(orders.data.total)}건
           </span>
         )}
+        <form className={styles.lookup} onSubmit={openByOrderId} noValidate>
+          <Input
+            label="주문 id로 열기"
+            size="small"
+            value={lookup}
+            error={lookupError}
+            onChange={(event) => {
+              setLookup(event.target.value)
+              setLookupError(undefined)
+            }}
+          />
+          <Button type="submit" size="small" variant="outline" color="cancel">
+            열기
+          </Button>
+        </form>
       </div>
 
       {/* 다시 받기가 실패해도 이전 목록은 남는다 — 멈춘 목록을 최신으로 읽지 않게 알린다. */}
@@ -185,10 +224,10 @@ export function AdminPurchasesPage() {
         columns={columns}
         rows={orders.data?.items ?? []}
         rowKey={(order) => order.orderId}
-        onRowClick={(order) => navigate(adminPurchasePath(order.orderId))}
+        onRowClick={(order) => navigate(adminOrderPath(order.orderId))}
         rowAction={{
           label: (order) => `주문 ${orderNo(order.orderId)} 상세 보기`,
-          onClick: (order) => navigate(adminPurchasePath(order.orderId)),
+          onClick: (order) => navigate(adminOrderPath(order.orderId)),
         }}
         loading={orders.isPending}
         loadingRows={10}
