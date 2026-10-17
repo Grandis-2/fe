@@ -11,6 +11,7 @@ import { showToast, useToastStore } from '@shared/model/toastStore'
 import { Modal, ToastViewport } from '@shared/ui'
 import { Header } from '@widgets/header'
 import { MobileTabBar } from '@widgets/mobile-tab-bar'
+import { RequestMonitor } from '@widgets/request-monitor'
 
 import { isCallbackPath } from './callbackPaths'
 
@@ -65,6 +66,8 @@ export function RootLayout() {
         />
       )}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+      {/* 백오프·재전송이 실제로 일어나는 걸 보여 주는 창 — 결제 콜백에서도 보여야 해서 늘 그린다. */}
+      <RequestMonitor />
       {queueTicket && (
         <PreorderQueue
           key={queueTicket.joinedAt}
