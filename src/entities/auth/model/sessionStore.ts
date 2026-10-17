@@ -1,5 +1,6 @@
+import { create } from 'zustand'
+
 import type { Session, SessionRole } from '@shared/api/types'
-import { createStore } from '@shared/lib/createStore'
 
 export type SessionState = {
   displayName: string | null
@@ -24,7 +25,7 @@ type SessionStore = SessionState & {
   markAuthReady: () => void
 }
 
-export const useSessionStore = createStore<SessionStore>((set) => ({
+export const useSessionStore = create<SessionStore>()((set) => ({
   sessionToken: null,
   displayName: null,
   role: null,

@@ -1,4 +1,4 @@
-import { createStore } from '@shared/lib/createStore'
+import { create } from 'zustand'
 
 // 대기열 한 번 — joinedAt이 key라 새로 줄 서면 PreorderQueue가 다시 마운트된다.
 export type PreorderQueueTicket = {
@@ -30,7 +30,7 @@ type PreorderQueueStore = {
 
 // 토스트와 같은 구조다 — PreorderQueue는 RootLayout에 하나만 두고, 줄 서는 쪽은
 // joinPreorderQueue만 부른다. 페이지를 옮겨도 QueuePill이 남아 있다.
-export const usePreorderQueueStore = createStore<PreorderQueueStore>((set) => ({
+export const usePreorderQueueStore = create<PreorderQueueStore>()((set) => ({
   ticket: null,
   admission: null,
   join: (ticket) => set({ ticket: { ...ticket, joinedAt: Date.now() } }),
