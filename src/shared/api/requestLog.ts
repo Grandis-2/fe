@@ -1,15 +1,16 @@
 /**
- * 화면 옆 요청 모니터(@widgets/request-monitor)가 그리는 기록. apiClient가 보내는 폴링·SSE 요청과
- * 실패 뒤 기다린 시간을 일어난 순서대로 쌓는다. 최근 MAX_ENTRIES개만 둔다.
+ * 화면 옆 요청 모니터(@widgets/request-monitor)가 그리는 기록. apiClient가 보내는 대기열·사전예약·결제·알림
+ * 요청과 실패 뒤 기다린 시간을 일어난 순서대로 쌓는다. 최근 MAX_ENTRIES개만 둔다.
  * 기록만 하고 요청 흐름에는 끼어들지 않는다.
  */
-// 폴링이면 'poll', SSE 연결이면 'sse'.
-export type Channel = 'poll' | 'sse'
+export type Topic = '대기열' | '사전예약' | '결제' | '알림'
 
 export type LoggedRequest = {
   kind: 'request'
   id: number
-  channel: Channel
+  topic: Topic
+  // SSE 연결이면 true.
+  sse: boolean
   startedAt: number
   endedAt: number | null
   method: string
@@ -27,7 +28,9 @@ export type LoggedRequest = {
 export type LoggedWait = {
   kind: 'wait'
   id: number
-  channel: Channel
+  topic: Topic
+  // SSE 재연결 대기면 true.
+  sse: boolean
   startedAt: number
   waitMs: number
   baseMs: number
@@ -62,13 +65,23 @@ export const requestLog = {
   clear: () => commit([]),
 }
 
-// 폴링 쿼리는 queryFn의 signal을 pollingSignal로 감싸 넘긴다 — 그 signal로 보낸 요청만 기록한다.
-// 폴링 여부는 API 함수가 아니라 쿼리가 정해서(같은 주문 상세도 결제 확인 중일 때만 폴링) 여기서 고른다.
-const pollingSignals = new WeakSet<AbortSignal>()
+// 결제 결과를 기다리며 주문·응모 상태를 다시 묻는 요청은 주소만으로는 주문 상세 조회와 구분되지 않는다 —
+// 그 조회는 signal을 이걸로 감싸 넘긴다.
+const paymentCheckSignals = new WeakSet<AbortSignal>()
 
-export const pollingSignal = (signal: AbortSignal) => {
-  pollingSignals.add(signal)
+export const paymentCheckSignal = (signal: AbortSignal) => {
+  paymentCheckSignals.add(signal)
   return signal
+}
+
+// 모니터에 보일 흐름. 관리자 API(/api/v1/admin/…)와 상품·장바구니 같은 나머지는 null — 남기지 않는다.
+const topicOf = (path: string, signal?: AbortSignal): Topic | null => {
+  if (path.startsWith('/api/v1/preorders/queue')) return '대기열'
+  if (path.includes('/payment-attempts')) return '결제'
+  if (signal && paymentCheckSignals.has(signal)) return '결제'
+  if (path.startsWith('/api/v1/preorders')) return '사전예약'
+  if (path.startsWith('/api/v1/notifications')) return '알림'
+  return null
 }
 
 const noop = () => {}
@@ -76,7 +89,10 @@ const noop = () => {}
 const bodyKey = (body: unknown) =>
   body instanceof FormData ? `form-${nextId}` : JSON.stringify(body ?? null)
 
-// 요청을 보내기 직전에 부르고, 끝나면 돌려받은 함수에 결과를 넘긴다. 폴링·SSE가 아니면 남기지 않는다.
+const isRequest = (entry: LogEntry): entry is LoggedRequest =>
+  entry.kind === 'request'
+
+// 요청을 보내기 직전에 부르고, 끝나면 돌려받은 함수에 결과를 넘긴다. 모니터에 보일 흐름이 아니면 남기지 않는다.
 export function logRequest(request: {
   method: string
   path: string
@@ -85,24 +101,20 @@ export function logRequest(request: {
   signal?: AbortSignal
   sse?: boolean
 }): (result: { status: number | null; retryAfter?: number }) => void {
-  const channel: Channel | null = request.sse
-    ? 'sse'
-    : request.signal && pollingSignals.has(request.signal)
-      ? 'poll'
-      : null
-  if (!channel) return noop
+  const topic = topicOf(request.path, request.signal)
+  if (!topic) return noop
   const signature = `${request.method} ${request.path} ${request.idempotencyKey ?? bodyKey(request.body)}`
-  const previous = entries.findLast(
-    (entry): entry is LoggedRequest =>
-      entry.kind === 'request' && entry.signature === signature,
-  )
+  const previous = entries
+    .filter(isRequest)
+    .findLast((entry) => entry.signature === signature)
   const id = nextId++
   commit([
     ...entries,
     {
       kind: 'request',
       id,
-      channel,
+      topic,
+      sse: request.sse ?? false,
       startedAt: Date.now(),
       endedAt: null,
       method: request.method,
@@ -136,19 +148,31 @@ export function logRequest(request: {
     )
 }
 
-export function logWait(
-  wait: Omit<LoggedWait, 'kind' | 'id' | 'startedAt' | 'channel'> & {
-    channel?: Channel
-  },
-) {
+type WaitInput = Omit<LoggedWait, 'kind' | 'id' | 'startedAt' | 'topic' | 'sse'>
+
+// 실패 뒤 기다리기 시작할 때 부른다. 폴링 대기는 방금 끝난 요청(실패 직후에 불리므로 가장 늦게 끝난 것)의
+// 흐름을 따르고, 그 요청이 기록에 없거나 실패가 아니면(관리자 화면 폴링 등) 남기지 않는다.
+// 같은 ms에 끝났으면 뒤에 남긴 쪽이 더 늦은 것이다(>=).
+export function logWait(wait: WaitInput & { sse?: boolean }) {
+  const failed = wait.sse
+    ? null
+    : entries
+        .filter(isRequest)
+        .reduce<LoggedRequest | null>(
+          (latest, entry) =>
+            (entry.endedAt ?? 0) >= (latest?.endedAt ?? 0) ? entry : latest,
+          null,
+        )
+  if (!wait.sse && failed?.outcome !== 'fail') return
   commit([
     ...entries,
     {
       kind: 'wait',
       id: nextId++,
+      topic: failed?.topic ?? '알림',
       startedAt: Date.now(),
-      channel: 'poll',
       ...wait,
+      sse: wait.sse ?? false,
     },
   ])
 }

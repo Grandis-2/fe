@@ -3,11 +3,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
-import {
-  pollingRetry,
-  pollingSignal,
-  queryPolicy,
-} from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import { logWait } from '@shared/api/requestLog'
 import { delay } from '@shared/lib/delay'
 
@@ -68,7 +64,7 @@ export const useUnreadNotificationCount = (enabled: boolean) => {
         const maxMs = Math.min(RECONNECT_MS * 2 ** failures, RECONNECT_MAX_MS)
         const waitMs = Math.random() * maxMs
         logWait({
-          channel: 'sse',
+          sse: true,
           waitMs,
           baseMs: RECONNECT_MS,
           failureCount: failures - 1,
@@ -88,7 +84,7 @@ export const useUnreadNotificationCount = (enabled: boolean) => {
 
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getUnreadNotificationCount(pollingSignal(signal)),
+    queryFn: ({ signal }) => getUnreadNotificationCount(signal),
     enabled,
     ...queryPolicy.live,
     refetchInterval: isLive ? LIVE_SYNC_MS : POLL_INTERVAL_MS,

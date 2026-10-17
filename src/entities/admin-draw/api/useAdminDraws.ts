@@ -2,11 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
 import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
-import {
-  pollingRetry,
-  pollingSignal,
-  queryPolicy,
-} from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
 
@@ -57,8 +53,7 @@ export const useAdminDrawProgress = (
     !data || intervalMs === false || isDrawSettled(data) ? null : intervalMs
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) =>
-      getAdminDrawProgress(drawId, pollingSignal(signal)),
+    queryFn: ({ signal }) => getAdminDrawProgress(drawId, signal),
     ...queryPolicy.live,
     refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
     ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),

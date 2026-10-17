@@ -1,10 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import {
-  pollingRetry,
-  pollingSignal,
-  queryPolicy,
-} from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 
 import { enterQueue, getQueueStatus, submitPreorder } from './queue'
 import { reservationKeys } from './useReservations'
@@ -44,7 +40,7 @@ export const useQueueStatus = (
   return useQuery({
     queryKey,
     queryFn: ({ signal }) =>
-      getQueueStatus(productId, entry?.queueToken ?? '', pollingSignal(signal)),
+      getQueueStatus(productId, entry?.queueToken ?? '', signal),
     enabled: enabled && Boolean(entry?.queueToken),
     initialData: entry,
     refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,

@@ -258,6 +258,17 @@ export const path = style({ overflowWrap: 'anywhere' })
 
 export const method = style({ color: onDark(50) })
 
+// 어느 흐름의 요청인지(대기열·사전예약·결제·알림).
+export const topic = style([
+  typography.body.caption,
+  {
+    padding: `0 ${spacing[6]}`,
+    borderRadius: '999px',
+    border: `1px solid ${onDark(24)}`,
+    color: onDark(75),
+  },
+])
+
 export const status = styleVariants({
   ok: { color: statusOnDark.success },
   fail: { color: statusOnDark.danger },

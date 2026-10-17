@@ -1,11 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import {
-  keepNewer,
-  pollingRetry,
-  pollingSignal,
-  queryPolicy,
-} from '@shared/api/queryPolicy'
+import { keepNewer, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { PreorderStatus } from '@shared/api/types'
 
 import {
@@ -54,7 +49,7 @@ export const useReservation = (preorderId: string) => {
   const queryKey = reservationKeys.detail(preorderId)
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getReservation(preorderId, pollingSignal(signal)),
+    queryFn: ({ signal }) => getReservation(preorderId, signal),
     enabled: preorderId !== '',
     refetchInterval: ({ state: { data } }) => settlePollMs(data) ?? false,
     // PAYMENT_IN_PROGRESS·PAYMENT_EXPIRED로 바뀔 땐 version이 그대로라 같은 값은 받는다.

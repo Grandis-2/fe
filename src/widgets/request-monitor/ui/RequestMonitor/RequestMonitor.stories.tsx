@@ -17,7 +17,8 @@ const request = (
 ): LogEntry => ({
   kind: 'request',
   id,
-  channel: 'poll',
+  topic: '대기열',
+  sse: false,
   startedAt: NOW - secondsAgo * 1000,
   endedAt: NOW - secondsAgo * 1000 + 120,
   method: 'GET',
@@ -40,7 +41,8 @@ const wait = (
   return {
     kind: 'wait',
     id,
-    channel: 'poll',
+    topic: '대기열',
+    sse: false,
     startedAt: NOW - secondsAgo * 1000,
     waitMs,
     baseMs: 2000,
@@ -93,7 +95,8 @@ export const BackingOff: Story = {}
 const STREAM = '/api/v1/notifications/stream'
 const sse = (id: number, secondsAgo: number, status: number, repeat = false) =>
   request(id, secondsAgo, status, {
-    channel: 'sse',
+    topic: '알림',
+    sse: true,
     path: STREAM,
     retryAfter: 0,
     repeat,
@@ -109,7 +112,8 @@ export const SseReconnect: Story = {
       {
         kind: 'wait',
         id: 2,
-        channel: 'sse',
+        topic: '알림',
+        sse: true,
         startedAt: NOW - 29_900,
         waitMs: 6_200,
         baseMs: 5_000,
@@ -122,7 +126,8 @@ export const SseReconnect: Story = {
       {
         kind: 'wait',
         id: 4,
-        channel: 'sse',
+        topic: '알림',
+        sse: true,
         startedAt: NOW - 23_500,
         waitMs: 14_100,
         baseMs: 5_000,
@@ -132,6 +137,35 @@ export const SseReconnect: Story = {
         maxMs: 20_000,
       },
       sse(5, 9.3, 200, true),
+    ],
+  },
+}
+
+const CONFIRM = '/api/v1/orders/1/payment-attempts/t1/confirm'
+
+// 결제 승인이 503이라 같은 내용으로 한 번 더 보내고, 그다음 주문 상태를 묻는다.
+export const ConfirmResent: Story = {
+  args: {
+    fault: 'confirm',
+    entries: [
+      request(1, 12, 503, {
+        topic: '결제',
+        method: 'POST',
+        path: CONFIRM,
+        signature: 'POST confirm',
+      }),
+      request(2, 11.8, 503, {
+        topic: '결제',
+        method: 'POST',
+        path: CONFIRM,
+        signature: 'POST confirm',
+        repeat: true,
+      }),
+      request(3, 8.7, 200, {
+        topic: '결제',
+        path: '/api/v1/orders/1',
+        retryAfter: 0,
+      }),
     ],
   },
 }

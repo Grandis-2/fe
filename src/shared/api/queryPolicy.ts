@@ -7,8 +7,6 @@ import {
 import { ApiRequestError } from './client'
 import { logWait } from './requestLog'
 
-export { pollingSignal } from './requestLog'
-
 // 다시 보내도 결과가 같은 실패(4xx — 인증·검증·없음)는 재시도하지 않는다.
 // 응답을 못 받았거나(타임아웃·네트워크, status 0) 서버 오류(5xx)일 때만 다시 묻는다.
 // 401이라도 details.retryable이면 세션 문제가 아니라 일시 장애다(명세) — apiClient가 한 번

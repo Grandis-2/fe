@@ -42,21 +42,21 @@ const statusText = (entry: LoggedRequest) =>
       ? '취소'
       : entry.status === 0
         ? '응답 없음'
-        : entry.channel === 'sse' && entry.outcome === 'ok'
+        : entry.sse && entry.outcome === 'ok'
           ? '연결됨'
           : String(entry.status)
 
 // 기다린 시간이 정책의 어느 항에서 나왔는지 — 폴링은 queryPolicy.backoffDelay,
 // SSE 재연결은 useUnreadNotificationCount(0~상한 사이 무작위).
 const waitReason = ({
-  channel,
+  sse,
   baseMs,
   failureCount,
   retryAfterMs,
   minMs,
   maxMs,
 }: LoggedWait) => {
-  if (channel === 'sse')
+  if (sse)
     return `SSE 끊김 ${failureCount + 1}번째 · ${seconds(baseMs)} × 2^${failureCount + 1}(최대 1분) → 0~${seconds(maxMs)} 사이 무작위`
   const doubled = baseMs * 2 ** failureCount
   const from =
@@ -91,8 +91,8 @@ function useNow(active: boolean) {
 }
 
 /**
- * 뒤에서 오가는 폴링·SSE 요청을 화면 옆에 그대로 보여 주는 창 — 백오프(실패하면 간격을 늘림)와
- * SSE 재연결이 실제로 어떻게 일어나는지 개발자 도구 없이 본다.
+ * 대기열·사전예약·결제·알림 요청을 화면 옆에 그대로 보여 주는 창 — 백오프(실패하면 간격을 늘림),
+ * 재전송(같은 내용으로 다시 보냄), SSE 재연결이 실제로 어떻게 일어나는지 개발자 도구 없이 본다.
  * 목 서버면 [장애 내기]로 고른 요청을 503으로 실패시킬 수 있다.
  */
 export function RequestMonitor() {
@@ -252,9 +252,11 @@ export function RequestMonitorPanel({
       </div>
 
       <p className={styles.policy}>
-        폴링과 SSE만 보여요. 폴링이 실패하면 다음 요청까지 두 배씩 늘려
-        기다리고(최대 30초, 무작위로 최대 1.5배), 4xx는 다시 묻지 않아요. SSE가
-        끊기면 0초~상한(두 배씩, 최대 1분) 사이 무작위로 기다렸다 다시 연결해요.
+        대기열·사전예약·결제·알림 요청만 보여요. 계속 묻는 요청이 실패하면 두
+        배씩 늘려 기다리고(최대 30초, 무작위로 최대 1.5배), 4xx는 다시 묻지
+        않아요. 결제 승인은 응답을 못 받으면 같은 내용으로 한 번만 다시 보내고,
+        알림 SSE가 끊기면 0초~상한(두 배씩, 최대 1분) 사이 무작위로 기다렸다
+        다시 연결해요.
       </p>
 
       {blocked && (
@@ -338,8 +340,8 @@ export function RequestMonitorPanel({
       <ol className={styles.list}>
         {entries.length === 0 && (
           <li className={styles.empty}>
-            아직 폴링·SSE 요청이 없어요. 대기열·결제 확인·알림처럼 계속 묻는
-            화면에 들어가면 여기에 쌓여요.
+            아직 대기열·사전예약·결제·알림 요청이 없어요. 그 화면에 들어가면
+            여기에 쌓여요.
           </li>
         )}
         {entries.toReversed().map((entry) =>
@@ -347,6 +349,7 @@ export function RequestMonitorPanel({
             <li key={entry.id} className={styles.row}>
               <span className={styles.time}>{clock(entry.startedAt)}</span>
               <span className={styles.line}>
+                <span className={styles.topic}>{entry.topic}</span>
                 <span className={styles.status.wait}>
                   {seconds(entry.waitMs)} 기다림
                 </span>
@@ -380,8 +383,9 @@ function RequestRow({
     <li className={styles.row}>
       <span className={styles.time}>{clock(entry.startedAt)}</span>
       <span className={styles.line}>
+        <span className={styles.topic}>{entry.topic}</span>
         <span className={styles.method}>
-          {entry.channel === 'sse' ? 'SSE' : entry.method}
+          {entry.sse ? 'SSE' : entry.method}
         </span>
         <span className={styles.path}>{shortPath(entry.path)}</span>
         <span className={styles.status[entry.outcome]}>
@@ -389,7 +393,11 @@ function RequestRow({
         </span>
         {entry.repeat && (
           <span className={styles.tag}>
-            {entry.channel === 'sse' ? '다시 연결' : '다시 물음'}
+            {entry.sse
+              ? '다시 연결'
+              : entry.method === 'GET'
+                ? '다시 물음'
+                : '같은 내용 재전송'}
           </span>
         )}
       </span>

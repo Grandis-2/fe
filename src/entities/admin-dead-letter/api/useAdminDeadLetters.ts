@@ -1,10 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import {
-  pollingRetry,
-  pollingSignal,
-  queryPolicy,
-} from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { DeadLetterListParams } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
@@ -47,7 +43,7 @@ export const useDeadLetters = (
   }
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getDeadLetters(params, pollingSignal(signal)),
+    queryFn: ({ signal }) => getDeadLetters(params, signal),
     ...queryPolicy.live,
     refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
     ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
