@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { pollEvery, queryPolicy } from '@shared/api/queryPolicy'
+import { pollEvery, pollingSignal, queryPolicy } from '@shared/api/queryPolicy'
 import type { AdmissionRateView } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
@@ -28,7 +28,7 @@ export const useWaitingroomStatus = (intervalMs: RefreshInterval) => {
   const queryKey = [...WAITINGROOM_KEY, 'status'] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getWaitingroomStatus(signal),
+    queryFn: ({ signal }) => getWaitingroomStatus(pollingSignal(signal)),
     ...queryPolicy.live,
     ...pollEvery(
       queryClient,

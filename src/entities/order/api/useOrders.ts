@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
+import {
+  pollingRetry,
+  pollingSignal,
+  queryPolicy,
+} from '@shared/api/queryPolicy'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
@@ -44,7 +48,7 @@ export const useOrder = (orderId: string) => {
   const deadline = useDeadline(pollMs() !== null, AUTHORIZING_LIMIT_MS)
   const query = useQuery({
     queryKey,
-    queryFn: ({ signal }) => getOrder(orderId, signal),
+    queryFn: ({ signal }) => getOrder(orderId, pollingSignal(signal)),
     enabled: orderId !== '' && !deadline.passed,
     refetchInterval: ({ state: { data } }) => authorizingPollMs(data) ?? false,
     ...queryPolicy.live,

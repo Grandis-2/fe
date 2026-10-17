@@ -67,6 +67,7 @@ async function send<TData>(
     path,
     body,
     idempotencyKey: headers?.['Idempotency-Key'],
+    signal,
   })
   try {
     const response = await http.request<ApiResponse<TData> | string>({
@@ -190,6 +191,7 @@ async function openStream(
   retried = false,
 ): Promise<ReadableStream<Uint8Array>> {
   const sentId = requestId()
+  const logged = logRequest({ method: 'GET', path, sse: true })
   let response: Response
   try {
     response = await fetch(path, {
@@ -202,6 +204,7 @@ async function openStream(
       signal,
     })
   } catch (caught) {
+    logged({ status: signal.aborted ? null : 0 })
     if (signal.aborted) throw caught
     throw new ApiRequestError(
       {
@@ -213,6 +216,7 @@ async function openStream(
       sentId,
     )
   }
+  logged({ status: response.status })
   if (response.ok && response.body) return response.body
   if (
     response.status === 401 &&

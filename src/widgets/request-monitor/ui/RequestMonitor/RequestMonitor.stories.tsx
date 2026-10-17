@@ -17,6 +17,7 @@ const request = (
 ): LogEntry => ({
   kind: 'request',
   id,
+  channel: 'poll',
   startedAt: NOW - secondsAgo * 1000,
   endedAt: NOW - secondsAgo * 1000 + 120,
   method: 'GET',
@@ -39,6 +40,7 @@ const wait = (
   return {
     kind: 'wait',
     id,
+    channel: 'poll',
     startedAt: NOW - secondsAgo * 1000,
     waitMs,
     baseMs: 2000,
@@ -88,23 +90,48 @@ type Story = StoryObj<typeof meta>
 
 export const BackingOff: Story = {}
 
-// 결제 승인이 503이라 같은 내용으로 한 번 더 보내고, 그다음 주문 상태를 묻는다.
-export const ConfirmResent: Story = {
+const STREAM = '/api/v1/notifications/stream'
+const sse = (id: number, secondsAgo: number, status: number, repeat = false) =>
+  request(id, secondsAgo, status, {
+    channel: 'sse',
+    path: STREAM,
+    retryAfter: 0,
+    repeat,
+    signature: `GET ${STREAM} null`,
+  })
+
+// 알림 SSE가 503으로 두 번 못 열려 상한(10→20초) 안에서 무작위로 기다렸다 다시 연결됐다.
+export const SseReconnect: Story = {
   args: {
-    fault: 'confirm',
+    fault: 'all',
     entries: [
-      request(1, 12, 503, {
-        method: 'POST',
-        path: '/api/v1/orders/1/payment-attempts/t1/confirm',
-        signature: 'POST confirm',
-      }),
-      request(2, 11.8, 503, {
-        method: 'POST',
-        path: '/api/v1/orders/1/payment-attempts/t1/confirm',
-        signature: 'POST confirm',
-        repeat: true,
-      }),
-      request(3, 8.7, 200, { path: '/api/v1/orders/1', retryAfter: 0 }),
+      sse(1, 30, 503),
+      {
+        kind: 'wait',
+        id: 2,
+        channel: 'sse',
+        startedAt: NOW - 29_900,
+        waitMs: 6_200,
+        baseMs: 5_000,
+        failureCount: 0,
+        retryAfterMs: 0,
+        minMs: 0,
+        maxMs: 10_000,
+      },
+      sse(3, 23.6, 503, true),
+      {
+        kind: 'wait',
+        id: 4,
+        channel: 'sse',
+        startedAt: NOW - 23_500,
+        waitMs: 14_100,
+        baseMs: 5_000,
+        failureCount: 1,
+        retryAfterMs: 0,
+        minMs: 0,
+        maxMs: 20_000,
+      },
+      sse(5, 9.3, 200, true),
     ],
   },
 }

@@ -4,6 +4,7 @@ import {
   keepNewer,
   pollEvery,
   pollingRetry,
+  pollingSignal,
   queryPolicy,
 } from '@shared/api/queryPolicy'
 import type { AdminPreorderListParams, PreorderStats } from '@shared/api/types'
@@ -42,7 +43,8 @@ export const useAdminReservations = (
   const queryKey = [...RESERVATIONS_KEY, 'list', params] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getAdminReservations(params, signal),
+    queryFn: ({ signal }) =>
+      getAdminReservations(params, pollingSignal(signal)),
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
   })
@@ -71,7 +73,8 @@ export const useReservationStats = (
   const queryKey = [...RESERVATIONS_KEY, 'stats', productId] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getReservationStats(productId, signal),
+    queryFn: ({ signal }) =>
+      getReservationStats(productId, pollingSignal(signal)),
     // 소수 초 자릿수가 응답마다 달라(0·3·6자리) 문자열이 아니라 시각으로 비교한다.
     structuralSharing: keepNewer<PreorderStats>(({ countedAt }) =>
       Date.parse(countedAt),
@@ -115,7 +118,7 @@ export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
   const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors'] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getSyncJobErrorGroups(signal),
+    queryFn: ({ signal }) => getSyncJobErrorGroups(pollingSignal(signal)),
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
   })
@@ -144,7 +147,8 @@ export const useAdminReservation = (preorderId: string) => {
   ) => (data && data.status !== 'CANCELED' ? POLL_INTERVAL_MS : null)
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getAdminReservation(preorderId, signal),
+    queryFn: ({ signal }) =>
+      getAdminReservation(preorderId, pollingSignal(signal)),
     select: toAdminReservationDetail,
     ...queryPolicy.live,
     refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,

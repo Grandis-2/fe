@@ -1,6 +1,10 @@
 import type { OrderPaymentResult } from '@entities/order'
 import { ApiRequestError } from '@shared/api/client'
-import { backoffDelay, isRetryableError } from '@shared/api/queryPolicy'
+import {
+  backoffDelay,
+  isRetryableError,
+  pollingSignal,
+} from '@shared/api/queryPolicy'
 import { pollUntil } from '@shared/lib/pollUntil'
 
 // 주문 결제와 럭키 드로우 응모비 결제가 같이 쓰는 승인 뒤처리.
@@ -47,6 +51,8 @@ const pollOutcome = async (
   check: () => Promise<PaymentOutcome | null>,
   signal?: AbortSignal,
 ): Promise<PaymentOutcome> => {
+  // 상태 확인(check)도 이 signal로 보낸다 — 요청 모니터에 폴링으로 보인다.
+  if (signal) pollingSignal(signal)
   let failures = 0
   let lastFailure: unknown = null
   return (
