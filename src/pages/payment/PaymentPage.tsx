@@ -51,7 +51,13 @@ import { formatWon } from '@shared/lib/formatNumber'
 import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, Container, Input, InlineAlert } from '@shared/ui'
+import {
+  ActionButton,
+  Container,
+  Input,
+  InlineAlert,
+  PollingNotice,
+} from '@shared/ui'
 
 import * as styles from './PaymentPage.css'
 
@@ -425,6 +431,8 @@ export function PaymentPage() {
         {paymentError && (
           <InlineAlert status="error">{paymentError}</InlineAlert>
         )}
+        {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. */}
+        <PollingNotice query={reservation} />
         {checkout.blockedReason && (
           <InlineAlert status="info">{checkout.blockedReason}</InlineAlert>
         )}

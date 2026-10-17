@@ -22,7 +22,7 @@ import { drawPaymentPath, mypagePath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { useCountdown } from '@shared/lib/useCountdown'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, InlineAlert } from '@shared/ui'
+import { ActionButton, InlineAlert, PollingNotice } from '@shared/ui'
 
 import { NOTICES, STEPS } from '../../lib/drawDetailCopy'
 import { getDrawView } from '../../lib/getDrawAction'
@@ -67,6 +67,7 @@ export function DrawDetail({ drawId }: DrawDetailProps) {
       draw={draw.data}
       entry={entry.data}
       isEntryLoading={isLoggedIn && entry.isPending}
+      entryPoll={entry}
     />
   )
 }
@@ -76,9 +77,31 @@ type DrawDetailBodyProps = {
   // undefined는 아직 모르는 것, null은 응모하지 않은 것이다.
   entry: DrawEntry | null | undefined
   isEntryLoading: boolean
+  // 승인·추첨 결과를 기다리며 다시 묻는 상태(실패·시간 초과 안내용).
+  entryPoll: Pick<
+    ReturnType<typeof useMyDrawEntry>,
+    'fetchStatus' | 'failureCount' | 'timedOut' | 'recheck'
+  >
 }
 
-function DrawDetailBody({ draw, entry, isEntryLoading }: DrawDetailBodyProps) {
+// 기다리던 결과를 제한 시간 안에 못 받았을 때의 안내. 결제는 다시 결제하지 않게 막는다.
+const TIMEOUT_COPY = {
+  payment: {
+    title: '결제 결과를 확인하지 못했어요. 응모 내역에서 확인해 주세요.',
+    description: '다시 결제하지 마세요.',
+  },
+  result: {
+    title: '결과가 아직 나오지 않았어요.',
+    description: '당첨되면 알림으로 알려드려요.',
+  },
+} as const
+
+function DrawDetailBody({
+  draw,
+  entry,
+  isEntryLoading,
+  entryPoll,
+}: DrawDetailBodyProps) {
   const navigate = useNavigate()
   const requireLogin = useRequireLogin()
   const others = useDraws()
@@ -204,6 +227,17 @@ function DrawDetailBody({ draw, entry, isEntryLoading }: DrawDetailBodyProps) {
               </div>
             </dl>
 
+            <PollingNotice
+              query={entryPoll}
+              timeout={
+                entryPoll.timedOut
+                  ? {
+                      ...TIMEOUT_COPY[entryPoll.timedOut],
+                      onRecheck: entryPoll.recheck,
+                    }
+                  : null
+              }
+            />
             {view.note && (
               <div className={styles.note[view.note.tone]}>
                 <span className={styles.noteTitle}>{view.note.title}</span>
