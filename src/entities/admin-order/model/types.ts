@@ -6,6 +6,7 @@ import type {
   OrderStatus,
   ShippingStep,
 } from '@shared/api/types'
+import { shortId } from '@shared/lib/shortId'
 
 // 서버 응답과 화면이 쓰는 모양이 같아서 매퍼 없이 그대로 재노출한다.
 export type AdminOrder = AdminOrderSummary
@@ -68,8 +69,8 @@ export const adminOrderSources = Object.keys(
   adminOrderSourceLabel,
 ) as OrderSource[]
 
-/** 화면이 이 순서로 보여주는 짧은 주문 번호 — 전체 id는 상세에서 본다 */
-export const orderNo = (orderId: string) => orderId.slice(0, 8).toUpperCase()
+/** 화면에 보이는 짧은 주문 번호 — 회원 화면의 주문번호와 같다. 전체 id는 상세에서 본다 */
+export const orderNo = shortId
 
 export type NextShippingStep = {
   step: ShippingStep
