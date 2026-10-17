@@ -29,6 +29,11 @@ export type ApiRequestOptions = {
   skipAuthRefresh?: boolean
   // 쿼리 키가 바뀌거나 화면을 떠날 때 이전 요청을 취소한다.
   signal?: AbortSignal
+  // 사진 업로드처럼 전송이 긴 요청만 늘린다. 기본은 TIMEOUT_MS.
+  timeout?: number
+  // API 도메인으로 직접 부르는 요청은 쿠키가 필요 없다 — false면 CORS가 credentials를
+  // 허용하지 않아도 통한다. 인증은 Authorization 헤더로 간다.
+  withCredentials?: boolean
 }
 
 const TIMEOUT_MS = 10_000
@@ -47,7 +52,14 @@ type RawResponse<TData> = AxiosResponse<ApiResponse<TData> | string>
 
 async function send<TData>(
   path: string,
-  { body, method = 'GET', headers, signal }: ApiRequestOptions,
+  {
+    body,
+    method = 'GET',
+    headers,
+    signal,
+    timeout,
+    withCredentials,
+  }: ApiRequestOptions,
 ): Promise<RawResponse<TData>> {
   try {
     return await http.request<ApiResponse<TData> | string>({
@@ -55,6 +67,8 @@ async function send<TData>(
       method,
       data: body,
       signal,
+      timeout,
+      withCredentials,
       headers: {
         'X-Request-Id': requestId(),
         ...getAuthHeaders(),

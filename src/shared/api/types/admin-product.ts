@@ -296,26 +296,6 @@ export type RegistrationImages = {
 }
 
 /**
- * 상품 사진 업로드 URL 발급(POST /admin/products/image-uploads). 파일 하나에 한 번씩
- * 부른다. jpeg·png·webp, 1바이트~10MiB 밖이면 400.
- */
-export type ImageUploadRequest = {
-  contentType: string
-  /** 실제 파일 바이트 수와 같아야 한다 — 다르면 올리기가 403이다 */
-  contentLength: number
-}
-
-export type ImageUpload = {
-  /** 파일을 PUT으로 올릴 서명 주소. 5분 동안만 쓸 수 있다 */
-  uploadUrl: string
-  /** 올리기 요청에 그대로 넣을 헤더(Content-Type) — 서명에 포함돼 있다 */
-  headers: Record<string, string>
-  /** 올린 뒤의 사진 주소(CDN). 화면 표시·등록·사진 넣기에는 이것만 쓴다 */
-  imageUrl: string
-  expiresAt: string
-}
-
-/**
  * 등록 뒤 사진 한 장 넣기(POST /admin/products/{id}/images). 묶음 맨 뒤에 들어가고, 빈
  * 묶음의 첫 장은 대표가 된다. 사전예약 수정 잠금과 상관없이 오픈 뒤에도 된다.
  */

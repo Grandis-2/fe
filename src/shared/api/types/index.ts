@@ -1,4 +1,5 @@
 export type * from './admin-dead-letter'
+export type * from './admin-image'
 export type * from './admin-product'
 export type * from './admin-promotion'
 export type * from './admin-reservation'

@@ -4,7 +4,6 @@ import { adminProductStore } from '../fixtures/admin-product'
 import {
   imagesOf,
   MOCK_CDN_ORIGIN,
-  MOCK_UPLOAD_ORIGIN,
   mockUploadedFiles,
   productImageStore,
   toBundle,
@@ -18,8 +17,8 @@ import type {
   AdminProductDetail,
   AdminProductListItem,
   AdminProductResponse,
-  ImageUpload,
-  ImageUploadRequest,
+  AdminImagePurpose,
+  AdminImageUpload,
   OptionValueAddRequest,
   OptionValueEditRequest,
   PageResponse,
@@ -1083,63 +1082,47 @@ export const adminProductHandlers: RequestHandler[] = [
     },
   ),
 
-  // 사진 업로드 주소 발급 — 실서버와 같은 형식·크기 규칙으로 400을 준다.
-  http.post(
-    url('/api/v1/admin/products/image-uploads'),
-    async ({ request }) => {
-      const body = await readBody<ImageUploadRequest>(request)
-      const contentType = body?.contentType ?? ''
-      const contentLength = body?.contentLength ?? 0
-      const types = ['image/jpeg', 'image/png', 'image/webp']
-      if (!types.includes(contentType)) {
-        return invalid([
-          {
-            field: 'contentType',
-            message: 'image/jpeg, image/png, image/webp만 됩니다.',
-          },
-        ])
-      }
-      if (
-        !Number.isInteger(contentLength) ||
-        contentLength < 1 ||
-        contentLength > 10 * 1024 * 1024
-      ) {
-        return invalid([
-          {
-            field: 'contentLength',
-            message: '1 ~ 10,485,760 바이트여야 합니다.',
-          },
-        ])
-      }
-      const ext = contentType.split('/')[1].replace('jpeg', 'jpg')
-      const key = `products/${crypto.randomUUID()}.${ext}`
-      return ok<ImageUpload>(
-        {
-          uploadUrl: `${MOCK_UPLOAD_ORIGIN}/${key}?X-Amz-Signature=mock`,
-          headers: { 'Content-Type': contentType },
-          imageUrl: `${MOCK_CDN_ORIGIN}/${key}`,
-          expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
-        },
-        201,
-      )
-    },
-  ),
-
-  // 가짜 S3 — 올린 파일을 메모리에 둔다. 응답은 봉투가 아니라 상태 코드뿐이다(실서버와 같다).
-  http.put(
-    `${MOCK_UPLOAD_ORIGIN}/products/:file`,
-    async ({ request, params }) => {
-      mockUploadedFiles.set(
-        `products/${String(params.file)}`,
-        await request.blob(),
-      )
-      return new HttpResponse(null, { status: 200 })
-    },
-  ),
+  // 사진 한 장 올리기 — 실서버와 같은 형식·크기 규칙으로 400·413을 준다.
+  http.post(url('/api/v1/admin/images'), async ({ request }) => {
+    const purpose = new URL(request.url).searchParams.get('purpose')
+    const folders: Record<AdminImagePurpose, string> = {
+      PRODUCT: 'products',
+      PROMOTION: 'promotions',
+    }
+    if (purpose !== 'PRODUCT' && purpose !== 'PROMOTION') {
+      return invalid([
+        { field: 'purpose', message: 'PRODUCT, PROMOTION 중 하나여야 합니다.' },
+      ])
+    }
+    const files = (await request.formData()).getAll('file')
+    const file = files[0]
+    if (files.length !== 1 || !(file instanceof File)) {
+      return invalid([
+        { field: 'file', message: '파일 파트는 정확히 하나여야 합니다.' },
+      ])
+    }
+    if (file.type !== 'image/jpeg' && file.type !== 'image/png') {
+      return invalid([
+        { field: 'file', message: 'JPEG, PNG 사진만 올릴 수 있습니다.' },
+      ])
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      return fail(413, {
+        code: 'VALIDATION_FAILED',
+        message: '파일이 10MB를 넘습니다.',
+      })
+    }
+    const ext = file.type === 'image/png' ? 'png' : 'jpg'
+    const key = `${folders[purpose]}/${crypto.randomUUID()}.${ext}`
+    mockUploadedFiles.set(key, file)
+    return ok<AdminImageUpload>({ imageUrl: `${MOCK_CDN_ORIGIN}/${key}` }, 201)
+  }),
 
   // 가짜 CDN — 올린 파일을 그대로 돌려준다. 새로고침하면 메모리가 비어 404다.
-  http.get(`${MOCK_CDN_ORIGIN}/products/:file`, ({ params }) => {
-    const file = mockUploadedFiles.get(`products/${String(params.file)}`)
+  http.get(`${MOCK_CDN_ORIGIN}/:folder/:file`, ({ params }) => {
+    const file = mockUploadedFiles.get(
+      `${String(params.folder)}/${String(params.file)}`,
+    )
     return file
       ? new HttpResponse(file, { headers: { 'Content-Type': file.type } })
       : new HttpResponse(null, { status: 404 })
