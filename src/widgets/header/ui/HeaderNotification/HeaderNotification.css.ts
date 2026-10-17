@@ -33,10 +33,17 @@ export const panel = style({
   },
 })
 
+export const titleRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[12],
+  padding: `${spacing[12]} ${spacing[16]} ${spacing[12]} ${spacing[20]}`,
+  borderBottom: `1px solid ${color.border.subtle}`,
+})
+
 export const title = style([
   typography.title.smMedium,
-  {
-    padding: `${spacing[16]} ${spacing[20]}`,
-    borderBottom: `1px solid ${color.border.subtle}`,
-  },
+  // "모두 읽음"(작은 버튼, 37px)이 사라져도 줄 높이가 그대로이게 맞춘다.
+  { lineHeight: '37px' },
 ])

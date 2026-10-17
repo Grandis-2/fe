@@ -10,8 +10,9 @@ import {
   getUnreadNotificationCount,
   streamUnreadNotificationCount,
 } from './notification'
+import { notificationKeys } from './useNotifications'
 
-const queryKey = ['notifications', 'unread-count'] as const
+const queryKey = notificationKeys.unreadCount
 // SSE가 끊겨 있는 동안만 주기적으로 묻는다(명세: 503이면 unread-count 주기 조회로 돌아간다).
 // 조회가 실패하면 pollingInterval이 간격을 4배로 늘린다.
 const POLL_INTERVAL_MS = 60_000
