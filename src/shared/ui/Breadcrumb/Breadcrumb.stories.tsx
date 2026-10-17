@@ -15,7 +15,7 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   args: {
     items: [
-      { label: '예약 현황', to: '/admin/orders' },
+      { label: '예약 현황', to: '/admin/reservations' },
       { label: 'RSV-18821' },
     ],
   },
@@ -23,7 +23,7 @@ export const Default: Story = {
     await expect(canvas.getByRole('navigation')).toBeVisible()
     await expect(
       canvas.getByRole('link', { name: '예약 현황' }),
-    ).toHaveAttribute('href', '/admin/orders')
+    ).toHaveAttribute('href', '/admin/reservations')
     // 마지막 항목은 링크가 아니라 현재 위치다.
     await expect(
       canvas.queryByRole('link', { name: 'RSV-18821' }),

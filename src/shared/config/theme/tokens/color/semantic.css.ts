@@ -51,6 +51,12 @@ export const color = createGlobalTheme(':root', {
     base: '#0F1215',
     surface: '#17191D',
   },
+  // 그래프의 선 색(분류용) — 정해진 순서로 쓴다. 색약 시뮬레이션에서도 갈리는지 검증한 쌍이다
+  // (dataviz validate_palette, 밝은 바탕 ΔE 26 · 어두운 바탕 ΔE 22).
+  chart: {
+    series1: '#3F4891',
+    series2: '#EB6834',
+  },
   // 어두운 시트·오버레이 위 닫기 버튼 — 테마와 상관없이 늘 어두운 바탕용이라 두 테마 값이 같다.
   close: {
     base: 'rgba(255, 255, 255, 0.1)',
@@ -117,6 +123,10 @@ createGlobalTheme(':root[data-theme="dark"], [data-theme="dark"]', color, {
   backgroundDark: {
     base: '#0F1215',
     surface: '#17191D',
+  },
+  chart: {
+    series1: '#5A64B8',
+    series2: '#D95926',
   },
   close: {
     base: 'rgba(255, 255, 255, 0.1)',

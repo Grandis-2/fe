@@ -1,6 +1,8 @@
 // 여러 레이어가 같이 참조하는 경로. 페이지끼리 서로 import하지 않도록 shared에 둔다.
 // 라우터는 동적 세그먼트를 함수에 ':id' 문자열로 넘겨 패턴을 만든다(productPath(':productId')).
 // 카카오·토스 콜백 경로는 SDK 호출과 짝이라 각 feature(login, payment)가 소유한다.
+import type { OrderSource } from '@shared/api/types'
+
 export const HOME_PATH = '/'
 export const SIGNUP_PATH = '/signup'
 export const PAYMENT_PATH = '/payment'
@@ -97,12 +99,25 @@ export const ADMIN_PROMOTION_NEW_PATH = '/admin/preorders/new'
 export const adminPromotionPath = (promotionId: string) =>
   `${ADMIN_PROMOTIONS_PATH}/${promotionId}`
 
+export const ADMIN_DRAWS_PATH = '/admin/draws'
+export const ADMIN_DRAW_NEW_PATH = '/admin/draws/new'
+/** 럭키 드로우 회차 상세(응모·추첨 진행) */
+export const adminDrawPath = (drawId: string) => `${ADMIN_DRAWS_PATH}/${drawId}`
+
 /** 대기열 관리 — 입장 속도·상품별 상한·최대 대기·이탈 유예(바꾸면 바로 회원에게 반영) */
 export const ADMIN_WAITINGROOM_PATH = '/admin/waitingroom'
-export const ADMIN_RESERVATIONS_PATH = '/admin/orders'
+export const ADMIN_RESERVATIONS_PATH = '/admin/reservations'
 /** 예약 상세 */
 export const adminReservationPath = (preorderId: string) =>
   `${ADMIN_RESERVATIONS_PATH}/${preorderId}`
+
+/** 주문 관리 — 모든 회원의 주문과 배송 단계 */
+export const ADMIN_ORDERS_PATH = '/admin/orders'
+/** 출처를 걸러서 연다(럭키드로우 회차 → 당첨 주문) */
+export const adminOrdersPath = (source?: OrderSource) =>
+  source ? `${ADMIN_ORDERS_PATH}?source=${source}` : ADMIN_ORDERS_PATH
+export const adminOrderPath = (orderId: string) =>
+  `${ADMIN_ORDERS_PATH}/${orderId}`
 
 /**
  * 상세로 들어갈 때 navigate state로 넘기는 '돌아갈 곳'. 예약 상세는 예약 현황 말고

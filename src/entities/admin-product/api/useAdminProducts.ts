@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 
+import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
 import { queryPolicy } from '@shared/api/queryPolicy'
 import type { AdminProductListParams } from '@shared/api/types'
 
-import { getAdminProducts } from './adminProduct'
-import { adminProductsKey } from './keys'
+import { getAdminProducts, getGiftCandidates } from './adminProduct'
+import { ADMIN_PRODUCTS_KEY, adminProductsKey } from './keys'
 import { toAdminProduct } from './toAdminProduct'
 
 /**
@@ -17,5 +18,19 @@ export const useAdminProducts = (params: AdminProductListParams = {}) =>
     queryFn: ({ signal }) => getAdminProducts(params, signal),
     // 서버는 사전예약/일반에 따라 다른 필드로 상태를 주므로 화면이 쓰는 모양으로 바꾼다.
     select: (paged) => paged.items.map(toAdminProduct),
+    ...queryPolicy.live,
+  })
+
+/**
+ * 럭키 드로우 증정품 후보 전체. 고를 수 있는 것만 오므로 쪽을 끝까지 이어 받는다 — 일반
+ * 목록의 첫 100개에서 거르면 조건에 안 맞는 상품이 자리를 차지해 고를 것이 빠진다.
+ */
+export const useGiftCandidates = () =>
+  useQuery({
+    queryKey: [...ADMIN_PRODUCTS_KEY, 'gift-candidates'] as const,
+    queryFn: ({ signal }) =>
+      fetchAllPages((page) =>
+        getGiftCandidates({ page, size: PAGE_SIZE_MAX }, signal),
+      ),
     ...queryPolicy.live,
   })

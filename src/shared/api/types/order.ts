@@ -1,6 +1,7 @@
 import type { CursorPage } from './common'
 
-// 주문·결제 API(order 서비스 — api-docs의 order.json) 회원용 모양. 관리자(배송·재고)·럭키 드로우 API는 다루지 않는다.
+// 주문·결제 API(order 서비스 — api-docs의 order.json). 회원용 모양이 기준이고, 관리자 주문(/admin/orders)은 맨 아래에 회원 모양에서 파생한다.
+// 재고·럭키 드로우 API는 다루지 않는다.
 // 주문은 장바구니에서 고른 줄(CART), 상품 상세의 바로 구매(BUY_NOW), 결제 가능해진 사전예약(PREORDER)으로 만들고 토스로 결제한다.
 // 화면과 경로의 주문 id는 주문 토큰(orderId)이다. 토스 결제창의 orderId는 tossOrderId라 다른 값이다.
 
@@ -154,4 +155,50 @@ export type ConfirmPaymentResponse = {
   orderStatus: OrderStatus
   // DECLINED일 때만. CARD_REJECTED는 다른 결제 수단, PAYMENT_EXPIRED는 결제창 다시 열기, FAILED는 일반 실패.
   declineReason: 'CARD_REJECTED' | 'PAYMENT_EXPIRED' | 'FAILED' | null
+}
+
+// ── 관리자 주문(/api/v1/admin/orders) ─────────────────────────────
+// 모든 회원의 주문. 항목은 회원 응답에 customerId가 더해진 모양이고, 상세 이력엔 관리자 사유도 그대로 보인다.
+
+export type AdminOrderSummary = Order & {
+  customerId: string
+}
+
+export type AdminOrderDetail = OrderDetail & {
+  customerId: string
+}
+
+// 오프셋 페이지 — page는 0부터, 전체 건수는 total.
+export type AdminOrderPage = {
+  items: AdminOrderSummary[]
+  page: number
+  size: number
+  total: number
+}
+
+// 둘 다 주면 둘 다 맞는 주문만. 모르는 값은 400.
+export type AdminOrderListParams = {
+  status?: OrderStatus
+  source?: OrderSource
+  page?: number
+  // 1~100(기본 20).
+  size?: number
+}
+
+// 배송 단계 — 한 단계씩만 옮긴다(건너뛸 수 없다).
+// PREPARATION_STARTED: 결제 완료(AWAITING_CONFIRMATION) → PREPARING_ITEMS, PACKED: → READY_TO_SHIP, SHIPPED·DELIVERED는 같은 이름의 상태로.
+export type ShippingStep =
+  'PREPARATION_STARTED' | 'PACKED' | 'SHIPPED' | 'DELIVERED'
+
+// POST /api/v1/admin/orders/{orderId}/shipping-steps — reason은 필수, 500자(코드 포인트) 이하이고 관리자 이력에만 보인다.
+export type AdvanceShippingRequest = {
+  step: ShippingStep
+  reason: string
+}
+
+// 200 — 이미 그 단계였으면 applied false(바뀐 것 없음). 갈 수 없는 단계면 409 ORDER_STEP_NOT_ALLOWED(details.status에 현재 상태).
+export type ShippingStepResponse = {
+  orderId: string
+  status: OrderStatus
+  applied: boolean
 }

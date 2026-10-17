@@ -46,6 +46,8 @@ const DEFAULT_CONFIG: MockConfig = {
   workerReadTimeoutMs: 5000,
 }
 let config: MockConfig = DEFAULT_CONFIG
+/** 지금 적용 중인 Mock 설정 — 목 부하(loadSimulation)가 지연·실패율을 따른다 */
+export const currentMockConfig = () => config
 // 초기화하면 원장이 빈다 — 목은 우리 예약에서 원장을 만들어서, 초기화 뒤엔 비워 둔다.
 let ledgerCleared = false
 

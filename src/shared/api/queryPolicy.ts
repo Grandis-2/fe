@@ -26,7 +26,7 @@ const retryUpTo = (max: number) => (failureCount: number, error: unknown) =>
  * 새 유형이 필요하면 값을 하드코딩하지 말고 여기에 추가한다.
  */
 export const queryPolicy = {
-  // 상품 목록·검색·상세 — 몇 분 사이엔 거의 안 바뀌는 공개 데이터. 5분간 캐시를 그대로 쓴다.
+  // 상품 목록·검색·상세, 관리자 표의 회원 이름 — 몇 분 사이엔 거의 안 바뀌는 데이터. 5분간 캐시를 그대로 쓴다.
   catalog: { staleTime: 5 * 60_000, retry: retryUpTo(2) },
   // 프로필·기본 배송지 — 내가 바꿀 때만 바뀌고, 저장 응답으로 캐시를 직접 갱신한다
   // (useUpdateProfile 등). 비로그인 401은 isRetryableError가 걸러 재시도하지 않는다.

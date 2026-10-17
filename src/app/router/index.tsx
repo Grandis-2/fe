@@ -17,11 +17,14 @@ import {
   ADMIN_LOAD_TEST_PATH,
   ADMIN_LOGIN_PATH,
   ADMIN_MOCK_SETTINGS_PATH,
+  ADMIN_DRAW_NEW_PATH,
+  ADMIN_DRAWS_PATH,
   ADMIN_NOTIFICATIONS_PATH,
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTION_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
+  ADMIN_ORDERS_PATH,
   ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
   ADMIN_WAITINGROOM_PATH,
@@ -29,6 +32,8 @@ import {
   adminDeadLetterPath,
   adminReservationPath,
   adminPromotionPath,
+  adminDrawPath,
+  adminOrderPath,
   DRAW_PATH,
   drawPath,
   HOME_PATH,
@@ -280,6 +285,41 @@ export const router = createBrowserRouter([
                     lazy: () =>
                       import('@pages/admin/promotion-edit/AdminPromotionEditPage').then(
                         (m) => ({ Component: m.AdminPromotionEditPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_DRAWS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/draws/AdminDrawsPage').then((m) => ({
+                        Component: m.AdminDrawsPage,
+                      })),
+                  },
+                  {
+                    path: ADMIN_DRAW_NEW_PATH,
+                    lazy: () =>
+                      import('@pages/admin/draw-new/AdminDrawNewPage').then(
+                        (m) => ({ Component: m.AdminDrawNewPage }),
+                      ),
+                  },
+                  {
+                    path: adminDrawPath(':drawId'),
+                    lazy: () =>
+                      import('@pages/admin/draw-detail/AdminDrawDetailPage').then(
+                        (m) => ({ Component: m.AdminDrawDetailPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_ORDERS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/orders/AdminOrdersPage').then(
+                        (m) => ({ Component: m.AdminOrdersPage }),
+                      ),
+                  },
+                  {
+                    path: adminOrderPath(':orderId'),
+                    lazy: () =>
+                      import('@pages/admin/order-detail/AdminOrderDetailPage').then(
+                        (m) => ({ Component: m.AdminOrderDetailPage }),
                       ),
                   },
                   {

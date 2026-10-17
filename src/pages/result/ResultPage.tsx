@@ -13,6 +13,7 @@ import {
   RESULT_STATUSES,
   type ResultStatus,
 } from '@shared/config/routes'
+import { shortId } from '@shared/lib/shortId'
 import { ActionButton, PollingNotice } from '@shared/ui'
 import {
   OrderReceipt,
@@ -261,7 +262,7 @@ export function ResultPage() {
               order
                 ? {
                     label: '주문번호',
-                    value: order.orderId.slice(0, 8).toUpperCase(),
+                    value: shortId(order.orderId),
                   }
                 : reservation && status === 'preorder'
                   ? {

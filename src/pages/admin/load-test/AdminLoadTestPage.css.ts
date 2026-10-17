@@ -10,6 +10,14 @@ export const root = style({
 
 export const header = style({
   display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  gap: spacing[16],
+})
+
+export const heading = style({
+  display: 'flex',
   flexDirection: 'column',
   gap: spacing[8],
 })

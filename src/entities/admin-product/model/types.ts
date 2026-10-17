@@ -1,5 +1,6 @@
 import type {
   DisplayStatus,
+  GiftCandidate,
   OptionAxis,
   PreorderSaleStatus,
   ProductBrandCode,
@@ -68,6 +69,7 @@ export type AdminProduct = {
 }
 
 // 화면(pages/widgets)은 DTO를 직접 import할 수 없어 여기서 다시 내보낸다.
+export type AdminGiftCandidate = GiftCandidate
 export type AdminStockItemModel = StockOverviewItem
 export type AdminSaleState = ProductSaleStatus
 export type AdminPreorderStage = PreorderSaleStatus

@@ -372,6 +372,32 @@ export type AdminProductDetail = ProductDetail & {
   updatedBy: string | null
 }
 
+/**
+ * GET /admin/products/gift-candidates — 럭키 드로우 증정품 후보. 일반 판매·판매 중 상품 가운데
+ * 판매 중이고 재고를 등록한 옵션이 하나 이상 있는 것만 온다(비공개 상품 포함, 등록 최신순).
+ */
+export type GiftCandidate = {
+  productId: string
+  title: string
+  imageUrl: string | null
+  /** false면 회원에게 안 보이는 상품 — "비공개" 표시를 붙인다 */
+  visible: boolean
+  /** 고를 수 있는 옵션(하나 이상, 등록 순) */
+  options: {
+    optionId: string
+    sku: string
+    /** 값 이름을 축 순서대로 ' / '로 이은 것. 축이 없으면 상품명 */
+    title: string
+    /** 지금 확보할 수 있는 수량. 0일 수 있고, 당첨 인원이 이보다 크면 회차 만들기가 409 */
+    available: number
+  }[]
+}
+
+export type GiftCandidateParams = Pick<
+  AdminProductListParams,
+  'q' | 'page' | 'size'
+>
+
 export type AdminProductListParams = {
   /** 상품명과 태그에서 대소문자 없이 부분 일치. 비우면 무시한다 */
   q?: string

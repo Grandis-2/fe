@@ -1,5 +1,6 @@
 import { delay, http } from 'msw'
 
+import { settleDueDraws } from '../drawSettlement'
 import {
   drawAttempts as attempts,
   drawEntries as entries,
@@ -24,7 +25,7 @@ import type { DrawEntryRecord, DrawRecord } from '../fixtures/draw'
 import type { RequestHandler } from 'msw'
 
 // 토스 승인은 흉내만 낸다 — paymentKey는 무엇이든 승인한다. 추첨은 흉내 내지 않고 시드의 결과만 보여 준다.
-// ponytail: 새로 응모한 건 마감이 지나도 result가 null이다(추첨 없음) — 결과 화면은 시드 응모로 본다.
+// 추첨은 결과 반영 시각이 지난 뒤 응모를 읽을 때 따라잡는다(drawSettlement — 결제한 응모는 모두 당첨).
 
 const ATTEMPT_LIFETIME_MS = 35 * 60 * 1000
 
@@ -34,7 +35,7 @@ const hasToken = (request: Request) =>
 const unauthenticated = () =>
   fail(401, { code: 'UNAUTHENTICATED', message: '로그인이 필요합니다.' })
 
-const drawNotFound = () =>
+export const drawNotFound = () =>
   fail(404, { code: 'DRAW_NOT_FOUND', message: '회차를 찾을 수 없습니다.' })
 
 const entryNotFound = () =>
@@ -56,13 +57,16 @@ const notPayable = () =>
   })
 
 // 서버 시각으로 단계를 정한다 — 시작 시각부터 응모 중, 마감 시각부터 마감.
-const phaseOf = ({ opensAt, closesAt }: DrawRecord): DrawPhase => {
+export const phaseOf = ({ opensAt, closesAt }: DrawRecord): DrawPhase => {
   const now = Date.now()
   if (now < Date.parse(opensAt)) return 'SCHEDULED'
   return now < Date.parse(closesAt) ? 'OPEN' : 'CLOSED'
 }
 
-const toDraw = (draw: DrawRecord): Draw => ({ ...draw, phase: phaseOf(draw) })
+export const toDraw = (draw: DrawRecord): Draw => ({
+  ...draw,
+  phase: phaseOf(draw),
+})
 
 const toEntry = (entry: DrawEntryRecord): DrawEntry => ({
   ...entry,
@@ -150,6 +154,7 @@ export const drawHandlers: RequestHandler[] = [
     if (!hasToken(request)) return unauthenticated()
     if (!isUuid(String(params.drawId)))
       return invalid([uuidViolation('drawId')])
+    settleDueDraws()
     const entry = findEntry(params.drawId)
     return entry ? ok(toEntry(entry)) : entryNotFound()
   }),

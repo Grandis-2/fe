@@ -18,6 +18,7 @@ import {
   ADMIN_PROMOTION_NEW_PATH,
   adminPromotionPath,
 } from '@shared/config/routes'
+import { copyText } from '@shared/lib/copyText'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import { Button, SegmentedTabs, Table, Tag } from '@shared/ui'
@@ -73,8 +74,7 @@ export function AdminPromotionsPage() {
   // 버튼은 그대로 두고 결과만 토스트로 알린다 — 여러 번 눌러도 매번 같은 피드백을 준다.
   // 클립보드는 권한·비보안 컨텍스트(http)에서 거절될 수 있어 실패도 알린다.
   const copyLink = (promotion: AdminPromotion) =>
-    void navigator.clipboard
-      .writeText(promotion.publicUrl)
+    void copyText(promotion.publicUrl)
       .then(() => showToast('링크가 복사되었습니다!'))
       .catch(() => showToast('링크를 복사하지 못했습니다. 다시 시도해 주세요.'))
 

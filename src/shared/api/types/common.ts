@@ -10,6 +10,8 @@ export type ApiErrorDetails = {
   retryable?: boolean
   // 429에서만 온다. Retry-After 헤더와 같은 값(초, 최소 1)이다.
   retryAfterSeconds?: number
+  // 409 ORDER_STEP_NOT_ALLOWED에서만 온다 — 주문의 지금 상태(화면을 그 상태로 다시 그린다).
+  status?: string
 }
 
 export type ApiError = {
