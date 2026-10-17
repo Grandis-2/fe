@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { CircleCheck, Info, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
@@ -18,6 +18,7 @@ import {
   useMockConfig,
 } from '@entities/external-reservation'
 import { getErrorMessage } from '@shared/api/client'
+import { setMockLoad } from '@shared/api/mock'
 import {
   refreshIntervalOptions,
   type RefreshInterval,
@@ -283,6 +284,13 @@ export function AdminLoadTest({
     ? `${GRAFANA_BASE}&from=${test.startedAt}&to=${test.endedAt ?? 'now'}`
     : `${GRAFANA_BASE}&from=now-1h&to=now&refresh=10s`
   const running = test !== null && test.endedAt === null
+
+  // 목(MSW)으로 띄웠을 때만 시험 중에 가짜 예약이 들어온다 — 목 예약은 원래 고정이라 그래프가
+  // 0에 붙는다. 실서버면 아무것도 하지 않는다. 화면을 나가면 멈춘다.
+  useEffect(() => {
+    void setMockLoad(running)
+    return () => void setMockLoad(false)
+  }, [running])
 
   return (
     <div className={styles.root}>
