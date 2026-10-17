@@ -55,7 +55,9 @@ generated: { by: 'claude-code', at: '2026-10-04T09:44:53.662Z' }
 | (없음)      | 홈                                             | `/admin`                      | `AdminHomePage` — 각 메뉴 카드           |
 | 백오피스    | 상품 관리                                      | `/admin/products`             | 목록·등록·상세                           |
 |             | 사전 예약 관리                                 | `/admin/preorders`            | 프로모션 목록·등록·수정                  |
-|             | 예약 현황                                      | `/admin/orders`               | 예약 목록                                |
+|             | 럭키드로우 관리                                | `/admin/draws`                | 회차 목록·만들기·진행                    |
+|             | 예약 현황                                      | `/admin/reservations`         | 예약 목록                                |
+|             | 주문 관리                                      | `/admin/orders`               | 주문 목록·배송 단계                      |
 | 개발자 기능 | 정합성 대조, 부하 검증, 관리자 알림, Mock 설정 | `/admin/consistency-check` 등 | `AdminPlaceholderPage`("준비 중입니다.") |
 
 ## 상품 관리
@@ -99,7 +101,7 @@ generated: { by: 'claude-code', at: '2026-10-04T09:44:53.662Z' }
 
 ## 예약 현황
 
-`AdminReservationsPage`(`/admin/orders`)는 상품 목록·회원 목록을 한 번 받아(회원 이름은 예약 응답에 없어
+`AdminReservationsPage`(`/admin/reservations`)는 상품 목록·회원 목록을 한 번 받아(회원 이름은 예약 응답에 없어
 `memberId`로 이어 붙인다) 예약 목록을 **10초마다** 다시 받는다. 상태 탭과 예약번호 검색은 서버 쿼리가
 아니라 받아온 목록(최대 100건)을 화면에서 거른다 — 집계 카드와 표가 같은 목록에서 나와야 숫자가 맞기
 때문이다. 100건을 넘으면 카드 숫자가 덜 세진다. 외부 등록 재처리는 `ConfirmDialog`로 한 번 더 확인한 뒤

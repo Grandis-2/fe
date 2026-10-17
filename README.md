@@ -287,7 +287,9 @@ src/
 | `/admin`                                      | 홈                                                |
 | `/admin/products` · `/new` · `/:productId`    | 상품 관리 — 목록, 등록, 수정(옵션·재고·배송 구간) |
 | `/admin/preorders` · `/new` · `/:promotionId` | 사전예약 관리 — 목록, 생성, 수정                  |
-| `/admin/orders`                               | 예약 현황 — 대시보드 + 표                         |
+| `/admin/draws` · `/new` · `/:drawId`          | 럭키드로우 관리 — 회차 목록, 만들기, 진행         |
+| `/admin/reservations` · `/:preorderId`        | 예약 현황 — 대시보드 + 표, 예약 상세              |
+| `/admin/orders` · `/:orderId`                 | 주문 관리 — 주문 목록, 배송 단계 처리             |
 | `/admin/consistency-check`                    | 정합성 대조 — **placeholder**                     |
 | `/admin/load-test`                            | 부하 검증 — **placeholder**                       |
 | `/admin/notifications`                        | 관리자 알림 내역 — **placeholder**                |
