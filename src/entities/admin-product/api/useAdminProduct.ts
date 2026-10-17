@@ -43,8 +43,6 @@ export const useAdminProduct = (productId: string) =>
     queryKey: adminProductKey(productId),
     queryFn: ({ signal }) => getAdminProduct(productId, signal),
     select: toAdminProductDetail,
-    // 아직 고르지 않았으면(빈 id) 부르지 않는다 — 럭키 드로우 증정품 고르기.
-    enabled: productId !== '',
     ...queryPolicy.live,
   })
 
@@ -69,7 +67,6 @@ export const useAdminProductStock = (productId: string) =>
     queryKey: adminProductStockKey(productId),
     queryFn: ({ signal }) => getAdminProductStock(productId, signal),
     select: (response) => response.items,
-    enabled: productId !== '',
     ...queryPolicy.live,
   })
 

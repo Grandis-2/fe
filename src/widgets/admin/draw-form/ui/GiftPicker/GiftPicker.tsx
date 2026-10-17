@@ -10,7 +10,6 @@ export type GiftPickerProps = {
   products: GiftProduct[] | undefined
   /** 고른 상품의 옵션. 상품을 고르기 전이거나 불러오는 중이면 undefined */
   options: GiftOption[] | undefined
-  optionsLoading?: boolean
   productId: string
   optionId: string
   onChange: (gift: { productId: string; optionId: string }) => void
@@ -28,7 +27,6 @@ export type GiftPickerProps = {
 export function GiftPicker({
   products,
   options,
-  optionsLoading = false,
   productId,
   optionId,
   onChange,
@@ -60,26 +58,22 @@ export function GiftPicker({
         ) : (
           <Skeleton height={48} radius={8} />
         )}
-        {optionsLoading ? (
-          <Skeleton height={48} radius={8} />
-        ) : (
-          <Dropdown
-            label={
-              productId === ''
-                ? '상품을 먼저 골라 주세요'
-                : options?.length === 0
-                  ? '재고를 등록한 판매 중 옵션이 없습니다'
-                  : '옵션을 골라 주세요'
-            }
-            width="100%"
-            options={(options ?? []).map((option) => ({
-              label: `${option.label} · 가용 ${formatNumber(option.available)}개`,
-              value: option.optionId,
-            }))}
-            value={optionId || undefined}
-            onSelect={(next) => onChange({ productId, optionId: next })}
-          />
-        )}
+        <Dropdown
+          label={
+            productId === ''
+              ? '상품을 먼저 골라 주세요'
+              : options?.length === 0
+                ? '재고를 등록한 판매 중 옵션이 없습니다'
+                : '옵션을 골라 주세요'
+          }
+          width="100%"
+          options={(options ?? []).map((option) => ({
+            label: `${option.label} · 가용 ${formatNumber(option.available)}개`,
+            value: option.optionId,
+          }))}
+          value={optionId || undefined}
+          onSelect={(next) => onChange({ productId, optionId: next })}
+        />
       </div>
 
       {selected && (

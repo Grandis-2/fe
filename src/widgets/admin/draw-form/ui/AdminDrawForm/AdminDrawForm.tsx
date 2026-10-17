@@ -14,7 +14,7 @@ import { closeModal, openModal } from '@shared/model/modalStore'
 import { Button, FormSection, InlineAlert, Input } from '@shared/ui'
 
 import { toSubmitFailure } from '../../lib/submitFailure'
-import { useGiftOptions, useGiftProducts } from '../../lib/useGiftOptions'
+import { useGiftOptions } from '../../lib/useGiftOptions'
 import { GiftPicker } from '../GiftPicker'
 
 import * as styles from './AdminDrawForm.css'
@@ -48,7 +48,6 @@ export function AdminDrawForm({
   const [issues, setIssues] = useState<DrawFormIssue[]>(() =>
     submitError ? toSubmitFailure(submitError).issues : [],
   )
-  const gifts = useGiftProducts()
   const giftOptions = useGiftOptions(value.productId)
   const gift = giftOptions.options?.find(
     (option) => option.optionId === value.optionId,
@@ -134,16 +133,15 @@ export function AdminDrawForm({
         description="일반 판매 상품의 옵션 하나입니다. 이름·사진은 만든 때 값으로 고정됩니다."
       >
         <GiftPicker
-          products={gifts.products}
+          products={giftOptions.products}
           options={giftOptions.options}
-          optionsLoading={giftOptions.isPending}
           productId={value.productId}
           optionId={value.optionId}
           onChange={(next) => patch(next, 'gift')}
           onAddProduct={onAddProduct}
           error={issueOf('gift')}
           loadError={
-            gifts.error || giftOptions.error
+            giftOptions.error
               ? '증정품 후보를 불러오지 못했습니다. 새로고침해 주세요.'
               : undefined
           }

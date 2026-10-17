@@ -9,11 +9,13 @@ import {
   toBundle,
 } from '../fixtures/admin-product-image'
 import { shipmentBatchStore } from '../fixtures/admin-shipment'
-import { adminStockStore } from '../fixtures/admin-stock'
+import { adminStockStore, findStockItem } from '../fixtures/admin-stock'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
+import { readPaging, toPage } from '../validate'
 
 import type {
+  GiftCandidate,
   AdminProductDetail,
   AdminProductListItem,
   AdminProductResponse,
@@ -643,6 +645,45 @@ export const adminProductHandlers: RequestHandler[] = [
       },
       201,
     )
+  }),
+
+  // 럭키 드로우 증정품 후보 — 일반 판매·판매 중이고, 판매 중이면서 재고를 등록한 옵션이 있는 상품만.
+  // /:productId보다 먼저 잡혀야 한다.
+  http.get(url('/api/v1/admin/products/gift-candidates'), ({ request }) => {
+    const params = new URL(request.url).searchParams
+    const { page, size, violations } = readPaging(params)
+    if (violations.length > 0) return invalid(violations)
+    const keyword = (params.get('q') ?? '').trim()
+    const candidates = adminProductStore
+      .filter(
+        (detail) =>
+          detail.saleMode === 'IN_STOCK' &&
+          saleStatusOf(detail.productId) === 'ACTIVE' &&
+          (!keyword || detail.name.includes(keyword)),
+      )
+      .map((detail): GiftCandidate => ({
+        productId: detail.productId,
+        title: detail.name,
+        imageUrl: detail.thumbnailUrl,
+        visible: detail.displayStatus === 'PUBLISHED',
+        options: detail.variants.flatMap((variant) => {
+          const stock = findStockItem(detail.productId, variant.optionCode)
+          return variant.available && stock
+            ? [
+                {
+                  // 상세의 variantId와 같은 값(옵션 코드)이다.
+                  optionId: variant.optionCode,
+                  sku: variant.optionCode,
+                  title: variant.name,
+                  available: stock.availableQuantity,
+                },
+              ]
+            : []
+        }),
+      }))
+      .filter((candidate) => candidate.options.length > 0)
+      .reverse()
+    return ok(toPage(candidates, page, size))
   }),
 
   http.get(url('/api/v1/admin/products/registrations/:key'), ({ params }) => {

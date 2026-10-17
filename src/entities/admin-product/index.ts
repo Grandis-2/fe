@@ -11,7 +11,7 @@ export {
   useSetAdminProductSaleStatus,
   useSetAdminProductVisibility,
 } from './api/useAdminProduct'
-export { useAdminProducts } from './api/useAdminProducts'
+export { useAdminProducts, useGiftCandidates } from './api/useAdminProducts'
 // 예외로 생 함수를 내보낸다 — 사진 업로드는 조회가 아니라 파일마다 한 번 보내는
 // 일이고, 진행·실패 상태는 업로더(ImageUploader)가 사진 칸마다 들고 있다. 화면은
 // 이 함수를 업로더의 upload로 넘기기만 한다(DTO는 밖으로 나가지 않는다).
@@ -64,6 +64,7 @@ export {
 } from './model/types'
 export type {
   AdminProduct,
+  AdminGiftCandidate,
   AdminProductDetailModel,
   AdminPreorderStage,
   AdminSaleState,

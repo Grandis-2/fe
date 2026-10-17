@@ -17,6 +17,8 @@ import type {
   Variant,
   VariantAddRequest,
   VariantEditRequest,
+  GiftCandidate,
+  GiftCandidateParams,
   VisibilityChangeRequest,
   VisibilityView,
 } from '@shared/api/types'
@@ -31,6 +33,17 @@ export const getAdminProducts = (
 ) =>
   apiClient.request<PageResponse<AdminProductListItem>>(
     `${BASE}${toQueryString(params)}`,
+    { signal },
+  )
+
+// [catalog] GET /api/v1/admin/products/gift-candidates — 럭키 드로우 증정품 후보
+/** 증정품으로 고를 수 있는 상품과 옵션(가용 재고 포함) — 회차 만들기 화면이 쓴다 */
+export const getGiftCandidates = (
+  params: GiftCandidateParams,
+  signal?: AbortSignal,
+) =>
+  apiClient.request<PageResponse<GiftCandidate>>(
+    `${BASE}/gift-candidates${toQueryString(params)}`,
     { signal },
   )
 
