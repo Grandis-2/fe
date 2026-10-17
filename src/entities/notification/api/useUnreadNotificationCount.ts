@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
-import { pollingInterval, queryPolicy } from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import { delay } from '@shared/lib/delay'
 
 import {
@@ -14,7 +14,8 @@ import { notificationKeys } from './useNotifications'
 
 const queryKey = notificationKeys.unreadCount
 // SSE가 끊겨 있는 동안은 60초마다 묻는다(명세: 503이면 unread-count 주기 조회로 돌아간다).
-// 조회가 실패하면 pollingInterval이 간격을 4배로 늘린다.
+// 실패하면 pollingRetry가 다시 묻는다 — 이미 30초보다 길어 간격은 그대로 두고 지터만 준다.
+// 배지는 보조 정보라 실패 안내를 띄우지 않고 마지막 개수를 그대로 둔다.
 const POLL_INTERVAL_MS = 60_000
 // 연결된 동안에도 실시간으로 오지 못한 알림이 드물게 있어 5분마다 한 번 맞춘다(명세).
 const LIVE_SYNC_MS = 5 * 60_000
@@ -77,6 +78,11 @@ export const useUnreadNotificationCount = (enabled: boolean) => {
     queryFn: ({ signal }) => getUnreadNotificationCount(signal),
     enabled,
     ...queryPolicy.live,
-    refetchInterval: isLive ? LIVE_SYNC_MS : pollingInterval(POLL_INTERVAL_MS),
+    refetchInterval: isLive ? LIVE_SYNC_MS : POLL_INTERVAL_MS,
+    ...pollingRetry(() =>
+      isLive || queryClient.getQueryData(queryKey) === undefined
+        ? null
+        : POLL_INTERVAL_MS,
+    ),
   })
 }
