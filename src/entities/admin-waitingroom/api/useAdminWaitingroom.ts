@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { pollingInterval, queryPolicy } from '@shared/api/queryPolicy'
+import { pollEvery, queryPolicy } from '@shared/api/queryPolicy'
 import type { AdmissionRateView } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
@@ -23,16 +23,20 @@ const RATES_KEY = [...WAITINGROOM_KEY, 'rates'] as const
 const MIN_POLL_MS = 1_000
 
 /** 대기열 현황. 간격은 화면이 고르되 1초보다 짧게는 묻지 않는다 */
-export const useWaitingroomStatus = (intervalMs: RefreshInterval) =>
-  useQuery({
-    queryKey: [...WAITINGROOM_KEY, 'status'] as const,
+export const useWaitingroomStatus = (intervalMs: RefreshInterval) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...WAITINGROOM_KEY, 'status'] as const
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getWaitingroomStatus(signal),
     ...queryPolicy.live,
-    refetchInterval:
-      intervalMs === false
-        ? false
-        : pollingInterval(Math.max(intervalMs, MIN_POLL_MS)),
+    ...pollEvery(
+      queryClient,
+      queryKey,
+      intervalMs === false ? false : Math.max(intervalMs, MIN_POLL_MS),
+    ),
   })
+}
 
 export const useAdmissionRates = () =>
   useQuery({

@@ -2,6 +2,7 @@ import { useLocation, useParams } from 'react-router'
 
 import { useAdminReservation } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import { ADMIN_RESERVATIONS_PATH, readBackTo } from '@shared/config/routes'
 import {
   Breadcrumb,
@@ -48,6 +49,8 @@ export function AdminReservationDetailPage() {
 
   // 취소가 끝난 예약은 더 바뀔 게 없어 자동 갱신을 멈춘다(useAdminReservation).
   const polling = reservation.data.status !== 'CANCELED'
+  // 재시도 중에도 알린다 — 다시 묻는 동안엔 isError가 켜지지 않는다(pollingRetry).
+  const staleError = pollingError(reservation)
 
   return (
     <div className={styles.root}>
@@ -67,13 +70,10 @@ export function AdminReservationDetailPage() {
       />
 
       {/* 갱신이 실패해도 이전 값은 남아 화면에 보인다 — 멈춘 값을 최신으로 읽지 않게 알린다. */}
-      {reservation.isError && (
+      {staleError !== null && (
         <InlineAlert status="warning">
-          {getErrorMessage(
-            reservation.error,
-            '예약을 다시 불러오지 못했습니다.',
-          )}{' '}
-          아래 내용은 마지막으로 받은 값입니다.
+          {getErrorMessage(staleError, '예약을 다시 불러오지 못했습니다.')} 아래
+          내용은 마지막으로 받은 값입니다.
         </InlineAlert>
       )}
 

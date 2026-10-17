@@ -18,6 +18,7 @@ import {
   type WaitingroomSetting,
 } from '@entities/admin-waitingroom'
 import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import {
   refreshIntervalOptions,
   type RefreshInterval,
@@ -291,9 +292,12 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
         />
       </RefreshStatus>
 
-      {status.isError && (
+      {pollingError(status) !== null && (
         <InlineAlert status={view ? 'warning' : 'error'}>
-          {getErrorMessage(status.error, '대기열 현황을 불러오지 못했습니다.')}
+          {getErrorMessage(
+            pollingError(status),
+            '대기열 현황을 불러오지 못했습니다.',
+          )}
           {view && ' 아래 숫자는 마지막으로 받은 값입니다.'}
         </InlineAlert>
       )}

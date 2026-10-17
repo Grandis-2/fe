@@ -88,6 +88,10 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
       ? headerTraceId
       : sentRequestId(response.config)
 
+  // 명세는 초 단위로만 준다 — 날짜 형식 등 숫자가 아니면 없는 것으로 본다.
+  const retryAfter = Number(response.headers['retry-after'])
+  const retryAfterSeconds = Number.isFinite(retryAfter) ? retryAfter : 0
+
   // 로그아웃 등 204 No Content는 파싱할 본문이 없다.
   if (response.status === 204) return undefined as TData
 
@@ -102,6 +106,7 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
       },
       response.status,
       fallbackTraceId,
+      retryAfterSeconds,
     )
   }
   if (json.success) return json.data
@@ -109,6 +114,7 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
     json.error,
     response.status,
     json.traceId ?? fallbackTraceId,
+    retryAfterSeconds,
   )
 }
 

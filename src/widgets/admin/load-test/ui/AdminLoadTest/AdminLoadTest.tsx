@@ -12,6 +12,7 @@ import {
   useMockConfig,
 } from '@entities/external-reservation'
 import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import {
   refreshIntervalOptions,
   type RefreshInterval,
@@ -204,9 +205,12 @@ export function AdminLoadTest() {
           </>
         }
       >
-        {queue.isError && (
+        {pollingError(queue) !== null && (
           <InlineAlert status={q ? 'warning' : 'error'}>
-            {getErrorMessage(queue.error, '대기열 현황을 불러오지 못했습니다.')}
+            {getErrorMessage(
+              pollingError(queue),
+              '대기열 현황을 불러오지 못했습니다.',
+            )}
           </InlineAlert>
         )}
         {braking && (
@@ -275,9 +279,12 @@ export function AdminLoadTest() {
         title="예약 처리"
         description="집계는 서버가 5초까지 캐시해서 초당 확정은 최근 30초 평균입니다."
       >
-        {stats.isError && (
+        {pollingError(stats) !== null && (
           <InlineAlert status={s ? 'warning' : 'error'}>
-            {getErrorMessage(stats.error, '예약 집계를 불러오지 못했습니다.')}
+            {getErrorMessage(
+              pollingError(stats),
+              '예약 집계를 불러오지 못했습니다.',
+            )}
           </InlineAlert>
         )}
         <div className={styles.cards}>
@@ -332,10 +339,10 @@ export function AdminLoadTest() {
         <div className={styles.subTitle}>
           외부 등록이 실패 중인 작업(오류 코드별)
         </div>
-        {errors.isError && (
+        {pollingError(errors) !== null && (
           <InlineAlert status="warning">
             {getErrorMessage(
-              errors.error,
+              pollingError(errors),
               '오류 코드별 수를 불러오지 못했습니다.',
             )}
           </InlineAlert>

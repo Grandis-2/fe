@@ -1,7 +1,8 @@
 import { delay } from './delay'
 
 type PollOptions = {
-  intervalMs: number
+  /** 함수면 매 차례 다시 읽는다(실패가 이어질 때 간격을 늘리는 쪽이 쓴다) */
+  intervalMs: number | (() => number)
   /** 첫 조회부터가 아니라 부른 때부터 잰다. 횟수가 아니라 시각이라 응답이 느려도 늘어나지 않는다 */
   timeoutMs: number
   /** 끊기면 다음 차례에 멈춘다 */
@@ -19,7 +20,7 @@ export async function pollUntil<T>(
 ): Promise<T | null> {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
-    await delay(intervalMs)
+    await delay(typeof intervalMs === 'function' ? intervalMs() : intervalMs)
     if (signal?.aborted) return null
     const result = await check()
     if (result !== null) return result

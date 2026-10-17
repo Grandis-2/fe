@@ -2,7 +2,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
   keepNewer,
-  pollingInterval,
+  pollEvery,
+  pollingRetry,
   queryPolicy,
 } from '@shared/api/queryPolicy'
 import type { AdminPreorderListParams, PreorderStats } from '@shared/api/types'
@@ -29,21 +30,23 @@ const POLL_INTERVAL_MS = 10_000
 const reservationKey = (preorderId: string) =>
   [...RESERVATIONS_KEY, 'detail', preorderId] as const
 
-// 조회가 실패하면 pollingInterval이 간격을 4배로 늘려, 이미 힘든 서버를 계속 두드리지 않는다.
-const refetchEvery = (intervalMs: RefreshInterval) =>
-  intervalMs === false ? false : pollingInterval(intervalMs)
-
-/** 접수는 계속 들어오므로 주기적으로 다시 받는다. 간격은 화면이 고른다 */
+/**
+ * 접수는 계속 들어오므로 주기적으로 다시 받는다. 간격은 화면이 고른다.
+ * 실패하면 pollEvery가 그 간격에서 백오프하며 계속 다시 묻는다.
+ */
 export const useAdminReservations = (
   params: AdminPreorderListParams = {},
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
-) =>
-  useQuery({
-    queryKey: [...RESERVATIONS_KEY, 'list', params] as const,
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...RESERVATIONS_KEY, 'list', params] as const
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getAdminReservations(params, signal),
     ...queryPolicy.live,
-    refetchInterval: refetchEvery(intervalMs),
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
+}
 
 /**
  * 모든 예약. 외부 원장과 맞춰 보는 데만 쓴다. 무거워서 화면에 처음 들어올 때 한 번만
@@ -63,17 +66,20 @@ export const useAllAdminReservations = () =>
 export const useReservationStats = (
   productId?: string,
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
-) =>
-  useQuery({
-    queryKey: [...RESERVATIONS_KEY, 'stats', productId] as const,
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...RESERVATIONS_KEY, 'stats', productId] as const
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getReservationStats(productId, signal),
     // 소수 초 자릿수가 응답마다 달라(0·3·6자리) 문자열이 아니라 시각으로 비교한다.
     structuralSharing: keepNewer<PreorderStats>(({ countedAt }) =>
       Date.parse(countedAt),
     ),
     ...queryPolicy.live,
-    refetchInterval: refetchEvery(intervalMs),
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
+}
 
 /**
  * 표에 보이는 회원 id를 이름으로 바꾼다. 이름은 예약만큼 자주 바뀌지 않아 폴링하지
@@ -104,13 +110,16 @@ export const useReprocessReservation = () => {
 }
 
 /** 외부 등록 실패를 오류 코드별로. 부하 시험 중 무엇 때문에 실패하는지 본다 */
-export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) =>
-  useQuery({
-    queryKey: [...RESERVATIONS_KEY, 'sync-job-errors'] as const,
+export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors'] as const
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getSyncJobErrorGroups(signal),
     ...queryPolicy.live,
-    refetchInterval: refetchEvery(intervalMs),
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
+}
 
 /** 여러 예약 일괄 재처리. 응답은 시작한 건수뿐이라 결과는 다시 조회해 본다 */
 export const useReprocessReservations = () => {
@@ -126,17 +135,22 @@ export const useReprocessReservations = () => {
  * 예약 상세. 목록처럼 10초마다 다시 받는다 — 결제 대기 중 결제·기한 만료, 결제 뒤
  * 취소처럼 회원·서버가 상태를 바꾸므로. 취소가 끝난 예약만 더 바뀔 게 없어 멈춘다.
  */
-export const useAdminReservation = (preorderId: string) =>
-  useQuery({
-    queryKey: reservationKey(preorderId),
+export const useAdminReservation = (preorderId: string) => {
+  const queryClient = useQueryClient()
+  const queryKey = reservationKey(preorderId)
+  // select 전의 응답으로 판단한다(캐시에는 응답이 그대로 있다).
+  const pollMs = (
+    data: Awaited<ReturnType<typeof getAdminReservation>> | undefined,
+  ) => (data && data.status !== 'CANCELED' ? POLL_INTERVAL_MS : null)
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getAdminReservation(preorderId, signal),
     select: toAdminReservationDetail,
     ...queryPolicy.live,
-    refetchInterval: (query) =>
-      query.state.data?.status === 'CANCELED'
-        ? false
-        : pollingInterval(POLL_INTERVAL_MS)(query),
+    refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
+    ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
   })
+}
 
 /** 관리자 예약 취소. 상태가 취소 중으로 바뀌어 목록·집계·상세를 다시 받는다 */
 export const useCancelReservation = () => {

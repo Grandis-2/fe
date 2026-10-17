@@ -90,8 +90,9 @@ export function PaymentCallbackPage() {
             )
             return
           case 'pending':
+            // 승인이 진행 중이거나 끝났을 수 있어 "실패"라고 하지 않고, 다시 결제하지 않게 막는다.
             showToast(
-              '결제를 확인하는 데 시간이 걸리고 있어요. 주문 내역에서 결과를 확인해 주세요.',
+              '결제 결과를 확인하지 못했어요. 주문 내역에서 확인해 주세요. 다시 결제하지 마세요.',
             )
             navigate(mypagePath('history'), { replace: true })
         }
