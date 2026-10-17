@@ -19,9 +19,11 @@ npm run lint              # eslint .
 npm run lint:fix          # eslint . --fix
 npm run storybook         # Storybook dev server on :6006
 npm run format:fix        # prettier --write .
+npm run test              # vitest unit (src/**/*.test.ts)
 ```
 
-- 테스트 러너는 없다 — 검증은 `npm run lint` + `npm run build` + 브라우저 확인.
+- `npm run test`는 순수 로직 단위 테스트(`src/**/*.test.ts`, node)만 돈다 — 결제 승인처럼 돈·재시도가 걸린 로직에 둔다. 화면 검증은 `npm run lint` + `npm run build` + 브라우저 확인.
+- 목 결제 승인을 느리게 하려면 `.env.local`에 `VITE_MOCK_CONFIRM_DELAY_MS=15000` — 승인 중 폴링·재전송·새로고침을 재현한다.
 - 커밋 시 husky가 commitlint(`feat:`/`fix:`/`test:` …)와 lint-staged(eslint --fix, prettier)를 돌린다.
 - MSW는 dev에서 기본 on이다. 실제 API에 붙이려면 `.env.local`에 `VITE_USE_MSW=false`.
 

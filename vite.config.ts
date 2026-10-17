@@ -71,6 +71,15 @@ export default defineConfig({
   },
   test: {
     projects: [
+      // 순수 로직(결제 승인 재시도·폴링 등) 단위 테스트 — 브라우저 없이 node에서 돈다.
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['src/**/*.test.ts'],
+          environment: 'node',
+        },
+      },
       {
         extends: true,
         plugins: [

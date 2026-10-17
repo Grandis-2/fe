@@ -1,4 +1,4 @@
-import { http } from 'msw'
+import { delay, http } from 'msw'
 
 import {
   drawAttempts as attempts,
@@ -10,7 +10,7 @@ import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 import { isUuid, readPaging, toPage, uuidViolation } from '../validate'
 
-import { shipToViolations, toShipTo } from './order'
+import { CONFIRM_DELAY_MS, shipToViolations, toShipTo } from './order'
 
 import type {
   ApiViolation,
@@ -71,8 +71,18 @@ const toEntry = (entry: DrawEntryRecord): DrawEntry => ({
 
 const findDraw = (drawId: unknown) => draws.find((it) => it.drawId === drawId)
 
-const findEntry = (drawId: unknown) =>
-  entries.find((it) => it.drawId === drawId)
+// 이 탭에서 승인 지연을 기다리는 응모(회차 id). 그사이 새로고침되면 AUTHORIZING만 저장된 채 여기서 빠진다.
+const authorizing = new Set<string>()
+
+const findEntry = (drawId: unknown) => {
+  const entry = entries.find((it) => it.drawId === drawId)
+  // 새로고침으로 끊긴 승인은 실제 서버라면 그사이 끝났다 — 결제된 것으로 마무리한다.
+  if (entry?.status === 'AUTHORIZING' && !authorizing.has(entry.drawId)) {
+    entry.status = 'PAID'
+    saveDrawDb()
+  }
+  return entry
+}
 
 export const drawHandlers: RequestHandler[] = [
   // 회차 목록 — 최신순. 로그인 없이 부를 수 있다.
@@ -211,6 +221,8 @@ export const drawHandlers: RequestHandler[] = [
           declineReason: null,
         })
       }
+      // 승인 중에 같은 승인이 또 들어왔다(타임아웃 뒤 재전송·새로고침) — 이 요청은 승인 전에 거절한다.
+      if (entry.status === 'AUTHORIZING') return notPayable()
       const attempt = attempts.get(tossOrderId)
       if (!attempt || attempt.drawId !== draw.drawId) {
         return fail(404, {
@@ -229,7 +241,15 @@ export const drawHandlers: RequestHandler[] = [
       if (phaseOf(draw) !== 'OPEN') return notOpen()
 
       attempts.delete(tossOrderId)
-      if (Date.now() - attempt.openedAt > ATTEMPT_LIFETIME_MS) {
+      // 결제창 유효 시간은 승인을 시작할 때 본다(지연만큼 늦게 재지 않게).
+      const expired = Date.now() - attempt.openedAt > ATTEMPT_LIFETIME_MS
+      entry.status = 'AUTHORIZING'
+      saveDrawDb()
+      authorizing.add(entry.drawId)
+      await delay(CONFIRM_DELAY_MS)
+      authorizing.delete(entry.drawId)
+      if (expired) {
+        entry.status = 'AWAITING_PAYMENT'
         saveDrawDb()
         return ok<EntryConfirmResponse>({
           result: 'DECLINED',
