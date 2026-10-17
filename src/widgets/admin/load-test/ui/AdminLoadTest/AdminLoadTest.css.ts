@@ -14,12 +14,17 @@ export const cards = style({
   gap: spacing[16],
 })
 
-// 카드 값 아래에 그래프를 붙인다.
-export const trend = style({
+// 카드 값 아래에 변화량·시험 중 증가분을 작게 붙인다.
+export const valueWithNote = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[8],
+  gap: spacing[4],
 })
+
+export const note = style([
+  typography.body.caption,
+  { color: color.text.tertiary },
+])
 
 /** 섹션 내용을 감싸는 흰 카드 */
 export const card = style({
