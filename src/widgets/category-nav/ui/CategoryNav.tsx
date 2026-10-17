@@ -1,4 +1,3 @@
-import { ChevronRight } from 'lucide-react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 
 import { useBrandMenus } from '@entities/product'
@@ -131,23 +130,6 @@ export function CategoryNav({
                       </div>
                     </div>
                   )}
-                </div>
-                <div className={styles.menuAside}>
-                  <div className={styles.menuSectionTitle}>더 알아보기</div>
-                  {menu.more.map((item) => (
-                    <Link
-                      key={item.label}
-                      to={item.to}
-                      className={styles.menuAsideLink}
-                      onClick={blurActiveElement}
-                    >
-                      {item.label}
-                      <ChevronRight
-                        className={styles.menuAsideArrow}
-                        aria-hidden="true"
-                      />
-                    </Link>
-                  ))}
                 </div>
               </div>
             </div>
