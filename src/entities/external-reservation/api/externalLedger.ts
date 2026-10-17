@@ -6,6 +6,7 @@ import { requestExternal } from './externalClient'
 // 원장 한 쪽 최대 크기(서버 상한 1000)
 const PAGE_SIZE = 1000
 
+// [mock] GET /external/reservations — 원장 목록 조회
 const getLedgerPage = (cursor: string | null, signal?: AbortSignal) => {
   const query = new URLSearchParams({ size: String(PAGE_SIZE) })
   if (cursor) query.set('cursor', cursor)

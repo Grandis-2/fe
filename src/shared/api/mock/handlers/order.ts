@@ -1,4 +1,4 @@
-import { http } from 'msw'
+import { delay, http } from 'msw'
 
 import {
   cartLines,
@@ -32,6 +32,10 @@ import type { OrderRecord } from '../fixtures/preorder'
 import type { RequestHandler } from 'msw'
 
 // 토스 승인은 흉내만 낸다 — paymentKey는 무엇이든 승인한다.
+// 실제 승인은 최대 70초쯤 걸린다. .env.local에 VITE_MOCK_CONFIRM_DELAY_MS(예: 15000)를 넣으면 승인이 그만큼
+// AUTHORIZING에 머문다 — 승인 중 폴링·타임아웃 뒤 재전송·새로고침을 재현할 때 쓴다. 비우면 바로 끝난다.
+export const CONFIRM_DELAY_MS =
+  Number(import.meta.env.VITE_MOCK_CONFIRM_DELAY_MS) || 0
 // ponytail: 장바구니 주문의 재고 확보는 흉내 내지 않고 가용 재고와 비교만 한다(확보·반납 없음).
 
 const SHIP_TO_LIMITS = {
@@ -84,8 +88,16 @@ const windowExpired = () =>
     message: '결제 기한이 지났습니다.',
   })
 
-const findOrder = (orderId: unknown) =>
-  orders.find((it) => it.orderId === orderId)
+// 이 탭에서 승인 지연을 기다리는 주문. 그사이 새로고침되면 AUTHORIZING만 저장된 채 여기서 빠진다.
+const authorizing = new Set<string>()
+
+const findOrder = (orderId: unknown) => {
+  const order = orders.find((it) => it.orderId === orderId)
+  // 새로고침으로 끊긴 승인은 실제 서버라면 그사이 끝났다 — 승인된 것으로 마무리한다.
+  if (order?.status === 'AUTHORIZING' && !authorizing.has(order.orderId))
+    approveOrder(order)
+  return order
+}
 
 function moveOrder(
   order: OrderRecord,
@@ -103,6 +115,17 @@ function moveOrder(
   })
   order.status = toStatus
   saveOrderDb()
+}
+
+function approveOrder(order: OrderRecord) {
+  moveOrder(order, 'AWAITING_CONFIRMATION', 'SYSTEM', 'PAYMENT_APPROVED')
+  if (order.source === 'CART') removePurchasedFromCart(order)
+  // 사전예약은 결제가 확인되면 예약이 확정된다.
+  const preorder = preorders.find((it) => it.preorderId === order.preorderId)
+  if (preorder) {
+    preorder.reservedAt = new Date().toISOString()
+    transition(preorder, 'RESERVED', 'SYSTEM')
+  }
 }
 
 const isCartDue = (order: OrderRecord) =>
@@ -709,6 +732,13 @@ export const orderHandlers: RequestHandler[] = [
           declineReason: null,
         })
       }
+      // 승인 중에 같은 승인이 또 들어왔다(타임아웃 뒤 재전송·새로고침) — 이 요청은 승인 전에 거절한다.
+      if (order.status === 'AUTHORIZING') {
+        return fail(409, {
+          code: 'ORDER_NOT_PAYABLE',
+          message: '결제할 수 있는 주문이 아닙니다.',
+        })
+      }
       const attempt = attempts.get(tossOrderId)
       if (!attempt || attempt.orderId !== order.orderId) {
         return fail(404, {
@@ -734,8 +764,13 @@ export const orderHandlers: RequestHandler[] = [
 
       attempts.delete(tossOrderId)
       saveOrderDb()
+      // 결제창 유효 시간은 승인을 시작할 때 본다(지연만큼 늦게 재지 않게).
+      const expired = Date.now() - attempt.openedAt > ATTEMPT_LIFETIME_MS
       moveOrder(order, 'AUTHORIZING', 'USER')
-      if (Date.now() - attempt.openedAt > ATTEMPT_LIFETIME_MS) {
+      authorizing.add(order.orderId)
+      await delay(CONFIRM_DELAY_MS)
+      authorizing.delete(order.orderId)
+      if (expired) {
         moveOrder(
           order,
           'AWAITING_PAYMENT',
@@ -748,16 +783,7 @@ export const orderHandlers: RequestHandler[] = [
           declineReason: 'PAYMENT_EXPIRED',
         })
       }
-      moveOrder(order, 'AWAITING_CONFIRMATION', 'SYSTEM', 'PAYMENT_APPROVED')
-      if (order.source === 'CART') removePurchasedFromCart(order)
-      // 사전예약은 결제가 확인되면 예약이 확정된다.
-      const preorder = preorders.find(
-        (it) => it.preorderId === order.preorderId,
-      )
-      if (preorder) {
-        preorder.reservedAt = new Date().toISOString()
-        transition(preorder, 'RESERVED', 'SYSTEM')
-      }
+      approveOrder(order)
       return ok<ConfirmPaymentResponse>({
         result: 'APPROVED',
         orderStatus: order.status,

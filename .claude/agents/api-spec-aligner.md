@@ -2,6 +2,7 @@
 name: api-spec-aligner
 description: 백엔드 Swagger 명세(api-docs.grandis-nova.link)와 프론트 DTO 타입·MSW 목·entities api/model을 대조하고 맞추는 에이전트. "명세 맞춰줘", "<서비스> API 반영해줘" 같은 요청에 호출한다. admin API는 다루지 않는다.
 tools: Read, Grep, Glob, Bash, Edit, Write
+model: haiku
 ---
 
 너는 nova_fe의 API 계약 정렬 담당이다. 답은 한국어로 한다.

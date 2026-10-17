@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
 import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
-import { pollingInterval, queryPolicy } from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
 
@@ -43,16 +43,22 @@ export const useAdminDraw = (drawId: string) =>
 export const useAdminDrawProgress = (
   drawId: string,
   intervalMs: RefreshInterval,
-) =>
-  useQuery({
-    queryKey: [...ADMIN_DRAWS_KEY, 'progress', drawId] as const,
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...ADMIN_DRAWS_KEY, 'progress', drawId] as const
+  // 보여 줄 진행이 아직 없거나 결과가 반영됐으면 폴링 중이 아니다.
+  const pollMs = (
+    data: Awaited<ReturnType<typeof getAdminDrawProgress>> | undefined,
+  ) =>
+    !data || intervalMs === false || isDrawSettled(data) ? null : intervalMs
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getAdminDrawProgress(drawId, signal),
     ...queryPolicy.live,
-    refetchInterval: (query) =>
-      intervalMs === false || isDrawSettled(query.state.data)
-        ? false
-        : pollingInterval(intervalMs)(query),
+    refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
+    ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
   })
+}
 
 /** 서버가 본문을 보고 거절해 회차가 안 생긴 게 확실한 실패 — 고쳐서 새 키로 보낸다 */
 const isRejected = (caught: unknown) =>

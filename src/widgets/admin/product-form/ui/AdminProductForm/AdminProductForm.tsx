@@ -141,11 +141,11 @@ export function AdminProductForm({
   // 고치기 시작하면 서버 오류를 걷는다. 걷은 묶음을 기억해 새 오류가 오면 다시 보인다.
   const [dismissedServer, setDismissedServer] = useState<FormIssue[]>()
   const editing = mode === 'edit'
-  // 사진은 고르는 즉시 올리고(5분 서명 주소), 저장할 때 주소만 보낸다. 수정 화면은
+  // 사진은 고르는 즉시 올리고, 저장할 때 주소만 보낸다. 수정 화면은
   // 저장할 때 사진 넣기·빼기 API로 한 장씩 반영한다.
   const imageNote = editing
-    ? `사진은 '수정하기'를 누르면 반영됩니다. 최대 ${DETAIL_IMAGE_MAX}장, JPG·PNG·WEBP, 10MB 이하.`
-    : `최대 ${DETAIL_IMAGE_MAX}장, JPG·PNG·WEBP, 10MB 이하. 세로로 위에서부터 이어 붙습니다.`
+    ? `사진은 '수정하기'를 누르면 반영됩니다. 최대 ${DETAIL_IMAGE_MAX}장, JPG·PNG, 10MB 이하.`
+    : `최대 ${DETAIL_IMAGE_MAX}장, JPG·PNG, 10MB 이하. 세로로 위에서부터 이어 붙습니다.`
   const uploaderProps = {
     upload: uploadProductImage,
     accept: PRODUCT_IMAGE_ACCEPT,

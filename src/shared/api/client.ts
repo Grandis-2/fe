@@ -29,6 +29,11 @@ export type ApiRequestOptions = {
   skipAuthRefresh?: boolean
   // 쿼리 키가 바뀌거나 화면을 떠날 때 이전 요청을 취소한다.
   signal?: AbortSignal
+  // 사진 업로드·결제 승인처럼 오래 걸리는 요청만 늘린다. 기본은 TIMEOUT_MS.
+  timeout?: number
+  // API 도메인으로 직접 부르는 요청은 쿠키가 필요 없다 — false면 CORS가 credentials를
+  // 허용하지 않아도 통한다. 인증은 Authorization 헤더로 간다.
+  withCredentials?: boolean
 }
 
 const TIMEOUT_MS = 10_000
@@ -47,7 +52,14 @@ type RawResponse<TData> = AxiosResponse<ApiResponse<TData> | string>
 
 async function send<TData>(
   path: string,
-  { body, method = 'GET', headers, signal }: ApiRequestOptions,
+  {
+    body,
+    method = 'GET',
+    headers,
+    signal,
+    timeout,
+    withCredentials,
+  }: ApiRequestOptions,
 ): Promise<RawResponse<TData>> {
   try {
     return await http.request<ApiResponse<TData> | string>({
@@ -55,6 +67,8 @@ async function send<TData>(
       method,
       data: body,
       signal,
+      timeout,
+      withCredentials,
       headers: {
         'X-Request-Id': requestId(),
         ...getAuthHeaders(),
@@ -74,6 +88,10 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
       ? headerTraceId
       : sentRequestId(response.config)
 
+  // 명세는 초 단위로만 준다 — 날짜 형식 등 숫자가 아니면 없는 것으로 본다.
+  const retryAfter = Number(response.headers['retry-after'])
+  const retryAfterSeconds = Number.isFinite(retryAfter) ? retryAfter : 0
+
   // 로그아웃 등 204 No Content는 파싱할 본문이 없다.
   if (response.status === 204) return undefined as TData
 
@@ -88,6 +106,7 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
       },
       response.status,
       fallbackTraceId,
+      retryAfterSeconds,
     )
   }
   if (json.success) return json.data
@@ -95,6 +114,7 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
     json.error,
     response.status,
     json.traceId ?? fallbackTraceId,
+    retryAfterSeconds,
   )
 }
 

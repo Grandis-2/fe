@@ -27,6 +27,7 @@ import {
   type ReservationState,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import {
   DEFAULT_REFRESH_INTERVAL,
   refreshIntervalOptions,
@@ -100,17 +101,18 @@ export function AdminReservationsPage() {
 
   // 탭은 화면이 거른다 — 서버 상태값 하나로는 '확정'(결제 대기 + 결제 완료)을 못 고른다.
   // shortcut: 최근 100건만 받는다. 넘으면 표 위에 알리고, 더 보려면 서버 페이지로 바꾼다.
-  const {
-    data: page,
-    isPending,
-    isError,
-    error,
-    dataUpdatedAt,
-    refetch,
-  } = useAdminReservations({ productId, size: LIST_SIZE }, refreshInterval)
+  const list = useAdminReservations(
+    { productId, size: LIST_SIZE },
+    refreshInterval,
+  )
+  const { data: page, isPending, isError, error, dataUpdatedAt, refetch } = list
   const reservations = page?.items
   // 아직 한 번도 못 받았으면 data가 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
   const stats = useReservationStats(productId, refreshInterval)
+  // 이미 받은 값이 있는데 다시 받는 데 실패하고 있으면(재시도 중 포함) 멈춘 값임을 알린다.
+  const staleError =
+    (reservations !== undefined ? pollingError(list) : null) ??
+    (stats.data !== undefined ? pollingError(stats) : null)
 
   const reprocess = useReprocessReservation()
 
@@ -316,14 +318,10 @@ export function AdminReservationsPage() {
       {/* 폴링이 실패해도 이미 받은 데이터는 남아 카드와 표에 그대로 보인다 —
           멈춘 숫자를 최신으로 읽으면 '실패를 0건으로 보여주기'와 똑같이 위험하다.
           그래서 숫자보다 먼저 읽히는 자리에 둔다. */}
-      {((isError && reservations !== undefined) ||
-        (stats.isError && stats.data !== undefined)) && (
+      {staleError !== null && (
         <InlineAlert status="warning">
-          {getErrorMessage(
-            error ?? stats.error,
-            '예약을 다시 불러오지 못했습니다.',
-          )}{' '}
-          아래 숫자와 목록은 마지막으로 받은 값입니다.
+          {getErrorMessage(staleError, '예약을 다시 불러오지 못했습니다.')} 아래
+          숫자와 목록은 마지막으로 받은 값입니다.
         </InlineAlert>
       )}
 

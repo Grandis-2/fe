@@ -1,11 +1,20 @@
+import {
+  replaceEqualDeep,
+  type QueryClient,
+  type QueryKey,
+} from '@tanstack/react-query'
+
 import { ApiRequestError } from './client'
 
 // 다시 보내도 결과가 같은 실패(4xx — 인증·검증·없음)는 재시도하지 않는다.
 // 응답을 못 받았거나(타임아웃·네트워크, status 0) 서버 오류(5xx)일 때만 다시 묻는다.
+// 401이라도 details.retryable이면 세션 문제가 아니라 일시 장애다(명세) — apiClient가 한 번
+// 다시 보내고도 실패한 것이라 5xx처럼 다룬다.
 export const isRetryableError = (error: unknown) =>
   !(error instanceof ApiRequestError) ||
   error.status === 0 ||
-  error.status >= 500
+  error.status >= 500 ||
+  (error.status === 401 && error.error.details?.retryable === true)
 
 // 재시도가 다 실패하면 그때 isError로 화면에 반영된다.
 const retryUpTo = (max: number) => (failureCount: number, error: unknown) =>
@@ -33,19 +42,103 @@ export const queryPolicy = {
   snapshot: { staleTime: Infinity, gcTime: 30 * 60_000, retry: retryUpTo(1) },
 } as const
 
+// 실패가 이어져도 이보다 길게 기다리지 않는다 — 요청 타임아웃(10초)을 더해도 한 번에 약 55초라,
+// 대기열이 250초 안에 4번 이상 다시 묻는다. 평소 간격이 더 길면 그 간격이 상한이다.
+const BACKOFF_CAP_MS = 30_000
+// 같은 순간 실패한 사용자들이 같은 순간 다시 몰리지 않게 흩는다. 위쪽으로만(최대 1.5배) 줘서
+// 서버가 정한 간격보다 빨라지지 않는다.
+const JITTER = 0.5
+// 폴링 중이 아닐 때(첫 조회 등) 재시도 간격의 출발값 — TanStack 기본값(1초부터 두 배)과 같다.
+const FIRST_RETRY_MS = 1_000
+
 /**
- * 폴링 간격. 마지막 조회가 끝내 실패했으면 간격을 늘려, 이미 힘든 서버를 원래 주기로
- * 계속 두드리지 않는다. 다음 조회가 성공하면 바로 원래 간격으로 돌아온다.
- *
- * 실패 횟수에 따라 두 배씩 늘리는 방식은 쓰지 않는다 — TanStack Query는 새 fetch를
- * 시작할 때 fetchFailureCount를 0으로 되돌려서(query-core의 fetchState), 그 값으로는
- * '연속 몇 주기째 실패인지'를 셀 수 없다. 한 주기 안의 재시도 횟수만 들어 있다.
+ * 연속 failureCount번째 실패 뒤 다음 요청까지 기다릴 시간(ms). 평소 간격(baseMs)에서 두 배씩
+ * 늘리되 상한에서 멈추고, 서버가 Retry-After를 줬으면 그보다 일찍 보내지 않는다.
+ * failureCount는 TanStack retryDelay처럼 첫 실패 뒤 0이다.
  */
-export const pollingInterval =
-  (baseMs: number, failedMs = baseMs * 4) =>
-  // Query 제네릭과 엮이지 않게 필요한 필드만 받는다.
-  (query: { state: { status: 'pending' | 'error' | 'success' } }) =>
-    query.state.status === 'error' ? failedMs : baseMs
+export const backoffDelay = (
+  baseMs: number,
+  failureCount: number,
+  error?: unknown,
+) => {
+  const retryAfterMs =
+    error instanceof ApiRequestError ? error.retryAfter * 1000 : 0
+  const grown = Math.min(
+    baseMs * 2 ** failureCount,
+    Math.max(BACKOFF_CAP_MS, baseMs),
+  )
+  return Math.max(retryAfterMs, grown) * (1 + Math.random() * JITTER)
+}
+
+/**
+ * 폴링 쿼리의 실패 재시도. 프리셋 뒤에 펼친다 — `...queryPolicy.live, ...pollingRetry(...)`.
+ *
+ * refetchInterval은 주기마다 실패 횟수를 0으로 되돌려 연속 실패를 셀 수 없어서, 실패하면
+ * 한 번의 조회 안에서 계속 재시도하며 backoffDelay로 간격을 늘린다. 그동안 쿼리는 fetching에
+ * 머물러 isError가 켜지지 않는다 — 실패 안내는 pollingError로 띄운다.
+ *
+ * - pollMs: 지금 폴링 간격. 폴링 중이 아니면(보여 줄 값이 아직 없음, 처리가 끝남, 자동 갱신 끔)
+ *   null — 그때는 retries번만 다시 묻고 isError로 실패를 알린다. 재시도마다 다시 읽는다.
+ * - expired: 제한 시간이 지났으면 true — 재시도를 그만둔다. 멈추는 건 쿼리를 끄는(enabled) 쪽이다.
+ */
+export const pollingRetry = (
+  pollMs: () => number | null,
+  {
+    retries = 1,
+    expired = () => false,
+  }: { retries?: number; expired?: () => boolean } = {},
+) => ({
+  retry: (failureCount: number, error: unknown) => {
+    if (!isRetryableError(error)) return false
+    return pollMs() === null ? failureCount < retries : !expired()
+  },
+  retryDelay: (failureCount: number, error: unknown) =>
+    backoffDelay(pollMs() ?? FIRST_RETRY_MS, failureCount, error),
+})
+
+/**
+ * 정해진 간격으로 다시 받는 폴링(관리자 자동 갱신). intervalMs가 false면 자동 갱신을 끈 것이다.
+ * 실패하면 그 간격에서 백오프하며 계속 다시 묻는다 — 관리자 화면은 제한 시간을 두지 않는다.
+ * 보여 줄 값이 아직 없으면(첫 조회) 프리셋처럼 한 번만 다시 묻는다.
+ */
+export const pollEvery = (
+  queryClient: QueryClient,
+  queryKey: QueryKey,
+  intervalMs: number | false,
+) => ({
+  refetchInterval: intervalMs,
+  ...pollingRetry(() =>
+    intervalMs === false || queryClient.getQueryData(queryKey) === undefined
+      ? null
+      : intervalMs,
+  ),
+})
+
+/**
+ * 폴링 쿼리의 실패. 재시도가 끝났으면 error, 아직 재시도 중이면 마지막 실패 이유다.
+ * 성공하면 null로 돌아온다. 화면은 이 값이 있으면 "마지막으로 받은 값"이라고 알린다.
+ */
+export const pollingError = ({
+  error,
+  failureCount,
+  failureReason,
+}: {
+  error: unknown
+  failureCount: number
+  failureReason: unknown
+}) => error ?? (failureCount > 0 ? failureReason : null)
+
+/**
+ * 폴링 응답이 지금 캐시보다 옛것이면 버린다(useQuery의 structuralSharing에 넣는다).
+ * 요청은 한 키에 하나씩 나가지만, 서버 인스턴스마다 캐시·복제 시점이 달라 나중 응답이
+ * 더 옛 값일 수 있다 — 명세가 version·countedAt으로 거르라고 한다. 같으면 받는다.
+ */
+export const keepNewer =
+  <T>(orderOf: (data: T) => number) =>
+  (prev: unknown, next: unknown) =>
+    prev !== undefined && orderOf(next as T) < orderOf(prev as T)
+      ? prev
+      : replaceEqualDeep(prev, next)
 
 // QueryClient 기본값 — 정책을 고르지 않은 쿼리도 4xx를 헛되이 재시도하지 않게 한다.
 // 변경(mutation)은 같은 요청이 두 번 반영될 수 있어 자동 재시도하지 않는다.

@@ -47,30 +47,19 @@ export default defineConfig({
           })
         },
       },
-      // 상품 사진 업로드(S3 presigned PUT)를 개발 서버가 대신 보낸다. 업로드 버킷 CORS가
-      // 운영 프런트 도메인만 허용해서 localhost에서 브라우저가 직접 보내면 막힌다 — 같은
-      // 주소(/__s3)로 받아 서버끼리 넘기면 CORS 검사가 없다. 운영 빌드엔 프록시가 없고
-      // 브라우저가 S3로 직접 올린다(shared/api/presignedUpload.ts가 개발일 때만 주소를 바꾼다).
-      // 서명에 host·content-type·content-length가 들어 있어 Host만 버킷으로 맞추고 둘은
-      // 그대로 둔다. 버킷이 바뀌면 presignedUpload.ts의 DEV_S3_ORIGIN과 같이 고친다.
-      '/__s3': {
-        target:
-          'https://nova-prod-upload-316708313927.s3.ap-northeast-2.amazonaws.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/__s3/, ''),
-        configure: (proxy) => {
-          proxy.on('proxyReq', (req) => {
-            // 업로드엔 인증·쿠키를 싣지 않는다(명세). localhost 쿠키가 S3로 새지 않게 뺀다.
-            req.removeHeader('cookie')
-            req.removeHeader('authorization')
-            req.removeHeader('origin')
-          })
-        },
-      },
     },
   },
   test: {
     projects: [
+      // 순수 로직(결제 승인 재시도·폴링 등) 단위 테스트 — 브라우저 없이 node에서 돈다.
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: ['src/**/*.test.ts'],
+          environment: 'node',
+        },
+      },
       {
         extends: true,
         plugins: [

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { queryPolicy } from '@shared/api/queryPolicy'
+import { keepNewer, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { PreorderStatus } from '@shared/api/types'
 
 import {
@@ -9,6 +9,8 @@ import {
   getReservation,
   getReservationHistory,
 } from './reservation'
+
+import type { ReservationDetail } from '../model/reservation'
 
 // 외부 등록·취소는 서버가 비동기로 끝낸다 — 이 상태면 상세를 다시 물어 바뀐 상태를 받는다.
 const SETTLING: PreorderStatus[] = ['PENDING_SYNC', 'CANCELING']
@@ -37,15 +39,27 @@ export const useMyReservations = ({
     ...queryPolicy.live,
   })
 
-export const useReservation = (preorderId: string) =>
-  useQuery({
-    queryKey: reservationKeys.detail(preorderId),
+const settlePollMs = (data: ReservationDetail | undefined) =>
+  data && SETTLING.includes(data.status) ? SETTLE_POLL_MS : null
+
+// 처리를 기다리는 동안 실패하면 백오프하며 다시 묻는다.
+// ponytail: 제한 시간은 두지 않는다 — 명세에 외부 등록·취소 처리 시간이 없다. 정해지면 useOrder처럼 useDeadline을 붙인다.
+export const useReservation = (preorderId: string) => {
+  const queryClient = useQueryClient()
+  const queryKey = reservationKeys.detail(preorderId)
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getReservation(preorderId, signal),
     enabled: preorderId !== '',
-    refetchInterval: ({ state: { data } }) =>
-      data && SETTLING.includes(data.status) ? SETTLE_POLL_MS : false,
+    refetchInterval: ({ state: { data } }) => settlePollMs(data) ?? false,
+    // PAYMENT_IN_PROGRESS·PAYMENT_EXPIRED로 바뀔 땐 version이 그대로라 같은 값은 받는다.
+    structuralSharing: keepNewer<ReservationDetail>(({ version }) => version),
     ...queryPolicy.live,
+    ...pollingRetry(() =>
+      settlePollMs(queryClient.getQueryData<ReservationDetail>(queryKey)),
+    ),
   })
+}
 
 export const useReservationHistory = (preorderId: string) =>
   useQuery({

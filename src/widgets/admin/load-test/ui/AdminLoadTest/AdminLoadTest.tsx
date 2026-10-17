@@ -19,6 +19,7 @@ import {
 } from '@entities/external-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { setMockLoad } from '@shared/api/mock'
+import { pollingError } from '@shared/api/queryPolicy'
 import {
   refreshIntervalOptions,
   type RefreshInterval,
@@ -347,9 +348,12 @@ export function AdminLoadTest({
         title="예약 처리"
         description="접수와 외부 등록 처리를 같은 축에 그립니다. 두 선 사이가 벌어지면 그만큼 처리 중 적체가 쌓입니다. 집계는 서버가 5초까지 캐시해 최근 30초 평균으로 계산합니다."
       >
-        {stats.isError && (
+        {pollingError(stats) !== null && (
           <InlineAlert status={s ? 'warning' : 'error'}>
-            {getErrorMessage(stats.error, '예약 집계를 불러오지 못했습니다.')}
+            {getErrorMessage(
+              pollingError(stats),
+              '예약 집계를 불러오지 못했습니다.',
+            )}
           </InlineAlert>
         )}
         <div className={styles.card}>
@@ -432,10 +436,10 @@ export function AdminLoadTest({
           {/* 동기화 작업 목록 API에는 상품 조건이 없다. */}
           {productId && ' — 전체 상품 기준'}
         </div>
-        {errors.isError && (
+        {pollingError(errors) !== null && (
           <InlineAlert status="warning">
             {getErrorMessage(
-              errors.error,
+              pollingError(errors),
               '오류 코드별 수를 불러오지 못했습니다.',
             )}
           </InlineAlert>
@@ -462,9 +466,12 @@ export function AdminLoadTest({
           </>
         }
       >
-        {queue.isError && (
+        {pollingError(queue) !== null && (
           <InlineAlert status={q ? 'warning' : 'error'}>
-            {getErrorMessage(queue.error, '대기열 현황을 불러오지 못했습니다.')}
+            {getErrorMessage(
+              pollingError(queue),
+              '대기열 현황을 불러오지 못했습니다.',
+            )}
           </InlineAlert>
         )}
         {q?.snapshotStale && (

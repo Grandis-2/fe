@@ -19,6 +19,7 @@ import {
 } from '@entities/admin-dead-letter'
 import { reservationNo } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import {
   DEFAULT_REFRESH_INTERVAL,
   refreshIntervalOptions,
@@ -340,9 +341,12 @@ export function AdminDeadLetterList() {
       </div>
 
       {/* 다시 받기가 실패해도 이전 목록은 남는다 — 멈춘 목록을 최신으로 읽지 않게 알린다. */}
-      {deadLetters.isError && (
+      {pollingError(deadLetters) !== null && (
         <InlineAlert status={items ? 'warning' : 'error'}>
-          {getErrorMessage(deadLetters.error, '메시지를 불러오지 못했습니다.')}
+          {getErrorMessage(
+            pollingError(deadLetters),
+            '메시지를 불러오지 못했습니다.',
+          )}
           {items && ' 아래 목록은 마지막으로 받은 값입니다.'}
         </InlineAlert>
       )}

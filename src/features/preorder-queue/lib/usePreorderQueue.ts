@@ -7,6 +7,7 @@ import {
 } from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { isRetryableError } from '@shared/api/queryPolicy'
+import { useDeadline } from '@shared/lib/useDeadline'
 
 import type { PreorderAdmission } from '../model/preorderQueueStore'
 
@@ -20,6 +21,9 @@ const QUEUE_FULL_RETRY_MS = 10_000
 const UNAVAILABLE_RETRY_MS = 2_000
 // 예상 시간을 계산할 수 없을 때 서버가 주는 값 — 이 이상은 "오래 걸림".
 const UNKNOWN_ETA = 450
+// 이만큼 조회에 성공하지 못하면 줄에서 빠졌을 수 있다(명세: 250초 넘게 조회하지 않으면).
+// 안내만 바꾸고 조회는 계속한다. 운영자가 이탈 유예를 늘렸어도 구매자 응답엔 그 값이 없어 기본값을 쓴다.
+const LEAVE_GRACE_MS = 250_000
 
 export type QueueStatus = 'waiting' | 'mine'
 type QueueWaiting = Extract<QueuePoll, { status: 'WAITING' }>
@@ -105,11 +109,18 @@ export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
     else handleFail('사전예약이 마감되었어요.')
   }, [poll.data, hasLeft])
 
-  // 일시 장애는 다음 간격에 다시 묻고(직전 응답의 Retry-After가 남아 있다), 4xx는 멈춘다.
+  // 일시 장애는 pollingRetry가 백오프하며 계속 다시 묻고, 4xx는 멈춘다.
   useEffect(() => {
     if (poll.error && !isRetryableError(poll.error))
       handleFail(getErrorMessage(poll.error, '대기 순번을 확인하지 못했어요.'))
   }, [poll.error])
+
+  // 마지막으로 성공한 조회부터 실패가 이어진 지 250초가 지났다.
+  const mayHaveLeftQueue = useDeadline(
+    poll.failureCount > 0,
+    LEAVE_GRACE_MS,
+    poll.dataUpdatedAt,
+  ).passed
 
   const waiting = current?.status === 'WAITING' ? current : null
   // 렌더 중에 바로 맞춘다(이펙트에서 setState하면 react-hooks/set-state-in-effect에 걸린다).
@@ -153,6 +164,9 @@ export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
 
   return {
     status,
+    // 조회가 실패하고 있을 때의 안내용(PollingNotice).
+    poll: { fetchStatus: poll.fetchStatus, failureCount: poll.failureCount },
+    mayHaveLeftQueue,
     isOpen,
     hasLeft,
     moveIn,

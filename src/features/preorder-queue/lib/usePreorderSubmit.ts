@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { useNavigate } from 'react-router'
+
 import { useSubmitPreorder, type PreorderAccepted } from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
+import { mypagePath } from '@shared/config/routes'
 import { showToast } from '@shared/model/toastStore'
 
 import {
@@ -18,6 +21,12 @@ const TICKET_ERRORS = [
   'ADMISSION_TICKET_USED',
 ]
 
+// 이미 접수된 예약이 있다 — 409 ACTIVE_PREORDER_EXISTS, 또는 응답을 못 받은 첫 접수가 커밋된 뒤
+// 옵션을 바꿔 같은 키로 다시 보낸 422 KEY_PAYLOAD_MISMATCH. 다시 눌러도 같은 오류라 예약 내역으로 보낸다.
+const isAlreadyAccepted = (caught: unknown) =>
+  caught instanceof ApiRequestError &&
+  ['ACTIVE_PREORDER_EXISTS', 'KEY_PAYLOAD_MISMATCH'].includes(caught.error.code)
+
 type SubmitTarget = {
   productId: string
   productName: string
@@ -32,6 +41,7 @@ export function usePreorderSubmit() {
   const admission = usePreorderQueueStore((state) => state.admission)
   const clearAdmission = usePreorderQueueStore((state) => state.clearAdmission)
   const submit = useSubmitPreorder()
+  const navigate = useNavigate()
   const [isWaiting, setIsWaiting] = useState(false)
   const waitRef = useRef<AbortController>(null)
 
@@ -60,6 +70,16 @@ export function usePreorderSubmit() {
       {
         onSuccess: async (accepted) => {
           clearAdmission()
+          // 같은 키 재전송인데 그사이 취소한(취소 중인) 예약이다 — 재신청은 새 입장권·새 키로 줄부터 다시 선다.
+          if (
+            accepted.replayed &&
+            (accepted.status === 'CANCELING' || accepted.status === 'CANCELED')
+          ) {
+            showToast(
+              '취소된 예약이에요. 다시 신청하려면 한 번 더 눌러 주세요.',
+            )
+            return
+          }
           const controller = new AbortController()
           waitRef.current = controller
           setIsWaiting(true)
@@ -72,6 +92,12 @@ export function usePreorderSubmit() {
           onSuccess(accepted, registered)
         },
         onError: (caught) => {
+          if (isAlreadyAccepted(caught)) {
+            clearAdmission()
+            showToast('이미 접수한 예약이 있어요. 예약 내역에서 확인해 주세요.')
+            navigate(mypagePath('preorder-check'))
+            return
+          }
           if (
             caught instanceof ApiRequestError &&
             TICKET_ERRORS.includes(caught.error.code)

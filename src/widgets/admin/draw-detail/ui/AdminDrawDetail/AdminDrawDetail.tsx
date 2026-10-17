@@ -9,6 +9,7 @@ import {
   type AdminDraw,
 } from '@entities/admin-draw'
 import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import { DEFAULT_REFRESH_INTERVAL } from '@shared/config/refreshInterval'
 import { adminOrdersPath } from '@shared/config/routes'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
@@ -95,9 +96,12 @@ export function AdminDrawDetail({ draw, fetchedAt }: AdminDrawDetailProps) {
         }
       />
 
-      {progress.isError && (
+      {pollingError(progress) !== null && (
         <InlineAlert status={p ? 'warning' : 'error'}>
-          {getErrorMessage(progress.error, '진행 상황을 불러오지 못했습니다.')}
+          {getErrorMessage(
+            pollingError(progress),
+            '진행 상황을 불러오지 못했습니다.',
+          )}
           {p && ' 아래 숫자는 마지막으로 받은 값입니다.'}
         </InlineAlert>
       )}

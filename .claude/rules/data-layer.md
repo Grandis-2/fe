@@ -29,7 +29,7 @@ FSD 위에 얹는 규칙이다 — `domain/`, `data/`, `usecases/` 같은 별도
 
 - `useQuery`에 `staleTime`/`retry`를 직접 쓰지 않고 `@shared/api/queryPolicy`의 프리셋(`catalog`/`account`/`live`)을 펼친다. 새 유형이 필요하면 프리셋을 추가한다.
 - `queryFn`은 `({ signal })`을 API 함수까지 넘겨 키가 바뀌면 이전 요청이 취소되게 한다.
-- 폴링은 `pollingInterval()`로 실패 시 간격을 늘린다.
+- 폴링은 프리셋 뒤에 `pollingRetry()`(관리자 고정 간격은 `pollEvery()`)를 펼쳐, 실패하면 한 조회 안에서 백오프하며 다시 묻는다. 재시도 중엔 `isError`가 켜지지 않으니 실패 안내는 `pollingError(query)`로 띄운다. 제한 시간이 있는 대기는 `useDeadline`으로 재고 지나면 `enabled`로 끈다.
 
 ## MSW로 실패 재현
 

@@ -12,6 +12,7 @@ import type {
   SaleStatusChangeRequest,
 } from '@shared/api/types'
 import { delay } from '@shared/lib/delay'
+import { pollUntil } from '@shared/lib/pollUntil'
 import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
 
 import { toRegistrationRequest } from '../model/registration'
@@ -91,23 +92,25 @@ async function register(key: string, body: ProductRegistrationRequest) {
   }
 }
 
-// 준비(사전예약 회차·일반 재고 생성)가 끝날 때까지 몇 초 간격으로 확인한다.
+// 준비(사전예약 회차·일반 재고 생성)가 끝날 때까지 몇 초 간격으로 최대 30초 확인한다.
 const READY_POLL_MS = 1500
-const READY_POLL_TRIES = 20
+const READY_WAIT_MS = 30_000
 
 /**
  * 준비가 끝났는지 기다린다. 여기서 나는 실패는 삼킨다 — 상품은 이미 등록됐는데 확인
  * 요청이 실패했다고 등록 실패로 보이면, 관리자가 다시 눌러 같은 상품을 또 만든다.
  * 끝내 확인이 안 되면 준비 중으로 둔다(상세에서 '초안'으로 보인다).
+ * 끊지 않는다 — mutation이라 화면을 떠나면 mutate에 넘긴 콜백이 불리지 않아 이동이 없고,
+ * 길어야 30초다.
  */
-async function waitUntilReady(key: string) {
-  for (let attempt = 0; attempt < READY_POLL_TRIES; attempt += 1) {
-    await delay(READY_POLL_MS)
-    const status = await getRegistrationStatus(key).catch(() => null)
-    if (status?.completed) return true
-  }
-  return false
-}
+const waitUntilReady = async (key: string) =>
+  (await pollUntil(
+    () =>
+      getRegistrationStatus(key)
+        .then(({ completed }) => completed || null)
+        .catch(() => null),
+    { intervalMs: READY_POLL_MS, timeoutMs: READY_WAIT_MS },
+  )) ?? false
 
 /**
  * 상품을 등록한다. 사전예약은 회차·1차 배송 차수까지, 일반 상품은 조합별 재고까지
