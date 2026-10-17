@@ -7,7 +7,12 @@ import {
   useReservationStats,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
-import { isBraking, useWaitingroomStatus } from '@entities/admin-waitingroom'
+import {
+  isBraking,
+  useWaitingroomStatus,
+  waitingroomRuntimeLabel,
+  type WaitingroomProductStatus,
+} from '@entities/admin-waitingroom'
 import {
   mockFailureModeLabel,
   useMockConfig,
@@ -110,6 +115,36 @@ const errorColumns: TableColumn<ErrorGroup>[] = [
   },
 ]
 
+const queueColumns = (
+  productNames: ReadonlyMap<string, string>,
+): TableColumn<WaitingroomProductStatus>[] => [
+  {
+    key: 'name',
+    header: '상품',
+    render: (product) =>
+      productNames.get(product.productId) ?? product.productId,
+  },
+  {
+    key: 'runtime',
+    header: '대기열 상태',
+    align: 'center',
+    render: (product) => waitingroomRuntimeLabel[product.runtime],
+  },
+  {
+    key: 'waiting',
+    header: '대기 인원',
+    align: 'right',
+    render: (product) => `${formatNumber(product.waiting)}명`,
+  },
+  {
+    key: 'credit',
+    header: '입장 속도 / 상한',
+    align: 'right',
+    render: (product) =>
+      `${formatNumber(product.credit)} / ${formatNumber(product.cap)}명/초`,
+  },
+]
+
 /** 카드 값 아래에 작은 보조 문구(변화량·시험 중 증가분)를 붙인다 */
 function ValueWithNote({ value, note }: { value: string; note?: string }) {
   return (
@@ -120,17 +155,30 @@ function ValueWithNote({ value, note }: { value: string; note?: string }) {
   )
 }
 
+export type AdminLoadTestProps = {
+  /** 볼 사전예약 상품. 없으면 모든 상품을 합친 값 */
+  productId?: string
+  /** 대기열 표에 이름을 붙인다(대기열 현황엔 id만 온다) */
+  productNames: ReadonlyMap<string, string>
+  /** 전체 보기의 상품 행을 누르면 그 상품으로 들어간다 */
+  onSelectProduct: (productId: string) => void
+}
+
 /**
  * 부하 검증(개발자용). 부하는 k6 같은 도구가 만들고, 이 화면은 그동안 대기열 → 예약 처리
  * → 외부 등록 중 어디가 막히는지 본다. [시험 시작]을 누른 때를 기준으로 실패·접수를
  * 세고, 받은 값은 브라우저에 쌓아 그린다(새로고침하면 사라진다). 조작은 대기열 관리·Mock
  * 설정에서 한다.
  */
-export function AdminLoadTest() {
+export function AdminLoadTest({
+  productId,
+  productNames,
+  onSelectProduct,
+}: AdminLoadTestProps) {
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>(DEFAULT_INTERVAL)
   const queue = useWaitingroomStatus(refreshInterval)
-  const stats = useReservationStats(undefined, refreshInterval)
+  const stats = useReservationStats(productId, refreshInterval)
   const errors = useSyncJobErrorGroups(refreshInterval)
   const mock = useMockConfig()
 
@@ -145,7 +193,9 @@ export function AdminLoadTest() {
     setWaitingHistory((prev) =>
       appendSample(prev, {
         at: queue.dataUpdatedAt,
-        value: queue.data.products.reduce((total, p) => total + p.waiting, 0),
+        value: queue.data.products
+          .filter((p) => !productId || p.productId === productId)
+          .reduce((total, p) => total + p.waiting, 0),
       }),
     )
   }
@@ -173,6 +223,10 @@ export function AdminLoadTest() {
   const waitingSlope = slopePerSecond(waitingHistory).at(-1)?.value
 
   const q = queue.data
+  // 고른 상품이 대기열에 없으면(오픈 전·정리됨) undefined다.
+  const queueProduct = productId
+    ? q?.products.find((it) => it.productId === productId)
+    : undefined
   const s = stats.data
   const braking = isBraking(q?.brakeFactor ?? null)
   const failures = errors.data ?? []
@@ -367,6 +421,8 @@ export function AdminLoadTest() {
 
         <div className={styles.subTitle}>
           외부 등록이 실패 중인 작업(오류 코드별)
+          {/* 동기화 작업 목록 API에는 상품 조건이 없다. */}
+          {productId && ' — 전체 상품 기준'}
         </div>
         {errors.isError && (
           <InlineAlert status="warning">
@@ -410,7 +466,7 @@ export function AdminLoadTest() {
         )}
         <div className={styles.cards}>
           <StatCard
-            label="총 대기 인원"
+            label={productId ? '대기 인원' : '총 대기 인원'}
             muted={!q}
             loading={queue.isPending}
             value={
@@ -426,16 +482,27 @@ export function AdminLoadTest() {
           />
           <StatCard
             label="실제 입장 속도"
-            muted={!q}
+            muted={!q || (productId !== undefined && !queueProduct)}
             loading={queue.isPending}
             value={
-              q?.globalCredit != null
-                ? `${formatNumber(q.globalCredit)}명/초`
-                : '—'
+              productId ? (
+                queueProduct ? (
+                  <ValueWithNote
+                    value={`${formatNumber(queueProduct.credit)}명/초`}
+                    note={`상한 ${formatNumber(queueProduct.cap)}명/초`}
+                  />
+                ) : (
+                  '대기열에 없음'
+                )
+              ) : q?.globalCredit != null ? (
+                `${formatNumber(q.globalCredit)}명/초`
+              ) : (
+                '—'
+              )
             }
           />
           <StatCard
-            label="브레이크 배율"
+            label="브레이크 배율(전체)"
             muted={!q}
             loading={queue.isPending}
             value={
@@ -452,6 +519,25 @@ export function AdminLoadTest() {
             value={q?.gateways != null ? `${formatNumber(q.gateways)}대` : '—'}
           />
         </div>
+
+        {/* 전체 보기에서는 어느 상품이 막혔는지 비교하게 상품별로 나눠 보인다. */}
+        {!productId && (
+          <Table
+            columns={queueColumns(productNames)}
+            // 대기가 많은 상품이 막힌 상품이라 위로 올린다.
+            rows={(q?.products ?? []).toSorted((a, b) => b.waiting - a.waiting)}
+            rowKey={(product) => product.productId}
+            onRowClick={(product) => onSelectProduct(product.productId)}
+            rowAction={{
+              label: (product) =>
+                `${productNames.get(product.productId) ?? product.productId} 부하 보기`,
+              onClick: (product) => onSelectProduct(product.productId),
+            }}
+            loading={queue.isPending}
+            loadingRows={2}
+            emptyMessage="대기열에 오른 상품이 없습니다."
+          />
+        )}
       </FormSection>
 
       <FormSection
