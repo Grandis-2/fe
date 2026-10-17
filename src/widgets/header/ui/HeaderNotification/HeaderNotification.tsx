@@ -2,7 +2,14 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { Bell } from 'lucide-react'
 
-import { useNotifications } from '@entities/notification'
+import {
+  useNotifications,
+  useReadAllNotifications,
+  useReadNotification,
+} from '@entities/notification'
+import { getErrorMessage } from '@shared/api/client'
+import { showToast } from '@shared/model/toastStore'
+import { Button } from '@shared/ui'
 
 import * as headerStyles from '../Header.css'
 import { NotificationList } from '../NotificationList'
@@ -22,6 +29,9 @@ export function HeaderNotification({ label, badge }: HeaderNotificationProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const { data: notifications, isPending, isError } = useNotifications(isOpen)
+  const readNotification = useReadNotification()
+  const readAll = useReadAllNotifications()
+  const hasUnread = notifications?.some((item) => !item.read) ?? false
 
   // 열려 있는 동안만 문서를 듣는다(Dropdown과 같은 방식).
   useEffect(() => {
@@ -67,12 +77,40 @@ export function HeaderNotification({ label, badge }: HeaderNotificationProps) {
           className={styles.panel}
           data-theme="dark"
         >
-          <div className={styles.title}>알림</div>
+          <div className={styles.titleRow}>
+            <span className={styles.title}>알림</span>
+            {hasUnread && (
+              <Button
+                variant="subtle"
+                color="secondary"
+                size="small"
+                disabled={readAll.isPending}
+                onClick={() =>
+                  readAll.mutate(undefined, {
+                    onError: (caught) =>
+                      showToast(
+                        getErrorMessage(
+                          caught,
+                          '알림을 읽음으로 바꾸지 못했어요.',
+                        ),
+                      ),
+                  })
+                }
+              >
+                모두 읽음
+              </Button>
+            )}
+          </div>
+          {/* 읽음 처리를 기다리지 않고 바로 이동한다 — 실패하면 목록·배지를 다시 받아 맞춘다. */}
           <NotificationList
             notifications={notifications}
             isPending={isPending}
             isError={isError}
-            onNavigate={() => setIsOpen(false)}
+            onSelect={(notification) => {
+              if (!notification.read)
+                readNotification.mutate(notification.notificationId)
+              setIsOpen(false)
+            }}
           />
         </div>
       )}

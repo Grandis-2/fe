@@ -11,8 +11,22 @@ export const getUnreadNotificationCount = async (signal?: AbortSignal) => {
 }
 
 // [member] GET /api/v1/notifications — 내 알림 목록
+// ponytail: 첫 페이지(20건)만 받는다 — 패널에 "더 보기"가 필요해지면 nextCursor로 이어 받는다.
 export const getNotifications = (signal?: AbortSignal) =>
   apiClient.request<NotificationList>('/api/v1/notifications', { signal })
+
+// [member] PATCH /api/v1/notifications/{notificationId}/read — 알림 읽음 처리
+// 204. 이미 읽었어도 204라 다시 보내도 된다. 남의 알림·없는 id는 404.
+export const readNotification = (notificationId: string) =>
+  apiClient.request<void>(
+    `/api/v1/notifications/${encodeURIComponent(notificationId)}/read`,
+    { method: 'PATCH' },
+  )
+
+// [member] POST /api/v1/notifications/read-all — 알림 모두 읽음
+// 204. 안 읽은 알림이 없어도 204다.
+export const readAllNotifications = () =>
+  apiClient.request<void>('/api/v1/notifications/read-all', { method: 'POST' })
 
 // [member] GET /api/v1/notifications/stream — 안 읽은 수 실시간 연결
 // 안 읽은 수 실시간 연결(SSE). 열리면 onOpen, `unread` 이벤트마다 onCount를 부르고, 서버가 닫으면 끝난다(다시 여는 건 호출부).

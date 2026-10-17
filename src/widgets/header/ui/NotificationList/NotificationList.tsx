@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 
 import {
   formatNotificationTime,
+  notificationPath,
   type NotificationItem,
 } from '@entities/notification'
 
@@ -12,8 +13,8 @@ export type NotificationListProps = {
   notifications: NotificationItem[] | undefined
   isPending: boolean
   isError: boolean
-  /** 링크가 있는 알림을 눌러 이동할 때 — 패널을 닫는다 */
-  onNavigate?: () => void
+  /** 갈 곳이 있는 알림을 눌러 이동할 때 — 읽음 처리하고 패널을 닫는다 */
+  onSelect?: (notification: NotificationItem) => void
 }
 
 // 알림 패널 안의 목록. 조회는 패널(HeaderNotification)이 하고, 여기선 상태별로 그리기만 한다 —
@@ -22,7 +23,7 @@ export function NotificationList({
   notifications,
   isPending,
   isError,
-  onNavigate,
+  onSelect,
 }: NotificationListProps) {
   if (isPending) return <div className={styles.status}>불러오는 중…</div>
   if (isError || !notifications)
@@ -62,13 +63,15 @@ export function NotificationList({
           </>
         )
 
+        // ponytail: 갈 곳이 없는 알림은 눌러도 읽음이 되지 않는다 — "모두 읽음"으로 지운다.
+        const path = notificationPath(notification.target)
         return (
           <li key={notification.notificationId}>
-            {notification.link ? (
+            {path ? (
               <Link
-                to={notification.link}
+                to={path}
                 className={styles.item}
-                onClick={onNavigate}
+                onClick={() => onSelect?.(notification)}
               >
                 {content}
               </Link>
