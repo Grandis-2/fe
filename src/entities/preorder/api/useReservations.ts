@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { queryPolicy } from '@shared/api/queryPolicy'
+import { keepNewer, queryPolicy } from '@shared/api/queryPolicy'
 import type { PreorderStatus } from '@shared/api/types'
 
 import {
@@ -9,6 +9,8 @@ import {
   getReservation,
   getReservationHistory,
 } from './reservation'
+
+import type { ReservationDetail } from '../model/reservation'
 
 // 외부 등록·취소는 서버가 비동기로 끝낸다 — 이 상태면 상세를 다시 물어 바뀐 상태를 받는다.
 const SETTLING: PreorderStatus[] = ['PENDING_SYNC', 'CANCELING']
@@ -44,6 +46,8 @@ export const useReservation = (preorderId: string) =>
     enabled: preorderId !== '',
     refetchInterval: ({ state: { data } }) =>
       data && SETTLING.includes(data.status) ? SETTLE_POLL_MS : false,
+    // PAYMENT_IN_PROGRESS·PAYMENT_EXPIRED로 바뀔 땐 version이 그대로라 같은 값은 받는다.
+    structuralSharing: keepNewer<ReservationDetail>(({ version }) => version),
     ...queryPolicy.live,
   })
 

@@ -1,7 +1,7 @@
 import type { OrderPaymentResult } from '@entities/order'
 import { ApiRequestError } from '@shared/api/client'
 import { isRetryableError } from '@shared/api/queryPolicy'
-import { delay } from '@shared/lib/delay'
+import { pollUntil } from '@shared/lib/pollUntil'
 
 // 주문 결제와 럭키 드로우 응모비 결제가 같이 쓰는 승인 뒤처리.
 export type PaymentOutcome =
@@ -38,28 +38,30 @@ const sendConfirmWithRetry = <TResult>(
   })
 
 // 승인 결과가 나올 때까지 check로 상태를 다시 묻는다. check가 null을 주면 아직 모르는 것이다.
-async function pollOutcome(
+// 5xx·네트워크 오류도 아직 모르는 것으로 보고 다음 차례에 다시 묻고, 4xx는 던진다.
+// signal이 끊기면(화면을 떠나면) 멈추고 pending을 준다 — 호출부는 끊겼으면 결과를 쓰지 않는다.
+const pollOutcome = async (
   check: () => Promise<PaymentOutcome | null>,
-): Promise<PaymentOutcome> {
-  const deadline = Date.now() + POLL_LIMIT_MS
-  while (Date.now() < deadline) {
-    const outcome = await check().catch((caught: unknown) => {
-      if (isRetryableError(caught)) return null
-      throw caught
-    })
-    if (outcome) return outcome
-    await delay(POLL_MS)
-  }
-  return { kind: 'pending' }
-}
+  signal?: AbortSignal,
+): Promise<PaymentOutcome> =>
+  (await pollUntil(
+    () =>
+      check().catch((caught: unknown) => {
+        if (isRetryableError(caught)) return null
+        throw caught
+      }),
+    { intervalMs: POLL_MS, timeoutMs: POLL_LIMIT_MS, signal },
+  )) ?? { kind: 'pending' }
 
 // 승인을 보내고(send), 결과가 확정되지 않으면 상태(check)를 폴링한다.
 // 409는 "이 요청은 승인 전에 거절됐다"는 뜻일 뿐이다 — 재전송·새로고침처럼 같이 들어온 다른 요청이 이미
 // 승인 중일 수 있어서, 명세대로 실제 상태를 확인한다. 결제 대기로 남았으면 서버 사유(기한 지남 등)를 보여 준다.
 // 404 같은 나머지 4xx는 그대로 던진다(호출부가 서버 문구를 보여 준다).
+// signal은 폴링에만 쓴다 — 승인 요청은 끊으면 돈은 빠졌는데 결과를 모르게 되므로 끝까지 보낸다.
 export async function confirmPayment(
   send: () => Promise<Pick<OrderPaymentResult, 'result' | 'declineReason'>>,
   check: () => Promise<PaymentOutcome | null>,
+  signal?: AbortSignal,
 ): Promise<PaymentOutcome> {
   const sent = await sendConfirmWithRetry(send).catch((caught: unknown) => {
     if (caught instanceof ApiRequestError && caught.status === 409)
@@ -68,7 +70,7 @@ export async function confirmPayment(
   })
 
   if (sent instanceof ApiRequestError) {
-    const outcome = await pollOutcome(check)
+    const outcome = await pollOutcome(check, signal)
     return outcome.kind === 'declined'
       ? { kind: 'declined', message: sent.error.message }
       : outcome
@@ -80,5 +82,5 @@ export async function confirmPayment(
       message: DECLINE_MESSAGE[sent.declineReason ?? 'FAILED'],
     }
   // PENDING이거나 응답을 끝내 못 받았다.
-  return pollOutcome(check)
+  return pollOutcome(check, signal)
 }

@@ -1,6 +1,7 @@
 import { apiClient } from '@shared/api/client'
 import type { CountResponse, NotificationList } from '@shared/api/types'
 
+// [member] GET /api/v1/notifications/unread-count — 안 읽은 알림 수
 export const getUnreadNotificationCount = async (signal?: AbortSignal) => {
   const { count } = await apiClient.request<CountResponse>(
     '/api/v1/notifications/unread-count',
@@ -9,9 +10,11 @@ export const getUnreadNotificationCount = async (signal?: AbortSignal) => {
   return count
 }
 
+// [member] GET /api/v1/notifications — 내 알림 목록
 export const getNotifications = (signal?: AbortSignal) =>
   apiClient.request<NotificationList>('/api/v1/notifications', { signal })
 
+// [member] GET /api/v1/notifications/stream — 안 읽은 수 실시간 연결
 // 안 읽은 수 실시간 연결(SSE). 열리면 onOpen, `unread` 이벤트마다 onCount를 부르고, 서버가 닫으면 끝난다(다시 여는 건 호출부).
 // 이벤트는 빈 줄로 끝나고, `:`로 시작하는 줄(25초마다 오는 연결 유지용 주석)은 무시한다.
 export async function streamUnreadNotificationCount(

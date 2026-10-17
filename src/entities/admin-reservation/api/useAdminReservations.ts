@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { pollingInterval, queryPolicy } from '@shared/api/queryPolicy'
-import type { AdminPreorderListParams } from '@shared/api/types'
+import {
+  keepNewer,
+  pollingInterval,
+  queryPolicy,
+} from '@shared/api/queryPolicy'
+import type { AdminPreorderListParams, PreorderStats } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
@@ -63,6 +67,10 @@ export const useReservationStats = (
   useQuery({
     queryKey: [...RESERVATIONS_KEY, 'stats', productId] as const,
     queryFn: ({ signal }) => getReservationStats(productId, signal),
+    // 소수 초 자릿수가 응답마다 달라(0·3·6자리) 문자열이 아니라 시각으로 비교한다.
+    structuralSharing: keepNewer<PreorderStats>(({ countedAt }) =>
+      Date.parse(countedAt),
+    ),
     ...queryPolicy.live,
     refetchInterval: refetchEvery(intervalMs),
   })

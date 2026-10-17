@@ -18,10 +18,11 @@ import type { AdminProductFormValue } from './form'
 import type { FormIssue } from './validation'
 
 /* ------------------------------------------------------------------ *
- * 업로드 규칙 — 서버가 400을 줄 파일은 발급 전에 막는다
+ * 업로드 규칙 — 서버가 400·413을 줄 파일은 보내기 전에 막는다
  * ------------------------------------------------------------------ */
 
-export const PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+// CMYK·색 프로파일·픽셀 상한은 파일을 열어 봐야 알아서 서버 문구(400)에 맡긴다.
+export const PRODUCT_IMAGE_TYPES = ['image/jpeg', 'image/png']
 /** 파일 선택 창에서 고를 수 있는 형식 — 위와 같게 둔다 */
 export const PRODUCT_IMAGE_ACCEPT = PRODUCT_IMAGE_TYPES.join(',')
 const MAX_BYTES = 10 * 1024 * 1024
@@ -33,7 +34,7 @@ export const DETAIL_IMAGE_MAX = 3
 /** 올릴 수 없는 파일이면 그 이유. 올릴 수 있으면 null */
 export function productImageFileProblem(file: File): string | null {
   if (!PRODUCT_IMAGE_TYPES.includes(file.type)) {
-    return 'JPG, PNG, WEBP만 올릴 수 있습니다.'
+    return 'JPG, PNG만 올릴 수 있습니다.'
   }
   if (file.size < 1 || file.size > MAX_BYTES) {
     return '10MB 이하의 사진만 올릴 수 있습니다.'

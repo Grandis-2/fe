@@ -5,6 +5,7 @@ import type {
   PageResponse,
 } from '@shared/api/types'
 
+// [catalog] GET /api/v1/products — 상품 목록과 검색
 // 목록·키워드 검색·카테고리 둘러보기가 모두 이 API 하나다(백엔드에 /products/search는 없다).
 export const getProducts = (
   params: ProductListParams,
