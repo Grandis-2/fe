@@ -1,5 +1,7 @@
 import axios, { type AxiosResponse } from 'axios'
 
+import { delay } from '@shared/lib/delay'
+
 import { ApiRequestError, sentRequestId, toTransportError } from './errors'
 
 import type { ApiResponse } from './types'
@@ -27,6 +29,11 @@ export type ApiRequestOptions = {
   skipAuthRefresh?: boolean
   // 쿼리 키가 바뀌거나 화면을 떠날 때 이전 요청을 취소한다.
   signal?: AbortSignal
+  // 사진 업로드·결제 승인처럼 오래 걸리는 요청만 늘린다. 기본은 TIMEOUT_MS.
+  timeout?: number
+  // API 도메인으로 직접 부르는 요청은 쿠키가 필요 없다 — false면 CORS가 credentials를
+  // 허용하지 않아도 통한다. 인증은 Authorization 헤더로 간다.
+  withCredentials?: boolean
 }
 
 const TIMEOUT_MS = 10_000
@@ -38,8 +45,6 @@ const http = axios.create({
   validateStatus: () => true,
 })
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
 // 서버 제약(영숫자·.·_·-, 64자 이하)을 만족하는 요청 ID.
 const requestId = () => crypto.randomUUID().replace(/-/g, '')
 
@@ -47,7 +52,14 @@ type RawResponse<TData> = AxiosResponse<ApiResponse<TData> | string>
 
 async function send<TData>(
   path: string,
-  { body, method = 'GET', headers, signal }: ApiRequestOptions,
+  {
+    body,
+    method = 'GET',
+    headers,
+    signal,
+    timeout,
+    withCredentials,
+  }: ApiRequestOptions,
 ): Promise<RawResponse<TData>> {
   try {
     return await http.request<ApiResponse<TData> | string>({
@@ -55,6 +67,8 @@ async function send<TData>(
       method,
       data: body,
       signal,
+      timeout,
+      withCredentials,
       headers: {
         'X-Request-Id': requestId(),
         ...getAuthHeaders(),
@@ -74,6 +88,10 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
       ? headerTraceId
       : sentRequestId(response.config)
 
+  // 명세는 초 단위로만 준다 — 날짜 형식 등 숫자가 아니면 없는 것으로 본다.
+  const retryAfter = Number(response.headers['retry-after'])
+  const retryAfterSeconds = Number.isFinite(retryAfter) ? retryAfter : 0
+
   // 로그아웃 등 204 No Content는 파싱할 본문이 없다.
   if (response.status === 204) return undefined as TData
 
@@ -88,6 +106,7 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
       },
       response.status,
       fallbackTraceId,
+      retryAfterSeconds,
     )
   }
   if (json.success) return json.data
@@ -95,6 +114,7 @@ function unwrap<TData>(response: RawResponse<TData>): TData {
     json.error,
     response.status,
     json.traceId ?? fallbackTraceId,
+    retryAfterSeconds,
   )
 }
 
@@ -146,4 +166,60 @@ async function requestWithHeaders<TData>(
   return { data: unwrap(response), headers: { ...response.headers } }
 }
 
-export const apiClient = { request, requestWithHeaders }
+// SSE 연결(알림 배지 등) — axios는 브라우저에서 이어지는 본문을 못 읽어 fetch로 연다. 열리면 본문 스트림을 주고,
+// 연결 전 실패는 다른 API처럼 ApiRequestError로 던진다(401은 재발급 뒤 한 번 다시 연다). 취소는 그대로 던진다.
+async function openStream(
+  path: string,
+  signal: AbortSignal,
+  retried = false,
+): Promise<ReadableStream<Uint8Array>> {
+  const sentId = requestId()
+  let response: Response
+  try {
+    response = await fetch(path, {
+      headers: {
+        Accept: 'text/event-stream',
+        'X-Request-Id': sentId,
+        ...getAuthHeaders(),
+      },
+      credentials: 'include',
+      signal,
+    })
+  } catch (caught) {
+    if (signal.aborted) throw caught
+    throw new ApiRequestError(
+      {
+        code: 'NETWORK_ERROR',
+        message: '네트워크 연결을 확인해 주세요.',
+        details: null,
+      },
+      0,
+      sentId,
+    )
+  }
+  if (response.ok && response.body) return response.body
+  if (
+    response.status === 401 &&
+    !retried &&
+    onUnauthorized &&
+    (await onUnauthorized())
+  )
+    return openStream(path, signal, true)
+
+  const json = (await response
+    .json()
+    .catch(() => null)) as ApiResponse<unknown> | null
+  throw new ApiRequestError(
+    json && !json.success
+      ? json.error
+      : {
+          code: 'INVALID_RESPONSE',
+          message: '서버 응답을 처리할 수 없습니다.',
+          details: null,
+        },
+    response.status,
+    json?.traceId ?? response.headers.get('x-request-id') ?? sentId,
+  )
+}
+
+export const apiClient = { request, requestWithHeaders, openStream }

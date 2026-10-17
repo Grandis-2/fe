@@ -1,8 +1,8 @@
 import type { Draw, DrawEntry, ShipTo } from '../../types'
 
 // 럭키 드로우 목업의 메모리 DB. 회차의 시작·마감은 지금 기준 상대 시각이라 불러올 때마다 단계가 맞게 나온다
-// (phase는 핸들러가 응답할 때 시각으로 계산한다) — 그래서 회차는 저장하지 않는다. 응모·결제창은 토스 결제창을
-// 다녀와도 남도록 localStorage에 싣는다(saveDrawDb). 모양이 바뀌면 DB_KEY의 버전을 올려 예전 기록을 버린다.
+// (phase는 핸들러가 응답할 때 시각으로 계산한다) — 그래서 시드 회차는 저장하지 않는다. 관리자가 만든 회차·응모·결제창은
+// 토스 결제창을 다녀와도 남도록 localStorage에 싣는다(saveDrawDb). 모양이 바뀌면 DB_KEY의 버전을 올려 예전 기록을 버린다.
 // 로그인한 사람은 모두 같은 "나"다.
 
 export type DrawRecord = Omit<Draw, 'phase'>
@@ -189,9 +189,11 @@ const seedEntries: DrawEntryRecord[] = SEED_ENTRIES.map(
 type DrawDb = {
   entries: DrawEntryRecord[]
   attempts: [string, DrawAttemptRecord][]
+  // 관리자가 만든 회차 — 시드와 달리 시각이 고정이라 그대로 싣는다. 없으면 이 회차의 응모가 고아가 된다.
+  createdDraws?: DrawRecord[]
 }
 
-const DB_KEY = 'nova-draw-mock-db-v1'
+const DB_KEY = 'nova-draw-mock-db-v2'
 
 function loadDrawDb(): DrawDb | null {
   try {
@@ -204,13 +206,16 @@ function loadDrawDb(): DrawDb | null {
 
 const saved = loadDrawDb()
 
-export const draws: DrawRecord[] = seedDraws
+export const draws: DrawRecord[] = [
+  ...seedDraws,
+  ...(saved?.createdDraws ?? []),
+]
 export const drawEntries: DrawEntryRecord[] = saved?.entries ?? seedEntries
 export const drawAttempts = new Map<string, DrawAttemptRecord>(
   saved?.attempts ?? [],
 )
 
-// 응모·결제창을 바꾼 핸들러가 부른다.
+// 회차·응모·결제창을 바꾼 핸들러가 부른다.
 export function saveDrawDb() {
   try {
     localStorage.setItem(
@@ -218,6 +223,7 @@ export function saveDrawDb() {
       JSON.stringify({
         entries: drawEntries,
         attempts: [...drawAttempts],
+        createdDraws: draws.filter((draw) => !seedDraws.includes(draw)),
       }),
     )
   } catch {

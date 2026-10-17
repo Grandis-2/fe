@@ -23,7 +23,11 @@ export type AdminPromotionFormMode = 'create' | 'edit'
 export type AdminPromotionFormProps = {
   mode: AdminPromotionFormMode
   products: PromotionLinkableProduct[]
+  /** 연결할 상품을 받는 중 */
+  productsLoading?: boolean
   defaultValue?: AdminPromotionFormValue
+  /** 저장 중 — 제출을 막는다(연타하면 같은 프로모션이 여러 개 생긴다) */
+  submitting?: boolean
   onSubmit: (value: AdminPromotionFormValue) => void
   onCancel: () => void
   /** '추가 상품 등록하기' — 상품 등록 화면으로 보낸다 */
@@ -39,7 +43,9 @@ const submitLabel: Record<AdminPromotionFormMode, string> = {
 export function AdminPromotionForm({
   mode,
   products,
+  productsLoading = false,
   defaultValue,
+  submitting = false,
   onSubmit,
   onCancel,
   onAddProduct,
@@ -53,6 +59,7 @@ export function AdminPromotionForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (submitting) return
     onSubmit(value)
   }
 
@@ -109,6 +116,7 @@ export function AdminPromotionForm({
       >
         <PromotionProductLinker
           products={products}
+          loading={productsLoading}
           value={value.linkedProductIds}
           onChange={(linkedProductIds) => patch({ linkedProductIds })}
           onAddProduct={onAddProduct}
@@ -119,7 +127,9 @@ export function AdminPromotionForm({
         <Button variant="outline" color="cancel" onClick={onCancel}>
           취소
         </Button>
-        <Button type="submit">{submitLabel[mode]}</Button>
+        <Button type="submit" disabled={submitting}>
+          {submitLabel[mode]}
+        </Button>
       </div>
     </form>
   )

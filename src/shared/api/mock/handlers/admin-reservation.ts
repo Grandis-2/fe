@@ -1,163 +1,388 @@
 import { http } from 'msw'
 
+import { deadLetterStore } from '../fixtures/admin-dead-letter'
 import {
   findReservation,
   mockMembers,
   reservationStore,
 } from '../fixtures/admin-reservation'
-import { fail, ok } from '../response'
+import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
-import type { Paged, ReservationDetail, ReservationSummary } from '../../types'
+import type {
+  AdminCancelRequest,
+  AdminNoteRequest,
+  AdminPreorderDetail,
+  AdminPreorderSummary,
+  BatchReprocess,
+  OffsetPage,
+  PreorderStats,
+  PreorderStatus,
+  ReprocessBatchRequest,
+  SyncJob,
+  SyncJobErrorGroup,
+  SyncJobListResponse,
+  SyncJobSummary,
+} from '../../types'
 import type { RequestHandler } from 'msw'
 
-const notFound = () =>
-  fail(404, {
-    code: 'RESERVATION_NOT_FOUND',
-    message: '대상을 찾을 수 없습니다.',
-    retryable: false,
-  })
+const BASE = '/api/v1/admin/preorders'
 
-/** 상세에는 목록 전용 필드(overdue 등)가 없어 여기서 파생시킨다 */
-function toSummary(detail: ReservationDetail, now: number): ReservationSummary {
-  const register = detail.commands.find(
-    (command) => command.kind === 'REGISTER',
-  )
-
+/** 상세에서 목록 한 줄을 만든다 — 목록은 상세 일부에 REGISTER 작업 상태가 붙는다 */
+function toSummary(detail: AdminPreorderDetail): AdminPreorderSummary {
+  // 상세에만 있는 필드는 목록 응답에 싣지 않는다 — 목이 곧 응답 계약이다.
+  const {
+    externalReference: _externalReference,
+    cancelable: _cancelable,
+    internalNote: _internalNote,
+    syncJobs,
+    ...summary
+  } = detail
   return {
-    reservationId: detail.reservationId,
-    productId: detail.productId,
-    productName: detail.productName,
-    optionCode: detail.optionCode,
-    optionName: detail.optionName,
-    quantity: detail.quantity,
-    status: detail.status,
-    acceptSeq: detail.acceptSeq,
-    dispatch: detail.dispatch,
-    externalReservationNo: detail.externalReservationNo,
-    acceptedAt: detail.acceptedAt,
-    deadlineAt: detail.deadlineAt,
-    finalizedAt: detail.finalizedAt,
-    version: detail.version,
-    memberId: detail.memberId,
-    runId: detail.runId,
-    cleanup: detail.cleanup,
-    payment: detail.payment,
-    failureCode: detail.failure?.code ?? null,
-    overdue:
-      detail.status === 'ACCEPTED' && Date.parse(detail.deadlineAt) < now,
-    registerAttemptCount: register?.attemptCount ?? 0,
+    ...summary,
+    registerJobStatus:
+      syncJobs.find((job) => job.jobType === 'REGISTER')?.status ?? null,
   }
 }
 
-export const adminReservationHandlers: RequestHandler[] = [
-  http.get(url('/api/v1/admin/reservations'), ({ request }) => {
-    const query = new URL(request.url).searchParams
-    const now = Date.now()
+const OPEN_JOB_STATES = [
+  'PENDING',
+  'PROCESSING',
+  'RETRY_SCHEDULED',
+  'DEAD_LETTER',
+] as const
 
+// 상품을 고르면 그 상품 예약에 묶인 메시지만 센다.
+function countWaiting(preorderIds: ReadonlySet<string> | null) {
+  const waiting = deadLetterStore.filter(
+    (item) =>
+      item.status === 'OPEN' &&
+      (!preorderIds || (item.preorderId && preorderIds.has(item.preorderId))),
+  )
+  return {
+    waiting: waiting.length,
+    oldestWaitingAt:
+      waiting.map((item) => item.createdAt).toSorted()[0] ?? null,
+  }
+}
+
+function countStats(productId: string | null): PreorderStats {
+  const matched = reservationStore.filter(
+    (detail) => !productId || detail.productId === productId,
+  )
+  const preorders: Record<PreorderStatus, number> = {
+    PENDING_SYNC: 0,
+    REGISTERED: 0,
+    RESERVED: 0,
+    CANCELING: 0,
+    CANCELED: 0,
+  }
+  for (const detail of matched) preorders[detail.status] += 1
+
+  const jobs = matched.flatMap((detail) => detail.syncJobs)
+  const countJobs = (jobType: SyncJobSummary['jobType']) =>
+    Object.fromEntries(
+      OPEN_JOB_STATES.map((state) => [
+        state,
+        jobs.filter((job) => job.jobType === jobType && job.status === state)
+          .length,
+      ]),
+    ) as PreorderStats['syncJobs']['REGISTER']
+
+  return {
+    productId,
+    preorders,
+    syncJobs: { REGISTER: countJobs('REGISTER'), CANCEL: countJobs('CANCEL') },
+    deadLetters: countWaiting(
+      productId ? new Set(matched.map((detail) => detail.preorderId)) : null,
+    ),
+    paymentOverdue: matched.filter(
+      (detail) => detail.displayStatus === 'PAYMENT_EXPIRED',
+    ).length,
+    oldestPendingSyncAt:
+      matched
+        .filter((detail) => detail.status === 'PENDING_SYNC')
+        .map((detail) => detail.createdAt)
+        .toSorted()[0] ?? null,
+    countedAt: new Date().toISOString(),
+  }
+}
+
+/** 마지막 시도 오류 코드별 작업 수(많은 순) */
+function groupByError(jobs: SyncJobSummary[]): SyncJobErrorGroup[] {
+  const counts = new Map<string | null, number>()
+  for (const job of jobs) {
+    counts.set(job.lastErrorCode, (counts.get(job.lastErrorCode) ?? 0) + 1)
+  }
+  return [...counts]
+    .map(([errorCode, count]) => ({ errorCode, count }))
+    .toSorted((a, b) => b.count - a.count)
+}
+
+/**
+ * DEAD_LETTER 작업을 되돌린다. 실서버는 다시 등록을 보내는데, 목은 결과를 기다리지
+ * 않고 바로 등록된 것으로 둔다.
+ */
+function markReprocessed(detail: AdminPreorderDetail, job: SyncJob) {
+  const at = new Date().toISOString()
+  job.attempts.push({
+    attemptNumber: job.attempts.length + 1,
+    actor: 'ADMIN',
+    result: 'SUCCEEDED',
+    httpStatus: 200,
+    errorCode: null,
+    errorMessage: null,
+    startedAt: at,
+    finishedAt: at,
+  })
+  Object.assign(job, {
+    status: 'SUCCEEDED',
+    attemptCount: job.attempts.length,
+    lastErrorCode: null,
+    deadLetteredAt: null,
+    updatedAt: at,
+  })
+  detail.events.push({
+    eventSequence: detail.events.length + 1,
+    fromStatus: 'PENDING_SYNC',
+    toStatus: 'REGISTERED',
+    actor: 'SYSTEM',
+    reason: null,
+    createdAt: at,
+  })
+  Object.assign(detail, {
+    status: 'REGISTERED',
+    displayStatus: 'PAYABLE',
+    payableFrom: at,
+    paymentDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    externalReference: `R-${detail.preorderId.slice(-6)}`,
+    version: detail.version + 1,
+  })
+}
+
+export const adminReservationHandlers: RequestHandler[] = [
+  http.get(url(BASE), ({ request }) => {
+    const query = new URL(request.url).searchParams
     const status = query.get('status')
-    const failureCode = query.get('failureCode')
-    const memberId = query.get('memberId')
     const productId = query.get('productId')
-    const from = query.get('from')
-    const to = query.get('to')
-    const overdueOnly = query.get('overdueOnly') === 'true'
-    const cleanupPendingOnly = query.get('cleanupPendingOnly') === 'true'
+    const registerJobStatus = query.get('registerJobStatus')
+    const size = Number(query.get('size') ?? 20)
+    if (!Number.isInteger(size) || size < 1 || size > 100) {
+      return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
+    }
+    const page = Number(query.get('page') ?? 0)
 
     const matched = reservationStore
-      .map((detail) => toSummary(detail, now))
-      .filter((item) => {
-        if (status && item.status !== status) return false
-        if (failureCode && item.failureCode !== failureCode) return false
-        if (memberId && item.memberId !== memberId) return false
-        if (productId && item.productId !== productId) return false
-        if (from && item.acceptedAt < from) return false
-        if (to && item.acceptedAt > to) return false
-        if (overdueOnly && !item.overdue) return false
-        if (
-          cleanupPendingOnly &&
-          Object.values(item.cleanup).every((state) => state === 'NOT_REQUIRED')
-        ) {
-          return false
-        }
-        return true
-      })
-      // 최근 접수가 위로 온다 — 명세에 정렬 파라미터가 없어 서버 기본값을 가정한다.
-      .toSorted((a, b) => b.acceptSeq - a.acceptSeq)
+      .map(toSummary)
+      .filter(
+        (item) =>
+          (!status || item.status === status) &&
+          (!productId || item.productId === productId) &&
+          (!registerJobStatus || item.registerJobStatus === registerJobStatus),
+      )
+      // 최신 접수가 위로 온다.
+      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
 
-    const page = Number(query.get('page') ?? 0)
-    const size = Number(query.get('size') ?? 20)
     const start = page * size
-
-    return ok<Paged<ReservationSummary>>({
+    return ok<OffsetPage<AdminPreorderSummary>>({
       items: matched.slice(start, start + size),
       page,
       size,
       total: matched.length,
-      totalPages: Math.max(1, Math.ceil(matched.length / size)),
-      hasNext: start + size < matched.length,
     })
   }),
 
-  http.get(url('/api/v1/admin/reservations/:reservationId'), ({ params }) => {
-    const detail = findReservation(String(params.reservationId))
-    return detail ? ok(detail) : notFound()
+  // sync-jobs·stats는 경로 :preorderId보다 먼저 잡혀야 한다.
+  http.get(url(`${BASE}/sync-jobs`), ({ request }) => {
+    const query = new URL(request.url).searchParams
+    const size = Number(query.get('size') ?? 20)
+    if (!Number.isInteger(size) || size < 1 || size > 100) {
+      return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
+    }
+    const page = Number(query.get('page') ?? 0)
+    const matched = reservationStore
+      .flatMap((detail) => detail.syncJobs)
+      .filter(
+        (job) =>
+          (!query.get('jobType') || job.jobType === query.get('jobType')) &&
+          (!query.get('status') || job.status === query.get('status')) &&
+          (!query.get('preorderId') ||
+            job.preorderId === query.get('preorderId')),
+      )
+      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .map(({ attempts: _attempts, ...summary }) => summary)
+
+    const start = page * size
+    return ok<SyncJobListResponse>({
+      items: matched.slice(start, start + size),
+      page,
+      size,
+      total: matched.length,
+      errorGroups:
+        query.get('groupByError') === 'true' ? groupByError(matched) : null,
+    })
   }),
 
-  // ponytail: 재처리 핸들러는 명세에 없는 임시 계약이다. 와이어프레임의 '재처리
-  // 시도'를 붙이려면 필요해서 기존 명세의 작명 규칙을 따라 임의로 정했다.
-  http.post(
-    url('/api/v1/admin/reservations/:reservationId/reprocess'),
-    ({ params }) => {
-      const detail = findReservation(String(params.reservationId))
-      if (!detail) return notFound()
-      if (detail.status !== 'FAILED') {
-        return fail(409, {
-          code: 'RESERVATION_NOT_REPROCESSABLE',
-          message: '등록 실패 상태에서만 재처리할 수 있습니다.',
-          retryable: false,
-        })
-      }
-
-      const at = new Date().toISOString()
-      detail.status = 'ACCEPTED'
-      detail.failure = null
-      detail.finalizedAt = null
-      detail.version += 1
-      for (const command of detail.commands) {
-        if (command.kind !== 'REGISTER') continue
-        command.status = 'PENDING'
-        command.manualReprocessCount += 1
-        command.updatedAt = at
-      }
-      detail.history.push({
-        historySeq: detail.history.length,
-        transition: 'T6',
-        fromStatus: 'FAILED',
-        toStatus: 'ACCEPTED',
-        actorType: 'ADMIN',
-        actorId: 'admin',
-        reasonCode: 'MANUAL_REPROCESS',
-        note: '재처리 시도',
-        decidedAt: at,
-        committedAt: at,
-      })
-
-      return ok(detail)
-    },
+  http.get(url(`${BASE}/stats`), ({ request }) =>
+    ok(countStats(new URL(request.url).searchParams.get('productId'))),
   ),
 
-  // ponytail: 회원 이름을 주는 API가 명세에 없다. 예약 응답에 이름이 없어서
-  // 표의 '예약자' 열이 memberId를 이름으로 바꾸려면 필요해 목에만 둔다.
-  http.get(url('/api/v1/admin/members'), ({ request }) => {
-    const keyword = new URL(request.url).searchParams.get('q')?.trim() ?? ''
-    const items = keyword
-      ? mockMembers.filter(
-          (member) =>
-            member.name.includes(keyword) || member.memberId.includes(keyword),
-        )
-      : mockMembers
+  http.get(url(`${BASE}/:preorderId`), ({ params }) => {
+    const detail = findReservation(String(params.preorderId))
+    return detail
+      ? ok(detail)
+      : fail(404, {
+          code: 'PREORDER_NOT_FOUND',
+          message: '예약을 찾을 수 없습니다.',
+        })
+  }),
 
-    return ok({ items })
+  // 실서버는 대상 수만 주고 초당 ratePerSecond건씩 이어서 하는데, 목은 바로 끝낸다.
+  http.post(url(`${BASE}/sync-jobs/reprocess-batch`), async ({ request }) => {
+    const body = (await request
+      .json()
+      .catch(() => null)) as ReprocessBatchRequest | null
+    if (!body)
+      return invalid([{ field: 'body', message: '본문이 필요합니다.' }])
+    const ids = new Set(body.syncJobIds ?? [])
+    if (ids.size > 1000) {
+      return invalid([{ field: 'syncJobIds', message: '최대 1000건입니다.' }])
+    }
+
+    const targets = reservationStore.flatMap((detail) =>
+      detail.syncJobs
+        .filter(
+          (job) =>
+            job.jobType === 'REGISTER' &&
+            job.status === 'DEAD_LETTER' &&
+            (ids.size === 0 || ids.has(job.syncJobId)) &&
+            detail.status !== 'CANCELING' &&
+            detail.status !== 'CANCELED',
+        )
+        .map((job) => [detail, job] as const),
+    )
+    for (const [detail, job] of targets) markReprocessed(detail, job)
+    const rate = body.ratePerSecond ?? 20
+    return ok<BatchReprocess>(
+      {
+        targetCount: targets.length,
+        skippedCount: ids.size === 0 ? 0 : ids.size - targets.length,
+        estimatedSeconds: Math.ceil(targets.length / rate),
+      },
+      202,
+    )
+  }),
+
+  // DEAD_LETTER인 REGISTER 작업만 되돌린다.
+  http.post(url(`${BASE}/sync-jobs/:syncJobId/reprocess`), ({ params }) => {
+    const detail = reservationStore.find((item) =>
+      item.syncJobs.some((job) => job.syncJobId === params.syncJobId),
+    )
+    const job = detail?.syncJobs.find(
+      (item) => item.syncJobId === params.syncJobId,
+    )
+    if (!detail || !job) {
+      return fail(404, {
+        code: 'SYNC_JOB_NOT_FOUND',
+        message: '작업을 찾을 수 없습니다.',
+      })
+    }
+    if (job.status !== 'DEAD_LETTER') {
+      return fail(409, {
+        code: 'STATE_CONFLICT',
+        message: '재처리할 수 없는 작업입니다.',
+      })
+    }
+
+    markReprocessed(detail, job)
+    // 응답은 되돌린 직후의 작업 요약이다(시도 기록 없이).
+    const { attempts: _attempts, ...summary } = job
+    return ok({ ...summary, status: 'PENDING', deadLetteredAt: null }, 202)
+  }),
+
+  // 관리자 취소 — 사유는 이력에 남는다. 목은 외부 취소를 기다리지 않고 바로 끝낸다.
+  http.post(url(`${BASE}/:preorderId/cancel`), async ({ request, params }) => {
+    const detail = findReservation(String(params.preorderId))
+    if (!detail) {
+      return fail(404, {
+        code: 'PREORDER_NOT_FOUND',
+        message: '예약을 찾을 수 없습니다.',
+      })
+    }
+    const body = (await request
+      .json()
+      .catch(() => null)) as Partial<AdminCancelRequest> | null
+    const reason = body?.reason?.trim()
+    if (!reason || reason.length < 5 || reason.length > 500) {
+      return invalid([{ field: 'reason', message: '5~500자여야 합니다.' }])
+    }
+    if (detail.status !== 'CANCELING' && detail.status !== 'CANCELED') {
+      const at = new Date().toISOString()
+      detail.events.push({
+        eventSequence: detail.events.length + 1,
+        fromStatus: detail.status,
+        toStatus: 'CANCELED',
+        actor: 'ADMIN',
+        reason,
+        createdAt: at,
+      })
+      Object.assign(detail, {
+        status: 'CANCELED',
+        displayStatus: 'CANCELED',
+        paymentDueAt: null,
+        cancelable: false,
+        version: detail.version + 1,
+      })
+    }
+    return ok(
+      {
+        preorderId: detail.preorderId,
+        status: detail.status,
+        version: detail.version,
+      },
+      202,
+    )
+  }),
+
+  // 내부 메모만 바꾼다. 다른 키가 섞이면 409(실서버와 같다).
+  http.patch(url(`${BASE}/:preorderId`), async ({ request, params }) => {
+    const detail = findReservation(String(params.preorderId))
+    if (!detail) {
+      return fail(404, {
+        code: 'PREORDER_NOT_FOUND',
+        message: '예약을 찾을 수 없습니다.',
+      })
+    }
+    const body = (await request
+      .json()
+      .catch(() => null)) as Partial<AdminNoteRequest> | null
+    if (!body || Object.keys(body).some((key) => key !== 'internalNote')) {
+      return fail(409, {
+        code: 'PREORDER_FIELD_IMMUTABLE',
+        message: '내부 메모만 바꿀 수 있습니다.',
+      })
+    }
+    const note = body.internalNote ?? null
+    if (note !== null && note.length > 1000) {
+      return invalid([
+        { field: 'internalNote', message: '1000자 이하여야 합니다.' },
+      ])
+    }
+    detail.internalNote = note
+    return ok(detail)
+  }),
+
+  // 보이는 id만 이름으로 바꾼다. 없는 회원은 빠진다(실서버와 같다).
+  http.get(url('/api/v1/admin/members'), ({ request }) => {
+    const ids = new URL(request.url).searchParams
+      .getAll('ids')
+      .flatMap((value) => value.split(','))
+      .filter(Boolean)
+    if (ids.length < 1 || ids.length > 100) {
+      return invalid([{ field: 'ids', message: '1~100개여야 합니다.' }])
+    }
+    return ok({
+      items: mockMembers.filter((member) => ids.includes(member.memberId)),
+    })
   }),
 ]

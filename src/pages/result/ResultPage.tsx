@@ -13,7 +13,8 @@ import {
   RESULT_STATUSES,
   type ResultStatus,
 } from '@shared/config/routes'
-import { ActionButton } from '@shared/ui'
+import { shortId } from '@shared/lib/shortId'
+import { ActionButton, PollingNotice } from '@shared/ui'
 import {
   OrderReceipt,
   OrderStatusMark,
@@ -132,8 +133,10 @@ export function ResultPage() {
     orderId = '',
     failReason,
   } = readState(location.state)
-  const { data: reservation } = useReservation(isPaid ? '' : preorderId)
-  const { data: order } = useOrder(isPaid ? orderId : '')
+  const reservationQuery = useReservation(isPaid ? '' : preorderId)
+  const orderQuery = useOrder(isPaid ? orderId : '')
+  const reservation = reservationQuery.data
+  const order = orderQuery.data
   // useCountdown이 매 렌더 새 Date로 타이머를 다시 걸지 않게 값이 바뀔 때만 만든다.
   const paymentDueAt = reservation?.paymentDueAt
   const dueAt = useMemo(
@@ -221,6 +224,22 @@ export function ResultPage() {
           <div className={styles.description}>{description}</div>
         </div>
 
+        {/* 처리·승인을 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 승인은 70초가 지나면 멈춘다. */}
+        <PollingNotice query={reservationQuery} />
+        <PollingNotice
+          query={orderQuery}
+          timeout={
+            orderQuery.timedOut
+              ? {
+                  title:
+                    '결제 결과를 확인하지 못했어요. 주문 내역에서 확인해 주세요.',
+                  description: '다시 결제하지 마세요.',
+                  onRecheck: orderQuery.recheck,
+                }
+              : null
+          }
+        />
+
         {status === 'preorder' && dueAt && <PurchaseDeadline dueAt={dueAt} />}
 
         {status === 'failed' && (
@@ -243,7 +262,7 @@ export function ResultPage() {
               order
                 ? {
                     label: '주문번호',
-                    value: order.orderId.slice(0, 8).toUpperCase(),
+                    value: shortId(order.orderId),
                   }
                 : reservation && status === 'preorder'
                   ? {

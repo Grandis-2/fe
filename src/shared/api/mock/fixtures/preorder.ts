@@ -38,6 +38,8 @@ export type OrderRecord = Order & {
   preorderId: string | null
   // 장바구니 주문이 고른 줄 — 결제가 승인되면 이만큼 장바구니에서 뺀다.
   cartItems: CartOrderItem[] | null
+  // 바로 구매 Idempotency-Key — 같은 키로 다시 오면 이 주문을 돌려준다.
+  idempotencyKey?: string
   events: OrderEvent[]
 }
 

@@ -42,3 +42,19 @@ export const Draft: Story = {
     await expect(visibleLabel(canvas, '초안')).toBeVisible()
   },
 }
+
+/** 사전예약을 공개로 뒀지만 오픈 전 — 구매자에게 아직 안 보인다 */
+export const Scheduled: Story = {
+  args: { status: 'SCHEDULED' },
+  play: async ({ canvas }) => {
+    await expect(visibleLabel(canvas, '공개 예정')).toBeVisible()
+  },
+}
+
+/** 사전예약을 공개로 뒀지만 마감 뒤 — 구매자에게 더는 안 보인다 */
+export const Ended: Story = {
+  args: { status: 'ENDED' },
+  play: async ({ canvas }) => {
+    await expect(visibleLabel(canvas, '공개 종료')).toBeVisible()
+  },
+}

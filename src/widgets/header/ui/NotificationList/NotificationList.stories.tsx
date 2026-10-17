@@ -13,25 +13,29 @@ const minutesAgo = (minutes: number) =>
 const notifications: NotificationItem[] = [
   {
     notificationId: 'n1',
+    kind: 'PREORDER_OPENED',
     title: '사전예약 오픈',
     message: '알림 신청하신 아이폰 Duo 사전예약이 시작됐어요.',
-    link: '/preorder',
+    target: { type: 'PRODUCT', id: 'p1' },
     read: false,
     createdAt: minutesAgo(3),
   },
   {
     notificationId: 'n2',
-    title: '배송 시작',
-    message: '갤럭시 워치 주문이 출고됐어요.',
-    link: '/mypage/history',
+    kind: 'PREORDER_REGISTERED',
+    title: '사전예약 등록 완료',
+    message: '사전예약 등록이 완료됐어요. 24시간 안에 결제해 주세요.',
+    target: { type: 'PREORDER', id: 'r1' },
     read: false,
     createdAt: minutesAgo(60 * 5),
   },
   {
+    // 모르는 target.type — 이동 없이 알림만 보여 준다.
     notificationId: 'n3',
+    kind: 'COUPON_ISSUED',
     title: '쿠폰 지급',
     message: '사전예약 알림 신청 쿠폰이 지급됐어요.',
-    link: null,
+    target: { type: 'COUPON', id: 'c1' },
     read: true,
     createdAt: minutesAgo(60 * 24 * 3),
   },
@@ -44,7 +48,7 @@ const meta = {
     notifications,
     isPending: false,
     isError: false,
-    onNavigate: fn(),
+    onSelect: fn(),
   },
   // 패널(HeaderNotification)과 같은 어두운 바탕·폭으로 본다.
   decorators: [
@@ -62,7 +66,7 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// 링크가 있는 알림만 눌러 이동하고, 안 읽은 알림 앞에는 '안 읽음' 점이 붙는다.
+// 갈 곳을 아는 알림만 눌러 이동하고(누른 알림을 onSelect로 넘긴다), 안 읽은 알림 앞에는 '안 읽음' 점이 붙는다.
 export const Default: Story = {
   play: async ({ canvas, userEvent, args }) => {
     const links = canvas.getAllByRole('link')
@@ -72,8 +76,10 @@ export const Default: Story = {
     )
     await expect(canvas.getByText('쿠폰 지급')).toBeVisible()
 
+    await expect(links[0]).toHaveAttribute('href', '/products/p1')
+
     await userEvent.click(links[0])
-    await expect(args.onNavigate).toHaveBeenCalledTimes(1)
+    await expect(args.onSelect).toHaveBeenCalledWith(notifications[0])
   },
 }
 

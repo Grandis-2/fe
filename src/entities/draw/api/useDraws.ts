@@ -6,16 +6,34 @@ import {
 } from '@tanstack/react-query'
 
 import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
-import { queryPolicy } from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
+import { useDeadline } from '@shared/lib/useDeadline'
 
 import { getDrawPhase } from '../lib/drawSchedule'
 
 import { enterDraw, getDraw, getDraws, getMyDrawEntry } from './draw'
 
+import type { DrawEntry } from '../model/draw'
+
 // 승인 결과를 기다리는 동안(AUTHORIZING) 내 응모를 다시 묻는다.
 const AUTHORIZING_POLL_MS = 3_000
 // 마감 뒤 추첨은 30초 뒤부터 서버가 한다 — 결과가 나올 때까지 30초 이상 간격으로 묻는다(명세).
 const RESULT_POLL_MS = 30_000
+// 응모비 승인은 최대 70초쯤 걸린다(명세).
+const AUTHORIZING_LIMIT_MS = 70_000
+// 결과는 마감부터 약 100초 안에 나온다 — 마감 직전 결제의 승인 최대 70초 + 다음 추첨 확인까지 30초(명세).
+const RESULT_LIMIT_MS = 100_000
+
+// 내 응모가 무엇을 기다리는지. 기다릴 게 없으면 null.
+const entryWait = (entry: DrawEntry | null | undefined) => {
+  if (entry?.status === 'AUTHORIZING')
+    return { kind: 'payment', pollMs: AUTHORIZING_POLL_MS } as const
+  return entry?.status === 'PAID' &&
+    entry.result === null &&
+    getDrawPhase(entry.draw) === 'CLOSED'
+    ? ({ kind: 'result', pollMs: RESULT_POLL_MS } as const)
+    : null
+}
 
 export const drawKeys = {
   all: ['draws'] as const,
@@ -46,24 +64,45 @@ export const useDraw = (drawId: string) =>
   })
 
 // 내 응모 — 응모 전이면 data가 null이다. 비로그인은 401이라 enabled로 끈다.
+// 승인(AUTHORIZING)·추첨 결과를 기다리는 동안 다시 묻고, 실패하면 백오프한다. 승인은 70초,
+// 결과는 마감부터 100초가 지나면 자동 조회를 끄고 timedOut으로 무엇을 못 받았는지 알린다.
 export const useMyDrawEntry = (
   drawId: string,
   { enabled = true }: { enabled?: boolean } = {},
-) =>
-  useQuery({
-    queryKey: drawKeys.entry(drawId),
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = drawKeys.entry(drawId)
+  const cached = () => queryClient.getQueryData<DrawEntry | null>(queryKey)
+  const entry = cached()
+  const wait = entryWait(entry)
+  // 결과는 마감 시각부터, 승인은 기다리기 시작한 때부터 센다.
+  const deadline = useDeadline(
+    wait !== null,
+    wait?.kind === 'result' ? RESULT_LIMIT_MS : AUTHORIZING_LIMIT_MS,
+    wait?.kind === 'result' && entry
+      ? Date.parse(entry.draw.closesAt)
+      : undefined,
+  )
+  const query = useQuery({
+    queryKey,
     queryFn: ({ signal }) => getMyDrawEntry(drawId, signal),
-    enabled: enabled && drawId !== '',
-    refetchInterval: ({ state: { data } }) => {
-      if (data?.status === 'AUTHORIZING') return AUTHORIZING_POLL_MS
-      return data?.status === 'PAID' &&
-        data.result === null &&
-        getDrawPhase(data.draw) === 'CLOSED'
-        ? RESULT_POLL_MS
-        : false
-    },
+    enabled: enabled && drawId !== '' && !deadline.passed,
+    refetchInterval: ({ state: { data } }) => entryWait(data)?.pollMs ?? false,
     ...queryPolicy.live,
+    ...pollingRetry(() => entryWait(cached())?.pollMs ?? null, {
+      expired: () => deadline.passed,
+    }),
   })
+  return {
+    ...query,
+    // 제한이 지났고 마지막 요청도 끝났다 — 'payment'면 승인 결과를, 'result'면 추첨 결과를 못 받았다.
+    timedOut:
+      deadline.passed && query.fetchStatus === 'idle'
+        ? (wait?.kind ?? null)
+        : null,
+    recheck: deadline.restart,
+  }
+}
 
 // 내 응모 전체 — 명세에 "내 응모 목록" API가 없어 회차 목록에서 이미 열린 회차마다 내 응모를 묻는다(응모 전 404는 null).
 // ponytail: 회차 수만큼 요청이 나간다 — 백엔드에 내 응모 목록이 생기면 그 한 번으로 바꾼다.

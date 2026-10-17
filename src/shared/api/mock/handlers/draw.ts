@@ -1,5 +1,6 @@
-import { http } from 'msw'
+import { delay, http } from 'msw'
 
+import { settleDueDraws } from '../drawSettlement'
 import {
   drawAttempts as attempts,
   drawEntries as entries,
@@ -10,7 +11,7 @@ import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 import { isUuid, readPaging, toPage, uuidViolation } from '../validate'
 
-import { shipToViolations, toShipTo } from './order'
+import { CONFIRM_DELAY_MS, shipToViolations, toShipTo } from './order'
 
 import type {
   ApiViolation,
@@ -24,7 +25,7 @@ import type { DrawEntryRecord, DrawRecord } from '../fixtures/draw'
 import type { RequestHandler } from 'msw'
 
 // 토스 승인은 흉내만 낸다 — paymentKey는 무엇이든 승인한다. 추첨은 흉내 내지 않고 시드의 결과만 보여 준다.
-// ponytail: 새로 응모한 건 마감이 지나도 result가 null이다(추첨 없음) — 결과 화면은 시드 응모로 본다.
+// 추첨은 결과 반영 시각이 지난 뒤 응모를 읽을 때 따라잡는다(drawSettlement — 결제한 응모는 모두 당첨).
 
 const ATTEMPT_LIFETIME_MS = 35 * 60 * 1000
 
@@ -34,7 +35,7 @@ const hasToken = (request: Request) =>
 const unauthenticated = () =>
   fail(401, { code: 'UNAUTHENTICATED', message: '로그인이 필요합니다.' })
 
-const drawNotFound = () =>
+export const drawNotFound = () =>
   fail(404, { code: 'DRAW_NOT_FOUND', message: '회차를 찾을 수 없습니다.' })
 
 const entryNotFound = () =>
@@ -56,13 +57,16 @@ const notPayable = () =>
   })
 
 // 서버 시각으로 단계를 정한다 — 시작 시각부터 응모 중, 마감 시각부터 마감.
-const phaseOf = ({ opensAt, closesAt }: DrawRecord): DrawPhase => {
+export const phaseOf = ({ opensAt, closesAt }: DrawRecord): DrawPhase => {
   const now = Date.now()
   if (now < Date.parse(opensAt)) return 'SCHEDULED'
   return now < Date.parse(closesAt) ? 'OPEN' : 'CLOSED'
 }
 
-const toDraw = (draw: DrawRecord): Draw => ({ ...draw, phase: phaseOf(draw) })
+export const toDraw = (draw: DrawRecord): Draw => ({
+  ...draw,
+  phase: phaseOf(draw),
+})
 
 const toEntry = (entry: DrawEntryRecord): DrawEntry => ({
   ...entry,
@@ -71,8 +75,18 @@ const toEntry = (entry: DrawEntryRecord): DrawEntry => ({
 
 const findDraw = (drawId: unknown) => draws.find((it) => it.drawId === drawId)
 
-const findEntry = (drawId: unknown) =>
-  entries.find((it) => it.drawId === drawId)
+// 이 탭에서 승인 지연을 기다리는 응모(회차 id). 그사이 새로고침되면 AUTHORIZING만 저장된 채 여기서 빠진다.
+const authorizing = new Set<string>()
+
+const findEntry = (drawId: unknown) => {
+  const entry = entries.find((it) => it.drawId === drawId)
+  // 새로고침으로 끊긴 승인은 실제 서버라면 그사이 끝났다 — 결제된 것으로 마무리한다.
+  if (entry?.status === 'AUTHORIZING' && !authorizing.has(entry.drawId)) {
+    entry.status = 'PAID'
+    saveDrawDb()
+  }
+  return entry
+}
 
 export const drawHandlers: RequestHandler[] = [
   // 회차 목록 — 최신순. 로그인 없이 부를 수 있다.
@@ -140,6 +154,7 @@ export const drawHandlers: RequestHandler[] = [
     if (!hasToken(request)) return unauthenticated()
     if (!isUuid(String(params.drawId)))
       return invalid([uuidViolation('drawId')])
+    settleDueDraws()
     const entry = findEntry(params.drawId)
     return entry ? ok(toEntry(entry)) : entryNotFound()
   }),
@@ -211,6 +226,8 @@ export const drawHandlers: RequestHandler[] = [
           declineReason: null,
         })
       }
+      // 승인 중에 같은 승인이 또 들어왔다(타임아웃 뒤 재전송·새로고침) — 이 요청은 승인 전에 거절한다.
+      if (entry.status === 'AUTHORIZING') return notPayable()
       const attempt = attempts.get(tossOrderId)
       if (!attempt || attempt.drawId !== draw.drawId) {
         return fail(404, {
@@ -229,7 +246,15 @@ export const drawHandlers: RequestHandler[] = [
       if (phaseOf(draw) !== 'OPEN') return notOpen()
 
       attempts.delete(tossOrderId)
-      if (Date.now() - attempt.openedAt > ATTEMPT_LIFETIME_MS) {
+      // 결제창 유효 시간은 승인을 시작할 때 본다(지연만큼 늦게 재지 않게).
+      const expired = Date.now() - attempt.openedAt > ATTEMPT_LIFETIME_MS
+      entry.status = 'AUTHORIZING'
+      saveDrawDb()
+      authorizing.add(entry.drawId)
+      await delay(CONFIRM_DELAY_MS)
+      authorizing.delete(entry.drawId)
+      if (expired) {
+        entry.status = 'AWAITING_PAYMENT'
         saveDrawDb()
         return ok<EntryConfirmResponse>({
           result: 'DECLINED',

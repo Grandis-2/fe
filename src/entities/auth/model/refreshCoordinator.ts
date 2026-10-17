@@ -1,5 +1,6 @@
 import { ApiRequestError, configureApiAuth } from '@shared/api/client'
 import type { Session } from '@shared/api/types'
+import { delay } from '@shared/lib/delay'
 
 import { refreshSession } from '../api/auth'
 
@@ -11,6 +12,8 @@ const CHANNEL_NAME = 'nova-auth'
 const LOCK_NAME = 'nova-auth-refresh'
 // 락을 기다리는 동안 다른 탭이 이미 갱신했으면, 이 창(ms) 안이면 나는 다시 안 부른다.
 const CROSS_TAB_FRESH_WINDOW_MS = 5000
+// retryable 401(서버 일시 장애)을 다시 보내기까지 기다리는 시간.
+const RETRY_DELAY_MS = 1000
 
 type BroadcastMessage =
   { type: 'session-updated'; session: Session } | { type: 'session-cleared' }
@@ -45,23 +48,45 @@ export function broadcastSessionCleared() {
   } satisfies BroadcastMessage)
 }
 
-async function performRefresh(): Promise<boolean> {
+// 로그인으로 받은 세션도 다른 탭에 알린다 — 안 알리면 로그아웃 상태로 열려 있던 탭은
+// 새로고침해야(재발급) 로그인이 반영된다.
+export function broadcastSessionUpdated(session: Session) {
+  lastRefreshedAt = Date.now()
+  getChannel()?.postMessage({
+    type: 'session-updated',
+    session,
+  } satisfies BroadcastMessage)
+}
+
+async function performRefresh(retried = false): Promise<boolean> {
+  // 재발급이 도는 사이 로그인으로 새 세션이 들어올 수 있다(카카오 콜백 페이지에선 부팅
+  // 재발급과 로그인 요청이 같이 나간다) — 그 세션은 이 재발급의 실패로 지우면 안 된다.
+  const tokenAtStart = useSessionStore.getState().sessionToken
   try {
     const session = await refreshSession()
     useSessionStore.getState().setSession(session)
-    lastRefreshedAt = Date.now()
-    getChannel()?.postMessage({
-      type: 'session-updated',
-      session,
-    } satisfies BroadcastMessage)
+    broadcastSessionUpdated(session)
     return true
   } catch (caught) {
     // 인증이 실제로 끊긴 경우(401)만 세션을 지운다 — 일시적 네트워크 오류까지
     // 로그아웃 처리하면 멀쩡한 세션이 끊긴다.
-    if (caught instanceof ApiRequestError && caught.status === 401) {
-      useSessionStore.getState().clearSession()
-      broadcastSessionCleared()
+    if (!(caught instanceof ApiRequestError) || caught.status !== 401)
+      return false
+
+    // retryable 401은 인증이 끊긴 게 아니라 서버가 지금 확인을 못 한 것이다
+    // (명세: "retryable=true 면 잠시 뒤 다시 시도합니다"). 실패한 재발급은 쿠키를
+    // 회전시키지 않으므로 같은 쿠키로 다시 보내도 재사용 판정에 걸리지 않는다.
+    if (caught.error.details?.retryable) {
+      // 두 번째도 실패하면 세션을 지우지 않고 그대로 둔다 — 서버 장애로 멀쩡한
+      // 세션을 끊지 않으려는 것이고, 다음 401이 또 이 경로를 탄다.
+      if (retried) return false
+      await delay(RETRY_DELAY_MS)
+      return performRefresh(true)
     }
+
+    if (useSessionStore.getState().sessionToken !== tokenAtStart) return false
+    useSessionStore.getState().clearSession()
+    broadcastSessionCleared()
     return false
   }
 }

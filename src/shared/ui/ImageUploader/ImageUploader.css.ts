@@ -1,4 +1,4 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { keyframes, style, styleVariants } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@shared/config/theme'
 
@@ -6,6 +6,16 @@ export const root = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[8],
+  borderRadius: '8px',
+  outline: '2px dashed transparent',
+  outlineOffset: spacing[4],
+  transition: `outline-color ${motion.duration.fast} ${motion.easing.default}`,
+})
+
+// 파일을 끌고 와 놓을 수 있는 동안
+export const rootFileOver = style({
+  outlineColor: color.primary.base,
+  background: color.primary.subtler,
 })
 
 export const header = style({
@@ -42,6 +52,21 @@ const tileBase = style({
 export const tile = styleVariants({
   square: [tileBase, { width: '80px', height: '80px' }],
   portrait: [tileBase, { width: '80px', height: '160px' }],
+})
+
+export const tileMovable = style({
+  cursor: 'grab',
+  selectors: {
+    '&:focus-visible': {
+      outline: `2px solid ${color.primary.base}`,
+      outlineOffset: spacing[2],
+    },
+  },
+})
+
+// 끌고 있는 사진은 놓일 자리를 보여주는 빈칸처럼 흐리게 둔다.
+export const tileDragging = style({
+  opacity: 0.4,
 })
 
 export const thumbnail = style({
@@ -117,4 +142,78 @@ export const addIcon = style({
 
 export const fileInput = style({
   display: 'none',
+})
+
+/** 올리는 중·실패를 사진 위에 덮는다 */
+export const overlay = style({
+  position: 'absolute',
+  inset: 0,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  background: `color-mix(in srgb, ${color.background.base} 60%, transparent)`,
+})
+
+export const overlayError = style({
+  background: `color-mix(in srgb, ${color.background.subtleDanger} 80%, transparent)`,
+  outline: `1px solid ${color.status.danger}`,
+  outlineOffset: '-1px',
+  borderRadius: '8px',
+})
+
+const spin = keyframes({ to: { transform: 'rotate(360deg)' } })
+
+export const spinner = style({
+  width: '20px',
+  height: '20px',
+  color: color.primary.base,
+  animation: `${spin} 0.9s linear infinite`,
+  '@media': {
+    // 움직임을 줄이라는 설정이면 돌리지 않는다 — 아이콘만으로도 진행 중임이 보인다.
+    '(prefers-reduced-motion: reduce)': { animation: 'none' },
+  },
+})
+
+export const retryButton = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: '32px',
+  height: '32px',
+  padding: 0,
+  border: 'none',
+  borderRadius: '9999px',
+  background: color.background.base,
+  color: color.status.danger,
+  cursor: 'pointer',
+})
+
+export const retryIcon = style({
+  width: '16px',
+  height: '16px',
+})
+
+export const errorText = style([
+  typography.body.caption,
+  {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing[4],
+    color: color.status.danger,
+  },
+])
+
+export const errorIcon = style({
+  width: '14px',
+  height: '14px',
+  flexShrink: 0,
+})
+
+export const srOnly = style({
+  position: 'absolute',
+  width: '1px',
+  height: '1px',
+  overflow: 'hidden',
+  clip: 'rect(0 0 0 0)',
+  whiteSpace: 'nowrap',
 })

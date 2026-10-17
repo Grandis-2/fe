@@ -13,6 +13,7 @@ import type { ReservationDetail } from '../model/reservation'
 const path = (preorderId: string) =>
   `/api/v1/preorders/${encodeURIComponent(preorderId)}`
 
+// [preorder] GET /api/v1/preorders — 내 예약 목록
 // 내 예약 — 최신순, 취소된 예약 포함. 커서 페이지(nextCursor가 null이면 마지막).
 export const getMyReservations = (
   params: PreorderListParams,
@@ -22,10 +23,12 @@ export const getMyReservations = (
     signal,
   })
 
+// [preorder] GET /api/v1/preorders/{preorderId} — 예약 상세
 // 예약 상세 — 접수 뒤 폴링하는 대상. 남의 예약은 404.
 export const getReservation = (preorderId: string, signal?: AbortSignal) =>
   apiClient.request<ReservationDetail>(path(preorderId), { signal })
 
+// [preorder] GET /api/v1/preorders/{preorderId}/history — 예약 상태 이력
 // 상태 변경 이력(eventSequence 순, 페이지 없음).
 export const getReservationHistory = async (
   preorderId: string,
@@ -38,6 +41,7 @@ export const getReservationHistory = async (
     )
   ).items
 
+// [preorder] POST /api/v1/preorders/{preorderId}/cancel — 내 예약 취소
 // 취소 — 202는 시작됐다는 뜻이고 완료는 비동기다. 다시 보내도 안전하다(이미 취소 중이면 지금 상태).
 export const cancelReservation = ({
   preorderId,

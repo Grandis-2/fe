@@ -3,10 +3,26 @@ export const isMockEnabled = import.meta.env.DEV
   ? import.meta.env.VITE_USE_MSW !== 'false'
   : import.meta.env.VITE_USE_MSW === 'true'
 
-export async function startMockWorker() {
+/**
+ * 부하 검증의 [시험 시작]·[종료]에 맞춰 목 예약이 저절로 들어오고 처리되게 한다. 목이 꺼져
+ * 있으면(실서버) 아무것도 하지 않고, 목 코드도 불러오지 않는다.
+ */
+export async function setMockLoad(running: boolean) {
   if (!isMockEnabled) return
+  const { setLoadSimulation } = await import('./loadSimulation')
+  setLoadSimulation(running)
+}
 
-  const { worker } = await import('./browser')
-  // 핸들러가 없는 요청은 그대로 네트워크로 흘려보낸다(정적 자산 경고 방지).
-  await worker.start({ onUnhandledRequest: 'bypass' })
+export async function startMockWorker() {
+  if (isMockEnabled) {
+    const { startWorker } = await import('./browser')
+    await startWorker('all')
+    return
+  }
+  // 실서버에 붙어도 dev에서는 백엔드에 아직 없는 API(사전예약 프로모션)만 목으로 받는다.
+  // 배포에서는 켜지 않는다 — 없는 API는 실패로 보여야 한다.
+  if (import.meta.env.DEV) {
+    const { startWorker } = await import('./browser')
+    await startWorker('pending')
+  }
 }

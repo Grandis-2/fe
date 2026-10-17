@@ -51,7 +51,7 @@ export const Member: Story = {
   },
 }
 
-// 회원으로 들어가도 어드민 헤더는 알림 하나만 남는다.
+// 회원으로 들어가도 어드민 헤더는 알림과 로그아웃만 남는다.
 export const Admin: Story = {
   beforeEach: signIn,
   parameters: { initialEntries: ['/admin/products'] },
@@ -61,8 +61,10 @@ export const Admin: Story = {
     ).toHaveAttribute('href', '/admin')
     await expect(canvas.queryByRole('link', { name: '모바일' })).toBeNull()
 
+    // 아이콘만 있는 버튼이라 이름은 aria-label에서 온다. 로그아웃이 가장 오른쪽이다.
     const buttons = canvas.getAllByRole('button')
-    await expect(buttons).toHaveLength(1)
+    await expect(buttons).toHaveLength(2)
     await expect(buttons[0]).toHaveAccessibleName('알림')
+    await expect(buttons[1]).toHaveAccessibleName('로그아웃')
   },
 }

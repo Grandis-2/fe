@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
+import type { CartLine } from '@shared/api/types'
 
 import {
   addCartItem,
@@ -35,7 +36,7 @@ export const useCartLines = ({ enabled = true }: { enabled?: boolean } = {}) =>
     ...queryPolicy.live,
   })
 
-// 담기·수량 변경·삭제는 서버 확인 뒤 반영한다 — 응답엔 금액이 없어(줄 금액·살 수 있는지는 조회가 정한다)
+// 담기·삭제는 서버 확인 뒤 반영한다 — 응답엔 금액이 없어(줄 금액·살 수 있는지는 조회가 정한다)
 // 장바구니 캐시(줄·배지)를 통째로 다시 받는다.
 const useCartMutation = <TVariables, TData>(
   mutationFn: (variables: TVariables) => Promise<TData>,
@@ -48,6 +49,41 @@ const useCartMutation = <TVariables, TData>(
 }
 
 export const useAddCartItem = () => useCartMutation(addCartItem)
-export const useUpdateCartItemQuantity = () =>
-  useCartMutation(updateCartItemQuantity)
+// 수량만은 낙관적으로 — 틀려도 되돌리면 그만인 값이라 누르는 즉시 줄 수량·금액을 바꾸고, 실패하면 되돌린다.
+// 연달아 눌러 요청이 겹치면 마지막 요청이 끝난 뒤에 한 번만 다시 받아 서버 값으로 맞춘다
+// (중간에 받으면 아직 반영 안 된 수량으로 깜빡인다).
+const updateQuantityKey = [...cartKeys.lines, 'update-quantity'] as const
+
+export const useUpdateCartItemQuantity = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationKey: updateQuantityKey,
+    mutationFn: updateCartItemQuantity,
+    onMutate: async ({ cartItemId, quantity }) => {
+      await queryClient.cancelQueries({ queryKey: cartKeys.lines })
+      const previous = queryClient.getQueryData<CartLine[]>(cartKeys.lines)
+      queryClient.setQueryData<CartLine[]>(cartKeys.lines, (lines) =>
+        lines?.map((line) =>
+          line.cartItemId === cartItemId
+            ? {
+                ...line,
+                quantity,
+                lineAmount:
+                  line.unitPrice === null
+                    ? null
+                    : (line.unitPrice + (line.warrantyPrice ?? 0)) * quantity,
+              }
+            : line,
+        ),
+      )
+      return { previous }
+    },
+    onError: (_error, _variables, context) =>
+      queryClient.setQueryData(cartKeys.lines, context?.previous),
+    onSettled: () =>
+      queryClient.isMutating({ mutationKey: updateQuantityKey }) === 1
+        ? queryClient.invalidateQueries({ queryKey: cartKeys.all })
+        : undefined,
+  })
+}
 export const useRemoveCartItem = () => useCartMutation(removeCartItem)

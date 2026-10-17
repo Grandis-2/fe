@@ -59,7 +59,9 @@ RootLayout                        Header · Outlet · MobileTabBar · Modal · T
    ├─ /admin                      AdminHomePage
    ├─ /admin/products(/new, /:productId)
    ├─ /admin/preorders(/new, /:promotionId)   프로모션
-   ├─ /admin/orders               예약 현황
+   ├─ /admin/draws(/new, /:drawId)            럭키드로우
+   ├─ /admin/reservations(/:preorderId)       예약 현황
+   ├─ /admin/orders(/:orderId)                주문 관리(배송 단계)
    └─ /admin/consistency-check, /load-test, /notifications, /mock-settings   AdminPlaceholderPage
 ```
 

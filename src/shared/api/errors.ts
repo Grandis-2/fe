@@ -8,13 +8,22 @@ export class ApiRequestError extends Error {
   // 문의·버그 신고 때 서버 로그를 찾는 추적 ID — 봉투의 traceId, 없으면 응답 헤더 X-Request-Id,
   // 응답을 못 받았으면(타임아웃 등) 우리가 보낸 X-Request-Id.
   readonly traceId: string | null
+  // 실패 응답의 Retry-After(초). 503 등에서 서버가 다시 보낼 때까지 기다리라고 한 시간이다.
+  // 헤더가 없거나 숫자가 아니면 0.
+  readonly retryAfter: number
 
-  constructor(error: ApiError, status: number, traceId: string | null = null) {
+  constructor(
+    error: ApiError,
+    status: number,
+    traceId: string | null = null,
+    retryAfter = 0,
+  ) {
     super(error.message)
     this.name = 'ApiRequestError'
     this.error = error
     this.status = status
     this.traceId = traceId
+    this.retryAfter = retryAfter
   }
 }
 

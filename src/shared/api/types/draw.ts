@@ -1,6 +1,6 @@
 import type { PaymentAttempt, ShipTo, ShipToInput } from './order'
 
-// 럭키 드로우 API(order 서비스 — api-docs의 order.json) 회원용 모양. 관리자(/admin/draws)는 다루지 않는다.
+// 럭키 드로우 API(order 서비스 — api-docs의 order.json). 회차(Draw)는 회원과 관리자(/admin/draws)가 같은 모양을 쓴다.
 // 회차는 증정품(gift) 하나를 걸고, 응모비를 한 번 결제한 응모만 추첨 대상이 된다. 당첨되면 서버가 0원 주문(source DRAW)을 만든다.
 
 // SCHEDULED 시작 전, OPEN 응모 중, CLOSED 마감. 응답 시점의 서버 시각 기준이고 추첨이 끝났는지는 나타내지 않는다.
@@ -70,4 +70,37 @@ export type EntryConfirmResponse = {
   result: 'APPROVED' | 'DECLINED' | 'PENDING'
   entryStatus: DrawEntryStatus
   declineReason: 'CARD_REJECTED' | 'PAYMENT_EXPIRED' | 'FAILED' | null
+}
+
+// POST /api/v1/admin/draws 본문 — 모든 칸이 필수다. Idempotency-Key 헤더가 함께 필요하다.
+// 증정품은 일반 판매·판매 중·재고 등록을 마친 옵션이고, 만들 때 winnerCount만큼 재고를 확보한다(모자라면 409 INSUFFICIENT_STOCK).
+export type CreateDrawRequest = {
+  productId: string
+  optionId: string
+  // 100자 이하. 결제창 이름으로도 쓰인다.
+  title: string
+  // 100 이상 정수, 12자리 이하.
+  entryFee: number
+  // 1 이상 정수.
+  winnerCount: number
+  // ISO-8601. 지난 시각이면 바로 응모 중이다.
+  opensAt: string
+  // 시작보다 뒤이고 지금보다 뒤.
+  closesAt: string
+}
+
+// GET /api/v1/admin/draws/{drawId}/progress — 응모 수와 추첨 진행. 추첨은 마감 30초 뒤부터
+// authorizingEntries가 0이면 서버가 한다. 결제 완료가 당첨 인원 이하면 추첨 없이 모두 당첨이라 drawRequestedAt은 null로 남는다.
+export type DrawProgress = {
+  // 결제 완료 — 추첨 대상.
+  paidEntries: number
+  // 결제 확인 중 — 마감 뒤 0이 돼야 추첨한다.
+  authorizingEntries: number
+  // 결제 대기 — 응모비를 내지 않아 추첨 대상이 아니고 추첨을 막지도 않는다.
+  awaitingEntries: number
+  // 당첨 주문이 생긴 응모 수. 결과 반영 전엔 0.
+  winners: number
+  drawRequestedAt: string | null
+  // 결과를 반영한 시각. 마감 뒤 1시간이 넘도록 null이면 정상이 아니다.
+  settledAt: string | null
 }

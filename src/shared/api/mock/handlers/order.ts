@@ -1,5 +1,6 @@
-import { http } from 'msw'
+import { delay, http } from 'msw'
 
+import { settleDueDraws } from '../drawSettlement'
 import {
   cartLines,
   orders,
@@ -32,6 +33,10 @@ import type { OrderRecord } from '../fixtures/preorder'
 import type { RequestHandler } from 'msw'
 
 // 토스 승인은 흉내만 낸다 — paymentKey는 무엇이든 승인한다.
+// 실제 승인은 최대 70초쯤 걸린다. .env.local에 VITE_MOCK_CONFIRM_DELAY_MS(예: 15000)를 넣으면 승인이 그만큼
+// AUTHORIZING에 머문다 — 승인 중 폴링·타임아웃 뒤 재전송·새로고침을 재현할 때 쓴다. 비우면 바로 끝난다.
+export const CONFIRM_DELAY_MS =
+  Number(import.meta.env.VITE_MOCK_CONFIRM_DELAY_MS) || 0
 // ponytail: 장바구니 주문의 재고 확보는 흉내 내지 않고 가용 재고와 비교만 한다(확보·반납 없음).
 
 const SHIP_TO_LIMITS = {
@@ -84,8 +89,16 @@ const windowExpired = () =>
     message: '결제 기한이 지났습니다.',
   })
 
-const findOrder = (orderId: unknown) =>
-  orders.find((it) => it.orderId === orderId)
+// 이 탭에서 승인 지연을 기다리는 주문. 그사이 새로고침되면 AUTHORIZING만 저장된 채 여기서 빠진다.
+const authorizing = new Set<string>()
+
+const findOrder = (orderId: unknown) => {
+  const order = orders.find((it) => it.orderId === orderId)
+  // 새로고침으로 끊긴 승인은 실제 서버라면 그사이 끝났다 — 승인된 것으로 마무리한다.
+  if (order?.status === 'AUTHORIZING' && !authorizing.has(order.orderId))
+    approveOrder(order)
+  return order
+}
 
 function moveOrder(
   order: OrderRecord,
@@ -105,14 +118,25 @@ function moveOrder(
   saveOrderDb()
 }
 
+function approveOrder(order: OrderRecord) {
+  moveOrder(order, 'AWAITING_CONFIRMATION', 'SYSTEM', 'PAYMENT_APPROVED')
+  if (order.source === 'CART') removePurchasedFromCart(order)
+  // 사전예약은 결제가 확인되면 예약이 확정된다.
+  const preorder = preorders.find((it) => it.preorderId === order.preorderId)
+  if (preorder) {
+    preorder.reservedAt = new Date().toISOString()
+    transition(preorder, 'RESERVED', 'SYSTEM')
+  }
+}
+
 const isCartDue = (order: OrderRecord) =>
   order.paymentDueAt !== null && Date.now() > Date.parse(order.paymentDueAt)
 
-// 결제 기한이 지난 장바구니 주문은 서버가 곧 취소한다 — 읽을 때 흉내 낸다.
-function expireCartOrders() {
+// 결제 기한이 지난 장바구니 주문은 서버가 곧 취소한다 — 읽을 때 흉내 낸다(관리자 주문 목록도 부른다).
+export function expireCartOrders() {
   for (const order of orders) {
     if (
-      order.source === 'CART' &&
+      (order.source === 'CART' || order.source === 'BUY_NOW') &&
       order.status === 'AWAITING_PAYMENT' &&
       isCartDue(order)
     )
@@ -123,6 +147,7 @@ function expireCartOrders() {
 const toOrder = ({
   preorderId: _preorderId,
   cartItems: _cartItems,
+  idempotencyKey: _idempotencyKey,
   events: _events,
   ...order
 }: OrderRecord): Order => order
@@ -187,6 +212,24 @@ export const toShipTo = (address: Record<string, unknown>): ShipTo => ({
 const sameShipTo = (a: ShipTo, b: ShipTo) =>
   (Object.keys(SHIP_TO_LIMITS) as (keyof ShipTo)[]).every(
     (key) => a[key] === b[key],
+  )
+
+// 옵션·보증 여부·수량·화면에 보여 준 가격·배송지가 같은 주문인지.
+const sameOrderContent = (
+  order: OrderRecord,
+  items: CartOrderItem[],
+  shipTo: ShipTo,
+) =>
+  sameShipTo(order.shipTo, shipTo) &&
+  order.cartItems?.length === items.length &&
+  items.every((item) =>
+    order.cartItems?.some(
+      (prev) =>
+        lineKey(prev) === lineKey(item) &&
+        prev.quantity === item.quantity &&
+        prev.expectedUnitPrice === item.expectedUnitPrice &&
+        prev.expectedWarrantyPrice === item.expectedWarrantyPrice,
+    ),
   )
 
 const lineKey = ({ variantId, warranty = false }: CartOrderItem) =>
@@ -268,26 +311,31 @@ function toOrderItems(items: CartOrderItem[]): OrderItem[] {
 }
 
 // 장바구니 주문 만들기 — 실패하면 409·400 응답, 성공하면 주문.
+// 바로 구매(BUY_NOW)도 가격·판매 상태·재고 규칙은 같고, 장바구니와 무관해 대조·승인 대기·회원당 하나 규칙만 빠진다
+// (기존 주문은 Idempotency-Key로만 돌려받는다 — 아래 핸들러).
 function placeCartOrder(
   items: CartOrderItem[],
   shipTo: ShipTo,
+  source: 'CART' | 'BUY_NOW',
 ): Response | OrderRecord {
   // 앞 장바구니 주문이 승인 결과를 기다리면 새 주문을 받지 않는다.
-  const authorizing = orders.find(
-    (it) => it.source === 'CART' && it.status === 'AUTHORIZING',
-  )
+  const authorizing =
+    source === 'CART' &&
+    orders.find((it) => it.source === 'CART' && it.status === 'AUTHORIZING')
   if (authorizing) return paymentInProgress()
 
   // 고른 줄의 옵션·보증 여부·수량이 지금 장바구니와 정확히 같아야 한다.
-  const changed = items.some(
-    (item) =>
-      !cartLines.some(
-        (line) =>
-          line.variantId === item.variantId &&
-          line.warranty === (item.warranty ?? false) &&
-          line.quantity === item.quantity,
-      ),
-  )
+  const changed =
+    source === 'CART' &&
+    items.some(
+      (item) =>
+        !cartLines.some(
+          (line) =>
+            line.variantId === item.variantId &&
+            line.warranty === (item.warranty ?? false) &&
+            line.quantity === item.quantity,
+        ),
+    )
   if (changed) {
     return fail(409, {
       code: 'CART_CHANGED',
@@ -346,25 +394,20 @@ function placeCartOrder(
 
   const totalAmount = orderItems.reduce((sum, row) => sum + row.lineAmount, 0)
   // 결제 전 장바구니 주문은 회원당 하나 — 구성·가격·배송지가 같고 기한 안이면 그 주문을 돌려준다.
-  const pending = orders.filter(
-    (it) => it.source === 'CART' && it.status === 'AWAITING_PAYMENT',
-  )
-  const same = pending.find(
-    (it) =>
-      !isCartDue(it) &&
-      it.totalAmount === totalAmount &&
-      sameShipTo(it.shipTo, shipTo) &&
-      it.cartItems?.length === items.length &&
-      items.every((item) =>
-        it.cartItems?.some(
-          (prev) =>
-            lineKey(prev) === lineKey(item) && prev.quantity === item.quantity,
-        ),
-      ),
-  )
-  if (same) return same
-  for (const previous of pending)
-    moveOrder(previous, 'CANCELED', 'SYSTEM', 'REPLACED_BY_NEW_ORDER')
+  if (source === 'CART') {
+    const pending = orders.filter(
+      (it) => it.source === 'CART' && it.status === 'AWAITING_PAYMENT',
+    )
+    const same = pending.find(
+      (it) =>
+        !isCartDue(it) &&
+        it.totalAmount === totalAmount &&
+        sameOrderContent(it, items, shipTo),
+    )
+    if (same) return same
+    for (const previous of pending)
+      moveOrder(previous, 'CANCELED', 'SYSTEM', 'REPLACED_BY_NEW_ORDER')
+  }
 
   const createdAt = new Date().toISOString()
   return {
@@ -375,7 +418,7 @@ function placeCartOrder(
       warranty: item.warranty ?? false,
     })),
     status: 'AWAITING_PAYMENT',
-    source: 'CART',
+    source,
     totalAmount,
     paymentDueAt: new Date(Date.now() + CART_PAYMENT_WINDOW_MS).toISOString(),
     items: orderItems,
@@ -478,6 +521,8 @@ export const orderHandlers: RequestHandler[] = [
   http.get(url('/api/v1/orders'), ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     expireCartOrders()
+    // 결과 반영이 지난 럭키드로우 당첨 주문도 내 주문에 나온다.
+    settleDueDraws()
     const params = new URL(request.url).searchParams
     const size = Number(params.get('size') ?? 20)
     if (!Number.isInteger(size) || size < 1 || size > 100)
@@ -500,7 +545,7 @@ export const orderHandlers: RequestHandler[] = [
     })
   }),
 
-  // 주문 생성 — 장바구니(CART) 또는 사전예약(PREORDER). 새 주문은 201, 기존 주문은 200(reused).
+  // 주문 생성 — 장바구니(CART)·바로 구매(BUY_NOW) 또는 사전예약(PREORDER). 새 주문은 201, 기존 주문은 200(reused).
   http.post(url('/api/v1/orders'), async ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     expireCartOrders()
@@ -523,7 +568,7 @@ export const orderHandlers: RequestHandler[] = [
         : {}
 
     const violations: ApiViolation[] = [
-      ...(source === 'BUY_NOW' || source === 'DRAW'
+      ...(source === 'DRAW'
         ? [{ field: 'source', message: '이 주문은 아직 받지 않습니다.' }]
         : []),
       ...(source === 'PREORDER' &&
@@ -534,20 +579,58 @@ export const orderHandlers: RequestHandler[] = [
       )
         ? [{ field: 'preorderId', message: '예약 토큰 형식이 아닙니다.' }]
         : []),
-      ...(source === 'CART' ? cartItemViolations(items) : []),
+      ...(source === 'CART' || source === 'BUY_NOW'
+        ? cartItemViolations(items)
+        : []),
+      ...(source === 'BUY_NOW' &&
+      Array.isArray(items) &&
+      new Set(items.map((item: CartOrderItem) => item.variantId)).size > 1
+        ? [
+            {
+              field: 'items',
+              message: '바로 구매는 옵션 하나만 주문할 수 있습니다.',
+            },
+          ]
+        : []),
       ...shipToViolations(address),
     ]
     if (violations.length > 0) return invalid(violations)
 
+    // 바로 구매는 Idempotency-Key 필수 — 같은 키·같은 내용이면 처음 주문을 지금 상태 그대로 돌려준다.
+    const idempotencyKey = request.headers.get('Idempotency-Key')
+    if (source === 'BUY_NOW' && !idempotencyKey)
+      return fail(400, {
+        code: 'IDEMPOTENCY_KEY_REQUIRED',
+        message: 'Idempotency-Key 헤더가 필요합니다.',
+      })
+    if (source === 'BUY_NOW' && !isUuid(idempotencyKey as string))
+      return invalid([
+        { field: 'Idempotency-Key', message: 'UUID 형식이어야 합니다.' },
+      ])
+    const keyed =
+      source === 'BUY_NOW'
+        ? orders.find((it) => it.idempotencyKey === idempotencyKey)
+        : undefined
+    if (
+      keyed &&
+      !sameOrderContent(keyed, items as CartOrderItem[], toShipTo(address))
+    )
+      return fail(422, {
+        code: 'KEY_PAYLOAD_MISMATCH',
+        message: '이전 요청과 내용이 다릅니다. 새 주문으로 다시 시도해 주세요.',
+      })
+
     const result =
-      source === 'CART'
-        ? placeCartOrder(items as CartOrderItem[], toShipTo(address))
-        : placePreorderOrder(preorderId as string, toShipTo(address))
+      keyed ??
+      (source === 'CART' || source === 'BUY_NOW'
+        ? placeCartOrder(items as CartOrderItem[], toShipTo(address), source)
+        : placePreorderOrder(preorderId as string, toShipTo(address)))
     if (result instanceof Response) return result
 
     const reused = orders.includes(result)
     if (!reused) {
       orders.push(result)
+      if (source === 'BUY_NOW') result.idempotencyKey = idempotencyKey as string
       saveOrderDb()
     }
     const response = ok<PlaceOrderResponse>(
@@ -652,6 +735,13 @@ export const orderHandlers: RequestHandler[] = [
           declineReason: null,
         })
       }
+      // 승인 중에 같은 승인이 또 들어왔다(타임아웃 뒤 재전송·새로고침) — 이 요청은 승인 전에 거절한다.
+      if (order.status === 'AUTHORIZING') {
+        return fail(409, {
+          code: 'ORDER_NOT_PAYABLE',
+          message: '결제할 수 있는 주문이 아닙니다.',
+        })
+      }
       const attempt = attempts.get(tossOrderId)
       if (!attempt || attempt.orderId !== order.orderId) {
         return fail(404, {
@@ -677,8 +767,13 @@ export const orderHandlers: RequestHandler[] = [
 
       attempts.delete(tossOrderId)
       saveOrderDb()
+      // 결제창 유효 시간은 승인을 시작할 때 본다(지연만큼 늦게 재지 않게).
+      const expired = Date.now() - attempt.openedAt > ATTEMPT_LIFETIME_MS
       moveOrder(order, 'AUTHORIZING', 'USER')
-      if (Date.now() - attempt.openedAt > ATTEMPT_LIFETIME_MS) {
+      authorizing.add(order.orderId)
+      await delay(CONFIRM_DELAY_MS)
+      authorizing.delete(order.orderId)
+      if (expired) {
         moveOrder(
           order,
           'AWAITING_PAYMENT',
@@ -691,16 +786,7 @@ export const orderHandlers: RequestHandler[] = [
           declineReason: 'PAYMENT_EXPIRED',
         })
       }
-      moveOrder(order, 'AWAITING_CONFIRMATION', 'SYSTEM', 'PAYMENT_APPROVED')
-      if (order.source === 'CART') removePurchasedFromCart(order)
-      // 사전예약은 결제가 확인되면 예약이 확정된다.
-      const preorder = preorders.find(
-        (it) => it.preorderId === order.preorderId,
-      )
-      if (preorder) {
-        preorder.reservedAt = new Date().toISOString()
-        transition(preorder, 'RESERVED', 'SYSTEM')
-      }
+      approveOrder(order)
       return ok<ConfirmPaymentResponse>({
         result: 'APPROVED',
         orderStatus: order.status,

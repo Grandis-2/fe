@@ -9,10 +9,10 @@ import {
   isPreorder,
   productTypeLabel,
   productTypeLabels,
-  saleStatusLabel,
+  saleStateLabel,
   useAdminProducts,
   type AdminProduct,
-  type AdminSaleStatus,
+  type AdminSaleState,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCT_NEW_PATH, adminProductPath } from '@shared/config/routes'
@@ -38,11 +38,11 @@ const typeFilters = [
 type TypeFilter = (typeof typeFilters)[number]['value']
 
 // 값이 undefined면 '전체' — 서버에 판매 상태를 안 보낸다.
-const statusOptions: DropdownOption<AdminSaleStatus | undefined>[] = [
+const statusOptions: DropdownOption<AdminSaleState | undefined>[] = [
   { label: '전체', value: undefined },
-  ...Object.entries(saleStatusLabel).map(([value, label]) => ({
+  ...Object.entries(saleStateLabel).map(([value, label]) => ({
     label,
-    value: value as AdminSaleStatus,
+    value: value as AdminSaleState,
   })),
 ]
 
@@ -66,10 +66,10 @@ export function AdminProductsPage() {
   const navigate = useNavigate()
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [keyword, setKeyword] = useState('')
-  const [saleStatus, setSaleStatus] = useState<AdminSaleStatus>()
+  const [saleStatus, setSaleStatus] = useState<AdminSaleState>()
   const [sort, setSort] = useState<ProductSort>('openAt')
 
-  // 검색어와 판매 상태는 서버가 걸러준다.
+  // 검색어와 유형은 서버가 걸러준다.
   const trimmedKeyword = keyword.trim()
 
   const {
@@ -78,8 +78,14 @@ export function AdminProductsPage() {
     isError,
     error,
   } = useAdminProducts({
-    saleStatus,
     q: trimmedKeyword || undefined,
+    status: saleStatus,
+    saleMode:
+      typeFilter === 'all'
+        ? undefined
+        : typeFilter === 'preorder'
+          ? 'PREORDER'
+          : 'IN_STOCK',
     // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
     size: 100,
   })
@@ -91,18 +97,18 @@ export function AdminProductsPage() {
   const openEdit = (product: AdminProduct) =>
     navigate(adminProductPath(product.productId, 'edit'))
 
-  // 유형과 정렬은 목록 응답에 해당 파라미터가 없어 화면에서 처리한다.
-  const visibleProducts = products
-    .filter(
-      (product) =>
-        typeFilter === 'all' ||
-        isPreorder(product) === (typeFilter === 'preorder'),
-    )
-    .toSorted((a, b) =>
-      sort === 'name'
-        ? a.name.localeCompare(b.name)
-        : a.openAt.localeCompare(b.openAt),
-    )
+  /**
+   * 검색어·유형·판매 상태는 서버가 걸러주고 정렬만 화면에서 한다 — 목록은 등록
+   * 최신순 하나만 지원한다.
+   *
+   * 오픈 시각이 없는 상품(일반 판매)은 뒤로 모은다 — 빈 값끼리는 순서를 바꾸지 않아
+   * 서버가 준 등록 최신순이 남는다.
+   */
+  const visibleProducts = products.toSorted((a, b) => {
+    if (sort === 'name') return a.name.localeCompare(b.name)
+    if (!a.opensAt || !b.opensAt) return Number(!a.opensAt) - Number(!b.opensAt)
+    return a.opensAt.localeCompare(b.opensAt)
+  })
 
   const columns: TableColumn<AdminProduct>[] = [
     {
@@ -131,15 +137,15 @@ export function AdminProductsPage() {
       key: 'option',
       header: '옵션',
       align: 'center',
-      render: (product) => `${product.variantCount}종`,
+      render: (product) => `${product.optionCount}종`,
     },
     {
       key: 'openAt',
       header: '오픈 시각',
       align: 'center',
       render: (product) =>
-        isPreorder(product)
-          ? dateFormatter.format(new Date(product.openAt))
+        product.opensAt
+          ? dateFormatter.format(new Date(product.opensAt))
           : '해당없음',
     },
     {
@@ -165,7 +171,13 @@ export function AdminProductsPage() {
       key: 'status',
       header: '상태',
       align: 'center',
-      render: (product) => <AdminProductSaleTag status={product.saleStatus} />,
+      // 사전예약은 접수 단계도 같이 — 판매 상태와 다른 축이라 하나로 못 합친다.
+      render: (product) => (
+        <AdminProductSaleTag
+          status={product.status}
+          stage={product.preorderStatus}
+        />
+      ),
     },
     {
       key: 'display',
@@ -239,12 +251,11 @@ export function AdminProductsPage() {
             `${product.name} ${productTypeLabel(product)} 상세 보기`,
           onClick: openDetail,
         }}
+        loading={isPending}
         emptyMessage={
           isError
             ? getErrorMessage(error, '상품을 불러오지 못했습니다.')
-            : isPending
-              ? '불러오는 중입니다.'
-              : '조건에 맞는 상품이 없습니다.'
+            : '조건에 맞는 상품이 없습니다.'
         }
       />
     </div>
