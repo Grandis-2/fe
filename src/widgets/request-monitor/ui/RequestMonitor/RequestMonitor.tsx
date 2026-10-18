@@ -109,7 +109,9 @@ export function RequestMonitor() {
   // 모달(<dialog>)이 열리면 그 모달이 top layer 맨 위로 올라와 이 창을 덮는다 — 다시 맨 위로 올린다.
   useEffect(() => {
     const root = rootRef.current
-    if (!root) return
+    // Popover API가 없는 브라우저(Safari 16 이하 등)에선 :popover-open·showPopover가 던져 앱이 깨진다 —
+    // 맨 위로 올리지 않고 그냥 둔다.
+    if (!root || typeof root.showPopover !== 'function') return
     const raise = () => {
       if (root.matches(':popover-open')) root.hidePopover()
       root.showPopover()
