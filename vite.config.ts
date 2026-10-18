@@ -15,7 +15,10 @@ const dirname = import.meta.dirname
 export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
-    vanillaExtractPlugin(),
+    // 클래스 이름은 production mode에서만 짧아진다 — analyze도 운영과 같은 크기로 재도록 맞춘다.
+    vanillaExtractPlugin({
+      identifiers: mode === 'analyze' ? 'short' : undefined,
+    }),
     // npm run analyze — 빌드 결과를 dist/stats.html 트리맵으로 열어 청크별 크기(gzip 포함)를 본다.
     mode === 'analyze' &&
       visualizer({ filename: 'dist/stats.html', gzipSize: true, open: true }),
