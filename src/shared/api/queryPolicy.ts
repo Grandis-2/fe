@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query'
 
 import { ApiRequestError } from './client'
+import { logWait } from './requestLog'
 
 // 다시 보내도 결과가 같은 실패(4xx — 인증·검증·없음)는 재시도하지 않는다.
 // 응답을 못 받았거나(타임아웃·네트워크, status 0) 서버 오류(5xx)일 때만 다시 묻는다.
@@ -67,7 +68,18 @@ export const backoffDelay = (
     baseMs * 2 ** failureCount,
     Math.max(BACKOFF_CAP_MS, baseMs),
   )
-  return Math.max(retryAfterMs, grown) * (1 + Math.random() * JITTER)
+  const minMs = Math.max(retryAfterMs, grown)
+  const waitMs = minMs * (1 + Math.random() * JITTER)
+  // 요청 모니터에 "왜 이만큼 기다리는지"를 남긴다.
+  logWait({
+    waitMs,
+    baseMs,
+    failureCount,
+    retryAfterMs,
+    minMs,
+    maxMs: minMs * (1 + JITTER),
+  })
+  return waitMs
 }
 
 /**

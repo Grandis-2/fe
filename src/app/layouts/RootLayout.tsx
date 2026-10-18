@@ -5,12 +5,14 @@ import { Outlet, useLocation, useNavigate } from 'react-router'
 import { logout, useSession } from '@entities/auth'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PreorderQueue, usePreorderQueueStore } from '@features/preorder-queue'
+import { isMockEnabled } from '@shared/api/mock'
 import { SIGNUP_PATH } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
 import { showToast, useToastStore } from '@shared/model/toastStore'
 import { Modal, ToastViewport } from '@shared/ui'
 import { Header } from '@widgets/header'
 import { MobileTabBar } from '@widgets/mobile-tab-bar'
+import { RequestMonitor } from '@widgets/request-monitor'
 
 import { isCallbackPath } from './callbackPaths'
 
@@ -65,6 +67,9 @@ export function RootLayout() {
         />
       )}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
+      {/* 백오프·재전송이 실제로 일어나는 걸 보여 주는 창 — 결제 콜백에서도 보여야 해서 경로와 상관없이 그린다.
+          개발 도구라 로컬·목 배포에서만 — 실서버에 붙은 운영 화면엔 띄우지 않는다. */}
+      {(import.meta.env.DEV || isMockEnabled) && <RequestMonitor />}
       {queueTicket && (
         <PreorderQueue
           key={queueTicket.joinedAt}
