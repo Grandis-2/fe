@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 
 import { Outlet, useLocation, useNavigate } from 'react-router'
 
@@ -12,9 +12,16 @@ import { showToast, useToastStore } from '@shared/model/toastStore'
 import { Modal, ToastViewport } from '@shared/ui'
 import { Header } from '@widgets/header'
 import { MobileTabBar } from '@widgets/mobile-tab-bar'
-import { RequestMonitor } from '@widgets/request-monitor'
 
 import { isCallbackPath } from './callbackPaths'
+
+// 개발 도구라 켜지는 환경에서만 따로 받는다 — 바로 import하면 조건과 상관없이 운영 첫 번들에 실린다.
+// 요청 기록은 requestLog가 모으므로 늦게 마운트돼도 빠지는 요청이 없다.
+const RequestMonitor = lazy(() =>
+  import('@widgets/request-monitor').then((m) => ({
+    default: m.RequestMonitor,
+  })),
+)
 
 export function RootLayout() {
   const { isSignupPending } = useSession()
@@ -69,7 +76,11 @@ export function RootLayout() {
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
       {/* 백오프·재전송이 실제로 일어나는 걸 보여 주는 창 — 결제 콜백에서도 보여야 해서 경로와 상관없이 그린다.
           개발 도구라 로컬·목 배포에서만 — 실서버에 붙은 운영 화면엔 띄우지 않는다. */}
-      {(import.meta.env.DEV || isMockEnabled) && <RequestMonitor />}
+      {(import.meta.env.DEV || isMockEnabled) && (
+        <Suspense fallback={null}>
+          <RequestMonitor />
+        </Suspense>
+      )}
       {queueTicket && (
         <PreorderQueue
           key={queueTicket.joinedAt}
