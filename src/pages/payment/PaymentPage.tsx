@@ -47,7 +47,6 @@ import {
   mypagePath,
   resultPath,
 } from '@shared/config/routes'
-import { track } from '@shared/lib/analytics'
 import { formatWon } from '@shared/lib/formatNumber'
 import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
@@ -370,11 +369,6 @@ export function PaymentPage() {
         return
       }
       setIsStarting(true)
-      if (preorderId)
-        track('Preorder Payment Started', {
-          preorderId,
-          orderId: order.orderId,
-        })
       await startOrderPayment({
         orderId: order.orderId,
         preorderId: preorderId || undefined,

@@ -5,10 +5,13 @@
 const apiKey = import.meta.env.VITE_AMPLITUDE_API_KEY
 
 const sdk = apiKey
-  ? import('@amplitude/analytics-browser').then((amplitude) => {
-      amplitude.init(apiKey, { autocapture: true })
-      return amplitude
-    })
+  ? import('@amplitude/analytics-browser')
+      .then((amplitude) => {
+        amplitude.init(apiKey, { autocapture: true })
+        return amplitude
+      })
+      // 받기에 실패하면(광고 차단·네트워크) 분석만 꺼진다 — track()마다 미처리 거부가 쌓이지 않게.
+      .catch(() => null)
   : null
 
 /** 이벤트 이름과 속성. 이름은 Amplitude 관례대로 "대상 + 과거형 동사" */
@@ -25,9 +28,18 @@ type AnalyticsEvents = {
   'Preorder Paid': { preorderId: string; orderId: string }
 }
 
+// dedupeKey: 같은 일이 두 번 보고돼도(새로고침·재전송) 한 번으로 세야 할 때 준다 — Amplitude가
+// 같은 insert_id를 7일 동안 한 번만 받는다.
 export const track = <E extends keyof AnalyticsEvents>(
   event: E,
   properties: AnalyticsEvents[E],
+  dedupeKey?: string,
 ) => {
-  void sdk?.then((amplitude) => amplitude.track(event, properties))
+  void sdk?.then((amplitude) =>
+    amplitude?.track(
+      event,
+      properties,
+      dedupeKey ? { insert_id: `${event}:${dedupeKey}` } : undefined,
+    ),
+  )
 }

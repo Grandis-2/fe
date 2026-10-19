@@ -94,11 +94,12 @@ export function usePreorderSubmit() {
             accepted.preorderId,
             controller.signal,
           )
-          track('Preorder Submitted', {
-            productId,
-            preorderId: accepted.preorderId,
-            registered,
-          })
+          // 재전송이면 기존 예약이 replayed로 다시 온다 — 예약 하나는 한 번만 센다.
+          track(
+            'Preorder Submitted',
+            { productId, preorderId: accepted.preorderId, registered },
+            accepted.preorderId,
+          )
           if (controller.signal.aborted) return
           setIsWaiting(false)
           onSuccess(accepted, registered)
