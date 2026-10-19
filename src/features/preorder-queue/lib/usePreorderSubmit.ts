@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router'
 import { useSubmitPreorder, type PreorderAccepted } from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { mypagePath } from '@shared/config/routes'
+import { track } from '@shared/lib/analytics'
 import { showToast } from '@shared/model/toastStore'
 
 import {
@@ -60,10 +61,12 @@ export function usePreorderSubmit() {
     ) {
       // 같은 '사전예약하기' 버튼이 입장권 유무로 갈려서 버튼 속성 대신 여기서 동작 이름을 단다(Faro가 꺼져 있으면 api가 없다).
       faro.api?.startUserAction('queue-enter')
+      track('Preorder Apply Clicked', { productId, queued: true })
       joinPreorderQueue({ productId, productName, to: returnTo })
       return
     }
     faro.api?.startUserAction('preorder-apply')
+    track('Preorder Apply Clicked', { productId, queued: false })
     submit.mutate(
       {
         productId,
@@ -91,6 +94,11 @@ export function usePreorderSubmit() {
             accepted.preorderId,
             controller.signal,
           )
+          track('Preorder Submitted', {
+            productId,
+            preorderId: accepted.preorderId,
+            registered,
+          })
           if (controller.signal.aborted) return
           setIsWaiting(false)
           onSuccess(accepted, registered)

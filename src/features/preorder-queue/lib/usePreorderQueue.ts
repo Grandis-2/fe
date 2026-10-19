@@ -7,6 +7,7 @@ import {
 } from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { isRetryableError } from '@shared/api/queryPolicy'
+import { track } from '@shared/lib/analytics'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import type { PreorderAdmission } from '../model/preorderQueueStore'
@@ -143,6 +144,7 @@ export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
   // 닫혀 있으면 QueuePill이 moveIn초를 센 뒤 넘어간다(그 사이 누르면 모달이 열려 바로 넘어간다).
   useEffect(() => {
     if (!admissionTicket || hasLeft) return
+    track('Preorder Queue Admitted', { productId })
     const complete = () =>
       handleComplete({
         productId,
