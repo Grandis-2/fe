@@ -6,7 +6,6 @@ export {
   useAdminReservations,
   useAllAdminReservations,
   useCancelReservation,
-  useReprocessByErrorCodes,
   useReprocessReservation,
   useReprocessReservations,
   useReservationStats,
@@ -23,7 +22,6 @@ export {
   RESERVATION_CANCEL_REASON_MAX,
   RESERVATION_CANCEL_REASON_MIN,
   RESERVATION_NOTE_MAX,
-  syncErrorCause,
   syncJobStatusLabel,
   syncJobTypeLabel,
   isReprocessable,
@@ -46,5 +44,4 @@ export type {
   ReservationEvent,
   ReservationState,
   ReservationSyncJob,
-  SyncErrorCause,
 } from './model/types'

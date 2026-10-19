@@ -38,11 +38,10 @@ export const description = style([
   { color: color.text.secondary },
 ])
 
-// 다른 화면으로 가는 링크는 <a>, 이 화면에서 펼치는 것은 <button>이고 모양은 같다.
+// 다른 화면으로 가는 링크라 <a>로 두고 버튼 모양만 입힌다.
 export const action = style([
   typography.button.smMedium,
   {
-    cursor: 'pointer',
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',

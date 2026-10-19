@@ -5,10 +5,8 @@ import { CircleCheck, Info, TriangleAlert } from 'lucide-react'
 import { DRAW_STUCK_AFTER_MS, useAdminDraws } from '@entities/admin-draw'
 import { useAdminOrders } from '@entities/admin-order'
 import {
-  syncErrorCause,
   useReservationStats,
   useReservationStatsHistory,
-  useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
 import { isBraking, waitEstimate } from '@entities/admin-waitingroom'
 import {
@@ -22,6 +20,7 @@ import {
   ADMIN_ORDERS_PATH,
   ADMIN_RESERVATIONS_PATH,
   ADMIN_WAITINGROOM_PATH,
+  adminReservationsPath,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { ratePerSecond, slopePerSecond } from '@shared/lib/samples'
@@ -34,9 +33,7 @@ import {
 } from '@shared/ui'
 
 import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
-import { sentRunStore } from '../../model/sentRun'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
-import { ResendPanel } from '../ResendPanel'
 import { StuckDrawTask } from '../StuckDrawTask'
 
 import * as styles from './AdminOpsHome.css'
@@ -44,13 +41,10 @@ import * as styles from './AdminOpsHome.css'
 // 집계는 서버가 5초까지 캐시해(명세: "5초 이상이면 충분") 그보다 자주 받아도 같은 값이다.
 // 문제를 처음 알아채는 화면이라 그 하한에 맞춘다.
 const POLL_INTERVAL_MS = 5_000
-// 원인별 묶음은 작업 전체를 세는 무거운 조회이고, 홈에선 실패 원인을 덧붙이는 보조 정보라 덜 자주.
-const ERROR_GROUPS_INTERVAL_MS = 10_000
 /** 실패 카드에 나눠 적을 사전예약 수 — 넘으면 '외 N곳'으로 줄인다 */
 const BREAKDOWN_MAX = 3
 // shortcut: 마감 뒤 하루 안의 회차만 멈췄는지 본다(회차마다 진행을 따로 받아서). 회차가 많아지면 서버 집계로 바꾼다.
 const STUCK_LOOKBACK_MS = 24 * 60 * 60 * 1000
-const RESEND_PANEL_ID = 'ops-resend'
 // 맨 뒤 예상 대기가 이만큼 길어지면 할 일로 띄운다 — 서버에 기준이 없어 화면에서 정한 값이다.
 const LONG_WAIT_SECONDS = 10 * 60
 
@@ -80,12 +74,11 @@ export type AdminOpsHomeProps = {
 
 /**
  * 운영 대시보드 — 오픈 중 운영자가 가장 먼저 보는 화면. 급한 일부터 위에 올리고(실패 → 멈춤 →
- * 기한·일상), 아래에 접수·처리 속도를 둔다. 숫자마다 처리할 화면으로 가는 링크를 붙이고,
- * 외부 등록 실패는 이 화면에서 펼쳐 다시 보낸다 — 들어오는 트래픽을 보면서 보낼 때를 고르게.
+ * 기한·일상), 아래에 접수·처리 속도를 둔다. 숫자마다 처리할 화면으로 가는 링크를 붙인다 —
+ * 외부 등록 실패는 예약 현황의 실패 탭에서 골라 재처리한다.
  */
 export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const stats = useReservationStats(undefined, POLL_INTERVAL_MS)
-  const errors = useSyncJobErrorGroups(ERROR_GROUPS_INTERVAL_MS)
   const draws = useAdminDraws()
   // 건수만 필요해 한 건씩 받고 total을 쓴다.
   const preparing = useAdminOrders({ status: 'PREPARING_ITEMS', size: 1 })
@@ -103,10 +96,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   // 대시보드가 보는 범위 — 처음엔 전체(null). 고른 사전예약이 마감돼 띠에서 빠지면 전체로
   // 돌아간다.
   const [picked, setPicked] = useState<string | null>(null)
-  // 다시 보내기 패널 — 보낸 기록이 있으면(다른 화면에 다녀와도) 펼친 채로 돌아온다.
-  const [resendOpen, setResendOpen] = useState(
-    () => sentRunStore.get().length > 0,
-  )
   const selected = openProducts.some((product) => product.productId === picked)
     ? picked
     : null
@@ -166,24 +155,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           .join(' · ')
       : ''
 
-  const topErrors = (errors.data ?? [])
-    .toSorted((a, b) => b.count - a.count)
-    .slice(0, 2)
-    // 판매자가 읽을 말로 — 코드는 다시 보내기 패널에서 흐리게 함께 보인다.
-    .map(
-      (group) =>
-        `${group.errorCode === null ? '확인되지 않은 오류' : syncErrorCause(group.errorCode).label} ${formatNumber(group.count)}건`,
-    )
-    .join(' · ')
-
   const shipping =
     preparing.data && readyToShip.data
       ? { preparing: preparing.data.total, ready: readyToShip.data.total }
       : null
 
   // 급한 순서대로 쌓는다. 0건인 일은 빼서 이상이 없으면 목록이 비게 한다.
-  // 사전예약을 골랐으면 할 일도 그 사전예약 집계로 센다. 상품으로 거를 수 없는 것(원인별
-  // 묶음·다시 보내기·배송 대기)은 '전체 기준'이라고 밝힌다 — 백엔드에 상품 조건을 요청해 뒀다.
+  // 사전예약을 골랐으면 할 일도 그 사전예약 집계로 센다. 상품으로 거를 수 없는 것(배송 대기)은
+  // '전체 기준'이라고 밝힌다 — 백엔드에 상품 조건을 요청해 뒀다.
   const scoped = selected !== null
   const t = scoped && selected ? statsOf(selected) : s
   // 외부 등록을 기다리는 작업(재처리 필요는 빼고) — 0이면 오래 기다리는 접수 시각이
@@ -199,14 +178,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     now - Date.parse(t.oldestPendingSyncAt) > SLOW_AFTER_MS
       ? ageOf(t.oldestPendingSyncAt, now)
       : null
-
-  // 범위별 지금 실패 수 — 다시 보내기 패널이 보낼 때 남겨 두고 비교한다.
-  const failuresByScope: Record<string, number> = {}
-  if (s) failuresByScope.all = s.syncJobs.REGISTER.DEAD_LETTER
-  for (const product of openProducts) {
-    const count = statsOf(product.productId)?.syncJobs.REGISTER.DEAD_LETTER
-    if (count !== undefined) failuresByScope[product.productId] = count
-  }
 
   // 대기가 긴 사전예약 — 대기열은 평소엔 띠의 대기·예상 대기로만 보이고, 길어지면 할 일이 된다.
   // 입장이 멈췄는데 줄이 있으면(초당 0) 끝이 없으니 같이 띄운다.
@@ -226,21 +197,17 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           title: `외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건 — 결제 단계로 못 넘어가고 있어요`,
           description: [
             !scoped && failuresByPreorder,
-            topErrors
-              ? `원인${scoped ? '(전체 기준)' : ''} ${topErrors}`
-              : '원인별 건수를 불러오는 중이에요',
+            '예약 현황에서 실패한 예약을 골라 재처리하세요',
           ]
             .filter(Boolean)
             .join(' / '),
+          // 재처리는 예약 현황에서 한 건씩 골라서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
           action: {
-            label: resendOpen
-              ? '접기'
-              : scoped
-                ? '원인별로 다시 보내기 (전체)'
-                : '원인별로 다시 보내기',
-            onClick: () => setResendOpen((open) => !open),
-            expanded: resendOpen,
-            controls: RESEND_PANEL_ID,
+            label: '예약 현황에서 재처리',
+            to: adminReservationsPath(
+              'REPROCESS_NEEDED',
+              selected ?? undefined,
+            ),
           },
         },
         t.deadLetters.waiting > 0 && {
@@ -307,7 +274,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
 
   const refresh = () => {
     void stats.refetch()
-    void errors.refetch()
     void queue.refetch()
     void draws.refetch()
     void preparing.refetch()
@@ -315,18 +281,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   }
 
   const statsError = pollingError(stats)
-
-  const resendPanel = resendOpen && (
-    <ResendPanel
-      key="resend"
-      id={RESEND_PANEL_ID}
-      selected={selected}
-      scopeName={selected ? nameOf(selected) : undefined}
-      failuresByScope={failuresByScope}
-      onSelectAll={() => setPicked(null)}
-      now={now}
-    />
-  )
 
   return (
     <div className={styles.root}>
@@ -384,17 +338,11 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           </SkeletonGroup>
         ) : (
           <>
-            {/* 다시 보내기 패널은 실패 카드 바로 아래 — 다 보내 카드가 사라져도 보낸 기록을 볼 수
-                있게 맨 위에 남긴다. 한 목록에 같은 key로 둬야 자리가 바뀌어도 다시 그려지지 않는다. */}
-            {[
-              !tasks.some((task) => task.key === 'register') && resendPanel,
-              ...tasks
-                .filter((task) => task.level !== 'todo')
-                .flatMap(({ key, ...task }) => [
-                  <OpsTaskCard key={key} {...task} />,
-                  key === 'register' && resendPanel,
-                ]),
-            ]}
+            {tasks
+              .filter((task) => task.level !== 'todo')
+              .map(({ key, ...task }) => (
+                <OpsTaskCard key={key} {...task} />
+              ))}
             {/* 멈춘 추첨은 '확인' 단계라 실패 뒤, 일상 업무 앞에 둔다. */}
             {stuckCandidates.map((draw) => (
               <StuckDrawTask key={draw.drawId} draw={draw} now={now} />

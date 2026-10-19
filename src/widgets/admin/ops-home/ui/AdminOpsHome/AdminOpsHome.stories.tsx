@@ -85,15 +85,6 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
       registerFailures: Math.min(15, counts.registerFailures),
     }),
   )
-  queryClient.setQueryData(
-    ['admin', 'reservations', 'sync-job-errors', 'dead-letter'],
-    counts.registerFailures
-      ? [
-          { errorCode: 'HTTP_503', count: counts.registerFailures - 40 },
-          { errorCode: 'TIMEOUT', count: 40 },
-        ]
-      : [],
-  )
   queryClient.setQueryData(['admin', 'waitingroom', 'status'], {
     nodeId: 'node-1',
     leaderNodeId: 'node-1',
@@ -141,8 +132,8 @@ type Story = StoryObj<typeof meta>
 
 /**
  * 처음엔 전체 — 할 일은 모든 사전예약을 합친 값이고, 실패는 어느 사전예약에서 났는지 나눠
- * 적는다. 사전예약을 고르면 할 일이 그 기준으로 바뀌고, 상품으로 거를 수 없는
- * 원인·다시 보내기·배송은 '전체 기준'이라고 밝힌다.
+ * 적는다. 사전예약을 고르면 할 일이 그 기준으로 바뀌고, 상품으로 거를 수 없는 배송은
+ * '전체 기준'이라고 밝힌다. 실패는 예약 현황의 실패 탭에서 재처리한다.
  */
 export const Busy: Story = {
   decorators: [
@@ -173,21 +164,9 @@ export const Busy: Story = {
     await expect(cards[0]).toHaveTextContent(
       '아이폰 18 Pro 845건 · 갤럭시 S27 15건',
     )
-    // 다시 보내기는 다른 화면으로 가지 않고 실패 카드 아래에 펼친다.
-    const expand = within(cards[0]).getByRole('button', {
-      name: '원인별로 다시 보내기',
-    })
-    await userEvent.click(expand)
-    await expect(expand).toHaveAttribute('aria-expanded', 'true')
     await expect(
-      canvas.getByRole('region', { name: '원인별로 다시 보내기' }),
-    ).toBeVisible()
-    await userEvent.click(
-      within(cards[0]).getByRole('button', { name: '접기' }),
-    )
-    await expect(
-      canvas.queryByRole('region', { name: '원인별로 다시 보내기' }),
-    ).toBeNull()
+      within(cards[0]).getByRole('link', { name: '예약 현황에서 재처리' }),
+    ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
     await expect(cards[3]).not.toHaveTextContent('전체 기준')
 
     // 사전예약을 고르면 할 일이 그 사전예약으로 바뀐다.
@@ -196,12 +175,13 @@ export const Busy: Story = {
     await userEvent.click(iphone)
     const scoped = canvas.getAllByRole('article')
     await expect(scoped[0]).toHaveTextContent('외부 등록 실패 845건')
-    await expect(scoped[0]).toHaveTextContent('원인(전체 기준)')
+    // 고른 사전예약 그대로 예약 현황을 연다.
     await expect(
-      within(scoped[0]).getByRole('button', {
-        name: '원인별로 다시 보내기 (전체)',
-      }),
-    ).toBeVisible()
+      within(scoped[0]).getByRole('link', { name: '예약 현황에서 재처리' }),
+    ).toHaveAttribute(
+      'href',
+      '/admin/reservations?status=REPROCESS_NEEDED&product=p-iphone',
+    )
     await expect(scoped.at(-1)).toHaveTextContent('전체 기준')
   },
 }

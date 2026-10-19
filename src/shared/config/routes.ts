@@ -107,11 +107,14 @@ export const adminDrawPath = (drawId: string) => `${ADMIN_DRAWS_PATH}/${drawId}`
 /** 대기열 관리 — 입장 속도·상품별 상한·최대 대기·이탈 유예(바꾸면 바로 회원에게 반영) */
 export const ADMIN_WAITINGROOM_PATH = '/admin/waitingroom'
 export const ADMIN_RESERVATIONS_PATH = '/admin/reservations'
-/** 상태 탭을 골라서 연다(다시 보내기 → 외부 등록 실패 예약) */
-export const adminReservationsPath = (status?: string) =>
-  status
-    ? `${ADMIN_RESERVATIONS_PATH}?status=${status}`
-    : ADMIN_RESERVATIONS_PATH
+/** 상태 탭·상품을 골라서 연다(운영 대시보드 → 외부 등록 실패 예약) */
+export const adminReservationsPath = (status?: string, productId?: string) => {
+  const params = new URLSearchParams()
+  if (status) params.set('status', status)
+  if (productId) params.set('product', productId)
+  const query = params.toString()
+  return query ? `${ADMIN_RESERVATIONS_PATH}?${query}` : ADMIN_RESERVATIONS_PATH
+}
 /** 예약 상세 */
 export const adminReservationPath = (preorderId: string) =>
   `${ADMIN_RESERVATIONS_PATH}/${preorderId}`

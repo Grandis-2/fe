@@ -139,7 +139,7 @@ export async function reprocessAdminReservations(preorderIds: string[]) {
     throw new ApiRequestError(
       {
         code: 'NOTHING_TO_REPROCESS',
-        message: '재처리할 작업이 없습니다. 대조를 다시 실행해 확인해 주세요.',
+        message: '재처리할 작업이 없습니다. 목록을 새로 고쳐 확인해 주세요.',
         details: null,
       },
       409,
@@ -154,47 +154,14 @@ export async function reprocessAdminReservations(preorderIds: string[]) {
   )
 }
 
-// [preorder] POST /api/v1/admin/preorders/sync-jobs/reprocess-batch — 조건으로 일괄 재처리
-/**
- * 마지막 오류 코드가 같은 DEAD_LETTER 작업을 코드마다 한 번씩(각 최대 1000건) 다시 보낸다.
- * 서버가 정한 속도(기본 초당 20건)로 나눠 이어서 처리하므로 응답은 시작한 건수뿐이다.
- * 속도는 보내지 않는다 — 외부 시스템이 버티는 양은 서버가 알고, 관리자에겐 고를 근거가
- * 없다. 코드끼리 동시에 몰리지 않게 차례로 보낸다.
- */
-export async function reprocessByErrorCodes(errorCodes: string[]) {
-  const results: (BatchReprocess & { errorCode: string })[] = []
-  for (const errorCode of errorCodes) {
-    const result = await apiClient.request<BatchReprocess>(
-      `${BASE}/sync-jobs/reprocess-batch`,
-      {
-        method: 'POST',
-        body: { errorCodeFilter: errorCode } satisfies ReprocessBatchRequest,
-      },
-    )
-    results.push({ ...result, errorCode })
-  }
-  return results
-}
-
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록(errorGroups만)
 /**
  * 외부 등록 작업의 마지막 시도 오류 코드별 수. 성공했거나 시도 전인 작업은 errorCode가
- * null이라 뺀다.
- * - 'dead-letter': 재처리 필요(자동 재시도를 다 쓴 것)만 — 다시 보낼 수 있는 것과 같은 범위.
- *   ponytail: 서버가 status 조건을 묶음에도 적용하는지 명세에 없다(백엔드 요청서 Q1).
- * - 'failing': 자동 재시도 중인 것까지 — 지금 무엇 때문에 실패하고 있는지(부하 검증).
+ * null이라 빼고, 지금 실패 중(재시도 대기·DEAD_LETTER)인 것만 남는다.
  */
-export const getSyncJobErrorGroups = async (
-  scope: 'dead-letter' | 'failing',
-  signal?: AbortSignal,
-) => {
+export const getSyncJobErrorGroups = async (signal?: AbortSignal) => {
   const { errorGroups } = await getAdminSyncJobs(
-    {
-      jobType: 'REGISTER',
-      groupByError: true,
-      size: 1,
-      ...(scope === 'dead-letter' && { status: 'DEAD_LETTER' as const }),
-    },
+    { jobType: 'REGISTER', groupByError: true, size: 1 },
     signal,
   )
   return (errorGroups ?? []).filter((group) => group.errorCode !== null)

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
-import { Link, useNavigate, useSearchParams } from 'react-router'
+import { CircleCheck } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router'
 
 import { useAdminProducts } from '@entities/admin-product'
 import {
@@ -20,7 +21,7 @@ import {
   reservationStateOf,
   useAdminMembers,
   useAdminReservations,
-  useReprocessReservation,
+  useReprocessReservations,
   useReservationStats,
   type AdminReservation,
   type ReservationState,
@@ -32,10 +33,12 @@ import {
   refreshIntervalOptions,
   type RefreshInterval,
 } from '@shared/config/refreshInterval'
-import { ADMIN_HOME_PATH, adminReservationPath } from '@shared/config/routes'
+import { adminReservationPath } from '@shared/config/routes'
+import { toggleInSet } from '@shared/lib/toggleInSet'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
+  Checkbox,
   Dropdown,
   InlineAlert,
   Input,
@@ -70,32 +73,40 @@ const matchesFilter = (state: ReservationState, filter: StatusFilter) =>
   state === filter ||
   (filter === 'CANCELED' && state === 'CANCELING')
 
+type Feedback = { status: 'success' | 'error'; message: string }
+
 /**
- * 예약 접수 현황. 10초마다 자동 갱신하고, 외부 등록이 끝내 실패한 예약은 재처리를
- * 걸 수 있다. 탭 건수는 집계 API로 전체를 세고, 표는 최근 예약을 보여준다. 실패가 쌓이면
- * 원인별로 한 번에 다시 보내는 운영 대시보드로 안내한다.
+ * 예약 접수 현황. 10초마다 자동 갱신하고, 외부 등록이 끝내 실패한 예약은 골라서 한 번에
+ * 재처리한다(맨 왼쪽 체크박스). 탭 건수는 집계 API로 전체를 세고, 표는 최근 예약을 보여준다.
+ * 운영 대시보드의 외부 등록 실패 카드가 실패 탭을 연 채로 이 화면에 온다.
  */
 export function AdminReservationsPage() {
   const navigate = useNavigate()
-  // 탭은 주소(?status=)에 둔다 — 운영 대시보드에서 실패 탭을 바로 열고, 상세에서
-  // 돌아와도 고른 탭이 남는다. 모르는 값이면 전체.
+  // 탭·상품은 주소(?status=·?product=)에 둔다 — 운영 대시보드에서 실패 탭을 고른
+  // 사전예약 그대로 열고, 상세에서 돌아와도 남는다. 모르는 탭이면 전체.
   const [searchParams, setSearchParams] = useSearchParams()
   const statusFilter: StatusFilter =
     statusFilters.find(({ value }) => value === searchParams.get('status'))
       ?.value ?? 'all'
-  const setStatusFilter = (next: StatusFilter) =>
+  const setParam = (key: string, value: string | undefined) =>
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev)
-        if (next === 'all') params.delete('status')
-        else params.set('status', next)
+        if (value === undefined) params.delete(key)
+        else params.set(key, value)
         return params
       },
       { replace: true },
     )
+  const setStatusFilter = (next: StatusFilter) =>
+    setParam('status', next === 'all' ? undefined : next)
   const [keyword, setKeyword] = useState('')
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
-  const [productId, setProductId] = useState<string>()
+  const productId = searchParams.get('product') ?? undefined
+  const setProductId = (next: string | undefined) => setParam('product', next)
+  // 재처리할 예약(예약 id). 실제로 보내는 건 지금 표에서 재처리할 수 있는 것만이다.
+  const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
+  const [feedback, setFeedback] = useState<Feedback>()
   const [refreshInterval, setRefreshInterval] = useState<RefreshInterval>(
     DEFAULT_REFRESH_INTERVAL,
   )
@@ -129,7 +140,7 @@ export function AdminReservationsPage() {
     (reservations !== undefined ? pollingError(list) : null) ??
     (stats.data !== undefined ? pollingError(stats) : null)
 
-  const reprocess = useReprocessReservation()
+  const reprocess = useReprocessReservations()
 
   // 회원 이름은 예약 응답에 없어서 보이는 회원 id만 모아 이름으로 바꾼다.
   const { data: members = [] } = useAdminMembers(
@@ -146,21 +157,6 @@ export function AdminReservationsPage() {
     void stats.refetch()
   }
 
-  // 되돌릴 수 없는 조치라서 한 번 더 묻는다. 끝나면 목록을 다시 받아 표를 갱신한다.
-  const confirmReprocess = (reservation: AdminReservation) =>
-    openModal({
-      theme: 'light',
-      title: '재처리를 시도할까요?',
-      description: `${reservationNo(reservation.preorderId)} · ${reservation.productTitle}의 외부 등록을 다시 시도합니다.`,
-      confirmLabel: '재처리',
-      onConfirm: () => {
-        closeModal()
-        // 지난 실패 문구가 남아 있으면 이번 시도의 결과처럼 보인다.
-        reprocess.reset()
-        reprocess.mutate(reservation.preorderId)
-      },
-    })
-
   // 예약번호로 거르는 쿼리 파라미터가 명세에 없어 받아온 목록에서 직접 찾는다.
   const trimmedKeyword = keyword.trim().toUpperCase()
   const visibleReservations = (reservations ?? [])
@@ -172,6 +168,53 @@ export function AdminReservationsPage() {
         !trimmedKeyword ||
         reservationNo(reservation.preorderId).includes(trimmedKeyword),
     )
+
+  // 탭·검색으로 보이는 것 중 재처리할 수 있는 것만 고를 수 있다 — 상태가 바뀌어 빠진 예약은
+  // 고른 채로 남아도 보내지 않는다.
+  const selectable = visibleReservations.filter(isReprocessable)
+  const selectedIds = selectable
+    .filter((reservation) => selected.has(reservation.preorderId))
+    .map((reservation) => reservation.preorderId)
+  const allSelected =
+    selectable.length > 0 && selectedIds.length === selectable.length
+  const toggle = (ids: string[], checked: boolean) =>
+    setSelected((prev) => toggleInSet(prev, ids, checked))
+
+  // 외부로 등록을 다시 보내는 조치라 한 번 더 묻는다. 끝나면 목록을 다시 받아 표를 갱신한다.
+  const confirmReprocess = () => {
+    const ids = selectedIds
+    openModal({
+      theme: 'light',
+      title: `${ids.length.toLocaleString('ko-KR')}건을 재처리할까요?`,
+      description:
+        '고른 예약을 외부 예약 시스템에 다시 등록합니다. 차례로 처리돼서 반영까지 몇 초 걸릴 수 있습니다.',
+      confirmLabel: '재처리',
+      onConfirm: () => {
+        closeModal()
+        setFeedback(undefined)
+        reprocess.mutate(ids, {
+          onSuccess: ({ targetCount, skippedCount, estimatedSeconds }) => {
+            setSelected(new Set())
+            setFeedback({
+              status: 'success',
+              message: [
+                `${targetCount.toLocaleString('ko-KR')}건 재처리를 시작했습니다(약 ${estimatedSeconds}초).`,
+                skippedCount > 0 &&
+                  `${skippedCount.toLocaleString('ko-KR')}건은 이미 처리됐거나 상태가 바뀌어 건너뛰었습니다.`,
+              ]
+                .filter(Boolean)
+                .join(' '),
+            })
+          },
+          onError: (caught) =>
+            setFeedback({
+              status: 'error',
+              message: getErrorMessage(caught, '재처리를 요청하지 못했습니다.'),
+            }),
+        })
+      },
+    })
+  }
 
   const stageCounts = stats.data && countByStage(stats.data)
 
@@ -193,6 +236,37 @@ export function AdminReservationsPage() {
   const failures = stageCounts?.REPROCESS_NEEDED ?? 0
 
   const columns: TableColumn<AdminReservation>[] = [
+    {
+      key: 'select',
+      header: (
+        <Checkbox
+          aria-label="재처리할 수 있는 예약 모두 선택"
+          checked={allSelected}
+          disabled={selectable.length === 0 || reprocess.isPending}
+          onChange={(event) =>
+            toggle(
+              selectable.map((reservation) => reservation.preorderId),
+              event.target.checked,
+            )
+          }
+        />
+      ),
+      align: 'center',
+      width: '56px',
+      render: (reservation) =>
+        isReprocessable(reservation) && (
+          <Checkbox
+            aria-label={`${reservationNo(reservation.preorderId)} 선택`}
+            checked={selected.has(reservation.preorderId)}
+            disabled={reprocess.isPending}
+            // 행 전체가 상세로 가는 버튼이라, 고르기만 하고 머문다.
+            onClick={(event) => event.stopPropagation()}
+            onChange={(event) =>
+              toggle([reservation.preorderId], event.target.checked)
+            }
+          />
+        ),
+    },
     {
       key: 'no',
       header: '예약 번호',
@@ -284,27 +358,6 @@ export function AdminReservationsPage() {
         )
       },
     },
-    {
-      key: 'reprocess',
-      header: '재처리',
-      align: 'center',
-      width: '120px',
-      render: (reservation) =>
-        isReprocessable(reservation) ? (
-          <Button
-            size="small"
-            onClick={(event) => {
-              // 행 전체가 상세로 가는 버튼이라, 재처리만 하고 머문다.
-              event.stopPropagation()
-              confirmReprocess(reservation)
-            }}
-          >
-            재처리
-          </Button>
-        ) : (
-          <span className={styles.subText}>—</span>
-        ),
-    },
   ]
 
   return (
@@ -352,20 +405,36 @@ export function AdminReservationsPage() {
         </InlineAlert>
       )}
 
-      {/* 여러 건은 원인별로 묶어 한 번에 보내는 게 빠르다 — 한 건씩은 아래 표의 재처리. */}
+      {/* 실패는 어느 탭에서든 먼저 보이게 — 실패 탭이 아니면 그 탭으로 가는 단추를 단다. */}
       {failures > 0 && (
         <InlineAlert status="error">
-          {failures.toLocaleString('ko-KR')}건이 외부 등록에 실패해 결제 단계로
-          못 넘어가고 있습니다.{' '}
-          <Link className={styles.link} to={ADMIN_HOME_PATH}>
-            운영 대시보드에서 원인별로 다시 보내기
-          </Link>
+          <span className={styles.alertRow}>
+            <span>
+              <b>
+                {failures.toLocaleString('ko-KR')}건이 외부 등록에 실패해 결제
+                단계로 못 넘어가고 있습니다.
+              </b>{' '}
+              재처리를 시도해 주세요.
+            </span>
+            {statusFilter !== 'REPROCESS_NEEDED' && (
+              <Button
+                size="small"
+                onClick={() => setStatusFilter('REPROCESS_NEEDED')}
+              >
+                실패 예약 보기
+              </Button>
+            )}
+          </span>
         </InlineAlert>
       )}
 
-      {reprocess.isError && (
-        <InlineAlert status="error">
-          {getErrorMessage(reprocess.error, '재처리에 실패했습니다.')}
+      {feedback && (
+        <InlineAlert
+          status={feedback.status}
+          // 성공에 경고 삼각형이 붙으면 문구와 반대로 읽힌다.
+          icon={feedback.status === 'success' ? CircleCheck : undefined}
+        >
+          {feedback.message}
         </InlineAlert>
       )}
 
@@ -392,6 +461,21 @@ export function AdminReservationsPage() {
         <div className={styles.subText}>
           전체 {page.total.toLocaleString('ko-KR')}건 중 최근{' '}
           {page.items.length.toLocaleString('ko-KR')}건만 표시합니다.
+        </div>
+      )}
+
+      {selectable.length > 0 && (
+        <div className={styles.selectionBar}>
+          <span className={styles.selectionCount}>
+            {selectedIds.length.toLocaleString('ko-KR')}건 선택됨
+          </span>
+          <Button
+            size="small"
+            disabled={selectedIds.length === 0 || reprocess.isPending}
+            onClick={confirmReprocess}
+          >
+            {reprocess.isPending ? '재처리 요청 중…' : '선택한 예약 재처리'}
+          </Button>
         </div>
       )}
 

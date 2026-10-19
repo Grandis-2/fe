@@ -25,7 +25,6 @@ import {
   getSyncJobErrorGroups,
   reprocessAdminReservation,
   reprocessAdminReservations,
-  reprocessByErrorCodes,
   toAdminReservationDetail,
   updateAdminReservationNote,
 } from './adminReservation'
@@ -143,28 +142,14 @@ export const useReprocessReservation = () => {
 }
 
 /** 외부 등록 실패를 오류 코드별로. 부하 시험 중 무엇 때문에 실패하는지 본다 */
-export const useSyncJobErrorGroups = (
-  intervalMs: RefreshInterval,
-  scope: 'dead-letter' | 'failing' = 'dead-letter',
-) => {
+export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
   const queryClient = useQueryClient()
-  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors', scope] as const
+  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors'] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getSyncJobErrorGroups(scope, signal),
+    queryFn: ({ signal }) => getSyncJobErrorGroups(signal),
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
-  })
-}
-
-/** 오류 코드별 일괄 재처리. 응답은 시작한 건수뿐이라 결과는 집계를 다시 받아 본다 */
-export const useReprocessByErrorCodes = () => {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: reprocessByErrorCodes,
-    onSettled: () =>
-      // 중간 코드에서 실패해도 앞 코드는 이미 시작됐다 — 성공·실패 모두 다시 받는다.
-      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })
 }
 

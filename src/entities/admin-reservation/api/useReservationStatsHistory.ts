@@ -73,8 +73,8 @@ function storeOf(client: QueryClient, productId?: string) {
 
 /**
  * 운영 현황 집계의 추이(받은 시각 순). productId를 주면 그 상품, 빼면 전체. 집계를 받는 건
- * 화면들의 useReservationStats가 하고, 이 훅은 받은 값을 쌓아 읽기만 한다 — 처리 흐름·
- * 회복 확인 그래프가 쓴다. 상품은 처음 고른 때부터 쌓인다.
+ * 화면들의 useReservationStats가 하고, 이 훅은 받은 값을 쌓아 읽기만 한다 — 운영 대시보드의
+ * 접수·처리 속도 그래프가 쓴다. 상품은 처음 고른 때부터 쌓인다.
  */
 export function useReservationStatsHistory(
   productId?: string,

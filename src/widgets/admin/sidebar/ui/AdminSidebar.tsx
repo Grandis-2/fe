@@ -63,14 +63,14 @@ export function AdminSidebar() {
   // 다른 메뉴에서 넘어온 상세(외부 예약 대조 → 예약 상세)는 들어온 메뉴를 켜 둔다.
   const pathname =
     readBackTo(location.state)?.to.split('?')[0] ?? location.pathname
-  // 어느 화면에 있든 외부 등록 실패가 쌓이면 메뉴에서 보이게 한다 — 다시 보내는 곳이 운영
-  // 대시보드라 그 메뉴에 단다. 같은 키라 운영 대시보드·예약 현황이 5~10초마다 받은 값을 그대로 읽는다. 구독마다 자동 갱신 타이머가 따로
+  // 어느 화면에 있든 외부 등록 실패가 쌓이면 메뉴에서 보이게 한다 — 재처리하는 곳이 예약
+  // 현황이라 그 메뉴에 단다. 같은 키라 운영 대시보드·예약 현황이 5~10초마다 받은 값을 그대로 읽는다. 구독마다 자동 갱신 타이머가 따로
   // 돌아 겹쳐 묻게 되므로, 배지는 그 화면들이 없을 때만 의미 있는 느린 간격으로 둔다.
   // 못 받았으면 배지를 숨긴다(0건으로 보이지 않게).
   const failures = useReservationStats(undefined, BADGE_INTERVAL_MS).data
     ?.syncJobs.REGISTER.DEAD_LETTER
   const badgeOf = (path: string) =>
-    path === ADMIN_HOME_PATH && failures ? failures : null
+    path === ADMIN_RESERVATIONS_PATH && failures ? failures : null
 
   return (
     <nav className={styles.root} aria-label="관리자 메뉴">

@@ -182,7 +182,7 @@ export function AdminLoadTest({
   const queue = useWaitingroomStatus(refreshInterval)
   const stats = useReservationStats(productId, refreshInterval)
   // 부하 중엔 자동 재시도 중인 실패까지 봐야 무엇 때문에 실패하는지 일찍 보인다.
-  const errors = useSyncJobErrorGroups(refreshInterval, 'failing')
+  const errors = useSyncJobErrorGroups(refreshInterval)
   const mock = useMockConfig()
 
   const [waitingHistory, setWaitingHistory] = useState<Sample<number>[]>([])

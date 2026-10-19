@@ -1,7 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@shared/config/theme'
-import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
   display: 'flex',
@@ -33,12 +32,32 @@ export const tabCount = style({
   opacity: 0.8,
 })
 
-// 경고 문구 안의 링크라 문구 색을 그대로 따른다.
-export const link = style({
-  color: 'inherit',
-  fontWeight: fontWeight.semibold,
-  textDecoration: 'underline',
+// 실패 경고 — 문구와 실패 탭으로 가는 단추를 한 줄에.
+export const alertRow = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[12],
+  width: '100%',
 })
+
+// 고른 건수와 재처리 단추 — 표 바로 위에 붙어 무엇을 보낼지 보인다.
+export const selectionBar = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[12],
+  padding: `${spacing[10]} ${spacing[16]}`,
+  borderRadius: '10px',
+  background: color.primary.subtler,
+})
+
+export const selectionCount = style([
+  typography.body.defaultMedium,
+  { color: color.primary.focus, fontVariantNumeric: 'tabular-nums' },
+])
 
 export const toolbar = style({
   display: 'flex',

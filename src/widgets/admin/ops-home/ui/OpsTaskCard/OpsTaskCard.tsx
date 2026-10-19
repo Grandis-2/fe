@@ -28,17 +28,9 @@ export type OpsTaskCardProps = {
   description: ReactNode
   /**
    * 이 일을 처리하는 화면. 없으면 운영자가 화면에서 풀 수 없는 일이라 '개발팀 문의'를
-   * 보인다 — 운영 홈에서 개발자 기능 화면으로 보내지 않는다. `to` 대신 `onClick`이면 이
-   * 화면 안에서 펼친다(`expanded`로 펼친 상태, `controls`로 펼친 영역 id).
+   * 보인다 — 운영 홈에서 개발자 기능 화면으로 보내지 않는다.
    */
-  action?:
-    | { label: string; to: string }
-    | {
-        label: string
-        onClick: () => void
-        expanded: boolean
-        controls: string
-      }
+  action?: { label: string; to: string }
   /**
    * 화면이 사전예약 하나를 보고 있는데 이 카드는 그렇게 거를 수 없을 때(예: '전체 기준')
    * 제목 옆에 붙인다 — 숫자가 고른 사전예약 것으로 읽히지 않게.
@@ -76,17 +68,7 @@ export function OpsTaskCard({
         </div>
         <div className={styles.description}>{description}</div>
       </div>
-      {action && 'onClick' in action ? (
-        <button
-          type="button"
-          className={actionClass}
-          onClick={action.onClick}
-          aria-expanded={action.expanded}
-          aria-controls={action.controls}
-        >
-          {action.label}
-        </button>
-      ) : action ? (
+      {action ? (
         <Link to={action.to} className={actionClass}>
           {action.label}
         </Link>
