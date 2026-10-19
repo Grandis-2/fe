@@ -8,7 +8,7 @@ import type { AdminPreorderDetail, SyncJob } from '../types'
 //   사전예약 3개에 5,000명이 30초 안에 대기열에 몰림 → 대기열 입장 속도(대기열 관리의 전역 값 × 브레이크)
 //   만큼 예약 접수 → 외부 등록은 초당 처리 한도까지만 → 5%는 재시도 끝에 실패.
 // 접수가 처리 한도보다 빨라 적체가 쌓이면 대기열 브레이크가 걸려 입장이 줄어든다.
-// 장애 대응에서 다시 보내면 서버처럼 초당 정해진 건수씩 다시 처리하고, 일부는 또 실패한다.
+// 운영 대시보드에서 다시 보내면 서버처럼 초당 정해진 건수씩 다시 처리하고, 일부는 또 실패한다.
 const TICK_MS = 1000
 const TOTAL_ARRIVALS = 5000
 const ARRIVAL_SECONDS = 30
@@ -147,7 +147,7 @@ export function startOpenScenario() {
 export const isOpenScenarioRunning = () => timer !== null
 
 /**
- * 장애 대응의 다시 보내기 — 작업을 대기로 돌리고 초당 ratePerSecond건씩 다시 처리한다.
+ * 운영 대시보드의 다시 보내기 — 작업을 대기로 돌리고 초당 ratePerSecond건씩 다시 처리한다.
  * 마지막 오류 코드는 다음 시도가 끝날 때까지 남는다(실서버와 같다).
  */
 export function requeueForReprocess(

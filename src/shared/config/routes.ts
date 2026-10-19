@@ -107,7 +107,7 @@ export const adminDrawPath = (drawId: string) => `${ADMIN_DRAWS_PATH}/${drawId}`
 /** 대기열 관리 — 입장 속도·상품별 상한·최대 대기·이탈 유예(바꾸면 바로 회원에게 반영) */
 export const ADMIN_WAITINGROOM_PATH = '/admin/waitingroom'
 export const ADMIN_RESERVATIONS_PATH = '/admin/reservations'
-/** 상태 탭을 골라서 연다(장애 대응 → 외부 등록 실패 예약) */
+/** 상태 탭을 골라서 연다(다시 보내기 → 외부 등록 실패 예약) */
 export const adminReservationsPath = (status?: string) =>
   status
     ? `${ADMIN_RESERVATIONS_PATH}?status=${status}`
@@ -138,13 +138,6 @@ export const readBackTo = (state: unknown): BackTo | undefined => {
     : undefined
 }
 
-/** 장애 대응 — 외부 등록이 끝내 실패한 예약을 원인(오류 코드)별로 묶어 다시 보낸다 */
-export const ADMIN_RECOVERY_PATH = '/admin/recovery'
-/** 사전예약을 골라서 연다(운영 대시보드에서 고른 사전예약 그대로) */
-export const adminRecoveryPath = (productId?: string) =>
-  productId
-    ? `${ADMIN_RECOVERY_PATH}?product=${encodeURIComponent(productId)}`
-    : ADMIN_RECOVERY_PATH
 /** 외부 예약 대조 — 우리 예약과 외부 예약 시스템 원장을 맞춰 본다 */
 export const ADMIN_RECONCILIATION_PATH = '/admin/reconciliation'
 export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'

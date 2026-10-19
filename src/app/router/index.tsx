@@ -27,7 +27,6 @@ import {
   ADMIN_PROMOTIONS_PATH,
   ADMIN_ORDERS_PATH,
   ADMIN_RECONCILIATION_PATH,
-  ADMIN_RECOVERY_PATH,
   ADMIN_RESERVATIONS_PATH,
   ADMIN_WAITINGROOM_PATH,
   adminProductPath,
@@ -242,13 +241,6 @@ const browserRouter = createBrowserRouter([
                       import('@pages/admin/home/AdminHomePage').then((m) => ({
                         Component: m.AdminHomePage,
                       })),
-                  },
-                  {
-                    path: ADMIN_RECOVERY_PATH,
-                    lazy: () =>
-                      import('@pages/admin/recovery/AdminRecoveryPage').then(
-                        (m) => ({ Component: m.AdminRecoveryPage }),
-                      ),
                   },
                   {
                     path: ADMIN_PRODUCTS_PATH,

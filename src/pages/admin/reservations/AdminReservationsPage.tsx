@@ -32,10 +32,7 @@ import {
   refreshIntervalOptions,
   type RefreshInterval,
 } from '@shared/config/refreshInterval'
-import {
-  ADMIN_RECOVERY_PATH,
-  adminReservationPath,
-} from '@shared/config/routes'
+import { ADMIN_HOME_PATH, adminReservationPath } from '@shared/config/routes'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
@@ -76,11 +73,11 @@ const matchesFilter = (state: ReservationState, filter: StatusFilter) =>
 /**
  * 예약 접수 현황. 10초마다 자동 갱신하고, 외부 등록이 끝내 실패한 예약은 재처리를
  * 걸 수 있다. 탭 건수는 집계 API로 전체를 세고, 표는 최근 예약을 보여준다. 실패가 쌓이면
- * 원인별로 한 번에 다시 보내는 장애 대응 화면으로 안내한다.
+ * 원인별로 한 번에 다시 보내는 운영 대시보드로 안내한다.
  */
 export function AdminReservationsPage() {
   const navigate = useNavigate()
-  // 탭은 주소(?status=)에 둔다 — 장애 대응·운영 홈에서 실패 탭을 바로 열고, 상세에서
+  // 탭은 주소(?status=)에 둔다 — 운영 대시보드에서 실패 탭을 바로 열고, 상세에서
   // 돌아와도 고른 탭이 남는다. 모르는 값이면 전체.
   const [searchParams, setSearchParams] = useSearchParams()
   const statusFilter: StatusFilter =
@@ -360,8 +357,8 @@ export function AdminReservationsPage() {
         <InlineAlert status="error">
           {failures.toLocaleString('ko-KR')}건이 외부 등록에 실패해 결제 단계로
           못 넘어가고 있습니다.{' '}
-          <Link className={styles.link} to={ADMIN_RECOVERY_PATH}>
-            장애 대응에서 원인별로 다시 보내기
+          <Link className={styles.link} to={ADMIN_HOME_PATH}>
+            운영 대시보드에서 원인별로 다시 보내기
           </Link>
         </InlineAlert>
       )}

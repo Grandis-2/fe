@@ -14,7 +14,7 @@ const meta = {
     level: 'urgent',
     title: '외부 등록 실패 860건 — 결제 단계로 못 넘어가고 있어요',
     description: '원인 HTTP_503 820건 · TIMEOUT 40건',
-    action: { label: '원인별로 다시 보내기', to: '/admin/recovery' },
+    action: { label: '예약 보기', to: '/admin/reservations' },
   },
 } satisfies Meta<typeof OpsTaskCard>
 
@@ -26,8 +26,8 @@ export const Urgent: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getAllByText('긴급')[0]).toBeVisible()
     await expect(
-      canvas.getByRole('link', { name: '원인별로 다시 보내기' }),
-    ).toHaveAttribute('href', '/admin/recovery')
+      canvas.getByRole('link', { name: '예약 보기' }),
+    ).toHaveAttribute('href', '/admin/reservations')
   },
 }
 

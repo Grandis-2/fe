@@ -33,8 +33,7 @@ export type OpenPreorderStripProps = {
   selected: string | null
   onSelect: (productId: string | null) => void
   /**
-   * '전체' 단추를 둔다. 장애 대응처럼 일부 동작이 전체 단위로만 되는 화면에서 쓴다 —
-   * 운영 대시보드는 언제나 하나를 골라 보므로 두지 않는다.
+   * '전체' 단추를 둔다. 여러 사전예약을 합쳐 보는 화면(운영 대시보드)에서 쓴다.
    */
   allowAll?: boolean
   /** 마감까지 남은 시간을 잴 기준 시각 */

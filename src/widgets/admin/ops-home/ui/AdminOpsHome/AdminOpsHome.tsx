@@ -20,7 +20,6 @@ import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
 import {
   ADMIN_ORDERS_PATH,
-  adminRecoveryPath,
   ADMIN_RESERVATIONS_PATH,
   ADMIN_WAITINGROOM_PATH,
 } from '@shared/config/routes'
@@ -35,8 +34,10 @@ import {
 } from '@shared/ui'
 
 import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
+import { sentRunStore } from '../../model/sentRun'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
 import { PreorderQueueCard } from '../PreorderQueueCard'
+import { ResendPanel } from '../ResendPanel'
 import { StuckDrawTask } from '../StuckDrawTask'
 
 import * as styles from './AdminOpsHome.css'
@@ -50,6 +51,7 @@ const ERROR_GROUPS_INTERVAL_MS = 10_000
 const BREAKDOWN_MAX = 3
 // shortcut: 마감 뒤 하루 안의 회차만 멈췄는지 본다(회차마다 진행을 따로 받아서). 회차가 많아지면 서버 집계로 바꾼다.
 const STUCK_LOOKBACK_MS = 24 * 60 * 60 * 1000
+const RESEND_PANEL_ID = 'ops-resend'
 
 // 성공에 경고 삼각형이 붙으면 문구와 반대로 읽힌다.
 const verdictIcon: Record<FlowVerdict['status'], typeof Info> = {
@@ -76,9 +78,9 @@ export type AdminOpsHomeProps = {
 }
 
 /**
- * 운영 홈 — 오픈 중 운영자가 가장 먼저 보는 화면. 급한 일부터 위에 올리고(실패 → 멈춤 →
- * 기한·일상), 아래에 처리 흐름(부하 검증과 같은 그래프)과 상품별 대기열을 둔다. 숫자마다
- * 처리할 화면으로 가는 링크를 붙인다.
+ * 운영 대시보드 — 오픈 중 운영자가 가장 먼저 보는 화면. 급한 일부터 위에 올리고(실패 → 멈춤 →
+ * 기한·일상), 아래에 접수·처리 속도를 둔다. 숫자마다 처리할 화면으로 가는 링크를 붙이고,
+ * 외부 등록 실패는 이 화면에서 펼쳐 다시 보낸다 — 들어오는 트래픽을 보면서 보낼 때를 고르게.
  */
 export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const stats = useReservationStats(undefined, POLL_INTERVAL_MS)
@@ -100,6 +102,10 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   // 대시보드가 보는 범위 — 처음엔 전체(null). 고른 사전예약이 마감돼 띠에서 빠지면 전체로
   // 돌아간다.
   const [picked, setPicked] = useState<string | null>(null)
+  // 다시 보내기 패널 — 보낸 기록이 있으면(다른 화면에 다녀와도) 펼친 채로 돌아온다.
+  const [resendOpen, setResendOpen] = useState(
+    () => sentRunStore.get().length > 0,
+  )
   const selected = openProducts.some((product) => product.productId === picked)
     ? picked
     : null
@@ -167,7 +173,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const topErrors = (errors.data ?? [])
     .toSorted((a, b) => b.count - a.count)
     .slice(0, 2)
-    // 판매자가 읽을 말로 — 코드는 장애 대응 화면에서 흐리게 함께 보인다.
+    // 판매자가 읽을 말로 — 코드는 다시 보내기 패널에서 흐리게 함께 보인다.
     .map(
       (group) =>
         `${group.errorCode === null ? '확인되지 않은 오류' : syncErrorCause(group.errorCode).label} ${formatNumber(group.count)}건`,
@@ -198,6 +204,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       ? ageOf(t.oldestPendingSyncAt, now)
       : null
 
+  // 범위별 지금 실패 수 — 다시 보내기 패널이 보낼 때 남겨 두고 비교한다.
+  const failuresByScope: Record<string, number> = {}
+  if (s) failuresByScope.all = s.syncJobs.REGISTER.DEAD_LETTER
+  for (const product of openProducts) {
+    const count = statsOf(product.productId)?.syncJobs.REGISTER.DEAD_LETTER
+    if (count !== undefined) failuresByScope[product.productId] = count
+  }
+
   const candidates: (Task | false)[] = t
     ? [
         t.syncJobs.REGISTER.DEAD_LETTER > 0 && {
@@ -213,11 +227,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             .filter(Boolean)
             .join(' / '),
           action: {
-            label: scoped
-              ? '원인별로 다시 보내기 (전체)'
-              : '원인별로 다시 보내기',
-            // 고른 사전예약 그대로 장애 대응을 연다.
-            to: adminRecoveryPath(selected ?? undefined),
+            label: resendOpen
+              ? '접기'
+              : scoped
+                ? '원인별로 다시 보내기 (전체)'
+                : '원인별로 다시 보내기',
+            onClick: () => setResendOpen((open) => !open),
+            expanded: resendOpen,
+            controls: RESEND_PANEL_ID,
           },
         },
         t.deadLetters.waiting > 0 && {
@@ -282,6 +299,18 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   }
 
   const statsError = pollingError(stats)
+
+  const resendPanel = resendOpen && (
+    <ResendPanel
+      key="resend"
+      id={RESEND_PANEL_ID}
+      selected={selected}
+      scopeName={selected ? nameOf(selected) : undefined}
+      failuresByScope={failuresByScope}
+      onSelectAll={() => setPicked(null)}
+      now={now}
+    />
+  )
 
   return (
     <div className={styles.root}>
@@ -374,11 +403,17 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           </SkeletonGroup>
         ) : (
           <>
-            {tasks
-              .filter((task) => task.level !== 'todo')
-              .map(({ key, ...task }) => (
-                <OpsTaskCard key={key} {...task} />
-              ))}
+            {/* 다시 보내기 패널은 실패 카드 바로 아래 — 다 보내 카드가 사라져도 보낸 기록을 볼 수
+                있게 맨 위에 남긴다. 한 목록에 같은 key로 둬야 자리가 바뀌어도 다시 그려지지 않는다. */}
+            {[
+              !tasks.some((task) => task.key === 'register') && resendPanel,
+              ...tasks
+                .filter((task) => task.level !== 'todo')
+                .flatMap(({ key, ...task }) => [
+                  <OpsTaskCard key={key} {...task} />,
+                  key === 'register' && resendPanel,
+                ]),
+            ]}
             {/* 멈춘 추첨은 '확인' 단계라 실패 뒤, 일상 업무 앞에 둔다. */}
             {stuckCandidates.map((draw) => (
               <StuckDrawTask key={draw.drawId} draw={draw} now={now} />

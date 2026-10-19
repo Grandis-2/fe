@@ -2,32 +2,7 @@ import { style } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@shared/config/theme'
 
-export const root = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[24],
-})
-
-export const section = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[12],
-})
-
-export const sectionHeader = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'baseline',
-  justifyContent: 'space-between',
-  gap: spacing[8],
-})
-
-export const sectionTitle = style([
-  typography.title.mdSemibold,
-  { margin: 0, color: color.text.primary },
-])
-
-/** 섹션 내용을 감싸는 흰 카드 */
+/** 실패 카드 아래 펼쳐지는 카드 */
 export const card = style({
   minWidth: 0,
   display: 'flex',
@@ -132,28 +107,6 @@ export const causeCount = style([
 export const causeHintWarn = style([
   typography.body.sub,
   { paddingLeft: spacing[32], color: color.status.danger },
-])
-
-export const result = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'baseline',
-  gap: spacing[12],
-})
-
-export const resultValue = style([
-  typography.title.mdSemibold,
-  { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
-])
-
-export const resultDown = style([
-  typography.body.defaultMedium,
-  { color: color.status.success },
-])
-
-export const resultUp = style([
-  typography.body.defaultMedium,
-  { color: color.status.danger },
 ])
 
 export const caption = style([
