@@ -193,7 +193,7 @@ export function ProductCapTable({
           )}
           <Button
             size="small"
-            variant="outline"
+            variant="solid"
             color="primary"
             disabled={admission.isPending || !rates}
             onClick={() => askCap(product)}
