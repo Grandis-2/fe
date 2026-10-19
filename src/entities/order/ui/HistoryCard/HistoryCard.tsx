@@ -68,7 +68,7 @@ export function HistoryCard<T>({
         <span className={styles.orderDate}>{orderDate}</span>
         {preorder && (
           <Tag
-            color="secondary"
+            color="preorder"
             variant="subtle"
             rounded={false}
             className={styles.tag}

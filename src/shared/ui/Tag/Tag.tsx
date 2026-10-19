@@ -11,7 +11,14 @@ import {
 } from './Tag.css'
 
 type TagColor =
-  'primary' | 'secondary' | 'blue' | 'green' | 'yellow' | 'red' | 'gray'
+  | 'primary'
+  | 'secondary'
+  | 'blue'
+  | 'green'
+  | 'yellow'
+  | 'red'
+  | 'gray'
+  | 'preorder'
 type TagVariant = 'solid' | 'subtle' | 'outline'
 type TagSize = 'small' | 'medium'
 

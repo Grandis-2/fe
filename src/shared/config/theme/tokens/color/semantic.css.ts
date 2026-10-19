@@ -57,10 +57,11 @@ export const color = createGlobalTheme(':root', {
     series1: '#3F4891',
     series2: '#EB6834',
   },
-  // 마이페이지 내역 카드의 강조 테두리 — gold: 사전예약 구매 확정, sky: 럭키드로우 당첨.
+  // preorder: 사전예약 색 — 사전예약 배지·태그, 마이페이지 사전예약 구매 확정 카드 테두리.
+  // sky: 마이페이지 럭키드로우 당첨 카드 테두리.
   // 사용자 페이지는 늘 어두워 다크 바탕 기준으로 고른 값이라 두 테마 값이 같다.
   accent: {
-    gold: '#E8C987',
+    preorder: '#E8C987',
     sky: '#7DD3FC',
   },
   // 어두운 시트·오버레이 위 닫기 버튼 — 테마와 상관없이 늘 어두운 바탕용이라 두 테마 값이 같다.
@@ -135,7 +136,7 @@ createGlobalTheme(':root[data-theme="dark"], [data-theme="dark"]', color, {
     series2: '#D95926',
   },
   accent: {
-    gold: '#E8C987',
+    preorder: '#E8C987',
     sky: '#7DD3FC',
   },
   close: {

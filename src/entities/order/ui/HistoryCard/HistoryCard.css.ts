@@ -43,10 +43,10 @@ export const root = style({
 
 // 사용자가 할 일이 남은 카드는 테두리부터 강조색이라 목록에서 먼저 눈에 걸린다.
 // warning: 결제 대기, payment: 사전예약 구매 확정, won: 럭키드로우 당첨.
-// 경고색은 진해서 옅게 섞고, gold·primary.subtle은 지정 색 그대로 테두리에 쓴다.
+// 경고색은 진해서 옅게 섞고, 사전예약 색·primary.subtle은 지정 색 그대로 테두리에 쓴다.
 export const highlight = styleVariants({
   warning: { borderColor: accentTint(28) },
-  payment: { vars: { [accent]: color.accent.gold }, borderColor: accent },
+  payment: { vars: { [accent]: color.accent.preorder }, borderColor: accent },
   // 선택된 Chip 테두리와 같은 색 — 카드 안 구분선도 같은 색이다.
   won: {
     vars: {

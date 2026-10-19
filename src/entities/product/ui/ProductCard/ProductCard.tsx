@@ -60,7 +60,7 @@ export function ProductCard({
     >
       <div className={styles.media}>
         {isPreorder && (
-          <Tag color="primary" size="small" className={styles.badge}>
+          <Tag color="preorder" size="small" className={styles.badge}>
             사전예약
           </Tag>
         )}
