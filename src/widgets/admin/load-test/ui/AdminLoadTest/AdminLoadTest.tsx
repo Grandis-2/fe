@@ -31,6 +31,12 @@ import {
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
 import {
+  appendSample,
+  ratePerSecond,
+  slopePerSecond,
+  type Sample,
+} from '@shared/lib/samples'
+import {
   Button,
   Dropdown,
   FormSection,
@@ -40,17 +46,11 @@ import {
   SkeletonGroup,
   StatCard,
   Table,
+  ThroughputChart,
 } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
 import { diagnose, type LoadTestVerdict } from '../../lib/diagnose'
-import {
-  appendSample,
-  ratePerSecond,
-  slopePerSecond,
-  type Sample,
-} from '../../lib/samples'
-import { ThroughputChart } from '../ThroughputChart'
 
 import * as styles from './AdminLoadTest.css'
 
