@@ -97,6 +97,21 @@ type Seed = {
   paused?: boolean
   // 따로 고르는 보증 금액. 없으면 보증을 팔지 않는다.
   warranty?: number
+  // 사전예약을 오늘부터 며칠 뒤 오전 10시(KST)에 연다 — 오픈 전 화면·오픈 알림 확인용.
+  opensInDays?: number
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+// 오픈 전 회차는 지금 기준으로 날짜를 잡아야 시간이 지나도 오픈 전으로 남는다.
+const beforeOpenCampaign = (days: number) => {
+  const opensAt = new Date(Date.now() + days * DAY_MS)
+  opensAt.setUTCHours(1, 0, 0, 0)
+  return {
+    opensAt: opensAt.toISOString(),
+    closesAt: new Date(opensAt.getTime() + 7 * DAY_MS).toISOString(),
+    status: 'BEFORE_OPEN' as const,
+  }
 }
 
 function buildProduct(
@@ -110,6 +125,7 @@ function buildProduct(
     stock = 10,
     paused,
     warranty,
+    opensInDays,
   }: Seed,
 ): ProductDetailView {
   const isPreorder = saleMode === 'PREORDER'
@@ -155,13 +171,15 @@ function buildProduct(
     warranty: { offered: warranty !== undefined, surcharge: warranty ?? 0 },
     sellable,
     soldOut: !isPreorder && sellable && stock <= 0,
-    campaign: isPreorder
-      ? {
-          opensAt: '2026-10-01T01:00:00Z',
-          closesAt: '2026-12-31T14:59:59Z',
-          status: 'OPEN',
-        }
-      : null,
+    campaign: !isPreorder
+      ? null
+      : opensInDays !== undefined
+        ? beforeOpenCampaign(opensInDays)
+        : {
+            opensAt: '2026-10-01T01:00:00Z',
+            closesAt: '2026-12-31T14:59:59Z',
+            status: 'OPEN',
+          },
     optionAxes,
     variants,
     images: { gallery, detail: [] },
@@ -227,6 +245,23 @@ const seeds: Seed[] = [
     brand: 'LG',
     basePrice: 59000,
     paused: true,
+  },
+  // 오픈 전 사전예약 — 오픈 알림을 신청해 볼 수 있다. 맨 뒤에 둬야 앞 상품들의 id가 그대로다.
+  {
+    title: '갤럭시 Z 폴드8',
+    categoryId: childId('모바일', '폴더블'),
+    brand: 'SAMSUNG',
+    basePrice: 2390000,
+    saleMode: 'PREORDER',
+    opensInDays: 3,
+  },
+  {
+    title: '아이폰 18 Pro',
+    categoryId: childId('모바일', '스마트폰'),
+    brand: 'APPLE',
+    basePrice: 1790000,
+    saleMode: 'PREORDER',
+    opensInDays: 14,
   },
 ]
 

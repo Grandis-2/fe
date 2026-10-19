@@ -20,6 +20,11 @@ export {
   useReservationHistory,
 } from './api/useReservations'
 export { getReservation } from './api/reservation'
+export {
+  useMyOpenAlerts,
+  useOpenAlert,
+  useToggleOpenAlert,
+} from './api/useOpenAlerts'
 export { NEEDS_PURCHASE, reservationStatusTag } from './model/reservation'
 export type {
   Reservation,

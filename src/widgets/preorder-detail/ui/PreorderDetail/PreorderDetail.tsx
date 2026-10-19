@@ -3,10 +3,13 @@ import { useMemo, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 
+import { useSession } from '@entities/auth'
 import {
   formatPreorderDate,
   getPreorderSchedule,
+  useOpenAlert,
   usePreorder,
+  useToggleOpenAlert,
   type Preorder,
   type PreorderModel,
   type PreorderStatus,
@@ -16,6 +19,7 @@ import { joinPreorderQueue } from '@features/preorder-queue'
 import { getErrorMessage } from '@shared/api/client'
 import { PREORDER_PATH, productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
+import { showToast } from '@shared/model/toastStore'
 import { Button, InlineAlert, PageSkeleton } from '@shared/ui'
 
 import {
@@ -77,9 +81,16 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
     preorder.closesAt,
   )
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  // ponytail: 오픈 알림 API가 없어 신청 상태를 화면에만 둔다 — 새로고침하면 사라진다. API 연동 시 교체.
-  const [subscribedIds, setSubscribedIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
+  const { isLoggedIn } = useSession()
+  // 백엔드는 상품 하나가 모델 하나라(toPreorder) 상품 id 하나만 묻는다.
+  const { data: isSubscribed = false } = useOpenAlert(
+    preorder.id,
+    isLoggedIn && status === 'soon',
+  )
+  const toggleOpenAlert = useToggleOpenAlert()
+  const subscribedIds = useMemo(
+    () => new Set(isSubscribed ? [preorder.id] : []),
+    [isSubscribed, preorder.id],
   )
 
   // 매 렌더 새 Date면 useCountdown의 interval이 매초 다시 걸린다 — 날짜가 바뀔 때만 만든다.
@@ -96,12 +107,13 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
       : requireLogin(() => setIsSheetOpen(true))
 
   const toggleNotify = (model: PreorderModel) =>
-    setSubscribedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(model.id)) next.delete(model.id)
-      else next.add(model.id)
-      return next
-    })
+    toggleOpenAlert.mutate(
+      { productId: model.id, subscribed: !subscribedIds.has(model.id) },
+      {
+        onError: (caught) =>
+          showToast(getErrorMessage(caught, '오픈 알림을 바꾸지 못했어요.')),
+      },
+    )
 
   const ctaLabel =
     status === 'soon' && subscribedIds.size > 0

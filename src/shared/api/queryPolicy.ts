@@ -169,6 +169,7 @@ export const defaultQueryOptions = {
  * - 낙관적: `onMutate`에서 캐시를 먼저 바꾸고 실패하면 되돌린다. 장바구니 수량이나
  *   토글처럼 틀려도 원래대로 돌리면 끝나는 값에만 쓴다.
  *
- * 낙관적은 장바구니 수량(useUpdateCartItemQuantity) 하나뿐이고 나머지는 서버 확인이다.
+ * 낙관적은 장바구니 수량(useUpdateCartItemQuantity)과 오픈 알림 토글(useToggleOpenAlert)뿐이고
+ * 나머지는 서버 확인이다.
  * 반복되면 그때 여기에 헬퍼를 만든다.
  */
