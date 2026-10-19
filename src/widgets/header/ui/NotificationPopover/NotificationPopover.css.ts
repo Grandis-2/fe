@@ -1,6 +1,12 @@
 import { style } from '@vanilla-extract/css'
 
-import { breakpoint, color, spacing, typography } from '@shared/config/theme'
+import {
+  breakpoint,
+  color,
+  shadow,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 
 import { DARK_HEADER_PADDING_X } from '../../model/layout'
 
@@ -23,7 +29,7 @@ export const panel = style({
   border: `1px solid ${color.border.default}`,
   background: color.background.base,
   color: color.text.primary,
-  boxShadow: '0 24px 48px rgba(0, 0, 0, 0.5)',
+  boxShadow: shadow.mdDark,
   overflow: 'hidden',
   '@media': {
     [breakpoint.mobile]: {

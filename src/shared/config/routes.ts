@@ -148,8 +148,6 @@ export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'
 export const ADMIN_DEAD_LETTERS_PATH = '/admin/dead-letters'
 export const adminDeadLetterPath = (deadLetterId: string) =>
   `${ADMIN_DEAD_LETTERS_PATH}/${deadLetterId}`
-// 아직 기능 범위가 안 정해져 placeholder로만 열리는 메뉴.
-export const ADMIN_NOTIFICATIONS_PATH = '/admin/notifications'
 // 관리자 로그인. 사이드바 없는 단독 화면이라 AdminLayout 밖에 둔다.
 export const ADMIN_LOGIN_PATH = '/admin/login'
 export const ADMIN_MOCK_SETTINGS_PATH = '/admin/mock-settings'

@@ -491,11 +491,8 @@ export function AdminReservationsPage() {
         <InlineAlert status="error">
           <span className={styles.alertRow}>
             <span>
-              <b>
-                {failures.toLocaleString('ko-KR')}건이 외부 등록에 실패해 결제
-                단계로 못 넘어가고 있습니다.
-              </b>{' '}
-              재처리를 시도해 주세요.
+              {failures.toLocaleString('ko-KR')}건이 외부 등록에 실패해 결제
+              단계로 못 넘어가고 있습니다. 재처리를 시도해 주세요.
             </span>
           </span>
         </InlineAlert>

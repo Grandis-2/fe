@@ -4,6 +4,7 @@ import {
   breakpoint,
   color,
   onDark,
+  shadow,
   spacing,
   statusOnDark,
   TAB_BAR_HEIGHT,
@@ -45,7 +46,7 @@ export const panel = style({
   borderRadius: '16px',
   background: tint(color.backgroundDark.base, 88),
   backdropFilter: 'blur(18px) saturate(140%)',
-  boxShadow: '0 12px 32px rgba(0, 0, 0, 0.55)',
+  boxShadow: shadow.mdDark,
   // 기록 목록의 스크롤바도 어두운 바탕에 맞춘다.
   colorScheme: 'dark',
 })
@@ -313,7 +314,7 @@ export const pill = style([
     borderRadius: '999px',
     background: tint(color.backgroundDark.base, 88),
     backdropFilter: 'blur(18px) saturate(140%)',
-    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.45)',
+    boxShadow: shadow.mdDark,
     color: onDark(88),
     cursor: 'pointer',
     selectors: {

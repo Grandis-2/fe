@@ -20,7 +20,6 @@ import {
   ADMIN_MOCK_SETTINGS_PATH,
   ADMIN_DRAW_NEW_PATH,
   ADMIN_DRAWS_PATH,
-  ADMIN_NOTIFICATIONS_PATH,
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTION_NEW_PATH,
@@ -366,17 +365,6 @@ const browserRouter = createBrowserRouter([
                     lazy: () =>
                       import('@pages/admin/load-test/AdminLoadTestPage').then(
                         (m) => ({ Component: m.AdminLoadTestPage }),
-                      ),
-                  },
-                  {
-                    path: ADMIN_NOTIFICATIONS_PATH,
-                    lazy: () =>
-                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                        (m) => ({
-                          element: (
-                            <m.AdminPlaceholderPage title="관리자 알림 내역 확인" />
-                          ),
-                        }),
                       ),
                   },
                   {

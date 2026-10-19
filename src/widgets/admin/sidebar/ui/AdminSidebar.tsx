@@ -7,7 +7,6 @@ import {
   ADMIN_HOME_PATH,
   ADMIN_LOAD_TEST_PATH,
   ADMIN_MOCK_SETTINGS_PATH,
-  ADMIN_NOTIFICATIONS_PATH,
   ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTIONS_PATH,
   ADMIN_ORDERS_PATH,
@@ -52,7 +51,6 @@ const navGroups = [
     items: [
       { path: ADMIN_LOAD_TEST_PATH, label: '부하 검증' },
       { path: ADMIN_DEAD_LETTERS_PATH, label: '이벤트 DLQ' },
-      { path: ADMIN_NOTIFICATIONS_PATH, label: '관리자 알림' },
       { path: ADMIN_MOCK_SETTINGS_PATH, label: 'Mock 설정' },
     ],
   },
