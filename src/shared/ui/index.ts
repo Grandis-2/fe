@@ -84,4 +84,8 @@ export type { DateRangeFieldProps, DateRange } from './DateRangeField'
 export { ScrollArrows } from './ScrollArrows'
 export type { ScrollArrowsProps } from './ScrollArrows'
 export { ThroughputChart } from './ThroughputChart'
-export type { ThroughputChartProps, ThroughputSeries } from './ThroughputChart'
+export type {
+  ThroughputChartProps,
+  ThroughputMarker,
+  ThroughputSeries,
+} from './ThroughputChart'

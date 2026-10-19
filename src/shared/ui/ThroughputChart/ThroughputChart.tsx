@@ -13,12 +13,23 @@ export type ThroughputSeries = {
 export type ThroughputChartProps = {
   /** 표본 시각(ms), 시간 순 */
   times: readonly number[]
-  /** 두 줄 — 첫째가 들어오는 양, 둘째가 처리한 양. 같은 단위라 축 하나로 그린다 */
-  series: readonly [ThroughputSeries, ThroughputSeries]
+  /**
+   * 한 줄 또는 두 줄(예: 들어오는 양 · 처리한 양). 같은 단위라 축 하나로 그린다 — 크기가
+   * 크게 다른 값을 같이 넣으면 작은 쪽이 바닥에 붙으니 한 줄로 그린다.
+   */
+  series:
+    readonly [ThroughputSeries] | readonly [ThroughputSeries, ThroughputSeries]
   unit: string
   /** 스크린리더용 제목 */
   label: string
+  /**
+   * 사건이 일어난 시각에 세로선을 긋는다(예: 다시 보낸 시각). 그린 구간 밖이면 아직
+   * 오지 않은 시각이라 그리지 않는다. dashed는 실제 사건이 아닌 예상 시각에 쓴다.
+   */
+  markers?: readonly ThroughputMarker[]
 }
+
+export type ThroughputMarker = { at: number; label: string; dashed?: boolean }
 
 const WIDTH = 600
 const HEIGHT = 200
@@ -44,6 +55,20 @@ const formatValue = (value: number, unit: string) =>
   `${value.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}${unit}`
 
 /**
+ * 시각이 가로축의 어디(0~1)인지. 가로축은 표본 순서라 시각 사이를 표본 간격으로
+ * 나눠 끼운다. 그린 구간 밖이면 null.
+ */
+function positionOf(times: readonly number[], at: number) {
+  const last = times.length - 1
+  if (at < times[0] || at > times[last]) return null
+  const index = times.findIndex((time) => time >= at)
+  if (index <= 0) return 0
+  const prev = times[index - 1]
+  const fraction = (at - prev) / (times[index] - prev)
+  return (index - 1 + fraction) / last
+}
+
+/**
  * 들어오는 양과 처리한 양을 한 축에 겹쳐 그린다. 두 선 사이가 벌어지면 그만큼 적체가
  * 쌓이는 것이다. 차트 라이브러리를 들이지 않으려고 SVG로 그리고, 글자는 늘어나지 않게
  * HTML로 겹친다.
@@ -53,6 +78,7 @@ export function ThroughputChart({
   series,
   unit,
   label,
+  markers = [],
 }: ThroughputChartProps) {
   const [hover, setHover] = useState<number | null>(null)
 
@@ -83,6 +109,10 @@ export function ThroughputChart({
   const last = times.length - 1
   const shown = hover ?? last
   const hoverLeft = `${(shown / last) * 100}%`
+  const placedMarkers = markers.flatMap((marker) => {
+    const position = positionOf(times, marker.at)
+    return position === null ? [] : [{ ...marker, position }]
+  })
 
   return (
     <figure className={styles.root}>
@@ -114,6 +144,11 @@ export function ThroughputChart({
             .map(
               (item) => `${item.label} ${formatValue(item.values[last], unit)}`,
             )
+            .concat(
+              placedMarkers.map(
+                (marker) => `${marker.label} ${formatTime(marker.at)}`,
+              ),
+            )
             .join(', ')}`}
         >
           <svg
@@ -143,6 +178,26 @@ export function ThroughputChart({
               />
             ))}
           </svg>
+
+          {placedMarkers.map((marker) => (
+            <span
+              key={`${marker.label}-${marker.at}`}
+              className={marker.dashed ? styles.markerDashed : styles.marker}
+              style={{ left: `${marker.position * 100}%` }}
+              aria-hidden="true"
+            >
+              <span
+                className={
+                  // 오른쪽 끝 가까이면 글자를 선 왼쪽에 붙여 그래프 밖으로 안 나가게 한다.
+                  marker.position > 0.7
+                    ? styles.markerLabelLeft
+                    : styles.markerLabelRight
+                }
+              >
+                {marker.label}
+              </span>
+            </span>
+          ))}
 
           {hover !== null && (
             <>

@@ -71,3 +71,25 @@ export const NotEnough: Story = {
     ).toBeVisible()
   },
 }
+
+/** 사건 시각에 세로선을 긋는다. 아직 오지 않은 시각(구간 밖)은 그리지 않는다 */
+export const Markers: Story = {
+  args: {
+    markers: [
+      { at: START + 22_500, label: '보냄' },
+      { at: START + 50_000, label: '예상 완료', dashed: true },
+      { at: START + 120_000, label: '아직 안 옴', dashed: true },
+    ],
+  },
+  play: async ({ canvas }) => {
+    const plot = canvas.getByRole('img', { name: /보냄/ })
+    await expect(plot).toHaveAccessibleName(/예상 완료/)
+    await expect(plot).not.toHaveAccessibleName(/아직 안 옴/)
+    await expect(canvas.getByText('보냄')).toBeVisible()
+    // 표본이 5초 간격이라 22.5초는 20초(4번)와 25초(5번) 표본 한가운데 → 11칸 중 4.5칸.
+    const left = parseFloat(
+      canvas.getByText('보냄').parentElement?.style.left ?? '',
+    )
+    await expect(left).toBeCloseTo((4.5 / 11) * 100, 2)
+  },
+}
