@@ -4,12 +4,14 @@ import { LogOut, Orbit } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { logout } from '@entities/auth'
+import { usePendingPurchaseCount } from '@entities/preorder'
 import { getErrorMessage } from '@shared/api/client'
 import {
   HOME_PATH,
   MYPAGE_TAB_LABELS,
   type MypageTab,
 } from '@shared/config/routes'
+import { srOnly } from '@shared/config/theme'
 import { showToast } from '@shared/model/toastStore'
 
 import * as styles from './MypageMenu.css'
@@ -44,6 +46,8 @@ export function MypageMenu({
   className,
 }: MypageMenuProps) {
   const navigate = useNavigate()
+  // 구매 확정할 예약이 있으면 '예약 내역' 옆에 숫자를 띄워 그쪽으로 이끈다(헤더 아이콘 숫자와 같은 셈).
+  const pendingPurchaseCount = usePendingPurchaseCount()
 
   // 서버가 세션을 지운 뒤에만 홈으로 나간다 — 실패하면 마이페이지에 남아 다시 누를 수 있다.
   // 세션이 먼저 지워져도 RequireLogin이 로그아웃으로 보고 로그인 모달 없이 홈으로 보낸다.
@@ -92,6 +96,16 @@ export function MypageMenu({
             onClick={() => onLinkClick?.(link)}
           >
             {MYPAGE_TAB_LABELS[link]}
+            {link === 'preorder-check' && pendingPurchaseCount > 0 && (
+              <>
+                <span className={styles.badge} aria-hidden="true">
+                  {pendingPurchaseCount > 99 ? '99+' : pendingPurchaseCount}
+                </span>
+                <span className={srOnly}>
+                  , 구매 확정 대기 {pendingPurchaseCount}건
+                </span>
+              </>
+            )}
           </button>
         ))}
       </nav>

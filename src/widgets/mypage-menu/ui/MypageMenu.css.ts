@@ -135,6 +135,25 @@ export const link = style([
   },
 ])
 
+// 구매 확정 대기 숫자 — 해야 할 일이라 헤더 마이페이지 아이콘 배지와 같은 경고색.
+export const badge = style([
+  typography.body.caption,
+  {
+    minWidth: '18px',
+    height: '18px',
+    marginLeft: spacing[6],
+    padding: `0 ${spacing[4]}`,
+    boxSizing: 'border-box',
+    borderRadius: '9px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: color.status.warning,
+    color: color.backgroundDark.base,
+    fontWeight: fontWeight.bold,
+  },
+])
+
 // 프로필 줄 오른쪽 끝의 아이콘 버튼.
 export const logout = style({
   display: 'flex',

@@ -10,7 +10,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { logout, useSession } from '@entities/auth'
 import { useCartCount } from '@entities/cart'
 import { useUnreadNotificationCount } from '@entities/notification'
-import { useMyReservations } from '@entities/preorder'
+import { usePendingPurchaseCount } from '@entities/preorder'
 import { KAKAO_CALLBACK_PATH, openLoginModal } from '@features/login'
 import { getErrorMessage } from '@shared/api/client'
 import {
@@ -80,13 +80,7 @@ export function Header({
   const showCounts = isMember && !isAdminPage
   const { data: cartCount = 0 } = useCartCount(showCounts)
   const { data: notificationCount = 0 } = useUnreadNotificationCount(showCounts)
-  // 구매 확정(결제)이 필요한 사전예약 수 — 결제 가능해진 예약이다.
-  const { data: reservations } = useMyReservations({ enabled: showCounts })
-  const pendingPurchaseCount = showCounts
-    ? (reservations?.items.filter(
-        ({ displayStatus }) => displayStatus === 'PAYABLE',
-      ).length ?? 0)
-    : 0
+  const pendingPurchaseCount = usePendingPurchaseCount(showCounts)
 
   // 아이콘 오른쪽 위 숫자. 0이면 안 그린다(개수는 aria-label에 따로 담는다).
   const countBadge = (count: number, tone?: 'warning') =>
