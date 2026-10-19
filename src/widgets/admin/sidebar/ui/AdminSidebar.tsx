@@ -23,7 +23,7 @@ import * as styles from './AdminSidebar.css'
 
 const BADGE_INTERVAL_MS = 30_000
 
-// 오픈 중에 보는 화면(오픈 운영)과 등록·일상 업무(상품·판매)를 나눈다 — 관리자의 목적이
+// 오픈 중에 보는 화면(사전예약)과 등록·일상 업무(상품·판매)를 나눈다 — 관리자의 목적이
 // "오픈 순간을 넘기는 관제"라 그 묶음을 위에 둔다.
 const navGroups = [
   {
@@ -31,10 +31,10 @@ const navGroups = [
     items: [{ path: ADMIN_HOME_PATH, label: '운영 대시보드' }],
   },
   {
-    label: '오픈 운영',
+    label: '사전예약',
     items: [
-      { path: ADMIN_WAITINGROOM_PATH, label: '대기열 관리' },
       { path: ADMIN_RESERVATIONS_PATH, label: '예약 현황' },
+      { path: ADMIN_WAITINGROOM_PATH, label: '대기열 관리' },
       { path: ADMIN_RECONCILIATION_PATH, label: '외부 예약 대조' },
     ],
   },
