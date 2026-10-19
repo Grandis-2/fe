@@ -176,6 +176,9 @@ export const adminReservationHandlers: RequestHandler[] = [
     const status = query.get('status')
     const productId = query.get('productId')
     const registerJobStatus = query.get('registerJobStatus')
+    const batchNumber = query.get('batchNumber')
+    const externalReference = query.get('externalReference')?.trim()
+    const from = query.get('from')
     const size = Number(query.get('size') ?? 20)
     if (!Number.isInteger(size) || size < 1 || size > 100) {
       return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
@@ -183,12 +186,20 @@ export const adminReservationHandlers: RequestHandler[] = [
     const page = Number(query.get('page') ?? 0)
 
     const matched = reservationStore
+      .filter(
+        (detail) =>
+          !externalReference || detail.externalReference === externalReference,
+      )
       .map(toSummary)
       .filter(
         (item) =>
           (!status || item.status === status) &&
           (!productId || item.productId === productId) &&
-          (!registerJobStatus || item.registerJobStatus === registerJobStatus),
+          (!registerJobStatus ||
+            item.registerJobStatus === registerJobStatus) &&
+          (!batchNumber ||
+            item.shipmentBatch.batchNumber === Number(batchNumber)) &&
+          (!from || Date.parse(item.createdAt) >= Date.parse(from)),
       )
       // 최신 접수가 위로 온다.
       .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -400,8 +411,11 @@ export const adminReservationHandlers: RequestHandler[] = [
     if (ids.length < 1 || ids.length > 100) {
       return invalid([{ field: 'ids', message: '1~100개여야 합니다.' }])
     }
+    // 서버처럼 첫 글자만 남기고 가린다(김철수 → 김**).
     return ok({
-      items: mockMembers.filter((member) => ids.includes(member.memberId)),
+      items: mockMembers
+        .filter((member) => ids.includes(member.memberId))
+        .map((member) => ({ ...member, name: `${[...member.name][0]}**` })),
     })
   }),
 ]

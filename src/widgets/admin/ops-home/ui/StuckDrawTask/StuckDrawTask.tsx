@@ -26,8 +26,8 @@ export function StuckDrawTask({ draw, now }: StuckDrawTaskProps) {
   return (
     <OpsTaskCard
       level="check"
-      title={`추첨 결과가 나오지 않은 회차 — ${draw.title}`}
-      description={`마감 뒤 1시간이 넘었어요 · 결제 완료 응모 ${progress.paidEntries.toLocaleString('ko-KR')}건 · 회차 id를 개발팀에 알려 주세요`}
+      title={`추첨 결과 안 나옴 · ${draw.title}`}
+      description={`마감 뒤 1시간 넘음 · 결제 완료 응모 ${progress.paidEntries.toLocaleString('ko-KR')}건`}
       action={{ label: '회차 확인', to: adminDrawPath(draw.drawId) }}
     />
   )

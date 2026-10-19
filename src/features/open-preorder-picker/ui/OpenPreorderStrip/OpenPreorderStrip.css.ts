@@ -68,6 +68,12 @@ export const meta = style([
   { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
 ])
 
+// 항목 이름(대기·예상·재처리 필요·마감까지) — 값보다 살짝 두껍게 해 훑어볼 때 기준이 된다.
+export const metaLabel = style([
+  typography.body.subMedium,
+  { color: color.text.primary },
+])
+
 export const empty = style([
   typography.body.defaultRegular,
   { color: color.text.secondary },

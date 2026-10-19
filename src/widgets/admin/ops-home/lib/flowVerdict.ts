@@ -25,25 +25,24 @@ export function flowVerdict({
   if (braking) {
     return {
       status: 'warning',
-      message:
-        '예약 서버의 오류나 지연 때문에 대기열이 모든 사전예약의 입장을 자동으로 줄이고 있어요.',
+      message: '서버가 버거워 모든 사전예약의 입장을 자동으로 줄이는 중이에요',
     }
   }
   const subject = scope ? `${scope} — ` : ''
   if (backlogPerMinute === null) {
     return {
       status: 'info',
-      message: `${subject}처리 흐름을 재는 중이에요. 이 화면을 열어 둔 동안 값을 모아요.`,
+      message: `${subject}처리 흐름을 재는 중이에요`,
     }
   }
   if (backlogPerMinute >= 1) {
     return {
       status: 'warning',
-      message: `${subject}처리가 밀리고 있어요. 들어오는 예약이 처리보다 분당 약 ${Math.round(backlogPerMinute)}건씩 많아요.`,
+      message: `${subject}처리가 밀려요 · 분당 ${Math.round(backlogPerMinute)}건씩 쌓이는 중`,
     }
   }
   return {
     status: 'success',
-    message: `${subject}처리 흐름은 정상이에요. 들어오는 만큼 외부 등록을 처리하고 있어요.`,
+    message: `${subject}처리 흐름 정상`,
   }
 }

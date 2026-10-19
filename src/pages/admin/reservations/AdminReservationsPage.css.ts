@@ -59,23 +59,22 @@ export const selectionCount = style([
   { color: color.primary.focus, fontVariantNumeric: 'tabular-nums' },
 ])
 
-export const toolbar = style({
+// 탭 아래 필터·정렬 줄 — 좁으면 줄을 바꾼다. 외부 예약 번호 칸이 가장 넓다.
+export const filters = style({
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
   flexWrap: 'wrap',
+  alignItems: 'center',
   gap: spacing[12],
 })
 
-export const controls = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[8],
-})
+export const referenceField = style({ flex: '2 1 240px', minWidth: 0 })
 
-export const searchBox = style({
-  width: '200px',
-})
+export const field = style({ flex: '1 1 150px', minWidth: 0 })
+
+export const receivedAt = style([
+  typography.body.sub,
+  { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
+])
 
 export const reservationNo = style([
   typography.body.subMedium,

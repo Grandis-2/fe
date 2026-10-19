@@ -38,10 +38,15 @@ export const description = style([
   { color: color.text.secondary },
 ])
 
+// 카드마다 버튼 폭이 다르면 오른쪽 끝이 들쭉날쭉하다 — 가장 긴 라벨에 맞춘 고정 폭.
+const ACTION_WIDTH = '128px'
+
 // 다른 화면으로 가는 링크라 <a>로 두고 버튼 모양만 입힌다.
 export const action = style([
   typography.button.smMedium,
   {
+    width: ACTION_WIDTH,
+    flexShrink: 0,
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -72,7 +77,9 @@ export const actionOutline = style({
 export const handoff = style([
   typography.body.subMedium,
   {
-    padding: `0 ${spacing[16]}`,
+    width: ACTION_WIDTH,
+    flexShrink: 0,
+    textAlign: 'center',
     color: color.text.secondary,
     whiteSpace: 'nowrap',
   },

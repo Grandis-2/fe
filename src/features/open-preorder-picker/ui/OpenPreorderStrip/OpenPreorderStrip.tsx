@@ -95,15 +95,23 @@ export function OpenPreorderStrip({
               )}
             </span>
             <span className={styles.meta}>
-              대기 {formatNumber(item.waiting)}명
-              {item.wait && ` · 예상 ${item.wait}`}
+              <b className={styles.metaLabel}>대기</b>{' '}
+              {formatNumber(item.waiting)}명
+              {item.wait && (
+                <>
+                  {' · '}
+                  <b className={styles.metaLabel}>예상</b> {item.wait}
+                </>
+              )}
             </span>
             <span className={styles.meta}>
-              재처리 필요{' '}
+              <b className={styles.metaLabel}>재처리 필요</b>{' '}
               {item.failures === null
                 ? '—'
-                : `${formatNumber(item.failures)}건`}{' '}
-              · 마감까지 {untilClose(item.closesAt, now)}
+                : `${formatNumber(item.failures)}건`}
+              {' · '}
+              <b className={styles.metaLabel}>마감까지</b>{' '}
+              {untilClose(item.closesAt, now)}
             </span>
           </button>
         )

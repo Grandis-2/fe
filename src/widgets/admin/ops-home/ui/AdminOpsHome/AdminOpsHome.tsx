@@ -18,7 +18,6 @@ import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
 import {
   ADMIN_ORDERS_PATH,
-  ADMIN_RESERVATIONS_PATH,
   ADMIN_WAITINGROOM_PATH,
   adminReservationsPath,
 } from '@shared/config/routes'
@@ -194,16 +193,13 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         t.syncJobs.REGISTER.DEAD_LETTER > 0 && {
           key: 'register',
           level: 'urgent',
-          title: `외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건 — 결제 단계로 못 넘어가고 있어요`,
-          description: [
-            !scoped && failuresByPreorder,
-            '예약 현황에서 실패한 예약을 골라 재처리하세요',
-          ]
+          title: `외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건`,
+          description: ['결제로 못 넘어가요', !scoped && failuresByPreorder]
             .filter(Boolean)
-            .join(' / '),
+            .join(' · '),
           // 재처리는 예약 현황에서 한 건씩 골라서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
           action: {
-            label: '예약 현황에서 재처리',
+            label: '재처리하기',
             to: adminReservationsPath(
               'REPROCESS_NEEDED',
               selected ?? undefined,
@@ -217,7 +213,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           // 원인은 메시지 원문을 봐야 알 수 있어 개발팀이 맡는다 — 운영 홈은 관리자 화면이라
           // 개발자 기능(이벤트 DLQ)으로 보내지 않고, 알릴 때 쓸 건수·시각만 보인다.
           description: [
-            '결제 완료·기한 만료 같은 처리가 예약에 반영되지 않았어요',
+            '결제·만료가 예약에 반영 안 됨',
             ageOf(t.deadLetters.oldestWaitingAt, now) &&
               `가장 오래된 건 ${ageOf(t.deadLetters.oldestWaitingAt, now)}`,
           ]
@@ -227,35 +223,33 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         slowAge !== null && {
           key: 'slow',
           level: 'check',
-          title: `외부 등록이 ${slowAge} 밀려 있어요 — 기다리는 예약 ${formatNumber(waitingRegister)}건`,
-          description:
-            '외부 예약 시스템이 느리거나 접수가 처리보다 빨라요 · 계속 늘면 입장 속도를 줄이세요',
+          title: `외부 등록 ${slowAge} 밀림 · ${formatNumber(waitingRegister)}건 대기`,
+          description: '계속 늘면 입장 속도를 줄이세요',
           action: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
         },
         ...longWaits.map((product): Task => ({
           key: `wait-${product.productId}`,
           level: 'check',
-          title: `${nameOf(product.productId)} 대기 예상 ${waitEstimate(product.waiting, product.credit)} — 대기 ${formatNumber(product.waiting)}명`,
+          title: `${nameOf(product.productId)} 대기 ${waitEstimate(product.waiting, product.credit)} · ${formatNumber(product.waiting)}명`,
           description:
             product.credit <= 0
-              ? '입장이 멈춰 있어요 · 대기열 관리에서 입장 속도를 확인하세요'
-              : `초당 ${formatNumber(product.credit)}명씩 들어가고 있어요 · 외부 등록이 밀리지 않으면 입장 속도를 올리세요`,
+              ? '입장이 멈춰 있어요'
+              : `초당 ${formatNumber(product.credit)}명 입장 중 · 외부 등록이 여유 있으면 올리세요`,
           action: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
         })),
         t.paymentOverdue > 0 && {
           key: 'overdue',
           level: 'todo',
-          title: `결제 기한이 지났는데 아직 만료 전인 예약 ${formatNumber(t.paymentOverdue)}건`,
-          description:
-            '서버가 곧 자동으로 만료해요 · 문의가 오면 예약 현황에서 찾으세요',
-          action: { label: '예약 보기', to: ADMIN_RESERVATIONS_PATH },
+          title: `결제 기한 지난 예약 ${formatNumber(t.paymentOverdue)}건`,
+          description: '곧 자동 만료돼요',
+          action: { label: '예약 보기', to: adminReservationsPath('all') },
         },
         shipping !== null &&
           shipping.preparing + shipping.ready > 0 && {
             key: 'shipping',
             level: 'todo',
-            title: `배송 처리 대기 주문 ${formatNumber(shipping.preparing + shipping.ready)}건`,
-            description: `상품 준비 중 ${formatNumber(shipping.preparing)}건 · 출고 대기 ${formatNumber(shipping.ready)}건`,
+            title: `배송 대기 주문 ${formatNumber(shipping.preparing + shipping.ready)}건`,
+            description: `상품 준비 ${formatNumber(shipping.preparing)} · 출고 대기 ${formatNumber(shipping.ready)}`,
             scope: scoped ? '전체 기준' : undefined,
             action: {
               label: '주문 처리',
@@ -356,15 +350,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             {t && tasks.length === 0 && (
               <div className={styles.allClear}>
                 <CircleCheck size={18} aria-hidden="true" />
-                외부 등록 · 상태 반영 · 결제 기한 · 배송에 밀린 일이 없어요.
+                밀린 일이 없어요.
               </div>
             )}
             {/* 못 받았으면 빈칸으로 두지 않는다 — 비어 있으면 "할 일 없음"으로 읽힌다. */}
             {!t && (
               <div className={styles.allClear}>
                 <TriangleAlert size={18} aria-hidden="true" />
-                운영 현황을 받지 못해 처리할 일을 판단할 수 없어요. 위 안내를
-                확인하세요.
+                현황을 받지 못해 판단할 수 없어요.
               </div>
             )}
           </>
@@ -399,9 +392,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
               },
             ]}
           />
-          <div className={styles.caption}>
-            두 선 사이가 벌어진 만큼 외부 등록 대기가 쌓여요.
-          </div>
+          <div className={styles.caption}>두 선이 벌어지면 대기가 쌓여요</div>
         </div>
       </section>
     </div>

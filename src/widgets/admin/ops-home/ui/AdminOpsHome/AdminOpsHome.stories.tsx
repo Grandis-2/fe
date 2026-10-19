@@ -165,7 +165,7 @@ export const Busy: Story = {
       '아이폰 18 Pro 845건 · 갤럭시 S27 15건',
     )
     await expect(
-      within(cards[0]).getByRole('link', { name: '예약 현황에서 재처리' }),
+      within(cards[0]).getByRole('link', { name: '재처리하기' }),
     ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
     await expect(cards[3]).not.toHaveTextContent('전체 기준')
 
@@ -177,7 +177,7 @@ export const Busy: Story = {
     await expect(scoped[0]).toHaveTextContent('외부 등록 실패 845건')
     // 고른 사전예약 그대로 예약 현황을 연다.
     await expect(
-      within(scoped[0]).getByRole('link', { name: '예약 현황에서 재처리' }),
+      within(scoped[0]).getByRole('link', { name: '재처리하기' }),
     ).toHaveAttribute(
       'href',
       '/admin/reservations?status=REPROCESS_NEEDED&product=p-iphone',
@@ -217,8 +217,8 @@ export const Slow: Story = {
   ],
   play: async ({ canvas }) => {
     const [card] = canvas.getAllByRole('article')
-    await expect(card).toHaveTextContent('외부 등록이')
-    await expect(card).toHaveTextContent('기다리는 예약 120건')
+    await expect(card).toHaveTextContent('외부 등록')
+    await expect(card).toHaveTextContent('120건 대기')
     await expect(
       within(card).getByRole('link', { name: '입장 속도 조절' }),
     ).toHaveAttribute('href', '/admin/waitingroom')
@@ -239,7 +239,7 @@ export const LongWait: Story = {
   play: async ({ canvas }) => {
     const cards = canvas.getAllByRole('article')
     await expect(cards).toHaveLength(1)
-    await expect(cards[0]).toHaveTextContent('갤럭시 S27 대기 예상 약 11분')
+    await expect(cards[0]).toHaveTextContent('갤럭시 S27 대기 약 11분')
     await expect(
       within(cards[0]).getByRole('link', { name: '입장 속도 조절' }),
     ).toHaveAttribute('href', '/admin/waitingroom')
