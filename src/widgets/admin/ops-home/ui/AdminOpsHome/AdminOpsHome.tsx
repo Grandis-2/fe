@@ -100,11 +100,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     openProducts.map((product) => product.productId),
     POLL_INTERVAL_MS,
   )
-  // 그래프로 볼 사전예약. 고른 것이 마감돼 목록에서 빠지면 전체로 돌아간다.
+  // 홈이 보는 사전예약 — 언제나 하나를 고른다(처음엔 첫 번째). 고른 것이 마감돼 목록에서
+  // 빠지면 첫 번째로 돌아간다. 진행 중인 게 없으면 null — 그땐 전체 집계로 본다.
   const [picked, setPicked] = useState<string | null>(null)
   const selected = openProducts.some((product) => product.productId === picked)
     ? picked
-    : null
+    : (openProducts[0]?.productId ?? null)
   const nameOf = (productId: string) => productNames.get(productId) ?? productId
   // 고른 사전예약의 대기열 설정(상한이 기본값인지 운영값인지) — 바뀔 일이 드물어 폴링하지 않는다.
   const rates = useAdmissionRates()
@@ -334,7 +335,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         ) : (
           <OpenPreorderStrip
             items={strip}
-            selected={selected}
+            selected={selected ?? ''}
             onSelect={setPicked}
             now={now}
           />
@@ -347,21 +348,25 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             )}
           </InlineAlert>
         )}
-        {selectedQueue && (
+      </section>
+
+      {selectedQueue && (
+        <section className={styles.section} aria-labelledby="ops-queue">
+          <h2 id="ops-queue" className={styles.sectionTitle}>
+            {nameOf(selectedQueue.productId)}의 대기열 상태
+          </h2>
           <PreorderQueueCard
-            name={nameOf(selectedQueue.productId)}
             queue={selectedQueue}
             rate={rates.data?.products.find(
               (product) => product.productId === selectedQueue.productId,
             )}
           />
-        )}
-      </section>
+        </section>
+      )}
 
       <section className={styles.section} aria-labelledby="ops-todo">
         <h2 id="ops-todo" className={styles.sectionTitle}>
           지금 처리할 일
-          {selected && <span className={styles.scope}>{nameOf(selected)}</span>}
         </h2>
         {stats.isPending ? (
           <SkeletonGroup className={styles.taskSkeleton}>
@@ -408,9 +413,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         <div className={styles.cardHeader}>
           <h2 id="ops-flow" className={styles.sectionTitle}>
             들어오는 양과 처리한 양
-            <span className={styles.scope}>
-              {selected ? nameOf(selected) : '전체'}
-            </span>
           </h2>
           <span className={styles.caption}>
             관리자 화면을 연 뒤부터 · 건/초

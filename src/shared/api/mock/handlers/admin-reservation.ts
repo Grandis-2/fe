@@ -100,9 +100,18 @@ function countStats(productId: string | null): PreorderStats {
     paymentOverdue: matched.filter(
       (detail) => detail.displayStatus === 'PAYMENT_EXPIRED',
     ).length,
+    // 재처리 필요(DEAD_LETTER)로 멈춘 예약은 빼고 아직 처리 중인 것만 본다.
+    // ponytail: 명세가 둘 중 무엇인지 말하지 않아(백엔드 요청서 Q3) 의미상 맞는 쪽으로 가정했다.
     oldestPendingSyncAt:
       matched
-        .filter((detail) => detail.status === 'PENDING_SYNC')
+        .filter(
+          (detail) =>
+            detail.status === 'PENDING_SYNC' &&
+            detail.syncJobs.some(
+              (job) =>
+                job.jobType === 'REGISTER' && job.status !== 'DEAD_LETTER',
+            ),
+        )
         .map((detail) => detail.createdAt)
         .toSorted()[0] ?? null,
     countedAt: new Date().toISOString(),

@@ -37,16 +37,6 @@ export const card = style([
   },
 ])
 
-// 사전예약 카드보다 가볍게 — 고르는 단추일 뿐 정보를 담지 않는다.
-export const allButton = style([
-  pressable,
-  typography.body.defaultMedium,
-  {
-    padding: `${spacing[14]} ${spacing[16]}`,
-    color: color.text.primary,
-  },
-])
-
 export const head = style({
   display: 'flex',
   alignItems: 'center',

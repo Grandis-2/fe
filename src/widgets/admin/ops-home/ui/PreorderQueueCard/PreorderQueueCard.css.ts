@@ -20,11 +20,6 @@ export const header = style({
   gap: spacing[8],
 })
 
-export const title = style([
-  typography.title.smMedium,
-  { color: color.text.primary },
-])
-
 export const link = style([
   typography.body.subMedium,
   {

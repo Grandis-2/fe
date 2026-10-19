@@ -8,7 +8,6 @@ const meta = {
   component: PreorderQueueCard,
   tags: ['ai-generated'],
   args: {
-    name: '아이폰 18 Pro',
     queue: { runtime: 'QUEUEING', waiting: 1497, credit: 37, cap: 150 },
     rate: { cap: { value: 80, source: 'OPERATIONAL' }, queueLimit: 24_000 },
   },

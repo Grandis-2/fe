@@ -16,7 +16,6 @@ import { Tag } from '@shared/ui'
 import * as styles from './PreorderQueueCard.css'
 
 export type PreorderQueueCardProps = {
-  name: string
   queue: Pick<
     WaitingroomProductStatus,
     'runtime' | 'waiting' | 'credit' | 'cap'
@@ -26,14 +25,10 @@ export type PreorderQueueCardProps = {
 }
 
 /**
- * 고른 사전예약의 대기열 — 지금 줄과 입장 속도, 그리고 그 속도를 정하는 설정(상한이
+ * 고른 사전예약의 대기열 상태(제목은 놓는 쪽이 단다) — 지금 줄과 입장 속도, 그리고 그 속도를 정하는 설정(상한이
  * 기본값인지 관리자가 정한 값인지). 바꾸는 건 대기열 관리에서 한다.
  */
-export function PreorderQueueCard({
-  name,
-  queue,
-  rate,
-}: PreorderQueueCardProps) {
+export function PreorderQueueCard({ queue, rate }: PreorderQueueCardProps) {
   const capSource = rate ? settingSourceLabel[rate.cap.source] : null
   const items = [
     { label: '대기', value: `${formatNumber(queue.waiting)}명` },
@@ -56,9 +51,8 @@ export function PreorderQueueCard({
   ]
 
   return (
-    <section className={styles.root} aria-label={`${name} 대기열`}>
+    <div className={styles.root}>
       <div className={styles.header}>
-        <span className={styles.title}>{name} 대기열</span>
         <Tag
           variant="subtle"
           size="small"
@@ -80,6 +74,6 @@ export function PreorderQueueCard({
           </div>
         ))}
       </dl>
-    </section>
+    </div>
   )
 }

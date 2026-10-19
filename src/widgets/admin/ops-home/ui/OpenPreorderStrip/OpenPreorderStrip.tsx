@@ -29,16 +29,17 @@ export type OpenPreorder = {
 
 export type OpenPreorderStripProps = {
   items: readonly OpenPreorder[]
-  /** 고른 사전예약. null이면 전체 */
-  selected: string | null
-  onSelect: (productId: string | null) => void
+  /** 고른 사전예약 — 언제나 하나가 골라져 있다 */
+  selected: string
+  onSelect: (productId: string) => void
   /** 마감까지 남은 시간을 잴 기준 시각 */
   now: number
 }
 
 /**
- * 진행 중인 사전예약 띠. 사전예약마다 상태를 보이고, 누르면 아래 처리 흐름 그래프가 그
- * 사전예약으로 바뀐다. 둘 이상일 때만 '전체'를 둔다(하나면 전체가 곧 그 사전예약이다).
+ * 진행 중인 사전예약 띠. 사전예약마다 상태를 보이고, 누르면 홈(할 일 · 대기열 · 처리 흐름)이
+ * 그 사전예약 기준으로 바뀐다. 언제나 하나가 골라져 있다 — 다른 사전예약의 문제는 띠의
+ * 상태 표시로 보인다.
  */
 export function OpenPreorderStrip({
   items,
@@ -52,16 +53,6 @@ export function OpenPreorderStrip({
 
   return (
     <div className={styles.root} role="group" aria-label="진행 중인 사전예약">
-      {items.length > 1 && (
-        <button
-          type="button"
-          className={styles.allButton}
-          aria-pressed={selected === null}
-          onClick={() => onSelect(null)}
-        >
-          전체
-        </button>
-      )}
       {items.map((item) => {
         const pressed = selected === item.productId
         return (
@@ -70,8 +61,7 @@ export function OpenPreorderStrip({
             type="button"
             className={styles.card}
             aria-pressed={pressed}
-            // 고른 걸 다시 누르면 전체로 돌아간다.
-            onClick={() => onSelect(pressed ? null : item.productId)}
+            onClick={() => onSelect(item.productId)}
           >
             <span className={styles.head}>
               <span className={styles.name}>{item.name}</span>

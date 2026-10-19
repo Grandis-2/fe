@@ -134,7 +134,10 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 급한 일부터 — 외부 등록 실패(긴급)가 맨 위, 배송(할 일)이 아래 */
+/**
+ * 사전예약이 언제나 하나 골라져 있고(처음엔 첫 번째), 할 일·대기열 상태가 그 사전예약
+ * 기준이다. 상품으로 거를 수 없는 원인·다시 보내기·배송은 '전체 기준'이라고 밝힌다.
+ */
 export const Busy: Story = {
   decorators: [
     withData({
@@ -145,54 +148,46 @@ export const Busy: Story = {
     }),
   ],
   play: async ({ canvas, userEvent }) => {
+    const strip = within(
+      canvas.getByRole('group', { name: '진행 중인 사전예약' }),
+    )
+    const galaxy = strip.getByRole('button', { name: /갤럭시 S27/ })
+    const iphone = strip.getByRole('button', { name: /아이폰 18 Pro/ })
+    await expect(galaxy).toHaveAttribute('aria-pressed', 'true')
+    await expect(strip.queryByRole('button', { name: '전체' })).toBeNull()
+    await expect(iphone).toHaveTextContent('재처리 필요 845건')
+    await expect(
+      canvas.getByRole('heading', { name: '갤럭시 S27의 대기열 상태' }),
+    ).toBeVisible()
+
     const cards = canvas.getAllByRole('article')
     await expect(cards).toHaveLength(4)
     await expect(within(cards[0]).getAllByText('긴급')[0]).toBeVisible()
-    await expect(cards[0]).toHaveTextContent('외부 등록 실패 860건')
+    await expect(cards[0]).toHaveTextContent('외부 등록 실패 15건')
     await expect(cards[0]).toHaveTextContent(
-      '외부 예약 시스템 일시 중단 820건 · 외부 예약 시스템이 응답하지 않음 40건',
+      '원인(전체 기준) 외부 예약 시스템 일시 중단 820건',
     )
     await expect(
-      within(cards[0]).getByRole('link', { name: '원인별로 다시 보내기' }),
-    ).toHaveAttribute('href', '/admin/recovery')
-    await expect(cards[3]).toHaveTextContent('배송 처리 대기 주문 37건')
-    // 둘 이상 열려 있으면 실패가 어느 사전예약에서 났는지 나눠 적는다.
-    await expect(cards[0]).toHaveTextContent(
-      '아이폰 18 Pro 845건 · 갤럭시 S27 15건',
-    )
-
-    // 진행 중인 사전예약 띠 — 누르면 그래프가 그 사전예약으로 바뀌고, 다시 누르면 전체.
-    const iphone = within(
-      canvas.getByRole('group', { name: '진행 중인 사전예약' }),
-    ).getByRole('button', { name: /아이폰 18 Pro/ })
-    await expect(iphone).toHaveTextContent('재처리 필요 845건')
-    await userEvent.click(iphone)
-    await expect(
-      canvas.getByRole('heading', { name: /들어오는 양과 처리한 양/ }),
-    ).toHaveTextContent('아이폰 18 Pro')
-    // 고르면 띠 아래에 그 사전예약의 대기열 카드가 생긴다.
-    const queueCard = canvas.getByRole('region', {
-      name: '아이폰 18 Pro 대기열',
-    })
-    await expect(queueCard).toHaveTextContent('14,830명')
-    // 할 일도 그 사전예약 숫자로 바뀌고, 거를 수 없는 것은 '전체 기준'이라고 밝힌다.
-    const scopedCards = canvas.getAllByRole('article')
-    await expect(scopedCards[0]).toHaveTextContent('외부 등록 실패 845건')
-    await expect(scopedCards[0]).toHaveTextContent('원인(전체 기준)')
-    await expect(
-      within(scopedCards[0]).getByRole('link', {
+      within(cards[0]).getByRole('link', {
         name: '원인별로 다시 보내기 (전체)',
       }),
-    ).toBeVisible()
-    await expect(scopedCards.at(-1)).toHaveTextContent('전체 기준')
+    ).toHaveAttribute('href', '/admin/recovery')
+    await expect(cards[3]).toHaveTextContent('배송 처리 대기 주문 37건')
+    await expect(cards[3]).toHaveTextContent('전체 기준')
+
+    // 다른 사전예약을 누르면 할 일·대기열 상태가 그 사전예약으로 바뀐다.
     await userEvent.click(iphone)
+    await expect(iphone).toHaveAttribute('aria-pressed', 'true')
+    await expect(canvas.getAllByRole('article')[0]).toHaveTextContent(
+      '외부 등록 실패 845건',
+    )
     await expect(
-      canvas.getByRole('heading', { name: /들어오는 양과 처리한 양/ }),
-    ).toHaveTextContent('전체')
+      canvas.getByRole('region', { name: '아이폰 18 Pro의 대기열 상태' }),
+    ).toHaveTextContent('14,830명')
   },
 }
 
-/** 밀린 일이 없으면 한 줄로 끝난다 */
+/** 밀린 일이 없으면 한 줄로 끝난다. 상품별 대기열 표 대신 고른 사전예약의 대기열 상태 */
 export const AllClear: Story = {
   decorators: [
     withData({
@@ -205,9 +200,10 @@ export const AllClear: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.queryAllByRole('article')).toHaveLength(0)
     await expect(canvas.getByText(/밀린 일이 없어요/)).toBeVisible()
-    // 상품별 대기열 표는 띠와 겹쳐 없앴다 — 고르기 전엔 대기열 카드도 없다.
     await expect(canvas.queryByRole('table')).toBeNull()
-    await expect(canvas.queryByRole('region', { name: /대기열$/ })).toBeNull()
+    await expect(
+      canvas.getByRole('region', { name: '갤럭시 S27의 대기열 상태' }),
+    ).toBeVisible()
   },
 }
 

@@ -5,7 +5,7 @@ import type { AdminPreorderDetail, SyncJob } from '../types'
 
 // 오픈 시나리오 — 주소에 ?mockScenario=open 을 붙여 열면 돈다(MSW일 때만). 운영 홈·장애
 // 대응을 실제 오픈처럼 보려고 만든 가짜 흐름이다.
-//   사전예약 2개에 5,000명이 30초 안에 대기열에 몰림 → 대기열 입장 속도(대기열 관리의 전역 값 × 브레이크)
+//   사전예약 3개에 5,000명이 30초 안에 대기열에 몰림 → 대기열 입장 속도(대기열 관리의 전역 값 × 브레이크)
 //   만큼 예약 접수 → 외부 등록은 초당 처리 한도까지만 → 5%는 재시도 끝에 실패.
 // 접수가 처리 한도보다 빨라 적체가 쌓이면 대기열 브레이크가 걸려 입장이 줄어든다.
 // 장애 대응에서 다시 보내면 서버처럼 초당 정해진 건수씩 다시 처리하고, 일부는 또 실패한다.
@@ -42,8 +42,8 @@ const inFlight: InFlight[] = []
 const reprocessQueue: { detail: AdminPreorderDetail; job: SyncJob }[] = []
 let reprocessPerTick = 20
 
-/** 동시에 여는 사전예약 수 — 실제로도 한두 개라 둘로 둔다 */
-const OPEN_PRODUCTS = 2
+/** 동시에 여는 사전예약 수 — 목의 사전예약 3개를 모두 연다 */
+const OPEN_PRODUCTS = 3
 
 // 상품마다 몰리는 정도가 다르다 — 앞 상품일수록 인기.
 const productIds = [...new Set(reservationStore.map((item) => item.productId))]
@@ -128,6 +128,19 @@ function tick() {
 /** 시나리오를 시작한다. 이미 돌고 있으면 그대로 둔다 */
 export function startOpenScenario() {
   if (timer) return
+  // 고정 목 예약 중 외부 등록 대기로 멈춰 있는 것(며칠 전 접수)을 처리된 것으로 돌린다 —
+  // 남겨 두면 '가장 오래 기다린 외부 등록'이 그걸 가리켜 오픈 직후부터 몇 시간째 밀린 것처럼 보인다.
+  const now = Date.now()
+  for (const detail of reservationStore) {
+    const [job] = detail.syncJobs
+    if (
+      detail.status === 'PENDING_SYNC' &&
+      job &&
+      job.status !== 'DEAD_LETTER'
+    ) {
+      settle(detail, now, null)
+    }
+  }
   timer = setInterval(tick, TICK_MS)
 }
 
