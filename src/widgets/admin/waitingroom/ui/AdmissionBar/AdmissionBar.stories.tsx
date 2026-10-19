@@ -34,6 +34,14 @@ export const PreviewOver: Story = {
   },
 }
 
+/** 선 가까이까지 찼다(빠듯함) — 바꿀 값이 없으면 빗금도 없다 */
 export const Tight: Story = {
   args: { admitting: 200, processing: 215, tone: 'warning' },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByRole('img', {
+        name: '입장 초당 200명, 외부 등록 처리 초당 215건',
+      }),
+    ).toBeVisible()
+  },
 }
