@@ -116,40 +116,6 @@ export const crosshair = style({
 })
 
 // 사건 시각 세로선 — 데이터 선보다 눈에 띄지 않게 가늘게, 글자는 위쪽에 붙인다.
-const markerBase = style({
-  position: 'absolute',
-  top: 0,
-  bottom: 0,
-  width: 0,
-  borderLeft: '2px solid',
-  pointerEvents: 'none',
-})
-
-export const marker = style([
-  markerBase,
-  { borderLeftColor: color.text.secondary },
-])
-
-// 예상 시각처럼 아직 일어나지 않은 일 — 점선으로 실제 사건과 구분한다.
-export const markerDashed = style([
-  markerBase,
-  { borderLeftStyle: 'dashed', borderLeftColor: color.border.focus },
-])
-
-const markerLabel = style([
-  typography.body.caption,
-  {
-    position: 'absolute',
-    top: 0,
-    padding: `0 ${spacing[4]}`,
-    whiteSpace: 'nowrap',
-    background: color.background.base,
-    color: color.text.secondary,
-  },
-])
-
-export const markerLabelRight = style([markerLabel, { left: spacing[4] }])
-export const markerLabelLeft = style([markerLabel, { right: spacing[4] }])
 
 const tooltip = style([
   typography.body.caption,

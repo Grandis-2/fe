@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 
 import { Input, ModalActions } from '@shared/ui'
 
@@ -14,8 +14,6 @@ export type NumberSettingFormProps = {
   initial: number | null
   /** 바꾸면 무슨 일이 생기는지 — 실제 회원에게 바로 반영되는 값이라 꼭 알린다 */
   hint?: string
-  /** 바꾸기 전에 "지금 → 바꾸면"을 비교해 보인다. 올바른 값일 때만 그린다 */
-  preview?: (value: number) => ReactNode
   onConfirm: (value: number) => void
   onCancel: () => void
 }
@@ -31,7 +29,6 @@ export function NumberSettingForm({
   max,
   initial,
   hint,
-  preview,
   onConfirm,
   onCancel,
 }: NumberSettingFormProps) {
@@ -66,11 +63,6 @@ export function NumberSettingForm({
         {unit}
         {hint && ` · ${hint}`}
       </div>
-      {preview && valid && (
-        <div className={styles.preview} aria-live="polite">
-          {preview(value)}
-        </div>
-      )}
       <ModalActions
         confirmLabel="변경"
         confirmDisabled={!valid}

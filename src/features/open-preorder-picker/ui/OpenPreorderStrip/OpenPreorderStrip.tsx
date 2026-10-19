@@ -31,13 +31,9 @@ export type OpenPreorder = {
 
 export type OpenPreorderStripProps = {
   items: readonly OpenPreorder[]
-  /** 고른 사전예약. null이면 전체(allowAll일 때만) */
+  /** 고른 사전예약. null이면 전체 */
   selected: string | null
   onSelect: (productId: string | null) => void
-  /**
-   * '전체' 단추를 둔다. 여러 사전예약을 합쳐 보는 화면(운영 대시보드)에서 쓴다.
-   */
-  allowAll?: boolean
   /** 마감까지 남은 시간을 잴 기준 시각 */
   now: number
 }
@@ -51,7 +47,6 @@ export function OpenPreorderStrip({
   selected,
   onSelect,
   now,
-  allowAll = false,
 }: OpenPreorderStripProps) {
   if (items.length === 0) {
     return <div className={styles.empty}>지금 접수 중인 사전예약이 없어요.</div>
@@ -59,17 +54,15 @@ export function OpenPreorderStrip({
 
   return (
     <div className={styles.root} role="group" aria-label="진행 중인 사전예약">
-      {allowAll && (
-        <button
-          type="button"
-          className={styles.allButton}
-          aria-pressed={selected === null}
-          onClick={() => onSelect(null)}
-        >
-          전체
-          <span className={styles.meta}>모든 사전예약</span>
-        </button>
-      )}
+      <button
+        type="button"
+        className={styles.allButton}
+        aria-pressed={selected === null}
+        onClick={() => onSelect(null)}
+      >
+        전체
+        <span className={styles.meta}>모든 사전예약</span>
+      </button>
       {items.map((item) => {
         const pressed = selected === item.productId
         return (
@@ -95,22 +88,22 @@ export function OpenPreorderStrip({
               )}
             </span>
             <span className={styles.meta}>
-              <b className={styles.metaLabel}>대기</b>{' '}
+              <span className={styles.metaLabel}>대기</span>{' '}
               {formatNumber(item.waiting)}명
               {item.wait && (
                 <>
                   {' · '}
-                  <b className={styles.metaLabel}>예상</b> {item.wait}
+                  <span className={styles.metaLabel}>예상</span> {item.wait}
                 </>
               )}
             </span>
             <span className={styles.meta}>
-              <b className={styles.metaLabel}>재처리 필요</b>{' '}
+              <span className={styles.metaLabel}>재처리 필요</span>{' '}
               {item.failures === null
                 ? '—'
                 : `${formatNumber(item.failures)}건`}
               {' · '}
-              <b className={styles.metaLabel}>마감까지</b>{' '}
+              <span className={styles.metaLabel}>마감까지</span>{' '}
               {untilClose(item.closesAt, now)}
             </span>
           </button>

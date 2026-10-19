@@ -88,9 +88,9 @@ export const Empty: Story = {
   },
 }
 
-/** allowAll이면 '전체'를 맨 앞에 두고, 고르지 않은 상태(null)가 전체다 */
+/** '전체'가 맨 앞에 있고, 고르지 않은 상태(null)가 전체다 */
 export const WithAll: Story = {
-  args: { allowAll: true, selected: null },
+  args: { selected: null },
   play: async ({ canvas, args, userEvent }) => {
     const all = canvas.getByRole('button', { name: /전체/ })
     await expect(all).toHaveAttribute('aria-pressed', 'true')

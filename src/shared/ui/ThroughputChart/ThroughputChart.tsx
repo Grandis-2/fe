@@ -22,14 +22,7 @@ export type ThroughputChartProps = {
   unit: string
   /** 스크린리더용 제목 */
   label: string
-  /**
-   * 사건이 일어난 시각에 세로선을 긋는다(예: 다시 보낸 시각). 그린 구간 밖이면 아직
-   * 오지 않은 시각이라 그리지 않는다. dashed는 실제 사건이 아닌 예상 시각에 쓴다.
-   */
-  markers?: readonly ThroughputMarker[]
 }
-
-export type ThroughputMarker = { at: number; label: string; dashed?: boolean }
 
 const WIDTH = 600
 const HEIGHT = 200
@@ -85,7 +78,6 @@ export function ThroughputChart({
   series,
   unit,
   label,
-  markers = [],
 }: ThroughputChartProps) {
   const [hover, setHover] = useState<number | null>(null)
 
@@ -116,10 +108,6 @@ export function ThroughputChart({
   const last = times.length - 1
   const shown = hover ?? last
   const hoverLeft = `${(positionOf(times, times[shown]) ?? 0) * 100}%`
-  const placedMarkers = markers.flatMap((marker) => {
-    const position = positionOf(times, marker.at)
-    return position === null ? [] : [{ ...marker, position }]
-  })
 
   return (
     <figure className={styles.root}>
@@ -151,11 +139,6 @@ export function ThroughputChart({
             .map(
               (item) => `${item.label} ${formatValue(item.values[last], unit)}`,
             )
-            .concat(
-              placedMarkers.map(
-                (marker) => `${marker.label} ${formatTime(marker.at)}`,
-              ),
-            )
             .join(', ')}`}
         >
           <svg
@@ -185,26 +168,6 @@ export function ThroughputChart({
               />
             ))}
           </svg>
-
-          {placedMarkers.map((marker) => (
-            <span
-              key={`${marker.label}-${marker.at}`}
-              className={marker.dashed ? styles.markerDashed : styles.marker}
-              style={{ left: `${marker.position * 100}%` }}
-              aria-hidden="true"
-            >
-              <span
-                className={
-                  // 오른쪽 끝 가까이면 글자를 선 왼쪽에 붙여 그래프 밖으로 안 나가게 한다.
-                  marker.position > 0.7
-                    ? styles.markerLabelLeft
-                    : styles.markerLabelRight
-                }
-              >
-                {marker.label}
-              </span>
-            </span>
-          ))}
 
           {hover !== null && (
             <>

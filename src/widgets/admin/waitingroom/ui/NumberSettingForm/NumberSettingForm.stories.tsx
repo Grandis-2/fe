@@ -59,19 +59,3 @@ export const Empty: Story = {
     await expect(canvas.getByRole('button', { name: '변경' })).toBeDisabled()
   },
 }
-
-/** 비교를 넘기면 올바른 값일 때 "지금 → 바꾸면"을 보인다 */
-export const WithPreview: Story = {
-  args: {
-    preview: (value: number) => `바꾸면 초당 ${value}명`,
-  },
-  play: async ({ canvas, userEvent }) => {
-    const input = canvas.getByLabelText('전역 입장 속도(명/초)')
-    await userEvent.clear(input)
-    await userEvent.type(input, '120')
-    await expect(canvas.getByText('바꾸면 초당 120명')).toBeVisible()
-    await userEvent.clear(input)
-    await userEvent.type(input, '2000')
-    await expect(canvas.queryByText(/바꾸면/)).toBeNull()
-  },
-}

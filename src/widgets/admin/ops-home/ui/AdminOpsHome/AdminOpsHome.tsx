@@ -307,7 +307,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             selected={selected}
             onSelect={setPicked}
             now={now}
-            allowAll
           />
         )}
         {pollingError(queue) !== null && (
