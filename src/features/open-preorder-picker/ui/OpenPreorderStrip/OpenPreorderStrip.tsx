@@ -22,6 +22,8 @@ export type OpenPreorder = {
   /** 집계를 못 받았으면 null — 상태를 지어내지 않는다 */
   health: PreorderHealth | null
   waiting: number
+  /** 맨 뒤 예상 대기(waitEstimate). 줄이 없으면 null */
+  wait: string | null
   /** 외부 등록 실패(재처리 필요). 못 받았으면 null */
   failures: number | null
   closesAt: string
@@ -93,13 +95,15 @@ export function OpenPreorderStrip({
               )}
             </span>
             <span className={styles.meta}>
-              대기 {formatNumber(item.waiting)}명 · 재처리 필요{' '}
-              {item.failures === null
-                ? '—'
-                : `${formatNumber(item.failures)}건`}
+              대기 {formatNumber(item.waiting)}명
+              {item.wait && ` · 예상 ${item.wait}`}
             </span>
             <span className={styles.meta}>
-              마감까지 {untilClose(item.closesAt, now)}
+              재처리 필요{' '}
+              {item.failures === null
+                ? '—'
+                : `${formatNumber(item.failures)}건`}{' '}
+              · 마감까지 {untilClose(item.closesAt, now)}
             </span>
           </button>
         )

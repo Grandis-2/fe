@@ -16,6 +16,8 @@ type Counts = {
   shipping: number
   /** 외부 등록을 기다리는 가장 오래된 접수 — 주면 등록 대기 작업도 있다고 본다 */
   slowSince?: string
+  /** 갤럭시 초당 입장 — 낮추면 대기가 길어진다 */
+  galaxyCredit?: number
 }
 
 const statsOf = ({
@@ -102,7 +104,10 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
     brakeFactor: 1,
     maxWaitSeconds: null,
     leaveGraceSeconds: 250,
-    products: [queueProduct(GALAXY, 3410, 20), queueProduct(IPHONE, 14830, 80)],
+    products: [
+      queueProduct(GALAXY, 3410, counts.galaxyCredit ?? 20),
+      queueProduct(IPHONE, 14830, 80),
+    ],
   })
   queryClient.setQueryData(['admin', 'draws', 'list'], [])
   queryClient.setQueryData(
@@ -136,7 +141,7 @@ type Story = StoryObj<typeof meta>
 
 /**
  * 처음엔 전체 — 할 일은 모든 사전예약을 합친 값이고, 실패는 어느 사전예약에서 났는지 나눠
- * 적는다. 사전예약을 고르면 할 일·대기열 상태가 그 기준으로 바뀌고, 상품으로 거를 수 없는
+ * 적는다. 사전예약을 고르면 할 일이 그 기준으로 바뀌고, 상품으로 거를 수 없는
  * 원인·다시 보내기·배송은 '전체 기준'이라고 밝힌다.
  */
 export const Busy: Story = {
@@ -156,9 +161,10 @@ export const Busy: Story = {
       'aria-pressed',
       'true',
     )
+    // 대기열은 띠의 대기·예상 대기로만 보인다(따로 된 섹션 없음).
     await expect(
-      canvas.getByRole('region', { name: '전체 대기열 상태' }),
-    ).toHaveTextContent('18,240명')
+      strip.getByRole('button', { name: /갤럭시 S27/ }),
+    ).toHaveTextContent('대기 3,410명 · 예상 약 3분')
 
     const cards = canvas.getAllByRole('article')
     await expect(cards).toHaveLength(4)
@@ -184,7 +190,7 @@ export const Busy: Story = {
     ).toBeNull()
     await expect(cards[3]).not.toHaveTextContent('전체 기준')
 
-    // 사전예약을 고르면 할 일·대기열 상태가 그 사전예약으로 바뀐다.
+    // 사전예약을 고르면 할 일이 그 사전예약으로 바뀐다.
     const iphone = strip.getByRole('button', { name: /아이폰 18 Pro/ })
     await expect(iphone).toHaveTextContent('재처리 필요 845건')
     await userEvent.click(iphone)
@@ -197,13 +203,10 @@ export const Busy: Story = {
       }),
     ).toBeVisible()
     await expect(scoped.at(-1)).toHaveTextContent('전체 기준')
-    await expect(
-      canvas.getByRole('region', { name: '아이폰 18 Pro의 대기열 상태' }),
-    ).toHaveTextContent('14,830명')
   },
 }
 
-/** 밀린 일이 없으면 한 줄로 끝난다. 처음엔 전체 대기열 상태를 보인다 */
+/** 밀린 일이 없으면 한 줄로 끝난다 */
 export const AllClear: Story = {
   decorators: [
     withData({
@@ -217,9 +220,6 @@ export const AllClear: Story = {
     await expect(canvas.queryAllByRole('article')).toHaveLength(0)
     await expect(canvas.getByText(/밀린 일이 없어요/)).toBeVisible()
     await expect(canvas.queryByRole('table')).toBeNull()
-    await expect(
-      canvas.getByRole('region', { name: '전체 대기열 상태' }),
-    ).toBeVisible()
   },
 }
 
@@ -241,6 +241,27 @@ export const Slow: Story = {
     await expect(card).toHaveTextContent('기다리는 예약 120건')
     await expect(
       within(card).getByRole('link', { name: '입장 속도 조절' }),
+    ).toHaveAttribute('href', '/admin/waitingroom')
+  },
+}
+
+/** 맨 뒤 예상 대기가 10분을 넘으면 '확인' 할 일로 올리고 대기열 관리로 보낸다 */
+export const LongWait: Story = {
+  decorators: [
+    withData({
+      registerFailures: 0,
+      deadLetters: 0,
+      paymentOverdue: 0,
+      shipping: 0,
+      galaxyCredit: 5,
+    }),
+  ],
+  play: async ({ canvas }) => {
+    const cards = canvas.getAllByRole('article')
+    await expect(cards).toHaveLength(1)
+    await expect(cards[0]).toHaveTextContent('갤럭시 S27 대기 예상 약 11분')
+    await expect(
+      within(cards[0]).getByRole('link', { name: '입장 속도 조절' }),
     ).toHaveAttribute('href', '/admin/waitingroom')
   },
 }

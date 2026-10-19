@@ -10,7 +10,7 @@ import {
   useReservationStatsHistory,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
-import { isBraking, useAdmissionRates } from '@entities/admin-waitingroom'
+import { isBraking, waitEstimate } from '@entities/admin-waitingroom'
 import {
   OpenPreorderStrip,
   SLOW_AFTER_MS,
@@ -36,7 +36,6 @@ import {
 import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
 import { sentRunStore } from '../../model/sentRun'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
-import { PreorderQueueCard } from '../PreorderQueueCard'
 import { ResendPanel } from '../ResendPanel'
 import { StuckDrawTask } from '../StuckDrawTask'
 
@@ -52,6 +51,8 @@ const BREAKDOWN_MAX = 3
 // shortcut: 마감 뒤 하루 안의 회차만 멈췄는지 본다(회차마다 진행을 따로 받아서). 회차가 많아지면 서버 집계로 바꾼다.
 const STUCK_LOOKBACK_MS = 24 * 60 * 60 * 1000
 const RESEND_PANEL_ID = 'ops-resend'
+// 맨 뒤 예상 대기가 이만큼 길어지면 할 일로 띄운다 — 서버에 기준이 없어 화면에서 정한 값이다.
+const LONG_WAIT_SECONDS = 10 * 60
 
 // 성공에 경고 삼각형이 붙으면 문구와 반대로 읽힌다.
 const verdictIcon: Record<FlowVerdict['status'], typeof Info> = {
@@ -109,11 +110,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const selected = openProducts.some((product) => product.productId === picked)
     ? picked
     : null
-  // 고른 사전예약의 대기열 설정(상한이 기본값인지 운영값인지) — 바뀔 일이 드물어 폴링하지 않는다.
-  const rates = useAdmissionRates()
-  const selectedQueue = openProducts.find(
-    (product) => product.productId === selected,
-  )
 
   // 처리 흐름은 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도 이어진다
   // (새로 고치면 처음부터). 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 —
@@ -212,6 +208,16 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     if (count !== undefined) failuresByScope[product.productId] = count
   }
 
+  // 대기가 긴 사전예약 — 대기열은 평소엔 띠의 대기·예상 대기로만 보이고, 길어지면 할 일이 된다.
+  // 입장이 멈췄는데 줄이 있으면(초당 0) 끝이 없으니 같이 띄운다.
+  const longWaits = openProducts.filter(
+    (product) =>
+      (selected === null || product.productId === selected) &&
+      product.waiting > 0 &&
+      (product.credit <= 0 ||
+        product.waiting / product.credit >= LONG_WAIT_SECONDS),
+  )
+
   const candidates: (Task | false)[] = t
     ? [
         t.syncJobs.REGISTER.DEAD_LETTER > 0 && {
@@ -259,6 +265,16 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             '외부 예약 시스템이 느리거나 접수가 처리보다 빨라요 · 계속 늘면 입장 속도를 줄이세요',
           action: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
         },
+        ...longWaits.map((product): Task => ({
+          key: `wait-${product.productId}`,
+          level: 'check',
+          title: `${nameOf(product.productId)} 대기 예상 ${waitEstimate(product.waiting, product.credit)} — 대기 ${formatNumber(product.waiting)}명`,
+          description:
+            product.credit <= 0
+              ? '입장이 멈춰 있어요 · 대기열 관리에서 입장 속도를 확인하세요'
+              : `초당 ${formatNumber(product.credit)}명씩 들어가고 있어요 · 외부 등록이 밀리지 않으면 입장 속도를 올리세요`,
+          action: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
+        })),
         t.paymentOverdue > 0 && {
           key: 'overdue',
           level: 'todo',
@@ -355,41 +371,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           </InlineAlert>
         )}
       </section>
-
-      {selectedQueue ? (
-        <section className={styles.section} aria-labelledby="ops-queue">
-          <h2 id="ops-queue" className={styles.sectionTitle}>
-            {nameOf(selectedQueue.productId)}의 대기열 상태
-          </h2>
-          <PreorderQueueCard
-            queue={selectedQueue}
-            rate={rates.data?.products.find(
-              (product) => product.productId === selectedQueue.productId,
-            )}
-          />
-        </section>
-      ) : (
-        q && (
-          // 전체 — 접수 중인 사전예약의 줄을 합치고, 입장은 실제 적용 중인 전역 속도로.
-          <section className={styles.section} aria-labelledby="ops-queue">
-            <h2 id="ops-queue" className={styles.sectionTitle}>
-              전체 대기열 상태
-            </h2>
-            <PreorderQueueCard
-              queue={{
-                waiting: openProducts.reduce(
-                  (total, product) => total + product.waiting,
-                  0,
-                ),
-                credit: q.globalCredit ?? 0,
-                cap: q.globalCredit ?? 0,
-              }}
-              rate={rates.data && { cap: rates.data.globalCredit }}
-              brakeFactor={q.brakeFactor}
-            />
-          </section>
-        )
-      )}
 
       <section className={styles.section} aria-labelledby="ops-todo">
         <h2 id="ops-todo" className={styles.sectionTitle}>

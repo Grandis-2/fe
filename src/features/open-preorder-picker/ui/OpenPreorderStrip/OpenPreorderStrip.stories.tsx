@@ -19,6 +19,7 @@ const meta = {
         name: '아이폰 18 Pro',
         health: 'failing',
         waiting: 837,
+        wait: '약 1분',
         failures: 60,
         closesAt: '2026-10-08T06:30:00Z',
       },
@@ -27,6 +28,7 @@ const meta = {
         name: '갤럭시 S27',
         health: 'ok',
         waiting: 0,
+        wait: null,
         failures: 0,
         closesAt: '2026-10-08T08:15:00Z',
       },
@@ -46,7 +48,7 @@ export const Several: Story = {
     await expect(canvas.queryByRole('button', { name: '전체' })).toBeNull()
     const iphone = canvas.getByRole('button', { name: /아이폰 18 Pro/ })
     await expect(iphone).toHaveAttribute('aria-pressed', 'true')
-    await expect(iphone).toHaveTextContent('대기 837명 · 재처리 필요 60건')
+    await expect(iphone).toHaveTextContent('대기 837명 · 예상 약 1분')
     await expect(iphone).toHaveTextContent('마감까지 1시간 20분')
     await expect(canvas.getAllByText('재처리 필요')[0]).toBeVisible()
 
@@ -64,6 +66,7 @@ export const Single: Story = {
         name: '아이폰 18 Pro',
         health: 'slow',
         waiting: 120,
+        wait: '3초',
         failures: 0,
         closesAt: '2026-10-08T05:40:00Z',
       },

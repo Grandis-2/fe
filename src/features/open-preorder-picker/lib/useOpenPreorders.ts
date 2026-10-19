@@ -1,5 +1,5 @@
 import { useReservationStatsByProduct } from '@entities/admin-reservation'
-import { useWaitingroomStatus } from '@entities/admin-waitingroom'
+import { useWaitingroomStatus, waitEstimate } from '@entities/admin-waitingroom'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import { preorderHealth } from './preorderHealth'
@@ -8,8 +8,8 @@ import type { OpenPreorder } from '../ui/OpenPreorderStrip'
 
 /**
  * 지금 접수 중인 사전예약과 각각의 상태. 대기열 현황에서 접수 중(OPEN)인 상품을 고르고,
- * 상품마다 집계를 받아 띠에 그릴 값(대기·재처리 필요·상태)을 만든다. 운영 대시보드와 장애
- * 대응이 같이 쓴다 — 같은 키라 두 화면이 캐시를 나눠 쓴다.
+ * 상품마다 집계를 받아 띠에 그릴 값(대기·재처리 필요·상태)을 만든다. 대기열 현황과 같은
+ * 키라 다른 관리자 화면과 캐시를 나눠 쓴다.
  * @param productNames 상품 id → 이름. 대기열 응답엔 id만 있다
  */
 export function useOpenPreorders(
@@ -44,6 +44,7 @@ export function useOpenPreorders(
           })
         : null,
       waiting: product.waiting,
+      wait: waitEstimate(product.waiting, product.credit),
       failures: data ? data.syncJobs.REGISTER.DEAD_LETTER : null,
       closesAt: product.closesAt,
     }
