@@ -14,8 +14,8 @@ import * as styles from './ErrorPage.css'
 type ErrorPageProps = {
   // 어디에 그려지는지 — 라우터에서 errorElement마다 정한다.
   // page: 사용자 헤더 아래(헤더 뒤까지 끌어올린다) / standalone: 헤더 없이(레이아웃째 깨짐·온보딩)
-  // inset: 관리자 본문 자리(밝은 헤더라 끌어올리지 않고 화면 일부만 채운다)
-  placement?: 'page' | 'standalone' | 'inset'
+  // inset: 관리자 로그인(밝은 헤더라 끌어올리지 않고 헤더 아래만 채운다) / panel: 관리자 본문 칸
+  placement?: 'page' | 'standalone' | 'inset' | 'panel'
 }
 
 // 라우터 에러 경계(errorElement). 화면을 그리다 예외가 나면 흰 화면 대신 이 안내가 뜬다.
@@ -48,7 +48,7 @@ export function ErrorPage({ placement = 'page' }: ErrorPageProps) {
           </>
         }
         showLogo={placement === 'standalone'}
-        compact={placement === 'inset'}
+        compact={placement === 'inset' || placement === 'panel'}
         actions={
           <>
             {/* 경계는 렌더링이 다시 성공해야 풀린다 — 같은 주소를 새로 불러온다. */}

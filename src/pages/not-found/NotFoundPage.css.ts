@@ -14,14 +14,12 @@ export const root = style({
   display: 'flex',
   flexDirection: 'column',
   boxSizing: 'border-box',
-  minHeight: '100vh',
+  // 모바일은 하단 탭바가 떠 있다 — 버튼이 가려지지 않게 탭바 위에서 끝낸다.
+  minHeight: `calc(100vh - ${TAB_BAR_HEIGHT} - ${TAB_BAR_OFFSET})`,
   marginTop: `calc(-1 * ${headerHeight})`,
   paddingTop: headerHeight,
   background: color.backgroundDark.base,
-  // 모바일은 하단 탭바가 떠 있다 — 버튼이 가려지지 않게 탭바 위에서 끝낸다.
   '@media': {
-    [breakpoint.mobile]: {
-      minHeight: `calc(100vh - ${TAB_BAR_HEIGHT} - ${TAB_BAR_OFFSET})`,
-    },
+    [breakpoint.desktop]: { minHeight: '100vh' },
   },
 })

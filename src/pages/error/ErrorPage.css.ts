@@ -20,21 +20,21 @@ export const placement = styleVariants({
     fill,
     {
       boxSizing: 'border-box',
-      minHeight: '100vh',
+      // 모바일은 하단 탭바가 떠 있다 — 버튼이 가려지지 않게 탭바 위에서 끝낸다.
+      minHeight: `calc(100vh - ${TAB_BAR_HEIGHT} - ${TAB_BAR_OFFSET})`,
       marginTop: `calc(-1 * ${headerHeight})`,
       paddingTop: headerHeight,
       background: color.backgroundDark.base,
-      // 모바일은 하단 탭바가 떠 있다 — 버튼이 가려지지 않게 탭바 위에서 끝낸다.
       '@media': {
-        [breakpoint.mobile]: {
-          minHeight: `calc(100vh - ${TAB_BAR_HEIGHT} - ${TAB_BAR_OFFSET})`,
-        },
+        [breakpoint.desktop]: { minHeight: '100vh' },
       },
     },
   ],
   standalone: [fill, { minHeight: '100vh' }],
-  // 관리자 본문 자리 — 헤더 아래 남은 높이만.
+  // 관리자 로그인 — 헤더 아래 남은 높이만.
   inset: [fill, { minHeight: `calc(100vh - ${headerHeight})` }],
+  // 관리자 본문 칸 — 칸의 안쪽 여백을 뺀 높이만 채운다(100vh로 재면 여백만큼 넘친다).
+  panel: [fill, { minHeight: '100%' }],
 })
 
 export const trace = style([typography.body.sub, { color: onDark(64) }])

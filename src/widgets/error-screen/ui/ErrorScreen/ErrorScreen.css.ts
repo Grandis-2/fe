@@ -8,10 +8,13 @@ import {
   statusOnDark,
   typography,
 } from '@shared/config/theme'
-import { fontFamily } from '@shared/config/theme/tokens/typography/base'
+import {
+  fontFamily,
+  fontSize,
+} from '@shared/config/theme/tokens/typography/base'
 
 // 시안의 좌우·아래 여백 — 화면 폭에 따라 20~72px, 32~56px.
-const gutterX = 'clamp(20px, 5.5vw, 72px)'
+const gutterX = `clamp(${spacing[20]}, 5.5vw, 72px)`
 
 // 테마와 상관없이 늘 어두운 화면이다(온보딩과 같은 결) — 바탕은 backgroundDark, 글자는 흰색 계열.
 // 높이는 놓이는 자리(페이지)가 정하고, 여기선 그 안을 채운다(flex: 1).
@@ -48,7 +51,7 @@ export const logo = style({
   zIndex: 1,
   alignSelf: 'flex-start',
   margin: `${spacing[24]} ${gutterX}`,
-  fontSize: '20px',
+  fontSize: fontSize[20],
   textDecoration: 'none',
   background: `linear-gradient(120deg, ${color.primary.subtler} 0%, ${color.primary.subtle} 55%, ${color.secondary.subtle} 100%)`,
   WebkitBackgroundClip: 'text',
@@ -60,10 +63,10 @@ export const logo = style({
 export const spacer = styleVariants({
   full: {
     flex: 1,
-    minHeight: 'clamp(300px, 52vh, 620px)',
     // 모바일은 화면이 짧아 시안 여백대로면 버튼이 화면 밖으로 밀린다.
+    minHeight: 'clamp(160px, 30vh, 320px)',
     '@media': {
-      [breakpoint.mobile]: { minHeight: 'clamp(160px, 30vh, 320px)' },
+      [breakpoint.desktop]: { minHeight: 'clamp(300px, 52vh, 620px)' },
     },
   },
   compact: { flex: 1, minHeight: '240px' },
@@ -76,7 +79,7 @@ export const body = style({
   flexDirection: 'column',
   gap: spacing[20],
   maxWidth: `calc(440px + 2 * ${gutterX})`,
-  padding: `0 ${gutterX} clamp(32px, 5vw, 56px)`,
+  padding: `0 ${gutterX} clamp(${spacing[32]}, 5vw, 56px)`,
   boxSizing: 'border-box',
 })
 
