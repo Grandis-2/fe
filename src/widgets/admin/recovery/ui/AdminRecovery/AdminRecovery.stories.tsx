@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { expect, fn } from 'storybook/test'
+import { expect, fn, within } from 'storybook/test'
+
+import { sentRunStore } from '../../model/sentRun'
 
 import { AdminRecovery } from './AdminRecovery'
 
@@ -58,7 +60,7 @@ const withFailures =
       statsOf(Math.min(10, total)),
     )
     queryClient.setQueryData(
-      ['admin', 'reservations', 'sync-job-errors'],
+      ['admin', 'reservations', 'sync-job-errors', 'dead-letter'],
       groups,
     )
     queryClient.setQueryData(['admin', 'waitingroom', 'status'], {
@@ -173,5 +175,41 @@ export const NothingToSend: Story = {
     await expect(
       canvas.getByRole('button', { name: '0건 다시 보내기' }),
     ).toBeDisabled()
+  },
+}
+
+/**
+ * 보낸 뒤 — 진행 막대 대신 다시 보내기 카드 아래 보낸 기록에 처리 상태와 결과(남은 실패)를 보인다.
+ * 예상 시간이 지난 기록을 넣어 끝난 상태를 본다(보내기는 Storybook에서 API가 없어 못 한다).
+ */
+export const AfterSend: Story = {
+  decorators: [
+    withFailures([
+      { errorCode: 'HTTP_503', count: 12 },
+      { errorCode: 'TIMEOUT', count: 0 },
+    ]),
+    (Story) => {
+      sentRunStore.add({
+        at: Date.now() - 120_000,
+        targetCount: 860,
+        skippedCount: 0,
+        estimatedSeconds: 43,
+        capped: false,
+        failuresAtSend: { all: 860 },
+        byErrorCode: { HTTP_503: 820, TIMEOUT: 40 },
+      })
+      return <Story />
+    },
+  ],
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole('progressbar')).toBeNull()
+    // 보낸 기록 — 끝났고 그 원인들의 남은 실패가 12건
+    const [row] = within(
+      canvas.getByRole('list', { name: '보낸 기록' }),
+    ).getAllByRole('listitem')
+    await expect(row).toHaveTextContent('860건 다시 보냄')
+    await expect(row).toHaveTextContent('처리 끝 · 같은 원인 실패 지금 12건')
+    await expect(canvas.getByText('실패 860 → 12건')).toBeVisible()
+    await expect(canvas.getByText('848건 줄었어요')).toBeVisible()
   },
 }

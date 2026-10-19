@@ -143,12 +143,15 @@ export const useReprocessReservation = () => {
 }
 
 /** 외부 등록 실패를 오류 코드별로. 부하 시험 중 무엇 때문에 실패하는지 본다 */
-export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
+export const useSyncJobErrorGroups = (
+  intervalMs: RefreshInterval,
+  scope: 'dead-letter' | 'failing' = 'dead-letter',
+) => {
   const queryClient = useQueryClient()
-  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors'] as const
+  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors', scope] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getSyncJobErrorGroups(signal),
+    queryFn: ({ signal }) => getSyncJobErrorGroups(scope, signal),
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
   })

@@ -84,7 +84,7 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
     }),
   )
   queryClient.setQueryData(
-    ['admin', 'reservations', 'sync-job-errors'],
+    ['admin', 'reservations', 'sync-job-errors', 'dead-letter'],
     counts.registerFailures
       ? [
           { errorCode: 'HTTP_503', count: counts.registerFailures - 40 },

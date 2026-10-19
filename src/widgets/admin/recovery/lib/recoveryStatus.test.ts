@@ -10,6 +10,7 @@ const sent = {
   estimatedSeconds: 43,
   capped: false,
   failuresAtSend: { all: 860 },
+  byErrorCode: { HTTP_503: 820, TIMEOUT: 40 },
 }
 const base = {
   rising: false,
@@ -62,6 +63,12 @@ describe('recoveryStatus — 보낸 뒤', () => {
     expect(recoveryStatus({ ...after, failures: 212 }).message).toContain(
       '860 → 212건',
     )
-    expect(recoveryStatus({ ...after, failures: 860 }).tone).toBe('warning')
+    expect(recoveryStatus({ ...after, failures: 860 }).message).toContain(
+      '그대로예요',
+    )
+    // 늘었으면 다시 보내기 실패로 단정하지 않는다 — 새 접수의 실패일 수 있다.
+    expect(recoveryStatus({ ...after, failures: 1000 }).message).toContain(
+      '새 접수에서 실패가 나고 있어요',
+    )
   })
 })

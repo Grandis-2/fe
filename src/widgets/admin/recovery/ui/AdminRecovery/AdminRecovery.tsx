@@ -32,6 +32,7 @@ import {
 
 import { recoveryStatus, type RecoveryStatus } from '../../lib/recoveryStatus'
 import { sentRunStore } from '../../model/sentRun'
+import { SentRunList } from '../SentRunList'
 
 import * as styles from './AdminRecovery.css'
 
@@ -86,7 +87,8 @@ export function AdminRecovery({
     productNames,
     POLL_INTERVAL_MS,
   )
-  const sent = useSyncExternalStore(sentRunStore.subscribe, sentRunStore.get)
+  const runs = useSyncExternalStore(sentRunStore.subscribe, sentRunStore.get)
+  const sent = runs[0] ?? null
 
   // 고른 사전예약이 마감돼 띠에서 빠지면 전체로 본다.
   const selected = openProducts.some(
@@ -154,7 +156,7 @@ export function AdminRecovery({
       picked.map((group) => group.errorCode),
       {
         onSuccess: (results) =>
-          sentRunStore.set({
+          sentRunStore.add({
             at: Date.now(),
             targetCount: results.reduce((t, r) => t + r.targetCount, 0),
             skippedCount: results.reduce((t, r) => t + r.skippedCount, 0),
@@ -165,6 +167,9 @@ export function AdminRecovery({
             ),
             capped: results.some((r) => r.targetCount >= BATCH_MAX),
             failuresAtSend: atSend,
+            byErrorCode: Object.fromEntries(
+              results.map((r) => [r.errorCode, r.targetCount]),
+            ),
           }),
       },
     )
@@ -194,13 +199,6 @@ export function AdminRecovery({
     void queue.refetch()
   }
 
-  // 회복 확인 — 보낸 시각부터 예상 완료까지 얼마나 왔나(5초마다 오르는 집계 시각 기준).
-  const progress = sent
-    ? Math.min(
-        1,
-        Math.max(0, (now - sent.at) / (sent.estimatedSeconds * 1000 || 1)),
-      )
-    : 0
   const decreased =
     failuresAtSend !== undefined && failures !== undefined
       ? failuresAtSend - failures
@@ -361,6 +359,14 @@ export function AdminRecovery({
               </div>
             )
           )}
+          {/* 보낸 기록 — 처리 중이면 돌고, 끝나면 결과 */}
+          <SentRunList
+            runs={runs}
+            failuresByCode={Object.fromEntries(
+              groups.map((group) => [group.errorCode, group.count]),
+            )}
+            now={now}
+          />
         </div>
       </section>
 
@@ -408,30 +414,6 @@ export function AdminRecovery({
               </span>
             )}
           </div>
-          {sent && (
-            <div className={styles.progress}>
-              <div
-                className={styles.progressTrack}
-                role="progressbar"
-                aria-label="다시 보내기 진행"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.round(progress * 100)}
-              >
-                <div
-                  className={styles.progressFill}
-                  style={{ width: `${progress * 100}%` }}
-                />
-              </div>
-              <span className={styles.caption}>
-                전체 {formatNumber(sent.targetCount)}건 보냄
-                {sent.skippedCount > 0 &&
-                  ` · 조건 밖이라 건너뛴 ${formatNumber(sent.skippedCount)}건 제외`}
-                {sent.capped &&
-                  ` · 원인마다 ${formatNumber(BATCH_MAX)}건까지라 남은 실패는 끝난 뒤 다시 보내세요`}
-              </span>
-            </div>
-          )}
           <ThroughputChart
             key={scopeKey}
             label={`${selected ? nameOf(selected) : '전체'} 외부 등록 실패 건수`}

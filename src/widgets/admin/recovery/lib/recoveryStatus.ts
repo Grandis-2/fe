@@ -62,6 +62,14 @@ export function recoveryStatus({
         message: `${subject}실패가 ${formatNumber(before)} → ${formatNumber(failures)}건으로 줄었어요 · 남은 실패는 원인을 보고 다시 보내세요`,
       }
     }
+    // 오픈 중엔 새 접수에서도 실패가 생겨, 보낸 뒤 실패가 늘었다고 다시 보내기가 실패한 건
+    // 아니다 — 묶음별 결과가 없어(백엔드 요청서 R6) 둘을 가를 수 없으니 그렇게 말한다.
+    if (failures > before) {
+      return {
+        tone: 'warning',
+        message: `${subject}보낸 뒤에도 실패가 ${formatNumber(before)} → ${formatNumber(failures)}건으로 늘었어요 · 다시 보낸 것이 또 실패했거나 새 접수에서 실패가 나고 있어요. 실패가 늘지 않을 때 다시 보내세요`,
+      }
+    }
     return {
       tone: 'warning',
       message: `${subject}예상 시간이 지났는데 실패가 그대로예요(${formatNumber(failures)}건) · 잠시 뒤 다시 보내거나 외부 시스템 담당자에게 알리세요`,

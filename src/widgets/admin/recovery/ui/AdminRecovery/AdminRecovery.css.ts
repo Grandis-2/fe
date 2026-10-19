@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
@@ -155,26 +155,6 @@ export const resultUp = style([
   typography.body.defaultMedium,
   { color: color.status.danger },
 ])
-
-export const progress = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[6],
-})
-
-export const progressTrack = style({
-  height: '8px',
-  borderRadius: '999px',
-  background: color.background.subSurface,
-  overflow: 'hidden',
-})
-
-export const progressFill = style({
-  height: '100%',
-  borderRadius: '999px',
-  background: color.primary.base,
-  transition: `width ${motion.duration.fast} ${motion.easing.default}`,
-})
 
 export const caption = style([
   typography.body.sub,
