@@ -6,6 +6,7 @@ import {
   mockMembers,
   reservationStore,
 } from '../fixtures/admin-reservation'
+import { isOpenScenarioRunning, requeueForReprocess } from '../openScenario'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
@@ -266,8 +267,12 @@ export const adminReservationHandlers: RequestHandler[] = [
       )
       // 서버처럼 한 번에 1000건까지 — 남은 건 같은 요청을 다시 보내야 한다.
       .slice(0, 1000)
-    for (const [detail, job] of targets) markReprocessed(detail, job)
     const rate = body.ratePerSecond ?? 20
+    // 오픈 시나리오 중엔 서버처럼 초당 rate건씩 다시 처리하고 일부는 또 실패한다.
+    for (const [detail, job] of targets) {
+      if (isOpenScenarioRunning()) requeueForReprocess(detail, job, rate)
+      else markReprocessed(detail, job)
+    }
     return ok<BatchReprocess>(
       {
         targetCount: targets.length,
