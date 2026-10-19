@@ -12,7 +12,14 @@ import {
 } from '@entities/draw'
 import { getErrorMessage } from '@shared/api/client'
 import { drawPath } from '@shared/config/routes'
-import { Chip, InlineAlert, Tag, type TagProps } from '@shared/ui'
+import {
+  Chip,
+  InlineAlert,
+  Skeleton,
+  SkeletonGroup,
+  Tag,
+  type TagProps,
+} from '@shared/ui'
 
 import * as styles from './MobileLuckyPanel.css'
 
@@ -68,9 +75,11 @@ export function MobileLuckyPanel({ onClose }: MobileLuckyPanelProps) {
           {getErrorMessage(error, '럭키드로우를 불러오지 못했어요.')}
         </InlineAlert>
       ) : isPending ? (
-        <InlineAlert status="info" variant="big" icon={Info}>
-          럭키드로우를 불러오는 중이에요.
-        </InlineAlert>
+        <SkeletonGroup className={styles.list}>
+          {[0, 1].map((i) => (
+            <Skeleton key={i} height={260} radius={18} />
+          ))}
+        </SkeletonGroup>
       ) : visible.length === 0 ? (
         <InlineAlert status="info" variant="big" icon={Info}>
           해당하는 럭키드로우가 없어요.

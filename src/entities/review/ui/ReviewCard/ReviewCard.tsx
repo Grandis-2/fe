@@ -1,5 +1,6 @@
 import { typography } from '@shared/config/theme'
 import { formatDotDate } from '@shared/lib/formatDotDate'
+import { Skeleton } from '@shared/ui'
 
 import * as styles from './ReviewCard.css'
 
@@ -75,6 +76,25 @@ export function ReviewCard({ review, className }: ReviewCardProps) {
       <div className={[typography.body.sub, styles.meta].join(' ')}>
         <span>{authorName}</span>
         <span>{formatDotDate(createdAt)}</span>
+      </div>
+    </div>
+  )
+}
+
+// 썸네일·별점·본문·상품명 자리를 같은 크기로 깔아 응답이 와도 높이가 튀지 않게 한다.
+// 스크린리더 안내는 감싸는 SkeletonGroup이 한 번만 한다.
+export function ReviewCardSkeleton({
+  className,
+}: Pick<ReviewCardProps, 'className'>) {
+  return (
+    <div className={[styles.root, className].filter(Boolean).join(' ')}>
+      <Skeleton width={120} height={120} radius={8} />
+      <div className={styles.main}>
+        <div className={styles.top}>
+          <Skeleton width={96} height={18} />
+          <Skeleton width="80%" height={20} />
+        </div>
+        <Skeleton width="40%" height={16} />
       </div>
     </div>
   )

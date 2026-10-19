@@ -1,4 +1,4 @@
-export { DrawCard } from './ui/DrawCard'
+export { DrawCard, DrawCardSkeleton } from './ui/DrawCard'
 export type { DrawCardProps, DrawCardData } from './ui/DrawCard'
 export {
   formatDrawDateTime,

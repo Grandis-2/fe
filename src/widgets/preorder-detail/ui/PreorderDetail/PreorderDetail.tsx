@@ -16,7 +16,7 @@ import { joinPreorderQueue } from '@features/preorder-queue'
 import { getErrorMessage } from '@shared/api/client'
 import { PREORDER_PATH, productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
-import { Button, InlineAlert } from '@shared/ui'
+import { Button, InlineAlert, PageSkeleton } from '@shared/ui'
 
 import {
   formatOpenTime,
@@ -56,11 +56,7 @@ export function PreorderDetail({ preorderId }: PreorderDetailProps) {
       </InlineAlert>
     )
   }
-  if (isPending) {
-    return (
-      <InlineAlert status="info">사전예약을 불러오는 중이에요.</InlineAlert>
-    )
-  }
+  if (isPending) return <PageSkeleton tone="dark" />
   if (!preorder) {
     return <InlineAlert status="error">사전예약을 찾을 수 없어요.</InlineAlert>
   }

@@ -1,4 +1,4 @@
-import { Skeleton } from '../Skeleton'
+import { Skeleton, type SkeletonProps } from '../Skeleton'
 import { SkeletonGroup } from '../SkeletonGroup'
 
 import * as styles from './PageSkeleton.css'
@@ -10,6 +10,7 @@ export type PageSkeletonProps = {
   sections?: number
   /** 섹션마다 입력·내용 칸 수 */
   fieldsPerSection?: number
+  tone?: SkeletonProps['tone']
   className?: string
 }
 
@@ -21,6 +22,7 @@ export function PageSkeleton({
   title = true,
   sections = 2,
   fieldsPerSection = 2,
+  tone,
   className,
 }: PageSkeletonProps) {
   return (
@@ -29,16 +31,16 @@ export function PageSkeleton({
     >
       {title && (
         <div className={styles.titleRow}>
-          <Skeleton width={240} height={30} radius={8} />
-          <Skeleton width={64} height={26} />
-          <Skeleton width={64} height={26} />
+          <Skeleton tone={tone} width={240} height={30} radius={8} />
+          <Skeleton tone={tone} width={64} height={26} />
+          <Skeleton tone={tone} width={64} height={26} />
         </div>
       )}
       {Array.from({ length: sections }, (_, section) => (
         <div key={section} className={styles.section}>
-          <Skeleton width={120} height={20} />
+          <Skeleton tone={tone} width={120} height={20} />
           {Array.from({ length: fieldsPerSection }, (_, field) => (
-            <Skeleton key={field} height={52} radius={12} />
+            <Skeleton tone={tone} key={field} height={52} radius={12} />
           ))}
         </div>
       ))}

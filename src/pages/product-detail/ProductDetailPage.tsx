@@ -4,7 +4,11 @@ import { MessageSquare } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
 import { useProduct, useShipmentBatches } from '@entities/product'
-import { ReviewCard, useProductReviews } from '@entities/review'
+import {
+  ReviewCard,
+  ReviewCardSkeleton,
+  useProductReviews,
+} from '@entities/review'
 import { useRequireLogin } from '@features/login'
 import { usePreorderSubmit } from '@features/preorder-queue'
 import {
@@ -18,7 +22,7 @@ import {
   productPath,
   resultPath,
 } from '@shared/config/routes'
-import { InlineAlert } from '@shared/ui'
+import { InlineAlert, PageSkeleton, SkeletonGroup } from '@shared/ui'
 import {
   ProductDetailImages,
   ProductOverview,
@@ -123,11 +127,13 @@ export function ProductDetailPage() {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
         <div className={styles.content}>
-          <InlineAlert status={isError ? 'error' : 'info'}>
-            {isError || !isPending
-              ? '상품을 불러오지 못했어요.'
-              : '상품을 불러오는 중이에요.'}
-          </InlineAlert>
+          {isError || !isPending ? (
+            <InlineAlert status={isError ? 'error' : 'info'}>
+              상품을 불러오지 못했어요.
+            </InlineAlert>
+          ) : (
+            <PageSkeleton />
+          )}
         </div>
       </div>
     )
@@ -192,9 +198,11 @@ export function ProductDetailPage() {
                       후기를 불러오지 못했어요.
                     </InlineAlert>
                   ) : reviews.isPending ? (
-                    <InlineAlert status="info">
-                      후기를 불러오고 있어요.
-                    </InlineAlert>
+                    <SkeletonGroup className={styles.reviewList}>
+                      {[0, 1].map((i) => (
+                        <ReviewCardSkeleton key={i} />
+                      ))}
+                    </SkeletonGroup>
                   ) : reviews.data.items.length === 0 ? (
                     <InlineAlert
                       status="info"
