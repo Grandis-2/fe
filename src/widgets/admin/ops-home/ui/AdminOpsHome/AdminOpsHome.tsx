@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { CircleCheck, Info, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 
@@ -6,6 +8,7 @@ import { useAdminOrders } from '@entities/admin-order'
 import {
   syncErrorCause,
   useReservationStats,
+  useReservationStatsByProduct,
   useReservationStatsHistory,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
@@ -35,6 +38,8 @@ import {
 import type { TableColumn } from '@shared/ui'
 
 import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
+import { preorderHealth } from '../../lib/preorderHealth'
+import { OpenPreorderStrip, type OpenPreorder } from '../OpenPreorderStrip'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
 import { StuckDrawTask } from '../StuckDrawTask'
 
@@ -47,6 +52,8 @@ const POLL_INTERVAL_MS = 5_000
 const ERROR_GROUPS_INTERVAL_MS = 10_000
 /** 상품별 대기열 표에 보일 상품 수 — 전부는 대기열 관리에서 본다 */
 const QUEUE_ROWS = 5
+/** 실패 카드에 나눠 적을 사전예약 수 — 넘으면 '외 N곳'으로 줄인다 */
+const BREAKDOWN_MAX = 3
 // shortcut: 마감 뒤 하루 안의 회차만 멈췄는지 본다(회차마다 진행을 따로 받아서). 회차가 많아지면 서버 집계로 바꾼다.
 const STUCK_LOOKBACK_MS = 24 * 60 * 60 * 1000
 
@@ -88,11 +95,31 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const preparing = useAdminOrders({ status: 'PREPARING_ITEMS', size: 1 })
   const readyToShip = useAdminOrders({ status: 'READY_TO_SHIP', size: 1 })
 
+  // 진행 중인 사전예약 — 동시에 여럿 열릴 수 있어 각각의 집계를 따로 받는다.
+  const q = queue.data
+  const openProducts = (q?.products ?? []).filter(
+    (product) => product.phase === 'OPEN',
+  )
+  const productStats = useReservationStatsByProduct(
+    openProducts.map((product) => product.productId),
+    POLL_INTERVAL_MS,
+  )
+  // 그래프로 볼 사전예약. 고른 것이 마감돼 목록에서 빠지면 전체로 돌아간다.
+  const [picked, setPicked] = useState<string | null>(null)
+  const selected = openProducts.some((product) => product.productId === picked)
+    ? picked
+    : null
+  const nameOf = (productId: string) => productNames.get(productId) ?? productId
+
   // 처리 흐름은 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도 이어진다
   // (새로 고치면 처음부터). 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 —
-  // 둘의 차이가 적체다.
-  const history = useReservationStatsHistory()
-  const pick = (key: 'received' | 'processed' | 'backlog') =>
+  // 둘의 차이가 적체다. 맨 위 판정은 언제나 전체로, 그래프만 고른 사전예약을 따른다.
+  const totalHistory = useReservationStatsHistory()
+  const selectedHistory = useReservationStatsHistory(selected ?? undefined)
+  const series = (
+    history: typeof totalHistory,
+    key: 'received' | 'processed' | 'backlog',
+  ) =>
     history.map(({ at, value: { preorders } }) => {
       const received = sum(preorders)
       const value = {
@@ -102,12 +129,13 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       }
       return { at, value: value[key] }
     })
-  const receivedRates = ratePerSecond(pick('received'))
-  const processedRates = ratePerSecond(pick('processed'))
-  const backlogSlope = slopePerSecond(pick('backlog')).at(-1)?.value
+  const receivedRates = ratePerSecond(series(selectedHistory, 'received'))
+  const processedRates = ratePerSecond(series(selectedHistory, 'processed'))
+  const backlogSlope = slopePerSecond(series(totalHistory, 'backlog')).at(
+    -1,
+  )?.value
 
   const s = stats.data
-  const q = queue.data
   const braking = isBraking(q?.brakeFactor ?? null)
   const verdict = flowVerdict({
     braking,
@@ -116,6 +144,43 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   // 판정 기준 시각 — 받은 집계의 시각을 써서 렌더마다 흔들리지 않게 한다. 아직 못 받았으면
   // 0이라 멈춘 추첨·경과 시간을 판정하지 않는다.
   const now = stats.dataUpdatedAt
+
+  const strip: OpenPreorder[] = openProducts.map((product, index) => {
+    const data = productStats[index]?.data
+    return {
+      productId: product.productId,
+      name: nameOf(product.productId),
+      health: data
+        ? preorderHealth({
+            failures: data.syncJobs.REGISTER.DEAD_LETTER,
+            oldestPendingAt: data.oldestPendingSyncAt,
+            now,
+          })
+        : null,
+      waiting: product.waiting,
+      failures: data ? data.syncJobs.REGISTER.DEAD_LETTER : null,
+      closesAt: product.closesAt,
+    }
+  })
+  // 둘 이상 열려 있으면 실패가 어느 사전예약에서 났는지 나눠 적는다(많은 순).
+  const failedPreorders = strip
+    .filter((item) => item.failures)
+    // 많은 곳부터 — 어디부터 볼지 바로 보이게.
+    .toSorted((a, b) => (b.failures ?? 0) - (a.failures ?? 0))
+  const failuresByPreorder =
+    strip.length > 1
+      ? [
+          ...failedPreorders
+            .slice(0, BREAKDOWN_MAX)
+            .map(
+              (item) => `${item.name} ${formatNumber(item.failures ?? 0)}건`,
+            ),
+          failedPreorders.length > BREAKDOWN_MAX &&
+            `외 ${failedPreorders.length - BREAKDOWN_MAX}곳`,
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : ''
 
   const topErrors = (errors.data ?? [])
     .toSorted((a, b) => b.count - a.count)
@@ -133,35 +198,53 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       : null
 
   // 급한 순서대로 쌓는다. 0건인 일은 빼서 이상이 없으면 목록이 비게 한다.
-  const candidates: (Task | false)[] = s
+  // 사전예약을 골랐으면 할 일도 그 사전예약 집계로 센다. 상품으로 거를 수 없는 것(원인별
+  // 묶음·다시 보내기·배송 대기)은 '전체 기준'이라고 밝힌다 — 백엔드에 상품 조건을 요청해 뒀다.
+  const scoped = selected !== null
+  const t = scoped
+    ? productStats[
+        openProducts.findIndex((product) => product.productId === selected)
+      ]?.data
+    : s
+  const candidates: (Task | false)[] = t
     ? [
-        s.syncJobs.REGISTER.DEAD_LETTER > 0 && {
+        t.syncJobs.REGISTER.DEAD_LETTER > 0 && {
           key: 'register',
           level: 'urgent',
-          title: `외부 등록 실패 ${formatNumber(s.syncJobs.REGISTER.DEAD_LETTER)}건 — 결제 단계로 못 넘어가고 있어요`,
-          description: topErrors
-            ? `원인 ${topErrors}`
-            : '원인별 건수를 불러오는 중이에요',
-          action: { label: '원인별로 다시 보내기', to: ADMIN_RECOVERY_PATH },
+          title: `외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건 — 결제 단계로 못 넘어가고 있어요`,
+          description: [
+            !scoped && failuresByPreorder,
+            topErrors
+              ? `원인${scoped ? '(전체 기준)' : ''} ${topErrors}`
+              : '원인별 건수를 불러오는 중이에요',
+          ]
+            .filter(Boolean)
+            .join(' / '),
+          action: {
+            label: scoped
+              ? '원인별로 다시 보내기 (전체)'
+              : '원인별로 다시 보내기',
+            to: ADMIN_RECOVERY_PATH,
+          },
         },
-        s.deadLetters.waiting > 0 && {
+        t.deadLetters.waiting > 0 && {
           key: 'dead-letters',
           level: 'check',
-          title: `상태 반영 실패 ${formatNumber(s.deadLetters.waiting)}건`,
+          title: `상태 반영 실패 ${formatNumber(t.deadLetters.waiting)}건`,
           // 원인은 메시지 원문을 봐야 알 수 있어 개발팀이 맡는다 — 운영 홈은 관리자 화면이라
           // 개발자 기능(이벤트 DLQ)으로 보내지 않고, 알릴 때 쓸 건수·시각만 보인다.
           description: [
             '결제 완료·기한 만료 같은 처리가 예약에 반영되지 않았어요',
-            ageOf(s.deadLetters.oldestWaitingAt, now) &&
-              `가장 오래된 건 ${ageOf(s.deadLetters.oldestWaitingAt, now)}`,
+            ageOf(t.deadLetters.oldestWaitingAt, now) &&
+              `가장 오래된 건 ${ageOf(t.deadLetters.oldestWaitingAt, now)}`,
           ]
             .filter(Boolean)
             .join(' · '),
         },
-        s.paymentOverdue > 0 && {
+        t.paymentOverdue > 0 && {
           key: 'overdue',
           level: 'todo',
-          title: `결제 기한이 지났는데 아직 만료 전인 예약 ${formatNumber(s.paymentOverdue)}건`,
+          title: `결제 기한이 지났는데 아직 만료 전인 예약 ${formatNumber(t.paymentOverdue)}건`,
           description:
             '서버가 곧 자동으로 만료해요 · 문의가 오면 예약 현황에서 찾으세요',
           action: { label: '예약 보기', to: ADMIN_RESERVATIONS_PATH },
@@ -172,6 +255,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             level: 'todo',
             title: `배송 처리 대기 주문 ${formatNumber(shipping.preparing + shipping.ready)}건`,
             description: `상품 준비 중 ${formatNumber(shipping.preparing)}건 · 출고 대기 ${formatNumber(shipping.ready)}건`,
+            scope: scoped ? '전체 기준' : undefined,
             action: {
               label: '주문 처리',
               to: `${ADMIN_ORDERS_PATH}?status=PREPARING_ITEMS`,
@@ -200,8 +284,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     {
       key: 'name',
       header: '상품',
-      render: (product) =>
-        productNames.get(product.productId) ?? product.productId,
+      render: (product) => nameOf(product.productId),
     },
     {
       key: 'waiting',
@@ -238,9 +321,26 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         {verdict.message}
       </InlineAlert>
 
+      <section className={styles.section} aria-labelledby="ops-open">
+        <h2 id="ops-open" className={styles.sectionTitle}>
+          진행 중인 사전예약
+        </h2>
+        {queue.isPending ? (
+          <Skeleton height={96} />
+        ) : (
+          <OpenPreorderStrip
+            items={strip}
+            selected={selected}
+            onSelect={setPicked}
+            now={now}
+          />
+        )}
+      </section>
+
       <section className={styles.section} aria-labelledby="ops-todo">
         <h2 id="ops-todo" className={styles.sectionTitle}>
           지금 처리할 일
+          {selected && <span className={styles.scope}>{nameOf(selected)}</span>}
         </h2>
         {stats.isPending ? (
           <SkeletonGroup className={styles.taskSkeleton}>
@@ -265,14 +365,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
                 <OpsTaskCard key={key} {...task} />
               ))}
             {/* 집계를 못 받았으면 이상 없음이라고 말하지 않는다. */}
-            {s && tasks.length === 0 && (
+            {t && tasks.length === 0 && (
               <div className={styles.allClear}>
                 <CircleCheck size={18} aria-hidden="true" />
                 외부 등록 · 상태 반영 · 결제 기한 · 배송에 밀린 일이 없어요.
               </div>
             )}
             {/* 못 받았으면 빈칸으로 두지 않는다 — 비어 있으면 "할 일 없음"으로 읽힌다. */}
-            {!s && (
+            {!t && (
               <div className={styles.allClear}>
                 <TriangleAlert size={18} aria-hidden="true" />
                 운영 현황을 받지 못해 처리할 일을 판단할 수 없어요. 위 안내를
@@ -288,13 +388,18 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           <div className={styles.cardHeader}>
             <h2 id="ops-flow" className={styles.sectionTitle}>
               들어오는 양과 처리한 양
+              <span className={styles.scope}>
+                {selected ? nameOf(selected) : '전체'}
+              </span>
             </h2>
             <span className={styles.caption}>
               관리자 화면을 연 뒤부터 · 건/초
             </span>
           </div>
           <ThroughputChart
-            label="초당 접수와 외부 등록 처리"
+            // 고른 사전예약이 바뀌면 그래프 상태(올린 지점)를 새로 시작한다.
+            key={selected ?? 'all'}
+            label={`${selected ? nameOf(selected) : '전체'} 초당 접수와 외부 등록 처리`}
             unit="건/초"
             times={receivedRates.map(({ at }) => at)}
             series={[
@@ -337,6 +442,15 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
               .toSorted((a, b) => b.waiting - a.waiting)
               .slice(0, QUEUE_ROWS)}
             rowKey={(product) => product.productId}
+            // 대기가 몰린 사전예약의 처리 흐름을 바로 본다.
+            onRowClick={(product) =>
+              product.phase === 'OPEN' && setPicked(product.productId)
+            }
+            rowAction={{
+              label: (product) => `${nameOf(product.productId)} 처리 흐름 보기`,
+              onClick: (product) =>
+                product.phase === 'OPEN' && setPicked(product.productId),
+            }}
             loading={queue.isPending}
             loadingRows={3}
             emptyMessage="대기열에 오른 상품이 없어요."

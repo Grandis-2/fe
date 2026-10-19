@@ -73,3 +73,16 @@ export const link = style([
   typography.body.subMedium,
   { color: color.primary.base, textDecoration: 'underline' },
 ])
+
+// 그래프가 어느 사전예약 기준인지 제목 옆에 붙인다.
+export const scope = style([
+  typography.body.subMedium,
+  {
+    marginLeft: spacing[8],
+    padding: `${spacing[2]} ${spacing[8]}`,
+    borderRadius: '6px',
+    background: color.primary.subtler,
+    color: color.primary.base,
+    verticalAlign: 'middle',
+  },
+])

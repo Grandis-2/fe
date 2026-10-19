@@ -17,7 +17,7 @@ export async function startMockWorker() {
   if (isMockEnabled) {
     const { startWorker } = await import('./browser')
     await startWorker('all')
-    // 주소에 ?mockScenario=open 을 붙여 열면 오픈 상황(5,000명 · 실패 5%)을 흉내 낸다.
+    // 주소에 ?mockScenario=open 을 붙여 열면 오픈 상황(사전예약 2개 · 5,000명 · 실패 5%)을 흉내 낸다.
     // 새로 고치면 목 데이터가 처음으로 돌아가므로 다시 붙여 연다.
     if (
       new URLSearchParams(window.location.search).get('mockScenario') === 'open'

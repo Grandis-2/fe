@@ -64,6 +64,18 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
     ['admin', 'reservations', 'stats', undefined],
     statsOf(counts),
   )
+  // 진행 중인 두 사전예약 — 실패는 아이폰에 몰려 있다.
+  queryClient.setQueryData(
+    ['admin', 'reservations', 'stats', IPHONE],
+    statsOf({ ...counts, registerFailures: counts.registerFailures - 15 }),
+  )
+  queryClient.setQueryData(
+    ['admin', 'reservations', 'stats', GALAXY],
+    statsOf({
+      ...counts,
+      registerFailures: Math.min(15, counts.registerFailures),
+    }),
+  )
   queryClient.setQueryData(
     ['admin', 'reservations', 'sync-job-errors'],
     counts.registerFailures
@@ -125,7 +137,7 @@ export const Busy: Story = {
       shipping: 37,
     }),
   ],
-  play: async ({ canvas }) => {
+  play: async ({ canvas, userEvent }) => {
     const cards = canvas.getAllByRole('article')
     await expect(cards).toHaveLength(4)
     await expect(within(cards[0]).getAllByText('긴급')[0]).toBeVisible()
@@ -137,6 +149,35 @@ export const Busy: Story = {
       within(cards[0]).getByRole('link', { name: '원인별로 다시 보내기' }),
     ).toHaveAttribute('href', '/admin/recovery')
     await expect(cards[3]).toHaveTextContent('배송 처리 대기 주문 37건')
+    // 둘 이상 열려 있으면 실패가 어느 사전예약에서 났는지 나눠 적는다.
+    await expect(cards[0]).toHaveTextContent(
+      '아이폰 18 Pro 845건 · 갤럭시 S27 15건',
+    )
+
+    // 진행 중인 사전예약 띠 — 누르면 그래프가 그 사전예약으로 바뀌고, 다시 누르면 전체.
+    // 대기열 표의 '처리 흐름 보기' 버튼과 겹치지 않게 띠 안에서 찾는다.
+    const iphone = within(
+      canvas.getByRole('group', { name: '진행 중인 사전예약' }),
+    ).getByRole('button', { name: /아이폰 18 Pro/ })
+    await expect(iphone).toHaveTextContent('실패 845건')
+    await userEvent.click(iphone)
+    await expect(
+      canvas.getByRole('heading', { name: /들어오는 양과 처리한 양/ }),
+    ).toHaveTextContent('아이폰 18 Pro')
+    // 할 일도 그 사전예약 숫자로 바뀌고, 거를 수 없는 것은 '전체 기준'이라고 밝힌다.
+    const scopedCards = canvas.getAllByRole('article')
+    await expect(scopedCards[0]).toHaveTextContent('외부 등록 실패 845건')
+    await expect(scopedCards[0]).toHaveTextContent('원인(전체 기준)')
+    await expect(
+      within(scopedCards[0]).getByRole('link', {
+        name: '원인별로 다시 보내기 (전체)',
+      }),
+    ).toBeVisible()
+    await expect(scopedCards.at(-1)).toHaveTextContent('전체 기준')
+    await userEvent.click(iphone)
+    await expect(
+      canvas.getByRole('heading', { name: /들어오는 양과 처리한 양/ }),
+    ).toHaveTextContent('전체')
   },
 }
 

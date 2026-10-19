@@ -77,3 +77,16 @@ export const handoff = style([
     whiteSpace: 'nowrap',
   },
 ])
+
+// 범위 표시 — 상태가 아니라 설명이라 무채색으로 작게.
+export const scope = style([
+  typography.body.caption,
+  {
+    marginLeft: spacing[8],
+    padding: `${spacing[2]} ${spacing[6]}`,
+    borderRadius: '4px',
+    background: color.background.subSurface,
+    color: color.text.secondary,
+    verticalAlign: 'middle',
+  },
+])

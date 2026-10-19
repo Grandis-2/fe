@@ -1,4 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query'
 
 import {
   keepNewer,
@@ -67,22 +73,44 @@ export const useAllAdminReservations = () =>
     ...queryPolicy.snapshot,
   })
 
-/** 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다 */
-export const useReservationStats = (
-  productId?: string,
-  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
+const statsQuery = (
+  queryClient: QueryClient,
+  productId: string | undefined,
+  intervalMs: RefreshInterval,
 ) => {
-  const queryClient = useQueryClient()
   const queryKey = reservationStatsKey(productId)
-  return useQuery({
+  return {
     queryKey,
-    queryFn: ({ signal }) => getReservationStats(productId, signal),
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      getReservationStats(productId, signal),
     // 소수 초 자릿수가 응답마다 달라(0·3·6자리) 문자열이 아니라 시각으로 비교한다.
     structuralSharing: keepNewer<PreorderStats>(({ countedAt }) =>
       Date.parse(countedAt),
     ),
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
+  }
+}
+
+/** 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다 */
+export const useReservationStats = (
+  productId?: string,
+  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
+) => useQuery(statsQuery(useQueryClient(), productId, intervalMs))
+
+/**
+ * 여러 상품의 집계를 한꺼번에(상품마다 한 요청). 운영 홈이 진행 중인 사전예약마다
+ * 상태를 나눠 보일 때 쓴다. 같은 키라 예약 현황의 상품별 집계와 캐시를 나눠 쓴다.
+ */
+export const useReservationStatsByProduct = (
+  productIds: readonly string[],
+  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
+) => {
+  const queryClient = useQueryClient()
+  return useQueries({
+    queries: productIds.map((productId) =>
+      statsQuery(queryClient, productId, intervalMs),
+    ),
   })
 }
 

@@ -10,6 +10,7 @@ export {
   useReprocessReservation,
   useReprocessReservations,
   useReservationStats,
+  useReservationStatsByProduct,
   useSaveReservationNote,
   useSyncJobErrorGroups,
 } from './api/useAdminReservations'
