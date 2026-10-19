@@ -15,7 +15,7 @@ type Story = StoryObj<typeof meta>
 export const Home: Story = {
   parameters: { initialEntries: ['/admin'] },
   play: async ({ canvas }) => {
-    await expect(canvas.getByRole('link', { name: '홈' })).toHaveAttribute(
+    await expect(canvas.getByRole('link', { name: '운영 홈' })).toHaveAttribute(
       'aria-current',
       'page',
     )
@@ -32,7 +32,7 @@ export const ProductsActive: Story = {
       color: 'rgb(63, 72, 145)', // primary.base
     })
 
-    const inactive = canvas.getByRole('link', { name: '홈' })
+    const inactive = canvas.getByRole('link', { name: '운영 홈' })
     await expect(inactive).not.toHaveAttribute('aria-current', 'page')
   },
 }

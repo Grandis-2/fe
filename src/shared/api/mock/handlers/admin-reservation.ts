@@ -249,18 +249,23 @@ export const adminReservationHandlers: RequestHandler[] = [
       return invalid([{ field: 'syncJobIds', message: '최대 1000건입니다.' }])
     }
 
-    const targets = reservationStore.flatMap((detail) =>
-      detail.syncJobs
-        .filter(
-          (job) =>
-            job.jobType === 'REGISTER' &&
-            job.status === 'DEAD_LETTER' &&
-            (ids.size === 0 || ids.has(job.syncJobId)) &&
-            detail.status !== 'CANCELING' &&
-            detail.status !== 'CANCELED',
-        )
-        .map((job) => [detail, job] as const),
-    )
+    const targets = reservationStore
+      .flatMap((detail) =>
+        detail.syncJobs
+          .filter(
+            (job) =>
+              job.jobType === 'REGISTER' &&
+              job.status === 'DEAD_LETTER' &&
+              (ids.size === 0 || ids.has(job.syncJobId)) &&
+              (!body.errorCodeFilter ||
+                job.lastErrorCode === body.errorCodeFilter) &&
+              detail.status !== 'CANCELING' &&
+              detail.status !== 'CANCELED',
+          )
+          .map((job) => [detail, job] as const),
+      )
+      // 서버처럼 한 번에 1000건까지 — 남은 건 같은 요청을 다시 보내야 한다.
+      .slice(0, 1000)
     for (const [detail, job] of targets) markReprocessed(detail, job)
     const rate = body.ratePerSecond ?? 20
     return ok<BatchReprocess>(

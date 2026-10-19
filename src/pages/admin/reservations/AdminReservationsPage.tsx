@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 
 import { useAdminProducts } from '@entities/admin-product'
 import {
@@ -14,7 +14,6 @@ import {
   paymentStateVariant,
   reservationNo,
   reservationStageLabel,
-  reservationStages,
   reservationStateColor,
   reservationStateLabel,
   reservationStateLabels,
@@ -33,7 +32,10 @@ import {
   refreshIntervalOptions,
   type RefreshInterval,
 } from '@shared/config/refreshInterval'
-import { adminReservationPath } from '@shared/config/routes'
+import {
+  ADMIN_RECOVERY_PATH,
+  adminReservationPath,
+} from '@shared/config/routes'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
@@ -42,7 +44,6 @@ import {
   Input,
   RefreshStatus,
   SegmentedTabs,
-  StatCard,
   Table,
   Tag,
 } from '@shared/ui'
@@ -52,12 +53,13 @@ import * as styles from './AdminReservationsPage.css'
 
 const ALL_PRODUCTS = '전체 상품'
 
+// 처리할 일이 있는 상태부터 — 실패가 맨 앞이다. stage는 집계 건수(countByStage)의 칸이다.
 const statusFilters = [
-  { value: 'all', label: '전체' },
-  { value: 'CONFIRMED', label: '확정' },
-  { value: 'PROCESSING', label: '처리 중' },
-  { value: 'REPROCESS_NEEDED', label: '외부 등록 실패' },
-  { value: 'CANCELED', label: '취소' },
+  { value: 'REPROCESS_NEEDED', stage: 'REPROCESS_NEEDED' },
+  { value: 'PROCESSING', stage: 'PROCESSING' },
+  { value: 'CONFIRMED', stage: 'CONFIRMED' },
+  { value: 'CANCELED', stage: 'CANCELED' },
+  { value: 'all', stage: 'ALL' },
 ] as const
 
 // 한 번에 받는 최근 예약 수(서버 상한). 표·탭·검색은 이 안에서 한다.
@@ -73,7 +75,8 @@ const matchesFilter = (state: ReservationState, filter: StatusFilter) =>
 
 /**
  * 예약 접수 현황. 10초마다 자동 갱신하고, 외부 등록이 끝내 실패한 예약은 재처리를
- * 걸 수 있다. 카드는 집계 API로 전체를 세고, 표는 최근 예약을 보여준다.
+ * 걸 수 있다. 탭 건수는 집계 API로 전체를 세고, 표는 최근 예약을 보여준다. 실패가 쌓이면
+ * 원인별로 한 번에 다시 보내는 장애 대응 화면으로 안내한다.
  */
 export function AdminReservationsPage() {
   const navigate = useNavigate()
@@ -160,16 +163,22 @@ export function AdminReservationsPage() {
 
   const stageCounts = stats.data && countByStage(stats.data)
 
-  // 카드는 탭과 같은 칸이다 — 카드 숫자가 그 탭을 눌렀을 때의 건수다(표는 최근 100건).
-  // 마지막 '상태 반영 실패'만 탭이 없다 — 예약 상태가 아니라 서버 안에서 멈춘 처리(이벤트
-  // DLQ) 수라서, 해당 예약 상세의 '상태 반영 실패'에서 다시 처리한다.
-  const cards = [
-    ...reservationStages.map((stage) => ({
-      label: reservationStageLabel[stage],
-      value: stageCounts?.[stage],
-    })),
-    { label: '상태 반영 실패', value: stats.data?.deadLetters.waiting },
-  ]
+  // 탭에 전체 건수를 붙인다(집계 API) — 표는 최근 100건이라 탭 숫자와 표 줄 수가 다를 수 있다.
+  // 집계를 못 받았으면 숫자를 빼서 0건으로 읽히지 않게 한다.
+  const tabs = statusFilters.map(({ value, stage }) => ({
+    value,
+    label: (
+      <span className={styles.tabLabel}>
+        {reservationStageLabel[stage]}
+        {stageCounts && (
+          <span className={styles.tabCount}>
+            {stageCounts[stage].toLocaleString('ko-KR')}
+          </span>
+        )}
+      </span>
+    ),
+  }))
+  const failures = stageCounts?.REPROCESS_NEEDED ?? 0
 
   const columns: TableColumn<AdminReservation>[] = [
     {
@@ -325,26 +334,22 @@ export function AdminReservationsPage() {
         </InlineAlert>
       )}
 
-      <div className={styles.cards}>
-        {cards.map(({ label, value }) => {
-          // 셋을 구분해야 한다 — 0건, 아직 못 받음, 조회 실패. 실패를 0건으로 보여주면
-          // 운영 판단이 정반대가 되고, 로딩을 실패로 보여주면 멀쩡한데 놀라게 한다.
-          const unknown = value === undefined
-          return (
-            <StatCard
-              key={label}
-              label={label}
-              muted={unknown}
-              loading={stats.isPending}
-              value={
-                value !== undefined
-                  ? `${value.toLocaleString('ko-KR')}건`
-                  : '조회 실패'
-              }
-            />
-          )
-        })}
-      </div>
+      {stats.isError && !stats.data && (
+        <InlineAlert status="error">
+          {getErrorMessage(stats.error, '상태별 건수를 불러오지 못했습니다.')}
+        </InlineAlert>
+      )}
+
+      {/* 여러 건은 원인별로 묶어 한 번에 보내는 게 빠르다 — 한 건씩은 아래 표의 재처리. */}
+      {failures > 0 && (
+        <InlineAlert status="error">
+          {failures.toLocaleString('ko-KR')}건이 외부 등록에 실패해 결제 단계로
+          못 넘어가고 있습니다.{' '}
+          <Link className={styles.link} to={ADMIN_RECOVERY_PATH}>
+            장애 대응에서 원인별로 다시 보내기
+          </Link>
+        </InlineAlert>
+      )}
 
       {reprocess.isError && (
         <InlineAlert status="error">
@@ -354,7 +359,7 @@ export function AdminReservationsPage() {
 
       <div className={styles.toolbar}>
         <SegmentedTabs
-          items={statusFilters}
+          items={tabs}
           value={statusFilter}
           onChange={setStatusFilter}
         />

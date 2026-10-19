@@ -133,6 +133,8 @@ export const readBackTo = (state: unknown): BackTo | undefined => {
     : undefined
 }
 
+/** 장애 대응 — 외부 등록이 끝내 실패한 예약을 원인(오류 코드)별로 묶어 다시 보낸다 */
+export const ADMIN_RECOVERY_PATH = '/admin/recovery'
 /** 외부 예약 대조 — 우리 예약과 외부 예약 시스템 원장을 맞춰 본다 */
 export const ADMIN_RECONCILIATION_PATH = '/admin/reconciliation'
 export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'

@@ -27,6 +27,7 @@ import {
   ADMIN_PROMOTIONS_PATH,
   ADMIN_ORDERS_PATH,
   ADMIN_RECONCILIATION_PATH,
+  ADMIN_RECOVERY_PATH,
   ADMIN_RESERVATIONS_PATH,
   ADMIN_WAITINGROOM_PATH,
   adminProductPath,
@@ -234,18 +235,21 @@ const browserRouter = createBrowserRouter([
                 // 관리자 페이지도 사이드바는 남기고 본문 자리에만 에러 화면을 그린다.
                 errorElement: <ErrorPage />,
                 children: [
-                  // 홈은 다른 용도로 바꿀 예정이라 비워 둔다. 메뉴 목록은 사이드바 한 곳에만 둔다.
+                  // 운영 홈 — 오픈 중 지금 처리할 일과 처리 흐름. 메뉴 목록은 사이드바 한 곳에만 둔다.
                   {
                     path: ADMIN_HOME_PATH,
                     lazy: () =>
-                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                        (m) => ({
-                          element: <m.AdminPlaceholderPage title="관리자 홈" />,
-                        }),
+                      import('@pages/admin/home/AdminHomePage').then((m) => ({
+                        Component: m.AdminHomePage,
+                      })),
+                  },
+                  {
+                    path: ADMIN_RECOVERY_PATH,
+                    lazy: () =>
+                      import('@pages/admin/recovery/AdminRecoveryPage').then(
+                        (m) => ({ Component: m.AdminRecoveryPage }),
                       ),
                   },
-                  // 홈을 제외한 나머지는 아직 기능 범위가 안 정해져서 전부 placeholder —
-                  // 스코프가 정해지는 대로 각자 전용 페이지로 교체.
                   {
                     path: ADMIN_PRODUCTS_PATH,
                     lazy: () =>

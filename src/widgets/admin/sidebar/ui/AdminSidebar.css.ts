@@ -56,6 +56,22 @@ export const navItem = style([
   },
 ])
 
+// 실패 건수 — 메뉴 이름 오른쪽 끝에 붙는다.
+export const badge = style([
+  typography.body.sub,
+  {
+    marginLeft: 'auto',
+    minWidth: spacing[20],
+    padding: `0 ${spacing[8]}`,
+    borderRadius: '999px',
+    background: color.status.danger,
+    color: color.text.inverse,
+    textAlign: 'center',
+    fontWeight: fontWeight.medium,
+    fontVariantNumeric: 'tabular-nums',
+  },
+])
+
 export const navItemActive = style({
   background: color.primary.subtler,
   borderLeftColor: color.primary.base,

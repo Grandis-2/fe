@@ -1,6 +1,7 @@
 import { style } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@shared/config/theme'
+import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
   display: 'flex',
@@ -20,11 +21,23 @@ export const title = style([
   { color: color.text.primary },
 ])
 
-export const cards = style({
-  display: 'grid',
-  // 카드가 6장이라 좁은 화면에서 한 줄에 다 넣으면 숫자가 줄바꿈된다.
-  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-  gap: spacing[16],
+// 탭 이름 옆에 그 상태의 전체 건수를 붙인다.
+export const tabLabel = style({
+  display: 'inline-flex',
+  alignItems: 'baseline',
+  gap: spacing[6],
+})
+
+export const tabCount = style({
+  fontVariantNumeric: 'tabular-nums',
+  opacity: 0.8,
+})
+
+// 경고 문구 안의 링크라 문구 색을 그대로 따른다.
+export const link = style({
+  color: 'inherit',
+  fontWeight: fontWeight.semibold,
+  textDecoration: 'underline',
 })
 
 export const toolbar = style({

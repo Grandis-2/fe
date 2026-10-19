@@ -19,6 +19,7 @@ import {
   getSyncJobErrorGroups,
   reprocessAdminReservation,
   reprocessAdminReservations,
+  reprocessByErrorCodes,
   toAdminReservationDetail,
   updateAdminReservationNote,
 } from './adminReservation'
@@ -118,6 +119,17 @@ export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
     queryFn: ({ signal }) => getSyncJobErrorGroups(signal),
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
+  })
+}
+
+/** 오류 코드별 일괄 재처리. 응답은 시작한 건수뿐이라 결과는 집계를 다시 받아 본다 */
+export const useReprocessByErrorCodes = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: reprocessByErrorCodes,
+    onSettled: () =>
+      // 중간 코드에서 실패해도 앞 코드는 이미 시작됐다 — 성공·실패 모두 다시 받는다.
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })
 }
 

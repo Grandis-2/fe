@@ -1,0 +1,44 @@
+import { expect } from 'storybook/test'
+
+import { OpsTaskCard } from './OpsTaskCard'
+
+import type { Meta, StoryObj } from '@storybook/react-vite'
+
+// Tag는 widthOptions로 너비를 맞추려고 같은 글자를 aria-hidden ghost로 한 번 더 그린다.
+// 눈에 보이는 쪽은 언제나 첫 번째다.
+
+const meta = {
+  component: OpsTaskCard,
+  tags: ['ai-generated'],
+  args: {
+    level: 'urgent',
+    title: '외부 등록 실패 860건 — 결제 단계로 못 넘어가고 있어요',
+    description: '원인 HTTP_503 820건 · TIMEOUT 40건',
+    action: { label: '원인별로 다시 보내기', to: '/admin/recovery' },
+  },
+} satisfies Meta<typeof OpsTaskCard>
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+/** 급한 정도를 글자로도 알리고, 처리할 화면으로 가는 링크를 단다 */
+export const Urgent: Story = {
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText('긴급')[0]).toBeVisible()
+    await expect(
+      canvas.getByRole('link', { name: '원인별로 다시 보내기' }),
+    ).toHaveAttribute('href', '/admin/recovery')
+  },
+}
+
+export const Todo: Story = {
+  args: {
+    level: 'todo',
+    title: '배송 처리 대기 주문 37건',
+    description: '상품 준비 중 24건 · 출고 대기 13건',
+    action: { label: '주문 처리', to: '/admin/orders' },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText('할 일')[0]).toBeVisible()
+  },
+}
