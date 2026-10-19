@@ -157,26 +157,18 @@ export async function reprocessAdminReservations(preorderIds: string[]) {
 // [preorder] POST /api/v1/admin/preorders/sync-jobs/reprocess-batch — 조건으로 일괄 재처리
 /**
  * 마지막 오류 코드가 같은 DEAD_LETTER 작업을 코드마다 한 번씩(각 최대 1000건) 다시 보낸다.
- * 서버가 초당 ratePerSecond건씩 이어서 처리하므로 응답은 시작한 건수뿐이다. 코드끼리
- * 동시에 몰리지 않게 차례로 보낸다.
+ * 서버가 정한 속도(기본 초당 20건)로 나눠 이어서 처리하므로 응답은 시작한 건수뿐이다.
+ * 속도는 보내지 않는다 — 외부 시스템이 버티는 양은 서버가 알고, 관리자에겐 고를 근거가
+ * 없다. 코드끼리 동시에 몰리지 않게 차례로 보낸다.
  */
-export async function reprocessByErrorCodes({
-  errorCodes,
-  ratePerSecond,
-}: {
-  errorCodes: string[]
-  ratePerSecond: number
-}) {
+export async function reprocessByErrorCodes(errorCodes: string[]) {
   const results: (BatchReprocess & { errorCode: string })[] = []
   for (const errorCode of errorCodes) {
     const result = await apiClient.request<BatchReprocess>(
       `${BASE}/sync-jobs/reprocess-batch`,
       {
         method: 'POST',
-        body: {
-          errorCodeFilter: errorCode,
-          ratePerSecond,
-        } satisfies ReprocessBatchRequest,
+        body: { errorCodeFilter: errorCode } satisfies ReprocessBatchRequest,
       },
     )
     results.push({ ...result, errorCode })

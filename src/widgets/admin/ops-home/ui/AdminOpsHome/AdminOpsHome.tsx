@@ -6,6 +6,7 @@ import { Link } from 'react-router'
 import { DRAW_STUCK_AFTER_MS, useAdminDraws } from '@entities/admin-draw'
 import { useAdminOrders } from '@entities/admin-order'
 import {
+  syncErrorCause,
   useReservationStats,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
@@ -45,7 +46,11 @@ import { StuckDrawTask } from '../StuckDrawTask'
 
 import * as styles from './AdminOpsHome.css'
 
-const POLL_INTERVAL_MS = 10_000
+// 집계는 서버가 5초까지 캐시해(명세: "5초 이상이면 충분") 그보다 자주 받아도 같은 값이다.
+// 문제를 처음 알아채는 화면이라 그 하한에 맞춘다.
+const POLL_INTERVAL_MS = 5_000
+// 원인별 묶음은 작업 전체를 세는 무거운 조회이고, 홈에선 실패 원인을 덧붙이는 보조 정보라 덜 자주.
+const ERROR_GROUPS_INTERVAL_MS = 10_000
 /** 상품별 대기열 표에 보일 상품 수 — 전부는 대기열 관리에서 본다 */
 const QUEUE_ROWS = 5
 // shortcut: 마감 뒤 하루 안의 회차만 멈췄는지 본다(회차마다 진행을 따로 받아서). 회차가 많아지면 서버 집계로 바꾼다.
@@ -82,7 +87,7 @@ export type AdminOpsHomeProps = {
  */
 export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const stats = useReservationStats(undefined, POLL_INTERVAL_MS)
-  const errors = useSyncJobErrorGroups(POLL_INTERVAL_MS)
+  const errors = useSyncJobErrorGroups(ERROR_GROUPS_INTERVAL_MS)
   const queue = useWaitingroomStatus(POLL_INTERVAL_MS)
   const draws = useAdminDraws()
   // 건수만 필요해 한 건씩 받고 total을 쓴다.
@@ -129,7 +134,11 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const topErrors = (errors.data ?? [])
     .toSorted((a, b) => b.count - a.count)
     .slice(0, 2)
-    .map((group) => `${group.errorCode} ${formatNumber(group.count)}건`)
+    // 판매자가 읽을 말로 — 코드는 장애 대응 화면에서 흐리게 함께 보인다.
+    .map(
+      (group) =>
+        `${group.errorCode === null ? '확인되지 않은 오류' : syncErrorCause(group.errorCode).label} ${formatNumber(group.count)}건`,
+    )
     .join(' · ')
 
   const shipping =
@@ -229,7 +238,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       <RefreshStatus
         updatedAt={stats.dataUpdatedAt}
         onRefresh={refresh}
-        note="10초마다 자동 갱신"
+        note="5초마다 자동 갱신"
       />
 
       {statsError !== null && (

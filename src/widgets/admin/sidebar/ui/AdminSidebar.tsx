@@ -22,6 +22,8 @@ import { formatNumber } from '@shared/lib/formatNumber'
 
 import * as styles from './AdminSidebar.css'
 
+const BADGE_INTERVAL_MS = 30_000
+
 // 오픈 중에 보는 화면(오픈 운영)과 등록·일상 업무(상품·판매)를 나눈다 — 관리자의 목적이
 // "오픈 순간을 넘기는 관제"라 그 묶음을 위에 둔다.
 const navGroups = [
@@ -63,9 +65,12 @@ export function AdminSidebar() {
   // 다른 메뉴에서 넘어온 상세(외부 예약 대조 → 예약 상세)는 들어온 메뉴를 켜 둔다.
   const pathname =
     readBackTo(location.state)?.to.split('?')[0] ?? location.pathname
-  // 어느 화면에 있든 외부 등록 실패가 쌓이면 메뉴에서 보이게 한다. 같은 키라 홈·예약 현황과
-  // 캐시를 나눠 쓴다. 못 받았으면 배지를 숨긴다(0건으로 보이지 않게).
-  const failures = useReservationStats().data?.syncJobs.REGISTER.DEAD_LETTER
+  // 어느 화면에 있든 외부 등록 실패가 쌓이면 메뉴에서 보이게 한다. 같은 키라 운영 홈·장애
+  // 대응·예약 현황이 5~10초마다 받은 값을 그대로 읽는다. 구독마다 자동 갱신 타이머가 따로
+  // 돌아 겹쳐 묻게 되므로, 배지는 그 화면들이 없을 때만 의미 있는 느린 간격으로 둔다.
+  // 못 받았으면 배지를 숨긴다(0건으로 보이지 않게).
+  const failures = useReservationStats(undefined, BADGE_INTERVAL_MS).data
+    ?.syncJobs.REGISTER.DEAD_LETTER
   const badgeOf = (path: string) =>
     path === ADMIN_RECOVERY_PATH && failures ? failures : null
 

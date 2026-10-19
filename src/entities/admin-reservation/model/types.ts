@@ -47,6 +47,29 @@ export const syncJobTypeLabel: Record<SyncJob['jobType'], string> = {
   CANCEL: '외부 취소',
 }
 
+/** 외부 등록 실패 원인을 판매자가 읽을 말로. transient면 잠시 뒤 다시 보내면 풀릴 수 있다 */
+export type SyncErrorCause = { label: string; transient: boolean }
+
+/**
+ * 마지막 시도의 오류 코드(lastErrorCode) → 원인. 5xx·응답 없음은 외부 시스템의 일시 장애,
+ * 거절(…REJECTED, 명세상 422)은 요청 내용 문제라 다시 보내도 같다. 모르는 코드는 일시
+ * 장애로 보지 않는다(잘못 보내 외부 시스템을 두드리지 않게).
+ * shortcut: 코드 목록이 명세에 없어 이름 규칙으로 나눈다. 백엔드가 목록·재시도 가능 여부를 주면 그걸로 바꾼다.
+ */
+export function syncErrorCause(errorCode: string): SyncErrorCause {
+  if (errorCode === 'TIMEOUT')
+    return { label: '외부 예약 시스템이 응답하지 않음', transient: true }
+  if (errorCode === 'HTTP_503')
+    return { label: '외부 예약 시스템 일시 중단', transient: true }
+  if (errorCode === 'HTTP_504')
+    return { label: '외부 예약 시스템 응답 지연', transient: true }
+  if (/^HTTP_5\d\d/.test(errorCode))
+    return { label: '외부 예약 시스템 오류', transient: true }
+  if (errorCode.endsWith('REJECTED'))
+    return { label: '외부 예약 시스템이 접수를 거절', transient: false }
+  return { label: '확인되지 않은 오류', transient: false }
+}
+
 export const syncJobStatusLabel: Record<SyncJobStatus, string> = {
   PENDING: '대기',
   PROCESSING: '처리 중',

@@ -1,7 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@shared/config/theme'
-import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
   display: 'flex',
@@ -55,7 +54,8 @@ export const columns = style({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
   gap: spacing[16],
-  alignItems: 'start',
+  // 나란한 카드는 높이를 맞춘다 — 윗선·아랫선이 어긋나면 서로 다른 덩어리로 읽힌다.
+  alignItems: 'stretch',
 })
 
 /** 섹션 내용을 감싸는 흰 카드 */
@@ -89,10 +89,32 @@ export const causePicked = style({
   background: color.primary.subtler,
 })
 
-export const causeCode = style([
+export const causeText = style({
+  flex: 1,
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[2],
+})
+
+export const causeLabel = style([
   typography.title.smMedium,
-  { flex: 1, minWidth: 0, color: color.text.primary },
+  { color: color.text.primary },
 ])
+
+export const causeHint = style([
+  typography.body.sub,
+  { color: color.text.secondary },
+])
+
+// 다시 보내도 같은 원인 — 기본으로 빠져 있는 이유를 눈에 띄게.
+export const causeHintWarn = style([
+  typography.body.sub,
+  { color: color.status.danger },
+])
+
+// 판매자에게는 설명이 먼저고, 코드는 개발팀에 알릴 때 쓰도록 흐리게 붙인다.
+export const causeCode = style({ color: color.text.tertiary })
 
 export const causeCount = style([
   typography.title.mdSemibold,
@@ -111,17 +133,6 @@ export const summary = style({
 export const summaryValue = style([
   typography.title.lgSemibold,
   { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
-])
-
-export const field = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[8],
-})
-
-export const fieldLabel = style([
-  typography.body.defaultMedium,
-  { color: color.text.primary, fontWeight: fontWeight.medium },
 ])
 
 export const cards = style({

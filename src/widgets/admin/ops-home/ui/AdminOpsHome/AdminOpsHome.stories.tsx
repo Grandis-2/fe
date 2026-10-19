@@ -130,7 +130,9 @@ export const Busy: Story = {
     await expect(cards).toHaveLength(4)
     await expect(within(cards[0]).getAllByText('긴급')[0]).toBeVisible()
     await expect(cards[0]).toHaveTextContent('외부 등록 실패 860건')
-    await expect(cards[0]).toHaveTextContent('HTTP_503 820건 · TIMEOUT 40건')
+    await expect(cards[0]).toHaveTextContent(
+      '외부 예약 시스템 일시 중단 820건 · 외부 예약 시스템이 응답하지 않음 40건',
+    )
     await expect(
       within(cards[0]).getByRole('link', { name: '원인별로 다시 보내기' }),
     ).toHaveAttribute('href', '/admin/recovery')

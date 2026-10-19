@@ -54,30 +54,41 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 원인은 많은 순이고 기본으로 모두 골라져 있다. 하나를 빼면 보낼 건수가 줄어든다 */
+/**
+ * 원인은 판매자가 읽을 말로, 많은 순이다. 일시 장애만 기본으로 골라지고 거절된 건은
+ * 빠져 있다. 하나를 빼면 보낼 건수와 예상 시간이 줄어든다
+ */
 export const PickCauses: Story = {
   decorators: [
     withFailures([
       { errorCode: 'TIMEOUT', count: 40 },
+      { errorCode: 'MOCK_REJECTED', count: 6 },
       { errorCode: 'HTTP_503', count: 820 },
     ]),
   ],
   play: async ({ canvas, userEvent }) => {
     const [first] = canvas.getAllByRole('checkbox')
-    await expect(first.closest('label')).toHaveTextContent('HTTP_503')
+    await expect(first.closest('label')).toHaveTextContent(
+      '외부 예약 시스템 일시 중단',
+    )
+    await expect(
+      canvas.getByRole('checkbox', { name: /접수를 거절/ }),
+    ).not.toBeChecked()
+    // 회복 확인은 보내기 전에도 지금 실패 수를 보인다.
+    await expect(canvas.getByText('지금 실패')).toBeVisible()
     await expect(
       canvas.getByRole('button', { name: '860건 다시 보내기' }),
     ).toBeEnabled()
 
-    await userEvent.click(canvas.getByRole('checkbox', { name: /TIMEOUT/ }))
+    await userEvent.click(
+      canvas.getByRole('checkbox', { name: /응답하지 않음/ }),
+    )
     await expect(
       canvas.getByRole('button', { name: '820건 다시 보내기' }),
     ).toBeEnabled()
-    await expect(canvas.getByText(/약 41초 걸려요/)).toBeVisible()
-
-    // 속도를 올리면 예상 시간이 줄어든다.
-    await userEvent.click(canvas.getByRole('button', { name: '초당 50건' }))
-    await expect(canvas.getByText(/약 17초 걸려요/)).toBeVisible()
+    // 속도는 고르지 않는다 — 서버 기본(초당 20건)으로 어림한다.
+    await expect(canvas.getByText(/약 41초에 걸쳐 나눠 보내요/)).toBeVisible()
+    await expect(canvas.queryByRole('button', { name: /초당/ })).toBeNull()
   },
 }
 

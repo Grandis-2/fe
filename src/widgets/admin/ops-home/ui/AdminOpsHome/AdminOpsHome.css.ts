@@ -40,7 +40,8 @@ export const columns = style({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
   gap: spacing[16],
-  alignItems: 'start',
+  // 나란한 카드는 높이를 맞춘다 — 윗선·아랫선이 어긋나면 서로 다른 덩어리로 읽힌다.
+  alignItems: 'stretch',
 })
 
 /** 섹션 내용을 감싸는 흰 카드 */

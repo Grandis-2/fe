@@ -4,15 +4,16 @@ import { CircleCheck } from 'lucide-react'
 import { Link } from 'react-router'
 
 import {
+  syncErrorCause,
   useReprocessByErrorCodes,
   useReservationStats,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
-import { ADMIN_RESERVATIONS_PATH } from '@shared/config/routes'
+import { adminReservationsPath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { toggleInSet } from '@shared/lib/toggleInSet'
+import { appendSample, type Sample } from '@shared/lib/samples'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
@@ -20,10 +21,10 @@ import {
   FormSection,
   InlineAlert,
   RefreshStatus,
-  SegmentedTabs,
   Skeleton,
   SkeletonGroup,
   StatCard,
+  ThroughputChart,
 } from '@shared/ui'
 
 import * as styles from './AdminRecovery.css'
@@ -35,14 +36,13 @@ const BATCH_MAX = 1000
 /** 예상 시간이 이만큼 지나도 줄지 않으면 외부 시스템이 아직 회복되지 않은 것으로 본다 */
 const GRACE_SECONDS = 30
 
-const rateOptions = [
-  { value: '10', label: '초당 10건' },
-  { value: '20', label: '초당 20건 (기본)' },
-  { value: '50', label: '초당 50건' },
-] as const
-type Rate = (typeof rateOptions)[number]['value']
+/**
+ * 서버가 다시 보내는 속도(명세 기본값). 보내기 전 예상 시간을 어림하는 데만 쓰고 요청엔
+ * 싣지 않는다 — 보낸 뒤엔 서버가 준 예상 시간을 쓴다.
+ */
+const SERVER_RATE_PER_SECOND = 20
 
-const steps = ['원인 확인', '속도 정해서 다시 보내기', '회복 확인'] as const
+const steps = ['원인 확인', '다시 보내기', '회복 확인'] as const
 
 /** 다시 보낸 때의 값 — 그 뒤로 실패가 얼마나 줄었는지 비교한다 */
 type Sent = {
@@ -65,41 +65,57 @@ export function AdminRecovery() {
   const errors = useSyncJobErrorGroups(POLL_INTERVAL_MS)
   const reprocess = useReprocessByErrorCodes()
 
-  // 고르지 않은 코드만 기억한다 — 새로 생긴 오류 코드는 기본으로 골라진다.
-  const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set())
-  const [rate, setRate] = useState<Rate>('20')
+  // 관리자가 직접 켜고 끈 원인만 기억한다. 손대지 않은 원인은 다시 보내면 풀릴 수 있는
+  // 것(일시 장애)만 기본으로 골라진다 — 거절된 건을 같이 보내 외부 시스템을 두드리지 않게.
+  const [choices, setChoices] = useState<ReadonlyMap<string, boolean>>(
+    new Map(),
+  )
   const [sent, setSent] = useState<Sent | null>(null)
 
   const groups = (errors.data ?? [])
     .flatMap(({ errorCode, count }) =>
-      errorCode === null ? [] : [{ errorCode, count }],
+      errorCode === null
+        ? []
+        : [{ errorCode, count, cause: syncErrorCause(errorCode) }],
     )
     .toSorted((a, b) => b.count - a.count)
-  const picked = groups.filter((group) => !excluded.has(group.errorCode))
+  const isPicked = (group: (typeof groups)[number]) =>
+    choices.get(group.errorCode) ?? group.cause.transient
+  const picked = groups.filter(isPicked)
   const pickedCount = picked.reduce((total, group) => total + group.count, 0)
   // 서버는 코드마다 1000건까지만 받는다 — 예상 시간은 실제로 보낼 수 있는 만큼으로 잰다.
   const sendableCount = picked.reduce(
     (total, group) => total + Math.min(group.count, BATCH_MAX),
     0,
   )
-  const ratePerSecond = Number(rate)
 
   const s = stats.data
   const failuresNow = s?.syncJobs.REGISTER.DEAD_LETTER
-  const retrying = s
+  // 외부 등록을 기다리는 작업 전부 — 다시 보낸 것뿐 아니라 새로 들어온 예약의 정상 등록
+  // 대기가 대부분이라, 재처리 결과로 읽히지 않게 이름을 그대로 둔다.
+  const pendingRegister = s
     ? s.syncJobs.REGISTER.PENDING +
       s.syncJobs.REGISTER.PROCESSING +
       s.syncJobs.REGISTER.RETRY_SCHEDULED
     : undefined
 
+  // 회복 추이 — 이 화면을 연 뒤 받은 실패 수를 쌓는다(보내기 전부터 그려 둬야 보낸 뒤와
+  // 비교된다). 등록 대기는 수천 건이라 같은 축에 넣으면 실패 선이 바닥에 붙어 빼 둔다.
+  const [history, setHistory] = useState<Sample<number>[]>([])
+  if (s && stats.dataUpdatedAt !== history.at(-1)?.at) {
+    setHistory((prev) =>
+      appendSample(prev, {
+        at: stats.dataUpdatedAt,
+        value: s.syncJobs.REGISTER.DEAD_LETTER,
+      }),
+    )
+  }
+
   const send = () => {
     const failuresAtSend = failuresNow ?? 0
     reprocess.reset()
     reprocess.mutate(
-      {
-        errorCodes: picked.map((group) => group.errorCode),
-        ratePerSecond,
-      },
+      picked.map((group) => group.errorCode),
       {
         onSuccess: (results) => {
           const targetCount = results.reduce((t, r) => t + r.targetCount, 0)
@@ -124,7 +140,7 @@ export function AdminRecovery() {
     openModal({
       theme: 'light',
       title: `${formatNumber(pickedCount)}건을 다시 보낼까요?`,
-      description: `초당 ${rate}건씩 외부 예약 시스템에 다시 등록해요. 외부 시스템이 막 회복됐다면 속도를 낮추세요.`,
+      description: `외부 예약 시스템에 다시 등록해요. 한꺼번에 몰리지 않게 약 ${formatNumber(Math.ceil(sendableCount / SERVER_RATE_PER_SECOND))}초에 걸쳐 나눠 보내요.`,
       confirmLabel: '다시 보내기',
       onConfirm: () => {
         closeModal()
@@ -180,7 +196,7 @@ export function AdminRecovery() {
         <div className={styles.card}>
           <FormSection
             title="1. 실패 원인별 묶음"
-            description="마지막 시도의 오류 코드로 묶었어요. 다시 보낼 원인을 고르세요."
+            description="외부 예약 시스템이 마지막에 돌려준 이유로 묶었어요. 다시 보낼 원인을 고르세요."
           >
             {pollingError(errors) !== null && (
               <InlineAlert status={errors.data ? 'warning' : 'error'}>
@@ -203,7 +219,7 @@ export function AdminRecovery() {
             ) : (
               <div className={styles.list}>
                 {groups.map((group) => {
-                  const checked = !excluded.has(group.errorCode)
+                  const checked = isPicked(group)
                   return (
                     <label
                       key={group.errorCode}
@@ -214,17 +230,34 @@ export function AdminRecovery() {
                       <Checkbox
                         checked={checked}
                         onChange={(event) =>
-                          setExcluded((prev) =>
-                            toggleInSet(
-                              prev,
-                              [group.errorCode],
-                              !event.target.checked,
+                          setChoices((prev) =>
+                            new Map(prev).set(
+                              group.errorCode,
+                              event.target.checked,
                             ),
                           )
                         }
                       />
-                      <span className={styles.causeCode}>
-                        {group.errorCode}
+                      <span className={styles.causeText}>
+                        <span className={styles.causeLabel}>
+                          {group.cause.label}
+                        </span>
+                        <span
+                          className={
+                            group.cause.transient
+                              ? styles.causeHint
+                              : styles.causeHintWarn
+                          }
+                        >
+                          {group.cause.transient
+                            ? '잠시 뒤 다시 보내면 풀릴 수 있어요'
+                            : '다시 보내도 같은 결과일 수 있어요 — 예약을 한 건씩 확인하세요'}
+                          {/* 개발팀에 알릴 때 쓰는 원래 코드 */}
+                          <span className={styles.causeCode}>
+                            {' '}
+                            · {group.errorCode}
+                          </span>
+                        </span>
                       </span>
                       <span className={styles.causeCount}>
                         {formatNumber(group.count)}건
@@ -237,11 +270,13 @@ export function AdminRecovery() {
             <div className={styles.caption}>
               건수에는 아직 자동 재시도 중인 작업이 섞일 수 있어요. 다시
               보내기는 재시도를 다 쓴 작업만 보내고, 실제로 보낸 수는 결과에
-              나와요. 한 건씩 보려면{' '}
-              <Link className={styles.link} to={ADMIN_RESERVATIONS_PATH}>
-                예약 현황
+              나와요.{' '}
+              <Link
+                className={styles.link}
+                to={adminReservationsPath('REPROCESS_NEEDED')}
+              >
+                실패한 예약을 한 건씩 보기
               </Link>
-              에서 찾으세요.
             </div>
           </FormSection>
         </div>
@@ -254,23 +289,11 @@ export function AdminRecovery() {
                 {formatNumber(pickedCount)}건
               </span>
             </div>
-            <div className={styles.field}>
-              <span className={styles.fieldLabel} id="recovery-rate">
-                보내는 속도
-              </span>
-              <div aria-labelledby="recovery-rate" role="group">
-                <SegmentedTabs
-                  items={rateOptions}
-                  value={rate}
-                  onChange={setRate}
-                />
-              </div>
-              <span className={styles.caption}>
-                {pickedCount > 0
-                  ? `약 ${formatNumber(Math.ceil(sendableCount / ratePerSecond))}초 걸려요. 한꺼번에 몰리면 다시 실패할 수 있어요.`
-                  : '보낼 원인을 골라 주세요.'}
-              </span>
-            </div>
+            <span className={styles.caption}>
+              {pickedCount > 0
+                ? `한꺼번에 보내면 막 회복된 외부 시스템이 다시 멈출 수 있어 약 ${formatNumber(Math.ceil(sendableCount / SERVER_RATE_PER_SECOND))}초에 걸쳐 나눠 보내요. 누른 순간의 실패만 보내고, 그 뒤에 생긴 실패는 다시 눌러야 해요.`
+                : '보낼 원인을 골라 주세요.'}
+            </span>
             {reprocess.isError && (
               <InlineAlert status="error">
                 {getErrorMessage(reprocess.error, '다시 보내지 못했어요.')}
@@ -293,62 +316,96 @@ export function AdminRecovery() {
           title="3. 회복 확인"
           description="서버가 집계한 값만 보여요. 다시 보낸 작업이 또 실패하면 '지금 실패'로 돌아와요."
         >
-          {!sent ? (
-            <div className={styles.caption}>
-              다시 보내면 여기서 실패가 줄어드는지 보여 줘요.
-            </div>
-          ) : (
-            <>
-              <InlineAlert status="success" icon={CircleCheck}>
-                {formatNumber(sent.targetCount)}건을 다시 보내기 시작했어요. 약{' '}
-                {formatNumber(sent.estimatedSeconds)}초 걸려요
-                {sent.skippedCount > 0 &&
-                  ` (조건 밖이라 건너뛴 ${formatNumber(sent.skippedCount)}건 제외)`}
-                .
-              </InlineAlert>
-              {sent.capped && (
-                <InlineAlert status="info">
-                  한 번에 원인마다 {formatNumber(BATCH_MAX)}건까지 보내요. 남은
-                  실패가 있으면 끝난 뒤 다시 보내 주세요.
-                </InlineAlert>
+          {pollingError(stats) !== null && (
+            <InlineAlert status={s ? 'warning' : 'error'}>
+              {getErrorMessage(
+                pollingError(stats),
+                '실패 건수를 불러오지 못했어요.',
               )}
-              <div className={styles.cards}>
-                <StatCard
-                  label="보낼 때 실패"
-                  value={`${formatNumber(sent.failuresAtSend)}건`}
-                />
-                <StatCard
-                  label="지금 실패"
-                  muted={failuresNow === undefined}
-                  value={
-                    failuresNow === undefined
-                      ? '조회 실패'
-                      : `${formatNumber(failuresNow)}건`
-                  }
-                />
-                <StatCard
-                  label="다시 보내는 중"
-                  muted={retrying === undefined}
-                  value={
-                    retrying === undefined
-                      ? '조회 실패'
-                      : `${formatNumber(retrying)}건`
-                  }
-                />
-                <StatCard
-                  label="경과"
-                  value={`${formatNumber(elapsedSeconds)}초 / 약 ${formatNumber(sent.estimatedSeconds)}초`}
-                />
-              </div>
-              {notRecovering && (
-                <InlineAlert status="warning">
-                  예상 시간이 지났는데 실패가 줄지 않았어요. 외부 시스템이 아직
-                  회복되지 않았을 수 있어요. 속도를 낮춰 다시 보내거나 외부
-                  시스템 담당자에게 알리세요.
-                </InlineAlert>
-              )}
-            </>
+              {s && ' 아래 숫자는 마지막으로 받은 값이에요.'}
+            </InlineAlert>
           )}
+          {sent && (
+            <InlineAlert status="success" icon={CircleCheck}>
+              {formatNumber(sent.targetCount)}건을 다시 보내기 시작했어요. 약{' '}
+              {formatNumber(sent.estimatedSeconds)}초 걸려요
+              {sent.skippedCount > 0 &&
+                ` (조건 밖이라 건너뛴 ${formatNumber(sent.skippedCount)}건 제외)`}
+              .
+            </InlineAlert>
+          )}
+          {sent?.capped && (
+            <InlineAlert status="info">
+              한 번에 원인마다 {formatNumber(BATCH_MAX)}건까지 보내요. 남은
+              실패가 있으면 끝난 뒤 다시 보내 주세요.
+            </InlineAlert>
+          )}
+          <div className={styles.cards}>
+            {sent && (
+              <StatCard
+                label="보낼 때 실패"
+                value={`${formatNumber(sent.failuresAtSend)}건`}
+              />
+            )}
+            <StatCard
+              label="지금 실패"
+              muted={failuresNow === undefined}
+              loading={stats.isPending}
+              value={
+                failuresNow === undefined
+                  ? '조회 실패'
+                  : `${formatNumber(failuresNow)}건`
+              }
+            />
+            <StatCard
+              label="외부 등록 대기 (새 접수 포함)"
+              muted={pendingRegister === undefined}
+              loading={stats.isPending}
+              value={
+                pendingRegister === undefined
+                  ? '조회 실패'
+                  : `${formatNumber(pendingRegister)}건`
+              }
+            />
+          </div>
+          {notRecovering && (
+            <InlineAlert status="warning">
+              예상 시간이 지났는데 실패가 줄지 않았어요. 외부 시스템이 아직
+              회복되지 않았을 수 있어요. 잠시 뒤 다시 보내거나 외부 시스템
+              담당자에게 알리세요.
+            </InlineAlert>
+          )}
+          <ThroughputChart
+            label="외부 등록 실패 건수"
+            unit="건"
+            times={history.map(({ at }) => at)}
+            series={[
+              {
+                label: '외부 등록 실패',
+                values: history.map(({ value }) => value),
+              },
+            ]}
+            // 보낸 시각이 기준점이다 — 그 뒤로 실패 선이 내려가야 회복이다. 예상 완료는
+            // 서버가 준 소요 시간으로 그은 점선이라, 이 선을 지나도 안 줄면 회복이 안 된 것이다.
+            markers={
+              sent
+                ? [
+                    { at: sent.at, label: '보냄' },
+                    {
+                      at: sent.at + sent.estimatedSeconds * 1000,
+                      label: '예상 완료',
+                      dashed: true,
+                    },
+                  ]
+                : []
+            }
+          />
+          <div className={styles.caption}>
+            이 화면을 연 뒤부터 그려요. &lsquo;보냄&rsquo; 선 뒤로 실패가 줄어야
+            회복된 거예요. &lsquo;예상 완료&rsquo; 점선을 지나도 그대로거나 다시
+            오르면 외부 시스템이 아직 회복되지 않았거나, 오픈 중이라 새 실패가
+            생기고 있는 거예요.
+          </div>
         </FormSection>
       </div>
     </div>

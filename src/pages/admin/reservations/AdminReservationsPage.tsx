@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 
 import { useAdminProducts } from '@entities/admin-product'
 import {
@@ -80,7 +80,22 @@ const matchesFilter = (state: ReservationState, filter: StatusFilter) =>
  */
 export function AdminReservationsPage() {
   const navigate = useNavigate()
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  // 탭은 주소(?status=)에 둔다 — 장애 대응·운영 홈에서 실패 탭을 바로 열고, 상세에서
+  // 돌아와도 고른 탭이 남는다. 모르는 값이면 전체.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const statusFilter: StatusFilter =
+    statusFilters.find(({ value }) => value === searchParams.get('status'))
+      ?.value ?? 'all'
+  const setStatusFilter = (next: StatusFilter) =>
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev)
+        if (next === 'all') params.delete('status')
+        else params.set('status', next)
+        return params
+      },
+      { replace: true },
+    )
   const [keyword, setKeyword] = useState('')
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const [productId, setProductId] = useState<string>()
