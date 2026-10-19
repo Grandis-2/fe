@@ -1,4 +1,5 @@
 import { createPaymentAttempt } from '@entities/order'
+import { track } from '@shared/lib/analytics'
 
 import { PAYMENT_CALLBACK_PATH, requestTossPayment } from './requestTossPayment'
 
@@ -20,6 +21,8 @@ export async function startOrderPayment({
   customerEmail,
 }: StartOrderPaymentParams) {
   const attempt = await createPaymentAttempt(orderId)
+  // 서버가 결제를 받아 준 뒤에 센다 — 결제할 수 없는 주문으로 거절되면 시작이 아니다.
+  if (preorderId) track('Preorder Payment Started', { preorderId, orderId })
   await requestTossPayment({
     tossOrderId: attempt.tossOrderId,
     amount: attempt.amount,
