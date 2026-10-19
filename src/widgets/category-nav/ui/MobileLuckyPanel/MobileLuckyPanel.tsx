@@ -14,6 +14,7 @@ import { getErrorMessage } from '@shared/api/client'
 import { drawPath } from '@shared/config/routes'
 import {
   Chip,
+  ImageWithFallback,
   InlineAlert,
   Skeleton,
   SkeletonGroup,
@@ -95,15 +96,10 @@ export function MobileLuckyPanel({ onClose }: MobileLuckyPanelProps) {
                 className={styles.card}
                 onClick={onClose}
               >
-                {draw.gift.imageUrl ? (
-                  <img
-                    src={draw.gift.imageUrl}
-                    alt=""
-                    className={styles.image}
-                  />
-                ) : (
-                  <div className={styles.image} />
-                )}
+                <ImageWithFallback
+                  src={draw.gift.imageUrl}
+                  className={styles.image}
+                />
                 <div className={styles.texts}>
                   <Tag
                     color={phaseTagColor[phase]}

@@ -6,7 +6,12 @@ import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
 import { useScrollArrows } from '@shared/lib/useScrollArrows'
-import { InlineAlert, PriceText, ScrollArrows } from '@shared/ui'
+import {
+  ImageWithFallback,
+  InlineAlert,
+  PriceText,
+  ScrollArrows,
+} from '@shared/ui'
 
 import * as styles from './ProductRanking.css'
 
@@ -93,13 +98,10 @@ export function ProductRanking() {
                       {rank}
                     </span>
                     <div className={styles.tile}>
-                      {product.imageUrl && (
-                        <img
-                          src={product.imageUrl}
-                          alt=""
-                          className={styles.image}
-                        />
-                      )}
+                      <ImageWithFallback
+                        src={product.imageUrl}
+                        className={styles.image}
+                      />
                     </div>
                   </div>
                   <div className={styles.info}>

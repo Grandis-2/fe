@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Slider, Tag } from '@shared/ui'
+import { ImageWithFallback, Slider, Tag } from '@shared/ui'
 
 import { ProductColorSwatches } from '../ProductColorSwatches'
 
@@ -68,16 +68,20 @@ export function ProductCard({
           {/* key를 imageSrcs에 묶어 Slider를 다시 마운트시킨다 — imageSrcs를 바꾸는 건
               색상 선택뿐이라(옵션 선택은 안 건드림), 이렇게 하면 색상 바뀔 때만
               슬라이더가 첫 장으로 리셋된다. */}
-          <Slider key={imageSrcs.join('|')}>
-            {imageSrcs.map((src) => (
-              <img
-                key={src}
-                src={src}
-                alt={imageAlt}
-                className={styles.image}
-              />
-            ))}
-          </Slider>
+          {imageSrcs.length > 0 ? (
+            <Slider key={imageSrcs.join('|')}>
+              {imageSrcs.map((src) => (
+                <ImageWithFallback
+                  key={src}
+                  src={src}
+                  alt={imageAlt}
+                  className={styles.image}
+                />
+              ))}
+            </Slider>
+          ) : (
+            <ImageWithFallback alt={imageAlt} className={styles.image} />
+          )}
         </div>
       </div>
       <div className={styles.content}>

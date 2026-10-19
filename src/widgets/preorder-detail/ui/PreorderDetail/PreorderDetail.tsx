@@ -20,7 +20,12 @@ import { getErrorMessage } from '@shared/api/client'
 import { PREORDER_PATH, productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
 import { showToast } from '@shared/model/toastStore'
-import { Button, InlineAlert, PageSkeleton } from '@shared/ui'
+import {
+  Button,
+  ImageWithFallback,
+  InlineAlert,
+  PageSkeleton,
+} from '@shared/ui'
 
 import {
   formatOpenTime,
@@ -146,15 +151,11 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
       </div>
 
       <div className={styles.hero}>
-        {preorder.imageSrc && (
-          <img
-            src={preorder.imageSrc}
-            alt={preorder.imageAlt ?? ''}
-            className={
-              styles.heroImage[status === 'done' ? 'dimmed' : 'normal']
-            }
-          />
-        )}
+        <ImageWithFallback
+          src={preorder.imageSrc}
+          alt={preorder.imageAlt ?? ''}
+          className={styles.heroImage[status === 'done' ? 'dimmed' : 'normal']}
+        />
         {status === 'done' && (
           <span className={styles.closedNotice}>사전예약이 마감되었어요</span>
         )}

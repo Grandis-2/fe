@@ -1,6 +1,6 @@
 import { typography } from '@shared/config/theme'
 import { formatDotDate } from '@shared/lib/formatDotDate'
-import { Skeleton } from '@shared/ui'
+import { ImageWithFallback, Skeleton } from '@shared/ui'
 
 import * as styles from './ReviewCard.css'
 
@@ -39,11 +39,7 @@ export function ReviewCard({ review, className }: ReviewCardProps) {
     : 0
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      {imageUrl ? (
-        <img src={imageUrl} alt="" className={styles.thumbnail} />
-      ) : (
-        <div className={styles.thumbnail} />
-      )}
+      <ImageWithFallback src={imageUrl} className={styles.thumbnail} />
       <div className={styles.main}>
         <div className={styles.top}>
           <div

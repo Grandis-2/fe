@@ -2,7 +2,7 @@ import { Link } from 'react-router'
 
 import { drawPath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Skeleton } from '@shared/ui'
+import { ImageWithFallback, Skeleton } from '@shared/ui'
 
 import { formatDrawMonthDay, getDrawSchedule } from '../../lib/drawSchedule'
 
@@ -48,9 +48,7 @@ export function DrawCard({ data, className }: DrawCardProps) {
         .join(' ')}
     >
       <div className={styles.thumb}>
-        {gift.imageUrl && (
-          <img src={gift.imageUrl} alt="" className={styles.image} />
-        )}
+        <ImageWithFallback src={gift.imageUrl} className={styles.image} />
       </div>
       <div className={styles.body}>
         <div className={styles.badges}>

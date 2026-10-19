@@ -23,6 +23,7 @@ import { useCountdown } from '@shared/lib/useCountdown'
 import { showToast } from '@shared/model/toastStore'
 import {
   ActionButton,
+  ImageWithFallback,
   InlineAlert,
   PageSkeleton,
   PollingNotice,
@@ -158,9 +159,10 @@ function DrawDetailBody({
       <section>
         <div className={styles.hero}>
           <div className={styles.imageBox}>
-            {draw.gift.imageUrl && (
-              <img src={draw.gift.imageUrl} alt="" className={styles.image} />
-            )}
+            <ImageWithFallback
+              src={draw.gift.imageUrl}
+              className={styles.image}
+            />
             <span className={styles.imageTag}>LUCKY DRAW</span>
           </div>
 
