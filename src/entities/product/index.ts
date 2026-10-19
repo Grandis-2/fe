@@ -11,7 +11,6 @@ export { useProducts } from './api/useProducts'
 export { useCategories } from './api/useCategories'
 export { useShipmentBatches } from './api/useShipmentBatches'
 export { findCategoryId } from './lib/findCategoryId'
-export { useBrandMenus } from './lib/useBrandMenus'
 export type {
   Product,
   ProductListItem,
