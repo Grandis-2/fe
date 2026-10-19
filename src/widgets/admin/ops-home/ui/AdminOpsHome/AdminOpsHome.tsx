@@ -97,12 +97,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     statsOf,
   } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
-  // 홈이 보는 사전예약 — 언제나 하나를 고른다(처음엔 첫 번째). 고른 것이 마감돼 목록에서
-  // 빠지면 첫 번째로 돌아간다. 진행 중인 게 없으면 null — 그땐 전체 집계로 본다.
+  // 대시보드가 보는 범위 — 처음엔 전체(null). 고른 사전예약이 마감돼 띠에서 빠지면 전체로
+  // 돌아간다.
   const [picked, setPicked] = useState<string | null>(null)
   const selected = openProducts.some((product) => product.productId === picked)
     ? picked
-    : (openProducts[0]?.productId ?? null)
+    : null
   // 고른 사전예약의 대기열 설정(상한이 기본값인지 운영값인지) — 바뀔 일이 드물어 폴링하지 않는다.
   const rates = useAdmissionRates()
   const selectedQueue = openProducts.find(
@@ -311,9 +311,10 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         ) : (
           <OpenPreorderStrip
             items={strip}
-            selected={selected ?? ''}
+            selected={selected}
             onSelect={setPicked}
             now={now}
+            allowAll
           />
         )}
         {pollingError(queue) !== null && (
@@ -326,7 +327,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         )}
       </section>
 
-      {selectedQueue && (
+      {selectedQueue ? (
         <section className={styles.section} aria-labelledby="ops-queue">
           <h2 id="ops-queue" className={styles.sectionTitle}>
             {nameOf(selectedQueue.productId)}의 대기열 상태
@@ -338,6 +339,27 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             )}
           />
         </section>
+      ) : (
+        q && (
+          // 전체 — 접수 중인 사전예약의 줄을 합치고, 입장은 실제 적용 중인 전역 속도로.
+          <section className={styles.section} aria-labelledby="ops-queue">
+            <h2 id="ops-queue" className={styles.sectionTitle}>
+              전체 대기열 상태
+            </h2>
+            <PreorderQueueCard
+              queue={{
+                waiting: openProducts.reduce(
+                  (total, product) => total + product.waiting,
+                  0,
+                ),
+                credit: q.globalCredit ?? 0,
+                cap: q.globalCredit ?? 0,
+              }}
+              rate={rates.data && { cap: rates.data.globalCredit }}
+              brakeFactor={q.brakeFactor}
+            />
+          </section>
+        )
       )}
 
       <section className={styles.section} aria-labelledby="ops-todo">

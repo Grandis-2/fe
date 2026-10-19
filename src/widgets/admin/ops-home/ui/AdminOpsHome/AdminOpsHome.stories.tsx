@@ -135,8 +135,9 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * 사전예약이 언제나 하나 골라져 있고(처음엔 첫 번째), 할 일·대기열 상태가 그 사전예약
- * 기준이다. 상품으로 거를 수 없는 원인·다시 보내기·배송은 '전체 기준'이라고 밝힌다.
+ * 처음엔 전체 — 할 일은 모든 사전예약을 합친 값이고, 실패는 어느 사전예약에서 났는지 나눠
+ * 적는다. 사전예약을 고르면 할 일·대기열 상태가 그 기준으로 바뀌고, 상품으로 거를 수 없는
+ * 원인·다시 보내기·배송은 '전체 기준'이라고 밝힌다.
  */
 export const Busy: Story = {
   decorators: [
@@ -151,43 +152,46 @@ export const Busy: Story = {
     const strip = within(
       canvas.getByRole('group', { name: '진행 중인 사전예약' }),
     )
-    const galaxy = strip.getByRole('button', { name: /갤럭시 S27/ })
-    const iphone = strip.getByRole('button', { name: /아이폰 18 Pro/ })
-    await expect(galaxy).toHaveAttribute('aria-pressed', 'true')
-    await expect(strip.queryByRole('button', { name: '전체' })).toBeNull()
-    await expect(iphone).toHaveTextContent('재처리 필요 845건')
+    await expect(strip.getByRole('button', { name: /전체/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
     await expect(
-      canvas.getByRole('heading', { name: '갤럭시 S27의 대기열 상태' }),
-    ).toBeVisible()
+      canvas.getByRole('region', { name: '전체 대기열 상태' }),
+    ).toHaveTextContent('18,240명')
 
     const cards = canvas.getAllByRole('article')
     await expect(cards).toHaveLength(4)
     await expect(within(cards[0]).getAllByText('긴급')[0]).toBeVisible()
-    await expect(cards[0]).toHaveTextContent('외부 등록 실패 15건')
+    await expect(cards[0]).toHaveTextContent('외부 등록 실패 860건')
     await expect(cards[0]).toHaveTextContent(
-      '원인(전체 기준) 외부 예약 시스템 일시 중단 820건',
+      '아이폰 18 Pro 845건 · 갤럭시 S27 15건',
     )
     await expect(
-      within(cards[0]).getByRole('link', {
+      within(cards[0]).getByRole('link', { name: '원인별로 다시 보내기' }),
+    ).toHaveAttribute('href', '/admin/recovery')
+    await expect(cards[3]).not.toHaveTextContent('전체 기준')
+
+    // 사전예약을 고르면 할 일·대기열 상태가 그 사전예약으로 바뀐다.
+    const iphone = strip.getByRole('button', { name: /아이폰 18 Pro/ })
+    await expect(iphone).toHaveTextContent('재처리 필요 845건')
+    await userEvent.click(iphone)
+    const scoped = canvas.getAllByRole('article')
+    await expect(scoped[0]).toHaveTextContent('외부 등록 실패 845건')
+    await expect(scoped[0]).toHaveTextContent('원인(전체 기준)')
+    await expect(
+      within(scoped[0]).getByRole('link', {
         name: '원인별로 다시 보내기 (전체)',
       }),
-    ).toHaveAttribute('href', '/admin/recovery?product=p-galaxy')
-    await expect(cards[3]).toHaveTextContent('배송 처리 대기 주문 37건')
-    await expect(cards[3]).toHaveTextContent('전체 기준')
-
-    // 다른 사전예약을 누르면 할 일·대기열 상태가 그 사전예약으로 바뀐다.
-    await userEvent.click(iphone)
-    await expect(iphone).toHaveAttribute('aria-pressed', 'true')
-    await expect(canvas.getAllByRole('article')[0]).toHaveTextContent(
-      '외부 등록 실패 845건',
-    )
+    ).toHaveAttribute('href', '/admin/recovery?product=p-iphone')
+    await expect(scoped.at(-1)).toHaveTextContent('전체 기준')
     await expect(
       canvas.getByRole('region', { name: '아이폰 18 Pro의 대기열 상태' }),
     ).toHaveTextContent('14,830명')
   },
 }
 
-/** 밀린 일이 없으면 한 줄로 끝난다. 상품별 대기열 표 대신 고른 사전예약의 대기열 상태 */
+/** 밀린 일이 없으면 한 줄로 끝난다. 처음엔 전체 대기열 상태를 보인다 */
 export const AllClear: Story = {
   decorators: [
     withData({
@@ -202,7 +206,7 @@ export const AllClear: Story = {
     await expect(canvas.getByText(/밀린 일이 없어요/)).toBeVisible()
     await expect(canvas.queryByRole('table')).toBeNull()
     await expect(
-      canvas.getByRole('region', { name: '갤럭시 S27의 대기열 상태' }),
+      canvas.getByRole('region', { name: '전체 대기열 상태' }),
     ).toBeVisible()
   },
 }

@@ -42,3 +42,18 @@ export const NoQueue: Story = {
     await expect(canvas.getByText('제한 없음')).toBeVisible()
   },
 }
+
+/** 전체 — 줄을 합치고, 상품 상한 대신 전역 입장 속도와 브레이크 배율을 보인다 */
+export const Whole: Story = {
+  args: {
+    queue: { waiting: 18240, credit: 50, cap: 100 },
+    rate: { cap: { value: 100, source: 'OPERATIONAL' } },
+    brakeFactor: 0.5,
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('전역 입장 속도')).toBeVisible()
+    await expect(canvas.getByText('초당 100명 · 운영값')).toBeVisible()
+    await expect(canvas.getByText('0.5× (서버 자동)')).toBeVisible()
+    await expect(canvas.queryByText('줄 최대 길이')).toBeNull()
+  },
+}
