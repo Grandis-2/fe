@@ -7,13 +7,13 @@ import {
   syncErrorCause,
   useReprocessByErrorCodes,
   useReservationStats,
+  useReservationStatsHistory,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
 import { adminReservationsPath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { appendSample, type Sample } from '@shared/lib/samples'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
@@ -99,17 +99,12 @@ export function AdminRecovery() {
       s.syncJobs.REGISTER.RETRY_SCHEDULED
     : undefined
 
-  // 회복 추이 — 이 화면을 연 뒤 받은 실패 수를 쌓는다(보내기 전부터 그려 둬야 보낸 뒤와
-  // 비교된다). 등록 대기는 수천 건이라 같은 축에 넣으면 실패 선이 바닥에 붙어 빼 둔다.
-  const [history, setHistory] = useState<Sample<number>[]>([])
-  if (s && stats.dataUpdatedAt !== history.at(-1)?.at) {
-    setHistory((prev) =>
-      appendSample(prev, {
-        at: stats.dataUpdatedAt,
-        value: s.syncJobs.REGISTER.DEAD_LETTER,
-      }),
-    )
-  }
+  // 회복 추이 — 관리자 화면을 연 뒤 받은 실패 수(보내기 전부터 있어야 보낸 뒤와 비교된다).
+  // 등록 대기는 수천 건이라 같은 축에 넣으면 실패 선이 바닥에 붙어 빼 둔다.
+  const history = useReservationStatsHistory().map(({ at, value }) => ({
+    at,
+    value: value.syncJobs.REGISTER.DEAD_LETTER,
+  }))
 
   const send = () => {
     const failuresAtSend = failuresNow ?? 0
@@ -401,10 +396,10 @@ export function AdminRecovery() {
             }
           />
           <div className={styles.caption}>
-            이 화면을 연 뒤부터 그려요. &lsquo;보냄&rsquo; 선 뒤로 실패가 줄어야
-            회복된 거예요. &lsquo;예상 완료&rsquo; 점선을 지나도 그대로거나 다시
-            오르면 외부 시스템이 아직 회복되지 않았거나, 오픈 중이라 새 실패가
-            생기고 있는 거예요.
+            관리자 화면을 연 뒤부터 그려요. &lsquo;보냄&rsquo; 선 뒤로 실패가
+            줄어야 회복된 거예요. &lsquo;예상 완료&rsquo; 점선을 지나도
+            그대로거나 다시 오르면 외부 시스템이 아직 회복되지 않았거나, 오픈
+            중이라 새 실패가 생기고 있는 거예요.
           </div>
         </FormSection>
       </div>

@@ -55,17 +55,24 @@ const formatValue = (value: number, unit: string) =>
   `${value.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}${unit}`
 
 /**
- * 시각이 가로축의 어디(0~1)인지. 가로축은 표본 순서라 시각 사이를 표본 간격으로
- * 나눠 끼운다. 그린 구간 밖이면 null.
+ * 시각이 가로축의 어디(0~1)인지. 가로축은 실제 시각이다 — 표본 간격이 고르지 않아도
+ * (다른 화면에 있던 동안 덜 자주 받음) 시간 비율이 틀어지지 않는다. 구간 밖이면 null.
  */
 function positionOf(times: readonly number[], at: number) {
-  const last = times.length - 1
-  if (at < times[0] || at > times[last]) return null
-  const index = times.findIndex((time) => time >= at)
-  if (index <= 0) return 0
-  const prev = times[index - 1]
-  const fraction = (at - prev) / (times[index] - prev)
-  return (index - 1 + fraction) / last
+  const first = times[0]
+  const last = times[times.length - 1]
+  if (at < first || at > last) return null
+  return last === first ? 0 : (at - first) / (last - first)
+}
+
+/** 가로 위치(0~1)에서 가장 가까운 표본 */
+function nearestIndex(times: readonly number[], ratio: number) {
+  const at = times[0] + ratio * (times[times.length - 1] - times[0])
+  let best = 0
+  times.forEach((time, index) => {
+    if (Math.abs(time - at) < Math.abs(times[best] - at)) best = index
+  })
+  return best
 }
 
 /**
@@ -91,7 +98,7 @@ export function ThroughputChart({
   }
 
   const max = niceMax(Math.max(...series.flatMap((it) => it.values)))
-  const xOf = (index: number) => (index / (times.length - 1)) * WIDTH
+  const xOf = (index: number) => (positionOf(times, times[index]) ?? 0) * WIDTH
   const yOf = (value: number) => HEIGHT - (value / max) * (HEIGHT - PAD_TOP)
   const pathOf = (values: readonly number[]) =>
     values
@@ -103,12 +110,12 @@ export function ThroughputChart({
   const handleMove = (event: PointerEvent<HTMLDivElement>) => {
     const box = event.currentTarget.getBoundingClientRect()
     const ratio = (event.clientX - box.left) / box.width
-    setHover(Math.round(Math.min(1, Math.max(0, ratio)) * (times.length - 1)))
+    setHover(nearestIndex(times, Math.min(1, Math.max(0, ratio))))
   }
 
   const last = times.length - 1
   const shown = hover ?? last
-  const hoverLeft = `${(shown / last) * 100}%`
+  const hoverLeft = `${(positionOf(times, times[shown]) ?? 0) * 100}%`
   const placedMarkers = markers.flatMap((marker) => {
     const position = positionOf(times, marker.at)
     return position === null ? [] : [{ ...marker, position }]
@@ -205,7 +212,9 @@ export function ThroughputChart({
               <div
                 role="tooltip"
                 className={
-                  shown > last / 2 ? styles.tooltipLeft : styles.tooltipRight
+                  (positionOf(times, times[shown]) ?? 0) > 0.5
+                    ? styles.tooltipLeft
+                    : styles.tooltipRight
                 }
                 style={{ left: hoverLeft }}
               >

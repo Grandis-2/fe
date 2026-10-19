@@ -1,5 +1,3 @@
-import { useState } from 'react'
-
 import { CircleCheck, Info, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 
@@ -8,6 +6,7 @@ import { useAdminOrders } from '@entities/admin-order'
 import {
   syncErrorCause,
   useReservationStats,
+  useReservationStatsHistory,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
 import {
@@ -24,12 +23,7 @@ import {
   ADMIN_WAITINGROOM_PATH,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import {
-  appendSample,
-  ratePerSecond,
-  slopePerSecond,
-  type Sample,
-} from '@shared/lib/samples'
+import { ratePerSecond, slopePerSecond } from '@shared/lib/samples'
 import {
   InlineAlert,
   RefreshStatus,
@@ -94,28 +88,20 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const preparing = useAdminOrders({ status: 'PREPARING_ITEMS', size: 1 })
   const readyToShip = useAdminOrders({ status: 'READY_TO_SHIP', size: 1 })
 
-  // 처리 흐름은 이 화면을 연 뒤 받은 집계로 그린다(새로 고치면 처음부터).
-  const [history, setHistory] = useState<
-    Sample<{ received: number; processed: number; backlog: number }>[]
-  >([])
-  // 새 응답이 오면 렌더 중에 표본을 붙인다 — 같은 응답이면 건너뛴다.
-  if (stats.data && stats.dataUpdatedAt !== history.at(-1)?.at) {
-    const { preorders } = stats.data
-    // 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 — 둘의 차이가 적체다.
-    const received = sum(preorders)
-    setHistory((prev) =>
-      appendSample(prev, {
-        at: stats.dataUpdatedAt,
-        value: {
-          received,
-          processed: received - preorders.PENDING_SYNC,
-          backlog: preorders.PENDING_SYNC,
-        },
-      }),
-    )
-  }
+  // 처리 흐름은 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도 이어진다
+  // (새로 고치면 처음부터). 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 —
+  // 둘의 차이가 적체다.
+  const history = useReservationStatsHistory()
   const pick = (key: 'received' | 'processed' | 'backlog') =>
-    history.map(({ at, value }) => ({ at, value: value[key] }))
+    history.map(({ at, value: { preorders } }) => {
+      const received = sum(preorders)
+      const value = {
+        received,
+        processed: received - preorders.PENDING_SYNC,
+        backlog: preorders.PENDING_SYNC,
+      }
+      return { at, value: value[key] }
+    })
   const receivedRates = ratePerSecond(pick('received'))
   const processedRates = ratePerSecond(pick('processed'))
   const backlogSlope = slopePerSecond(pick('backlog')).at(-1)?.value
@@ -303,7 +289,9 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             <h2 id="ops-flow" className={styles.sectionTitle}>
               들어오는 양과 처리한 양
             </h2>
-            <span className={styles.caption}>이 화면을 연 뒤부터 · 건/초</span>
+            <span className={styles.caption}>
+              관리자 화면을 연 뒤부터 · 건/초
+            </span>
           </div>
           <ThroughputChart
             label="초당 접수와 외부 등록 처리"

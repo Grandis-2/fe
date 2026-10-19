@@ -27,6 +27,10 @@ import {
 const RESERVATIONS_KEY = ['admin', 'reservations'] as const
 const POLL_INTERVAL_MS = 10_000
 
+/** 운영 현황 집계 키. 전체(productId 없음)의 추이는 useReservationStatsHistory가 모은다 */
+export const reservationStatsKey = (productId?: string) =>
+  [...RESERVATIONS_KEY, 'stats', productId] as const
+
 // 목록·집계와 같은 접두사 아래라, 재처리·취소 뒤 한 번에 무효화된다.
 const reservationKey = (preorderId: string) =>
   [...RESERVATIONS_KEY, 'detail', preorderId] as const
@@ -69,7 +73,7 @@ export const useReservationStats = (
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
 ) => {
   const queryClient = useQueryClient()
-  const queryKey = [...RESERVATIONS_KEY, 'stats', productId] as const
+  const queryKey = reservationStatsKey(productId)
   return useQuery({
     queryKey,
     queryFn: ({ signal }) => getReservationStats(productId, signal),
