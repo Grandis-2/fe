@@ -15,7 +15,7 @@ const rootBase = style({
 })
 
 export const root = styleVariants({
-  small: [rootBase, { gap: spacing[6], marginBottom: spacing[4] }],
+  small: [rootBase, { gap: spacing[10], marginBottom: spacing[4] }],
   medium: [rootBase, { gap: spacing[12] }],
 })
 
