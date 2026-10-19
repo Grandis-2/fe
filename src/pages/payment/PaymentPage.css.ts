@@ -16,11 +16,8 @@ export const root = style({
   minHeight: '100vh',
   marginTop: `calc(-1 * ${headerHeight})`,
   paddingTop: headerHeight,
-  background: glowBackground.desktop,
+  background: glowBackground,
   color: color.text.primary,
-  '@media': {
-    [breakpoint.mobile]: { background: glowBackground.mobile },
-  },
 })
 
 export const title = style([

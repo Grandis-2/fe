@@ -14,11 +14,8 @@ export const root = style({
   minHeight: '100vh',
   marginTop: `calc(-1 * ${headerHeight})`,
   paddingTop: headerHeight,
-  background: glowBackground.desktop,
+  background: glowBackground,
   color: color.text.primary,
-  '@media': {
-    [breakpoint.mobile]: { background: glowBackground.mobile },
-  },
 })
 
 // 넓은 화면은 왼쪽 메뉴 + 오른쪽 내용, 좁은 화면은 위에서 아래로 쌓인다.
