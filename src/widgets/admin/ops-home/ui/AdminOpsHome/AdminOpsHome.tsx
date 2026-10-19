@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
 import { CircleCheck, Info, TriangleAlert } from 'lucide-react'
-import { Link } from 'react-router'
 
 import { DRAW_STUCK_AFTER_MS, useAdminDraws } from '@entities/admin-draw'
 import { useAdminOrders } from '@entities/admin-order'
@@ -14,8 +13,8 @@ import {
 } from '@entities/admin-reservation'
 import {
   isBraking,
+  useAdmissionRates,
   useWaitingroomStatus,
-  type WaitingroomProductStatus,
 } from '@entities/admin-waitingroom'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
@@ -32,15 +31,14 @@ import {
   RefreshStatus,
   Skeleton,
   SkeletonGroup,
-  Table,
   ThroughputChart,
 } from '@shared/ui'
-import type { TableColumn } from '@shared/ui'
 
 import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
-import { preorderHealth } from '../../lib/preorderHealth'
+import { preorderHealth, SLOW_AFTER_MS } from '../../lib/preorderHealth'
 import { OpenPreorderStrip, type OpenPreorder } from '../OpenPreorderStrip'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
+import { PreorderQueueCard } from '../PreorderQueueCard'
 import { StuckDrawTask } from '../StuckDrawTask'
 
 import * as styles from './AdminOpsHome.css'
@@ -50,8 +48,6 @@ import * as styles from './AdminOpsHome.css'
 const POLL_INTERVAL_MS = 5_000
 // 원인별 묶음은 작업 전체를 세는 무거운 조회이고, 홈에선 실패 원인을 덧붙이는 보조 정보라 덜 자주.
 const ERROR_GROUPS_INTERVAL_MS = 10_000
-/** 상품별 대기열 표에 보일 상품 수 — 전부는 대기열 관리에서 본다 */
-const QUEUE_ROWS = 5
 /** 실패 카드에 나눠 적을 사전예약 수 — 넘으면 '외 N곳'으로 줄인다 */
 const BREAKDOWN_MAX = 3
 // shortcut: 마감 뒤 하루 안의 회차만 멈췄는지 본다(회차마다 진행을 따로 받아서). 회차가 많아지면 서버 집계로 바꾼다.
@@ -110,14 +106,18 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     ? picked
     : null
   const nameOf = (productId: string) => productNames.get(productId) ?? productId
+  // 고른 사전예약의 대기열 설정(상한이 기본값인지 운영값인지) — 바뀔 일이 드물어 폴링하지 않는다.
+  const rates = useAdmissionRates()
+  const selectedQueue = openProducts.find(
+    (product) => product.productId === selected,
+  )
 
   // 처리 흐름은 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도 이어진다
   // (새로 고치면 처음부터). 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 —
   // 둘의 차이가 적체다. 맨 위 판정은 언제나 전체로, 그래프만 고른 사전예약을 따른다.
-  const totalHistory = useReservationStatsHistory()
   const selectedHistory = useReservationStatsHistory(selected ?? undefined)
   const series = (
-    history: typeof totalHistory,
+    history: typeof selectedHistory,
     key: 'received' | 'processed' | 'backlog',
   ) =>
     history.map(({ at, value: { preorders } }) => {
@@ -131,15 +131,17 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     })
   const receivedRates = ratePerSecond(series(selectedHistory, 'received'))
   const processedRates = ratePerSecond(series(selectedHistory, 'processed'))
-  const backlogSlope = slopePerSecond(series(totalHistory, 'backlog')).at(
+  const backlogSlope = slopePerSecond(series(selectedHistory, 'backlog')).at(
     -1,
   )?.value
 
   const s = stats.data
   const braking = isBraking(q?.brakeFactor ?? null)
+  // 브레이크는 대기열 전체에 하나라 언제나 전체, 처리 흐름은 고른 사전예약 기준이다.
   const verdict = flowVerdict({
     braking,
     backlogPerMinute: backlogSlope === undefined ? null : backlogSlope * 60,
+    scope: selected ? nameOf(selected) : undefined,
   })
   // 판정 기준 시각 — 받은 집계의 시각을 써서 렌더마다 흔들리지 않게 한다. 아직 못 받았으면
   // 0이라 멈춘 추첨·경과 시간을 판정하지 않는다.
@@ -206,6 +208,20 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         openProducts.findIndex((product) => product.productId === selected)
       ]?.data
     : s
+  // 외부 등록을 기다리는 작업(재처리 필요는 빼고) — 0이면 오래 기다리는 접수 시각이
+  // 재처리 필요 건을 가리킬 수 있어 밀림으로 보지 않는다.
+  const waitingRegister = t
+    ? t.syncJobs.REGISTER.PENDING +
+      t.syncJobs.REGISTER.PROCESSING +
+      t.syncJobs.REGISTER.RETRY_SCHEDULED
+    : 0
+  const slowAge =
+    t?.oldestPendingSyncAt &&
+    waitingRegister > 0 &&
+    now - Date.parse(t.oldestPendingSyncAt) > SLOW_AFTER_MS
+      ? ageOf(t.oldestPendingSyncAt, now)
+      : null
+
   const candidates: (Task | false)[] = t
     ? [
         t.syncJobs.REGISTER.DEAD_LETTER > 0 && {
@@ -240,6 +256,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           ]
             .filter(Boolean)
             .join(' · '),
+        },
+        slowAge !== null && {
+          key: 'slow',
+          level: 'check',
+          title: `외부 등록이 ${slowAge} 밀려 있어요 — 기다리는 예약 ${formatNumber(waitingRegister)}건`,
+          description:
+            '외부 예약 시스템이 느리거나 접수가 처리보다 빨라요 · 계속 늘면 입장 속도를 줄이세요',
+          action: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
         },
         t.paymentOverdue > 0 && {
           key: 'overdue',
@@ -280,26 +304,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     void readyToShip.refetch()
   }
 
-  const queueColumns: TableColumn<WaitingroomProductStatus>[] = [
-    {
-      key: 'name',
-      header: '상품',
-      render: (product) => nameOf(product.productId),
-    },
-    {
-      key: 'waiting',
-      header: '대기',
-      align: 'right',
-      render: (product) => `${formatNumber(product.waiting)}명`,
-    },
-    {
-      key: 'credit',
-      header: '초당 입장',
-      align: 'right',
-      render: (product) => `${formatNumber(product.credit)}명`,
-    },
-  ]
-
   const statsError = pollingError(stats)
 
   return (
@@ -333,6 +337,23 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             selected={selected}
             onSelect={setPicked}
             now={now}
+          />
+        )}
+        {pollingError(queue) !== null && (
+          <InlineAlert status={q ? 'warning' : 'error'}>
+            {getErrorMessage(
+              pollingError(queue),
+              '대기열 현황을 불러오지 못했어요.',
+            )}
+          </InlineAlert>
+        )}
+        {selectedQueue && (
+          <PreorderQueueCard
+            name={nameOf(selectedQueue.productId)}
+            queue={selectedQueue}
+            rate={rates.data?.products.find(
+              (product) => product.productId === selectedQueue.productId,
+            )}
           />
         )}
       </section>
@@ -383,84 +404,39 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         )}
       </section>
 
-      <div className={styles.columns}>
-        <section className={styles.card} aria-labelledby="ops-flow">
-          <div className={styles.cardHeader}>
-            <h2 id="ops-flow" className={styles.sectionTitle}>
-              들어오는 양과 처리한 양
-              <span className={styles.scope}>
-                {selected ? nameOf(selected) : '전체'}
-              </span>
-            </h2>
-            <span className={styles.caption}>
-              관리자 화면을 연 뒤부터 · 건/초
+      <section className={styles.card} aria-labelledby="ops-flow">
+        <div className={styles.cardHeader}>
+          <h2 id="ops-flow" className={styles.sectionTitle}>
+            들어오는 양과 처리한 양
+            <span className={styles.scope}>
+              {selected ? nameOf(selected) : '전체'}
             </span>
-          </div>
-          <ThroughputChart
-            // 고른 사전예약이 바뀌면 그래프 상태(올린 지점)를 새로 시작한다.
-            key={selected ?? 'all'}
-            label={`${selected ? nameOf(selected) : '전체'} 초당 접수와 외부 등록 처리`}
-            unit="건/초"
-            times={receivedRates.map(({ at }) => at)}
-            series={[
-              {
-                label: '접수',
-                values: receivedRates.map(({ value }) => value),
-              },
-              {
-                label: '외부 등록 처리',
-                values: processedRates.map(({ value }) => value),
-              },
-            ]}
-          />
-          <div className={styles.caption}>
-            두 선 사이가 벌어진 만큼 외부 등록 대기가 쌓여요.
-          </div>
-        </section>
-
-        <section className={styles.card} aria-labelledby="ops-queue">
-          <div className={styles.cardHeader}>
-            <h2 id="ops-queue" className={styles.sectionTitle}>
-              상품별 대기열
-            </h2>
-            <Link className={styles.link} to={ADMIN_WAITINGROOM_PATH}>
-              대기열 관리
-            </Link>
-          </div>
-          {pollingError(queue) !== null && (
-            <InlineAlert status={q ? 'warning' : 'error'}>
-              {getErrorMessage(
-                pollingError(queue),
-                '대기열 현황을 불러오지 못했어요.',
-              )}
-            </InlineAlert>
-          )}
-          <Table
-            columns={queueColumns}
-            // 대기가 많은 상품이 막힌 상품이라 위로 올린다.
-            rows={(q?.products ?? [])
-              .toSorted((a, b) => b.waiting - a.waiting)
-              .slice(0, QUEUE_ROWS)}
-            rowKey={(product) => product.productId}
-            // 대기가 몰린 사전예약의 처리 흐름을 바로 본다.
-            onRowClick={(product) =>
-              product.phase === 'OPEN' && setPicked(product.productId)
-            }
-            rowAction={{
-              label: (product) => `${nameOf(product.productId)} 처리 흐름 보기`,
-              onClick: (product) =>
-                product.phase === 'OPEN' && setPicked(product.productId),
-            }}
-            loading={queue.isPending}
-            loadingRows={3}
-            emptyMessage="대기열에 오른 상품이 없어요."
-          />
-          <div className={styles.caption}>
-            대기 많은 순 · 브레이크 배율{' '}
-            {q?.brakeFactor != null ? `${q.brakeFactor}×` : '—'} (서버 자동)
-          </div>
-        </section>
-      </div>
+          </h2>
+          <span className={styles.caption}>
+            관리자 화면을 연 뒤부터 · 건/초
+          </span>
+        </div>
+        <ThroughputChart
+          // 고른 사전예약이 바뀌면 그래프 상태(올린 지점)를 새로 시작한다.
+          key={selected ?? 'all'}
+          label={`${selected ? nameOf(selected) : '전체'} 초당 접수와 외부 등록 처리`}
+          unit="건/초"
+          times={receivedRates.map(({ at }) => at)}
+          series={[
+            {
+              label: '접수',
+              values: receivedRates.map(({ value }) => value),
+            },
+            {
+              label: '외부 등록 처리',
+              values: processedRates.map(({ value }) => value),
+            },
+          ]}
+        />
+        <div className={styles.caption}>
+          두 선 사이가 벌어진 만큼 외부 등록 대기가 쌓여요.
+        </div>
+      </section>
     </div>
   )
 }

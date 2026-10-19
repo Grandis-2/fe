@@ -8,6 +8,7 @@ import {
   useAdmissionRates,
   useChangeAdmissionRate,
   useWaitingroomStatus,
+  waitEstimate,
   WAITINGROOM_DEFAULTS,
   waitingroomPhaseLabel,
   waitingroomRuntimeColor,
@@ -39,7 +40,6 @@ import {
 } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
-import { waitEstimate } from '../../lib/waitEstimate'
 import {
   NumberSettingForm,
   type NumberSettingFormProps,

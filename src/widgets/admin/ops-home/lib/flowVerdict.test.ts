@@ -30,3 +30,19 @@ describe('flowVerdict', () => {
     )
   })
 })
+
+describe('flowVerdict 범위', () => {
+  it('브레이크는 고른 사전예약과 상관없이 모든 사전예약 기준이라고 밝힌다', () => {
+    expect(
+      flowVerdict({ braking: true, backlogPerMinute: 0, scope: '아이폰' })
+        .message,
+    ).toContain('모든 사전예약')
+  })
+
+  it('처리 흐름은 고른 사전예약 이름을 앞에 붙인다', () => {
+    expect(
+      flowVerdict({ braking: false, backlogPerMinute: 30, scope: '아이폰' })
+        .message,
+    ).toMatch(/^아이폰 — 처리가 밀리고/)
+  })
+})

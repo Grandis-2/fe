@@ -34,30 +34,41 @@ function record(client: QueryClient, store: Store, productId?: string) {
   store.listeners.forEach((listener) => listener())
 }
 
-function storeOf(client: QueryClient, productId?: string) {
+/** 그 키의 기록 — 없으면 만들고, 이미 받아 둔 값부터 넣는다 */
+function ensureStore(
+  client: QueryClient,
+  byKey: Map<string, Store>,
+  productId?: string,
+) {
   const hash = hashKey(reservationStatsKey(productId))
-  const byKey = stores.get(client) ?? new Map<string, Store>()
-  stores.set(client, byKey)
-
-  // 응답이 캐시에 들어올 때마다, 표본을 모으기로 한 키면 붙인다(QueryClient마다 한 번 구독).
-  if (!watching.has(client)) {
-    watching.add(client)
-    client.getQueryCache().subscribe((event) => {
-      if (event.type !== 'updated' || event.action.type !== 'success') return
-      const store = byKey.get(event.query.queryHash)
-      const [, , , key] = event.query.queryKey
-      if (store)
-        record(client, store, typeof key === 'string' ? key : undefined)
-    })
-  }
-
   const existing = byKey.get(hash)
   if (existing) return existing
   const store: Store = { samples: [], listeners: new Set() }
   byKey.set(hash, store)
-  // 이미 받아 둔 값부터 넣는다.
   record(client, store, productId)
   return store
+}
+
+function storeOf(client: QueryClient, productId?: string) {
+  const byKey = stores.get(client) ?? new Map<string, Store>()
+  stores.set(client, byKey)
+
+  // 집계 응답(전체·상품 모두)이 캐시에 들어올 때마다 붙인다(QueryClient마다 한 번 구독).
+  // 상품은 고르기 전부터 쌓아 둬야 골랐을 때 그래프가 바로 이어진다.
+  if (!watching.has(client)) {
+    watching.add(client)
+    client.getQueryCache().subscribe((event) => {
+      if (event.type !== 'updated' || event.action.type !== 'success') return
+      const [, , kind, key] = event.query.queryKey
+      if (kind !== 'stats') return
+      const productId = typeof key === 'string' ? key : undefined
+      if (event.query.queryHash !== hashKey(reservationStatsKey(productId)))
+        return
+      record(client, ensureStore(client, byKey, productId), productId)
+    })
+  }
+
+  return ensureStore(client, byKey, productId)
 }
 
 /**

@@ -48,9 +48,9 @@ export const Several: Story = {
       'true',
     )
     const iphone = canvas.getByRole('button', { name: /아이폰 18 Pro/ })
-    await expect(iphone).toHaveTextContent('대기 837명 · 실패 60건')
+    await expect(iphone).toHaveTextContent('대기 837명 · 재처리 필요 60건')
     await expect(iphone).toHaveTextContent('마감까지 1시간 20분')
-    await expect(canvas.getAllByText('실패 있음')[0]).toBeVisible()
+    await expect(canvas.getAllByText('재처리 필요')[0]).toBeVisible()
 
     await userEvent.click(iphone)
     await expect(args.onSelect).toHaveBeenCalledWith('p-iphone')

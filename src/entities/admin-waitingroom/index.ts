@@ -5,6 +5,7 @@ export {
   useWaitingroomStatus,
 } from './api/useAdminWaitingroom'
 export type { AdmissionRateChange } from './api/useAdminWaitingroom'
+export { waitEstimate } from './lib/waitEstimate'
 export {
   isBraking,
   LEAVE_GRACE_SECONDS_RANGE,

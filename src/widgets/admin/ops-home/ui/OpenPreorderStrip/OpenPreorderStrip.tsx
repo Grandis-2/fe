@@ -9,7 +9,7 @@ import {
 
 import * as styles from './OpenPreorderStrip.css'
 
-// 색만으로 구분하지 않게 글자(실패 있음·처리 밀림·정상)를 함께 단다.
+// 색만으로 구분하지 않게 글자(재처리 필요·처리 밀림·정상)를 함께 단다.
 const healthColor: Record<PreorderHealth, 'red' | 'yellow' | 'green'> = {
   failing: 'red',
   slow: 'yellow',
@@ -88,7 +88,7 @@ export function OpenPreorderStrip({
               )}
             </span>
             <span className={styles.meta}>
-              대기 {formatNumber(item.waiting)}명 · 실패{' '}
+              대기 {formatNumber(item.waiting)}명 · 재처리 필요{' '}
               {item.failures === null
                 ? '—'
                 : `${formatNumber(item.failures)}건`}

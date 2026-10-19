@@ -14,12 +14,15 @@ type Counts = {
   deadLetters: number
   paymentOverdue: number
   shipping: number
+  /** 외부 등록을 기다리는 가장 오래된 접수 — 주면 등록 대기 작업도 있다고 본다 */
+  slowSince?: string
 }
 
 const statsOf = ({
   registerFailures,
   deadLetters,
   paymentOverdue,
+  slowSince,
 }: Counts) => ({
   productId: null,
   preorders: {
@@ -30,7 +33,11 @@ const statsOf = ({
     CANCELED: 12,
   },
   syncJobs: {
-    REGISTER: { ...open, DEAD_LETTER: registerFailures },
+    REGISTER: {
+      ...open,
+      PENDING: slowSince ? 120 : 0,
+      DEAD_LETTER: registerFailures,
+    },
     CANCEL: open,
   },
   deadLetters: {
@@ -38,7 +45,7 @@ const statsOf = ({
     oldestWaitingAt: deadLetters ? '2026-10-08T04:35:00Z' : null,
   },
   paymentOverdue,
-  oldestPendingSyncAt: null,
+  oldestPendingSyncAt: slowSince ?? null,
   countedAt: '2026-10-08T05:00:00Z',
 })
 
@@ -155,15 +162,19 @@ export const Busy: Story = {
     )
 
     // 진행 중인 사전예약 띠 — 누르면 그래프가 그 사전예약으로 바뀌고, 다시 누르면 전체.
-    // 대기열 표의 '처리 흐름 보기' 버튼과 겹치지 않게 띠 안에서 찾는다.
     const iphone = within(
       canvas.getByRole('group', { name: '진행 중인 사전예약' }),
     ).getByRole('button', { name: /아이폰 18 Pro/ })
-    await expect(iphone).toHaveTextContent('실패 845건')
+    await expect(iphone).toHaveTextContent('재처리 필요 845건')
     await userEvent.click(iphone)
     await expect(
       canvas.getByRole('heading', { name: /들어오는 양과 처리한 양/ }),
     ).toHaveTextContent('아이폰 18 Pro')
+    // 고르면 띠 아래에 그 사전예약의 대기열 카드가 생긴다.
+    const queueCard = canvas.getByRole('region', {
+      name: '아이폰 18 Pro 대기열',
+    })
+    await expect(queueCard).toHaveTextContent('14,830명')
     // 할 일도 그 사전예약 숫자로 바뀌고, 거를 수 없는 것은 '전체 기준'이라고 밝힌다.
     const scopedCards = canvas.getAllByRole('article')
     await expect(scopedCards[0]).toHaveTextContent('외부 등록 실패 845건')
@@ -181,7 +192,7 @@ export const Busy: Story = {
   },
 }
 
-/** 밀린 일이 없으면 한 줄로 끝난다. 대기열은 대기 많은 순 */
+/** 밀린 일이 없으면 한 줄로 끝난다 */
 export const AllClear: Story = {
   decorators: [
     withData({
@@ -194,8 +205,30 @@ export const AllClear: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.queryAllByRole('article')).toHaveLength(0)
     await expect(canvas.getByText(/밀린 일이 없어요/)).toBeVisible()
-    const rows = canvas.getAllByRole('row')
-    // 머리줄 다음 첫 행이 대기가 가장 많은 상품이다.
-    await expect(rows[1]).toHaveTextContent('아이폰 18 Pro')
+    // 상품별 대기열 표는 띠와 겹쳐 없앴다 — 고르기 전엔 대기열 카드도 없다.
+    await expect(canvas.queryByRole('table')).toBeNull()
+    await expect(canvas.queryByRole('region', { name: /대기열$/ })).toBeNull()
+  },
+}
+
+/** 외부 등록이 1분 넘게 밀리면 '확인' 할 일로 올리고 대기열 관리로 보낸다 */
+export const Slow: Story = {
+  decorators: [
+    withData({
+      registerFailures: 0,
+      deadLetters: 0,
+      paymentOverdue: 0,
+      shipping: 0,
+      // 집계를 받은 시각(지금)보다 한참 전 — 1분을 넘는다.
+      slowSince: '2020-01-01T00:00:00Z',
+    }),
+  ],
+  play: async ({ canvas }) => {
+    const [card] = canvas.getAllByRole('article')
+    await expect(card).toHaveTextContent('외부 등록이')
+    await expect(card).toHaveTextContent('기다리는 예약 120건')
+    await expect(
+      within(card).getByRole('link', { name: '입장 속도 조절' }),
+    ).toHaveAttribute('href', '/admin/waitingroom')
   },
 }

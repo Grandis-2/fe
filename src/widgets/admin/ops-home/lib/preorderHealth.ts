@@ -2,7 +2,8 @@
 export type PreorderHealth = 'failing' | 'slow' | 'ok'
 
 export const preorderHealthLabel: Record<PreorderHealth, string> = {
-  failing: '실패 있음',
+  // '지금 실패 중'이 아니라 처리 안 한 실패가 남았다는 뜻이라 남은 일로 부른다.
+  failing: '재처리 필요',
   slow: '처리 밀림',
   ok: '정상',
 }
