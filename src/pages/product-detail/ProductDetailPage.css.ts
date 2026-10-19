@@ -1,11 +1,11 @@
 import { style } from '@vanilla-extract/css'
 
 import {
-  breakpoint,
   color,
   motion,
   spacing,
   typography,
+  productDetailBreakpoint,
 } from '@shared/config/theme'
 import { maxWidth } from '@shared/config/theme/tokens/container'
 import {
@@ -34,7 +34,7 @@ export const content = style({
   // 헤더 바로 밑에 붙으면 시선이 화면 맨 위로 올라가야 해서 위를 넉넉히 비운다.
   padding: `${spacing[80]} ${sidePadding} ${spacing[90]}`,
   '@media': {
-    [breakpoint.mobile]: {
+    [productDetailBreakpoint.mobile]: {
       padding: `${spacing[20]} ${spacing[16]} ${spacing[40]}`,
     },
   },
@@ -47,7 +47,7 @@ export const tabBarWrapper = style({
   top: 0,
   zIndex: 1,
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       top: 'var(--order-bar-offset, 0px)',
       transition: `top ${motion.duration.fast} ${motion.easing.default}`,
     },
@@ -63,7 +63,7 @@ export const sections = style({
   margin: '0 auto',
   padding: `56px ${sidePadding} 160px`,
   '@media': {
-    [breakpoint.mobile]: {
+    [productDetailBreakpoint.mobile]: {
       gap: spacing[50],
       padding: `${spacing[32]} ${spacing[16]} ${spacing[40]}`,
     },
@@ -78,7 +78,7 @@ export const section = style({
   scrollMarginTop: '140px',
   '@media': {
     // 모바일은 주문바가 하단이라 탭(44px)만 위에 고정된다.
-    [breakpoint.mobile]: { scrollMarginTop: '60px' },
+    [productDetailBreakpoint.mobile]: { scrollMarginTop: '60px' },
   },
 })
 
@@ -87,7 +87,7 @@ export const sectionTitle = style([
   {
     margin: 0,
     fontWeight: fontWeight.bold,
-    '@media': { [breakpoint.mobile]: { fontSize: fontSize[20] } },
+    '@media': { [productDetailBreakpoint.mobile]: { fontSize: fontSize[20] } },
   },
 ])
 

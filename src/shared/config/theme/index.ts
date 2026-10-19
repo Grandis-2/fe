@@ -2,7 +2,7 @@ import './fonts'
 
 export { color } from './tokens/color/semantic.css'
 export { spacing } from './tokens/spacing'
-export { breakpoint } from './tokens/breakpoint'
+export { breakpoint, productDetailBreakpoint } from './tokens/breakpoint'
 export {
   FIXED_BOTTOM_BAR_VAR,
   TAB_BAR_HEIGHT,
