@@ -67,3 +67,13 @@ export const actionOutline = style({
   color: color.text.primary,
   selectors: { '&:hover': { background: color.background.surface } },
 })
+
+// 누를 수 있는 것처럼 보이지 않게 버튼 자리에 글자만 둔다.
+export const handoff = style([
+  typography.body.subMedium,
+  {
+    padding: `0 ${spacing[16]}`,
+    color: color.text.secondary,
+    whiteSpace: 'nowrap',
+  },
+])

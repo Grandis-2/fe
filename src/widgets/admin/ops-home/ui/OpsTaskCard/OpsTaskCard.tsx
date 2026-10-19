@@ -26,8 +26,11 @@ export type OpsTaskCardProps = {
   level: OpsTaskLevel
   title: ReactNode
   description: ReactNode
-  /** 이 일을 처리하는 화면 */
-  action: { label: string; to: string }
+  /**
+   * 이 일을 처리하는 화면. 없으면 운영자가 화면에서 풀 수 없는 일이라 '개발팀 문의'를
+   * 보인다 — 운영 홈에서 개발자 기능 화면으로 보내지 않는다.
+   */
+  action?: { label: string; to: string }
 }
 
 /** 운영 홈 '지금 처리할 일' 한 줄 — 무엇이 몇 건인지와 처리할 화면으로 가는 버튼 */
@@ -52,15 +55,19 @@ export function OpsTaskCard({
         <div className={styles.title}>{title}</div>
         <div className={styles.description}>{description}</div>
       </div>
-      <Link
-        to={action.to}
-        className={[
-          styles.action,
-          level === 'urgent' ? styles.actionPrimary : styles.actionOutline,
-        ].join(' ')}
-      >
-        {action.label}
-      </Link>
+      {action ? (
+        <Link
+          to={action.to}
+          className={[
+            styles.action,
+            level === 'urgent' ? styles.actionPrimary : styles.actionOutline,
+          ].join(' ')}
+        >
+          {action.label}
+        </Link>
+      ) : (
+        <span className={styles.handoff}>개발팀 문의</span>
+      )}
     </article>
   )
 }

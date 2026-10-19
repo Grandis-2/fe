@@ -42,3 +42,17 @@ export const Todo: Story = {
     await expect(canvas.getAllByText('할 일')[0]).toBeVisible()
   },
 }
+
+/** 운영자가 화면에서 풀 수 없는 일은 링크 대신 '개발팀 문의'만 보인다 */
+export const Handoff: Story = {
+  args: {
+    level: 'check',
+    title: '상태 반영 실패 12건',
+    description: '결제 완료·기한 만료 같은 처리가 예약에 반영되지 않았어요',
+    action: undefined,
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('개발팀 문의')).toBeVisible()
+    await expect(canvas.queryByRole('link')).toBeNull()
+  },
+}

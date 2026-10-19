@@ -17,7 +17,6 @@ import {
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
 import {
-  ADMIN_DEAD_LETTERS_PATH,
   ADMIN_ORDERS_PATH,
   ADMIN_RECOVERY_PATH,
   ADMIN_RESERVATIONS_PATH,
@@ -154,14 +153,15 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           key: 'dead-letters',
           level: 'check',
           title: `상태 반영 실패 ${formatNumber(s.deadLetters.waiting)}건`,
+          // 원인은 메시지 원문을 봐야 알 수 있어 개발팀이 맡는다 — 운영 홈은 관리자 화면이라
+          // 개발자 기능(이벤트 DLQ)으로 보내지 않고, 알릴 때 쓸 건수·시각만 보인다.
           description: [
+            '결제 완료·기한 만료 같은 처리가 예약에 반영되지 않았어요',
             ageOf(s.deadLetters.oldestWaitingAt, now) &&
-              `가장 오래된 메시지 ${ageOf(s.deadLetters.oldestWaitingAt, now)}`,
-            '되돌리거나 사유를 적고 버리세요',
+              `가장 오래된 건 ${ageOf(s.deadLetters.oldestWaitingAt, now)}`,
           ]
             .filter(Boolean)
             .join(' · '),
-          action: { label: '이벤트 DLQ 열기', to: ADMIN_DEAD_LETTERS_PATH },
         },
         s.paymentOverdue > 0 && {
           key: 'overdue',
