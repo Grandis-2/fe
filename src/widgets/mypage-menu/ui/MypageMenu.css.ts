@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css'
+import { style, styleVariants } from '@vanilla-extract/css'
 
 import {
   breakpoint,
@@ -7,7 +7,10 @@ import {
   spacing,
   typography,
 } from '@shared/config/theme'
-import { fontWeight } from '@shared/config/theme/tokens/typography/base'
+import {
+  fontFamily,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
 import { headerHeight } from '@widgets/header'
 
 const brandTint = (percent: number) =>
@@ -135,24 +138,40 @@ export const link = style([
   },
 ])
 
-// 구매 확정 대기 숫자 — 해야 할 일이라 헤더 마이페이지 아이콘 배지와 같은 경고색.
-export const badge = style([
-  typography.body.caption,
-  {
-    minWidth: '18px',
-    height: '18px',
-    marginLeft: spacing[6],
-    padding: `0 ${spacing[4]}`,
-    boxSizing: 'border-box',
-    borderRadius: '9px',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    background: color.status.warning,
-    color: color.backgroundDark.base,
-    fontWeight: fontWeight.bold,
-  },
-])
+// 메뉴 옆 숫자. 색은 헤더 아이콘 배지와 맞춘다 — 구매 확정 대기는 경고색, 장바구니는 남색.
+// 글자 토큰(caption)의 줄 높이·자간을 쓰면 숫자가 원 안에서 위아래·왼쪽으로 치우친다 — 줄 높이 1, 자간 0으로 두고
+// text-box-trim으로 숫자 높이(cap~baseline)만 남겨 원 한가운데에 놓는다.
+const badgeBase = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  boxSizing: 'border-box',
+  minWidth: '18px',
+  height: '18px',
+  marginLeft: spacing[6],
+  padding: `0 ${spacing[4]}`,
+  borderRadius: '9px',
+  fontFamily: fontFamily.pretendard,
+  fontSize: '11px',
+  fontWeight: fontWeight.bold,
+  lineHeight: 1,
+  letterSpacing: 0,
+  fontVariantNumeric: 'tabular-nums',
+  textBoxTrim: 'trim-both',
+  textBoxEdge: 'cap alphabetic',
+})
+
+export const badge = styleVariants({
+  warning: [
+    badgeBase,
+    { background: color.status.warning, color: color.backgroundDark.base },
+  ],
+  primary: [
+    badgeBase,
+    { background: color.primary.base, color: color.text.inverse },
+  ],
+})
 
 // 프로필 줄 오른쪽 끝의 아이콘 버튼.
 export const logout = style({
