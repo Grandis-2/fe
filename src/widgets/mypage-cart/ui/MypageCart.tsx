@@ -9,7 +9,7 @@ import {
   useUpdateCartItemQuantity,
   type CartLine,
 } from '@entities/cart'
-import { OrderSummary } from '@entities/order'
+import { HistoryListSkeleton, OrderSummary } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
 import { cartPaymentPath, SEARCH_PATH } from '@shared/config/routes'
@@ -81,20 +81,16 @@ export function MypageCart() {
     )
   }
 
-  const listMessage = isPending
-    ? '불러오는 중이에요.'
-    : isError
-      ? '장바구니를 불러오지 못했어요.'
-      : null
   const actionError = updateQuantity.error ?? removeCartItem.error
 
   return (
     <div className={styles.root}>
       <h1 className={styles.title}>장바구니</h1>
 
-      {listMessage && (
-        <InlineAlert variant="big" status={isError ? 'error' : 'info'}>
-          {listMessage}
+      {isPending && <HistoryListSkeleton count={2} />}
+      {isError && (
+        <InlineAlert variant="big" status="error">
+          장바구니를 불러오지 못했어요.
         </InlineAlert>
       )}
       {actionError && (

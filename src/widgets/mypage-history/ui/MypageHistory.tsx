@@ -1,10 +1,10 @@
 import { useState } from 'react'
 
 import { ReceiptText } from 'lucide-react'
-import { useNavigate } from 'react-router'
 
 import {
   HistoryCard,
+  HistoryListSkeleton,
   orderStatusTag,
   useCancelOrder,
   useOrders,
@@ -17,7 +17,6 @@ import {
 } from '@entities/product'
 import { startOrderPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
-import { mypagePath } from '@shared/config/routes'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { shortId } from '@shared/lib/shortId'
@@ -26,7 +25,7 @@ import { ActionButton, Button, Chip, Dropdown, InlineAlert } from '@shared/ui'
 
 import * as styles from './MypageHistory.css'
 
-// 요약 칸 — 결제 대기는 사용자가 할 일이 남은 상태라 경고색으로 센다.
+// 요약 칸과 상태 칩이 같이 쓰는 묶음 — 결제 대기는 사용자가 할 일이 남은 상태라 경고색으로 센다.
 const summary: { label: string; statuses: OrderStatus[]; warning?: true }[] = [
   {
     label: '결제 대기',
@@ -41,8 +40,8 @@ const summary: { label: string; statuses: OrderStatus[]; warning?: true }[] = [
   { label: '배송 완료', statuses: ['DELIVERED'] },
 ]
 
-const kindFilters = ['전체', '사전예약', '일반 구매'] as const
-type KindFilter = (typeof kindFilters)[number]
+// 칩 — '전체' 아니면 요약 칸 하나와 같은 상태 묶음만 남긴다(취소된 주문은 '전체'에서만 보인다).
+const statusFilters = ['전체', ...summary.map(({ label }) => label)]
 
 // 0은 기간 제한 없음.
 const periodOptions = [0, 1, 3, 6, 12].map((months) => ({
@@ -50,8 +49,15 @@ const periodOptions = [0, 1, 3, 6, 12].map((months) => ({
   value: months,
 }))
 
-const matchesKind = (order: Order, kind: KindFilter) =>
-  kind === '전체' || (kind === '사전예약') === (order.source === 'PREORDER')
+const matchesStatus = (order: Order, filter: string) =>
+  filter === '전체' ||
+  summary.some(
+    ({ label, statuses }) =>
+      label === filter && statuses.includes(order.status),
+  )
+
+const countOf = (orders: Order[], filter: string) =>
+  orders.filter((order) => matchesStatus(order, filter)).length
 
 const withinMonths = (order: Order, months: number) => {
   if (!months) return true
@@ -85,10 +91,9 @@ const renderItem = (product: ProductPaymentCardItem) => (
   <ProductPaymentCard product={product} />
 )
 
-// 결제 대기 주문 — 장바구니·바로 구매 주문은 여기서 결제(기한 10분 안)·취소하고, 사전예약 주문은 예약 내역에서 결제·취소한다
-// (주문 응답엔 예약 id가 없고, 사전예약 주문 취소는 예약 취소로 한다).
+// 결제 대기 주문 — 장바구니·바로 구매 주문은 여기서 결제(기한 10분 안)·취소한다. 사전예약 주문은 버튼 없이 상태만 보이고
+// 결제·취소는 예약 내역에서 한다(주문 응답엔 예약 id가 없다) — 마이페이지 메뉴의 '예약 내역' 숫자가 그쪽으로 이끈다.
 export function MypageHistory() {
-  const navigate = useNavigate()
   const cancelOrder = useCancelOrder()
   const [payingId, setPayingId] = useState<string | null>(null)
 
@@ -110,13 +115,14 @@ export function MypageHistory() {
       onError: (caught) =>
         showToast(getErrorMessage(caught, '주문을 취소하지 못했어요.')),
     })
-  const [kind, setKind] = useState<KindFilter>('전체')
+  const [statusFilter, setStatusFilter] = useState('전체')
   const [period, setPeriod] = useState<number>(6)
   const { data, isPending, isError, error } = useOrders()
 
   const orders = data?.items ?? []
   const visibleOrders = orders.filter(
-    (order) => matchesKind(order, kind) && withinMonths(order, period),
+    (order) =>
+      matchesStatus(order, statusFilter) && withinMonths(order, period),
   )
 
   return (
@@ -124,10 +130,8 @@ export function MypageHistory() {
       <h1 className={styles.title}>주문 내역</h1>
 
       <dl className={styles.summary}>
-        {summary.map(({ label, statuses, warning }) => {
-          const count = orders.filter((order) =>
-            statuses.includes(order.status),
-          ).length
+        {summary.map(({ label, warning }) => {
+          const count = countOf(orders, label)
           return (
             <div key={label} className={styles.summaryItem}>
               <dt className={styles.summaryLabel}>{label}</dt>
@@ -147,13 +151,17 @@ export function MypageHistory() {
 
       <div className={styles.toolbar}>
         <div className={styles.chips}>
-          {kindFilters.map((filter) => (
+          {statusFilters.map((filter) => (
             <Chip
               key={filter}
-              selected={filter === kind}
-              onClick={() => setKind(filter)}
+              selected={filter === statusFilter}
+              onClick={() => setStatusFilter(filter)}
             >
               {filter}
+              {/* 모바일은 요약 칸을 숨기고 건수를 칩에 붙인다 — 요약 칸과 같은 셈(기간 필터와 무관). */}
+              <span className={styles.chipCount}>
+                {countOf(orders, filter)}
+              </span>
             </Chip>
           ))}
         </div>
@@ -172,7 +180,7 @@ export function MypageHistory() {
           {getErrorMessage(error, '주문 내역을 불러오지 못했어요.')}
         </div>
       ) : isPending ? (
-        <div className={styles.empty}>주문 내역을 불러오는 중이에요.</div>
+        <HistoryListSkeleton />
       ) : (
         visibleOrders.length === 0 && (
           <InlineAlert status="info" variant="big" icon={ReceiptText}>
@@ -187,7 +195,7 @@ export function MypageHistory() {
           <HistoryCard
             key={order.orderId}
             tag={orderStatusTag[order.status]}
-            highlight={awaitingPayment}
+            highlight={awaitingPayment ? 'warning' : undefined}
             preorder={order.source === 'PREORDER'}
             orderDate={formatDotDate(order.createdAt)}
             orderNumber={shortId(order.orderId)}
@@ -212,7 +220,7 @@ export function MypageHistory() {
                   </div>
                 )}
                 {awaitingPayment &&
-                  (order.source === 'CART' || order.source === 'BUY_NOW' ? (
+                  (order.source === 'CART' || order.source === 'BUY_NOW') && (
                     <div className={styles.actions}>
                       <Button
                         variant="subtle"
@@ -230,19 +238,25 @@ export function MypageHistory() {
                         결제하기
                       </ActionButton>
                     </div>
-                  ) : (
-                    <div className={styles.actions}>
-                      <ActionButton
-                        size="md"
-                        onClick={() => navigate(mypagePath('preorder-check'))}
-                      >
-                        예약 내역에서 결제하기
-                      </ActionButton>
-                    </div>
-                  ))}
+                  )}
               </>
             }
-          />
+          >
+            <dl className={styles.facts}>
+              <div className={styles.fact}>
+                <dt className={styles.factLabel}>받는 사람</dt>
+                <dd className={styles.factValue}>{order.shipTo.name}</dd>
+              </div>
+              <div className={styles.fact}>
+                <dt className={styles.factLabel}>배송지</dt>
+                <dd className={styles.factValue}>
+                  {[order.shipTo.line1, order.shipTo.line2]
+                    .filter(Boolean)
+                    .join(' ')}
+                </dd>
+              </div>
+            </dl>
+          </HistoryCard>
         )
       })}
     </div>

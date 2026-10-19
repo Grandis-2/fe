@@ -3,8 +3,9 @@ import { useMemo, useState } from 'react'
 import { BellOff, BellRing, CalendarClock } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
-import { HistoryCard } from '@entities/order'
+import { HistoryCard, HistoryListSkeleton } from '@entities/order'
 import {
+  NEEDS_PURCHASE,
   reservationStatusTag,
   useCancelReservation,
   useMyReservations,
@@ -26,10 +27,6 @@ import { ActionButton, Button, InlineAlert, Tag } from '@shared/ui'
 import * as styles from './MypagePreorder.css'
 
 // 화면 단계별 묶음 — 결제(구매 확정)가 필요한 것, 진행 중인 것, 끝난 것.
-const NEEDS_PAYMENT: ReservationDisplayStatus[] = [
-  'PAYABLE',
-  'PAYMENT_IN_PROGRESS',
-]
 const IN_PROGRESS: ReservationDisplayStatus[] = [
   'RECEIVED',
   'PROCESSING',
@@ -108,14 +105,14 @@ export function MypagePreorder() {
     [reservations],
   )
   const needsPayment = reservations.filter(({ displayStatus }) =>
-    NEEDS_PAYMENT.includes(displayStatus),
+    NEEDS_PURCHASE.includes(displayStatus),
   )
   const inProgress = reservations.filter(({ displayStatus }) =>
     IN_PROGRESS.includes(displayStatus),
   )
   const ended = reservations.filter(
     ({ displayStatus }) =>
-      !NEEDS_PAYMENT.includes(displayStatus) &&
+      !NEEDS_PURCHASE.includes(displayStatus) &&
       !IN_PROGRESS.includes(displayStatus),
   )
 
@@ -163,7 +160,7 @@ export function MypagePreorder() {
     <HistoryCard
       key={reservation.preorderId}
       tag={reservationStatusTag[reservation.displayStatus]}
-      highlight={highlight}
+      highlight={highlight ? 'payment' : undefined}
       preorder
       orderDate={formatDotDate(reservation.createdAt)}
       orderNumber={`${reservation.queuePosition.toLocaleString()}번`}
@@ -236,11 +233,7 @@ export function MypagePreorder() {
           {getErrorMessage(error, '예약 내역을 불러오지 못했어요.')}
         </div>
       )}
-      {isPending && (
-        <div className={styles.sectionTitle}>
-          예약 내역을 불러오는 중이에요.
-        </div>
-      )}
+      {isPending && <HistoryListSkeleton />}
 
       {needsPayment.length > 0 && (
         <section className={styles.section}>

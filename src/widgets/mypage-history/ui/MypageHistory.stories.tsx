@@ -41,7 +41,7 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
   ...overrides,
 })
 
-// 일반 구매(BUY_NOW) 한 건 — 종류 필터 확인용.
+// 결제 대기·배송 준비·배송 완료 한 건씩 — 상태 칩 확인용.
 const orders = {
   items: [
     order('8d3f5a2c-1e4b-4c7d-9a6f-2b8e0c4d1f73', {}),
@@ -86,20 +86,22 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas }) => {
-    // '결제 대기'는 요약 칸 라벨과 첫 주문의 상태 태그, 두 곳에 그려진다.
+    // '결제 대기'는 요약 칸 라벨, 상태 칩, 첫 주문의 상태 태그, 세 곳에 그려진다.
     const awaiting = canvas.getAllByText('결제 대기')
-    await expect(awaiting).toHaveLength(2)
+    await expect(awaiting).toHaveLength(3)
     for (const element of awaiting) await expect(element).toBeVisible()
+    // 사전예약 결제 대기는 예약 내역에서 결제한다 — 주문 내역엔 버튼이 없다.
     await expect(
-      canvas.getByRole('button', { name: '예약 내역에서 결제하기' }),
-    ).toBeVisible()
+      canvas.queryByRole('button', { name: /결제하기/ }),
+    ).not.toBeInTheDocument()
   },
 }
 
-export const FilterPreorder: Story = {
+export const FilterDelivered: Story = {
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: '사전예약' }))
-    // 사전예약 주문 두 건만 남는다.
-    await expect(canvas.getByText('2건')).toBeVisible()
+    await expect(canvas.getAllByRole('article')).toHaveLength(3)
+    await userEvent.click(canvas.getByRole('button', { name: '배송 완료' }))
+    // 배송 완료 주문 한 건만 남는다.
+    await expect(canvas.getAllByRole('article')).toHaveLength(1)
   },
 }

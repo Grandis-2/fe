@@ -1,4 +1,9 @@
-import { keyframes, style } from '@vanilla-extract/css'
+import {
+  createVar,
+  keyframes,
+  style,
+  styleVariants,
+} from '@vanilla-extract/css'
 
 import {
   breakpoint,
@@ -12,12 +17,17 @@ import {
   fontWeight,
 } from '@shared/config/theme/tokens/typography/base'
 
-const divider = `1px solid ${color.border.subtle}`
-const warningTint = (percent: number) =>
-  `color-mix(in srgb, ${color.status.warning} ${percent}%, transparent)`
+// 카드 안 구분선 색. 기본은 옅은 회색이고 럭키드로우 당첨(won)만 테두리와 같은 색으로 바꾼다.
+const dividerColor = createVar()
+const divider = `1px solid ${dividerColor}`
+// 강조 카드의 테두리·알림 띠 색. 기본은 경고색이고 highlight 종류마다 바꾼다.
+const accent = createVar()
+const accentTint = (percent: number) =>
+  `color-mix(in srgb, ${accent} ${percent}%, transparent)`
+// 모바일은 ProductCard처럼 모서리·여백·글자를 한 단계씩 줄인다 — 데스크톱 값은 그대로 두고 mobile 블록에서만 덮어쓴다.
 const padX = {
   paddingInline: spacing[24],
-  '@media': { [breakpoint.mobile]: { paddingInline: spacing[20] } },
+  '@media': { [breakpoint.mobile]: { paddingInline: spacing[16] } },
 }
 
 export const root = style({
@@ -27,10 +37,25 @@ export const root = style({
   borderRadius: '20px',
   border: divider,
   background: color.background.base,
+  vars: { [accent]: color.status.warning, [dividerColor]: color.border.subtle },
+  '@media': { [breakpoint.mobile]: { borderRadius: '14px' } },
 })
 
-// 구매 확정을 기다리는 주문은 테두리부터 경고색이라 목록에서 먼저 눈에 걸린다.
-export const rootWarning = style({ borderColor: warningTint(28) })
+// 사용자가 할 일이 남은 카드는 테두리부터 강조색이라 목록에서 먼저 눈에 걸린다.
+// warning: 결제 대기, payment: 사전예약 구매 확정, won: 럭키드로우 당첨.
+// 경고색은 진해서 옅게 섞고, gold·primary.subtle은 지정 색 그대로 테두리에 쓴다.
+export const highlight = styleVariants({
+  warning: { borderColor: accentTint(28) },
+  payment: { vars: { [accent]: color.accent.gold }, borderColor: accent },
+  // 선택된 Chip 테두리와 같은 색 — 카드 안 구분선도 같은 색이다.
+  won: {
+    vars: {
+      [accent]: color.primary.subtle,
+      [dividerColor]: color.primary.subtle,
+    },
+    borderColor: accent,
+  },
+})
 
 export const header = style([
   padX,
@@ -41,12 +66,21 @@ export const header = style([
     gap: `${spacing[8]} ${spacing[12]}`,
     paddingBlock: '18px',
     borderBottom: divider,
+    '@media': { [breakpoint.mobile]: { paddingBlock: spacing[14] } },
   },
 ])
 
 export const orderDate = style([
   typography.body.defaultMedium,
-  { fontWeight: fontWeight.bold },
+  {
+    fontWeight: fontWeight.bold,
+    '@media': {
+      [breakpoint.mobile]: {
+        fontSize: fontSize[14],
+        fontWeight: fontWeight.semibold,
+      },
+    },
+  },
 ])
 
 // Tag small(10px)은 표 안 기준이라 카드 머리에선 작다 — 날짜 옆에서 읽히도록 12px로 키운다.
@@ -70,8 +104,9 @@ export const notice = style([
     justifyContent: 'space-between',
     gap: `${spacing[8]} ${spacing[16]}`,
     paddingBlock: spacing[16],
-    background: warningTint(6),
-    borderBottom: `1px solid ${warningTint(18)}`,
+    background: accentTint(6),
+    '@media': { [breakpoint.mobile]: { paddingBlock: spacing[12] } },
+    borderBottom: `1px solid ${accentTint(18)}`,
   },
 ])
 
@@ -83,7 +118,7 @@ export const noticeTexts = style({
 
 export const noticeTitle = style([
   typography.body.subSemibold,
-  { color: color.status.warning },
+  { color: accent },
 ])
 
 export const noticeDescription = style([
@@ -98,12 +133,14 @@ export const countdown = style({
   letterSpacing: '0.02em',
   fontVariantNumeric: 'tabular-nums',
   color: color.text.primary,
+  '@media': { [breakpoint.mobile]: { fontSize: fontSize[20] } },
 })
 
 export const items = style([padX, { paddingBlock: spacing[4] }])
 
 export const item = style({
   paddingBlock: spacing[16],
+  '@media': { [breakpoint.mobile]: { paddingBlock: spacing[12] } },
   selectors: { '& + &': { borderTop: divider } },
 })
 
@@ -126,6 +163,9 @@ export const expandRow = style([
     gap: spacing[6],
     height: '46px',
     marginInline: spacing[24],
+    '@media': {
+      [breakpoint.mobile]: { height: '40px', marginInline: spacing[16] },
+    },
     border: 'none',
     borderTop: divider,
     background: 'transparent',
@@ -133,7 +173,6 @@ export const expandRow = style([
     cursor: 'pointer',
     transition: `color ${motion.duration.fast} ${motion.easing.default}`,
     selectors: { '&:hover': { color: color.text.primary } },
-    '@media': { [breakpoint.mobile]: { marginInline: spacing[20] } },
   },
 ])
 
@@ -155,5 +194,16 @@ export const footer = style([
     paddingBlock: '18px',
     borderTop: divider,
     background: color.background.page,
+    '@media': {
+      [breakpoint.mobile]: { gap: spacing[12], paddingBlock: spacing[14] },
+    },
   },
 ])
+
+// 불러오는 동안의 카드 자리 — 마이페이지 목록과 같은 간격으로 쌓는다.
+export const skeletonList = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[24],
+  '@media': { [breakpoint.mobile]: { gap: spacing[16] } },
+})
