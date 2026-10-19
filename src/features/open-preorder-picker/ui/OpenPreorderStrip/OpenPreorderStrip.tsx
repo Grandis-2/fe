@@ -29,23 +29,28 @@ export type OpenPreorder = {
 
 export type OpenPreorderStripProps = {
   items: readonly OpenPreorder[]
-  /** 고른 사전예약 — 언제나 하나가 골라져 있다 */
-  selected: string
-  onSelect: (productId: string) => void
+  /** 고른 사전예약. null이면 전체(allowAll일 때만) */
+  selected: string | null
+  onSelect: (productId: string | null) => void
+  /**
+   * '전체' 단추를 둔다. 장애 대응처럼 일부 동작이 전체 단위로만 되는 화면에서 쓴다 —
+   * 운영 대시보드는 언제나 하나를 골라 보므로 두지 않는다.
+   */
+  allowAll?: boolean
   /** 마감까지 남은 시간을 잴 기준 시각 */
   now: number
 }
 
 /**
- * 진행 중인 사전예약 띠. 사전예약마다 상태를 보이고, 누르면 홈(할 일 · 대기열 · 처리 흐름)이
- * 그 사전예약 기준으로 바뀐다. 언제나 하나가 골라져 있다 — 다른 사전예약의 문제는 띠의
- * 상태 표시로 보인다.
+ * 진행 중인 사전예약 띠. 사전예약마다 상태를 보이고, 누르면 화면이 그 사전예약 기준으로
+ * 바뀐다. 고르지 않은 사전예약의 문제도 띠의 상태 표시로 보인다.
  */
 export function OpenPreorderStrip({
   items,
   selected,
   onSelect,
   now,
+  allowAll = false,
 }: OpenPreorderStripProps) {
   if (items.length === 0) {
     return <div className={styles.empty}>지금 접수 중인 사전예약이 없어요.</div>
@@ -53,6 +58,17 @@ export function OpenPreorderStrip({
 
   return (
     <div className={styles.root} role="group" aria-label="진행 중인 사전예약">
+      {allowAll && (
+        <button
+          type="button"
+          className={styles.allButton}
+          aria-pressed={selected === null}
+          onClick={() => onSelect(null)}
+        >
+          전체
+          <span className={styles.meta}>모든 사전예약</span>
+        </button>
+      )}
       {items.map((item) => {
         const pressed = selected === item.productId
         return (

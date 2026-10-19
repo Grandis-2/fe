@@ -84,3 +84,14 @@ export const Empty: Story = {
     ).toBeVisible()
   },
 }
+
+/** allowAll이면 '전체'를 맨 앞에 두고, 고르지 않은 상태(null)가 전체다 */
+export const WithAll: Story = {
+  args: { allowAll: true, selected: null },
+  play: async ({ canvas, args, userEvent }) => {
+    const all = canvas.getByRole('button', { name: /전체/ })
+    await expect(all).toHaveAttribute('aria-pressed', 'true')
+    await userEvent.click(canvas.getByRole('button', { name: /아이폰 18 Pro/ }))
+    await expect(args.onSelect).toHaveBeenCalledWith('p-iphone')
+  },
+}

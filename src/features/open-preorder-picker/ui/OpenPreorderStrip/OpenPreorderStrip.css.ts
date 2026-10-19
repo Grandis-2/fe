@@ -37,6 +37,13 @@ export const card = style([
   },
 ])
 
+// 전체 — 사전예약 카드와 같은 틀에 이름만 둔다.
+export const allButton = style([
+  card,
+  typography.title.smMedium,
+  { color: color.text.primary },
+])
+
 export const head = style({
   display: 'flex',
   alignItems: 'center',

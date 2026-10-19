@@ -19,8 +19,3 @@ export const title = style([
   typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },
 ])
-
-export const description = style([
-  typography.body.defaultRegular,
-  { color: color.text.secondary },
-])

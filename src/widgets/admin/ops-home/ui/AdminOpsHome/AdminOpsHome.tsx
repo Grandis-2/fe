@@ -7,20 +7,20 @@ import { useAdminOrders } from '@entities/admin-order'
 import {
   syncErrorCause,
   useReservationStats,
-  useReservationStatsByProduct,
   useReservationStatsHistory,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
+import { isBraking, useAdmissionRates } from '@entities/admin-waitingroom'
 import {
-  isBraking,
-  useAdmissionRates,
-  useWaitingroomStatus,
-} from '@entities/admin-waitingroom'
+  OpenPreorderStrip,
+  SLOW_AFTER_MS,
+  useOpenPreorders,
+} from '@features/open-preorder-picker'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
 import {
   ADMIN_ORDERS_PATH,
-  ADMIN_RECOVERY_PATH,
+  adminRecoveryPath,
   ADMIN_RESERVATIONS_PATH,
   ADMIN_WAITINGROOM_PATH,
 } from '@shared/config/routes'
@@ -35,8 +35,6 @@ import {
 } from '@shared/ui'
 
 import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
-import { preorderHealth, SLOW_AFTER_MS } from '../../lib/preorderHealth'
-import { OpenPreorderStrip, type OpenPreorder } from '../OpenPreorderStrip'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
 import { PreorderQueueCard } from '../PreorderQueueCard'
 import { StuckDrawTask } from '../StuckDrawTask'
@@ -85,28 +83,26 @@ export type AdminOpsHomeProps = {
 export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const stats = useReservationStats(undefined, POLL_INTERVAL_MS)
   const errors = useSyncJobErrorGroups(ERROR_GROUPS_INTERVAL_MS)
-  const queue = useWaitingroomStatus(POLL_INTERVAL_MS)
   const draws = useAdminDraws()
   // 건수만 필요해 한 건씩 받고 total을 쓴다.
   const preparing = useAdminOrders({ status: 'PREPARING_ITEMS', size: 1 })
   const readyToShip = useAdminOrders({ status: 'READY_TO_SHIP', size: 1 })
 
   // 진행 중인 사전예약 — 동시에 여럿 열릴 수 있어 각각의 집계를 따로 받는다.
+  const {
+    queue,
+    openProducts,
+    items: strip,
+    nameOf,
+    statsOf,
+  } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
-  const openProducts = (q?.products ?? []).filter(
-    (product) => product.phase === 'OPEN',
-  )
-  const productStats = useReservationStatsByProduct(
-    openProducts.map((product) => product.productId),
-    POLL_INTERVAL_MS,
-  )
   // 홈이 보는 사전예약 — 언제나 하나를 고른다(처음엔 첫 번째). 고른 것이 마감돼 목록에서
   // 빠지면 첫 번째로 돌아간다. 진행 중인 게 없으면 null — 그땐 전체 집계로 본다.
   const [picked, setPicked] = useState<string | null>(null)
   const selected = openProducts.some((product) => product.productId === picked)
     ? picked
     : (openProducts[0]?.productId ?? null)
-  const nameOf = (productId: string) => productNames.get(productId) ?? productId
   // 고른 사전예약의 대기열 설정(상한이 기본값인지 운영값인지) — 바뀔 일이 드물어 폴링하지 않는다.
   const rates = useAdmissionRates()
   const selectedQueue = openProducts.find(
@@ -148,23 +144,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   // 0이라 멈춘 추첨·경과 시간을 판정하지 않는다.
   const now = stats.dataUpdatedAt
 
-  const strip: OpenPreorder[] = openProducts.map((product, index) => {
-    const data = productStats[index]?.data
-    return {
-      productId: product.productId,
-      name: nameOf(product.productId),
-      health: data
-        ? preorderHealth({
-            failures: data.syncJobs.REGISTER.DEAD_LETTER,
-            oldestPendingAt: data.oldestPendingSyncAt,
-            now,
-          })
-        : null,
-      waiting: product.waiting,
-      failures: data ? data.syncJobs.REGISTER.DEAD_LETTER : null,
-      closesAt: product.closesAt,
-    }
-  })
   // 둘 이상 열려 있으면 실패가 어느 사전예약에서 났는지 나눠 적는다(많은 순).
   const failedPreorders = strip
     .filter((item) => item.failures)
@@ -204,11 +183,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   // 사전예약을 골랐으면 할 일도 그 사전예약 집계로 센다. 상품으로 거를 수 없는 것(원인별
   // 묶음·다시 보내기·배송 대기)은 '전체 기준'이라고 밝힌다 — 백엔드에 상품 조건을 요청해 뒀다.
   const scoped = selected !== null
-  const t = scoped
-    ? productStats[
-        openProducts.findIndex((product) => product.productId === selected)
-      ]?.data
-    : s
+  const t = scoped && selected ? statsOf(selected) : s
   // 외부 등록을 기다리는 작업(재처리 필요는 빼고) — 0이면 오래 기다리는 접수 시각이
   // 재처리 필요 건을 가리킬 수 있어 밀림으로 보지 않는다.
   const waitingRegister = t
@@ -241,7 +216,8 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             label: scoped
               ? '원인별로 다시 보내기 (전체)'
               : '원인별로 다시 보내기',
-            to: ADMIN_RECOVERY_PATH,
+            // 고른 사전예약 그대로 장애 대응을 연다.
+            to: adminRecoveryPath(selected ?? undefined),
           },
         },
         t.deadLetters.waiting > 0 && {

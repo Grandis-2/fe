@@ -171,7 +171,7 @@ export const Busy: Story = {
       within(cards[0]).getByRole('link', {
         name: '원인별로 다시 보내기 (전체)',
       }),
-    ).toHaveAttribute('href', '/admin/recovery')
+    ).toHaveAttribute('href', '/admin/recovery?product=p-galaxy')
     await expect(cards[3]).toHaveTextContent('배송 처리 대기 주문 37건')
     await expect(cards[3]).toHaveTextContent('전체 기준')
 

@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@shared/config/theme'
+import { color, motion, spacing, typography } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
@@ -8,64 +8,72 @@ export const root = style({
   gap: spacing[24],
 })
 
-export const steps = style({
-  listStyle: 'none',
-  margin: 0,
-  padding: 0,
+export const section = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+})
+
+export const sectionHeader = style({
   display: 'flex',
   flexWrap: 'wrap',
-  gap: `${spacing[8]} ${spacing[24]}`,
+  alignItems: 'baseline',
+  justifyContent: 'space-between',
+  gap: spacing[8],
 })
 
-export const step = style([
-  typography.body.defaultMedium,
-  {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacing[8],
-    color: color.text.tertiary,
-  },
+export const sectionTitle = style([
+  typography.title.mdSemibold,
+  { margin: 0, color: color.text.primary },
 ])
-
-export const stepReached = style({ color: color.text.primary })
-
-export const stepNumber = style([
-  typography.body.subMedium,
-  {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '28px',
-    height: '28px',
-    borderRadius: '50%',
-    background: color.background.subSurface,
-    color: color.text.secondary,
-    selectors: {
-      [`${stepReached} &`]: {
-        background: color.primary.base,
-        color: color.text.inverse,
-      },
-    },
-  },
-])
-
-// 원인 고르기가 넓고 보내기가 좁다 — 좁은 화면에선 한 줄씩 쌓인다.
-export const columns = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-  gap: spacing[16],
-  // 나란한 카드는 높이를 맞춘다 — 윗선·아랫선이 어긋나면 서로 다른 덩어리로 읽힌다.
-  alignItems: 'stretch',
-})
 
 /** 섹션 내용을 감싸는 흰 카드 */
 export const card = style({
   minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[16],
   padding: spacing[20],
   borderRadius: '12px',
-  border: `1px solid ${color.border.subtle}`,
+  border: `1px solid ${color.border.default}`,
   background: color.background.base,
 })
+
+// 보낼 양과 버튼을 한 줄에 — 무엇을 보낼지 고르는 목록은 그 아래에.
+export const sendHeader = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[12],
+})
+
+export const sendSummary = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[4],
+})
+
+export const sendCount = style([
+  typography.title.mdSemibold,
+  { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
+])
+
+export const sendActions = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[8],
+})
+
+export const scopeNote = style([
+  typography.body.sub,
+  {
+    padding: `${spacing[10]} ${spacing[12]}`,
+    borderRadius: '8px',
+    background: color.background.surface,
+    color: color.text.secondary,
+  },
+])
 
 export const list = style({
   display: 'flex',
@@ -75,13 +83,11 @@ export const list = style({
 
 export const cause = style({
   display: 'flex',
-  alignItems: 'center',
-  gap: spacing[12],
-  minHeight: '44px',
+  flexDirection: 'column',
+  gap: spacing[6],
   padding: `${spacing[12]} ${spacing[16]}`,
   borderRadius: '10px',
   border: `1px solid ${color.border.default}`,
-  cursor: 'pointer',
 })
 
 export const causePicked = style({
@@ -89,12 +95,21 @@ export const causePicked = style({
   background: color.primary.subtler,
 })
 
+export const causeLabelRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[12],
+  minHeight: '32px',
+  cursor: 'pointer',
+})
+
 export const causeText = style({
   flex: 1,
   minWidth: 0,
   display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[2],
+  flexWrap: 'wrap',
+  alignItems: 'baseline',
+  gap: `${spacing[2]} ${spacing[8]}`,
 })
 
 export const causeLabel = style([
@@ -102,43 +117,63 @@ export const causeLabel = style([
   { color: color.text.primary },
 ])
 
-export const causeHint = style([
-  typography.body.sub,
-  { color: color.text.secondary },
-])
-
-// 다시 보내도 같은 원인 — 기본으로 빠져 있는 이유를 눈에 띄게.
-export const causeHintWarn = style([
-  typography.body.sub,
-  { color: color.status.danger },
-])
-
 // 판매자에게는 설명이 먼저고, 코드는 개발팀에 알릴 때 쓰도록 흐리게 붙인다.
-export const causeCode = style({ color: color.text.tertiary })
+export const causeCode = style([
+  typography.body.caption,
+  { color: color.text.tertiary },
+])
 
 export const causeCount = style([
   typography.title.mdSemibold,
   { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
 ])
 
-export const summary = style({
+// 다시 보내도 같은 원인 — 기본으로 빠져 있는 이유를 그 줄에 바로.
+export const causeHintWarn = style([
+  typography.body.sub,
+  { paddingLeft: spacing[32], color: color.status.danger },
+])
+
+export const result = style({
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'baseline',
-  justifyContent: 'space-between',
-  padding: `${spacing[12]} ${spacing[16]}`,
-  borderRadius: '10px',
-  background: color.background.surface,
+  gap: spacing[12],
 })
 
-export const summaryValue = style([
-  typography.title.lgSemibold,
+export const resultValue = style([
+  typography.title.mdSemibold,
   { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
 ])
 
-export const cards = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-  gap: spacing[16],
+export const resultDown = style([
+  typography.body.defaultMedium,
+  { color: color.status.success },
+])
+
+export const resultUp = style([
+  typography.body.defaultMedium,
+  { color: color.status.danger },
+])
+
+export const progress = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[6],
+})
+
+export const progressTrack = style({
+  height: '8px',
+  borderRadius: '999px',
+  background: color.background.subSurface,
+  overflow: 'hidden',
+})
+
+export const progressFill = style({
+  height: '100%',
+  borderRadius: '999px',
+  background: color.primary.base,
+  transition: `width ${motion.duration.fast} ${motion.easing.default}`,
 })
 
 export const caption = style([
@@ -147,6 +182,6 @@ export const caption = style([
 ])
 
 export const link = style({
-  color: color.primary.base,
+  color: 'inherit',
   textDecoration: 'underline',
 })

@@ -140,6 +140,11 @@ export const readBackTo = (state: unknown): BackTo | undefined => {
 
 /** 장애 대응 — 외부 등록이 끝내 실패한 예약을 원인(오류 코드)별로 묶어 다시 보낸다 */
 export const ADMIN_RECOVERY_PATH = '/admin/recovery'
+/** 사전예약을 골라서 연다(운영 대시보드에서 고른 사전예약 그대로) */
+export const adminRecoveryPath = (productId?: string) =>
+  productId
+    ? `${ADMIN_RECOVERY_PATH}?product=${encodeURIComponent(productId)}`
+    : ADMIN_RECOVERY_PATH
 /** 외부 예약 대조 — 우리 예약과 외부 예약 시스템 원장을 맞춰 본다 */
 export const ADMIN_RECONCILIATION_PATH = '/admin/reconciliation'
 export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'
