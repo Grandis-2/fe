@@ -29,7 +29,7 @@ const BADGE_INTERVAL_MS = 30_000
 const navGroups = [
   {
     label: null,
-    items: [{ path: ADMIN_HOME_PATH, label: '운영 홈' }],
+    items: [{ path: ADMIN_HOME_PATH, label: '운영 대시보드' }],
   },
   {
     label: '오픈 운영',

@@ -409,34 +409,37 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         )}
       </section>
 
-      <section className={styles.card} aria-labelledby="ops-flow">
+      {/* 다른 섹션처럼 제목은 카드 밖에 두고, 카드에는 그래프만 담는다. */}
+      <section className={styles.section} aria-labelledby="ops-flow">
         <div className={styles.cardHeader}>
           <h2 id="ops-flow" className={styles.sectionTitle}>
-            들어오는 양과 처리한 양
+            접수·처리 속도
           </h2>
           <span className={styles.caption}>
             관리자 화면을 연 뒤부터 · 건/초
           </span>
         </div>
-        <ThroughputChart
-          // 고른 사전예약이 바뀌면 그래프 상태(올린 지점)를 새로 시작한다.
-          key={selected ?? 'all'}
-          label={`${selected ? nameOf(selected) : '전체'} 초당 접수와 외부 등록 처리`}
-          unit="건/초"
-          times={receivedRates.map(({ at }) => at)}
-          series={[
-            {
-              label: '접수',
-              values: receivedRates.map(({ value }) => value),
-            },
-            {
-              label: '외부 등록 처리',
-              values: processedRates.map(({ value }) => value),
-            },
-          ]}
-        />
-        <div className={styles.caption}>
-          두 선 사이가 벌어진 만큼 외부 등록 대기가 쌓여요.
+        <div className={styles.card}>
+          <ThroughputChart
+            // 고른 사전예약이 바뀌면 그래프 상태(올린 지점)를 새로 시작한다.
+            key={selected ?? 'all'}
+            label={`${selected ? nameOf(selected) : '전체'} 초당 접수와 외부 등록 처리`}
+            unit="건/초"
+            times={receivedRates.map(({ at }) => at)}
+            series={[
+              {
+                label: '접수',
+                values: receivedRates.map(({ value }) => value),
+              },
+              {
+                label: '외부 등록 처리',
+                values: processedRates.map(({ value }) => value),
+              },
+            ]}
+          />
+          <div className={styles.caption}>
+            두 선 사이가 벌어진 만큼 외부 등록 대기가 쌓여요.
+          </div>
         </div>
       </section>
     </div>
