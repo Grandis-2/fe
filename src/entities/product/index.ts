@@ -14,11 +14,15 @@ export { findCategoryId } from './lib/findCategoryId'
 export type {
   Product,
   ProductListItem,
+  ProductBrand,
+  ProductListParams,
+  ProductSort,
   SaleMode,
   Category,
   ShipmentBatch,
 } from './model/product'
 export { brandMenus } from './model/categoryMenu'
+export { productBrandNames } from './model/brand'
 export type { BrandMenu } from './model/categoryMenu'
 export { ProductColorSwatches } from './ui/ProductColorSwatches'
 export type {

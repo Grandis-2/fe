@@ -1,6 +1,7 @@
 import type {
   CategoryNode,
   OptionAxis,
+  ProductBrandCode,
   ProductDetailView,
   SaleMode,
   ShipmentBatch,
@@ -12,23 +13,31 @@ import type {
 export const mockUuid = (kind: 1 | 2 | 3 | 4 | 5, n: number) =>
   `${kind}0000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 
-// ponytail: 카테고리 이름이 아직 백엔드와 확정되지 않았다. 목업은 헤더 메뉴(brandMenus)의 상위 이름 + 브랜드 하위로
-// 트리를 만든다 — 확정되면 이름을 맞춘다.
-const TREE: [name: string, brands: string[]][] = [
-  ['모바일', ['Apple', 'Samsung']],
-  ['PC/주변기기', ['Apple', 'Samsung', 'LG']],
-  ['웨어러블', ['Apple', 'Samsung']],
+// 명세처럼 상위 > 하위 카테고리 2단계다. 이름은 헤더 메뉴(brandMenus)와 같게 둔다.
+// 브랜드는 카테고리가 아니라 상품의 brand 칸이다 — 상위마다 번갈아 배정할 브랜드를 같이 둔다.
+const TREE: [name: string, children: string[], brands: ProductBrandCode[]][] = [
+  ['모바일', ['스마트폰', '태블릿', '폴더블'], ['APPLE', 'SAMSUNG']],
+  [
+    'PC/주변기기',
+    ['노트북', '데스크탑', '모니터', '키보드', '마우스'],
+    ['APPLE', 'SAMSUNG', 'LG'],
+  ],
+  [
+    '웨어러블',
+    ['스마트워치', '무선이어폰', '스마트밴드'],
+    ['APPLE', 'SAMSUNG'],
+  ],
 ]
 
-export const categories: CategoryNode[] = TREE.map(([name, brands], i) => {
+export const categories: CategoryNode[] = TREE.map(([name, children], i) => {
   const categoryId = mockUuid(1, (i + 1) * 10)
   return {
     categoryId,
     name,
     parentId: null,
-    children: brands.map((brand, j) => ({
+    children: children.map((child, j) => ({
       categoryId: mockUuid(1, (i + 1) * 10 + j + 1),
-      name: brand,
+      name: child,
       parentId: categoryId,
       children: [],
     })),
@@ -79,6 +88,7 @@ const optionAxes: OptionAxis[] = [
 type Seed = {
   title: string
   categoryId: string
+  brand: ProductBrandCode
   basePrice: number
   saleMode?: SaleMode
   // 일반 상품의 재고. 0이면 품절.
@@ -94,6 +104,7 @@ function buildProduct(
   {
     title,
     categoryId,
+    brand,
     basePrice,
     saleMode = 'IN_STOCK',
     stock = 10,
@@ -134,6 +145,7 @@ function buildProduct(
     categoryId,
     saleMode,
     title,
+    brand,
     modelNumber: `NV-${n}`,
     description: null,
     imageUrl: gallery[0].items[0].url,
@@ -156,12 +168,12 @@ function buildProduct(
   }
 }
 
-const brandId = (parent: string, brand: string) =>
+const childId = (parent: string, child: string) =>
   categories
     .find((node) => node.name === parent)
-    ?.children.find((child) => child.name === brand)?.categoryId ?? ''
+    ?.children.find((node) => node.name === child)?.categoryId ?? ''
 
-// 상위 카테고리별 [하위 상품군, 개수, 시작가, 판매 방식]. 브랜드는 하위 카테고리를 번갈아 쓴다.
+// 상위 카테고리별 [하위 카테고리, 개수, 시작가, 판매 방식]. 브랜드는 상위의 브랜드를 번갈아 쓴다.
 const LINES: [
   parent: string,
   line: string,
@@ -185,15 +197,17 @@ const LINES: [
 const seeds: Seed[] = [
   {
     title: '맥북 프로 14',
-    categoryId: brandId('PC/주변기기', 'Apple'),
+    categoryId: childId('PC/주변기기', '노트북'),
+    brand: 'APPLE',
     basePrice: 2390000,
     saleMode: 'PREORDER',
   },
   ...LINES.flatMap(([parent, line, count, price, saleMode, warranty]) => {
-    const brands = TREE.find(([name]) => name === parent)?.[1] ?? []
+    const brands = TREE.find(([name]) => name === parent)?.[2] ?? ['APPLE']
     return Array.from({ length: count }, (_, i) => ({
       title: `NOVA ${line} ${i + 1}`,
-      categoryId: brandId(parent, brands[i % brands.length]),
+      categoryId: childId(parent, line),
+      brand: brands[i % brands.length],
       basePrice: price + i * 50000,
       saleMode,
       warranty,
@@ -202,13 +216,15 @@ const seeds: Seed[] = [
   // 목록의 품절 · 판매 중지 표시를 확인하는 용도.
   {
     title: 'NOVA 스마트밴드 (품절)',
-    categoryId: brandId('웨어러블', 'Samsung'),
+    categoryId: childId('웨어러블', '스마트밴드'),
+    brand: 'SAMSUNG',
     basePrice: 79000,
     stock: 0,
   },
   {
     title: 'NOVA 마우스 (판매 중지)',
-    categoryId: brandId('PC/주변기기', 'LG'),
+    categoryId: childId('PC/주변기기', '마우스'),
+    brand: 'LG',
     basePrice: 59000,
     paused: true,
   },

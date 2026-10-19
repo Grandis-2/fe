@@ -282,6 +282,7 @@ export function toPreviewProduct(
     productId: 'preview',
     saleMode: value.isPreorder ? 'PREORDER' : 'IN_STOCK',
     title: value.name,
+    brand: brandCodeOf(value.brand) ?? 'APPLE',
     imageUrl: images.gallery[0]?.items[0]?.url ?? null,
     status: 'ACTIVE',
     sellable: variants.some((variant) => variant.status === 'ACTIVE'),

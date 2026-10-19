@@ -11,6 +11,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const tenProducts: ProductListItem[] = Array.from({ length: 10 }, (_, i) => ({
   productId: String(i + 1),
   saleMode: 'IN_STOCK',
+  brand: 'APPLE',
   title: `NOVA MacBook Neo ${i + 1}`,
   imageUrl: '/images/macbook_neo_sliver1.png',
   status: 'ACTIVE',

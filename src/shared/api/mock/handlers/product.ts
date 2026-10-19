@@ -16,6 +16,7 @@ import type {
 import type { RequestHandler } from 'msw'
 
 const SORTS = ['NEWEST', 'PRICE_ASC', 'PRICE_DESC']
+const BRANDS = ['SAMSUNG', 'APPLE', 'LG']
 
 // 명세의 ProductListItem 규칙대로 상세에서 목록 한 칸을 만든다 — 최저가는 판매 중 옵션만 본다(품절 포함).
 export function toListItem(product: ProductDetailView): ProductListItem {
@@ -27,6 +28,7 @@ export function toListItem(product: ProductDetailView): ProductListItem {
     productId: product.productId,
     saleMode: product.saleMode,
     title: product.title,
+    brand: product.brand,
     imageUrl: product.imageUrl,
     status: product.status,
     minPrice: prices.length > 0 ? Math.min(...prices) : null,
@@ -111,6 +113,7 @@ export const productHandlers: RequestHandler[] = [
     const { page, size, violations } = readPaging(params)
     const categoryId = params.get('categoryId')
     const sort = params.get('sort') ?? 'NEWEST'
+    const brands = params.getAll('brand')
     const extra: ApiViolation[] = [
       ...(categoryId && !isUuid(categoryId)
         ? [uuidViolation('categoryId')]
@@ -118,6 +121,9 @@ export const productHandlers: RequestHandler[] = [
       ...(SORTS.includes(sort)
         ? []
         : [{ field: 'sort', message: '형식이 맞지 않습니다.' }]),
+      ...(brands.every((brand) => BRANDS.includes(brand))
+        ? []
+        : [{ field: 'brand', message: '형식이 맞지 않습니다.' }]),
     ]
     if (violations.length + extra.length > 0)
       return invalid([...violations, ...extra])
@@ -136,7 +142,11 @@ export const productHandlers: RequestHandler[] = [
       .filter(
         (product) =>
           product.status === 'ACTIVE' &&
-          (!keyword || product.title.toLowerCase().includes(keyword)) &&
+          (!keyword ||
+            [product.title, product.modelNumber ?? '', product.brand].some(
+              (text) => text.toLowerCase().includes(keyword),
+            )) &&
+          (brands.length === 0 || brands.includes(product.brand)) &&
           (!scope || scope.includes(product.categoryId)) &&
           (!saleMode || product.saleMode === saleMode) &&
           (axes.every(([, values]) => values.length === 0) ||
