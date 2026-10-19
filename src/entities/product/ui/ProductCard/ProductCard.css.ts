@@ -129,6 +129,7 @@ export const modelNumber = style({
 export const priceRow = style({
   marginTop: spacing[6],
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'baseline',
   color: color.text.primary,
 })
@@ -140,6 +141,23 @@ export const priceAmount = style({
     [breakpoint.mobile]: { fontSize: fontSize[16] },
   },
 })
+// 할인 시 정가는 할인율·판매가 위 한 줄을 통째로 차지한다(flex-basis 100%).
+export const originalPrice = style({
+  flexBasis: '100%',
+  color: color.text.tertiary,
+  '@media': {
+    [breakpoint.mobile]: { fontSize: fontSize[12] },
+  },
+})
+
+export const discountRate = style({
+  color: color.status.danger,
+  marginRight: spacing[6],
+  '@media': {
+    [breakpoint.mobile]: { fontSize: fontSize[16], marginRight: spacing[4] },
+  },
+})
+
 export const priceUnit = style({
   color: color.text.tertiary,
   marginLeft: spacing[2],

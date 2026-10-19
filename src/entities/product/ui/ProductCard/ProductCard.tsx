@@ -21,6 +21,8 @@ export type ProductCardData = {
   colorName: string
   colorSwatches: ProductColorSwatchItem[]
   basePrice: number
+  // 0~100(%). 0이면 할인 표시 없이 basePrice만 그린다.
+  discountRate?: number
   priceUnit?: string
   saleMode: SaleMode
 }
@@ -45,10 +47,12 @@ export function ProductCard({
     colorName,
     colorSwatches,
     basePrice,
+    discountRate = 0,
     priceUnit = '원',
     saleMode,
   } = product
   const isPreorder = saleMode === 'PREORDER'
+  const salePrice = Math.round(basePrice * (1 - discountRate / 100))
   return (
     <div
       data-theme="dark"
@@ -98,12 +102,32 @@ export function ProductCard({
         <div
           className={[typography.body.subSemibold, styles.priceRow].join(' ')}
         >
+          {discountRate > 0 && (
+            <>
+              <del
+                className={[typography.body.sub, styles.originalPrice].join(
+                  ' ',
+                )}
+              >
+                {formatNumber(basePrice)}
+                {priceUnit}
+              </del>
+              <span
+                className={[
+                  typography.title.mdSemibold,
+                  styles.discountRate,
+                ].join(' ')}
+              >
+                {discountRate}%
+              </span>
+            </>
+          )}
           <span
             className={[typography.title.mdSemibold, styles.priceAmount].join(
               ' ',
             )}
           >
-            {formatNumber(basePrice)}
+            {formatNumber(salePrice)}
           </span>
           {/* 색상·옵션에 따라 오르는 시작가라 '부터'를 붙인다. */}
           <span

@@ -46,6 +46,17 @@ export const Preorder: Story = {
   },
 }
 
+export const Discount: Story = {
+  args: {
+    product: { ...Default.args.product, discountRate: 15 },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('1,290,000원')).toBeInTheDocument()
+    await expect(canvas.getByText('15%')).toBeInTheDocument()
+    await expect(canvas.getByText('1,096,500')).toBeInTheDocument()
+  },
+}
+
 export const Skeleton: StoryObj<typeof ProductCardSkeleton> = {
   render: () => <ProductCardSkeleton />,
 }
