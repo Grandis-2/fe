@@ -1,8 +1,8 @@
-import { Globe } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { HOME_PATH } from '@shared/config/routes'
-import { Button, Container, PlanetIcon } from '@shared/ui'
+import { Button } from '@shared/ui'
+import { ErrorScreen, OrbitScene } from '@widgets/error-screen'
 
 import * as styles from './NotFoundPage.css'
 
@@ -11,21 +11,30 @@ import * as styles from './NotFoundPage.css'
 export function NotFoundPage() {
   const navigate = useNavigate()
 
+  // 바깥 링크로 바로 들어와 돌아갈 곳이 없으면 홈으로 보낸다.
+  const goBack = () =>
+    window.history.length > 1 ? void navigate(-1) : void navigate(HOME_PATH)
+
   return (
-    <Container>
-      <div className={styles.root}>
-        <PlanetIcon size={200} className={styles.illustration} />
-        <div className={styles.code}>404</div>
-        <div className={styles.texts}>
-          <div className={styles.title}>페이지를 찾을 수 없어요</div>
-          <div className={styles.description}>
-            주소가 잘못되었거나 삭제된 페이지예요.
-          </div>
-        </div>
-        <Button icon={Globe} onClick={() => void navigate(HOME_PATH)}>
-          홈으로
-        </Button>
-      </div>
-    </Container>
+    <div className={styles.root} data-header-theme="dark">
+      <ErrorScreen
+        scene={<OrbitScene />}
+        code="404"
+        label="PAGE NOT FOUND"
+        tone="brand"
+        title="궤도를 벗어난 페이지예요"
+        description="주소가 바뀌었거나 사라진 페이지예요. 입력한 주소를 다시 확인해 주세요."
+        actions={
+          <>
+            <Button rounded onClick={() => void navigate(HOME_PATH)}>
+              홈으로 돌아가기
+            </Button>
+            <Button rounded variant="outline" color="close" onClick={goBack}>
+              이전 페이지
+            </Button>
+          </>
+        }
+      />
+    </div>
   )
 }
