@@ -39,6 +39,7 @@ import {
 } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
+import { waitEstimate } from '../../lib/waitEstimate'
 import {
   NumberSettingForm,
   type NumberSettingFormProps,
@@ -82,6 +83,27 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
 
   const view = status.data
   const maxCredit = rates.data?.maxGlobalCredit ?? 1500
+  const totalWaiting = view
+    ? view.products.reduce((sum, item) => sum + item.waiting, 0)
+    : null
+
+  // 전역 속도를 바꾸기 전에 "지금 → 바꾸면" 맨 뒤 대기를 비교한다. 실제 입장은 운영값 ×
+  // 브레이크 배율이라 바꾼 값에도 지금 배율을 곱해 본다.
+  const creditPreview = (value: number) => {
+    if (!view || totalWaiting === null) return null
+    const brake = view.brakeFactor ?? 1
+    const next = Math.round(value * brake)
+    const waitOf = (perSecond: number | null) =>
+      waitEstimate(totalWaiting, perSecond) ?? '줄 없음'
+    return (
+      <>
+        지금 초당 {count(view.globalCredit, '명')} · 맨 뒤{' '}
+        {waitOf(view.globalCredit)} → 바꾸면 초당 {count(next, '명')} · 맨 뒤{' '}
+        {waitOf(next)}
+        {brake < 1 && ` (브레이크 배율 ${brake} 적용)`}
+      </>
+    )
+  }
   const rateOf = (productId: string) =>
     rates.data?.products.find((product) => product.productId === productId)
 
@@ -202,6 +224,12 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
       render: (product) => `${product.credit} / ${product.cap}명/초`,
     },
     {
+      key: 'wait',
+      header: '맨 뒤 예상 대기',
+      align: 'right',
+      render: (product) => waitEstimate(product.waiting, product.credit) ?? '—',
+    },
+    {
       key: 'limit',
       header: '줄 최대 길이',
       align: 'right',
@@ -319,20 +347,23 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
           label="총 대기 인원"
           muted={!view}
           loading={status.isPending}
-          value={
-            view
-              ? count(
-                  view.products.reduce((sum, item) => sum + item.waiting, 0),
-                  '명',
-                )
-              : '—'
-          }
+          value={count(totalWaiting, '명')}
         />
         <StatCard
           label="실제 입장 속도"
           muted={!view}
           loading={status.isPending}
           value={count(view?.globalCredit ?? null, '명/초')}
+        />
+        <StatCard
+          label="맨 뒤 예상 대기"
+          muted={!view}
+          loading={status.isPending}
+          value={
+            view && totalWaiting !== null
+              ? (waitEstimate(totalWaiting, view.globalCredit) ?? '줄 없음')
+              : '—'
+          }
         />
         <StatCard
           label="브레이크 배율"
@@ -404,6 +435,10 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
                         max: row.max,
                         initial: row.setting.value,
                         hint: row.hint,
+                        preview:
+                          row.key === 'globalCredit'
+                            ? creditPreview
+                            : undefined,
                       },
                       (value) => ({ kind: row.key, value }),
                     )
@@ -438,7 +473,10 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
       >
         <Table
           columns={productColumns}
-          rows={view?.products ?? []}
+          // 대기가 많은 상품이 막힌 상품이라 위로 올린다.
+          rows={(view?.products ?? []).toSorted(
+            (a, b) => b.waiting - a.waiting,
+          )}
           rowKey={(product) => product.productId}
           loading={status.isPending}
           emptyMessage={
