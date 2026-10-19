@@ -157,7 +157,6 @@ export function MypageCart() {
               rows={[
                 { label: '선택 상품', value: `${selectedLines.length}개` },
                 { label: '상품 금액', value: formatWon(selectedTotal) },
-                { label: '배송비', value: '무료' },
               ]}
               totalLabel="결제 예정 금액"
               totalValue={formatWon(selectedTotal)}
