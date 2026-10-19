@@ -140,7 +140,7 @@ export const chipCount = style({
   '@media': { [breakpoint.mobile]: { display: 'inline' } },
 })
 
-// 받는 사람·배송지 — 예약 내역 카드의 facts와 같은 모양. 주소가 길어 배송지 칸을 넓게 준다.
+// 받는 사람·배송지 — 사전예약 내역 카드의 facts와 같은 모양. 주소가 길어 배송지 칸을 넓게 준다.
 export const facts = style({
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 3fr)',

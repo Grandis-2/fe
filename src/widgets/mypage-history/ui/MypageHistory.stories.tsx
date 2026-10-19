@@ -90,7 +90,7 @@ export const Default: Story = {
     const awaiting = canvas.getAllByText('결제 대기')
     await expect(awaiting).toHaveLength(3)
     for (const element of awaiting) await expect(element).toBeVisible()
-    // 사전예약 결제 대기는 예약 내역에서 결제한다 — 주문 내역엔 버튼이 없다.
+    // 사전예약 결제 대기는 사전예약 내역에서 결제한다 — 주문 내역엔 버튼이 없다.
     await expect(
       canvas.queryByRole('button', { name: /결제하기/ }),
     ).not.toBeInTheDocument()

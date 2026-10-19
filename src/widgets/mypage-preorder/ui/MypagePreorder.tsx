@@ -255,11 +255,11 @@ export function MypagePreorder() {
 
   return (
     <div className={styles.root}>
-      <h1 className={styles.title}>예약 내역</h1>
+      <h1 className={styles.title}>사전예약 내역</h1>
 
       {isError && (
         <div className={styles.sectionTitle}>
-          {getErrorMessage(error, '예약 내역을 불러오지 못했어요.')}
+          {getErrorMessage(error, '사전예약 내역을 불러오지 못했어요.')}
         </div>
       )}
       {isPending && <HistoryListSkeleton />}

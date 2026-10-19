@@ -92,7 +92,7 @@ const renderItem = (product: ProductPaymentCardItem) => (
 )
 
 // 결제 대기 주문 — 장바구니·바로 구매 주문은 여기서 결제(기한 10분 안)·취소한다. 사전예약 주문은 버튼 없이 상태만 보이고
-// 결제·취소는 예약 내역에서 한다(주문 응답엔 예약 id가 없다) — 마이페이지 메뉴의 '예약 내역' 숫자가 그쪽으로 이끈다.
+// 결제·취소는 사전예약 내역에서 한다(주문 응답엔 예약 id가 없다) — 마이페이지 메뉴의 '사전예약 내역' 숫자가 그쪽으로 이끈다.
 export function MypageHistory() {
   const cancelOrder = useCancelOrder()
   const [payingId, setPayingId] = useState<string | null>(null)
