@@ -20,5 +20,6 @@ export const Default: Story = {
     productName: '아이폰 18 Pro',
     onComplete: fn(),
     onFail: fn(),
+    onLeave: fn(),
   },
 }

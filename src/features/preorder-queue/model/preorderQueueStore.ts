@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 
+import { showToast } from '@shared/model/toastStore'
+
 // 대기열 한 번 — joinedAt이 key라 새로 줄 서면 PreorderQueue가 다시 마운트된다.
 export type PreorderQueueTicket = {
   productId: string
@@ -70,6 +72,17 @@ export const usePreorderQueueStore = create<PreorderQueueStore>()((set) => ({
   },
 }))
 
+// 줄은 한 번에 하나다 — 이미 서 있는 줄(입장 직전 포함)이 있으면 바꾸지 않는다. 바꾸면 기존 대기가
+// 끊기고, 막 받은 입장권도 저장되지 못한다. 나가기를 누르면 줄이 비워져 다른 상품에 설 수 있다.
 export const joinPreorderQueue = (
   ticket: Omit<PreorderQueueTicket, 'joinedAt'>,
-) => usePreorderQueueStore.getState().join(ticket)
+) => {
+  const current = usePreorderQueueStore.getState().ticket
+  if (current) {
+    showToast(
+      `'${current.productName}' 대기열에 서 있어요. 끝나거나 나간 뒤 다시 눌러 주세요.`,
+    )
+    return
+  }
+  usePreorderQueueStore.getState().join(ticket)
+}

@@ -46,11 +46,18 @@ type Options = {
   onComplete: (admission: PreorderAdmission) => void
   // 마감·오픈 전·없는 상품처럼 줄을 설 수 없으면 서버 문구와 함께 호출된다.
   onFail: (message: string) => void
+  // 나가기를 누르면 호출된다 — 줄을 비워 다른 상품에 설 수 있게 한다.
+  onLeave: () => void
 }
 
 // 진입(POST) → Retry-After마다 조회(GET) → 입장권. 조회가 NOT_IN_QUEUE면 다시 진입한다(줄에 있었다면 같은 자리).
 // 모달을 닫아도 조회는 계속된다 — 약 250초 넘게 조회하지 않으면 줄에서 빠지기 때문이다.
-export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
+export function usePreorderQueue({
+  productId,
+  onComplete,
+  onFail,
+  onLeave,
+}: Options) {
   const enter = useEnterQueue()
   const [isOpen, setIsOpen] = useState(true)
   const [hasLeft, setHasLeft] = useState(false)
@@ -200,6 +207,7 @@ export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
     leave: () => {
       setHasLeft(true)
       setIsOpen(false)
+      onLeave()
     },
   }
 }

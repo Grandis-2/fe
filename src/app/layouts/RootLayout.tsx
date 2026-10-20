@@ -109,6 +109,7 @@ export function RootLayout() {
             clearQueue()
             showToast(message)
           }}
+          onLeave={clearQueue}
         />
       )}
     </>
