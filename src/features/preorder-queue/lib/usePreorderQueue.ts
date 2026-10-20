@@ -10,7 +10,10 @@ import { isRetryableError } from '@shared/api/queryPolicy'
 import { track } from '@shared/lib/analytics'
 import { useDeadline } from '@shared/lib/useDeadline'
 
-import type { PreorderAdmission } from '../model/preorderQueueStore'
+import {
+  usePreorderQueueStore,
+  type PreorderAdmission,
+} from '../model/preorderQueueStore'
 
 const TICK_MS = 1000
 // 차례가 온 뒤 바로 넘기지 않고 100%를 잠깐 보여준 다음 이동한다.
@@ -60,6 +63,13 @@ export function usePreorderQueue({
 }: Options) {
   const enter = useEnterQueue()
   const [isOpen, setIsOpen] = useState(true)
+  // 서 있는 상품을 다시 누르면(joinPreorderQueue) 닫아 둔 창을 다시 연다 — 렌더 중에 바로 맞춘다.
+  const reopenedAt = usePreorderQueueStore((state) => state.reopenedAt)
+  const [seenReopenedAt, setSeenReopenedAt] = useState(reopenedAt)
+  if (reopenedAt !== seenReopenedAt) {
+    setSeenReopenedAt(reopenedAt)
+    setIsOpen(true)
+  }
   const [hasLeft, setHasLeft] = useState(false)
   // 아래 effect는 moveIn을 셀 때마다 다시 돈다 — 입장 이벤트는 입장권마다 한 번만 남긴다.
   const trackedTicket = useRef<string | null>(null)

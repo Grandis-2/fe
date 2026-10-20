@@ -1,4 +1,4 @@
-import { fn } from 'storybook/test'
+import { expect, fn } from 'storybook/test'
 
 import { PreorderQueue } from './PreorderQueue'
 
@@ -21,5 +21,12 @@ export const Default: Story = {
     onComplete: fn(),
     onFail: fn(),
     onLeave: fn(),
+  },
+  // '대기열 나가기'는 확인을 한 번 더 받고, '나가기'까지 눌러야 줄을 비운다(onLeave).
+  play: async ({ canvas, userEvent, args }) => {
+    await userEvent.click(canvas.getByRole('button', { name: '대기열 나가기' }))
+    await expect(args.onLeave).not.toHaveBeenCalled()
+    await userEvent.click(canvas.getByRole('button', { name: '나가기' }))
+    await expect(args.onLeave).toHaveBeenCalledOnce()
   },
 }

@@ -23,8 +23,11 @@ export type PreorderAdmission = {
 
 type PreorderQueueStore = {
   ticket: PreorderQueueTicket | null
+  // 서 있는 줄의 상품을 다시 누른 시각 — 닫아 둔 대기열 창을 다시 연다(PreorderQueue가 지켜본다).
+  reopenedAt: number | null
   admission: PreorderAdmission | null
   join: (ticket: Omit<PreorderQueueTicket, 'joinedAt'>) => void
+  reopen: () => void
   clear: () => void
   admit: (admission: PreorderAdmission) => void
   clearAdmission: () => void
@@ -59,8 +62,10 @@ const saveAdmission = (admission: PreorderAdmission | null) => {
 // joinPreorderQueue만 부른다. 페이지를 옮겨도 QueuePill이 남아 있다.
 export const usePreorderQueueStore = create<PreorderQueueStore>()((set) => ({
   ticket: null,
+  reopenedAt: null,
   admission: loadAdmission(),
   join: (ticket) => set({ ticket: { ...ticket, joinedAt: Date.now() } }),
+  reopen: () => set({ reopenedAt: Date.now() }),
   clear: () => set({ ticket: null }),
   admit: (admission) => {
     saveAdmission(admission)
@@ -72,12 +77,17 @@ export const usePreorderQueueStore = create<PreorderQueueStore>()((set) => ({
   },
 }))
 
-// 줄은 한 번에 하나다 — 이미 서 있는 줄(입장 직전 포함)이 있으면 바꾸지 않는다. 바꾸면 기존 대기가
+// 줄은 한 번에 하나다 — 다른 상품의 줄(입장 직전 포함)이 있으면 바꾸지 않는다. 바꾸면 기존 대기가
 // 끊기고, 막 받은 입장권도 저장되지 못한다. 나가기를 누르면 줄이 비워져 다른 상품에 설 수 있다.
 export const joinPreorderQueue = (
   ticket: Omit<PreorderQueueTicket, 'joinedAt'>,
 ) => {
-  const current = usePreorderQueueStore.getState().ticket
+  const { ticket: current, reopen } = usePreorderQueueStore.getState()
+  // 같은 상품이면 줄을 다시 서지 않고 닫아 둔 대기열 창만 다시 연다.
+  if (current?.productId === ticket.productId) {
+    reopen()
+    return
+  }
   if (current) {
     showToast(
       `'${current.productName}' 대기열에 서 있어요. 끝나거나 나간 뒤 다시 눌러 주세요.`,
