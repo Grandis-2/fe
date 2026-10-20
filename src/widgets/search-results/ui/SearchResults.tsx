@@ -129,7 +129,9 @@ export function SearchResults() {
         </div>
       )}
 
-      {(keyword || isCategoryMode) && <SearchFilters />}
+      {(keyword || isCategoryMode) && (
+        <SearchFilters category={category ?? undefined} />
+      )}
 
       {keyword && preorders.length > 0 && (
         <PreorderLinks preorders={preorders} />
