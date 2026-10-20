@@ -1,6 +1,7 @@
 import { style } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@shared/config/theme'
+import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 // 카드가 아니라 목록 한 줄 — 감싸는 쪽(할 일 카드·맨 위 긴급 줄)이 테두리를 맡는다.
 // 급한 정도는 앞의 꼬리표 색과 글자로 보인다.
@@ -21,18 +22,19 @@ export const text = style({
   gap: spacing[4],
 })
 
+// 16px 굵게 — 본문 16px에 굵기만 올린다(같은 크기의 굵은 본문 토큰이 없다).
 export const title = style([
-  typography.body.subSemibold,
-  { color: color.text.primary },
+  typography.body.defaultMedium,
+  { fontWeight: fontWeight.semibold, color: color.text.primary },
 ])
 
 export const description = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
 
 // 줄마다 버튼 폭이 다르면 오른쪽 끝이 들쭉날쭉하다 — 가장 긴 라벨에 맞춘 고정 폭.
-const ACTION_WIDTH = '104px'
+const ACTION_WIDTH = '100px'
 
 // 다른 화면으로 가는 링크라 <a>로 두고 버튼 모양만 입힌다.
 export const action = style([
@@ -43,7 +45,7 @@ export const action = style([
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: '36px',
+    minHeight: '40px',
     padding: `0 ${spacing[12]}`,
     borderRadius: '8px',
     border: '1px solid transparent',
@@ -69,7 +71,7 @@ export const actionOutline = style({
 
 // 누를 수 있는 것처럼 보이지 않게 버튼 자리에 글자만 둔다.
 export const handoff = style([
-  typography.body.subMedium,
+  typography.body.defaultMedium,
   {
     width: ACTION_WIDTH,
     flexShrink: 0,
@@ -81,7 +83,7 @@ export const handoff = style([
 
 // 범위 표시 — 상태가 아니라 설명이라 무채색으로 작게.
 export const scope = style([
-  typography.body.caption,
+  typography.body.sub,
   {
     marginLeft: spacing[8],
     padding: `${spacing[2]} ${spacing[6]}`,
