@@ -116,7 +116,7 @@ export function MypagePreorder() {
       // 탭을 오갈 때마다 기록이 쌓이면 뒤로 가기로 페이지를 못 벗어난다.
       { replace: true },
     )
-  const { data, isPending, isError, error } = useMyReservations()
+  const { data, isError, error } = useMyReservations()
   const cancel = useCancelReservation()
   const openAlerts = useMyOpenAlerts()
   const toggleOpenAlert = useToggleOpenAlert()
@@ -383,12 +383,15 @@ export function MypagePreorder() {
               </ul>
             )}
           </>
-        ) : isError ? (
-          <InlineAlert status="error">
-            {getErrorMessage(error, '사전예약 내역을 불러오지 못했어요.')}
-          </InlineAlert>
-        ) : isPending ? (
-          <HistoryListSkeleton />
+        ) : !data ? (
+          // 받은 목록이 있으면 다시 받다 실패해도 그대로 보인다 — 실패 문구는 처음 받기부터 실패했을 때만.
+          isError ? (
+            <InlineAlert status="error">
+              {getErrorMessage(error, '사전예약 내역을 불러오지 못했어요.')}
+            </InlineAlert>
+          ) : (
+            <HistoryListSkeleton />
+          )
         ) : view === 'progress' ? (
           inProgress.length === 0 ? (
             <InlineAlert status="info" variant="big" icon={CalendarClock}>
