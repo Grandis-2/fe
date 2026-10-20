@@ -102,7 +102,7 @@ export const allClear = style([
 ])
 
 export const caption = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { color: color.text.secondary },
 ])
 

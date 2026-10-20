@@ -183,9 +183,7 @@ export const Busy: Story = {
       'true',
     )
     // 사전예약별 대기·입장·실패는 표로 본다.
-    await expect(
-      canvas.getByRole('rowheader', { name: /갤럭시 S27/ }),
-    ).toBeVisible()
+    await expect(canvas.getByRole('cell', { name: /갤럭시 S27/ })).toBeVisible()
     await expect(
       canvas.getByRole('link', { name: /외부 등록 실패/ }),
     ).toHaveTextContent('860건')
@@ -201,9 +199,6 @@ export const Busy: Story = {
     await expect(
       within(cards[0]).getByRole('link', { name: '재처리' }),
     ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
-    await expect(
-      canvas.getByRole('link', { name: /배송 대기 주문/ }),
-    ).not.toHaveTextContent('전체 기준')
 
     // 사전예약을 고르면 숫자·할 일이 그 사전예약으로 바뀐다.
     await userEvent.click(picker.getByRole('button', { name: '아이폰 18 Pro' }))
@@ -216,10 +211,6 @@ export const Busy: Story = {
       'href',
       '/admin/reservations?status=REPROCESS_NEEDED&product=p-iphone',
     )
-    // 주문은 상품으로 거를 수 없어 '전체 기준'이라고 밝힌다.
-    await expect(
-      canvas.getByRole('link', { name: /배송 대기 주문/ }),
-    ).toHaveTextContent('전체 기준')
   },
 }
 

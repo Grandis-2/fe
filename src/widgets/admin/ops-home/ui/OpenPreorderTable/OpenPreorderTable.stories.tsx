@@ -4,13 +4,10 @@ import { OpenPreorderTable } from './OpenPreorderTable'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-const NOW = Date.parse('2026-10-08T05:00:00Z')
-
 const meta = {
   component: OpenPreorderTable,
   tags: ['ai-generated'],
   args: {
-    now: NOW,
     items: [
       {
         productId: 'p-iphone',
@@ -40,11 +37,11 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByRole('rowheader', { name: '아이폰 18 Pro · D-2' }),
+      canvas.getByRole('cell', { name: '아이폰 18 Pro' }),
     ).toBeVisible()
     await expect(
-      canvas.getByRole('rowheader', {
-        name: '갤럭시 워치 클래식 · 1시간 30분',
+      canvas.getByRole('cell', {
+        name: '갤럭시 워치 클래식',
       }),
     ).toBeVisible()
   },

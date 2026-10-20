@@ -1,19 +1,56 @@
 import { Link } from 'react-router'
 
-import { untilClose, type OpenPreorder } from '@features/open-preorder-picker'
+import type { OpenPreorder } from '@features/open-preorder-picker'
 import { ADMIN_WAITINGROOM_PATH } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
+import { Table, type TableColumn } from '@shared/ui'
 
 import * as styles from './OpenPreorderTable.css'
 
 export type OpenPreorderTableProps = {
   items: readonly OpenPreorder[]
-  /** 마감까지 남은 시간을 잴 기준 시각 */
-  now: number
+  /** 대기열 현황을 아직 못 받았다 — 0건과 섞이지 않게 회색 줄을 깐다 */
+  loading?: boolean
 }
 
 /** 진행 중인 사전예약마다 대기·입장 속도·외부 등록 실패를 한 줄씩 */
-export function OpenPreorderTable({ items, now }: OpenPreorderTableProps) {
+export function OpenPreorderTable({
+  items,
+  loading = false,
+}: OpenPreorderTableProps) {
+  const columns: TableColumn<OpenPreorder>[] = [
+    {
+      key: 'name',
+      header: '상품',
+      render: (item) => <span className={styles.name}>{item.name}</span>,
+    },
+    {
+      key: 'waiting',
+      header: '대기',
+      align: 'right',
+      render: (item) => formatNumber(item.waiting),
+    },
+    {
+      key: 'credit',
+      header: '입장/초',
+      align: 'right',
+      render: (item) => formatNumber(item.credit),
+    },
+    {
+      key: 'failures',
+      header: '실패',
+      align: 'right',
+      render: (item) =>
+        item.failures === null ? (
+          '—'
+        ) : (
+          <span className={item.failures ? styles.failures : undefined}>
+            {formatNumber(item.failures)}
+          </span>
+        ),
+    },
+  ]
+
   return (
     <section className={styles.root} aria-labelledby="ops-open-table">
       <div className={styles.header}>
@@ -24,42 +61,14 @@ export function OpenPreorderTable({ items, now }: OpenPreorderTableProps) {
           대기열 관리
         </Link>
       </div>
-      {items.length === 0 ? (
-        <div className={styles.empty}>지금 접수 중인 사전예약이 없어요.</div>
-      ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th scope="col" className={styles.th}>
-                상품
-              </th>
-              <th scope="col" className={styles.thNum}>
-                대기
-              </th>
-              <th scope="col" className={styles.thNum}>
-                입장/초
-              </th>
-              <th scope="col" className={styles.thNum}>
-                실패
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.productId} className={styles.row}>
-                <th scope="row" className={styles.name}>
-                  {item.name} · {untilClose(item.closesAt, now)}
-                </th>
-                <td className={styles.num}>{formatNumber(item.waiting)}</td>
-                <td className={styles.num}>{formatNumber(item.credit)}</td>
-                <td className={item.failures ? styles.failures : styles.num}>
-                  {item.failures === null ? '—' : formatNumber(item.failures)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+      <Table
+        columns={columns}
+        rows={[...items]}
+        rowKey={(item) => item.productId}
+        emptyMessage="지금 접수 중인 사전예약이 없어요."
+        loading={loading}
+        loadingRows={3}
+      />
     </section>
   )
 }

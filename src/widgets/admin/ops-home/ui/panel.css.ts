@@ -8,7 +8,7 @@ export const panel = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[12],
-  padding: `${spacing[16]} ${spacing[20]}`,
+  padding: `${spacing[20]} ${spacing[24]}`,
   borderRadius: '12px',
   border: `1px solid ${color.border.default}`,
   background: color.background.base,

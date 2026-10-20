@@ -448,7 +448,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             속도를 줄이세요.
           </div>
         </section>
-        <OpenPreorderTable items={openPreorders} now={now} />
+        <OpenPreorderTable items={openPreorders} loading={queue.isPending} />
       </div>
 
       <div className={styles.bottomRow}>

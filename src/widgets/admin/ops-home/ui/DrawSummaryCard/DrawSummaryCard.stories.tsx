@@ -94,7 +94,9 @@ type Story = StoryObj<typeof meta>
  */
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/진행 1회차/)).toBeVisible()
+    await expect(
+      canvas.getByRole('heading', { name: '진행 중인 럭키드로우' }),
+    ).toBeVisible()
     await expect(canvas.getByText('14건 확인 중')).toBeInTheDocument()
     await expect(canvas.getByText('당첨 300명')).toBeInTheDocument()
     await expect(canvas.getByText(/^지연 · /)).toBeInTheDocument()
