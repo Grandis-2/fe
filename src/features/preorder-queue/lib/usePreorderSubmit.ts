@@ -5,14 +5,11 @@ import { useNavigate } from 'react-router'
 
 import { useSubmitPreorder, type PreorderAccepted } from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
-import { mypagePath } from '@shared/config/routes'
+import { mypagePath, PREORDER_PATH } from '@shared/config/routes'
 import { track } from '@shared/lib/analytics'
 import { showToast } from '@shared/model/toastStore'
 
-import {
-  joinPreorderQueue,
-  usePreorderQueueStore,
-} from '../model/preorderQueueStore'
+import { usePreorderQueueStore } from '../model/preorderQueueStore'
 
 import { waitForRegistration } from './waitForRegistration'
 
@@ -31,13 +28,11 @@ const isAlreadyAccepted = (caught: unknown) =>
 
 type SubmitTarget = {
   productId: string
-  productName: string
   optionId: string
-  // 줄을 다시 서야 할 때 차례가 오면 돌아올 경로.
-  returnTo: string
 }
 
-// 사전예약하기 — 이 상품의 입장권이 살아 있으면 접수하고, 없거나 만료됐으면 대기열에 선다.
+// 사전예약하기 — 이 상품의 입장권이 살아 있으면 접수한다. 대기열은 사전예약 페이지에서만 서므로,
+// 입장권이 없거나 만료됐으면 상세에서 줄을 세우지 않고 사전예약 페이지로 보낸다.
 // 접수되면 외부 등록을 최대 5초 기다려 등록됐는지(registered)와 함께 onSuccess를 부른다.
 export function usePreorderSubmit() {
   const admission = usePreorderQueueStore((state) => state.admission)
@@ -51,7 +46,7 @@ export function usePreorderSubmit() {
   useEffect(() => () => waitRef.current?.abort(), [])
 
   const submitPreorder = (
-    { productId, productName, optionId, returnTo }: SubmitTarget,
+    { productId, optionId }: SubmitTarget,
     onSuccess: (accepted: PreorderAccepted, registered: boolean) => void,
   ) => {
     if (
@@ -59,12 +54,11 @@ export function usePreorderSubmit() {
       admission.productId !== productId ||
       admission.expiresAt <= Date.now()
     ) {
-      // 같은 '사전예약하기' 버튼이 입장권 유무로 갈려서 버튼 속성 대신 여기서 동작 이름을 단다(Faro가 꺼져 있으면 api가 없다).
-      faro.api?.startUserAction('queue-enter')
-      track('Preorder Apply Clicked', { productId, queued: true })
-      joinPreorderQueue({ productId, productName, to: returnTo })
+      showToast('사전예약 페이지에서 대기열을 거쳐야 예약할 수 있어요.')
+      navigate(PREORDER_PATH)
       return
     }
+    // 버튼 속성 대신 여기서 동작 이름을 단다(Faro가 꺼져 있으면 api가 없다).
     faro.api?.startUserAction('preorder-apply')
     track('Preorder Apply Clicked', { productId, queued: false })
     submit.mutate(

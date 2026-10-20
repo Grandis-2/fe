@@ -10,6 +10,8 @@ import {
   useCategories,
   useProducts,
 } from '@entities/product'
+import { useRequireLogin } from '@features/login'
+import { enterPreorderOnClick } from '@features/preorder-queue'
 import { useProductCardSelection } from '@features/product-card-select'
 import {
   ONGOING_PREORDERS,
@@ -63,6 +65,8 @@ export function SearchResults() {
   )
 
   const { getCardProps } = useProductCardSelection()
+
+  const enterPreorder = enterPreorderOnClick(useRequireLogin())
 
   const cards = isUnknownCategory ? [] : productList.data?.items
   const total = isUnknownCategory ? 0 : productList.data?.total
@@ -129,7 +133,9 @@ export function SearchResults() {
         </div>
       )}
 
-      {(keyword || isCategoryMode) && <SearchFilters />}
+      {(keyword || isCategoryMode) && (
+        <SearchFilters category={category ?? undefined} />
+      )}
 
       {keyword && preorders.length > 0 && (
         <PreorderLinks preorders={preorders} />
@@ -152,6 +158,7 @@ export function SearchResults() {
                     <ProductCard
                       key={product.productId}
                       {...getCardProps(product)}
+                      onLinkClick={enterPreorder(product)}
                     />
                   ))
                 : Array.from({ length: PAGE_SIZE }, (_, i) => (

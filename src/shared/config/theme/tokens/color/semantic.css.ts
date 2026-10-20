@@ -70,6 +70,12 @@ export const color = createGlobalTheme(':root', {
     hover: 'rgba(255, 255, 255, 0.16)',
     text: 'rgba(255, 255, 255, 0.9)',
   },
+  // 스크롤바 막대 — 페이지 전체(html)는 밝은 테마인데 사용자 페이지는 어두워, 양쪽 바탕에서 다 보이는
+  // 반투명 회색이라 두 테마 값이 같다.
+  scrollbar: {
+    thumb: 'rgba(128, 133, 145, 0.45)',
+    thumbHover: 'rgba(128, 133, 145, 0.7)',
+  },
 })
 
 // 다크모드 — 같은 변수에 값만 바꿔 꽂으므로 컴포넌트는 color.* 그대로 쓰면 된다.
@@ -143,6 +149,10 @@ createGlobalTheme(':root[data-theme="dark"], [data-theme="dark"]', color, {
     base: 'rgba(255, 255, 255, 0.1)',
     hover: 'rgba(255, 255, 255, 0.16)',
     text: 'rgba(255, 255, 255, 0.9)',
+  },
+  scrollbar: {
+    thumb: 'rgba(128, 133, 145, 0.45)',
+    thumbHover: 'rgba(128, 133, 145, 0.7)',
   },
 })
 

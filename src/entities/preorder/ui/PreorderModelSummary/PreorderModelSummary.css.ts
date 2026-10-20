@@ -60,12 +60,12 @@ export const body = style({
   gap: spacing[4],
 })
 
+// 모델끼리 이름 끝(Pro/Pro Max 등)으로 갈려서 자르지 않고 줄을 바꿔 다 보인다.
 export const name = style({
   fontSize: fontSize[18],
   fontWeight: fontWeight.bold,
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
+  wordBreak: 'keep-all',
+  overflowWrap: 'anywhere',
   '@media': { [breakpoint.mobile]: { fontSize: fontSize[16] } },
 })
 

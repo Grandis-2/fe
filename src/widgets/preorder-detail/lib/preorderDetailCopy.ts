@@ -1,4 +1,11 @@
-import type { Preorder, PreorderStatus } from '@entities/preorder'
+import {
+  formatPreorderDate,
+  formatPreorderPeriod,
+  getOpenAlertDeadline,
+  toKstParts,
+  type Preorder,
+  type PreorderStatus,
+} from '@entities/preorder'
 
 // 'YYYY-MM-DD' 날짜 계산·표기 — 일정표는 '9.26'처럼 짧게 쓴다.
 const toDate = (date: string) => {
@@ -14,7 +21,11 @@ const addDays = (date: string, days: number) => {
 
 const short = (date: Date) =>
   `${date.getMonth() + 1}.${String(date.getDate()).padStart(2, '0')}`
-const shortOf = (date: string) => short(toDate(date))
+// 순간 → 한국 시간 '10.20 08:00' — 브라우저 시간대가 달라도 일정표와 같은 시각을 보인다.
+const shortWithKstTime = (instant: Date) => {
+  const { date, time } = toKstParts(instant)
+  return `${short(toDate(date))} ${time.slice(0, 5)}`
+}
 const range = (from: Date, to: Date) => `${short(from)} – ${short(to)}`
 
 export const monthDay = (date: string) => {
@@ -30,17 +41,25 @@ export const formatOpenTime = (time: string) => {
   return `${period} ${hour12}시${minute ? ` ${minute}분` : ''}`
 }
 
-export type ScheduleStep = { label: string; date: string; isCurrent: boolean }
+export type ScheduleStep = {
+  label: string
+  date: string
+  isCurrent: boolean
+  /** 사전예약 단계 — 모델별 예약 기간을 이 아래에 붙인다 */
+  isPreorder?: boolean
+}
 
 // 진행 중이면 사전예약, 오픈 전이면 알림 신청 단계가 지금 단계다. 마감이면 모두 "완료".
 export function getScheduleSteps(
   preorder: Preorder,
   status: PreorderStatus,
 ): ScheduleStep[] {
-  const { opensAt, closesAt, paymentEndsAt, releaseAt } = preorder
+  const { closesAt, paymentEndsAt, releaseAt } = preorder
+  // 사전예약만 시각까지 보여준다 — '2026.10.20 09:00 ~ 23:59'
   const preorderStep = {
     label: '사전예약',
-    date: range(toDate(opensAt), toDate(closesAt)),
+    date: formatPreorderPeriod(preorder),
+    isPreorder: true,
   }
   // 결제 마감일·출시일은 비어 올 수 있다(명세에 없거나 배송 차수 전) — 없으면 그 단계를 뺀다.
   const paymentStep = paymentEndsAt && {
@@ -48,15 +67,15 @@ export function getScheduleSteps(
     date: range(addDays(closesAt, 1), toDate(paymentEndsAt)),
   }
   const releaseStep = releaseAt && {
-    label: '출시 · 배송',
-    date: shortOf(releaseAt),
+    label: '출시 · 순차 배송',
+    date: formatPreorderDate(releaseAt),
   }
 
   if (status === 'soon') {
     return [
       {
         label: '오픈 알림 신청',
-        date: `~ ${short(addDays(opensAt, -1))}`,
+        date: `~ ${shortWithKstTime(getOpenAlertDeadline(preorder))}`,
         isCurrent: true,
       },
       { ...preorderStep, isCurrent: false },
@@ -92,6 +111,7 @@ export function getNotices(preorder: Preorder, status: PreorderStatus) {
     ? [
         ...common,
         `오픈 알림은 ${monthDay(preorder.opensAt)} ${formatOpenTime(preorder.openTime)}에 앱 푸시로 발송돼요.`,
+        '오픈 알림은 오픈 1시간 전까지 신청할 수 있어요.',
       ]
     : [...common, '사은품은 출시일 이후 제품과 별도로 순차 발송돼요.']
 }

@@ -14,13 +14,13 @@ import { Chip, InlineAlert, Skeleton, SkeletonGroup } from '@shared/ui'
 import * as styles from './PreorderList.css'
 
 const TABS: { value: PreorderStatus; label: string }[] = [
-  { value: 'live', label: '진행 중' },
+  { value: 'live', label: '오늘 오픈' },
   { value: 'soon', label: '오픈 예정' },
   { value: 'done', label: '마감' },
 ]
 
 // 사전예약 제목 + 그 아래 상태 칩(개수) + 카드 그리드. 고른 탭은 URL(?status=)에 남겨
-// 새로고침·뒤로 가기·공유해도 유지된다. 상태는 카드와 같은 규칙(날짜)으로 나눈다.
+// 새로고침·뒤로 가기·공유해도 유지된다. 상태는 카드와 같은 규칙(날짜·시각)으로 나눈다.
 export function PreorderList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: preorders = [], isPending, error } = usePreorders()
@@ -29,7 +29,7 @@ export function PreorderList() {
     'live'
 
   const statusOf = (preorder: PreorderCardData) =>
-    getPreorderSchedule(preorder.opensAt, preorder.closesAt).status
+    getPreorderSchedule(preorder).status
   const count = (status: PreorderStatus) =>
     preorders.filter((preorder) => statusOf(preorder) === status).length
   const visible = preorders.filter((preorder) => statusOf(preorder) === active)

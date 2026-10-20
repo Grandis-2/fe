@@ -189,6 +189,8 @@ function toVariantView(
     sku: variant.optionCode,
     title: variant.name,
     price: variant.price,
+    // 관리자 저장소엔 할인율이 없다 — 정가 그대로 판다.
+    listPrice: variant.price,
     filterAttributes: {},
     selections: Object.fromEntries(
       Object.entries(variant.optionValues).map(([groupCode, valueCode]) => [
@@ -229,6 +231,7 @@ function toAdminProductResponse(
       description: detail.summary,
       visible: detail.displayStatus === 'PUBLISHED',
       basePrice: baseOf(detail),
+      discountRate: 0,
       warranty: { offered: false, surcharge: 0 },
       campaign: preorder
         ? {

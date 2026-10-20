@@ -424,14 +424,16 @@ export function PaymentPage() {
           {drawId ? '응모 / 결제' : '주문 / 결제'}
         </div>
 
-        {paymentError && (
-          <InlineAlert status="error">{paymentError}</InlineAlert>
-        )}
-        {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. */}
-        <PollingNotice query={reservation} />
-        {checkout.blockedReason && (
-          <InlineAlert status="info">{checkout.blockedReason}</InlineAlert>
-        )}
+        <div className={styles.notices}>
+          {paymentError && (
+            <InlineAlert status="error">{paymentError}</InlineAlert>
+          )}
+          {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. */}
+          <PollingNotice query={reservation} />
+          {checkout.blockedReason && (
+            <InlineAlert status="info">{checkout.blockedReason}</InlineAlert>
+          )}
+        </div>
 
         <div className={styles.layout}>
           <div className={styles.form}>

@@ -23,6 +23,20 @@ const RequestMonitor = lazy(() =>
   })),
 )
 
+// 운영에서도 주소에 ?monitor=1을 붙이면 켜진다(?monitor=0이면 끈다). 한 번 켜면 이 브라우저에서는 계속 보인다.
+const MONITOR_KEY = 'request-monitor-enabled'
+const isMonitorEnabled = (() => {
+  if (import.meta.env.DEV || isMockEnabled) return true
+  try {
+    const param = new URLSearchParams(window.location.search).get('monitor')
+    if (param === '1') localStorage.setItem(MONITOR_KEY, 'true')
+    if (param === '0') localStorage.removeItem(MONITOR_KEY)
+    return localStorage.getItem(MONITOR_KEY) === 'true'
+  } catch {
+    return false
+  }
+})()
+
 export function RootLayout() {
   const { isSignupPending } = useSession()
   const isModalOpen = useModalStore((state) => state.isOpen)
@@ -75,8 +89,8 @@ export function RootLayout() {
       )}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
       {/* 백오프·재전송이 실제로 일어나는 걸 보여 주는 창 — 결제 콜백에서도 보여야 해서 경로와 상관없이 그린다.
-          개발 도구라 로컬·목 배포에서만 — 실서버에 붙은 운영 화면엔 띄우지 않는다. */}
-      {(import.meta.env.DEV || isMockEnabled) && (
+          개발 도구라 로컬·목 배포에선 늘 띄우고, 실서버에 붙은 운영 화면에선 ?monitor=1로 켰을 때만 띄운다. */}
+      {isMonitorEnabled && (
         <Suspense fallback={null}>
           <RequestMonitor />
         </Suspense>

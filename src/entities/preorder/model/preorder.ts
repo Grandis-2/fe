@@ -11,12 +11,13 @@ export type PreorderModel = {
   price: number | null
   /** 예약·구매하면 이동할 상품 상세 */
   productId: string
-  /** 이 모델의 예약 시작 'YYYY-MM-DD'·'HH:mm'(로컬). 모르면(일반 상품·서비스 장애) 비어 온다 */
+  /** 이 모델의 예약 시작 'YYYY-MM-DD'·'HH:mm'과 마감 'HH:mm:ss'(한국 시간). 모르면(일반 상품·서비스 장애) 비어 온다 */
   opensAt?: string
   openTime?: string
+  closeTime?: string
 }
 
-// 날짜는 모두 'YYYY-MM-DD'(로컬 날짜). 상태(진행 중·오픈 예정·마감)는 날짜로 계산한다.
+// 날짜는 모두 'YYYY-MM-DD'(한국 날짜). 상태(오늘 오픈·오픈 예정·마감)는 날짜·시각으로 계산한다.
 // 사전예약 홍보 하나(catalog /api/v1/promotions)가 사전예약 하나다 — toPreorder 참고.
 export type Preorder = {
   id: string
@@ -31,6 +32,8 @@ export type Preorder = {
   openTime: string
   /** 이 날까지 예약할 수 있다. */
   closesAt: string
+  /** 'HH:mm:ss'(또는 'HH:mm') — 마감일의 마감 시각. 화면엔 분까지만 보인다 */
+  closeTime: string
   /** 결제·물량 배정이 끝나는 날(마감 다음 날부터 시작). 명세에 없어 비어 오면 일정에서 뺀다. */
   paymentEndsAt?: string
   /** 1차 배송 시작 예정일(배송 차수 API). 차수가 없으면 비어 온다. */

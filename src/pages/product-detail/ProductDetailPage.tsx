@@ -16,12 +16,7 @@ import {
   useProductPurchase,
   type PurchaseDraft,
 } from '@features/product-purchase'
-import {
-  PAYMENT_PATH,
-  paymentPath,
-  productPath,
-  resultPath,
-} from '@shared/config/routes'
+import { PAYMENT_PATH, paymentPath, resultPath } from '@shared/config/routes'
 import { InlineAlert, PageSkeleton, SkeletonGroup } from '@shared/ui'
 import {
   ProductDetailImages,
@@ -95,15 +90,13 @@ export function ProductDetailPage() {
         navigate(PAYMENT_PATH, { state: [purchasePayload] })
         return
       }
-      // 사전예약은 대기열 입장권으로 접수한다 — 입장권이 없으면 줄을 서고, 차례가 오면 이 상세로 돌아온다.
+      // 사전예약은 대기열 입장권으로 접수한다 — 입장권이 없으면 사전예약 페이지로 보낸다(줄은 거기서 선다).
       // 접수 뒤 5초 안에 외부 등록되면 바로 결제로, 아니면 예약 접수 화면(나중에 구매 확정)으로 간다.
       // 접수 후엔 뒤로가기로 상세에 돌아와 다시 제출하지 않게 기록을 바꾼다.
       preorderSubmit.submitPreorder(
         {
           productId: product.productId,
-          productName: product.title,
           optionId: variant.variantId,
-          returnTo: productPath(product.productId),
         },
         ({ preorderId }, registered) =>
           navigate(
