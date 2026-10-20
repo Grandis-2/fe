@@ -10,7 +10,10 @@ import { isRetryableError } from '@shared/api/queryPolicy'
 import { track } from '@shared/lib/analytics'
 import { useDeadline } from '@shared/lib/useDeadline'
 
-import type { PreorderAdmission } from '../model/preorderQueueStore'
+import {
+  usePreorderQueueStore,
+  type PreorderAdmission,
+} from '../model/preorderQueueStore'
 
 const TICK_MS = 1000
 // 차례가 온 뒤 바로 넘기지 않고 100%를 잠깐 보여준 다음 이동한다.
@@ -46,13 +49,27 @@ type Options = {
   onComplete: (admission: PreorderAdmission) => void
   // 마감·오픈 전·없는 상품처럼 줄을 설 수 없으면 서버 문구와 함께 호출된다.
   onFail: (message: string) => void
+  // 나가기를 누르면 호출된다 — 줄을 비워 다른 상품에 설 수 있게 한다.
+  onLeave: () => void
 }
 
 // 진입(POST) → Retry-After마다 조회(GET) → 입장권. 조회가 NOT_IN_QUEUE면 다시 진입한다(줄에 있었다면 같은 자리).
 // 모달을 닫아도 조회는 계속된다 — 약 250초 넘게 조회하지 않으면 줄에서 빠지기 때문이다.
-export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
+export function usePreorderQueue({
+  productId,
+  onComplete,
+  onFail,
+  onLeave,
+}: Options) {
   const enter = useEnterQueue()
   const [isOpen, setIsOpen] = useState(true)
+  // 서 있는 상품을 다시 누르면(joinPreorderQueue) 닫아 둔 창을 다시 연다 — 렌더 중에 바로 맞춘다.
+  const reopenedAt = usePreorderQueueStore((state) => state.reopenedAt)
+  const [seenReopenedAt, setSeenReopenedAt] = useState(reopenedAt)
+  if (reopenedAt !== seenReopenedAt) {
+    setSeenReopenedAt(reopenedAt)
+    setIsOpen(true)
+  }
   const [hasLeft, setHasLeft] = useState(false)
   // 아래 effect는 moveIn을 셀 때마다 다시 돈다 — 입장 이벤트는 입장권마다 한 번만 남긴다.
   const trackedTicket = useRef<string | null>(null)
@@ -200,6 +217,7 @@ export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
     leave: () => {
       setHasLeft(true)
       setIsOpen(false)
+      onLeave()
     },
   }
 }

@@ -11,9 +11,10 @@ export type PreorderModel = {
   price: number | null
   /** 예약·구매하면 이동할 상품 상세 */
   productId: string
-  /** 이 모델의 예약 시작 'YYYY-MM-DD'·'HH:mm'과 마감 'HH:mm:ss'(한국 시간). 모르면(일반 상품·서비스 장애) 비어 온다 */
+  /** 이 모델의 예약 시작 'YYYY-MM-DD'·'HH:mm'과 마감 'YYYY-MM-DD'·'HH:mm:ss'(한국 시간). 모르면(일반 상품·서비스 장애) 비어 온다 */
   opensAt?: string
   openTime?: string
+  closesAt?: string
   closeTime?: string
 }
 

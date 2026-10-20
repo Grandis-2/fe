@@ -10,7 +10,7 @@ export {
   formatPreorderDate,
   formatPreorderPeriod,
   getOpenAlertDeadline,
-  isModelOpen,
+  isModelReservable,
   kstInstant,
   toKstParts,
 } from './lib/preorderSchedule'

@@ -63,6 +63,9 @@ export const toPreorder = (
       opensAt: kstDate(product.opensAt),
       openTime: kstTime(product.opensAt),
     }),
-    ...(product.closesAt && { closeTime: kstCloseTime(product.closesAt) }),
+    ...(product.closesAt && {
+      closesAt: kstDate(product.closesAt),
+      closeTime: kstCloseTime(product.closesAt),
+    }),
   })),
 })

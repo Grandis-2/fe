@@ -1,6 +1,6 @@
 import {
   formatModelPeriod,
-  isModelOpen,
+  isModelReservable,
   OpenAlertToggle,
   PreorderModelSummary,
   type Preorder,
@@ -23,7 +23,10 @@ const COPY: Record<PreorderStatus, { title: string; description: string }> = {
 export type PreorderModelSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  preorder: Pick<Preorder, 'models' | 'opensAt' | 'openTime' | 'closeTime'>
+  preorder: Pick<
+    Preorder,
+    'models' | 'opensAt' | 'openTime' | 'closesAt' | 'closeTime'
+  >
   /** 현재 시각으로 계산한 값이라 preorder에서 다시 구하지 않고 위젯 것을 받는다(배지와 어긋나지 않게). */
   status: PreorderStatus
   /** 오픈 알림을 신청한 모델 id */
@@ -68,8 +71,8 @@ export function PreorderModelSheet({
       <Button
         rounded
         className={styles.action}
-        // 홍보가 열려도 오픈 시각이 늦은 모델은 그 시각까지 막는다.
-        disabled={status === 'live' && !isModelOpen(preorder, model)}
+        // 홍보가 열려 있어도 모델마다 자기 예약 시간(오픈~마감) 밖이면 막는다.
+        disabled={status === 'live' && !isModelReservable(preorder, model)}
         onClick={() => (status === 'live' ? onReserve : onPurchase)(model)}
       >
         {status === 'live' ? '예약하기' : '구매하기'}
