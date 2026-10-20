@@ -41,6 +41,7 @@ export const todoCount = style([
     minWidth: '52px',
     color: color.primary.base,
     fontVariantNumeric: 'tabular-nums',
+    paddingLeft: spacing[4],
   },
 ])
 

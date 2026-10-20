@@ -182,8 +182,13 @@ export const Busy: Story = {
       'aria-pressed',
       'true',
     )
-    // 사전예약별 대기·입장·실패는 표로 본다.
-    await expect(canvas.getByRole('cell', { name: /갤럭시 S27/ })).toBeVisible()
+    // 사전예약마다 맨 뒤 대기를 타일로 본다.
+    await expect(
+      // 칩 섹션과 카드가 같은 제목이라 뒤에 오는 카드 영역에서 찾는다.
+      within(
+        canvas.getAllByRole('region', { name: '진행 중인 사전예약' }).at(-1)!,
+      ).getByRole('button', { name: /갤럭시 S27/ }),
+    ).toBeVisible()
     await expect(
       canvas.getByRole('link', { name: /외부 등록 실패/ }),
     ).toHaveTextContent('860건')

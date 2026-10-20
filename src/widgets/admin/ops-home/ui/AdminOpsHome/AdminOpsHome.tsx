@@ -31,7 +31,7 @@ import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
 import { useScrolledPast } from '../../lib/useScrolledPast'
 import { BacklogCard } from '../BacklogCard'
 import { DrawSummaryCard } from '../DrawSummaryCard'
-import { OpenPreorderTable } from '../OpenPreorderTable'
+import { OpenPreorderCard } from '../OpenPreorderCard'
 import { OpsKpiCard } from '../OpsKpiCard'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
 import { OrderSummaryCard } from '../OrderSummaryCard'
@@ -402,7 +402,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             reserved: t ? t.preorders.RESERVED : null,
           }}
         />
-        <OpenPreorderTable items={openPreorders} loading={queue.isPending} />
+        <OpenPreorderCard
+          items={openPreorders}
+          selected={selected}
+          onSelect={setPicked}
+          loading={queue.isPending}
+        />
       </div>
 
       <div className={styles.bottomRow}>

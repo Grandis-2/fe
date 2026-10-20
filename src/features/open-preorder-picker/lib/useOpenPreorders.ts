@@ -9,6 +9,8 @@ export type OpenPreorder = {
   waiting: number
   /** 초당 입장 인원 */
   credit: number
+  /** 초당 입장 상한 */
+  cap: number
   /** 맨 뒤 예상 대기(waitEstimate). 줄이 없으면 null */
   wait: string | null
   /** 외부 등록 실패(재처리 필요). 못 받았으면 null */
@@ -46,6 +48,7 @@ export function useOpenPreorders(
       name: nameOf(product.productId),
       waiting: product.waiting,
       credit: product.credit,
+      cap: product.cap,
       wait: waitEstimate(product.waiting, product.credit),
       failures: data ? data.syncJobs.REGISTER.DEAD_LETTER : null,
       closesAt: product.closesAt,
