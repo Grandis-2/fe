@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { CircleCheck, Info, TriangleAlert } from 'lucide-react'
+import { CircleCheck, TriangleAlert } from 'lucide-react'
 
 import { useAdminDraws } from '@entities/admin-draw'
 import { useAdminOrderCounts } from '@entities/admin-order'
@@ -24,19 +24,12 @@ import {
   adminReservationsPath,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { ratePerSecond, slopePerSecond } from '@shared/lib/samples'
-import {
-  InlineAlert,
-  RefreshStatus,
-  Skeleton,
-  SkeletonGroup,
-  Tag,
-  ThroughputChart,
-} from '@shared/ui'
+import { slopePerSecond } from '@shared/lib/samples'
+import { InlineAlert, RefreshStatus, Skeleton, SkeletonGroup } from '@shared/ui'
 
-import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
 import { useScrolledPast } from '../../lib/useScrolledPast'
+import { BacklogCard } from '../BacklogCard'
 import { DrawSummaryCard } from '../DrawSummaryCard'
 import { OpenPreorderTable } from '../OpenPreorderTable'
 import { OpsKpiCard } from '../OpsKpiCard'
@@ -56,16 +49,6 @@ const BREAKDOWN_MAX = 3
 const STUCK_LOOKBACK_MS = 24 * 60 * 60 * 1000
 // 맨 뒤 예상 대기가 이만큼 길어지면 할 일로 띄운다 — 서버에 기준이 없어 화면에서 정한 값이다.
 const LONG_WAIT_SECONDS = 10 * 60
-
-// 성공에 경고 삼각형이 붙으면 문구와 반대로 읽힌다.
-const verdictIcon: Record<FlowVerdict['status'], typeof Info> = {
-  success: CircleCheck,
-  info: Info,
-  warning: TriangleAlert,
-}
-
-const verdictColor: Record<FlowVerdict['status'], 'green' | 'blue' | 'yellow'> =
-  { success: 'green', info: 'blue', warning: 'yellow' }
 
 type Task = OpsTaskCardProps & { key: string }
 
@@ -113,32 +96,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     : null
   const scoped = selected !== null
 
-  // 처리 흐름은 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도 이어진다
-  // (새로 고치면 처음부터). 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 —
-  // 둘의 차이가 적체다.
-  const history = useReservationStatsHistory(selected ?? undefined)
-  const series = (key: 'received' | 'processed' | 'backlog') =>
-    history.map(({ at, value: { preorders } }) => {
-      const received = sum(preorders)
-      const value = {
-        received,
-        processed: received - preorders.PENDING_SYNC,
-        backlog: preorders.PENDING_SYNC,
-      }
-      return { at, value: value[key] }
-    })
-  const receivedRates = ratePerSecond(series('received'))
-  const processedRates = ratePerSecond(series('processed'))
-  const backlogSlope = slopePerSecond(series('backlog')).at(-1)?.value
+  // 외부 등록 대기(적체)는 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도
+  // 이어진다(새로 고치면 처음부터). 고른 사전예약이 있으면 그 사전예약만.
+  const backlogSamples = useReservationStatsHistory(selected ?? undefined).map(
+    ({ at, value }) => ({ at, value: value.preorders.PENDING_SYNC }),
+  )
+  const backlogSlope = slopePerSecond(backlogSamples).at(-1)?.value
 
   const s = stats.data
-  // 브레이크는 대기열 전체에 하나라 언제나 전체, 처리 흐름은 고른 사전예약 기준이다.
-  const verdict = flowVerdict({
-    braking: isBraking(q?.brakeFactor ?? null),
-    backlogPerMinute: backlogSlope === undefined ? null : backlogSlope * 60,
-    scope: selected ? nameOf(selected) : undefined,
-  })
-  const VerdictIcon = verdictIcon[verdict.status]
   // 판정 기준 시각 — 받은 집계의 시각을 써서 렌더마다 흔들리지 않게 한다. 아직 못 받았으면
   // 0이라 멈춘 추첨·경과 시간을 판정하지 않는다.
   const now = stats.dataUpdatedAt
@@ -222,7 +187,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           level: 'urgent',
           title: `결제 막힘 · 외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건`,
           // 재처리는 예약 현황에서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
-          action: { label: '재처리하기', to: reprocessPath },
+          action: { label: '재처리', to: reprocessPath },
         },
         t.deadLetters.waiting > 0 && {
           key: 'dead-letters',
@@ -420,48 +385,23 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       </div>
 
       <div className={styles.mainRow}>
-        <section className={styles.flowPanel} aria-labelledby="ops-flow">
-          <div className={styles.panelHeader}>
-            <div className={styles.panelHeaderGap}>
-              <h2 id="ops-flow" className={styles.panelTitle}>
-                접수·외부 등록 처리 속도
-              </h2>
-              <span className={styles.caption}> 건/초 · 화면을 연 뒤부터</span>
-            </div>
-            <Tag
-              variant="subtle"
-              color={verdictColor[verdict.status]}
-              rounded={true}
-              className={styles.verdict}
-              size="medium"
-            >
-              <VerdictIcon size={16} aria-hidden="true" />
-              {verdict.message}
-            </Tag>
-          </div>
-          <ThroughputChart
-            // 고른 사전예약이 바뀌면 그래프 상태(올린 지점)를 새로 시작한다.
-            key={selected ?? 'all'}
-            label={`${selected ? nameOf(selected) : '전체'} 초당 접수와 외부 등록 처리`}
-            size="large"
-            unit="건/초"
-            times={receivedRates.map(({ at }) => at)}
-            series={[
-              {
-                label: '접수',
-                values: receivedRates.map(({ value }) => value),
-              },
-              {
-                label: '외부 등록 처리',
-                values: processedRates.map(({ value }) => value),
-              },
-            ]}
-          />
-          <div className={styles.caption}>
-            두 선이 벌어지면 외부 등록 대기가 쌓여요. 계속 벌어지면 대기열 입장
-            속도를 줄이세요.
-          </div>
-        </section>
+        <BacklogCard
+          // 고른 사전예약이 바뀌면 그래프를 새로 그린다(선이 다시 그려진다).
+          key={selected ?? 'all'}
+          backlog={t ? t.preorders.PENDING_SYNC : null}
+          perMinute={backlogSlope === undefined ? null : backlogSlope * 60}
+          history={{
+            times: backlogSamples.map(({ at }) => at),
+            values: backlogSamples.map(({ value }) => value),
+          }}
+          // 브레이크는 대기열 전체에 하나라 고른 사전예약과 상관없이 전체 기준이다.
+          braking={isBraking(q?.brakeFactor ?? null)}
+          flow={{
+            waiting,
+            payable: t ? t.preorders.REGISTERED : null,
+            reserved: t ? t.preorders.RESERVED : null,
+          }}
+        />
         <OpenPreorderTable items={openPreorders} loading={queue.isPending} />
       </div>
 

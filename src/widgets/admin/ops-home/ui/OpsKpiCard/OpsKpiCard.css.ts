@@ -59,10 +59,5 @@ export const value = style([
 
 export const unit = style([
   typography.body.defaultMedium,
-  { marginLeft: spacing[2] },
-])
-
-export const description = style([
-  typography.body.sub,
-  { color: color.text.secondary },
+  { marginLeft: spacing[2], color: color.text.secondary },
 ])

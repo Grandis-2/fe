@@ -68,7 +68,7 @@ export const text = style({
   minWidth: 0,
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[6],
+  gap: spacing[8],
 })
 
 export const headline = style({
@@ -105,7 +105,7 @@ export const chips = style({
 export const chip = style([
   typography.body.sub,
   {
-    padding: `${spacing[4]} ${spacing[10]}`,
+    padding: `${spacing[6]} ${spacing[10]}`,
     borderRadius: '9999px',
     border: `1px solid ${dangerTint(30)}`,
     background: color.background.base,

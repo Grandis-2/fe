@@ -1,6 +1,7 @@
 import { useState, type PointerEvent } from 'react'
 
 import { srOnly } from '@shared/config/theme'
+import { niceMax } from '@shared/lib/niceMax'
 
 import { Skeleton } from '../Skeleton'
 
@@ -24,8 +25,6 @@ export type ThroughputChartProps = {
   unit: string
   /** 스크린리더용 제목 */
   label: string
-  /** 글자 크기. large는 범례·축·툴팁을 한 단계씩 키운다(그래프가 화면의 중심일 때) */
-  size?: 'medium' | 'large'
 }
 
 const WIDTH = 600
@@ -36,14 +35,6 @@ const TABLE_ROWS = 12
 
 const seriesClass = [styles.series1, styles.series2] as const
 const swatchClass = [styles.swatch1, styles.swatch2] as const
-
-/** 1·2·5 단위로 올린 눈금 최댓값 — 축 숫자가 읽기 쉬운 값이 되게 */
-function niceMax(value: number) {
-  if (value <= 0) return 1
-  const power = 10 ** Math.floor(Math.log10(value))
-  const step = [1, 2, 5, 10].find((n) => n * power >= value) ?? 10
-  return step * power
-}
 
 const formatTime = (ms: number) =>
   new Date(ms).toLocaleTimeString('ko-KR', { hour12: false })
@@ -82,7 +73,6 @@ export function ThroughputChart({
   series,
   unit,
   label,
-  size = 'medium',
 }: ThroughputChartProps) {
   const [hover, setHover] = useState<number | null>(null)
 
@@ -93,7 +83,7 @@ export function ThroughputChart({
       <figure className={styles.root} aria-busy="true">
         <ul className={styles.legend} aria-hidden="true">
           {series.map((item, index) => (
-            <li key={item.label} className={styles.legendItem[size]}>
+            <li key={item.label} className={styles.legendItem}>
               <span className={swatchClass[index]} />
               {item.label}
               <Skeleton width={48} height="1em" />
@@ -101,12 +91,12 @@ export function ThroughputChart({
           ))}
         </ul>
         <div className={styles.plotRow} aria-hidden="true">
-          <div className={styles.yAxis[size]} />
+          <div className={styles.yAxis} />
           <div className={styles.plotPlaceholder}>
             <Skeleton height="100%" radius={8} />
           </div>
         </div>
-        <div className={styles.xAxis[size]} aria-hidden="true">
+        <div className={styles.xAxis} aria-hidden="true">
           <span>&nbsp;</span>
         </div>
         <span className={srOnly}>
@@ -140,10 +130,10 @@ export function ThroughputChart({
     <figure className={styles.root}>
       <ul className={styles.legend}>
         {series.map((item, index) => (
-          <li key={item.label} className={styles.legendItem[size]}>
+          <li key={item.label} className={styles.legendItem}>
             <span className={swatchClass[index]} aria-hidden="true" />
             {item.label}
-            <span className={styles.legendValue[size]}>
+            <span className={styles.legendValue}>
               {formatValue(item.values[last], unit)}
             </span>
           </li>
@@ -151,7 +141,7 @@ export function ThroughputChart({
       </ul>
 
       <div className={styles.plotRow}>
-        <div className={styles.yAxis[size]} aria-hidden="true">
+        <div className={styles.yAxis} aria-hidden="true">
           <span>{formatValue(max, unit)}</span>
           <span>{formatValue(max / 2, unit)}</span>
           <span>0</span>
@@ -203,8 +193,8 @@ export function ThroughputChart({
                 role="tooltip"
                 className={
                   (positionOf(times, times[shown]) ?? 0) > 0.5
-                    ? styles.tooltipLeft[size]
-                    : styles.tooltipRight[size]
+                    ? styles.tooltipLeft
+                    : styles.tooltipRight
                 }
                 style={{ left: hoverLeft }}
               >
@@ -215,7 +205,7 @@ export function ThroughputChart({
                   <div key={item.label} className={styles.tooltipRow}>
                     <span className={swatchClass[index]} aria-hidden="true" />
                     {item.label}
-                    <span className={styles.legendValue[size]}>
+                    <span className={styles.legendValue}>
                       {formatValue(item.values[shown], unit)}
                     </span>
                   </div>
@@ -226,7 +216,7 @@ export function ThroughputChart({
         </div>
       </div>
 
-      <div className={styles.xAxis[size]} aria-hidden="true">
+      <div className={styles.xAxis} aria-hidden="true">
         <span>{formatTime(times[0])}</span>
         <span>{formatTime(times[last])}</span>
       </div>

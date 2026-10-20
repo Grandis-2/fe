@@ -1,25 +1,11 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@shared/config/theme'
 
 const SERIES_1 = color.chart.series1
 const SERIES_2 = color.chart.series2
 
-// 글자 크기 단계 — large는 한 단계씩 키운다(운영 대시보드처럼 그래프가 화면의 중심일 때).
-const text = {
-  medium: {
-    caption: typography.body.caption,
-    sub: typography.body.sub,
-    subMedium: typography.body.subMedium,
-    axisWidth: '56px',
-  },
-  large: {
-    caption: typography.body.sub,
-    sub: typography.body.defaultRegular,
-    subMedium: typography.body.defaultMedium,
-    axisWidth: '68px',
-  },
-}
+const AXIS_WIDTH = '56px'
 
 export const root = style({
   display: 'flex',
@@ -37,8 +23,8 @@ export const legend = style({
   listStyle: 'none',
 })
 
-export const legendItem = styleVariants(text, (t) => [
-  t.sub,
+export const legendItem = style([
+  typography.body.sub,
   {
     display: 'flex',
     alignItems: 'center',
@@ -47,8 +33,8 @@ export const legendItem = styleVariants(text, (t) => [
   },
 ])
 
-export const legendValue = styleVariants(text, (t) => [
-  t.subMedium,
+export const legendValue = style([
+  typography.body.subMedium,
   { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
 ])
 
@@ -66,14 +52,14 @@ export const plotRow = style({
   gap: spacing[8],
 })
 
-export const yAxis = styleVariants(text, (t) => [
-  t.caption,
+export const yAxis = style([
+  typography.body.caption,
   {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    minWidth: t.axisWidth,
+    minWidth: AXIS_WIDTH,
     color: color.text.tertiary,
     fontVariantNumeric: 'tabular-nums',
   },
@@ -132,8 +118,8 @@ export const crosshair = style({
 
 // 사건 시각 세로선 — 데이터 선보다 눈에 띄지 않게 가늘게, 글자는 위쪽에 붙인다.
 
-const tooltip = styleVariants(text, (t) => [
-  t.caption,
+const tooltip = style([
+  typography.body.caption,
   {
     position: 'absolute',
     top: spacing[8],
@@ -150,12 +136,9 @@ const tooltip = styleVariants(text, (t) => [
   },
 ])
 // 오른쪽 절반에선 왼쪽으로 띄워 화면 밖으로 넘치지 않게 한다.
-export const tooltipRight = styleVariants(tooltip, (base) => [
-  base,
-  { marginLeft: spacing[8] },
-])
-export const tooltipLeft = styleVariants(tooltip, (base) => [
-  base,
+export const tooltipRight = style([tooltip, { marginLeft: spacing[8] }])
+export const tooltipLeft = style([
+  tooltip,
   { transform: `translateX(calc(-100% - ${spacing[8]}))` },
 ])
 
@@ -167,12 +150,12 @@ export const tooltipRow = style({
   gap: spacing[6],
 })
 
-export const xAxis = styleVariants(text, (t) => [
-  t.caption,
+export const xAxis = style([
+  typography.body.caption,
   {
     display: 'flex',
     justifyContent: 'space-between',
-    paddingLeft: `calc(${t.axisWidth} + ${spacing[8]})`,
+    paddingLeft: `calc(${AXIS_WIDTH} + ${spacing[8]})`,
     color: color.text.tertiary,
   },
 ])

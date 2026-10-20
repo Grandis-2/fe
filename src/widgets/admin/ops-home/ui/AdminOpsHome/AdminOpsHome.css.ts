@@ -84,15 +84,8 @@ export const bottomRow = style({
   gap: spacing[16],
 })
 
-export const flowPanel = panel
 export const taskPanel = panel
 export { panelHeader, panelTitle } from '../panel.css'
-
-export const verdict = style({
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: spacing[4],
-})
 
 export const taskSkeleton = style({
   display: 'flex',
@@ -110,14 +103,3 @@ export const allClear = style([
     color: color.text.secondary,
   },
 ])
-
-export const caption = style([
-  typography.body.defaultRegular,
-  { color: color.text.secondary },
-])
-
-export const panelHeaderGap = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[8],
-})

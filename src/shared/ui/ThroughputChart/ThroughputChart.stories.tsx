@@ -56,11 +56,6 @@ export const Hover: Story = {
   },
 }
 
-/** 그래프가 화면의 중심일 때(운영 대시보드) — 범례·축·툴팁 글자를 한 단계씩 키운다 */
-export const Large: Story = {
-  args: { size: 'large' },
-}
-
 /** 표본이 하나뿐이면 그래프와 같은 높이의 회색 막대를 깔고, 안내는 스크린리더로 읽는다 */
 export const NotEnough: Story = {
   args: {
