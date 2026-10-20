@@ -28,14 +28,16 @@ export type PreorderCardData = Pick<
 
 export type PreorderCardProps = {
   data: PreorderCardData
+  /** 상태를 셀 현재 시각 — 목록이 탭 나누기와 같은 값을 넘긴다(어긋나지 않게). 없으면 그릴 때 시각 */
+  now?: Date
   className?: string
 }
 
 // 이미지를 꽉 채우고 아래 그라데이션 위에 글자를 얹는다. 웹은 세로(3:4), 모바일은 가로(4:3)다.
 // 상태(오늘 오픈·오픈 예정·마감)는 날짜·시각으로 정한다.
-export function PreorderCard({ data, className }: PreorderCardProps) {
+export function PreorderCard({ data, now, className }: PreorderCardProps) {
   const { imageSrc, imageAlt = '', title, benefit } = data
-  const { status, ddayLabel } = getPreorderSchedule(data)
+  const { status, ddayLabel } = getPreorderSchedule(data, now)
 
   return (
     // div onClick이 아니라 링크 — 키보드 포커스·새 탭 열기·스크린리더가 링크로 인식한다.

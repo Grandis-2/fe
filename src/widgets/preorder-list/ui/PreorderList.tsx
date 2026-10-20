@@ -9,6 +9,7 @@ import {
   type PreorderStatus,
 } from '@entities/preorder'
 import { getErrorMessage } from '@shared/api/client'
+import { useNow } from '@shared/lib/useNow'
 import { Chip, InlineAlert, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './PreorderList.css'
@@ -28,8 +29,10 @@ export function PreorderList() {
     TABS.find(({ value }) => value === searchParams.get('status'))?.value ??
     'live'
 
+  // 열어 둔 채 오픈·마감 시각을 지나도 탭·카드가 바뀌게 30초마다 다시 센다.
+  const now = useNow(30_000)
   const statusOf = (preorder: PreorderCardData) =>
-    getPreorderSchedule(preorder).status
+    getPreorderSchedule(preorder, now).status
   const count = (status: PreorderStatus) =>
     preorders.filter((preorder) => statusOf(preorder) === status).length
   const visible = preorders.filter((preorder) => statusOf(preorder) === active)
@@ -85,7 +88,7 @@ export function PreorderList() {
       ) : (
         <div className={styles.grid}>
           {visible.map((preorder) => (
-            <PreorderCard key={preorder.id} data={preorder} />
+            <PreorderCard key={preorder.id} data={preorder} now={now} />
           ))}
         </div>
       )}
