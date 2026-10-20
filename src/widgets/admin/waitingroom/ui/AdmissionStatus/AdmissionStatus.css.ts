@@ -7,7 +7,7 @@ const rootBase = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[14],
-  padding: `${spacing[16]} ${spacing[22]}`,
+  padding: `${spacing[24]}`,
   borderRadius: '14px',
 })
 
@@ -40,7 +40,7 @@ export const dot = styleVariants({
   muted: [dotBase, { background: color.text.disabled }],
 })
 
-const titleBase = style([typography.title.mdSemibold])
+const titleBase = style([typography.title.lgSemibold])
 
 export const title = styleVariants({
   success: [titleBase, { color: color.text.primary }],
@@ -83,24 +83,27 @@ export const kpis = style({
 export const kpi = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[2],
-  padding: `${spacing[10]} ${spacing[14]}`,
+  gap: spacing[8],
+  padding: `${spacing[20]}`,
   borderRadius: '10px',
   background: color.background.base,
 })
 
 export const kpiLabel = style([
-  typography.body.caption,
+  typography.title.smMedium,
   { color: color.text.secondary },
 ])
 
 export const kpiValue = style([
-  typography.title.lgSemibold,
+  typography.title.xlSemibold,
   {
     margin: 0,
     fontWeight: fontWeight.bold,
     color: color.text.primary,
     fontVariantNumeric: 'tabular-nums',
+    gap: spacing[4],
+    display: 'flex',
+    alignItems: 'baseline',
   },
 ])
 

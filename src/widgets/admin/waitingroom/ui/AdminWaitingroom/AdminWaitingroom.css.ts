@@ -26,7 +26,7 @@ export const pageTitle = style([
 // 왼쪽은 자주 보고 바꾸는 것, 오른쪽 좁은 칸은 가끔 바꾸는 설정과 서버 상태.
 export const columns = style({
   display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) 300px',
+  gridTemplateColumns: 'minmax(0, 1fr) 400px',
   alignItems: 'start',
   gap: spacing[20],
   '@media': {

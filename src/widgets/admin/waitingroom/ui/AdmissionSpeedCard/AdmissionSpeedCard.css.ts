@@ -50,20 +50,22 @@ export const unit = style([
   { marginLeft: spacing[2], color: color.text.secondary },
 ])
 
+// 버튼을 입력 칸(small: 46px · 둥글기 8px)과 같은 높이로 맞춰 한 덩어리로 보이게 한다. 오류
+// 문구가 칸 아래에 붙어도 버튼이 따라 내려가지 않게 위로 맞춘다.
 export const stepper = style({
   display: 'flex',
-  alignItems: 'flex-end',
-  gap: spacing[6],
+  alignItems: 'flex-start',
+  gap: spacing[4],
 })
 
 export const stepButton = style([
   typography.button.smMedium,
   {
     minWidth: '48px',
-    height: '40px',
+    height: '46px',
     padding: `0 ${spacing[10]}`,
     border: `1px solid ${color.border.default}`,
-    borderRadius: '10px',
+    borderRadius: '8px',
     background: color.background.surface,
     color: color.text.secondary,
     cursor: 'pointer',
@@ -73,7 +75,7 @@ export const stepButton = style([
   },
 ])
 
-export const stepInput = style({ width: '140px' })
+export const stepInput = style({ width: '120px' })
 
 const previewBase = style([
   typography.body.defaultRegular,

@@ -22,7 +22,8 @@ export const head = style({
   gap: spacing[8],
 })
 
+// 카드 제목 — 운영 대시보드 카드와 같은 크기다.
 export const title = style([
-  typography.title.mdSemibold,
+  typography.title.lgSemibold,
   { margin: 0, color: color.text.primary },
 ])
