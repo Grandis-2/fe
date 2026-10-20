@@ -40,6 +40,11 @@ export default defineConfig(({ mode }) => ({
       '@shared': fileURLToPath(new URL('./src/shared', import.meta.url)),
     },
   },
+  // .css.ts가 변환된 뒤에야 보이는 import라 의존성 스캔이 놓친다 — 첫 방문에 뒤늦게 찾아
+  // 페이지를 한 번 새로고침해 버린다(E2E 첫 실행이 그 새로고침에 걸려 실패했다).
+  optimizeDeps: {
+    include: ['@vanilla-extract/sprinkles/createRuntimeSprinkles'],
+  },
   server: {
     proxy: {
       // ^ 로 시작하면 정규식 키 — /api 와 /external(외부 예약 Mock) 둘 다 백엔드로 보낸다
