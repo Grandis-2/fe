@@ -188,13 +188,21 @@ export const Busy: Story = {
       canvas.getByRole('link', { name: /외부 등록 실패/ }),
     ).toHaveTextContent('860건')
 
-    // 긴급은 맨 위에 한 번, 할 일 목록에 한 번 — 실패 · 반영 실패 · 기한 지남
+    // 결제를 막는 실패는 맨 위 긴급 카드에 — 사전예약별 칩과 재처리 버튼
+    const urgent = canvas.getByRole('region', { name: '긴급 할 일' })
+    await expect(urgent).toHaveTextContent('외부 등록 실패 860건')
+    await expect(urgent).toHaveTextContent('아이폰 18 Pro 845')
+    await expect(
+      within(urgent).getByRole('link', { name: /재처리/ }),
+    ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
+
+    // 할 일 목록에도 한 번 더 — 실패 · 반영 실패 · 기한 지남
     const cards = canvas.getAllByRole('article')
-    await expect(cards).toHaveLength(4)
+    await expect(cards).toHaveLength(3)
     await expect(within(cards[0]).getAllByText('긴급')[0]).toBeVisible()
     await expect(cards[0]).toHaveTextContent('결제 막힘 · 외부 등록 실패 860건')
     await expect(
-      within(cards[0]).getByRole('link', { name: '재처리' }),
+      within(cards[0]).getByRole('link', { name: '재처리하기' }),
     ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
 
     // 사전예약을 고르면 숫자·할 일이 그 사전예약으로 바뀐다.
@@ -203,7 +211,7 @@ export const Busy: Story = {
     await expect(scoped[0]).toHaveTextContent('외부 등록 실패 845건')
     // 고른 사전예약 그대로 예약 현황을 연다.
     await expect(
-      within(scoped[0]).getByRole('link', { name: '재처리' }),
+      within(scoped[0]).getByRole('link', { name: '재처리하기' }),
     ).toHaveAttribute(
       'href',
       '/admin/reservations?status=REPROCESS_NEEDED&product=p-iphone',

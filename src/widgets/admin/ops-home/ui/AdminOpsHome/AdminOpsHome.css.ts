@@ -4,11 +4,14 @@ import { color, spacing, typography } from '@shared/config/theme'
 
 import { panel } from '../panel.css'
 
+// 덩어리 사이 간격 — 높이 0인 긴급 고정 자리가 이만큼 끌어올려 간격을 상쇄한다.
+const ROOT_GAP = spacing[20]
+
 // 한 화면(1440×900 안팎)에 스크롤 없이 들어가게 줄 간격을 좁게 둔다.
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[20],
+  gap: ROOT_GAP,
 })
 
 export const topBar = style({
@@ -25,18 +28,25 @@ export const pageTitle = style([
   { margin: 0, color: color.text.primary },
 ])
 
-// 결제를 막는 일 — 빨간 테두리 카드로 따로 둔다.
-export const urgentBar = style({
-  // 결제를 막는 일이라 아래로 스크롤해도 본문 스크롤 영역 위쪽에 붙어 보이게 한다.
+// 긴급 띠가 스크롤로 사라지면 얇은 한 줄이 붙는 자리. 높이가 0이라 레이아웃이 바뀌지 않는다 —
+// 띠 자체를 줄이면 브라우저의 스크롤 위치 보정(scroll anchoring)과 맞물려 붙었다 떨어졌다
+// 깜빡인다.
+export const urgentPin = style({
   position: 'sticky',
-  top: 0,
+  // sticky는 스크롤 영역의 위쪽 여백(AdminLayout 본문 padding 40px)만큼 아래에 붙는다 —
+  // 그만큼 끌어올려 헤더 바로 아래(8px)에 붙인다.
+  top: `calc(${spacing[8]} - ${spacing[40]})`,
+  height: 0,
+  marginTop: `calc(-1 * ${ROOT_GAP})`,
   // 그래프 툴팁·표보다 위에 뜬다.
   zIndex: 10,
-  padding: `${spacing[4]} ${spacing[20]}`,
-  borderRadius: '12px',
-  border: `1px solid ${color.status.danger}`,
-  // 뒤의 카드가 비치지 않게 불투명한 바탕을 깐다.
-  background: color.background.base,
+})
+
+export const urgentPinned = style({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
 })
 
 export const section = style({

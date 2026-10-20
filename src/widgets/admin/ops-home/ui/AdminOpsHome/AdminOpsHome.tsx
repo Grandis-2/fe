@@ -36,12 +36,14 @@ import {
 
 import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
+import { useScrolledPast } from '../../lib/useScrolledPast'
 import { DrawSummaryCard } from '../DrawSummaryCard'
 import { OpenPreorderTable } from '../OpenPreorderTable'
 import { OpsKpiCard } from '../OpsKpiCard'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
 import { OrderSummaryCard } from '../OrderSummaryCard'
 import { StuckDrawTask } from '../StuckDrawTask'
+import { UrgentBanner, type UrgentItem } from '../UrgentBanner'
 
 import * as styles from './AdminOpsHome.css'
 
@@ -149,18 +151,18 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const failedPreorders = openPreorders
     .filter((item) => item.failures)
     .toSorted((a, b) => (b.failures ?? 0) - (a.failures ?? 0))
-  const failuresByPreorder =
+  const failureBreakdown =
     !scoped && openPreorders.length > 1
       ? [
           ...failedPreorders
             .slice(0, BREAKDOWN_MAX)
             .map((item) => `${item.name} ${formatNumber(item.failures ?? 0)}`),
-          failedPreorders.length > BREAKDOWN_MAX &&
-            `외 ${failedPreorders.length - BREAKDOWN_MAX}곳`,
+          ...(failedPreorders.length > BREAKDOWN_MAX
+            ? [`외 ${failedPreorders.length - BREAKDOWN_MAX}곳`]
+            : []),
         ]
-          .filter(Boolean)
-          .join(' · ')
-      : ''
+      : []
+  const failuresByPreorder = failureBreakdown.join(' · ')
 
   // 대기열 — 고른 사전예약이 있으면 그것만, 없으면 접수 중인 사전예약 합.
   const queueScope = openProducts.filter(
@@ -220,7 +222,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           level: 'urgent',
           title: `결제 막힘 · 외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건`,
           // 재처리는 예약 현황에서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
-          action: { label: '재처리', to: reprocessPath },
+          action: { label: '재처리하기', to: reprocessPath },
         },
         t.deadLetters.waiting > 0 && {
           key: 'dead-letters',
@@ -253,7 +255,24 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       ]
     : []
   const tasks = candidates.filter((task) => task !== false)
-  const urgentTasks = tasks.filter((task) => task.level === 'urgent')
+
+  // 맨 위 긴급 카드 — 결제를 막는 일. 지금은 외부 등록 실패 하나다.
+  const urgentItems: UrgentItem[] =
+    t && t.syncJobs.REGISTER.DEAD_LETTER > 0
+      ? [
+          {
+            key: 'register',
+            label: '외부 등록 실패',
+            count: t.syncJobs.REGISTER.DEAD_LETTER,
+            breakdown: failureBreakdown,
+            action: { label: '재처리하기', to: reprocessPath },
+          },
+        ]
+      : []
+  // 긴급 띠가 스크롤 영역 위로 사라지면 위에 얇은 한 줄을 띄운다. 띠의 높이를 바꾸지 않고
+  // 따로 띄워야 브라우저의 스크롤 위치 보정과 맞물려 깜빡이지 않는다.
+  const { ref: urgentRef, past: urgentScrolledPast } =
+    useScrolledPast<HTMLDivElement>()
 
   // 마감 뒤 결과가 나올 시간이 지난 회차만 진행을 받아 본다.
   const stuckCandidates = (draws.data ?? []).filter((draw) => {
@@ -291,13 +310,21 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         </InlineAlert>
       )}
 
-      {/* 결제를 막는 일은 어디를 보든 먼저 보이게 맨 위에 한 번 더 둔다. */}
-      {urgentTasks.length > 0 && (
-        <section className={styles.urgentBar} aria-label="긴급 할 일">
-          {urgentTasks.map(({ key, ...task }) => (
-            <OpsTaskCard key={key} {...task} />
-          ))}
-        </section>
+      {/* 결제를 막는 일은 어디를 보든 먼저 보이게 맨 위에 한 번 더 두고, 띠가 스크롤로
+          사라지면 헤더 바로 아래에 얇은 한 줄로 따라온다. */}
+      {urgentItems.length > 0 && (
+        <>
+          <div ref={urgentRef}>
+            <UrgentBanner items={urgentItems} />
+          </div>
+          <div className={styles.urgentPin}>
+            {urgentScrolledPast && (
+              <div className={styles.urgentPinned}>
+                <UrgentBanner items={urgentItems} compact />
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       <section className={styles.section} aria-labelledby="ops-open">
@@ -349,7 +376,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         <OpsKpiCard
           label="외부 등록 실패"
           to={reprocessPath}
-          linkLabel={failures ? '재처리 →' : '예약 현황'}
+          linkLabel={failures ? '재처리하기' : '예약 현황'}
           value={failures}
           unit="건"
           tone={failures ? 'danger' : 'default'}

@@ -31,7 +31,7 @@ export const Danger: Story = {
   args: {
     label: '외부 등록 실패',
     to: '/admin/reservations?status=REPROCESS_NEEDED',
-    linkLabel: '재처리 →',
+    linkLabel: '재처리하기',
     value: 860,
     unit: '건',
     description: '결제로 못 넘어가요',

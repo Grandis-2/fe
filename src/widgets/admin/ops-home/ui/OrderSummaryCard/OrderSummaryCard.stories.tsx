@@ -21,12 +21,21 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 단계를 누르면 그 상태로 거른 주문 목록이 열린다 */
+/**
+ * 손댈 단계(상품 준비·출고 대기)는 줄마다 처리 버튼, 결제 완료·배송 중은 아래 알약. 누르면
+ * 그 상태로 거른 주문 목록이 열린다.
+ */
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByRole('link', { name: /24\s*상품 준비 중/ }),
+      canvas.getByRole('link', { name: '상품 준비 중 주문 처리' }),
     ).toHaveAttribute('href', '/admin/orders?status=PREPARING_ITEMS')
+    await expect(
+      canvas.getByRole('link', { name: '출고 대기 주문 처리' }),
+    ).toHaveAttribute('href', '/admin/orders?status=READY_TO_SHIP')
+    await expect(
+      canvas.getByRole('link', { name: /배송 중\s*210/ }),
+    ).toHaveAttribute('href', '/admin/orders?status=SHIPPED')
     await expect(canvas.getByText(/판매 중 42/)).toBeVisible()
   },
 }
