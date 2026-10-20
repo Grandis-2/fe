@@ -97,19 +97,22 @@ type Seed = {
   paused?: boolean
   // 따로 고르는 보증 금액. 없으면 보증을 팔지 않는다.
   warranty?: number
-  // 사전예약을 오늘부터 며칠 뒤 오전 10시(KST)에 연다 — 오픈 전 화면·오픈 알림 확인용.
+  // 사전예약을 오늘부터 며칠 뒤 오전 9시(KST)에 열어 그날 23:59에 닫는다 — 오픈 전 화면·오픈 알림 확인용.
   opensInDays?: number
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
+// 사전예약은 하루만 받는다 — 09:00(KST)에 열어 23:59:59에 닫는다.
+const OPEN_MS = (15 * 60 * 60 - 1) * 1000
 
-// 오픈 전 회차는 지금 기준으로 날짜를 잡아야 시간이 지나도 오픈 전으로 남는다.
-const beforeOpenCampaign = (days: number) => {
-  const opensAt = new Date(Date.now() + days * DAY_MS)
-  opensAt.setUTCHours(1, 0, 0, 0)
+// 회차는 지금 기준으로 날짜를 잡아야 시간이 지나도 오픈 전·진행 중으로 남는다.
+// 한국 날짜로 며칠 뒤 09:00(= 00:00Z)를 잡는다 — 한국 새벽엔 UTC 날짜가 하루 늦다.
+const campaignIn = (days: number) => {
+  const opensAt = new Date(Date.now() + 9 * 60 * 60 * 1000 + days * DAY_MS)
+  opensAt.setUTCHours(0, 0, 0, 0)
   return {
     opensAt: opensAt.toISOString(),
-    closesAt: new Date(opensAt.getTime() + 7 * DAY_MS).toISOString(),
+    closesAt: new Date(opensAt.getTime() + OPEN_MS).toISOString(),
     status: 'BEFORE_OPEN' as const,
   }
 }
@@ -174,12 +177,8 @@ function buildProduct(
     campaign: !isPreorder
       ? null
       : opensInDays !== undefined
-        ? beforeOpenCampaign(opensInDays)
-        : {
-            opensAt: '2026-10-01T01:00:00Z',
-            closesAt: '2026-12-31T14:59:59Z',
-            status: 'OPEN',
-          },
+        ? campaignIn(opensInDays)
+        : { ...campaignIn(0), status: 'OPEN' },
     optionAxes,
     variants,
     images: { gallery, detail: [] },

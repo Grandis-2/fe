@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react'
 
-import { Bell, BellOff, BellRing, CalendarClock } from 'lucide-react'
+import { Bell, CalendarClock } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { HistoryCard, HistoryListSkeleton } from '@entities/order'
 import {
   NEEDS_PURCHASE,
+  OpenAlertToggle,
   reservationStatusTag,
   useCancelReservation,
   useMyOpenAlerts,
@@ -354,21 +355,11 @@ export function MypagePreorder() {
                       {alert.opensAtLabel} 오픈
                     </span>
                   </div>
-                  {/* 테두리 없이 아이콘만 보인다. 켜짐/꺼짐은 aria-pressed가 알려 주므로 이름은 고정한다. */}
-                  <button
-                    type="button"
-                    className={styles.alertToggle}
-                    aria-pressed={on}
-                    aria-label={`${alert.title} 오픈 알림`}
-                    title={on ? '알림 받는 중' : '알림 받기'}
-                    onClick={() => toggleAlert(alert.productId)}
-                  >
-                    {on ? (
-                      <BellRing size={22} aria-hidden="true" />
-                    ) : (
-                      <BellOff size={22} aria-hidden="true" />
-                    )}
-                  </button>
+                  <OpenAlertToggle
+                    subscribed={on}
+                    name={alert.title}
+                    onToggle={() => toggleAlert(alert.productId)}
+                  />
                 </li>
               )
             })}

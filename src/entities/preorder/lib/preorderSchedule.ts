@@ -1,6 +1,8 @@
 import { parseDateOnly } from '@shared/lib/parseDateOnly'
 
-// live: 예약 중, soon: 오픈 전, done: 마감. 날짜만으로 정하므로 서버가 따로 내려주지 않아도 된다.
+import type { Preorder, PreorderModel } from '../model/preorder'
+
+// live: 오늘 오픈, soon: 오픈 예정, done: 마감. 서버가 따로 내려주지 않아 날짜·시각으로 정한다.
 export type PreorderStatus = 'live' | 'soon' | 'done'
 
 export type PreorderSchedule = {
@@ -9,6 +11,8 @@ export type PreorderSchedule = {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
+const HOUR_MS = 60 * 60 * 1000
+const MINUTE_MS = 60 * 1000
 
 // 'YYYY-MM-DD'까지 남은 날 수. 오늘이면 0, 지났으면 음수.
 const daysUntil = (date: string, today: Date) => {
@@ -23,22 +27,78 @@ const daysUntil = (date: string, today: Date) => {
   return Math.round((target.getTime() - startOfToday.getTime()) / DAY_MS)
 }
 
-const dday = (days: number) => (days === 0 ? 'D-Day' : `D-${days}`)
+// 'YYYY-MM-DD' + 'HH:mm' → 그 시각(로컬)
+const dateAt = (date: string, time: string) => new Date(`${date}T${time}:00`)
 
-// 마감일 당일까지 예약할 수 있다(closesAt 포함).
+// 1시간 넘게 남으면 시간(내림), 아니면 분(올림)으로 센다 — '3시간', '25분'.
+const timeLeft = (target: Date, now: Date) => {
+  const ms = target.getTime() - now.getTime()
+  return ms >= HOUR_MS
+    ? `${Math.floor(ms / HOUR_MS)}시간`
+    : `${Math.ceil(ms / MINUTE_MS)}분`
+}
+
+// 오픈 알림은 오픈 1시간 전까지 받는다 — 그 뒤 오픈까지는 '오늘 오픈'으로 두고 예약 버튼만 막는다.
+export const getOpenAlertDeadline = ({
+  opensAt,
+  openTime,
+}: Pick<Preorder, 'opensAt' | 'openTime'>) =>
+  new Date(dateAt(opensAt, openTime).getTime() - HOUR_MS)
+
+// 모델마다 오픈 시각이 다를 수 있다 — 모르면 홍보 오픈(가장 이른 모델)으로 센다.
+export const isModelOpen = (
+  preorder: Pick<Preorder, 'opensAt' | 'openTime'>,
+  model: Pick<PreorderModel, 'opensAt' | 'openTime'>,
+  now = new Date(),
+) =>
+  now >=
+  dateAt(model.opensAt ?? preorder.opensAt, model.openTime ?? preorder.openTime)
+
+// 알림 마감(오픈 1시간 전) 전이면 오픈 예정(다른 날이면 D-N, 그날이면 N시간 후 시작),
+// 그때부터 마감 시각 전까지는 오늘 오픈(N분 후 시작/N시간 후 종료), 마감 시각이 지나면 마감이다.
 export function getPreorderSchedule(
-  opensAt: string,
-  closesAt: string,
-  today = new Date(),
+  {
+    opensAt,
+    openTime,
+    closesAt,
+    closeTime,
+  }: Pick<Preorder, 'opensAt' | 'openTime' | 'closesAt' | 'closeTime'>,
+  now = new Date(),
 ): PreorderSchedule {
-  const untilOpen = daysUntil(opensAt, today)
-  if (untilOpen > 0) {
-    return { status: 'soon', ddayLabel: `오픈까지 ${dday(untilOpen)}` }
+  const closeAt = dateAt(closesAt, closeTime)
+  if (!(now < closeAt)) return { status: 'done', ddayLabel: '마감' }
+  const openAt = dateAt(opensAt, openTime)
+  if (now < getOpenAlertDeadline({ opensAt, openTime })) {
+    const untilOpen = daysUntil(opensAt, now)
+    return {
+      status: 'soon',
+      ddayLabel:
+        untilOpen > 0 ? `D-${untilOpen}` : `${timeLeft(openAt, now)} 후 시작`,
+    }
   }
-  const untilClose = daysUntil(closesAt, today)
-  if (untilClose >= 0) return { status: 'live', ddayLabel: dday(untilClose) }
-  return { status: 'done', ddayLabel: '마감' }
+  return now < openAt
+    ? { status: 'live', ddayLabel: `${timeLeft(openAt, now)} 후 시작` }
+    : { status: 'live', ddayLabel: `${timeLeft(closeAt, now)} 후 종료` }
 }
 
 // 'YYYY-MM-DD' → 'YYYY.MM.DD'
 export const formatPreorderDate = (date: string) => date.replaceAll('-', '.')
+
+// 사전예약은 하루다 — '2026.10.20 09:00 ~ 23:59'. 마감이 자정을 넘겨도 날짜는 오픈 날만 쓴다.
+export const formatPreorderPeriod = ({
+  opensAt,
+  openTime,
+  closeTime,
+}: Pick<Preorder, 'opensAt' | 'openTime' | 'closeTime'>) =>
+  `${formatPreorderDate(opensAt)} ${openTime} ~ ${closeTime}`
+
+// 한 홍보에 묶인 모델끼리 예약 시간이 다를 수 있다 — 모르는 칸은 홍보 기간(가장 이른 오픈·늦은 마감)으로 채운다.
+export const formatModelPeriod = (
+  preorder: Pick<Preorder, 'opensAt' | 'openTime' | 'closeTime'>,
+  model: PreorderModel,
+) =>
+  formatPreorderPeriod({
+    opensAt: model.opensAt ?? preorder.opensAt,
+    openTime: model.openTime ?? preorder.openTime,
+    closeTime: model.closeTime ?? preorder.closeTime,
+  })

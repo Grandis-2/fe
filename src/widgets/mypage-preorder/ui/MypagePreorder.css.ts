@@ -158,15 +158,3 @@ export const alertDate = style([
 
 // SelectButton small에 테두리를 둘러 꺼진 상태도 버튼으로 읽히게 한다.
 // 테두리·배경 없이 벨 아이콘만 — 켜져 있으면 브랜드색, 꺼져 있으면 흐리게.
-export const alertToggle = style({
-  display: 'flex',
-  flexShrink: 0,
-  padding: spacing[4],
-  border: 'none',
-  background: 'transparent',
-  color: color.text.tertiary,
-  cursor: 'pointer',
-  selectors: {
-    '&[aria-pressed="true"]': { color: color.primary.subtle },
-  },
-})

@@ -5,7 +5,8 @@ import { Link, useNavigate } from 'react-router'
 
 import { useSession } from '@entities/auth'
 import {
-  formatPreorderDate,
+  formatModelPeriod,
+  formatPreorderPeriod,
   getPreorderSchedule,
   usePreorder,
   useSubscribedOpenAlerts,
@@ -27,18 +28,13 @@ import {
   PageSkeleton,
 } from '@shared/ui'
 
-import {
-  formatOpenTime,
-  getNotices,
-  getScheduleSteps,
-  monthDay,
-} from '../../lib/preorderDetailCopy'
+import { getNotices, getScheduleSteps } from '../../lib/preorderDetailCopy'
 import { PreorderModelSheet } from '../PreorderModelSheet'
 
 import * as styles from './PreorderDetail.css'
 
 const STATUS_LABEL: Record<PreorderStatus, string> = {
-  live: '진행 중',
+  live: '오늘 오픈',
   soon: '오픈 예정',
   done: '종료',
 }
@@ -79,10 +75,7 @@ export type PreorderPromotionProps = {
 export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
   const navigate = useNavigate()
   const requireLogin = useRequireLogin()
-  const { status, ddayLabel } = getPreorderSchedule(
-    preorder.opensAt,
-    preorder.closesAt,
-  )
+  const { status, ddayLabel } = getPreorderSchedule(preorder)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const { isLoggedIn } = useSession()
   // 오픈 알림은 모델(상품)마다 따로 신청한다.
@@ -98,6 +91,8 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
     [preorder.opensAt, preorder.openTime],
   )
   const countdown = useCountdown(openAt)
+  // 알림 마감(오픈 1시간 전)부터 오픈까지 — 예약 버튼은 보이되 막아 둔다. 카운트다운이 매초 다시 그려 오픈 순간 풀린다.
+  const isBeforeOpen = status === 'live' && !countdown.isOver
 
   // 예약·오픈 알림은 회원 전용, 마감 후 일반 구매는 상품 페이지로 바로 간다.
   const openSheet = () =>
@@ -114,12 +109,18 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
       },
     )
 
+  // 모델마다 예약 시간이 다르면 진행 일정의 사전예약 단계 아래에 모델별 기간을 따로 보인다.
+  const modelPeriods = preorder.models.map((model) => ({
+    model,
+    period: formatModelPeriod(preorder, model),
+  }))
+  const hasModelPeriods =
+    new Set(modelPeriods.map(({ period }) => period)).size > 1
+
   const ctaLabel =
     status === 'soon' && subscribedIds.size > 0
       ? `알림 신청 완료 · ${subscribedIds.size}개 모델`
       : CTA_LABEL[status]
-
-  const period = `${formatPreorderDate(preorder.opensAt)} ~ ${formatPreorderDate(preorder.closesAt)}`
 
   return (
     <div className={styles.root}>
@@ -137,11 +138,7 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
           )}
         </div>
         <h1 className={styles.title}>{preorder.title}</h1>
-        <div className={styles.period}>
-          {period}
-          {status === 'soon' &&
-            ` · ${monthDay(preorder.opensAt)} ${formatOpenTime(preorder.openTime)} 오픈`}
-        </div>
+        <div className={styles.period}>{formatPreorderPeriod(preorder)}</div>
       </div>
 
       <div className={styles.hero}>
@@ -210,6 +207,18 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
               >
                 <span className={styles.stepLabel}>{step.label}</span>
                 <span className={styles.stepDate}>{step.date}</span>
+                {step.isPreorder && hasModelPeriods && (
+                  <ul className={styles.modelPeriods}>
+                    {modelPeriods.map(({ model, period }) => (
+                      <li key={model.id} className={styles.modelPeriod}>
+                        <span className={styles.modelPeriodName}>
+                          {model.name}
+                        </span>
+                        <span className={styles.modelPeriodTime}>{period}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ol>
@@ -226,7 +235,7 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
       </div>
 
       <div className={styles.bottomBar}>
-        {status === 'soon' && !countdown.isOver && (
+        {(status === 'soon' || isBeforeOpen) && (
           <div className={styles.countdown}>
             <span className={styles.countdownLabel}>오픈까지</span>
             <span className={styles.countdownTime}>
@@ -242,7 +251,12 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
             사전예약은 종료되었어요. 지금은 일반 구매로 만나보세요.
           </div>
         )}
-        <Button size="large" className={styles.cta} onClick={openSheet}>
+        <Button
+          size="large"
+          className={styles.cta}
+          disabled={isBeforeOpen}
+          onClick={openSheet}
+        >
           {ctaLabel}
         </Button>
       </div>

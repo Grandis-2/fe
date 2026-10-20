@@ -7,17 +7,13 @@ import type {
 import type { Preorder } from '../model/preorder'
 import type { PreorderCardData } from '../ui/PreorderCard'
 
-const pad = (value: number) => String(value).padStart(2, '0')
-
-// 서버는 ISO 시각(UTC)으로 준다 — 화면 규칙(getPreorderSchedule)은 로컬 날짜로 세므로 로컬로 바꾼다.
-const localDate = (iso: string) => {
-  const date = new Date(iso)
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-const localTime = (iso: string) => {
-  const date = new Date(iso)
-  return `${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
+// 서버는 ISO 시각(UTC, 끝에 Z)으로 준다 — 브라우저 시간대와 상관없이 한국 시간으로 보여준다.
+// 한국은 서머타임이 없어 9시간을 더하면 된다. toISOString()은 'YYYY-MM-DDTHH:mm:ss.sssZ'다.
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000
+const toKst = (iso: string) =>
+  new Date(Date.parse(iso) + KST_OFFSET_MS).toISOString()
+const kstDate = (iso: string) => toKst(iso).slice(0, 10)
+const kstTime = (iso: string) => toKst(iso).slice(11, 16)
 
 // 오픈·마감 시각은 묶인 상품이 없거나 사전예약 서비스가 답하지 않으면 null이다 — 그때는
 // 홍보 기간으로 대신 센다(명세: 단계 표시 없이 그린다).
@@ -27,8 +23,10 @@ const periodOf = ({
   opensAt,
   closesAt,
 }: PromotionSummary) => ({
-  opensAt: opensAt ? localDate(opensAt) : startDate,
-  closesAt: closesAt ? localDate(closesAt) : endDate,
+  opensAt: opensAt ? kstDate(opensAt) : startDate,
+  openTime: opensAt ? kstTime(opensAt) : '00:00',
+  closesAt: closesAt ? kstDate(closesAt) : endDate,
+  closeTime: closesAt ? kstTime(closesAt) : '23:59',
 })
 
 export const toPreorderCard = (
@@ -52,7 +50,6 @@ export const toPreorder = (
   imageAlt: promotion.name,
   title: promotion.name,
   ...periodOf(promotion),
-  openTime: promotion.opensAt ? localTime(promotion.opensAt) : '00:00',
   releaseAt: batches[0]?.estimatedShipStart,
   detailImageSrcs: promotion.detailImageUrls,
   benefits: [],
@@ -63,8 +60,9 @@ export const toPreorder = (
     price: product.minPrice,
     productId: product.productId,
     ...(product.opensAt && {
-      opensAt: localDate(product.opensAt),
-      openTime: localTime(product.opensAt),
+      opensAt: kstDate(product.opensAt),
+      openTime: kstTime(product.opensAt),
     }),
+    ...(product.closesAt && { closeTime: kstTime(product.closesAt) }),
   })),
 })
