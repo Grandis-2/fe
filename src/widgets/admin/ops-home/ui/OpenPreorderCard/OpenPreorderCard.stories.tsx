@@ -84,7 +84,7 @@ export const CapFull: Story = {
   },
 }
 
-/** 상한이 크면 칸을 묶는다 — 상한 100이면 1칸 = 초당 5명 */
+/** 상한이 크면 칸을 묶는다 — 상한 100이면 1칸 = 초당 10명 */
 export const LargeCap: Story = {
   args: {
     selected: 'p-watch',
@@ -93,7 +93,7 @@ export const LargeCap: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/1칸 = 초당 5명/)).toBeVisible()
+    await expect(canvas.getByText(/1칸 = 초당 10명/)).toBeVisible()
   },
 }
 

@@ -181,32 +181,6 @@ export const blockMeta = style([
   { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
 ])
 
-// 1칸 = 초당 N명. 채운 칸이 지금 입장, 빈 칸이 더 들일 수 있는 여유.
-export const cells = style({ display: 'flex', gap: '3px' })
-
-const cellBase = style({
-  flex: '1 1 0',
-  height: '14px',
-  borderRadius: '3px',
-  transition: `background ${motion.duration.normal} ${motion.easing.default}`,
-})
-
-// 상한을 다 쓰면 채운 칸을 경고 색으로
-export const cell = styleVariants({
-  off: [cellBase, { background: color.background.subSurface }],
-  on: [cellBase, { background: color.primary.base }],
-  full: [cellBase, { background: color.status.warning }],
-})
-
-// 상한 0 — 칸 대신 빈 테두리
-export const cellsEmpty = style({
-  height: '14px',
-  borderRadius: '3px',
-  border: `1px dashed ${color.status.danger}`,
-  background: color.background.subtleDanger,
-  boxSizing: 'border-box',
-})
-
 export const hint = style([
   typography.body.sub,
   { color: color.text.secondary },

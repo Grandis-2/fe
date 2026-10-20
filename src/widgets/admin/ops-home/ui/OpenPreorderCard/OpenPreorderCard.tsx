@@ -6,7 +6,7 @@ import {
   adminReservationsPath,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Skeleton, Tag } from '@shared/ui'
+import { Skeleton, Tag, UsageCells, usageCellUnit } from '@shared/ui'
 
 import * as styles from './OpenPreorderCard.css'
 
@@ -64,9 +64,7 @@ export function OpenPreorderCard({
       picked.credit > 0 &&
       picked.waiting / picked.credit >= LONG_WAIT_SECONDS
     // 1칸 = 초당 perCell명. 상한이 커도 칸은 MAX_CELLS개를 넘지 않게 묶는다.
-    const perCell = Math.max(1, Math.ceil(picked.cap / MAX_CELLS))
-    const cellCount = Math.ceil(picked.cap / perCell)
-    const cellsOn = Math.min(cellCount, Math.round(picked.credit / perCell))
+    const perCell = usageCellUnit(picked.cap, MAX_CELLS)
     const capFull = picked.cap > 0 && picked.credit >= picked.cap
 
     return (
@@ -132,28 +130,12 @@ export function OpenPreorderCard({
               {formatNumber(picked.cap)}명
             </span>
           </div>
-          {picked.cap > 0 ? (
-            <div
-              className={styles.cells}
-              role="img"
-              aria-label={`입장 상한 ${formatNumber(picked.cap)}명 중 ${formatNumber(picked.credit)}명 사용`}
-            >
-              {Array.from({ length: cellCount }, (_, index) => (
-                <span
-                  key={index}
-                  className={
-                    index >= cellsOn
-                      ? styles.cell.off
-                      : capFull
-                        ? styles.cell.full
-                        : styles.cell.on
-                  }
-                />
-              ))}
-            </div>
-          ) : (
-            <div className={styles.cellsEmpty} aria-hidden="true" />
-          )}
+          <UsageCells
+            used={picked.credit}
+            total={picked.cap}
+            maxCells={MAX_CELLS}
+            label={`입장 상한 ${formatNumber(picked.cap)}명 중 ${formatNumber(picked.credit)}명 사용`}
+          />
           <span className={picked.cap > 0 ? styles.hint : styles.hintBad}>
             {picked.cap === 0 ? (
               '상한이 0이라 아무도 들어오지 못해요'
