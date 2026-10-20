@@ -429,6 +429,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             // 고른 사전예약이 바뀌면 그래프 상태(올린 지점)를 새로 시작한다.
             key={selected ?? 'all'}
             label={`${selected ? nameOf(selected) : '전체'} 초당 접수와 외부 등록 처리`}
+            size="large"
             unit="건/초"
             times={receivedRates.map(({ at }) => at)}
             series={[

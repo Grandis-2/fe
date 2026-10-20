@@ -22,6 +22,8 @@ export type ThroughputChartProps = {
   unit: string
   /** 스크린리더용 제목 */
   label: string
+  /** 글자 크기. large는 범례·축·툴팁을 한 단계씩 키운다(그래프가 화면의 중심일 때) */
+  size?: 'medium' | 'large'
 }
 
 const WIDTH = 600
@@ -78,12 +80,13 @@ export function ThroughputChart({
   series,
   unit,
   label,
+  size = 'medium',
 }: ThroughputChartProps) {
   const [hover, setHover] = useState<number | null>(null)
 
   if (times.length < 2) {
     return (
-      <div className={styles.empty}>
+      <div className={styles.empty[size]}>
         표본이 두 개 이상 모이면 그래프를 그립니다.
       </div>
     )
@@ -113,10 +116,10 @@ export function ThroughputChart({
     <figure className={styles.root}>
       <ul className={styles.legend}>
         {series.map((item, index) => (
-          <li key={item.label} className={styles.legendItem}>
+          <li key={item.label} className={styles.legendItem[size]}>
             <span className={swatchClass[index]} aria-hidden="true" />
             {item.label}
-            <span className={styles.legendValue}>
+            <span className={styles.legendValue[size]}>
               {formatValue(item.values[last], unit)}
             </span>
           </li>
@@ -124,7 +127,7 @@ export function ThroughputChart({
       </ul>
 
       <div className={styles.plotRow}>
-        <div className={styles.yAxis} aria-hidden="true">
+        <div className={styles.yAxis[size]} aria-hidden="true">
           <span>{formatValue(max, unit)}</span>
           <span>{formatValue(max / 2, unit)}</span>
           <span>0</span>
@@ -176,8 +179,8 @@ export function ThroughputChart({
                 role="tooltip"
                 className={
                   (positionOf(times, times[shown]) ?? 0) > 0.5
-                    ? styles.tooltipLeft
-                    : styles.tooltipRight
+                    ? styles.tooltipLeft[size]
+                    : styles.tooltipRight[size]
                 }
                 style={{ left: hoverLeft }}
               >
@@ -188,7 +191,7 @@ export function ThroughputChart({
                   <div key={item.label} className={styles.tooltipRow}>
                     <span className={swatchClass[index]} aria-hidden="true" />
                     {item.label}
-                    <span className={styles.legendValue}>
+                    <span className={styles.legendValue[size]}>
                       {formatValue(item.values[shown], unit)}
                     </span>
                   </div>
@@ -199,7 +202,7 @@ export function ThroughputChart({
         </div>
       </div>
 
-      <div className={styles.xAxis} aria-hidden="true">
+      <div className={styles.xAxis[size]} aria-hidden="true">
         <span>{formatTime(times[0])}</span>
         <span>{formatTime(times[last])}</span>
       </div>

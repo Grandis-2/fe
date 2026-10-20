@@ -9,7 +9,7 @@ export const root = style({
 })
 
 export const title = style([
-  typography.title.xlSemibold,
+  typography.title.xxlSemibold,
   { color: color.text.primary },
 ])
 

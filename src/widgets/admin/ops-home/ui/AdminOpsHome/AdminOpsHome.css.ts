@@ -21,7 +21,7 @@ export const topBar = style({
 
 // 다른 관리자 화면(예약 현황·대기열 관리)의 제목과 같은 크기다.
 export const pageTitle = style([
-  typography.title.xlSemibold,
+  typography.title.xxlSemibold,
   { margin: 0, color: color.text.primary },
 ])
 

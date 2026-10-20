@@ -3,7 +3,7 @@ import { style } from '@vanilla-extract/css'
 import { color, motion, spacing, typography } from '@shared/config/theme'
 
 export const root = style([
-  typography.body.sub,
+  typography.body.defaultMedium,
   {
     display: 'flex',
     flexWrap: 'wrap',
