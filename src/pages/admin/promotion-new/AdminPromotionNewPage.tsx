@@ -1,6 +1,10 @@
 import { useNavigate } from 'react-router'
 
-import { useCreateAdminPromotion } from '@entities/admin-promotion'
+import {
+  PromotionUnconfirmedError,
+  useCreateAdminPromotion,
+  usePromotionLinkableProducts,
+} from '@entities/admin-promotion'
 import { getErrorMessage } from '@shared/api/client'
 import {
   ADMIN_PRODUCT_NEW_PATH,
@@ -8,16 +12,13 @@ import {
 } from '@shared/config/routes'
 import { showToast } from '@shared/model/toastStore'
 import { Breadcrumb, InlineAlert } from '@shared/ui'
-import {
-  AdminPromotionForm,
-  useLinkableProducts,
-} from '@widgets/admin/promotion-form'
+import { AdminPromotionForm } from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionNewPage.css'
 
 export function AdminPromotionNewPage() {
   const navigate = useNavigate()
-  const linkable = useLinkableProducts()
+  const linkable = usePromotionLinkableProducts()
   const create = useCreateAdminPromotion()
 
   return (
@@ -38,13 +39,15 @@ export function AdminPromotionNewPage() {
       )}
       {create.isError && (
         <InlineAlert status="error">
-          {getErrorMessage(create.error, '사전예약을 등록하지 못했습니다.')}
+          {create.error instanceof PromotionUnconfirmedError
+            ? create.error.message
+            : getErrorMessage(create.error, '사전예약을 등록하지 못했습니다.')}
         </InlineAlert>
       )}
 
       <AdminPromotionForm
         mode="create"
-        products={linkable.products ?? []}
+        products={linkable.data ?? []}
         productsLoading={linkable.isPending}
         submitting={create.isPending}
         onSubmit={(value) =>

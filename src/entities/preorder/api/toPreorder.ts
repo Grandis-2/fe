@@ -1,6 +1,6 @@
 import type {
-  ProductDetailView,
-  ProductListItem,
+  PromotionDetailView,
+  PromotionSummary,
   ShipmentBatch,
 } from '@shared/api/types'
 
@@ -19,51 +19,52 @@ const localTime = (iso: string) => {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
-// 사전예약 목록 = 상품 목록(saleMode=PREORDER). 회차가 아직 없는 상품(opensAt null)은 뺀다.
-export const toPreorderCard = (
-  item: ProductListItem,
-): PreorderCardData | null =>
-  item.opensAt && item.closesAt
-    ? {
-        id: item.productId,
-        imageSrc: item.imageUrl ?? '',
-        imageAlt: item.title,
-        title: item.title,
-        opensAt: localDate(item.opensAt),
-        closesAt: localDate(item.closesAt),
-      }
-    : null
+// 오픈·마감 시각은 묶인 상품이 없거나 사전예약 서비스가 답하지 않으면 null이다 — 그때는
+// 홍보 기간으로 대신 센다(명세: 단계 표시 없이 그린다).
+const periodOf = ({
+  startDate,
+  endDate,
+  opensAt,
+  closesAt,
+}: PromotionSummary) => ({
+  opensAt: opensAt ? localDate(opensAt) : startDate,
+  closesAt: closesAt ? localDate(closesAt) : endDate,
+})
 
-// 상품 상세 → 사전예약 상세. 백엔드는 상품 하나가 모델 하나라 models도 한 줄이다.
-// 혜택·결제 마감일은 명세에 없어 비워 두고, 출시일은 1차 배송 시작 예정일로 쓴다.
-export function toPreorder(
-  product: ProductDetailView,
+export const toPreorderCard = (
+  promotion: PromotionSummary,
+): PreorderCardData => ({
+  id: promotion.promotionId,
+  imageSrc: promotion.thumbnailUrl,
+  imageAlt: promotion.name,
+  title: promotion.name,
+  ...periodOf(promotion),
+})
+
+// 홍보 상세 → 사전예약 상세. 묶인 상품 하나가 모델 하나다. 혜택·결제 마감일은 명세에 없어
+// 비워 두고, 출시일은 첫 사전예약 상품의 1차 배송 시작 예정일로 쓴다.
+export const toPreorder = (
+  promotion: PromotionDetailView,
   batches: ShipmentBatch[] = [],
-): Preorder | null {
-  const { campaign } = product
-  if (product.saleMode !== 'PREORDER' || !campaign) return null
-  const prices = product.variants
-    .filter((variant) => variant.status === 'ACTIVE')
-    .map((variant) => variant.price)
-  const imageSrc = product.imageUrl ?? ''
-  return {
+): Preorder => ({
+  id: promotion.promotionId,
+  imageSrc: promotion.thumbnailUrl,
+  imageAlt: promotion.name,
+  title: promotion.name,
+  ...periodOf(promotion),
+  openTime: promotion.opensAt ? localTime(promotion.opensAt) : '00:00',
+  releaseAt: batches[0]?.estimatedShipStart,
+  detailImageSrcs: promotion.detailImageUrls,
+  benefits: [],
+  models: promotion.products.map((product) => ({
     id: product.productId,
-    imageSrc,
-    imageAlt: product.title,
-    title: product.title,
-    opensAt: localDate(campaign.opensAt),
-    openTime: localTime(campaign.opensAt),
-    closesAt: localDate(campaign.closesAt),
-    releaseAt: batches[0]?.estimatedShipStart,
-    benefits: [],
-    models: [
-      {
-        id: product.productId,
-        name: product.title,
-        imageSrc,
-        price: prices.length > 0 ? Math.min(...prices) : product.basePrice,
-        productId: product.productId,
-      },
-    ],
-  }
-}
+    name: product.title,
+    imageSrc: product.imageUrl ?? undefined,
+    price: product.minPrice,
+    productId: product.productId,
+    ...(product.opensAt && {
+      opensAt: localDate(product.opensAt),
+      openTime: localTime(product.opensAt),
+    }),
+  })),
+})

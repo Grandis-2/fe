@@ -2,12 +2,15 @@ import { useState, type FormEvent } from 'react'
 
 import {
   createEmptyPromotionFormValue,
+  promotionFormProblem,
+  uploadPromotionImage,
   type AdminPromotionFormValue,
   type PromotionLinkableProduct,
 } from '@entities/admin-promotion'
 import {
   Button,
   DateRangeField,
+  FieldError,
   FormSection,
   ImageUploader,
   Input,
@@ -53,14 +56,20 @@ export function AdminPromotionForm({
   const [value, setValue] = useState(
     defaultValue ?? createEmptyPromotionFormValue(),
   )
+  const [problem, setProblem] = useState<string | null>(null)
 
-  const patch = (partial: Partial<AdminPromotionFormValue>) =>
+  const patch = (partial: Partial<AdminPromotionFormValue>) => {
     setValue((prev) => ({ ...prev, ...partial }))
+    // 고치기 시작하면 지난 제출의 문구는 맞지 않을 수 있다.
+    setProblem(null)
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (submitting) return
-    onSubmit(value)
+    const found = promotionFormProblem(value)
+    setProblem(found)
+    if (!found) onSubmit(value)
   }
 
   return (
@@ -79,9 +88,9 @@ export function AdminPromotionForm({
         description="사전예약 페이지가 보이는 기간입니다. 접수 오픈, 마감은 각 상품에서 정합니다."
       >
         <DateRangeField
-          value={{ start: value.startAt, end: value.endAt }}
+          value={{ start: value.startDate, end: value.endDate }}
           onChange={(range) =>
-            patch({ startAt: range.start, endAt: range.end })
+            patch({ startDate: range.start, endDate: range.end })
           }
         />
       </FormSection>
@@ -91,6 +100,7 @@ export function AdminPromotionForm({
         description="사전예약 목록에 표시할 대표 이미지 한 장을 등록합니다."
       >
         <PromotionThumbnailField
+          upload={uploadPromotionImage}
           value={value.thumbnail}
           onChange={(thumbnail) => patch({ thumbnail })}
         />
@@ -104,6 +114,8 @@ export function AdminPromotionForm({
           <ImageUploader
             ratio="portrait"
             showCount={false}
+            accept="image/jpeg,image/png"
+            upload={uploadPromotionImage}
             value={value.detailImages}
             onChange={(detailImages) => patch({ detailImages })}
           />
@@ -124,6 +136,7 @@ export function AdminPromotionForm({
       </FormSection>
 
       <div className={styles.actions}>
+        <FieldError message={problem ?? undefined} />
         <Button variant="outline" color="cancel" onClick={onCancel}>
           취소
         </Button>

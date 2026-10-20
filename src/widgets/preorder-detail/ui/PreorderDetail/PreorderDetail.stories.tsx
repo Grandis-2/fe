@@ -24,6 +24,7 @@ const BASE: Preorder = {
   opensAt: '',
   openTime: '10:00',
   closesAt: '',
+  detailImageSrcs: [],
   benefits: [
     {
       title: '사전예약 시 맥세이프 케이스 증정',

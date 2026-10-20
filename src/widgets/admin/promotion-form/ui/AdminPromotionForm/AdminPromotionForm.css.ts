@@ -21,6 +21,8 @@ export const tileFrame = style({
 
 export const actions = style({
   display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
   justifyContent: 'flex-end',
   gap: spacing[8],
   marginTop: spacing[16],

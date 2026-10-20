@@ -9,6 +9,8 @@ import {
 } from '@entities/preorder'
 import { BottomSheet, Button } from '@shared/ui'
 
+import { formatOpenTime } from '../../lib/preorderDetailCopy'
+
 import * as styles from './PreorderModelSheet.css'
 
 const COPY: Record<PreorderStatus, { title: string; description: string }> = {
@@ -23,7 +25,7 @@ const COPY: Record<PreorderStatus, { title: string; description: string }> = {
 export type PreorderModelSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  preorder: Pick<Preorder, 'models' | 'opensAt' | 'releaseAt'>
+  preorder: Pick<Preorder, 'models' | 'opensAt' | 'openTime'>
   /** 현재 시각으로 계산한 값이라 preorder에서 다시 구하지 않고 위젯 것을 받는다(배지와 어긋나지 않게). */
   status: PreorderStatus
   /** 오픈 알림을 신청한 모델 id */
@@ -39,7 +41,7 @@ export type PreorderModelSheetProps = {
 export function PreorderModelSheet({
   open,
   onOpenChange,
-  preorder: { models, opensAt, releaseAt },
+  preorder: { models, opensAt, openTime },
   status,
   subscribedIds,
   onReserve,
@@ -48,11 +50,13 @@ export function PreorderModelSheet({
 }: PreorderModelSheetProps) {
   const { title, description } = COPY[status]
 
-  const caption = {
-    live: releaseAt ? `출시일 ${formatPreorderDate(releaseAt)}` : '',
-    soon: `예약 오픈 ${formatPreorderDate(opensAt)}`,
-    done: '바로 구매 가능 · 1–2일 내 도착',
-  }[status]
+  // 진행 중엔 모델마다 예약 시작 시각을 보인다 — 홍보의 오픈은 묶인 모델 중 가장 이른 것이다.
+  const captionOf = (model: PreorderModel) =>
+    ({
+      live: `예약 시작 ${formatPreorderDate(model.opensAt ?? opensAt)} ${formatOpenTime(model.openTime ?? openTime)}`,
+      soon: `예약 오픈 ${formatPreorderDate(opensAt)}`,
+      done: '바로 구매 가능 · 1–2일 내 도착',
+    })[status]
 
   const renderAction = (model: PreorderModel) => {
     if (status === 'soon') {
@@ -97,7 +101,7 @@ export function PreorderModelSheet({
               <PreorderModelSummary
                 key={model.id}
                 model={model}
-                caption={caption}
+                caption={captionOf(model)}
                 action={renderAction(model)}
               />
             ))}

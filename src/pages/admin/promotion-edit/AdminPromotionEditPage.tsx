@@ -6,6 +6,7 @@ import {
   promotionStatusLabels,
   toPromotionFormValue,
   useAdminPromotion,
+  usePromotionLinkableProducts,
   useUpdateAdminPromotion,
 } from '@entities/admin-promotion'
 import { getErrorMessage } from '@shared/api/client'
@@ -15,10 +16,7 @@ import {
 } from '@shared/config/routes'
 import { showToast } from '@shared/model/toastStore'
 import { Breadcrumb, InlineAlert, PageSkeleton, Tag } from '@shared/ui'
-import {
-  AdminPromotionForm,
-  useLinkableProducts,
-} from '@widgets/admin/promotion-form'
+import { AdminPromotionForm } from '@widgets/admin/promotion-form'
 
 import * as styles from './AdminPromotionEditPage.css'
 
@@ -26,7 +24,7 @@ export function AdminPromotionEditPage() {
   const navigate = useNavigate()
   const { promotionId = '' } = useParams()
   const promotion = useAdminPromotion(promotionId)
-  const linkable = useLinkableProducts()
+  const linkable = usePromotionLinkableProducts(promotionId)
   const update = useUpdateAdminPromotion(promotionId)
 
   if (!promotion.data) {
@@ -91,7 +89,7 @@ export function AdminPromotionEditPage() {
         // 다른 프로모션으로 옮겨 가면 폼을 새 값으로 다시 연다.
         key={promotionId}
         mode="edit"
-        products={linkable.products ?? []}
+        products={linkable.data ?? []}
         productsLoading={linkable.isPending}
         defaultValue={toPromotionFormValue(promotion.data)}
         submitting={update.isPending}

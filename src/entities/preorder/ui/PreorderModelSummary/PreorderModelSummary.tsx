@@ -37,10 +37,12 @@ export function PreorderModelSummary({
       <div className={styles.body}>
         <span className={styles.name}>{name}</span>
         <span className={styles.caption}>{caption}</span>
-        <span className={styles.price}>
-          {formatNumber(price)}
-          <span className={styles.priceUnit}> 원부터</span>
-        </span>
+        {price !== null && (
+          <span className={styles.price}>
+            {formatNumber(price)}
+            <span className={styles.priceUnit}> 원부터</span>
+          </span>
+        )}
       </div>
       {action}
     </div>

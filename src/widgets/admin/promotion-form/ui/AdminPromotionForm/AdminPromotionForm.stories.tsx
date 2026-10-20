@@ -27,18 +27,14 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 등록 — 입력한 이름과 고른 상품을 한 번에 넘긴다 */
+/** 등록 — 진행 기간을 안 고르면 보내지 않고 이유를 보여준다(서버는 400) */
 export const Create: Story = {
   play: async ({ canvas, args, userEvent }) => {
     await userEvent.type(canvas.getByLabelText(/사전예약명/), '가을 사전예약')
     await userEvent.click(canvas.getByRole('button', { pressed: false }))
     await userEvent.click(canvas.getByRole('button', { name: '등록하기' }))
-    await expect(args.onSubmit).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: '가을 사전예약',
-        linkedProductIds: ['p-1'],
-      }),
-    )
+    await expect(canvas.getByText('진행 기간을 선택해 주세요.')).toBeVisible()
+    await expect(args.onSubmit).not.toHaveBeenCalled()
   },
 }
 
@@ -48,8 +44,8 @@ export const Edit: Story = {
     mode: 'edit',
     defaultValue: {
       name: '여름 사전예약',
-      startAt: '',
-      endAt: '',
+      startDate: '',
+      endDate: '',
       thumbnail: null,
       detailImages: [],
       linkedProductIds: ['p-1'],
