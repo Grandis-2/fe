@@ -1,3 +1,4 @@
+export type * from './admin-banner'
 export type * from './admin-dead-letter'
 export type * from './admin-image'
 export type * from './admin-product'

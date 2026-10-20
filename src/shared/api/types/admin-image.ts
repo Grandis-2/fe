@@ -1,5 +1,5 @@
-/** 사진을 어디에 쓰는가 — 상품 저장은 PRODUCT, 홍보 저장은 PROMOTION으로 올린 사진만 받는다 */
-export type AdminImagePurpose = 'PRODUCT' | 'PROMOTION'
+/** 사진을 어디에 쓰는가 — 상품 저장은 PRODUCT, 홍보는 PROMOTION, 배너는 BANNER로 올린 사진만 받는다 */
+export type AdminImagePurpose = 'PRODUCT' | 'PROMOTION' | 'BANNER'
 
 /**
  * 사진 한 장 올리기(POST /admin/images?purpose=, multipart 파트 file). 서버가 검사·재인코딩해
