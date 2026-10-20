@@ -8,7 +8,7 @@ import { panel } from '../panel.css'
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[16],
+  gap: spacing[20],
 })
 
 export const topBar = style({
@@ -21,14 +21,22 @@ export const topBar = style({
 
 // 다른 관리자 화면(예약 현황·대기열 관리)의 제목과 같은 크기다.
 export const pageTitle = style([
-  typography.title.xxlSemibold,
+  typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },
 ])
 
-// 결제를 막는 일 — 줄로만 두고 아래에 구분선을 그어 섹션과 나눈다.
+// 결제를 막는 일 — 빨간 테두리 카드로 따로 둔다.
 export const urgentBar = style({
-  paddingBottom: spacing[4],
-  borderBottom: `1px solid ${color.border.default}`,
+  // 결제를 막는 일이라 아래로 스크롤해도 본문 스크롤 영역 위쪽에 붙어 보이게 한다.
+  position: 'sticky',
+  top: 0,
+  // 그래프 툴팁·표보다 위에 뜬다.
+  zIndex: 10,
+  padding: `${spacing[4]} ${spacing[20]}`,
+  borderRadius: '12px',
+  border: `1px solid ${color.status.danger}`,
+  // 뒤의 카드가 비치지 않게 불투명한 바탕을 깐다.
+  background: color.background.base,
 })
 
 export const section = style({
@@ -38,7 +46,7 @@ export const section = style({
 })
 
 export const sectionTitle = style([
-  typography.title.xlSemibold,
+  typography.title.lgSemibold,
   { margin: 0, color: color.text.primary },
 ])
 

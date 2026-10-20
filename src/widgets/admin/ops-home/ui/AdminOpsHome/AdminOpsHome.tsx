@@ -306,11 +306,11 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
 
       {/* 결제를 막는 일은 어디를 보든 먼저 보이게 맨 위에 한 번 더 둔다. */}
       {urgentTasks.length > 0 && (
-        <div className={styles.urgentBar}>
+        <section className={styles.urgentBar} aria-label="긴급 할 일">
           {urgentTasks.map(({ key, ...task }) => (
             <OpsTaskCard key={key} {...task} />
           ))}
-        </div>
+        </section>
       )}
 
       <section className={styles.section} aria-labelledby="ops-open">

@@ -8,7 +8,7 @@ export const root = style({
   flexDirection: 'column',
   // 묶음 사이를 띄워야 바로 위 메뉴와 아래 묶음 이름이 한 덩어리로 안 읽힌다.
   gap: spacing[24],
-  width: '240px',
+  width: '300px',
   flexShrink: 0,
   overflowY: 'auto',
   padding: `${spacing[20]} 0`,
@@ -22,7 +22,7 @@ export const group = style({
 })
 
 export const groupLabel = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   {
     boxSizing: 'border-box',
     padding: `${spacing[8]} ${spacing[40]}`,
@@ -32,7 +32,7 @@ export const groupLabel = style([
 ])
 
 export const navItem = style([
-  typography.title.mdMedium,
+  typography.title.lgSemibold,
   {
     boxSizing: 'border-box',
     display: 'flex',
