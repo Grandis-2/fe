@@ -137,11 +137,21 @@ export function MypagePreorder() {
     [openAlerts.data],
   )
 
-  // 모달에서 취소를 누른 예약 — 목록이 '취소 처리 중'으로 다시 오기 전에도 구매 확정을 막는다.
-  // 취소가 실패하면 빼서 다시 결제할 수 있게 한다.
-  const [cancelingIds, setCancelingIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
-  )
+  // 모달에서 취소를 누른 예약과 그때의 version — 목록이 '취소 처리 중'으로 다시 오기 전에도 구매 확정을 막는다.
+  // 서버가 그 예약을 새 상태로 알려 주면(version이 바뀌면) 막지 않고 서버 상태를 따른다 — 취소가 나중에
+  // 거절돼 결제 가능으로 돌아와도 다시 누를 수 있다. 요청 자체가 실패하면 바로 뺀다.
+  const [cancelingVersions, setCancelingVersions] = useState<
+    ReadonlyMap<string, number>
+  >(() => new Map())
+  const isCanceling = ({ preorderId, version }: Reservation) =>
+    cancelingVersions.get(preorderId) === version
+  const setCanceling = ({ preorderId, version }: Reservation, on: boolean) =>
+    setCancelingVersions((prev) => {
+      const next = new Map(prev)
+      if (on) next.set(preorderId, version)
+      else next.delete(preorderId)
+      return next
+    })
 
   const reservations = useMemo(() => data?.items ?? [], [data])
   // 결제 기한 카운트다운 — 렌더마다 새 Date를 넘기면 useCountdown 타이머가 계속 새로 걸려 응답이 바뀔 때만 만든다.
@@ -201,13 +211,13 @@ export function MypagePreorder() {
       onConfirm: () => {
         closeModal()
         const { preorderId } = reservation
-        setCancelingIds((prev) => toggleInSet(prev, [preorderId], true))
+        setCanceling(reservation, true)
         cancel.mutate(
           { preorderId },
           {
             onSuccess: () => showToast('예약 취소를 요청했어요.'),
             onError: (caught) => {
-              setCancelingIds((prev) => toggleInSet(prev, [preorderId], false))
+              setCanceling(reservation, false)
               showToast(getErrorMessage(caught, '예약을 취소하지 못했어요.'))
             },
           },
@@ -220,7 +230,7 @@ export function MypagePreorder() {
       <Button
         variant="subtle"
         color="cancel"
-        disabled={cancel.isPending || cancelingIds.has(reservation.preorderId)}
+        disabled={cancel.isPending || isCanceling(reservation)}
         onClick={() => confirmCancel(reservation)}
       >
         예약 취소
@@ -247,7 +257,7 @@ export function MypagePreorder() {
             {cancelButton(reservation)}
             <ActionButton
               size="md"
-              disabled={cancelingIds.has(reservation.preorderId)}
+              disabled={isCanceling(reservation)}
               onClick={() => navigate(paymentPath(reservation.preorderId))}
             >
               구매 확정하기
