@@ -143,7 +143,9 @@ export function MypagePreorder() {
   const [cancelingVersions, setCancelingVersions] = useState<
     ReadonlyMap<string, number>
   >(() => new Map())
+  // 요청이 끝나기 전엔 version이 바뀌어도(외부 등록 등) 계속 막는다 — 곧 취소 중이 될 예약이다.
   const isCanceling = ({ preorderId, version }: Reservation) =>
+    (cancel.isPending && cancel.variables?.preorderId === preorderId) ||
     cancelingVersions.get(preorderId) === version
   const setCanceling = ({ preorderId, version }: Reservation, on: boolean) =>
     setCancelingVersions((prev) => {
