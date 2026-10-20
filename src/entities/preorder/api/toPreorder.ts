@@ -4,16 +4,16 @@ import type {
   ShipmentBatch,
 } from '@shared/api/types'
 
+import { toKstParts } from '../lib/preorderSchedule'
+
 import type { Preorder } from '../model/preorder'
 import type { PreorderCardData } from '../ui/PreorderCard'
 
-// 서버는 ISO 시각(UTC, 끝에 Z)으로 준다 — 브라우저 시간대와 상관없이 한국 시간으로 보여준다.
-// 한국은 서머타임이 없어 9시간을 더하면 된다. toISOString()은 'YYYY-MM-DDTHH:mm:ss.sssZ'다.
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000
-const toKst = (iso: string) =>
-  new Date(Date.parse(iso) + KST_OFFSET_MS).toISOString()
-const kstDate = (iso: string) => toKst(iso).slice(0, 10)
-const kstTime = (iso: string) => toKst(iso).slice(11, 16)
+// 서버는 ISO 시각(UTC, 끝에 Z)으로 준다 — 브라우저 시간대와 상관없이 한국 시간으로 바꾼다.
+// 오픈은 분까지, 마감은 초까지 남긴다(23:59:59 마감이 23:59:00에 닫혀 보이지 않게).
+const kstDate = (iso: string) => toKstParts(iso).date
+const kstTime = (iso: string) => toKstParts(iso).time.slice(0, 5)
+const kstCloseTime = (iso: string) => toKstParts(iso).time
 
 // 오픈·마감 시각은 묶인 상품이 없거나 사전예약 서비스가 답하지 않으면 null이다 — 그때는
 // 홍보 기간으로 대신 센다(명세: 단계 표시 없이 그린다).
@@ -26,7 +26,7 @@ const periodOf = ({
   opensAt: opensAt ? kstDate(opensAt) : startDate,
   openTime: opensAt ? kstTime(opensAt) : '00:00',
   closesAt: closesAt ? kstDate(closesAt) : endDate,
-  closeTime: closesAt ? kstTime(closesAt) : '23:59',
+  closeTime: closesAt ? kstCloseTime(closesAt) : '23:59:59',
 })
 
 export const toPreorderCard = (
@@ -63,6 +63,6 @@ export const toPreorder = (
       opensAt: kstDate(product.opensAt),
       openTime: kstTime(product.opensAt),
     }),
-    ...(product.closesAt && { closeTime: kstTime(product.closesAt) }),
+    ...(product.closesAt && { closeTime: kstCloseTime(product.closesAt) }),
   })),
 })

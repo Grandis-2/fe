@@ -17,7 +17,10 @@ export const enterPreorderOnClick =
     preorderStatus,
   }: Pick<ProductListItem, 'productId' | 'title' | 'preorderStatus'>) =>
   (event: MouseEvent) => {
-    if (preorderStatus !== 'OPEN') return
+    // 새 탭·새 창으로 여는 클릭(Ctrl/⌘·Shift·가운데 버튼)은 링크 기본 동작대로 둔다.
+    const opensElsewhere =
+      event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0
+    if (preorderStatus !== 'OPEN' || opensElsewhere) return
     event.preventDefault()
     requireLogin(() =>
       joinPreorderQueue({

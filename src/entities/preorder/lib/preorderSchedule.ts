@@ -1,5 +1,3 @@
-import { parseDateOnly } from '@shared/lib/parseDateOnly'
-
 import type { Preorder, PreorderModel } from '../model/preorder'
 
 // live: 오늘 오픈, soon: 오픈 예정, done: 마감. 서버가 따로 내려주지 않아 날짜·시각으로 정한다.
@@ -14,21 +12,28 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
 const MINUTE_MS = 60 * 1000
 
-// 'YYYY-MM-DD'까지 남은 날 수. 오늘이면 0, 지났으면 음수.
-const daysUntil = (date: string, today: Date) => {
-  const target = parseDateOnly(date)
-  if (!target) return Number.NaN
-  const startOfToday = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  )
-  // 서머타임으로 하루가 23·25시간인 날이 있어 반올림한다.
-  return Math.round((target.getTime() - startOfToday.getTime()) / DAY_MS)
+const KST_OFFSET_MS = 9 * HOUR_MS
+
+// 일정 문자열은 모두 한국 시간이다(toPreorder) — 브라우저 시간대와 상관없이 같은 순간으로 읽는다.
+// 한국은 서머타임이 없어 고정 오프셋(+09:00)이면 된다. 마감은 초까지('HH:mm:ss') 온다.
+export const kstInstant = (date: string, time: string) =>
+  new Date(`${date}T${time.length === 5 ? `${time}:00` : time}+09:00`)
+
+// 순간 → 한국 시간 'YYYY-MM-DD'·'HH:mm:ss'. toISOString()은 'YYYY-MM-DDTHH:mm:ss.sssZ'다.
+export const toKstParts = (instant: Date | string) => {
+  const iso = new Date(
+    new Date(instant).getTime() + KST_OFFSET_MS,
+  ).toISOString()
+  return { date: iso.slice(0, 10), time: iso.slice(11, 19) }
 }
 
-// 'YYYY-MM-DD' + 'HH:mm' → 그 시각(로컬)
-const dateAt = (date: string, time: string) => new Date(`${date}T${time}:00`)
+// 'YYYY-MM-DD'(한국 날짜)까지 남은 날 수 — 오늘(한국 날짜)이면 0, 지났으면 음수. 둘 다 UTC 자정으로 읽어 뺀다.
+const daysUntil = (date: string, now: Date) =>
+  Math.round(
+    (Date.parse(`${date}T00:00:00Z`) -
+      Date.parse(`${toKstParts(now).date}T00:00:00Z`)) /
+      DAY_MS,
+  )
 
 // 1시간 넘게 남으면 시간(내림), 아니면 분(올림)으로 센다 — '3시간', '25분'.
 const timeLeft = (target: Date, now: Date) => {
@@ -43,7 +48,7 @@ export const getOpenAlertDeadline = ({
   opensAt,
   openTime,
 }: Pick<Preorder, 'opensAt' | 'openTime'>) =>
-  new Date(dateAt(opensAt, openTime).getTime() - HOUR_MS)
+  new Date(kstInstant(opensAt, openTime).getTime() - HOUR_MS)
 
 // 모델마다 오픈 시각이 다를 수 있다 — 모르면 홍보 오픈(가장 이른 모델)으로 센다.
 export const isModelOpen = (
@@ -52,7 +57,10 @@ export const isModelOpen = (
   now = new Date(),
 ) =>
   now >=
-  dateAt(model.opensAt ?? preorder.opensAt, model.openTime ?? preorder.openTime)
+  kstInstant(
+    model.opensAt ?? preorder.opensAt,
+    model.openTime ?? preorder.openTime,
+  )
 
 // 알림 마감(오픈 1시간 전) 전이면 오픈 예정(다른 날이면 D-N, 그날이면 N시간 후 시작),
 // 그때부터 마감 시각 전까지는 오늘 오픈(N분 후 시작/N시간 후 종료), 마감 시각이 지나면 마감이다.
@@ -65,9 +73,9 @@ export function getPreorderSchedule(
   }: Pick<Preorder, 'opensAt' | 'openTime' | 'closesAt' | 'closeTime'>,
   now = new Date(),
 ): PreorderSchedule {
-  const closeAt = dateAt(closesAt, closeTime)
+  const closeAt = kstInstant(closesAt, closeTime)
   if (!(now < closeAt)) return { status: 'done', ddayLabel: '마감' }
-  const openAt = dateAt(opensAt, openTime)
+  const openAt = kstInstant(opensAt, openTime)
   if (now < getOpenAlertDeadline({ opensAt, openTime })) {
     const untilOpen = daysUntil(opensAt, now)
     return {
@@ -90,7 +98,7 @@ export const formatPreorderPeriod = ({
   openTime,
   closeTime,
 }: Pick<Preorder, 'opensAt' | 'openTime' | 'closeTime'>) =>
-  `${formatPreorderDate(opensAt)} ${openTime} ~ ${closeTime}`
+  `${formatPreorderDate(opensAt)} ${openTime} ~ ${closeTime.slice(0, 5)}`
 
 // 한 홍보에 묶인 모델끼리 예약 시간이 다를 수 있다 — 모르는 칸은 홍보 기간(가장 이른 오픈·늦은 마감)으로 채운다.
 export const formatModelPeriod = (

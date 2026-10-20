@@ -11,7 +11,7 @@ export type PreorderModel = {
   price: number | null
   /** 예약·구매하면 이동할 상품 상세 */
   productId: string
-  /** 이 모델의 예약 시작 'YYYY-MM-DD'·'HH:mm'과 마감 'HH:mm'(한국 시간). 모르면(일반 상품·서비스 장애) 비어 온다 */
+  /** 이 모델의 예약 시작 'YYYY-MM-DD'·'HH:mm'과 마감 'HH:mm:ss'(한국 시간). 모르면(일반 상품·서비스 장애) 비어 온다 */
   opensAt?: string
   openTime?: string
   closeTime?: string
@@ -32,7 +32,7 @@ export type Preorder = {
   openTime: string
   /** 이 날까지 예약할 수 있다. */
   closesAt: string
-  /** 'HH:mm' — 마감일의 마감 시각 */
+  /** 'HH:mm:ss'(또는 'HH:mm') — 마감일의 마감 시각. 화면엔 분까지만 보인다 */
   closeTime: string
   /** 결제·물량 배정이 끝나는 날(마감 다음 날부터 시작). 명세에 없어 비어 오면 일정에서 뺀다. */
   paymentEndsAt?: string

@@ -2,6 +2,7 @@ import {
   formatPreorderDate,
   formatPreorderPeriod,
   getOpenAlertDeadline,
+  toKstParts,
   type Preorder,
   type PreorderStatus,
 } from '@entities/preorder'
@@ -20,8 +21,11 @@ const addDays = (date: string, days: number) => {
 
 const short = (date: Date) =>
   `${date.getMonth() + 1}.${String(date.getDate()).padStart(2, '0')}`
-const shortWithTime = (date: Date) =>
-  `${short(date)} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+// 순간 → 한국 시간 '10.20 08:00' — 브라우저 시간대가 달라도 일정표와 같은 시각을 보인다.
+const shortWithKstTime = (instant: Date) => {
+  const { date, time } = toKstParts(instant)
+  return `${short(toDate(date))} ${time.slice(0, 5)}`
+}
 const range = (from: Date, to: Date) => `${short(from)} – ${short(to)}`
 
 export const monthDay = (date: string) => {
@@ -71,7 +75,7 @@ export function getScheduleSteps(
     return [
       {
         label: '오픈 알림 신청',
-        date: `~ ${shortWithTime(getOpenAlertDeadline(preorder))}`,
+        date: `~ ${shortWithKstTime(getOpenAlertDeadline(preorder))}`,
         isCurrent: true,
       },
       { ...preorderStep, isCurrent: false },

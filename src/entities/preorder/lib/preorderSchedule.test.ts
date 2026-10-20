@@ -8,9 +8,12 @@ const preorder = {
   closesAt: '2026-10-20',
   closeTime: '23:59',
 }
-// 로컬 시각 — 계산도 로컬 기준이다.
-const at = (day: number, hour: number, minute = 0) =>
-  new Date(2026, 9, day, hour, minute)
+// 한국 시각 — 일정은 브라우저 시간대와 상관없이 한국 시간으로 센다(TZ를 바꿔 돌려도 같아야 한다).
+const pad = (n: number) => String(n).padStart(2, '0')
+const at = (day: number, hour: number, minute = 0, second = 0) =>
+  new Date(
+    `2026-10-${pad(day)}T${pad(hour)}:${pad(minute)}:${pad(second)}+09:00`,
+  )
 
 describe('getPreorderSchedule', () => {
   it('오픈 날 전이면 D-N', () => {
@@ -43,6 +46,24 @@ describe('getPreorderSchedule', () => {
       status: 'live',
       ddayLabel: '14시간 후 종료',
     })
+  })
+
+  it('마감이 초까지 오면 그 초까지 열려 있다', () => {
+    const closesAtEnd = { ...preorder, closeTime: '23:59:59' }
+    expect(getPreorderSchedule(closesAtEnd, at(20, 23, 59, 30)).status).toBe(
+      'live',
+    )
+    expect(getPreorderSchedule(closesAtEnd, at(20, 23, 59, 59)).status).toBe(
+      'done',
+    )
+  })
+
+  it('한국 자정을 넘기면 날짜가 바뀐다 — 한국 10.19 23:30은 오픈 전날(D-1)', () => {
+    expect(getPreorderSchedule(preorder, at(19, 23, 30)).ddayLabel).toBe('D-1')
+    // 한국 10.20 00:30은 UTC로 아직 10.19다 — 그래도 오픈 당일로 센다.
+    expect(getPreorderSchedule(preorder, at(20, 0, 30)).ddayLabel).toBe(
+      '8시간 후 시작',
+    )
   })
 
   it('마감 시각이 지나면 그날이어도 마감', () => {

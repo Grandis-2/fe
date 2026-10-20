@@ -11,6 +11,8 @@ export {
   formatPreorderPeriod,
   getOpenAlertDeadline,
   isModelOpen,
+  kstInstant,
+  toKstParts,
 } from './lib/preorderSchedule'
 export type { PreorderStatus, PreorderSchedule } from './lib/preorderSchedule'
 export type { Preorder, PreorderBenefit, PreorderModel } from './model/preorder'

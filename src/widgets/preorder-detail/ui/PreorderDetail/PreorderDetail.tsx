@@ -8,6 +8,7 @@ import {
   formatModelPeriod,
   formatPreorderPeriod,
   getPreorderSchedule,
+  kstInstant,
   usePreorder,
   useSubscribedOpenAlerts,
   useToggleOpenAlert,
@@ -87,7 +88,7 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
 
   // 매 렌더 새 Date면 useCountdown의 interval이 매초 다시 걸린다 — 날짜가 바뀔 때만 만든다.
   const openAt = useMemo(
-    () => new Date(`${preorder.opensAt}T${preorder.openTime}:00`),
+    () => kstInstant(preorder.opensAt, preorder.openTime),
     [preorder.opensAt, preorder.openTime],
   )
   const countdown = useCountdown(openAt)
