@@ -62,5 +62,9 @@ export const toPreorder = (
     imageSrc: product.imageUrl ?? undefined,
     price: product.minPrice,
     productId: product.productId,
+    ...(product.opensAt && {
+      opensAt: localDate(product.opensAt),
+      openTime: localTime(product.opensAt),
+    }),
   })),
 })

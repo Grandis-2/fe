@@ -11,6 +11,9 @@ export type PreorderModel = {
   price: number | null
   /** 예약·구매하면 이동할 상품 상세 */
   productId: string
+  /** 이 모델의 예약 시작 'YYYY-MM-DD'·'HH:mm'(로컬). 모르면(일반 상품·서비스 장애) 비어 온다 */
+  opensAt?: string
+  openTime?: string
 }
 
 // 날짜는 모두 'YYYY-MM-DD'(로컬 날짜). 상태(진행 중·오픈 예정·마감)는 날짜로 계산한다.
