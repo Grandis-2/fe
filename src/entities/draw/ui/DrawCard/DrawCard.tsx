@@ -2,6 +2,7 @@ import { Link } from 'react-router'
 
 import { drawPath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
+import { ImageWithFallback, Skeleton } from '@shared/ui'
 
 import { formatDrawMonthDay, getDrawSchedule } from '../../lib/drawSchedule'
 
@@ -47,9 +48,7 @@ export function DrawCard({ data, className }: DrawCardProps) {
         .join(' ')}
     >
       <div className={styles.thumb}>
-        {gift.imageUrl && (
-          <img src={gift.imageUrl} alt="" className={styles.image} />
-        )}
+        <ImageWithFallback src={gift.imageUrl} className={styles.image} />
       </div>
       <div className={styles.body}>
         <div className={styles.badges}>
@@ -71,5 +70,22 @@ export function DrawCard({ data, className }: DrawCardProps) {
         <span className={styles.fee}>응모비 {formatNumber(entryFee)}원</span>
       </div>
     </Link>
+  )
+}
+
+// 썸네일(정사각)과 뱃지·제목·안내 줄 자리를 깔아 응답이 와도 그리드가 튀지 않게 한다.
+// 스크린리더 안내는 감싸는 SkeletonGroup이 한 번만 한다.
+export function DrawCardSkeleton({
+  className,
+}: Pick<DrawCardProps, 'className'>) {
+  return (
+    <div className={[styles.root, className].filter(Boolean).join(' ')}>
+      <Skeleton tone="dark" aspectRatio="1" radius={16} />
+      <div className={styles.body}>
+        <Skeleton tone="dark" width={64} height={22} />
+        <Skeleton tone="dark" width="80%" height={20} />
+        <Skeleton tone="dark" width="50%" height={16} />
+      </div>
+    </div>
   )
 }

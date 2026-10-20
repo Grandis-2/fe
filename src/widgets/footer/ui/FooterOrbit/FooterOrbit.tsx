@@ -18,13 +18,13 @@ const RADII = [
 ]
 // 팀원 행성 자리 — [궤도 반지름, 각도(도)]
 const POSITIONS: Record<string, [number, number]> = {
-  fe0: [214, -31],
-  fe1: [250, 28],
-  be0: [410, -18],
-  be1: [480, 0],
-  be2: [410, 18],
-  be3: [650, -7],
-  be4: [650, 8],
+  0: [214, -31],
+  1: [250, 28],
+  2: [410, -18],
+  3: [480, 0],
+  4: [410, 18],
+  5: [650, -7],
+  6: [650, 8],
 }
 const MEMBER_RADII = new Set(Object.values(POSITIONS).map(([r]) => r))
 

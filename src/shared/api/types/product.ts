@@ -1,3 +1,4 @@
+import type { ProductBrandCode } from './admin-product'
 import type { Paged } from './common'
 
 // 구매자용 상품·카테고리 API(catalog 서비스 — api-docs의 catalog.json) 응답 모양.
@@ -30,11 +31,13 @@ export type CategoryTreeResponse = {
 // GET /api/v1/products 쿼리.
 // color·storage는 같은 이름을 반복해 여러 값을 보낸다(?color=블랙&color=화이트). 축 안은 OR, 축끼리는 AND.
 export type ProductListParams = {
-  // 상품명·태그 부분 일치(대소문자 무시).
+  // 상품명·태그·모델명·브랜드 코드 부분 일치(대소문자 무시).
   q?: string
   // 상위 카테고리면 하위 상품까지 나온다. 없는 id는 빈 목록.
   categoryId?: string
   saleMode?: SaleMode
+  // 여러 값은 OR. 대문자 코드만 받는다(그 밖은 400).
+  brand?: ProductBrandCode[]
   color?: string[]
   storage?: string[]
   // 기본 NEWEST. 가격순은 minPrice 기준이고 null은 늘 맨 뒤.
@@ -51,6 +54,8 @@ export type ProductListItem = {
   productId: string
   saleMode: SaleMode
   title: string
+  // 화면 표시 이름은 프론트가 정한다.
+  brand: ProductBrandCode
   // 첫 색상 묶음의 첫 장(색상 축이 없으면 기본 묶음 첫 장). 없으면 null — 화면이 대체 이미지.
   imageUrl: string | null
   // 회원 목록엔 ACTIVE만 나온다.
@@ -121,6 +126,7 @@ export type ProductDetailView = Pick<
   | 'productId'
   | 'saleMode'
   | 'title'
+  | 'brand'
   | 'imageUrl'
   | 'status'
   | 'sellable'

@@ -2,6 +2,8 @@ import { style, styleVariants } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@shared/config/theme'
 
+const preorderTint = `color-mix(in srgb, ${color.accent.preorder} 14%, transparent)`
+
 const base = style({
   display: 'inline-flex',
   alignItems: 'center',
@@ -97,6 +99,11 @@ export const solid = styleVariants({
     background: color.text.tertiary,
     borderColor: color.text.tertiary,
     color: color.background.surface,
+  }, // 사전예약 색은 밝은 금색이라 글자를 어두운 바탕색으로 쓴다.
+  preorder: {
+    background: color.accent.preorder,
+    borderColor: color.accent.preorder,
+    color: color.backgroundDark.base,
   },
 })
 
@@ -140,6 +147,12 @@ export const subtle = styleVariants({
     borderColor: color.background.surface,
     color: color.text.tertiary,
   },
+  // 바탕이 반투명이라 테두리까지 같은 색을 칠하면 테두리 자리에 두 겹이 겹쳐 선처럼 보인다.
+  preorder: {
+    background: preorderTint,
+    borderColor: 'transparent',
+    color: color.accent.preorder,
+  },
 })
 
 export const outline = styleVariants({
@@ -177,5 +190,10 @@ export const outline = styleVariants({
     background: color.background.base,
     borderColor: color.text.tertiary,
     color: color.text.tertiary,
+  },
+  preorder: {
+    background: color.background.base,
+    borderColor: color.accent.preorder,
+    color: color.accent.preorder,
   },
 })

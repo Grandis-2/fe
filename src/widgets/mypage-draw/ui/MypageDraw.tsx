@@ -10,7 +10,7 @@ import {
   useMyDrawEntries,
   type DrawEntry,
 } from '@entities/draw'
-import { HistoryCard } from '@entities/order'
+import { HistoryCard, HistoryListSkeleton } from '@entities/order'
 import {
   ProductPaymentCard,
   type ProductPaymentCardItem,
@@ -90,7 +90,7 @@ export function MypageDraw() {
           {getErrorMessage(error, '응모 내역을 불러오지 못했어요.')}
         </div>
       ) : isPending ? (
-        <div className={styles.empty}>응모 내역을 불러오는 중이에요.</div>
+        <HistoryListSkeleton />
       ) : (
         visible.length === 0 && (
           <InlineAlert status="info" variant="big" icon={Ticket}>
@@ -108,7 +108,13 @@ export function MypageDraw() {
           <HistoryCard
             key={entry.entryId}
             tag={drawEntryTag[state]}
-            highlight={state === 'unpaid'}
+            highlight={
+              state === 'unpaid'
+                ? 'warning'
+                : state === 'won'
+                  ? 'won'
+                  : undefined
+            }
             orderDate={formatDotDate(entry.createdAt)}
             items={[toItem(entry)]}
             renderItem={renderItem}

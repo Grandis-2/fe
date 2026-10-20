@@ -4,12 +4,15 @@ import { LogOut, Orbit } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { logout } from '@entities/auth'
+import { useCartCount } from '@entities/cart'
+import { usePendingPurchaseCount } from '@entities/preorder'
 import { getErrorMessage } from '@shared/api/client'
 import {
   HOME_PATH,
   MYPAGE_TAB_LABELS,
   type MypageTab,
 } from '@shared/config/routes'
+import { srOnly } from '@shared/config/theme'
 import { showToast } from '@shared/model/toastStore'
 
 import * as styles from './MypageMenu.css'
@@ -44,6 +47,23 @@ export function MypageMenu({
   className,
 }: MypageMenuProps) {
   const navigate = useNavigate()
+  // 메뉴 옆 숫자 — 헤더 아이콘 숫자와 같은 셈이다. 구매 확정 대기는 해야 할 일이라 경고색,
+  // 장바구니는 담긴 수라 헤더 장바구니 배지와 같은 색.
+  const pendingPurchaseCount = usePendingPurchaseCount()
+  const { data: cartCount = 0 } = useCartCount(true)
+  const badges: Partial<
+    Record<
+      MypageMenuLink,
+      { count: number; tone: keyof typeof styles.badge; label: string }
+    >
+  > = {
+    'preorder-check': {
+      count: pendingPurchaseCount,
+      tone: 'warning',
+      label: '구매 확정 대기',
+    },
+    cart: { count: cartCount, tone: 'primary', label: '담긴 상품' },
+  }
 
   // 서버가 세션을 지운 뒤에만 홈으로 나간다 — 실패하면 마이페이지에 남아 다시 누를 수 있다.
   // 세션이 먼저 지워져도 RequireLogin이 로그아웃으로 보고 로그인 모달 없이 홈으로 보낸다.
@@ -83,17 +103,30 @@ export function MypageMenu({
         </button>
       </div>
       <nav className={styles.nav} aria-label="마이페이지">
-        {links.map((link) => (
-          <button
-            key={link}
-            type="button"
-            className={styles.link}
-            aria-current={link === activeLink ? 'page' : undefined}
-            onClick={() => onLinkClick?.(link)}
-          >
-            {MYPAGE_TAB_LABELS[link]}
-          </button>
-        ))}
+        {links.map((link) => {
+          const badge = badges[link]
+          return (
+            <button
+              key={link}
+              type="button"
+              className={styles.link}
+              aria-current={link === activeLink ? 'page' : undefined}
+              onClick={() => onLinkClick?.(link)}
+            >
+              {MYPAGE_TAB_LABELS[link]}
+              {badge && badge.count > 0 && (
+                <>
+                  <span className={styles.badge[badge.tone]} aria-hidden="true">
+                    {badge.count > 99 ? '99+' : badge.count}
+                  </span>
+                  <span className={srOnly}>
+                    , {badge.label} {badge.count}건
+                  </span>
+                </>
+              )}
+            </button>
+          )
+        })}
       </nav>
     </aside>
   )

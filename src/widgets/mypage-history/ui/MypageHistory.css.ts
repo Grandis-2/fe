@@ -17,6 +17,7 @@ export const root = style({
   flexDirection: 'column',
   gap: spacing[24],
   width: '100%',
+  '@media': { [breakpoint.mobile]: { gap: spacing[16] } },
 })
 
 // 마이페이지 탭 제목 — 모바일은 한 단계 줄인다(결제 페이지 제목과 같은 크기).
@@ -37,6 +38,8 @@ export const summary = style([
     gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
     margin: 0,
     padding: `${spacing[24]} ${spacing[8]}`,
+    // 모바일은 칩에 건수를 붙이므로 요약 칸을 숨긴다.
+    '@media': { [breakpoint.mobile]: { display: 'none' } },
   },
 ])
 
@@ -107,7 +110,17 @@ export const totalLabel = style([
 
 export const totalValue = style([
   typography.body.defaultMedium,
-  { fontSize: fontSize[18], fontWeight: fontWeight.bold, whiteSpace: 'nowrap' },
+  {
+    fontSize: fontSize[18],
+    fontWeight: fontWeight.bold,
+    whiteSpace: 'nowrap',
+    '@media': {
+      [breakpoint.mobile]: {
+        fontSize: fontSize[16],
+        fontWeight: fontWeight.semibold,
+      },
+    },
+  },
 ])
 
 // 버튼이 하나면 꽉 차고, 둘이면 반씩 나눈다.
@@ -117,3 +130,46 @@ export const actions = style({
   gridAutoColumns: 'minmax(0, 1fr)',
   gap: spacing[8],
 })
+
+// 칩 옆 건수 — 모바일에서만 보인다(데스크톱은 요약 칸이 건수를 보여 준다). 색·간격은 Chip의 count와 맞춘다.
+export const chipCount = style({
+  display: 'none',
+  marginLeft: spacing[6],
+  color: color.primary.subtle,
+  fontVariantNumeric: 'tabular-nums',
+  '@media': { [breakpoint.mobile]: { display: 'inline' } },
+})
+
+// 받는 사람·배송지 — 사전예약 내역 카드의 facts와 같은 모양. 주소가 길어 배송지 칸을 넓게 준다.
+export const facts = style({
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 3fr)',
+  gap: spacing[12],
+  margin: 0,
+  padding: `${spacing[20]} ${spacing[24]}`,
+  borderTop: `1px solid ${color.border.subtle}`,
+  '@media': {
+    [breakpoint.mobile]: { padding: spacing[16] },
+  },
+})
+
+export const fact = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[4],
+  minWidth: 0,
+})
+
+export const factLabel = style([
+  typography.body.caption,
+  { color: color.text.tertiary },
+])
+
+export const factValue = style([
+  typography.body.defaultMedium,
+  {
+    margin: 0,
+    fontSize: '15px',
+    '@media': { [breakpoint.mobile]: { fontSize: fontSize[14] } },
+  },
+])

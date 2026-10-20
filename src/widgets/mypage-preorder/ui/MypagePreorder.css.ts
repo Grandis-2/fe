@@ -1,7 +1,10 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
 import { breakpoint, color, spacing, typography } from '@shared/config/theme'
-import { fontWeight } from '@shared/config/theme/tokens/typography/base'
+import {
+  fontSize,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
 
 const divider = `1px solid ${color.border.subtle}`
 // HistoryCard 안쪽 여백과 맞춘다.
@@ -76,7 +79,11 @@ export const factLabel = style([
 
 export const factValue = style([
   typography.body.defaultMedium,
-  { margin: 0, fontSize: '15px', fontWeight: fontWeight.bold },
+  {
+    margin: 0,
+    fontSize: '15px',
+    '@media': { [breakpoint.mobile]: { fontSize: fontSize[14] } },
+  },
 ])
 
 export const steps = style([

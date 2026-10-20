@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 
 import { preorderPath } from '@shared/config/routes'
+import { ImageWithFallback } from '@shared/ui'
 
 import {
   formatPreorderDate,
@@ -36,9 +37,11 @@ export function PreorderCard({ data, className }: PreorderCardProps) {
         .filter(Boolean)
         .join(' ')}
     >
-      {imageSrc && (
-        <img src={imageSrc} alt={imageAlt} className={styles.image} />
-      )}
+      <ImageWithFallback
+        src={imageSrc}
+        alt={imageAlt}
+        className={styles.image}
+      />
       <span className={[styles.dday, styles.ddayColor[status]].join(' ')}>
         {ddayLabel}
       </span>

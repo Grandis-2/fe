@@ -15,11 +15,17 @@ export type { PreorderAccepted, QueueEntry, QueuePoll } from './model/queue'
 export {
   useCancelReservation,
   useMyReservations,
+  usePendingPurchaseCount,
   useReservation,
   useReservationHistory,
 } from './api/useReservations'
 export { getReservation } from './api/reservation'
-export { reservationStatusTag } from './model/reservation'
+export {
+  useMyOpenAlerts,
+  useOpenAlert,
+  useToggleOpenAlert,
+} from './api/useOpenAlerts'
+export { NEEDS_PURCHASE, reservationStatusTag } from './model/reservation'
 export type {
   Reservation,
   ReservationDetail,

@@ -3,7 +3,7 @@ import { useState, type ReactNode } from 'react'
 import { ChevronDown } from 'lucide-react'
 
 import { useCountdown } from '@shared/lib/useCountdown'
-import { Tag } from '@shared/ui'
+import { Skeleton, SkeletonGroup, Tag } from '@shared/ui'
 
 import * as styles from './HistoryCard.css'
 
@@ -17,9 +17,9 @@ const COLLAPSED_COUNT = 2
 export type HistoryCardProps<T> = {
   // 상태 태그. 주문은 orderStatusTag, 예약은 reservationStatusTag(@entities/preorder)에서 고른다.
   tag: StatusTag
-  /** 사용자가 직접 할 일(구매 확정 등)이 남은 카드 — 테두리로 강조한다. */
-  highlight?: boolean
-  /** 사전예약 주문이면 상태 옆에 '사전예약' 태그가 붙는다. */
+  /** 사용자가 직접 할 일(결제·구매 확정 등)이 남았거나 당첨된 카드 — 종류별 색 테두리로 강조한다. */
+  highlight?: keyof typeof styles.highlight
+  /** 사전예약 주문이면 상태 앞에 '사전예약' 태그가 붙는다. */
   preorder?: boolean
   orderDate: string
   /** 없으면 번호 칸을 그리지 않는다(내 리뷰처럼 주문 번호를 모를 때). */
@@ -56,12 +56,26 @@ export function HistoryCard<T>({
 
   return (
     <article
-      className={[styles.root, highlight && styles.rootWarning, className]
+      className={[
+        styles.root,
+        highlight && styles.highlight[highlight],
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
     >
       <header className={styles.header}>
         <span className={styles.orderDate}>{orderDate}</span>
+        {preorder && (
+          <Tag
+            color="preorder"
+            variant="subtle"
+            rounded={false}
+            className={styles.tag}
+          >
+            사전예약
+          </Tag>
+        )}
         <Tag
           color={tag.color}
           variant="subtle"
@@ -70,16 +84,6 @@ export function HistoryCard<T>({
         >
           {tag.label}
         </Tag>
-        {preorder && (
-          <Tag
-            color="secondary"
-            variant="subtle"
-            rounded={false}
-            className={styles.tag}
-          >
-            사전예약
-          </Tag>
-        )}
         {orderNumber && (
           <span className={styles.orderNumber}>
             {numberLabel} {orderNumber}
@@ -157,5 +161,16 @@ function PurchaseDueNotice({ dueAt }: { dueAt: Date }) {
         </span>
       )}
     </div>
+  )
+}
+
+// 마이페이지 내역(주문·예약·응모·리뷰)을 불러오는 동안 카드 자리를 깐다.
+export function HistoryListSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <SkeletonGroup className={styles.skeletonList}>
+      {Array.from({ length: count }, (_, i) => (
+        <Skeleton key={i} height={200} radius={20} />
+      ))}
+    </SkeletonGroup>
   )
 }

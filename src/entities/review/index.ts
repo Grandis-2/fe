@@ -1,4 +1,4 @@
-export { ReviewCard } from './ui/ReviewCard'
+export { ReviewCard, ReviewCardSkeleton } from './ui/ReviewCard'
 export type { ReviewCardProps } from './ui/ReviewCard'
 export {
   useCreateReview,

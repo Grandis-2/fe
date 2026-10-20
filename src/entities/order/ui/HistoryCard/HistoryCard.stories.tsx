@@ -63,7 +63,7 @@ export const PurchaseConfirm: Story = {
   args: {
     ...base,
     tag: { label: '구매 확정 대기', color: 'yellow' },
-    highlight: true,
+    highlight: 'payment',
     preorder: true,
     numberLabel: '예약번호',
     purchaseDueAt: dueAt,

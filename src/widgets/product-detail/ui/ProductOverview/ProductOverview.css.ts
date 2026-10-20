@@ -1,6 +1,11 @@
 import { createVar, fallbackVar, style } from '@vanilla-extract/css'
 
-import { breakpoint, color, spacing, typography } from '@shared/config/theme'
+import {
+  color,
+  spacing,
+  typography,
+  productDetailBreakpoint,
+} from '@shared/config/theme'
 import {
   fontSize,
   fontWeight,
@@ -13,8 +18,9 @@ export const layout = style({
   gridTemplateColumns: 'minmax(0, 1fr)',
   gap: spacing[24],
   '@media': {
-    [breakpoint.desktop]: {
-      gridTemplateColumns: 'minmax(0, 2fr) minmax(340px, 1fr)',
+    [productDetailBreakpoint.desktop]: {
+      // 사진·옵션 둘 다 340px 아래로 줄지 않는다 — 둘이 안 들어가는 폭은 productDetailBreakpoint가 한 칸(모바일)으로 바꾼다.
+      gridTemplateColumns: 'minmax(340px, 2fr) minmax(340px, 1fr)',
       gap: spacing[40],
     },
   },
@@ -28,7 +34,7 @@ export const stickyTop = createVar()
 export const imageColumn = style({
   width: '100%',
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       position: 'sticky',
       top: fallbackVar(stickyTop, '96px'),
       alignSelf: 'start',
@@ -57,8 +63,8 @@ export const title = style([
     fontWeight: fontWeight.bold,
     '@media': {
       // 글자 크기 토큰에 30px가 없어 웹에서만 값으로 덮는다.
-      [breakpoint.desktop]: { fontSize: '30px' },
-      [breakpoint.mobile]: { fontSize: fontSize[20] },
+      [productDetailBreakpoint.desktop]: { fontSize: '30px' },
+      [productDetailBreakpoint.mobile]: { fontSize: fontSize[20] },
     },
   },
 ])
@@ -72,7 +78,7 @@ export const modelNumber = style([
 export const quantityOption = style({
   display: 'none',
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',

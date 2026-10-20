@@ -1,4 +1,4 @@
-import { Info, Package } from 'lucide-react'
+import { Package } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import {
@@ -9,7 +9,7 @@ import {
   type PreorderStatus,
 } from '@entities/preorder'
 import { getErrorMessage } from '@shared/api/client'
-import { Chip, InlineAlert } from '@shared/ui'
+import { Chip, InlineAlert, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './PreorderList.css'
 
@@ -73,9 +73,11 @@ export function PreorderList() {
           {getErrorMessage(error, '사전예약을 불러오지 못했어요.')}
         </InlineAlert>
       ) : isPending ? (
-        <InlineAlert status="info" variant="big" icon={Info}>
-          사전예약을 불러오는 중이에요.
-        </InlineAlert>
+        <SkeletonGroup className={styles.grid}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} tone="dark" aspectRatio="3 / 4" radius={16} />
+          ))}
+        </SkeletonGroup>
       ) : visible.length === 0 ? (
         <InlineAlert status="info" variant="big" icon={Package}>
           해당하는 사전예약이 없어요
