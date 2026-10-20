@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect, fn } from 'storybook/test'
 
-import { ProductCapTable } from './ProductCapTable'
+import { ProductCapList } from './ProductCapList'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
@@ -30,7 +30,7 @@ const names = new Map([
 ])
 
 const meta = {
-  component: ProductCapTable,
+  component: ProductCapList,
   tags: ['ai-generated'],
   decorators: [withClient],
   args: {
@@ -54,19 +54,21 @@ const meta = {
     emptyMessage: '대기열에 올라온 상품이 없습니다.',
     admission: { apply: fn(), confirm: fn(), isPending: false, error: null },
   },
-} satisfies Meta<typeof ProductCapTable>
+} satisfies Meta<typeof ProductCapList>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/**
- * 상한에 닿은 상품엔 표시가 붙고, 운영값인 상품만 기본값 되돌리기가 보인다. 순서로 줄을
- * 찾는다(상품 이름이 버튼 이름에 없어서)
- */
+/** 상한에 닿은 상품엔 표시가 붙고, 운영값인 상품만 기본값 되돌리기가 보인다 */
 export const Default: Story = {
   play: async ({ canvas, args, userEvent }) => {
-    await expect(canvas.getByText('상한에 닿음')).toBeVisible()
-    const resets = canvas.getAllByRole('button', { name: '기본값' })
+    await expect(canvas.getByText(/상한에 닿음/)).toBeVisible()
+    await expect(
+      canvas.getByRole('img', {
+        name: /아이폰 18 Pro 입장 상한 150명 중 150명/,
+      }),
+    ).toBeVisible()
+    const resets = canvas.getAllByRole('button', { name: /상한 기본값으로/ })
     await expect(resets).toHaveLength(1)
     await userEvent.click(resets[0])
     await expect(args.admission.confirm).toHaveBeenCalledWith(
@@ -92,7 +94,7 @@ export const RatesMissing: Story = {
   args: { rates: undefined },
   play: async ({ canvas }) => {
     for (const button of canvas.getAllByRole('button', {
-      name: '상한 바꾸기',
+      name: /상한 바꾸기/,
     }))
       await expect(button).toBeDisabled()
   },

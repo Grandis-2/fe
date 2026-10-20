@@ -7,7 +7,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: AdmissionBar,
   tags: ['ai-generated'],
-  args: { admitting: 150, processing: 220, tone: 'success' },
+  args: { admitting: 150, processing: 220 },
 } satisfies Meta<typeof AdmissionBar>
 
 export default meta
@@ -24,7 +24,7 @@ export const Room: Story = {
   },
 }
 
-/** 바꿀 값이 선을 넘으면 빗금이 빨갛게 겹친다 */
+/** 바꿀 값이 처리선을 넘어 빨간 구간까지 빗금이 겹친다 */
 export const PreviewOver: Story = {
   args: { next: 260 },
   play: async ({ canvas }) => {
@@ -34,9 +34,9 @@ export const PreviewOver: Story = {
   },
 }
 
-/** 선 가까이까지 찼다(빠듯함) — 바꿀 값이 없으면 빗금도 없다 */
+/** 노란 구간까지 찼다(한계 근처) — 바꿀 값이 없으면 빗금도 없다 */
 export const Tight: Story = {
-  args: { admitting: 200, processing: 215, tone: 'warning' },
+  args: { admitting: 200, processing: 215 },
   play: async ({ canvas }) => {
     await expect(
       canvas.getByRole('img', {

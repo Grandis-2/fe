@@ -2,7 +2,7 @@ import {
   WAITINGROOM_DEFAULTS,
   type WaitingroomSetting,
 } from '@entities/admin-waitingroom'
-import { SegmentedTabs, Skeleton } from '@shared/ui'
+import { Skeleton } from '@shared/ui'
 
 import { formatSeconds } from '../../lib/duration'
 
@@ -61,20 +61,46 @@ export function LeaveGraceSetting({
   const extended = current > DEFAULT
 
   return (
-    <div className={styles.card}>
+    <section className={styles.card} aria-labelledby="wr-grace">
+      <div className={styles.head}>
+        <h2 id="wr-grace" className={styles.title}>
+          자리 지켜 주기
+        </h2>
+      </div>
       <span className={styles.lead}>
-        앱을 잠깐 나간 사람의 순번을 지켜 주는 시간
+        앱을 잠깐 나가도 순번을 지켜 주는 시간
       </span>
       {loading ? (
-        <Skeleton height={44} />
+        <Skeleton height={84} />
       ) : (
-        <SegmentedTabs items={items} value={String(current)} onChange={pick} />
+        <div
+          className={styles.choices}
+          role="group"
+          aria-label="자리 지켜 주는 시간"
+        >
+          {items.map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              className={
+                item.value === String(current)
+                  ? styles.choice.on
+                  : styles.choice.off
+              }
+              aria-pressed={item.value === String(current)}
+              disabled={admission.isPending}
+              onClick={() => pick(item.value)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
       )}
       <span className={extended ? styles.noteWarn : styles.note}>
         {extended
           ? '늘려 둔 만큼 정말 떠난 사람도 줄에 남아 대기 인원·예상 시간이 늘어 보여요'
           : `조회가 ${formatSeconds(current)} 끊기면 줄에서 빠지고, 다시 오면 맨 뒤에 서요`}
       </span>
-    </div>
+    </section>
   )
 }
