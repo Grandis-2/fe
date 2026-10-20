@@ -12,6 +12,8 @@ import * as styles from './OpenPreorderCard.css'
 
 /** 맨 뒤 예상 대기가 이만큼 길면 고른 사전예약의 대기 상자를 경고 색으로 칠한다 */
 const LONG_WAIT_SECONDS = 10 * 60
+/** 입장 상한 사용 칸 수의 최대값 — 상한이 크면 한 칸에 여러 명을 묶는다 */
+const MAX_CELLS = 10
 
 export type OpenPreorderCardProps = {
   items: readonly OpenPreorder[]
@@ -61,7 +63,11 @@ export function OpenPreorderCard({
       !stopped &&
       picked.credit > 0 &&
       picked.waiting / picked.credit >= LONG_WAIT_SECONDS
-    const capUse = picked.cap > 0 ? Math.min(1, picked.credit / picked.cap) : 0
+    // 1칸 = 초당 perCell명. 상한이 커도 칸은 MAX_CELLS개를 넘지 않게 묶는다.
+    const perCell = Math.max(1, Math.ceil(picked.cap / MAX_CELLS))
+    const cellCount = Math.ceil(picked.cap / perCell)
+    const cellsOn = Math.min(cellCount, Math.round(picked.credit / perCell))
+    const capFull = picked.cap > 0 && picked.credit >= picked.cap
 
     return (
       <section className={styles.root} aria-labelledby="ops-open-card">
@@ -126,21 +132,46 @@ export function OpenPreorderCard({
               {formatNumber(picked.cap)}명
             </span>
           </div>
-          <div
-            className={styles.track}
-            role="img"
-            aria-label={`입장 상한의 ${Math.round(capUse * 100)}% 사용`}
-          >
+          {picked.cap > 0 ? (
             <div
-              className={styles.fill}
-              style={{ width: `${capUse * 100}%` }}
-            />
-          </div>
-          {picked.cap > 0 && capUse >= 1 && (
-            <span className={styles.hint}>
-              상한을 다 쓰고 있어요. 대기를 줄이려면 상한을 올리세요.
-            </span>
+              className={styles.cells}
+              role="img"
+              aria-label={`입장 상한 ${formatNumber(picked.cap)}명 중 ${formatNumber(picked.credit)}명 사용`}
+            >
+              {Array.from({ length: cellCount }, (_, index) => (
+                <span
+                  key={index}
+                  className={
+                    index >= cellsOn
+                      ? styles.cell.off
+                      : capFull
+                        ? styles.cell.full
+                        : styles.cell.on
+                  }
+                />
+              ))}
+            </div>
+          ) : (
+            <div className={styles.cellsEmpty} aria-hidden="true" />
           )}
+          <span className={picked.cap > 0 ? styles.hint : styles.hintBad}>
+            {picked.cap === 0 ? (
+              '상한이 0이라 아무도 들어오지 못해요'
+            ) : capFull ? (
+              '상한을 다 쓰고 있어요. 대기를 줄이려면 상한을 올리세요.'
+            ) : (
+              <>
+                초당 <b>{formatNumber(picked.cap - picked.credit)}명</b> 더 들일
+                수 있어요
+              </>
+            )}
+            {perCell > 1 && (
+              <span className={styles.hintSub}>
+                {' '}
+                · 1칸 = 초당 {formatNumber(perCell)}명
+              </span>
+            )}
+          </span>
         </div>
 
         <div className={styles.actions}>

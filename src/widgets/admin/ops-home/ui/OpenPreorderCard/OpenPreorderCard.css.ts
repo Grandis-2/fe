@@ -106,7 +106,7 @@ export const hero = styleVariants({
 export const heroMain = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[4],
+  gap: spacing[8],
 })
 
 export const heroLabel = style([
@@ -120,7 +120,7 @@ export const heroLabelBad = style([
 ])
 
 export const heroValue = style([
-  typography.title.xlSemibold,
+  typography.title.lgSemibold,
   { fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 },
 ])
 
@@ -142,7 +142,7 @@ export const stat = style({
 })
 
 export const statLabel = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
 
@@ -156,10 +156,12 @@ export const statUnit = style([
   { marginLeft: spacing[2], color: color.text.secondary },
 ])
 
+// 카드 gap(12px)에 더해 위 대기 상자와 조금 더 띄운다
 export const block = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[6],
+  gap: spacing[12],
+  marginTop: spacing[8],
 })
 
 export const blockHead = style({
@@ -170,8 +172,8 @@ export const blockHead = style({
 })
 
 export const blockTitle = style([
-  typography.body.subSemibold,
-  { color: color.text.secondary },
+  typography.title.mdMedium,
+  { color: color.text.primary },
 ])
 
 export const blockMeta = style([
@@ -179,24 +181,40 @@ export const blockMeta = style([
   { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
 ])
 
-export const track = style({
-  height: '8px',
-  borderRadius: '999px',
-  background: color.background.subSurface,
-  overflow: 'hidden',
+// 1칸 = 초당 N명. 채운 칸이 지금 입장, 빈 칸이 더 들일 수 있는 여유.
+export const cells = style({ display: 'flex', gap: '3px' })
+
+const cellBase = style({
+  flex: '1 1 0',
+  height: '14px',
+  borderRadius: '3px',
+  transition: `background ${motion.duration.normal} ${motion.easing.default}`,
 })
 
-export const fill = style({
-  height: '100%',
-  borderRadius: '999px',
-  background: color.primary.base,
-  transition: `width ${motion.duration.normal} ${motion.easing.default}`,
+// 상한을 다 쓰면 채운 칸을 경고 색으로
+export const cell = styleVariants({
+  off: [cellBase, { background: color.background.subSurface }],
+  on: [cellBase, { background: color.primary.base }],
+  full: [cellBase, { background: color.status.warning }],
+})
+
+// 상한 0 — 칸 대신 빈 테두리
+export const cellsEmpty = style({
+  height: '14px',
+  borderRadius: '3px',
+  border: `1px dashed ${color.status.danger}`,
+  background: color.background.subtleDanger,
+  boxSizing: 'border-box',
 })
 
 export const hint = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
+
+export const hintBad = style([hint, { color: color.status.danger }])
+
+export const hintSub = style({ color: color.text.tertiary })
 
 export const actions = style({
   display: 'flex',

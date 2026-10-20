@@ -84,6 +84,19 @@ export const CapFull: Story = {
   },
 }
 
+/** 상한이 크면 칸을 묶는다 — 상한 100이면 1칸 = 초당 5명 */
+export const LargeCap: Story = {
+  args: {
+    selected: 'p-watch',
+    items: items.map((item) =>
+      item.productId === 'p-watch' ? { ...item, credit: 45, cap: 100 } : item,
+    ),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText(/1칸 = 초당 5명/)).toBeVisible()
+  },
+}
+
 /** 입장이 멈추면 맨 위 상자가 위험 상태로, 입장 상한 조절이 맨 앞 */
 export const Stopped: Story = {
   args: {
