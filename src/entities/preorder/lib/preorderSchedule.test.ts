@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { getPreorderSchedule, isModelOpen } from './preorderSchedule'
+import {
+  formatPreorderPeriod,
+  getPreorderSchedule,
+  isModelReservable,
+} from './preorderSchedule'
 
 const preorder = {
   opensAt: '2026-10-20',
@@ -74,11 +78,34 @@ describe('getPreorderSchedule', () => {
   })
 })
 
-describe('isModelOpen', () => {
+describe('isModelReservable', () => {
   it('모델 오픈 시각이 있으면 그 시각부터, 없으면 홍보 오픈부터', () => {
     const late = { opensAt: '2026-10-20', openTime: '09:30' }
-    expect(isModelOpen(preorder, late, at(20, 9, 10))).toBe(false)
-    expect(isModelOpen(preorder, late, at(20, 9, 30))).toBe(true)
-    expect(isModelOpen(preorder, {}, at(20, 9))).toBe(true)
+    expect(isModelReservable(preorder, late, at(20, 9, 10))).toBe(false)
+    expect(isModelReservable(preorder, late, at(20, 9, 30))).toBe(true)
+    expect(isModelReservable(preorder, {}, at(20, 9))).toBe(true)
+  })
+
+  it('홍보가 열려 있어도 먼저 마감한 모델은 막는다', () => {
+    const early = { closesAt: '2026-10-20', closeTime: '12:00:00' }
+    expect(isModelReservable(preorder, early, at(20, 11, 59))).toBe(true)
+    expect(isModelReservable(preorder, early, at(20, 12))).toBe(false)
+    expect(isModelReservable(preorder, {}, at(20, 12))).toBe(true)
+  })
+})
+
+describe('formatPreorderPeriod', () => {
+  it('같은 날 마감이면 날짜를 한 번만, 다른 날이면 마감 날짜도 쓴다', () => {
+    expect(formatPreorderPeriod({ ...preorder, closeTime: '23:59:59' })).toBe(
+      '2026.10.20 09:00 ~ 23:59',
+    )
+    expect(
+      formatPreorderPeriod({
+        ...preorder,
+        openTime: '14:01',
+        closesAt: '2026-10-21',
+        closeTime: '02:31:00',
+      }),
+    ).toBe('2026.10.20 14:01 ~ 2026.10.21 02:31')
   })
 })
