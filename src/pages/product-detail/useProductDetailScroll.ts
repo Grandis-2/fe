@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { FIXED_BOTTOM_BAR_VAR } from '@shared/config/theme'
+import {
+  FIXED_BOTTOM_BAR_VAR,
+  productDetailBreakpoint,
+} from '@shared/config/theme'
 import type { ProductPageTabKey } from '@widgets/product-page-tab'
 
 // 스티키 주문바/탭바가 스크롤 위치에 따라 나타나고, 탭 패널의 스크롤 위치로
@@ -45,11 +48,22 @@ export function useProductDetailScroll(productId: string, isReady: boolean) {
   }, [isReady])
 
   // 모바일 결제 바는 화면 아래에 고정돼 탭바보다 높다 — 레이아웃(MainLayout)이 푸터 밑을
-  // 이만큼 비우도록 높이를 알린다. 페이지를 떠나면 지워 다른 페이지엔 탭바 여백만 남긴다.
+  // 이만큼 비우도록 높이를 알린다. 웹 배치에선 바가 위에 붙으니 알리지 않는다.
+  // 페이지를 떠나면 지워 다른 페이지엔 탭바 여백만 남긴다.
   useEffect(() => {
     const root = document.documentElement.style
-    root.setProperty(FIXED_BOTTOM_BAR_VAR, `${orderBarHeight}px`)
+    const bottomBar = window.matchMedia(productDetailBreakpoint.mobile)
+    const sync = () => {
+      if (bottomBar.matches) {
+        root.setProperty(FIXED_BOTTOM_BAR_VAR, `${orderBarHeight}px`)
+      } else {
+        root.removeProperty(FIXED_BOTTOM_BAR_VAR)
+      }
+    }
+    sync()
+    bottomBar.addEventListener('change', sync)
     return () => {
+      bottomBar.removeEventListener('change', sync)
       root.removeProperty(FIXED_BOTTOM_BAR_VAR)
     }
   }, [orderBarHeight])

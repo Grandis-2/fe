@@ -3,12 +3,13 @@ import { useSearchParams } from 'react-router'
 
 import {
   DrawCard,
+  DrawCardSkeleton,
   getDrawPhase,
   useDraws,
   type DrawPhase,
 } from '@entities/draw'
 import { getErrorMessage } from '@shared/api/client'
-import { Chip, InlineAlert } from '@shared/ui'
+import { Chip, InlineAlert, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './DrawList.css'
 
@@ -75,9 +76,11 @@ export function DrawList() {
           {getErrorMessage(error, '럭키드로우를 불러오지 못했어요.')}
         </InlineAlert>
       ) : isPending ? (
-        <InlineAlert status="info" variant="big" icon={Info}>
-          럭키드로우를 불러오는 중이에요.
-        </InlineAlert>
+        <SkeletonGroup className={styles.grid}>
+          {[0, 1, 2, 3].map((i) => (
+            <DrawCardSkeleton key={i} />
+          ))}
+        </SkeletonGroup>
       ) : visible.length === 0 ? (
         <InlineAlert status="info" variant="big" icon={Info}>
           해당하는 럭키드로우가 없어요.

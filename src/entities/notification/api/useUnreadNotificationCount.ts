@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
 import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
+import { logWait } from '@shared/api/requestLog'
 import { delay } from '@shared/lib/delay'
 
 import {
@@ -60,10 +61,18 @@ export const useUnreadNotificationCount = (enabled: boolean) => {
         // 열리자마자 닫히는 것도 실패로 센다 — 안 그러면 재연결 간격이 늘지 않는다.
         failures += 1
         setIsLive(false)
-        await delay(
-          Math.random() *
-            Math.min(RECONNECT_MS * 2 ** failures, RECONNECT_MAX_MS),
-        )
+        const maxMs = Math.min(RECONNECT_MS * 2 ** failures, RECONNECT_MAX_MS)
+        const waitMs = Math.random() * maxMs
+        logWait({
+          sse: true,
+          waitMs,
+          baseMs: RECONNECT_MS,
+          failureCount: failures - 1,
+          retryAfterMs: 0,
+          minMs: 0,
+          maxMs,
+        })
+        await delay(waitMs)
       }
     }
     void connect()

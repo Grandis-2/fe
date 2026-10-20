@@ -94,7 +94,10 @@ export const Empty: Story = {
 export const Loading: Story = {
   args: { notifications: undefined, isPending: true },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('불러오는 중…')).toBeVisible()
+    await expect(canvas.getByRole('status')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
   },
 }
 

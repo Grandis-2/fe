@@ -83,8 +83,11 @@ const content: Record<
       '주문이 몰려 결제까지 완료되지 못했어요. 예약 순서는 확보되었으니, 24시간 안에 직접 구매를 확정해 주세요.',
     // 예약 id가 있으면 그 예약의 결제로 보낸다(아래 primaryTo).
     primary: { label: '지금 구매 확정하기', to: mypagePath('preorder-check') },
-    secondary: { label: '예약 내역 보기', to: mypagePath('preorder-check') },
-    note: '24시간 안에 구매를 확정하지 않으면 예약은 자동으로 취소돼요. 예약 내역에서도 구매를 확정할 수 있어요.',
+    secondary: {
+      label: '사전예약 내역 보기',
+      to: mypagePath('preorder-check'),
+    },
+    note: '24시간 안에 구매를 확정하지 않으면 예약은 자동으로 취소돼요. 사전예약 내역에서도 구매를 확정할 수 있어요.',
   },
   'preorder-paid': {
     tone: 'success',
@@ -199,10 +202,10 @@ export function ResultPage() {
     preorderId && (status === 'preorder' || status === 'failed')
       ? paymentPath(preorderId)
       : primary.to
-  // 사전예약 결제가 실패했으면 장바구니 대신 예약 내역으로 보낸다.
+  // 사전예약 결제가 실패했으면 장바구니 대신 사전예약 내역으로 보낸다.
   const secondaryAction =
     status === 'failed' && preorderId
-      ? { label: '예약 내역 보기', to: mypagePath('preorder-check') }
+      ? { label: '사전예약 내역 보기', to: mypagePath('preorder-check') }
       : secondary
   const primaryDisabled =
     status === 'preorder' &&

@@ -66,13 +66,13 @@ const browserRouter = createBrowserRouter([
       import('@pages/onboarding/OnboardingPage').then((m) => ({
         Component: m.OnboardingPage,
       })),
-    errorElement: <ErrorPage />,
+    errorElement: <ErrorPage placement="standalone" />,
   },
   {
     element: <RootLayout />,
     hydrateFallbackElement: <></>,
     // 헤더·레이아웃 자체가 깨지면 헤더 없이 에러 화면만 그린다.
-    errorElement: <ErrorPage />,
+    errorElement: <ErrorPage placement="standalone" />,
     children: [
       {
         element: <MainLayout />,
@@ -222,7 +222,7 @@ const browserRouter = createBrowserRouter([
           import('@pages/admin/login/AdminLoginPage').then((m) => ({
             Component: m.AdminLoginPage,
           })),
-        errorElement: <ErrorPage />,
+        errorElement: <ErrorPage placement="inset" />,
       },
       {
         element: <RequireAdmin />,
@@ -232,7 +232,7 @@ const browserRouter = createBrowserRouter([
             children: [
               {
                 // 관리자 페이지도 사이드바는 남기고 본문 자리에만 에러 화면을 그린다.
-                errorElement: <ErrorPage />,
+                errorElement: <ErrorPage placement="panel" />,
                 children: [
                   // 홈은 다른 용도로 바꿀 예정이라 비워 둔다. 메뉴 목록은 사이드바 한 곳에만 둔다.
                   {

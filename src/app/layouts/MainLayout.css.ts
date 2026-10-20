@@ -24,6 +24,10 @@ export const root = style({
     [breakpoint.mobile]: {
       paddingBottom: `max(calc(${TAB_BAR_HEIGHT} + ${TAB_BAR_OFFSET}), var(${FIXED_BOTTOM_BAR_VAR}, 0px))`,
     },
+    // 탭바는 없지만 상품 상세가 모바일 배치(744~799px)라 결제 바만 아래에 붙는 경우.
+    [breakpoint.desktop]: {
+      paddingBottom: `var(${FIXED_BOTTOM_BAR_VAR}, 0px)`,
+    },
   },
 })
 

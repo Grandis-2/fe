@@ -221,7 +221,7 @@ globalStyle(`body:has(${brand}:hover)::after`, {
 })
 
 // 내용도 헤더 콘텐츠(Header.css의 content)처럼 뷰포트 전체 너비를 쓰고 좌우 여백만
-// 맞춘다 — 로고 아래에서 타일이 시작하고, "더 알아보기"는 액션 아이콘 아래 끝에 붙는다.
+// 맞춘다 — 로고 아래에서 타일이 시작한다.
 export const menuInner = style({
   display: 'flex',
   alignItems: 'stretch',
@@ -229,16 +229,13 @@ export const menuInner = style({
   padding: '0 48px',
 })
 
-// 카테고리 / 브랜드 두 묶음을 세로로 쌓는다. 남은 폭을 차지해야 타일이 오른쪽
-// menuAside("더 알아보기")를 밀어내지 않고 줄바꿈한다.
+// 카테고리 / 브랜드 두 묶음을 세로로 쌓는다.
 export const menuGroups = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[32],
   flex: 1,
   minWidth: 0,
-  // menuInner가 stretch라 두면 aside 높이만큼 늘어난다.
-  alignSelf: 'flex-start',
 })
 
 export const menuGroup = style({
@@ -274,7 +271,7 @@ export const megaTile = style({
     .map((p) => `${p} ${motion.duration.fast} ${motion.easing.default}`)
     .join(', '),
   selectors: {
-    // aria-current: 지금 보고 있는 하위 카테고리(CategoryNav.tsx가 URL로 판단).
+    // aria-current: 지금 보고 있는 하위 카테고리·브랜드(CategoryNav.tsx가 URL로 판단).
     '&:hover, &[aria-current="page"]': {
       borderColor: color.primary.base,
       background: `color-mix(in srgb, ${color.primary.base} 8%, ${color.backgroundDark.surface})`,
@@ -325,46 +322,10 @@ export const menuTileThumbnail = style({
   objectFit: 'contain',
 })
 
-export const menuAside = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[6],
-  // 카테고리 타일은 왼쪽, "더 알아보기"는 콘텐츠 박스 오른쪽 끝으로 민다.
-  marginLeft: 'auto',
-  boxSizing: 'border-box',
-  width: '260px',
-  // 타일 쪽이 줄어들며 줄바꿈하지, 이 칸이 같이 줄어들면 안 된다.
-  flexShrink: 0,
-  paddingLeft: spacing[32],
-  borderLeft: `1px solid ${onDark(10)}`,
-})
-
-// 메가 메뉴의 소제목 — 카테고리/브랜드 묶음과 "더 알아보기"가 같이 쓴다.
+// 메가 메뉴의 소제목 — 카테고리/브랜드 묶음이 같이 쓴다.
 export const menuSectionTitle = style({
   fontSize: '13px',
   fontWeight: fontWeight.semibold,
   letterSpacing: '0.02em',
-  color: onDark(55),
-  selectors: { [`${menuAside} > &`]: { marginBottom: spacing[8] } },
-})
-
-export const menuAsideLink = style({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  height: '40px',
-  fontSize: '15px',
-  color: onDark(90),
-  textDecoration: 'none',
-  whiteSpace: 'nowrap',
-  transition: `color ${motion.duration.fast} ${motion.easing.default}`,
-  selectors: {
-    '&:hover': { color: color.primary.subtle },
-  },
-})
-
-export const menuAsideArrow = style({
-  width: '16px',
-  height: '16px',
   color: onDark(55),
 })

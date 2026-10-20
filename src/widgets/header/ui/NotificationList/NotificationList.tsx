@@ -5,6 +5,7 @@ import {
   notificationPath,
   type NotificationItem,
 } from '@entities/notification'
+import { Skeleton, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './NotificationList.css'
 
@@ -25,7 +26,17 @@ export function NotificationList({
   isError,
   onSelect,
 }: NotificationListProps) {
-  if (isPending) return <div className={styles.status}>불러오는 중…</div>
+  if (isPending)
+    return (
+      <SkeletonGroup>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className={styles.item}>
+            <span />
+            <Skeleton height={40} />
+          </div>
+        ))}
+      </SkeletonGroup>
+    )
   if (isError || !notifications)
     return <div className={styles.status}>알림을 불러오지 못했어요.</div>
   if (notifications.length === 0)

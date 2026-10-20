@@ -56,6 +56,7 @@ import {
   Container,
   Input,
   InlineAlert,
+  PageSkeleton,
   PollingNotice,
 } from '@shared/ui'
 
@@ -130,26 +131,19 @@ const formatDueAt = (iso: string) =>
     minute: '2-digit',
   })
 
-// 저장된 기본 배송지가 없을 때의 처리(배송지 등록 유도 등)가 정해지기 전까지는 배송지가
-// 있다고 가정하고 이 값으로 채운다.
-// ponytail: 목업 — 배송지 없음 처리가 정해지면 지우고 그쪽 흐름으로 바꾼다.
-const fallbackAddress: DefaultAddress = {
-  name: '홍길동',
-  phone: '01012345678',
-  postalCode: '06234',
-  line1: '서울특별시 강남구 테헤란로 123',
+// 저장된 기본 배송지가 없으면(또는 아직 불러오는 중이면) 비워 둔다 — 가짜 값을 채우면 그대로 주문될 수 있다.
+// 빈 칸은 필수 입력 검사(REQUIRED_KEYS)가 막고, 주소는 주소 찾기로 채운다.
+const emptyAddress: DefaultAddress = {
+  name: '',
+  phone: '',
+  postalCode: '',
+  line1: '',
   line2: null,
 }
 
 // email을 제외한 나머지가 결제를 막는 필수 입력이다. 우편번호는 칸이 없고 기본 주소와
 // 같이 채워지므로(저장된 배송지·주소 찾기) 따로 검사하지 않는다.
-const REQUIRED_KEYS = [
-  'name',
-  'phone',
-  'addressLabel',
-  'address',
-  'addressDetail',
-] as const
+const REQUIRED_KEYS = ['name', 'phone', 'address', 'addressDetail'] as const
 
 // 사전예약 하나(?preorderId=), 장바구니에서 고른 줄(?cart=), 상품 상세의 바로 구매(history state)를 결제한다
 // (order 명세: 주문 생성 → 결제 준비 → 토스 결제창 → 승인). 결제할 대상 없이 들어오면 홈으로 보낸다.
@@ -183,13 +177,13 @@ export function PaymentPage() {
   // 회원 프로필과 기본 배송지를 기본값으로 깐다(SignupPage의 프로필 프리필과 같은
   // 패턴). 사용자가 고친 칸이 항상 우선하므로 응답이 늦게 와도 입력 중인 값을
   // 덮어쓰지 않는다(useFormFields). 기본 주소는 직접 입력하지 않고 주소 찾기로만 바꾼다.
-  const address = savedAddress ?? fallbackAddress
+  // 수령인은 배송지에 저장된 받는 사람이 우선이고, 배송지가 없을 때만 회원 본인으로 채운다.
+  const address = savedAddress ?? emptyAddress
   const form = useFormFields(
     {
-      name: profile?.name || address.name,
-      phone: profile?.phoneNumber ?? '',
+      name: address.name || profile?.name || '',
+      phone: toPhoneDigits(address.phone || profile?.phoneNumber || ''),
       email: profile?.email ?? '',
-      addressLabel: address.label || '기본 배송지',
       postcode: address.postalCode,
       address: address.line1,
       addressDetail: address.line2 ?? '',
@@ -404,18 +398,20 @@ export function PaymentPage() {
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
         <Container>
           <div className={styles.title}>주문 / 결제</div>
-          <InlineAlert status={loadQuery.isError ? 'error' : 'info'}>
-            {loadQuery.isError
-              ? getErrorMessage(
-                  loadQuery.error,
-                  drawId
-                    ? '럭키드로우를 불러오지 못했어요.'
-                    : isCart
-                      ? '장바구니를 불러오지 못했어요.'
-                      : '예약을 불러오지 못했어요.',
-                )
-              : '주문할 상품을 불러오는 중이에요.'}
-          </InlineAlert>
+          {loadQuery.isError ? (
+            <InlineAlert status="error">
+              {getErrorMessage(
+                loadQuery.error,
+                drawId
+                  ? '럭키드로우를 불러오지 못했어요.'
+                  : isCart
+                    ? '장바구니를 불러오지 못했어요.'
+                    : '예약을 불러오지 못했어요.',
+              )}
+            </InlineAlert>
+          ) : (
+            <PageSkeleton title={false} sections={3} />
+          )}
         </Container>
       </div>
     )
@@ -488,7 +484,6 @@ export function PaymentPage() {
                 </div>
               </div>
 
-              <Input {...field('addressLabel', '배송지명')} variant="stacked" />
               <div className={styles.addressRow}>
                 <Input
                   {...field('address', '기본 주소')}

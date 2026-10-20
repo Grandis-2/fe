@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from 'react'
+import { useEffect, useEffectEvent, useRef, useState } from 'react'
 
 import {
   useEnterQueue,
@@ -7,6 +7,7 @@ import {
 } from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { isRetryableError } from '@shared/api/queryPolicy'
+import { track } from '@shared/lib/analytics'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import type { PreorderAdmission } from '../model/preorderQueueStore'
@@ -53,6 +54,8 @@ export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
   const enter = useEnterQueue()
   const [isOpen, setIsOpen] = useState(true)
   const [hasLeft, setHasLeft] = useState(false)
+  // 아래 effect는 moveIn을 셀 때마다 다시 돈다 — 입장 이벤트는 입장권마다 한 번만 남긴다.
+  const trackedTicket = useRef<string | null>(null)
   const [moveIn, setMoveIn] = useState(MOVE_NOTICE_SECONDS)
   // 진행률의 출발점(처음 본 순번)과 마지막으로 본 대기 상태 — 입장한 뒤에도 숫자가 '-'로 비지 않게 남겨 둔다.
   const [startPosition, setStartPosition] = useState<number | null>(null)
@@ -143,6 +146,10 @@ export function usePreorderQueue({ productId, onComplete, onFail }: Options) {
   // 닫혀 있으면 QueuePill이 moveIn초를 센 뒤 넘어간다(그 사이 누르면 모달이 열려 바로 넘어간다).
   useEffect(() => {
     if (!admissionTicket || hasLeft) return
+    if (trackedTicket.current !== admissionTicket) {
+      trackedTicket.current = admissionTicket
+      track('Preorder Queue Admitted', { productId })
+    }
     const complete = () =>
       handleComplete({
         productId,

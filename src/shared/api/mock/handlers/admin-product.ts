@@ -1129,10 +1129,18 @@ export const adminProductHandlers: RequestHandler[] = [
     const folders: Record<AdminImagePurpose, string> = {
       PRODUCT: 'products',
       PROMOTION: 'promotions',
+      BANNER: 'banners',
     }
-    if (purpose !== 'PRODUCT' && purpose !== 'PROMOTION') {
+    if (
+      purpose !== 'PRODUCT' &&
+      purpose !== 'PROMOTION' &&
+      purpose !== 'BANNER'
+    ) {
       return invalid([
-        { field: 'purpose', message: 'PRODUCT, PROMOTION 중 하나여야 합니다.' },
+        {
+          field: 'purpose',
+          message: 'PRODUCT, PROMOTION, BANNER 중 하나여야 합니다.',
+        },
       ])
     }
     const files = (await request.formData()).getAll('file')

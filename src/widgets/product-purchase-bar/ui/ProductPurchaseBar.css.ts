@@ -8,12 +8,13 @@ import {
   breakpoint,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,
+  productDetailBreakpoint,
 } from '@shared/config/theme'
 
 // 모바일은 화면 위쪽에 상품명이 이미 있어 바에서는 옵션 줄만 남긴다.
 export const productName = style([
   typography.title.mdSemibold,
-  { '@media': { [breakpoint.mobile]: { display: 'none' } } },
+  { '@media': { [productDetailBreakpoint.mobile]: { display: 'none' } } },
 ])
 export const productOption = style([
   typography.body.sub,
@@ -22,7 +23,7 @@ export const productOption = style([
 
 // 모바일 전용 — 상품명 없이 옵션 줄만 남으니 무엇인지 앞에 붙인다. 데스크톱은 상품명 아래라 필요 없다.
 export const optionPrefix = style({
-  '@media': { [breakpoint.desktop]: { display: 'none' } },
+  '@media': { [productDetailBreakpoint.desktop]: { display: 'none' } },
 })
 
 // 모바일: 화면 하단에 항상 고정(장바구니/결제하기가 스크롤과 무관하게 늘 보여야 함).
@@ -38,7 +39,7 @@ export const bottomBarGroup = style({
   display: 'flex',
   flexDirection: 'column',
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       top: 0,
       bottom: 'auto',
       // 안의 orderBar가 translateY로 화면 밖에 숨어 있어도 이 컨테이너의 레이아웃
@@ -52,7 +53,7 @@ export const bottomBarGroup = style({
 
 export const bottomBarGroupVisible = style({
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       pointerEvents: 'auto',
     },
   },
@@ -67,10 +68,11 @@ export const orderBar = style({
   backdropFilter: 'blur(24px) saturate(180%)',
   '@media': {
     // 모바일 탭바가 바 아래쪽에 떠 있으므로 그만큼 바 배경을 늘려 버튼이 가리지 않게 한다.
+    // 탭바는 사이트 모바일(743px 이하)에만 떠서 상품 상세 분기점이 아니라 breakpoint.mobile을 따른다.
     [breakpoint.mobile]: {
       paddingBottom: `calc(${TAB_BAR_HEIGHT} + ${TAB_BAR_OFFSET})`,
     },
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       borderBottom: `1px solid ${color.border.subtle}`,
       transform: 'translateY(-100%)',
       // 숨어 있어도 결제 버튼 그림자(primaryGlow)가 바 아래로 번져 헤더에 비친다 —
@@ -87,7 +89,7 @@ export const orderBar = style({
 // 모바일에서는 orderBar가 항상 보이므로 이 클래스가 할 일이 없다 — 데스크톱에서만 슬라이드 인.
 export const orderBarVisible = style({
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       transform: 'translateY(0)',
       visibility: 'visible',
       transition: `transform ${motion.duration.fast} ${motion.easing.default}`,
@@ -104,7 +106,7 @@ export const orderBarContent = style({
   gap: spacing[16],
   borderTop: `1px solid ${color.border.subtle}`,
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       display: 'grid',
       gridTemplateColumns: '1fr auto',
       alignItems: 'center',
@@ -121,7 +123,7 @@ export const orderBarShipmentNotice = style([
     color: color.primary.base,
     textAlign: 'center',
     '@media': {
-      [breakpoint.desktop]: {
+      [productDetailBreakpoint.desktop]: {
         display: 'none',
       },
     },
@@ -143,7 +145,7 @@ export const orderBarQuantityPrice = style({
   justifyContent: 'space-between',
   gap: spacing[8],
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       display: 'none',
     },
   },
@@ -183,7 +185,7 @@ export const breakdown = style({
   padding: `${spacing[12]} ${spacing[14]}`,
   borderRadius: '12px',
   background: color.background.surface,
-  '@media': { [breakpoint.desktop]: { display: 'none' } },
+  '@media': { [productDetailBreakpoint.desktop]: { display: 'none' } },
 })
 
 export const breakdownRow = style([
@@ -218,7 +220,7 @@ export const orderBarButtons = style({
   gap: spacing[8],
   width: '100%',
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       width: 'auto',
     },
   },
@@ -227,11 +229,11 @@ export const orderBarButtons = style({
 // 모바일은 장바구니 버튼을 뺀 나머지 가로를 전부 차지. 데스크톱은 내용 크기.
 export const orderBarCheckoutButton = style({
   flex: 1,
-  '@media': { [breakpoint.desktop]: { flex: 'initial' } },
+  '@media': { [productDetailBreakpoint.desktop]: { flex: 'initial' } },
 })
 
 // 결제 버튼 하나로 — 모바일은 "결제하기"만, 데스크톱은 앞에 금액을 붙인다.
 export const desktopPrice = style({
   display: 'none',
-  '@media': { [breakpoint.desktop]: { display: 'inline' } },
+  '@media': { [productDetailBreakpoint.desktop]: { display: 'inline' } },
 })

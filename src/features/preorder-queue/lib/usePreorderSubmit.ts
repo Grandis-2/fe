@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router'
 import { useSubmitPreorder, type PreorderAccepted } from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { mypagePath } from '@shared/config/routes'
+import { track } from '@shared/lib/analytics'
 import { showToast } from '@shared/model/toastStore'
 
 import {
@@ -23,7 +24,7 @@ const TICKET_ERRORS = [
 ]
 
 // 이미 접수된 예약이 있다 — 409 ACTIVE_PREORDER_EXISTS, 또는 응답을 못 받은 첫 접수가 커밋된 뒤
-// 옵션을 바꿔 같은 키로 다시 보낸 422 KEY_PAYLOAD_MISMATCH. 다시 눌러도 같은 오류라 예약 내역으로 보낸다.
+// 옵션을 바꿔 같은 키로 다시 보낸 422 KEY_PAYLOAD_MISMATCH. 다시 눌러도 같은 오류라 사전예약 내역으로 보낸다.
 const isAlreadyAccepted = (caught: unknown) =>
   caught instanceof ApiRequestError &&
   ['ACTIVE_PREORDER_EXISTS', 'KEY_PAYLOAD_MISMATCH'].includes(caught.error.code)
@@ -60,10 +61,12 @@ export function usePreorderSubmit() {
     ) {
       // 같은 '사전예약하기' 버튼이 입장권 유무로 갈려서 버튼 속성 대신 여기서 동작 이름을 단다(Faro가 꺼져 있으면 api가 없다).
       faro.api?.startUserAction('queue-enter')
+      track('Preorder Apply Clicked', { productId, queued: true })
       joinPreorderQueue({ productId, productName, to: returnTo })
       return
     }
     faro.api?.startUserAction('preorder-apply')
+    track('Preorder Apply Clicked', { productId, queued: false })
     submit.mutate(
       {
         productId,
@@ -91,6 +94,12 @@ export function usePreorderSubmit() {
             accepted.preorderId,
             controller.signal,
           )
+          // 재전송이면 기존 예약이 replayed로 다시 온다 — 예약 하나는 한 번만 센다.
+          track(
+            'Preorder Submitted',
+            { productId, preorderId: accepted.preorderId, registered },
+            accepted.preorderId,
+          )
           if (controller.signal.aborted) return
           setIsWaiting(false)
           onSuccess(accepted, registered)
@@ -98,7 +107,9 @@ export function usePreorderSubmit() {
         onError: (caught) => {
           if (isAlreadyAccepted(caught)) {
             clearAdmission()
-            showToast('이미 접수한 예약이 있어요. 예약 내역에서 확인해 주세요.')
+            showToast(
+              '이미 접수한 예약이 있어요. 사전예약 내역에서 확인해 주세요.',
+            )
             navigate(mypagePath('preorder-check'))
             return
           }

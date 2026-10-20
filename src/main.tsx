@@ -1,6 +1,6 @@
-// 실사용자 모니터링은 라우터가 만들어지기 전에 켜야 해서 가장 먼저 import한다.
+// 모니터링·분석 SDK를 가장 먼저 받기 시작하도록 맨 앞에 둔다.
 import './app/faro'
-import './app/amplitude'
+import './shared/lib/analytics'
 
 import { StrictMode } from 'react'
 

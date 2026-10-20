@@ -35,7 +35,7 @@ export const Default: Story = {
     await expect(
       canvas.getByRole('button', { name: '주문 내역' }),
     ).toHaveAttribute('aria-current', 'page')
-    await userEvent.click(canvas.getByRole('button', { name: '예약 내역' }))
+    await userEvent.click(canvas.getByRole('button', { name: '사전예약 내역' }))
     await expect(args.onLinkClick).toHaveBeenCalledWith('preorder-check')
   },
 }

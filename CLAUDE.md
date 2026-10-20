@@ -15,6 +15,7 @@ See [AGENTS.md](AGENTS.md) for OpenWiki agent instructions.
 ```bash
 npm run dev             # Vite dev server
 npm run build            # tsc -b && vite build
+npm run analyze          # 번들 크기 트리맵(dist/stats.html)을 브라우저로 연다
 npm run lint              # eslint .
 npm run lint:fix          # eslint . --fix
 npm run storybook         # Storybook dev server on :6006

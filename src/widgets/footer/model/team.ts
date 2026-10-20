@@ -18,24 +18,51 @@ export const REPO = {
 }
 
 // ponytail: 시안의 자리표시 값 그대로다 — 실제 팀원 이름·GitHub·담당 기능이 정해지면 여기만 바꾼다.
-const placeholder = (id: string, role: TeamRole, name: string): TeamMember => ({
+const placeholder = (
+  id: string,
+  role: TeamRole,
+  name: string,
+  handle: string,
+  features: string[],
+): TeamMember => ({
   id,
   name,
   role,
-  handle: 'username',
-  github: 'https://github.com/',
-  features: ['담당 기능 1', '담당 기능 2', '담당 기능 3'],
+  handle,
+  github: `https://github.com/${handle}`,
+  features,
 })
 
 export const TEAM: TeamMember[] = [
-  placeholder('fe0', 'Frontend', 'Frontend 1'),
-  placeholder('fe1', 'Frontend', 'Frontend 2'),
-  placeholder('be0', 'Backend', 'Backend 1'),
-  placeholder('be1', 'Backend', 'Backend 2'),
-  placeholder('be2', 'Backend', 'Backend 3'),
-  placeholder('be3', 'Backend', 'Backend 4'),
-  placeholder('be4', 'Backend', 'Backend 5'),
+  placeholder('0', 'Backend', '설승환', 'SH-Seol', [
+    '담당 기능 1',
+    '담당 기능 2',
+  ]),
+  placeholder('1', 'Backend', '김태중', 'taejoong15', [
+    '담당 기능 1',
+    '담당 기능 2',
+  ]),
+  placeholder('2', 'Frontend', '김혜진', 'llmeajinll', [
+    '담당 기능 1',
+    '담당 기능 2',
+  ]),
+  placeholder('3', 'Backend', '유희준', 'UHeeJoon', [
+    '담당 기능 1',
+    '담당 기능 2',
+  ]),
+  placeholder('4', 'Frontend', '이주현', 'hana03030', [
+    '담당 기능 1',
+    '담당 기능 2',
+  ]),
+  placeholder('5', 'Backend', '이호성', 'leehosss', [
+    '담당 기능 1',
+    '담당 기능 2',
+  ]),
+  placeholder('6', 'Backend', '허건', 'HUHGEON', [
+    '담당 기능 1',
+    '담당 기능 2',
+  ]),
 ]
 
 // 아무도 고르지 않았을 때 상세에 보여 줄 팀원.
-export const DEFAULT_MEMBER_ID = 'be0'
+export const DEFAULT_MEMBER_ID = '0'

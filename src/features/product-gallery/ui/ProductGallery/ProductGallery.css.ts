@@ -1,12 +1,17 @@
 import { style } from '@vanilla-extract/css'
 
-import { breakpoint, color, motion, spacing } from '@shared/config/theme'
+import {
+  color,
+  motion,
+  spacing,
+  productDetailBreakpoint,
+} from '@shared/config/theme'
 
 // 슬라이더 밑 미리보기 목록 — 웹 전용. 모바일은 점(pagination)과 스와이프로 충분하다.
 export const thumbnails = style({
   display: 'none',
   '@media': {
-    [breakpoint.desktop]: {
+    [productDetailBreakpoint.desktop]: {
       display: 'flex',
       justifyContent: 'center',
       gap: spacing[12],
@@ -55,7 +60,7 @@ export const imageFrame = style({
   overflow: 'hidden',
   '@media': {
     // 데스크톱은 가로로 조금 넓은 프레임 — 모바일은 정사각형 그대로.
-    [breakpoint.desktop]: { aspectRatio: '1.25' },
+    [productDetailBreakpoint.desktop]: { aspectRatio: '1.25' },
   },
 })
 

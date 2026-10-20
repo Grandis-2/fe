@@ -2,7 +2,13 @@ import { X } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { productPath } from '@shared/config/routes'
-import { Button, Checkbox, PriceText, QuantityStepper } from '@shared/ui'
+import {
+  Button,
+  Checkbox,
+  ImageWithFallback,
+  PriceText,
+  QuantityStepper,
+} from '@shared/ui'
 
 import * as styles from './ProductPaymentCard.css'
 
@@ -74,11 +80,7 @@ export function ProductPaymentCard({
             onChange={(event) => onCheckedChange?.(event.target.checked)}
           />
         )}
-        {imageSrc ? (
-          <img src={imageSrc} alt="" className={styles.thumbnail} />
-        ) : (
-          <div className={styles.thumbnail} />
-        )}
+        <ImageWithFallback src={imageSrc} className={styles.thumbnail} />
         <div
           className={[styles.body_, isCart && styles.bodyCart]
             .filter(Boolean)

@@ -1,7 +1,6 @@
-import { ChevronRight } from 'lucide-react'
 import { Link, useLocation, useSearchParams } from 'react-router'
 
-import { useBrandMenus } from '@entities/product'
+import { brandMenus } from '@entities/product'
 import { SEARCH_PATH, searchPath } from '@shared/config/routes'
 
 import {
@@ -36,7 +35,6 @@ export function CategoryNav({
   onLinkClick,
   className,
 }: CategoryNavProps) {
-  const brandMenus = useBrandMenus()
   // 검색 페이지에 있을 때만 URL의 카테고리로 브랜드 링크·타일을 활성 표시한다.
   const { pathname } = useLocation()
   const [searchParams] = useSearchParams()
@@ -45,6 +43,7 @@ export function CategoryNav({
   const activeSubCategory = isSearchPage
     ? searchParams.get('subCategory')
     : null
+  const activeBrand = isSearchPage ? searchParams.get('brand') : null
   // 오른쪽 링크는 경로로 판단한다 — /preorder/:id처럼 하위 경로도 같은 메뉴로 본다.
   // activeLink prop을 주면 그쪽이 우선한다.
   const currentLink =
@@ -123,6 +122,11 @@ export function CategoryNav({
                             key={b}
                             to={searchPath({ category: brand, brand: b })}
                             className={styles.megaTile}
+                            aria-current={
+                              brand === activeCategory && b === activeBrand
+                                ? 'page'
+                                : undefined
+                            }
                             onClick={blurActiveElement}
                           >
                             {b}
@@ -131,23 +135,6 @@ export function CategoryNav({
                       </div>
                     </div>
                   )}
-                </div>
-                <div className={styles.menuAside}>
-                  <div className={styles.menuSectionTitle}>더 알아보기</div>
-                  {menu.more.map((item) => (
-                    <Link
-                      key={item.label}
-                      to={item.to}
-                      className={styles.menuAsideLink}
-                      onClick={blurActiveElement}
-                    >
-                      {item.label}
-                      <ChevronRight
-                        className={styles.menuAsideArrow}
-                        aria-hidden="true"
-                      />
-                    </Link>
-                  ))}
                 </div>
               </div>
             </div>
