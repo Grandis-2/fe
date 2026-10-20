@@ -25,20 +25,20 @@ export function flowVerdict({
   if (braking) {
     return {
       status: 'warning',
-      message: '서버가 버거워 모든 사전예약의 입장을 자동으로 줄이는 중이에요',
+      message: '서버 부하로 입장을 줄이는 중',
     }
   }
   const subject = scope ? `${scope} — ` : ''
   if (backlogPerMinute === null) {
     return {
       status: 'info',
-      message: `${subject}처리 흐름을 재는 중이에요`,
+      message: `${subject}처리 흐름을 재는 중`,
     }
   }
   if (backlogPerMinute >= 1) {
     return {
       status: 'warning',
-      message: `${subject}처리가 밀려요 · 분당 ${Math.round(backlogPerMinute)}건씩 쌓이는 중`,
+      message: `${subject}처리 밀림 · 분당 ${Math.round(backlogPerMinute)}건씩 쌓이는 중`,
     }
   }
   return {

@@ -23,7 +23,7 @@ export const panelHeader = style({
 })
 
 export const panelTitle = style([
-  typography.title.smMedium,
+  typography.title.mdSemibold,
   { margin: 0, color: color.text.primary },
 ])
 

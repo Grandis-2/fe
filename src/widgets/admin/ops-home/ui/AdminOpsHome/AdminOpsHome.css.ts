@@ -38,7 +38,7 @@ export const section = style({
 })
 
 export const sectionTitle = style([
-  typography.title.smMedium,
+  typography.title.lgSemibold,
   { margin: 0, color: color.text.primary },
 ])
 
@@ -93,6 +93,12 @@ export const allClear = style([
 ])
 
 export const caption = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
+
+export const panelHeaderGap = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[8],
+})

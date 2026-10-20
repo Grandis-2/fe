@@ -21,7 +21,11 @@ export const root = styleVariants({
     {
       borderColor: color.border.default,
       background: color.background.base,
-      selectors: { '&:hover': { borderColor: color.primary.subtle } },
+      selectors: {
+        '&:hover': {
+          backgroundColor: color.background.subSurface,
+        },
+      },
     },
   ],
   // 처리 안 하면 결제로 못 넘어가는 숫자 — 바탕까지 칠해 줄에서 먼저 보이게 한다.
@@ -37,7 +41,7 @@ export const root = styleVariants({
 })
 
 export const head = style([
-  typography.body.subSemibold,
+  typography.title.mdMedium,
   {
     display: 'flex',
     justifyContent: 'space-between',
@@ -46,10 +50,7 @@ export const head = style([
   },
 ])
 
-export const linkLabel = style([
-  typography.body.caption,
-  { whiteSpace: 'nowrap' },
-])
+export const linkLabel = style([typography.body.sub, { whiteSpace: 'nowrap' }])
 
 export const value = style([
   typography.title.xlSemibold,
@@ -62,6 +63,6 @@ export const unit = style([
 ])
 
 export const description = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])

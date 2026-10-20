@@ -19,6 +19,7 @@ import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
 import {
   ADMIN_ORDERS_PATH,
+  ADMIN_RECONCILIATION_PATH,
   ADMIN_WAITINGROOM_PATH,
   adminReservationsPath,
 } from '@shared/config/routes'
@@ -374,6 +375,17 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
               : failures === 0 && '재처리할 예약이 없어요'
           }
         />
+        {/* ponytail: 불일치 건수를 주는 API가 없어 자리만 둔다(값은 '—'). 대조는 예약 전체와
+            외부 원장 전체를 받아야 해서 5초 갱신에 넣지 않는다 — 백엔드에 stats 응답의 대조
+            요약을 요청해 뒀고, 생기면 value에 그 숫자를 넣는다. */}
+        <OpsKpiCard
+          label="외부 예약 대조"
+          to={ADMIN_RECONCILIATION_PATH}
+          linkLabel="대조하기"
+          value={null}
+          unit="건"
+          description="불일치 건수는 집계 준비 중 · 눌러서 대조"
+        />
         <OpsKpiCard
           label="배송 대기 주문"
           to={`${ADMIN_ORDERS_PATH}?status=PREPARING_ITEMS`}
@@ -396,17 +408,20 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       <div className={styles.mainRow}>
         <section className={styles.flowPanel} aria-labelledby="ops-flow">
           <div className={styles.panelHeader}>
-            <h2 id="ops-flow" className={styles.panelTitle}>
-              접수·외부 등록 처리 속도
+            <div className={styles.panelHeaderGap}>
+              <h2 id="ops-flow" className={styles.panelTitle}>
+                접수·외부 등록 처리 속도
+              </h2>
               <span className={styles.caption}> 건/초 · 화면을 연 뒤부터</span>
-            </h2>
+            </div>
             <Tag
               variant="subtle"
               color={verdictColor[verdict.status]}
-              rounded={false}
+              rounded={true}
               className={styles.verdict}
+              size="medium"
             >
-              <VerdictIcon size={14} aria-hidden="true" />
+              <VerdictIcon size={16} aria-hidden="true" />
               {verdict.message}
             </Tag>
           </div>
