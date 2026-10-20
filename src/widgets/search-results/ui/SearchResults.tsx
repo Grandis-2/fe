@@ -1,4 +1,4 @@
-import { Fragment, useState, type MouseEvent } from 'react'
+import { Fragment, useState } from 'react'
 
 import { ChevronRight, SearchX, TriangleAlert } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
@@ -9,10 +9,9 @@ import {
   ProductCardSkeleton,
   useCategories,
   useProducts,
-  type ProductListItem,
 } from '@entities/product'
 import { useRequireLogin } from '@features/login'
-import { joinPreorderQueue } from '@features/preorder-queue'
+import { enterPreorderOnClick } from '@features/preorder-queue'
 import { useProductCardSelection } from '@features/product-card-select'
 import {
   ONGOING_PREORDERS,
@@ -23,7 +22,7 @@ import {
   useRecentSearches,
   useSearchFilters,
 } from '@features/search'
-import { productPath, searchResultsPath } from '@shared/config/routes'
+import { searchResultsPath } from '@shared/config/routes'
 import { InlineAlert, Navigator } from '@shared/ui'
 
 import * as styles from './SearchResults.css'
@@ -66,23 +65,8 @@ export function SearchResults() {
   )
 
   const { getCardProps } = useProductCardSelection()
-  const requireLogin = useRequireLogin()
 
-  // 예약 중인 사전예약 상품은 상세로 바로 가지 않고 대기열을 거친다(사전예약 상세의 모델 선택과 같다).
-  // 오픈 전·마감은 줄을 설 수 없어 그냥 상세로 간다.
-  const enterPreorder =
-    ({ productId, title, preorderStatus }: ProductListItem) =>
-    (event: MouseEvent) => {
-      if (preorderStatus !== 'OPEN') return
-      event.preventDefault()
-      requireLogin(() =>
-        joinPreorderQueue({
-          productId,
-          productName: title,
-          to: productPath(productId),
-        }),
-      )
-    }
+  const enterPreorder = enterPreorderOnClick(useRequireLogin())
 
   const cards = isUnknownCategory ? [] : productList.data?.items
   const total = isUnknownCategory ? 0 : productList.data?.total
