@@ -38,7 +38,7 @@ export const section = style({
 })
 
 export const sectionTitle = style([
-  typography.title.lgSemibold,
+  typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },
 ])
 

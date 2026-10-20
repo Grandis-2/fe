@@ -502,7 +502,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           draws={draws.data}
           isPending={draws.isPending}
           now={now}
-          stuckLookbackMs={STUCK_LOOKBACK_MS}
+          recentMs={STUCK_LOOKBACK_MS}
         />
 
         <OrderSummaryCard
