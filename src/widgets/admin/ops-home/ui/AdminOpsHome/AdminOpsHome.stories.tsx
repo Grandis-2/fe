@@ -192,10 +192,7 @@ export const Busy: Story = {
     const cards = canvas.getAllByRole('article')
     await expect(cards).toHaveLength(4)
     await expect(within(cards[0]).getAllByText('긴급')[0]).toBeVisible()
-    await expect(cards[0]).toHaveTextContent('외부 등록 실패 860건')
-    await expect(cards[0]).toHaveTextContent(
-      '아이폰 18 Pro 845 · 갤럭시 S27 15',
-    )
+    await expect(cards[0]).toHaveTextContent('결제 막힘 · 외부 등록 실패 860건')
     await expect(
       within(cards[0]).getByRole('link', { name: '재처리' }),
     ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
@@ -245,7 +242,7 @@ export const Slow: Story = {
   play: async ({ canvas }) => {
     const [card] = canvas.getAllByRole('article')
     await expect(card).toHaveTextContent('외부 등록')
-    await expect(card).toHaveTextContent('120건 대기')
+    await expect(card).toHaveTextContent('120건')
     await expect(
       within(card).getByRole('link', { name: '속도 조절' }),
     ).toHaveAttribute('href', '/admin/waitingroom')

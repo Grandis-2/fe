@@ -53,7 +53,7 @@ type Story = StoryObj<typeof meta>
 export const Stuck: Story = {
   decorators: [withProgress(null)],
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/추첨 결과 안 나옴/)).toBeVisible()
+    await expect(canvas.getByText(/추첨 결과 지연/)).toBeVisible()
     await expect(canvas.getByRole('link', { name: '회차 확인' })).toBeVisible()
   },
 }

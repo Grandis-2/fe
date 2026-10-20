@@ -1,11 +1,14 @@
 import { Link } from 'react-router'
 
-import { useAdminDrawProgress, type AdminDraw } from '@entities/admin-draw'
+import {
+  drawStageLabel,
+  drawStageOf,
+  useAdminDrawProgress,
+  type AdminDraw,
+} from '@entities/admin-draw'
 import { ADMIN_DRAWS_PATH, adminDrawPath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Skeleton } from '@shared/ui'
-
-import { DrawProgressSteps } from '../DrawProgressSteps'
+import { Skeleton, Tag } from '@shared/ui'
 
 import * as styles from './DrawSummaryCard.css'
 
@@ -23,7 +26,7 @@ type DrawRowProps = {
   now: number
 }
 
-/** 회차 한 줄 — 이름·당첨·응모 인원과 진행 단계 막대 */
+/** 회차 하나를 작은 카드로 — 왼쪽에 이름과 응모·당첨 한 줄, 오른쪽에 지금 단계 꼬리표 */
 function DrawRow({ draw, now }: DrawRowProps) {
   const { data: progress } = useAdminDrawProgress(
     draw.drawId,
@@ -35,19 +38,22 @@ function DrawRow({ draw, now }: DrawRowProps) {
       progress.authorizingEntries +
       progress.awaitingEntries
     : null
+  const stage = drawStageOf(draw, progress, now)
 
   return (
     <li className={styles.row}>
-      <div className={styles.rowHead}>
+      <div className={styles.info}>
         <Link to={adminDrawPath(draw.drawId)} className={styles.name}>
           {draw.title}
         </Link>
         <span className={styles.figure}>
-          당첨 <b>{formatNumber(draw.winnerCount)}</b>명 · 응모{' '}
-          <b>{entered === null ? '—' : formatNumber(entered)}</b>명
+          응모 {entered === null ? '—' : formatNumber(entered)}명 · 당첨{' '}
+          {formatNumber(draw.winnerCount)}명
         </span>
       </div>
-      <DrawProgressSteps draw={draw} progress={progress} now={now} />
+      <Tag variant="subtle" size="medium" rounded={true} color="primary">
+        {drawStageLabel[stage]}
+      </Tag>
     </li>
   )
 }

@@ -218,49 +218,36 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         t.syncJobs.REGISTER.DEAD_LETTER > 0 && {
           key: 'register',
           level: 'urgent',
-          title: `외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건`,
-          description: ['결제로 못 넘어가요', failuresByPreorder]
-            .filter(Boolean)
-            .join(' · '),
+          title: `결제 막힘 · 외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건`,
           // 재처리는 예약 현황에서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
           action: { label: '재처리', to: reprocessPath },
         },
         t.deadLetters.waiting > 0 && {
           key: 'dead-letters',
           level: 'check',
-          title: `상태 반영 실패 ${formatNumber(t.deadLetters.waiting)}건`,
           // 원인은 메시지 원문을 봐야 알 수 있어 개발팀이 맡는다 — 운영 대시보드는 관리자 화면이라
-          // 개발자 기능(이벤트 DLQ)으로 보내지 않고, 알릴 때 쓸 건수·시각만 보인다.
-          description: [
-            '결제·만료가 예약에 반영 안 됨',
-            ageOf(t.deadLetters.oldestWaitingAt, now) &&
-              `가장 오래된 건 ${ageOf(t.deadLetters.oldestWaitingAt, now)}`,
-          ]
-            .filter(Boolean)
-            .join(' · '),
+          // 개발자 기능(이벤트 DLQ)으로 보내지 않는다.
+          title: `결제·만료 반영 실패 ${formatNumber(t.deadLetters.waiting)}건`,
         },
         slowAge !== null && {
           key: 'slow',
           level: 'check',
-          title: `외부 등록 ${slowAge} 밀림 · ${formatNumber(waitingRegister)}건 대기`,
-          description: '계속 늘면 입장 속도를 줄이세요',
+          title: `외부 등록 ${formatNumber(waitingRegister)}건 ${slowAge} 밀림`,
           action: { label: '속도 조절', to: ADMIN_WAITINGROOM_PATH },
         },
         ...longWaits.map((product): Task => ({
           key: `wait-${product.productId}`,
           level: 'check',
-          title: `${nameOf(product.productId)} 대기 ${waitEstimate(product.waiting, product.credit)} · ${formatNumber(product.waiting)}명`,
-          description:
+          title:
             product.credit <= 0
-              ? '입장이 멈춰 있어요'
-              : `초당 ${formatNumber(product.credit)}명 입장 중 · 외부 등록이 여유 있으면 올리세요`,
+              ? `${nameOf(product.productId)} 입장 멈춤 · ${formatNumber(product.waiting)}명 대기`
+              : `${nameOf(product.productId)} 대기 ${waitEstimate(product.waiting, product.credit)}`,
           action: { label: '속도 조절', to: ADMIN_WAITINGROOM_PATH },
         })),
         t.paymentOverdue > 0 && {
           key: 'overdue',
           level: 'todo',
           title: `결제 기한 지난 예약 ${formatNumber(t.paymentOverdue)}건`,
-          description: '곧 자동 만료돼요',
           action: { label: '예약 보기', to: adminReservationsPath('all') },
         },
       ]
@@ -457,7 +444,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             <h2 id="ops-todo" className={styles.panelTitle}>
               지금 처리할 일
             </h2>
-            <span className={styles.caption}>급한 순</span>
           </div>
           {stats.isPending ? (
             <SkeletonGroup className={styles.taskSkeleton}>

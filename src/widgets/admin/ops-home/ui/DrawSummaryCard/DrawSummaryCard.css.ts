@@ -23,6 +23,9 @@ export const list = style({
   flex: 1,
   minHeight: 0,
   overflowY: 'auto',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[10],
   margin: 0,
   padding: 0,
   listStyle: 'none',
@@ -30,24 +33,25 @@ export const list = style({
   selectors: { '&::-webkit-scrollbar': { display: 'none' } },
 })
 
+// 회차 하나가 작은 카드 — 줄로 나누지 않고 카드끼리 간격을 둔다. 왼쪽에 이름과 인원,
+// 오른쪽 끝에 지금 단계 꼬리표를 세로 가운데로 맞춘다.
 export const row = style({
   display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[12],
-  padding: `${spacing[14]} 0`,
-  borderBottom: `1px solid ${color.border.subtle}`,
-  selectors: {
-    '&:first-child': { paddingTop: 0 },
-    '&:last-child': { borderBottom: 'none', paddingBottom: 0 },
-  },
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[16],
+  padding: `${spacing[14]} ${spacing[16]}`,
+  borderRadius: '10px',
+  border: `1px solid ${color.border.subtle}`,
+  background: color.background.base,
 })
 
-export const rowHead = style({
+// 왼쪽 — 이름 아래에 응모·당첨 한 줄
+export const info = style({
+  minWidth: 0,
   display: 'flex',
-  flexWrap: 'wrap',
-  justifyContent: 'space-between',
-  alignItems: 'baseline',
-  gap: spacing[8],
+  flexDirection: 'column',
+  gap: spacing[4],
 })
 
 export const name = style([

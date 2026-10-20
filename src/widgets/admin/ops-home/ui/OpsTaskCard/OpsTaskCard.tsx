@@ -24,8 +24,8 @@ const levelColor: Record<OpsTaskLevel, 'red' | 'yellow' | 'primary'> = {
 
 export type OpsTaskCardProps = {
   level: OpsTaskLevel
+  /** 무엇이 몇 건인지 한 줄로 — 설명 줄 없이 이것만 보고 알 수 있게 쓴다 */
   title: ReactNode
-  description: ReactNode
   /**
    * 이 일을 처리하는 화면. 없으면 운영자가 화면에서 풀 수 없는 일이라 '개발팀 문의'를
    * 보인다 — 운영 홈에서 개발자 기능 화면으로 보내지 않는다.
@@ -39,13 +39,7 @@ export type OpsTaskCardProps = {
 }
 
 /** 운영 대시보드 '지금 처리할 일' 한 줄 — 무엇이 몇 건인지와 처리할 화면으로 가는 버튼 */
-export function OpsTaskCard({
-  level,
-  title,
-  description,
-  action,
-  scope,
-}: OpsTaskCardProps) {
+export function OpsTaskCard({ level, title, action, scope }: OpsTaskCardProps) {
   const actionClass = [
     styles.action,
     level === 'urgent' ? styles.actionPrimary : styles.actionOutline,
@@ -55,18 +49,15 @@ export function OpsTaskCard({
       <Tag
         variant="subtle"
         size="medium"
-        rounded={false}
+        rounded={true}
         color={levelColor[level]}
         widthOptions={Object.values(levelLabel)}
       >
         {levelLabel[level]}
       </Tag>
-      <div className={styles.text}>
-        <div className={styles.title}>
-          {title}
-          {scope && <span className={styles.scope}>{scope}</span>}
-        </div>
-        <div className={styles.description}>{description}</div>
+      <div className={styles.title}>
+        {title}
+        {scope && <span className={styles.scope}>{scope}</span>}
       </div>
       {action ? (
         <Link to={action.to} className={actionClass}>

@@ -89,17 +89,17 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * 응모 중(마감 임박 순) 다음에 최근 마감한 회차 — 결제 확인·결과 반영·지연이 단계 막대로
- * 보인다. 카드 높이를 넘는 회차는 목록 안에서 스크롤한다.
+ * 응모 중(마감 임박 순) 다음에 최근 마감한 회차 — 지금 단계(결제 확인 대기·결과 반영
+ * 완료·결과 지연)가 꼬리표로 보인다. 카드 높이를 넘는 회차는 목록 안에서 스크롤한다.
  */
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(
       canvas.getByRole('heading', { name: '진행 중인 럭키드로우' }),
     ).toBeVisible()
-    await expect(canvas.getByText('14건 확인 중')).toBeInTheDocument()
-    await expect(canvas.getByText('당첨 300명')).toBeInTheDocument()
-    await expect(canvas.getByText(/^지연 · /)).toBeInTheDocument()
+    await expect(canvas.getByText('결제 확인 대기')).toBeInTheDocument()
+    await expect(canvas.getByText('결과 반영 완료')).toBeInTheDocument()
+    await expect(canvas.getByText('결과 지연')).toBeInTheDocument()
   },
 }
 

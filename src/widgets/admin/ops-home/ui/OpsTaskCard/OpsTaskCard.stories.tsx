@@ -13,7 +13,6 @@ const meta = {
   args: {
     level: 'urgent',
     title: '외부 등록 실패 860건 — 결제 단계로 못 넘어가고 있어요',
-    description: '원인 HTTP_503 820건 · TIMEOUT 40건',
     action: { label: '예약 보기', to: '/admin/reservations' },
   },
 } satisfies Meta<typeof OpsTaskCard>
@@ -35,7 +34,6 @@ export const Todo: Story = {
   args: {
     level: 'todo',
     title: '배송 처리 대기 주문 37건',
-    description: '상품 준비 중 24건 · 출고 대기 13건',
     action: { label: '주문 처리', to: '/admin/orders' },
   },
   play: async ({ canvas }) => {
@@ -48,7 +46,6 @@ export const Handoff: Story = {
   args: {
     level: 'check',
     title: '상태 반영 실패 12건',
-    description: '결제 완료·기한 만료 같은 처리가 예약에 반영되지 않았어요',
     action: undefined,
   },
   play: async ({ canvas }) => {

@@ -55,7 +55,7 @@ export function OpenPreorderTable({
     <section className={styles.root} aria-labelledby="ops-open-table">
       <div className={styles.header}>
         <h2 id="ops-open-table" className={styles.title}>
-          진행 중인 사전예약
+          사전예약 대기열 상황
         </h2>
         <Link to={ADMIN_WAITINGROOM_PATH} className={styles.link}>
           대기열 관리
