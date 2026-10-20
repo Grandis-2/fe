@@ -45,7 +45,7 @@ export const head = style([
   {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'baseline',
+    alignItems: 'center',
     gap: spacing[8],
   },
 ])

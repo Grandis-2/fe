@@ -89,7 +89,7 @@ export function DrawSummaryCard({
     <section className={styles.root} aria-labelledby="ops-draws">
       <div className={styles.header}>
         <h2 id="ops-draws" className={styles.title}>
-          럭키드로우 · 진행 {open.length}회차
+          진행 중인 럭키드로우
         </h2>
         <Link to={ADMIN_DRAWS_PATH} className={styles.link}>
           럭키드로우 관리

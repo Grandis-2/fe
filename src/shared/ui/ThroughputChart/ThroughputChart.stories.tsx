@@ -61,7 +61,7 @@ export const Large: Story = {
   args: { size: 'large' },
 }
 
-/** 표본이 하나뿐이면 선 대신 안내 */
+/** 표본이 하나뿐이면 그래프와 같은 높이의 회색 막대를 깔고, 안내는 스크린리더로 읽는다 */
 export const NotEnough: Story = {
   args: {
     times: [START],
@@ -73,6 +73,10 @@ export const NotEnough: Story = {
   play: async ({ canvas }) => {
     await expect(
       canvas.getByText('표본이 두 개 이상 모이면 그래프를 그립니다.'),
-    ).toBeVisible()
+    ).toBeInTheDocument()
+    await expect(canvas.getByRole('figure')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
   },
 }

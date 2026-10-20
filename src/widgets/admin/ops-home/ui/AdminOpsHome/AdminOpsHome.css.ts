@@ -41,8 +41,9 @@ export const urgentBar = style({
 
 export const section = style({
   display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[10],
+  flexDirection: 'row',
+  gap: spacing[20],
+  alignItems: 'center',
 })
 
 export const sectionTitle = style([

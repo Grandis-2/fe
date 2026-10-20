@@ -29,7 +29,7 @@ export function OpsKpiCard({
   linkLabel,
   value,
   unit,
-  description,
+  // description,
   tone = 'default',
   loading = false,
 }: OpsKpiCardProps) {
@@ -54,7 +54,7 @@ export function OpsKpiCard({
           {value !== null && <span className={styles.unit}>{unit}</span>}
         </span>
       )}
-      {description && <span className={styles.description}>{description}</span>}
+      {/* {description && <span className={styles.description}>{description}</span>} */}
     </Link>
   )
 }

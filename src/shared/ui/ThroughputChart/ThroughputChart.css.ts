@@ -28,15 +28,6 @@ export const root = style({
   margin: 0,
 })
 
-export const empty = styleVariants(text, (t) => [
-  t.sub,
-  {
-    padding: spacing[24],
-    textAlign: 'center',
-    color: color.text.tertiary,
-  },
-])
-
 export const legend = style({
   display: 'flex',
   flexWrap: 'wrap',
@@ -95,6 +86,14 @@ export const plot = style({
   height: '200px',
   cursor: 'crosshair',
   touchAction: 'pan-y',
+})
+
+// 표본이 모이기 전 그림 자리 — 그래프와 같은 높이를 차지한다.
+export const plotPlaceholder = style({
+  display: 'flex',
+  flex: 1,
+  minWidth: 0,
+  height: '200px',
 })
 
 export const svg = style({

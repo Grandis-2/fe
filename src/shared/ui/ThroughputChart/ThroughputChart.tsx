@@ -2,6 +2,8 @@ import { useState, type PointerEvent } from 'react'
 
 import { srOnly } from '@shared/config/theme'
 
+import { Skeleton } from '../Skeleton'
+
 import * as styles from './ThroughputChart.css'
 
 export type ThroughputSeries = {
@@ -84,11 +86,33 @@ export function ThroughputChart({
 }: ThroughputChartProps) {
   const [hover, setHover] = useState<number | null>(null)
 
+  // 표본이 모이기 전엔 그래프와 같은 틀(범례·축·그림 높이)에 회색 막대를 깐다 — 카드
+  // 높이가 그대로라 그래프가 그려질 때 아래 내용이 밀리지 않는다.
   if (times.length < 2) {
     return (
-      <div className={styles.empty[size]}>
-        표본이 두 개 이상 모이면 그래프를 그립니다.
-      </div>
+      <figure className={styles.root} aria-busy="true">
+        <ul className={styles.legend} aria-hidden="true">
+          {series.map((item, index) => (
+            <li key={item.label} className={styles.legendItem[size]}>
+              <span className={swatchClass[index]} />
+              {item.label}
+              <Skeleton width={48} height="1em" />
+            </li>
+          ))}
+        </ul>
+        <div className={styles.plotRow} aria-hidden="true">
+          <div className={styles.yAxis[size]} />
+          <div className={styles.plotPlaceholder}>
+            <Skeleton height="100%" radius={8} />
+          </div>
+        </div>
+        <div className={styles.xAxis[size]} aria-hidden="true">
+          <span>&nbsp;</span>
+        </div>
+        <span className={srOnly}>
+          표본이 두 개 이상 모이면 그래프를 그립니다.
+        </span>
+      </figure>
     )
   }
 

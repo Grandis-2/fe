@@ -17,7 +17,7 @@ export const panel = style({
 export const panelHeader = style({
   display: 'flex',
   flexWrap: 'wrap',
-  alignItems: 'start',
+  alignItems: 'center',
   justifyContent: 'space-between',
   gap: spacing[8],
 })
