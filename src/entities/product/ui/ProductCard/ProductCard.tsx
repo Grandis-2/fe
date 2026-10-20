@@ -5,6 +5,7 @@ import { Link } from 'react-router'
 import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatNumber } from '@shared/lib/formatNumber'
+import { usePreloadedSrcs } from '@shared/lib/usePreloadedSrcs'
 import { ImageWithFallback, Slider, Tag } from '@shared/ui'
 
 import { ProductColorSwatches } from '../ProductColorSwatches'
@@ -42,7 +43,7 @@ export function ProductCard({
 }: ProductCardProps) {
   const {
     productId,
-    imageSrcs,
+    imageSrcs: nextImageSrcs,
     imageAlt = '',
     name,
     modelNumber,
@@ -54,6 +55,8 @@ export function ProductCard({
     saleMode,
   } = product
   const isPreorder = saleMode === 'PREORDER'
+  // 색을 바꿔도 새 사진을 다 받기 전까진 이전 사진을 둔다.
+  const imageSrcs = usePreloadedSrcs(nextImageSrcs)
   // 지금 보고 있는 슬라이드. 색을 고르면 0으로 돌려 첫 장부터 보인다 — 슬라이더(Swiper)는 그대로 두고
   // 사진만 바꾼다. key로 다시 마운트하면 색을 고를 때마다 Swiper를 새로 만들어 버벅인다.
   const [slideIndex, setSlideIndex] = useState(0)
