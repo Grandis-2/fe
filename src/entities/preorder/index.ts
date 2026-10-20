@@ -23,6 +23,7 @@ export { getReservation } from './api/reservation'
 export {
   useMyOpenAlerts,
   useOpenAlert,
+  useSubscribedOpenAlerts,
   useToggleOpenAlert,
 } from './api/useOpenAlerts'
 export { NEEDS_PURCHASE, reservationStatusTag } from './model/reservation'

@@ -74,7 +74,7 @@ export function AdminPromotionsPage() {
 
   // 버튼은 그대로 두고 결과만 토스트로 알린다 — 여러 번 눌러도 매번 같은 피드백을 준다.
   // 클립보드는 권한·비보안 컨텍스트(http)에서 거절될 수 있어 실패도 알린다.
-  // ponytail: 고객 홍보 페이지가 아직 없어 예전 목업과 같은 주소를 만든다 — 페이지가 생기면 그 경로로 바꾼다.
+  // 고객 사전예약 상세(/preorder/{promotionId})가 곧 홍보 페이지다.
   const copyLink = (promotion: AdminPromotion) =>
     void copyText(`${location.origin}${preorderPath(promotion.promotionId)}`)
       .then(() => showToast('링크가 복사되었습니다!'))

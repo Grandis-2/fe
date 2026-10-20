@@ -7,8 +7,8 @@ import { useSession } from '@entities/auth'
 import {
   formatPreorderDate,
   getPreorderSchedule,
-  useOpenAlert,
   usePreorder,
+  useSubscribedOpenAlerts,
   useToggleOpenAlert,
   type Preorder,
   type PreorderModel,
@@ -50,13 +50,13 @@ const CTA_LABEL: Record<PreorderStatus, string> = {
 }
 
 export type PreorderDetailProps = {
-  /** 사전예약 상품 id(라우트 파라미터) */
+  /** 사전예약 홍보 id(라우트 파라미터) */
   preorderId: string
 }
 
-// 사전예약 상품을 불러와 프로모션 상세를 그린다. 사전예약 상품이 아니거나 회차가 없으면 찾을 수 없다고 한다.
+// 사전예약 홍보를 불러와 상세를 그린다. 없거나 기간 밖이면 서버가 404를 준다.
 export function PreorderDetail({ preorderId }: PreorderDetailProps) {
-  const { data: preorder, isPending, error } = usePreorder(preorderId)
+  const { data: preorder, error } = usePreorder(preorderId)
 
   if (error) {
     return (
@@ -65,10 +65,8 @@ export function PreorderDetail({ preorderId }: PreorderDetailProps) {
       </InlineAlert>
     )
   }
-  if (isPending) return <PageSkeleton tone="dark" />
-  if (!preorder) {
-    return <InlineAlert status="error">사전예약을 찾을 수 없어요.</InlineAlert>
-  }
+  // 실패는 위에서 걸렀으니 데이터가 없으면 아직 받는 중이다.
+  if (!preorder) return <PageSkeleton tone="dark" />
   return <PreorderPromotion preorder={preorder} />
 }
 
@@ -87,16 +85,12 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
   )
   const [isSheetOpen, setIsSheetOpen] = useState(false)
   const { isLoggedIn } = useSession()
-  // 백엔드는 상품 하나가 모델 하나라(toPreorder) 상품 id 하나만 묻는다.
-  const { data: isSubscribed = false } = useOpenAlert(
-    preorder.id,
+  // 오픈 알림은 모델(상품)마다 따로 신청한다.
+  const subscribedIds = useSubscribedOpenAlerts(
+    preorder.models.map((model) => model.productId),
     isLoggedIn && status === 'soon',
   )
   const toggleOpenAlert = useToggleOpenAlert()
-  const subscribedIds = useMemo(
-    () => new Set(isSubscribed ? [preorder.id] : []),
-    [isSubscribed, preorder.id],
-  )
 
   // 매 렌더 새 Date면 useCountdown의 interval이 매초 다시 걸린다 — 날짜가 바뀔 때만 만든다.
   const openAt = useMemo(
@@ -142,7 +136,7 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
             <span className={styles.dday[status]}>{ddayLabel}</span>
           )}
         </div>
-        <h1 className={styles.title}>{preorder.title} 사전예약 프로모션</h1>
+        <h1 className={styles.title}>{preorder.title}</h1>
         <div className={styles.period}>
           {period}
           {status === 'soon' &&
@@ -162,6 +156,20 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
       </div>
 
       <div className={styles.sections}>
+        {preorder.detailImageSrcs.length > 0 && (
+          <div className={styles.detailImages}>
+            {preorder.detailImageSrcs.map((src, index) => (
+              <img
+                key={src}
+                src={src}
+                alt={`${preorder.title} 안내 ${index + 1}`}
+                loading="lazy"
+                className={styles.detailImage}
+              />
+            ))}
+          </div>
+        )}
+
         {/* 혜택 API가 없어 지금은 비어 온다 — 비면 섹션째 뺀다. */}
         {preorder.benefits.length > 0 && (
           <section className={styles.section}>

@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
 import type { OpenAlert } from '@shared/api/types'
@@ -27,6 +32,25 @@ export const useOpenAlert = (productId: string, enabled = true) =>
     enabled: enabled && productId !== '',
     select: ({ subscribed }) => subscribed,
     ...queryPolicy.live,
+  })
+
+// 여러 모델의 신청 여부를 한 번에 — 신청한 모델 id만 모은다. 모델마다 useOpenAlert와 같은
+// 캐시를 써서 토글의 낙관적 반영이 바로 보인다.
+export const useSubscribedOpenAlerts = (productIds: string[], enabled = true) =>
+  useQueries({
+    queries: productIds.map((productId) => ({
+      queryKey: openAlertKeys.detail(productId),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        getOpenAlert(productId, signal),
+      enabled,
+      ...queryPolicy.live,
+    })),
+    combine: (results) =>
+      new Set(
+        results.flatMap((result, index) =>
+          result.data?.subscribed ? [productIds[index]] : [],
+        ),
+      ),
   })
 
 // 토글이라 낙관적으로 반영하고 실패하면 되돌린다. 빠르게 여러 번 눌러도 신청·해제가 보낸 순서대로

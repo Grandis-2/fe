@@ -12,10 +12,10 @@ export const usePreorders = () =>
     ...queryPolicy.catalog,
   })
 
-export const usePreorder = (productId: string) =>
+export const usePreorder = (promotionId: string) =>
   useQuery({
-    queryKey: ['preorders', 'promotions', productId] as const,
-    queryFn: ({ signal }) => getPreorder(productId, signal),
-    enabled: productId !== '',
+    queryKey: ['preorders', 'promotions', promotionId] as const,
+    queryFn: ({ signal }) => getPreorder(promotionId, signal),
+    enabled: promotionId !== '',
     ...queryPolicy.catalog,
   })

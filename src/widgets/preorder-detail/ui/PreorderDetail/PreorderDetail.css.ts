@@ -399,3 +399,18 @@ export const cta = style({
     '&:hover:not(:disabled)': { background: primaryGradient },
   },
 })
+
+// 관리자가 올린 상세 사진(혜택·기간 안내)을 틈 없이 세로로 이어 붙인다.
+export const detailImages = style({
+  display: 'flex',
+  flexDirection: 'column',
+  borderRadius: '20px',
+  overflow: 'hidden',
+  '@media': { [mobile]: { borderRadius: '16px' } },
+})
+
+export const detailImage = style({
+  display: 'block',
+  width: '100%',
+  height: 'auto',
+})
