@@ -3,7 +3,6 @@ import { useId, useState, type RefObject } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 
 import {
-  PREORDER_BENEFIT_RATE,
   PriceDisplay,
   QuantityControl,
   type ProductPurchase,
@@ -31,6 +30,7 @@ export type ProductPurchaseBarProps = {
     | 'basePrice'
     | 'selectedValues'
     | 'benefitAmount'
+    | 'discountLabel'
   >
   // 사전예약 출고 안내. 배송 차수를 아직 못 받았으면 비워 둔다.
   shipmentLabel?: string
@@ -62,6 +62,7 @@ export function ProductPurchaseBar({
     basePrice,
     selectedValues,
     benefitAmount,
+    discountLabel,
   },
   shipmentLabel,
   onCheckout,
@@ -128,9 +129,9 @@ export function ProductPurchaseBar({
                   <dt>수량</dt>
                   <dd>{quantity}개</dd>
                 </div>
-                {isPreorder && (
+                {discountLabel && (
                   <div className={styles.breakdownRow}>
-                    <dt>사전예약 혜택 ({PREORDER_BENEFIT_RATE * 100}%)</dt>
+                    <dt>{discountLabel}</dt>
                     <dd className={styles.discount}>
                       -{formatWon(benefitAmount)}
                     </dd>

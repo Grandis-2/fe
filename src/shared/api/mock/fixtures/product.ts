@@ -97,6 +97,8 @@ type Seed = {
   paused?: boolean
   // 따로 고르는 보증 금액. 없으면 보증을 팔지 않는다.
   warranty?: number
+  // 할인율(%). 없으면 사전예약 10, 일반 상품 0.
+  discountRate?: number
   // 사전예약을 오늘부터 며칠 뒤 오전 9시(KST)에 열어 그날 23:59에 닫는다 — 오픈 전 화면·오픈 알림 확인용.
   opensInDays?: number
 }
@@ -129,6 +131,7 @@ function buildProduct(
     paused,
     warranty,
     opensInDays,
+    discountRate = saleMode === 'PREORDER' ? 10 : 0,
   }: Seed,
 ): ProductDetailView {
   const isPreorder = saleMode === 'PREORDER'
@@ -138,11 +141,14 @@ function buildProduct(
         color: normalize(color.label),
         storage: normalize(storage.label),
       }
+      const listPrice = basePrice + storage.surcharge
       return {
         variantId: mockUuid(3, n * 100 + c * 10 + s),
         sku: `NV${n}-${color.slug}-${storage.label}`,
         title: `${color.label} / ${storage.label}`,
-        price: basePrice + storage.surcharge,
+        // 서버처럼 정가에 할인율을 걸고 100원 단위로 버린다.
+        price: Math.floor((listPrice * (100 - discountRate)) / 10000) * 100,
+        listPrice,
         filterAttributes: selections,
         selections,
         status: paused ? 'PAUSED' : 'ACTIVE',
@@ -171,6 +177,7 @@ function buildProduct(
     status: 'ACTIVE',
     visible: true,
     basePrice,
+    discountRate,
     warranty: { offered: warranty !== undefined, surcharge: warranty ?? 0 },
     sellable,
     soldOut: !isPreorder && sellable && stock <= 0,
@@ -228,6 +235,8 @@ const seeds: Seed[] = [
       basePrice: price + i * 50000,
       saleMode,
       warranty,
+      // 일반 상품 줄마다 첫 상품은 할인 중 — 할인율 표시 확인용.
+      ...(saleMode !== 'PREORDER' && i === 0 && { discountRate: 15 }),
     }))
   }),
   // 목록의 품절 · 판매 중지 표시를 확인하는 용도.

@@ -3,12 +3,16 @@ import { useState } from 'react'
 import type { Product, ProductOption } from '@entities/product'
 import { formatWon } from '@shared/lib/formatNumber'
 
-import { PREORDER_BENEFIT_RATE } from '../model/benefit'
-
 // 고르는 데 필요한 상세 응답 칸만 받는다.
 export type PurchaseProduct = Pick<
   Product,
-  'productId' | 'status' | 'saleMode' | 'basePrice' | 'optionAxes' | 'variants'
+  | 'productId'
+  | 'status'
+  | 'saleMode'
+  | 'basePrice'
+  | 'discountRate'
+  | 'optionAxes'
+  | 'variants'
 >
 
 // 옵션 값 하나 — 라벨과 고르면 기본가에 더해지는 추가금액. 가격 내역(구매 바)에 쓴다.
@@ -103,18 +107,26 @@ export function useProductPurchase(product: PurchaseProduct | undefined) {
     .join(' · ')
 
   const basePrice = product?.basePrice ?? 0
-  // 옵션 가격이 최종가다(기본가 + 값별 추가금). 판매하지 않는 조합이면 계산값으로 보여만 준다.
-  const unitPrice =
-    variant?.price ??
+  const discountRate = product?.discountRate ?? 0
+  // 옵션의 정가(listPrice)와 할인가(price)를 서버가 준다. 판매하지 않는 조합이면 서버와 같은 규칙
+  // (기본가 + 값별 추가금, 할인은 100원 단위 버림)으로 계산해 보여만 준다.
+  const listUnitPrice =
+    variant?.listPrice ??
     basePrice +
       selectedValues.reduce((sum, value) => sum + (value.extraPrice ?? 0), 0)
-  const totalPrice = unitPrice * quantity
-  // 할인은 사전예약에만 붙는다 — 일반 상품은 정가 그대로 결제한다.
-  const benefitAmount = isPreorder
-    ? Math.round(totalPrice * PREORDER_BENEFIT_RATE)
-    : 0
-  // 할인까지 뺀, 실제로 결제할 금액.
-  const payAmount = totalPrice - benefitAmount
+  const unitPrice =
+    variant?.price ??
+    Math.floor((listUnitPrice * (100 - discountRate)) / 10000) * 100
+  // 정가 합계 — 가격 내역은 정가에서 할인을 빼 보여 준다.
+  const totalPrice = listUnitPrice * quantity
+  // 실제로 결제할 금액.
+  const payAmount = unitPrice * quantity
+  const benefitAmount = totalPrice - payAmount
+  // 할인 줄 이름 — 사전예약이면 사전예약 혜택, 일반 상품이면 할인율. 할인이 없으면 줄을 안 그린다.
+  const discountLabel =
+    discountRate > 0
+      ? `${isPreorder ? '사전예약 혜택' : '할인율'} (${discountRate}%)`
+      : null
   const priceLabel = formatWon(payAmount)
 
   return {
@@ -134,6 +146,7 @@ export function useProductPurchase(product: PurchaseProduct | undefined) {
     unitPrice,
     totalPrice,
     benefitAmount,
+    discountLabel,
     payAmount,
     priceLabel,
   }

@@ -264,6 +264,8 @@ export function toPreviewProduct(
             .filter(Boolean)
             .join(' / ') || value.name,
         price,
+        // 폼엔 할인율이 없다 — 정가 그대로 보인다.
+        listPrice: price,
         filterAttributes: {},
         selections: Object.fromEntries(
           Object.entries(combo.selections).map(([axisKey, name]) => [
@@ -292,6 +294,7 @@ export function toPreviewProduct(
     description: null,
     visible: true,
     basePrice: value.basePrice,
+    discountRate: 0,
     warranty: { offered: false, surcharge: 0 },
     campaign: value.isPreorder
       ? {
