@@ -42,7 +42,7 @@ export const Open: Story = {
       draw.title,
     )
     await expect(canvas.getByText('결제 완료(추첨 대상)')).toBeVisible()
-    await expect(canvas.getByText('10초마다 자동 갱신')).toBeVisible()
+    await expect(canvas.getByText(/10초마다 자동 갱신/)).toBeVisible()
   },
 }
 
