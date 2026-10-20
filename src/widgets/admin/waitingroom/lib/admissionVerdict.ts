@@ -43,7 +43,7 @@ export function admissionVerdict({
     return { tone: 'danger', message: '처리보다 빨라요 · 낮추세요' }
   }
   if (backlog > 0 && admitting >= processing * 0.7) {
-    return { tone: 'warning', message: '빠듯해요 · 유지하세요' }
+    return { tone: 'warning', message: '한계에 가까워요 · 더 올리면 밀려요' }
   }
   if (receiving < 1) {
     return { tone: 'muted', message: '판단할 만큼 들어오는 양이 없어요' }
