@@ -38,3 +38,11 @@ export const Default: Story = {
     ),
   },
 }
+
+// 이름이 길어도 자르지 않는다 — 모델끼리 이름 끝으로 갈린다.
+export const LongName: Story = {
+  args: {
+    ...Default.args,
+    model: { name: 'iPhone 18 Pro Max 1TB 코스믹 오렌지', price: 2990000 },
+  },
+}
