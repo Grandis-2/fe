@@ -173,7 +173,7 @@ export function ProductOverview({
             <ActionButton
               fullWidth
               className={isPreorder ? styles.checkoutFull : undefined}
-              // 사전예약은 입장권 유무로 대기열·신청이 갈려 usePreorderSubmit이 이름을 단다.
+              // 사전예약은 입장권 유무로 신청·안내가 갈려 usePreorderSubmit이 이름을 단다.
               data-faro-user-action-name={
                 isPreorder ? undefined : 'order-buy-now'
               }
