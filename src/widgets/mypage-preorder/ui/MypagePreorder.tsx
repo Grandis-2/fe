@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
-import { Bell, CalendarClock } from 'lucide-react'
-import { useNavigate } from 'react-router'
+import { Bell, CalendarClock, History } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router'
 
 import { HistoryCard, HistoryListSkeleton } from '@entities/order'
 import {
@@ -29,6 +29,7 @@ import { showToast } from '@shared/model/toastStore'
 import {
   ActionButton,
   Button,
+  Chip,
   InlineAlert,
   Skeleton,
   SkeletonGroup,
@@ -52,6 +53,14 @@ const CANCELABLE: Reservation['status'][] = [
 ]
 
 const STEP_LABELS = ['예약 접수', '구매 확정', '발송'] as const
+
+// 목록을 한 번에 하나만 보인다. 고른 탭은 URL(?view=)에 남는다 — ?state=는 마이페이지 메뉴가 쓴다.
+const VIEWS = [
+  { value: 'progress', label: '진행 중' },
+  { value: 'ended', label: '지난 예약' },
+  { value: 'alerts', label: '알림 신청' },
+] as const
+type View = (typeof VIEWS)[number]['value']
 
 // 'YYYY-MM-DD'를 시간대 변환 없이 'M.D'로 자른다.
 const monthDay = (date: string) => {
@@ -94,6 +103,19 @@ const formatOpensAt = (opensAt: Date) => {
 
 export function MypagePreorder() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const view: View =
+    VIEWS.find(({ value }) => value === searchParams.get('view'))?.value ??
+    'progress'
+  const selectView = (next: View) =>
+    setSearchParams(
+      (prev) => {
+        prev.set('view', next)
+        return prev
+      },
+      // 탭을 오갈 때마다 기록이 쌓이면 뒤로 가기로 페이지를 못 벗어난다.
+      { replace: true },
+    )
   const { data, isPending, isError, error } = useMyReservations()
   const cancel = useCancelReservation()
   const openAlerts = useMyOpenAlerts()
@@ -113,6 +135,12 @@ export function MypagePreorder() {
         }
       }),
     [openAlerts.data],
+  )
+
+  // 모달에서 취소를 누른 예약 — 목록이 '취소 처리 중'으로 다시 오기 전에도 구매 확정을 막는다.
+  // 취소가 실패하면 빼서 다시 결제할 수 있게 한다.
+  const [cancelingIds, setCancelingIds] = useState<ReadonlySet<string>>(
+    () => new Set(),
   )
 
   const reservations = useMemo(() => data?.items ?? [], [data])
@@ -139,6 +167,15 @@ export function MypagePreorder() {
       !IN_PROGRESS.includes(displayStatus),
   )
 
+  // 탭 옆 건수 — 받기 전엔 비운다. 끈 알림도 다시 켤 수 있게 목록엔 남기고, 건수는 켜진 것만 센다.
+  const countOf: Record<View, number | undefined> = {
+    progress: data && inProgress.length,
+    ended: data && ended.length,
+    alerts:
+      openAlerts.data &&
+      alertRows.filter((alert) => !alertOffIds.has(alert.productId)).length,
+  }
+
   // 토글이라 먼저 바꿔 보이고, 실패하면 되돌린다.
   const toggleAlert = (productId: string) => {
     const subscribed = alertOffIds.has(productId)
@@ -163,12 +200,16 @@ export function MypagePreorder() {
       cancelLabel: '닫기',
       onConfirm: () => {
         closeModal()
+        const { preorderId } = reservation
+        setCancelingIds((prev) => toggleInSet(prev, [preorderId], true))
         cancel.mutate(
-          { preorderId: reservation.preorderId },
+          { preorderId },
           {
             onSuccess: () => showToast('예약 취소를 요청했어요.'),
-            onError: (caught) =>
-              showToast(getErrorMessage(caught, '예약을 취소하지 못했어요.')),
+            onError: (caught) => {
+              setCancelingIds((prev) => toggleInSet(prev, [preorderId], false))
+              showToast(getErrorMessage(caught, '예약을 취소하지 못했어요.'))
+            },
           },
         )
       },
@@ -179,7 +220,7 @@ export function MypagePreorder() {
       <Button
         variant="subtle"
         color="cancel"
-        disabled={cancel.isPending}
+        disabled={cancel.isPending || cancelingIds.has(reservation.preorderId)}
         onClick={() => confirmCancel(reservation)}
       >
         예약 취소
@@ -206,6 +247,7 @@ export function MypagePreorder() {
             {cancelButton(reservation)}
             <ActionButton
               size="md"
+              disabled={cancelingIds.has(reservation.preorderId)}
               onClick={() => navigate(paymentPath(reservation.preorderId))}
             >
               구매 확정하기
@@ -258,13 +300,7 @@ export function MypagePreorder() {
     <div className={styles.root}>
       <h1 className={styles.title}>사전예약 내역</h1>
 
-      {isError && (
-        <div className={styles.sectionTitle}>
-          {getErrorMessage(error, '사전예약 내역을 불러오지 못했어요.')}
-        </div>
-      )}
-      {isPending && <HistoryListSkeleton />}
-
+      {/* 결제 기한이 있어 놓치면 예약이 취소된다 — 어느 탭을 보고 있어도 위에 둔다. */}
       {needsPayment.length > 0 && (
         <section className={styles.section}>
           <h2 className={styles.sectionTitle}>구매 확정이 필요해요</h2>
@@ -272,100 +308,103 @@ export function MypagePreorder() {
         </section>
       )}
 
-      {data && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            진행 중인 예약{' '}
-            <span className={styles.count}>{inProgress.length}건</span>
-          </h2>
-          {inProgress.length === 0 ? (
+      <div className={styles.section}>
+        <div
+          className={styles.tabs}
+          role="group"
+          aria-label="사전예약 내역 보기"
+        >
+          {VIEWS.map(({ value, label }) => (
+            <Chip
+              key={value}
+              selected={value === view}
+              count={countOf[value]}
+              onClick={() => selectView(value)}
+            >
+              {label}
+            </Chip>
+          ))}
+        </div>
+
+        {view === 'alerts' ? (
+          <>
+            {openAlerts.isError && (
+              <InlineAlert status="error">
+                {getErrorMessage(
+                  openAlerts.error,
+                  '알림 신청 내역을 불러오지 못했어요.',
+                )}
+              </InlineAlert>
+            )}
+            {openAlerts.isPending && (
+              <SkeletonGroup className={styles.alerts}>
+                {[0, 1].map((key) => (
+                  <div key={key} className={styles.alert}>
+                    <Skeleton height={40} />
+                  </div>
+                ))}
+              </SkeletonGroup>
+            )}
+            {openAlerts.data?.length === 0 && (
+              <InlineAlert status="info" variant="big" icon={Bell}>
+                알림 신청한 사전예약이 없어요
+              </InlineAlert>
+            )}
+            {alertRows.length > 0 && (
+              <ul className={styles.alerts}>
+                {alertRows.map((alert) => {
+                  const on = !alertOffIds.has(alert.productId)
+                  return (
+                    <li key={alert.productId} className={styles.alert}>
+                      {/* D-day 태그 폭을 가장 긴 값에 맞춰 제목 줄이 세로로 가지런하다. */}
+                      <Tag
+                        color="primary"
+                        variant="subtle"
+                        size="medium"
+                        rounded={false}
+                        widthOptions={alertRows.map(({ dDay }) => dDay)}
+                      >
+                        {alert.dDay}
+                      </Tag>
+                      <div className={styles.alertTexts}>
+                        <span className={styles.alertTitle}>{alert.title}</span>
+                        <span className={styles.alertDate}>
+                          {alert.opensAtLabel} 오픈
+                        </span>
+                      </div>
+                      <OpenAlertToggle
+                        subscribed={on}
+                        name={alert.title}
+                        onToggle={() => toggleAlert(alert.productId)}
+                      />
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </>
+        ) : isError ? (
+          <InlineAlert status="error">
+            {getErrorMessage(error, '사전예약 내역을 불러오지 못했어요.')}
+          </InlineAlert>
+        ) : isPending ? (
+          <HistoryListSkeleton />
+        ) : view === 'progress' ? (
+          inProgress.length === 0 ? (
             <InlineAlert status="info" variant="big" icon={CalendarClock}>
               진행 중인 예약이 없어요
             </InlineAlert>
           ) : (
             inProgress.map((reservation) => card(reservation))
-          )}
-        </section>
-      )}
-
-      {ended.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>
-            지난 예약 <span className={styles.count}>{ended.length}건</span>
-          </h2>
-          {ended.map((reservation) => card(reservation))}
-        </section>
-      )}
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>
-          알림 신청한 사전예약{' '}
-          {/* 끈 알림도 다시 켤 수 있게 목록엔 남기고, 건수는 켜진 것만 센다. */}
-          {openAlerts.data && (
-            <span className={styles.count}>
-              {
-                alertRows.filter((alert) => !alertOffIds.has(alert.productId))
-                  .length
-              }
-              건
-            </span>
-          )}
-        </h2>
-        {openAlerts.isError && (
-          <InlineAlert status="error">
-            {getErrorMessage(
-              openAlerts.error,
-              '알림 신청 내역을 불러오지 못했어요.',
-            )}
+          )
+        ) : ended.length === 0 ? (
+          <InlineAlert status="info" variant="big" icon={History}>
+            지난 예약이 없어요
           </InlineAlert>
+        ) : (
+          ended.map((reservation) => card(reservation))
         )}
-        {openAlerts.isPending && (
-          <SkeletonGroup className={styles.alerts}>
-            {[0, 1].map((key) => (
-              <div key={key} className={styles.alert}>
-                <Skeleton height={40} />
-              </div>
-            ))}
-          </SkeletonGroup>
-        )}
-        {openAlerts.data?.length === 0 && (
-          <InlineAlert status="info" variant="big" icon={Bell}>
-            알림 신청한 사전예약이 없어요
-          </InlineAlert>
-        )}
-        {alertRows.length > 0 && (
-          <ul className={styles.alerts}>
-            {alertRows.map((alert) => {
-              const on = !alertOffIds.has(alert.productId)
-              return (
-                <li key={alert.productId} className={styles.alert}>
-                  {/* D-day 태그 폭을 가장 긴 값에 맞춰 제목 줄이 세로로 가지런하다. */}
-                  <Tag
-                    color="primary"
-                    variant="subtle"
-                    size="medium"
-                    rounded={false}
-                    widthOptions={alertRows.map(({ dDay }) => dDay)}
-                  >
-                    {alert.dDay}
-                  </Tag>
-                  <div className={styles.alertTexts}>
-                    <span className={styles.alertTitle}>{alert.title}</span>
-                    <span className={styles.alertDate}>
-                      {alert.opensAtLabel} 오픈
-                    </span>
-                  </div>
-                  <OpenAlertToggle
-                    subscribed={on}
-                    name={alert.title}
-                    onToggle={() => toggleAlert(alert.productId)}
-                  />
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+      </div>
     </div>
   )
 }

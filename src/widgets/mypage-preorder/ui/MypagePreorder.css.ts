@@ -41,9 +41,12 @@ export const sectionTitle = style([
   { margin: 0, fontSize: '17px', fontWeight: fontWeight.bold },
 ])
 
-export const count = style({
-  marginLeft: spacing[4],
-  color: color.primary.subtle,
+// 사전예약 목록(PreorderList)의 상태 칩과 같은 모양.
+export const tabs = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[8],
+  marginBottom: spacing[8],
 })
 
 // 버튼 둘을 반씩 나눈다.

@@ -63,6 +63,17 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { enabled: false } },
 })
 queryClient.setQueryData(['reservations', 'mine'], reservations)
+queryClient.setQueryData(
+  ['openAlerts', 'mine'],
+  [
+    {
+      productId: '20000000-0000-4000-8000-000000000016',
+      title: 'iPhone Duo',
+      opensAt: hoursFromNow(30),
+      closesAt: hoursFromNow(44),
+    },
+  ],
+)
 
 const meta = {
   component: MypagePreorder,
@@ -93,10 +104,23 @@ export const Default: Story = {
     await expect(countdowns).toHaveLength(2)
     await expect(countdowns[0].textContent).not.toBe(countdowns[1].textContent)
 
-    // 오픈 알림은 눌러서 끄고 켤 수 있다.
+    // 구매 확정할 예약은 탭 위에 고정되고, 탭은 한 목록만 보인다 — 처음엔 진행 중.
+    await expect(canvas.getByText('맥북 프로 14')).toBeVisible()
+    await expect(canvas.queryByText('iPhone Duo')).toBeNull()
+
+    // 오픈 알림은 알림 신청 탭에서 눌러서 끄고 켤 수 있다.
+    await userEvent.click(canvas.getByRole('button', { name: /^알림 신청/ }))
+    await expect(canvas.queryByText('맥북 프로 14')).toBeNull()
+    await expect(
+      canvas.getAllByRole('button', { name: '구매 확정하기' }),
+    ).toHaveLength(2)
     const [firstAlert] = canvas.getAllByRole('button', { name: /오픈 알림$/ })
     await expect(firstAlert).toHaveAttribute('aria-pressed', 'true')
     await userEvent.click(firstAlert)
     await expect(firstAlert).toHaveAttribute('aria-pressed', 'false')
+
+    // 다시 진행 중으로 돌아올 수 있다.
+    await userEvent.click(canvas.getByRole('button', { name: /^진행 중/ }))
+    await expect(await canvas.findByText('맥북 프로 14')).toBeVisible()
   },
 }
