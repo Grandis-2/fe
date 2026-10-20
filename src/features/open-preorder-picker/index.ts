@@ -1,7 +1,5 @@
-export { OpenPreorderStrip } from './ui/OpenPreorderStrip'
-export type {
-  OpenPreorder,
-  OpenPreorderStripProps,
-} from './ui/OpenPreorderStrip'
+export { OpenPreorderPicker } from './ui/OpenPreorderPicker'
+export type { OpenPreorderPickerProps } from './ui/OpenPreorderPicker'
 export { useOpenPreorders } from './lib/useOpenPreorders'
-export { SLOW_AFTER_MS } from './lib/preorderHealth'
+export type { OpenPreorder } from './lib/useOpenPreorders'
+export { SLOW_AFTER_MS, untilClose } from './lib/preorderHealth'

@@ -21,6 +21,19 @@ export const useAdminProducts = (params: AdminProductListParams = {}) =>
     ...queryPolicy.live,
   })
 
+/** 조건에 맞는 상품 수 — 한 건만 받고 전체 건수(total)를 쓴다 */
+export const useAdminProductCount = (
+  params: Omit<AdminProductListParams, 'page' | 'size'>,
+) => {
+  const countParams = { ...params, size: 1 }
+  return useQuery({
+    queryKey: adminProductsKey(countParams),
+    queryFn: ({ signal }) => getAdminProducts(countParams, signal),
+    select: (paged) => paged.total,
+    ...queryPolicy.live,
+  })
+}
+
 /**
  * 럭키 드로우 증정품 후보 전체. 고를 수 있는 것만 오므로 쪽을 끝까지 이어 받는다 — 일반
  * 목록의 첫 100개에서 거르면 조건에 안 맞는 상품이 자리를 차지해 고를 것이 빠진다.

@@ -2,6 +2,7 @@
 // 4xx 재시도 차단을 건너뛰는 길이 열린다.
 export {
   useAdminOrder,
+  useAdminOrderCounts,
   useAdminOrders,
   useAdvanceShipping,
 } from './api/useAdminOrders'

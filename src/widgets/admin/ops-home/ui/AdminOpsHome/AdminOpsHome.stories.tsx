@@ -109,6 +109,38 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
     ['admin', 'orders', 'list', { status: 'READY_TO_SHIP', size: 1 }],
     orderPage(0),
   )
+  queryClient.setQueryData(
+    ['admin', 'orders', 'list', { status: 'AWAITING_CONFIRMATION', size: 1 }],
+    orderPage(52),
+  )
+  queryClient.setQueryData(
+    ['admin', 'orders', 'list', { status: 'SHIPPED', size: 1 }],
+    orderPage(210),
+  )
+  queryClient.setQueryData(
+    ['admin', 'products', 'list', { status: 'ACTIVE', size: 1 }],
+    orderPage(42),
+  )
+  queryClient.setQueryData(
+    ['admin', 'products', 'list', { status: 'PAUSED', size: 1 }],
+    orderPage(3),
+  )
+  queryClient.setQueryData(
+    ['admin', 'orders', 'list', { status: 'AWAITING_CONFIRMATION', size: 1 }],
+    orderPage(52),
+  )
+  queryClient.setQueryData(
+    ['admin', 'orders', 'list', { status: 'SHIPPED', size: 1 }],
+    orderPage(210),
+  )
+  queryClient.setQueryData(
+    ['admin', 'products', 'list', { status: 'ACTIVE', size: 1 }],
+    orderPage(42),
+  )
+  queryClient.setQueryData(
+    ['admin', 'products', 'list', { status: 'PAUSED', size: 1 }],
+    orderPage(3),
+  )
   return (
     <QueryClientProvider client={queryClient}>
       <Story />
@@ -131,9 +163,9 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 /**
- * 처음엔 전체 — 할 일은 모든 사전예약을 합친 값이고, 실패는 어느 사전예약에서 났는지 나눠
- * 적는다. 사전예약을 고르면 할 일이 그 기준으로 바뀌고, 상품으로 거를 수 없는 배송은
- * '전체 기준'이라고 밝힌다. 실패는 예약 현황의 실패 탭에서 재처리한다.
+ * 처음엔 전체 — 숫자·할 일은 모든 사전예약을 합친 값이고, 실패는 어느 사전예약에서 났는지
+ * 나눠 적는다. 사전예약을 고르면 그 기준으로 바뀌고, 상품으로 거를 수 없는 배송은 '전체
+ * 기준'이라고 밝힌다. 결제를 막는 실패는 맨 위에도 한 번 더 보인다.
  */
 export const Busy: Story = {
   decorators: [
@@ -145,44 +177,49 @@ export const Busy: Story = {
     }),
   ],
   play: async ({ canvas, userEvent }) => {
-    const strip = within(
-      canvas.getByRole('group', { name: '진행 중인 사전예약' }),
-    )
-    await expect(strip.getByRole('button', { name: /전체/ })).toHaveAttribute(
+    const picker = within(canvas.getByRole('group', { name: '볼 사전예약' }))
+    await expect(picker.getByRole('button', { name: '전체' })).toHaveAttribute(
       'aria-pressed',
       'true',
     )
-    // 대기열은 띠의 대기·예상 대기로만 보인다(따로 된 섹션 없음).
+    // 사전예약별 대기·입장·실패는 표로 본다.
     await expect(
-      strip.getByRole('button', { name: /갤럭시 S27/ }),
-    ).toHaveTextContent('대기 3,410명 · 예상 약 3분')
+      canvas.getByRole('rowheader', { name: /갤럭시 S27/ }),
+    ).toBeVisible()
+    await expect(
+      canvas.getByRole('link', { name: /외부 등록 실패/ }),
+    ).toHaveTextContent('860건')
 
+    // 긴급은 맨 위에 한 번, 할 일 목록에 한 번 — 실패 · 반영 실패 · 기한 지남
     const cards = canvas.getAllByRole('article')
     await expect(cards).toHaveLength(4)
     await expect(within(cards[0]).getAllByText('긴급')[0]).toBeVisible()
     await expect(cards[0]).toHaveTextContent('외부 등록 실패 860건')
     await expect(cards[0]).toHaveTextContent(
-      '아이폰 18 Pro 845건 · 갤럭시 S27 15건',
+      '아이폰 18 Pro 845 · 갤럭시 S27 15',
     )
     await expect(
-      within(cards[0]).getByRole('link', { name: '재처리하기' }),
+      within(cards[0]).getByRole('link', { name: '재처리' }),
     ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
-    await expect(cards[3]).not.toHaveTextContent('전체 기준')
+    await expect(
+      canvas.getByRole('link', { name: /배송 대기 주문/ }),
+    ).not.toHaveTextContent('전체 기준')
 
-    // 사전예약을 고르면 할 일이 그 사전예약으로 바뀐다.
-    const iphone = strip.getByRole('button', { name: /아이폰 18 Pro/ })
-    await expect(iphone).toHaveTextContent('재처리 필요 845건')
-    await userEvent.click(iphone)
+    // 사전예약을 고르면 숫자·할 일이 그 사전예약으로 바뀐다.
+    await userEvent.click(picker.getByRole('button', { name: '아이폰 18 Pro' }))
     const scoped = canvas.getAllByRole('article')
     await expect(scoped[0]).toHaveTextContent('외부 등록 실패 845건')
     // 고른 사전예약 그대로 예약 현황을 연다.
     await expect(
-      within(scoped[0]).getByRole('link', { name: '재처리하기' }),
+      within(scoped[0]).getByRole('link', { name: '재처리' }),
     ).toHaveAttribute(
       'href',
       '/admin/reservations?status=REPROCESS_NEEDED&product=p-iphone',
     )
-    await expect(scoped.at(-1)).toHaveTextContent('전체 기준')
+    // 주문은 상품으로 거를 수 없어 '전체 기준'이라고 밝힌다.
+    await expect(
+      canvas.getByRole('link', { name: /배송 대기 주문/ }),
+    ).toHaveTextContent('전체 기준')
   },
 }
 
@@ -199,7 +236,6 @@ export const AllClear: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.queryAllByRole('article')).toHaveLength(0)
     await expect(canvas.getByText(/밀린 일이 없어요/)).toBeVisible()
-    await expect(canvas.queryByRole('table')).toBeNull()
   },
 }
 
@@ -220,7 +256,7 @@ export const Slow: Story = {
     await expect(card).toHaveTextContent('외부 등록')
     await expect(card).toHaveTextContent('120건 대기')
     await expect(
-      within(card).getByRole('link', { name: '입장 속도 조절' }),
+      within(card).getByRole('link', { name: '속도 조절' }),
     ).toHaveAttribute('href', '/admin/waitingroom')
   },
 }
@@ -241,7 +277,7 @@ export const LongWait: Story = {
     await expect(cards).toHaveLength(1)
     await expect(cards[0]).toHaveTextContent('갤럭시 S27 대기 약 11분')
     await expect(
-      within(cards[0]).getByRole('link', { name: '입장 속도 조절' }),
+      within(cards[0]).getByRole('link', { name: '속도 조절' }),
     ).toHaveAttribute('href', '/admin/waitingroom')
   },
 }

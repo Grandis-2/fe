@@ -38,7 +38,7 @@ export type OpsTaskCardProps = {
   scope?: string
 }
 
-/** 운영 홈 '지금 처리할 일' 한 줄 — 무엇이 몇 건인지와 처리할 화면으로 가는 버튼 */
+/** 운영 대시보드 '지금 처리할 일' 한 줄 — 무엇이 몇 건인지와 처리할 화면으로 가는 버튼 */
 export function OpsTaskCard({
   level,
   title,
@@ -51,7 +51,7 @@ export function OpsTaskCard({
     level === 'urgent' ? styles.actionPrimary : styles.actionOutline,
   ].join(' ')
   return (
-    <article className={[styles.root, styles.tone[level]].join(' ')}>
+    <article className={styles.root}>
       <Tag
         variant="subtle"
         size="medium"

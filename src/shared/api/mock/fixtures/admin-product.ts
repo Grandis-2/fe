@@ -157,7 +157,7 @@ function buildDetail(seed: Seed): AdminProductDetail {
   }
 }
 
-// 사전예약은 시드의 3종만 하나씩 둔다 — 운영 홈의 진행 중인 사전예약 띠가 실제처럼 한두세
+// 사전예약은 시드의 3종만 하나씩 둔다 — 운영 대시보드의 진행 중인 사전예약 표가 실제처럼 한두세
 // 개로 보이게. 일반 판매 상품은 상품 관리의 페이지네이션을 확인할 수 있게 번호를 붙여 여러
 // 개 채운다(이름에도 번호를 붙여 필터 드롭다운에서 서로 구분되게).
 const preorderSeeds = SEEDS.filter((seed) => seed.preorder)

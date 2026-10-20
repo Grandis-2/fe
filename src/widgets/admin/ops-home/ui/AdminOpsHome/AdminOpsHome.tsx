@@ -2,15 +2,16 @@ import { useState } from 'react'
 
 import { CircleCheck, Info, TriangleAlert } from 'lucide-react'
 
-import { DRAW_STUCK_AFTER_MS, useAdminDraws } from '@entities/admin-draw'
-import { useAdminOrders } from '@entities/admin-order'
+import { useAdminDraws } from '@entities/admin-draw'
+import { useAdminOrderCounts } from '@entities/admin-order'
+import { useAdminProductCount } from '@entities/admin-product'
 import {
   useReservationStats,
   useReservationStatsHistory,
 } from '@entities/admin-reservation'
 import { isBraking, waitEstimate } from '@entities/admin-waitingroom'
 import {
-  OpenPreorderStrip,
+  OpenPreorderPicker,
   SLOW_AFTER_MS,
   useOpenPreorders,
 } from '@features/open-preorder-picker'
@@ -28,11 +29,17 @@ import {
   RefreshStatus,
   Skeleton,
   SkeletonGroup,
+  Tag,
   ThroughputChart,
 } from '@shared/ui'
 
 import { flowVerdict, type FlowVerdict } from '../../lib/flowVerdict'
+import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
+import { DrawSummaryCard } from '../DrawSummaryCard'
+import { OpenPreorderTable } from '../OpenPreorderTable'
+import { OpsKpiCard } from '../OpsKpiCard'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
+import { OrderSummaryCard } from '../OrderSummaryCard'
 import { StuckDrawTask } from '../StuckDrawTask'
 
 import * as styles from './AdminOpsHome.css'
@@ -40,7 +47,7 @@ import * as styles from './AdminOpsHome.css'
 // 집계는 서버가 5초까지 캐시해(명세: "5초 이상이면 충분") 그보다 자주 받아도 같은 값이다.
 // 문제를 처음 알아채는 화면이라 그 하한에 맞춘다.
 const POLL_INTERVAL_MS = 5_000
-/** 실패 카드에 나눠 적을 사전예약 수 — 넘으면 '외 N곳'으로 줄인다 */
+/** 실패 숫자에 나눠 적을 사전예약 수 — 넘으면 '외 N곳'으로 줄인다 */
 const BREAKDOWN_MAX = 3
 // shortcut: 마감 뒤 하루 안의 회차만 멈췄는지 본다(회차마다 진행을 따로 받아서). 회차가 많아지면 서버 집계로 바꾼다.
 const STUCK_LOOKBACK_MS = 24 * 60 * 60 * 1000
@@ -53,6 +60,9 @@ const verdictIcon: Record<FlowVerdict['status'], typeof Info> = {
   info: Info,
   warning: TriangleAlert,
 }
+
+const verdictColor: Record<FlowVerdict['status'], 'green' | 'blue' | 'yellow'> =
+  { success: 'green', info: 'blue', warning: 'yellow' }
 
 type Task = OpsTaskCardProps & { key: string }
 
@@ -72,41 +82,39 @@ export type AdminOpsHomeProps = {
 }
 
 /**
- * 운영 대시보드 — 오픈 중 운영자가 가장 먼저 보는 화면. 급한 일부터 위에 올리고(실패 → 멈춤 →
- * 기한·일상), 아래에 접수·처리 속도를 둔다. 숫자마다 처리할 화면으로 가는 링크를 붙인다 —
- * 외부 등록 실패는 예약 현황의 실패 탭에서 골라 재처리한다.
+ * 운영 대시보드 — 오픈 중 운영자가 가장 먼저 보는 한 화면. 맨 위에 결제를 막는 긴급한 일,
+ * 그 아래 영역별 숫자(대기열·예약·외부 등록·배송), 처리 흐름과 사전예약별 현황, 마지막으로
+ * 할 일 목록과 럭키드로우·주문 요약을 둔다. 숫자마다 처리할 화면으로 가는 링크를 붙인다.
  */
 export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const stats = useReservationStats(undefined, POLL_INTERVAL_MS)
   const draws = useAdminDraws()
-  // 건수만 필요해 한 건씩 받고 total을 쓴다.
-  const preparing = useAdminOrders({ status: 'PREPARING_ITEMS', size: 1 })
-  const readyToShip = useAdminOrders({ status: 'READY_TO_SHIP', size: 1 })
+  const orders = useAdminOrderCounts(ORDER_SUMMARY_STEPS)
+  const activeProducts = useAdminProductCount({ status: 'ACTIVE' })
+  const pausedProducts = useAdminProductCount({ status: 'PAUSED' })
 
   // 진행 중인 사전예약 — 동시에 여럿 열릴 수 있어 각각의 집계를 따로 받는다.
   const {
     queue,
     openProducts,
-    items: strip,
+    items: openPreorders,
     nameOf,
     statsOf,
   } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
-  // 대시보드가 보는 범위 — 처음엔 전체(null). 고른 사전예약이 마감돼 띠에서 빠지면 전체로
+  // 대시보드가 보는 범위 — 처음엔 전체(null). 고른 사전예약이 마감돼 목록에서 빠지면 전체로
   // 돌아간다.
   const [picked, setPicked] = useState<string | null>(null)
   const selected = openProducts.some((product) => product.productId === picked)
     ? picked
     : null
+  const scoped = selected !== null
 
   // 처리 흐름은 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도 이어진다
   // (새로 고치면 처음부터). 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 —
-  // 둘의 차이가 적체다. 맨 위 판정은 언제나 전체로, 그래프만 고른 사전예약을 따른다.
-  const selectedHistory = useReservationStatsHistory(selected ?? undefined)
-  const series = (
-    history: typeof selectedHistory,
-    key: 'received' | 'processed' | 'backlog',
-  ) =>
+  // 둘의 차이가 적체다.
+  const history = useReservationStatsHistory(selected ?? undefined)
+  const series = (key: 'received' | 'processed' | 'backlog') =>
     history.map(({ at, value: { preorders } }) => {
       const received = sum(preorders)
       const value = {
@@ -116,37 +124,36 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       }
       return { at, value: value[key] }
     })
-  const receivedRates = ratePerSecond(series(selectedHistory, 'received'))
-  const processedRates = ratePerSecond(series(selectedHistory, 'processed'))
-  const backlogSlope = slopePerSecond(series(selectedHistory, 'backlog')).at(
-    -1,
-  )?.value
+  const receivedRates = ratePerSecond(series('received'))
+  const processedRates = ratePerSecond(series('processed'))
+  const backlogSlope = slopePerSecond(series('backlog')).at(-1)?.value
 
   const s = stats.data
-  const braking = isBraking(q?.brakeFactor ?? null)
   // 브레이크는 대기열 전체에 하나라 언제나 전체, 처리 흐름은 고른 사전예약 기준이다.
   const verdict = flowVerdict({
-    braking,
+    braking: isBraking(q?.brakeFactor ?? null),
     backlogPerMinute: backlogSlope === undefined ? null : backlogSlope * 60,
     scope: selected ? nameOf(selected) : undefined,
   })
+  const VerdictIcon = verdictIcon[verdict.status]
   // 판정 기준 시각 — 받은 집계의 시각을 써서 렌더마다 흔들리지 않게 한다. 아직 못 받았으면
   // 0이라 멈춘 추첨·경과 시간을 판정하지 않는다.
   const now = stats.dataUpdatedAt
 
+  // 사전예약을 골랐으면 숫자·할 일도 그 사전예약 집계로 센다.
+  const t = selected ? statsOf(selected) : s
+  const failures = t ? t.syncJobs.REGISTER.DEAD_LETTER : null
+
   // 둘 이상 열려 있으면 실패가 어느 사전예약에서 났는지 나눠 적는다(많은 순).
-  const failedPreorders = strip
+  const failedPreorders = openPreorders
     .filter((item) => item.failures)
-    // 많은 곳부터 — 어디부터 볼지 바로 보이게.
     .toSorted((a, b) => (b.failures ?? 0) - (a.failures ?? 0))
   const failuresByPreorder =
-    strip.length > 1
+    !scoped && openPreorders.length > 1
       ? [
           ...failedPreorders
             .slice(0, BREAKDOWN_MAX)
-            .map(
-              (item) => `${item.name} ${formatNumber(item.failures ?? 0)}건`,
-            ),
+            .map((item) => `${item.name} ${formatNumber(item.failures ?? 0)}`),
           failedPreorders.length > BREAKDOWN_MAX &&
             `외 ${failedPreorders.length - BREAKDOWN_MAX}곳`,
         ]
@@ -154,16 +161,28 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           .join(' · ')
       : ''
 
+  // 대기열 — 고른 사전예약이 있으면 그것만, 없으면 접수 중인 사전예약 합.
+  const queueScope = openProducts.filter(
+    (product) => selected === null || product.productId === selected,
+  )
+  const waiting = q
+    ? queueScope.reduce((total, product) => total + product.waiting, 0)
+    : null
+  const credit = queueScope.reduce(
+    (total, product) => total + product.credit,
+    0,
+  )
+  const wait = waiting === null ? null : waitEstimate(waiting, credit)
+
   const shipping =
-    preparing.data && readyToShip.data
-      ? { preparing: preparing.data.total, ready: readyToShip.data.total }
+    orders.counts.PREPARING_ITEMS !== null &&
+    orders.counts.READY_TO_SHIP !== null
+      ? {
+          preparing: orders.counts.PREPARING_ITEMS,
+          ready: orders.counts.READY_TO_SHIP,
+        }
       : null
 
-  // 급한 순서대로 쌓는다. 0건인 일은 빼서 이상이 없으면 목록이 비게 한다.
-  // 사전예약을 골랐으면 할 일도 그 사전예약 집계로 센다. 상품으로 거를 수 없는 것(배송 대기)은
-  // '전체 기준'이라고 밝힌다 — 백엔드에 상품 조건을 요청해 뒀다.
-  const scoped = selected !== null
-  const t = scoped && selected ? statsOf(selected) : s
   // 외부 등록을 기다리는 작업(재처리 필요는 빼고) — 0이면 오래 기다리는 접수 시각이
   // 재처리 필요 건을 가리킬 수 있어 밀림으로 보지 않는다.
   const waitingRegister = t
@@ -178,39 +197,38 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       ? ageOf(t.oldestPendingSyncAt, now)
       : null
 
-  // 대기가 긴 사전예약 — 대기열은 평소엔 띠의 대기·예상 대기로만 보이고, 길어지면 할 일이 된다.
-  // 입장이 멈췄는데 줄이 있으면(초당 0) 끝이 없으니 같이 띄운다.
-  const longWaits = openProducts.filter(
+  // 대기가 긴 사전예약 — 입장이 멈췄는데 줄이 있으면(초당 0) 끝이 없으니 같이 띄운다.
+  const longWaits = queueScope.filter(
     (product) =>
-      (selected === null || product.productId === selected) &&
       product.waiting > 0 &&
       (product.credit <= 0 ||
         product.waiting / product.credit >= LONG_WAIT_SECONDS),
   )
 
+  const reprocessPath = adminReservationsPath(
+    'REPROCESS_NEEDED',
+    selected ?? undefined,
+  )
+
+  // 급한 순서대로 쌓는다. 0건인 일은 빼서 이상이 없으면 목록이 비게 한다. 배송 대기는 위
+  // 숫자와 주문 카드가 보여 줘 여기엔 두지 않는다.
   const candidates: (Task | false)[] = t
     ? [
         t.syncJobs.REGISTER.DEAD_LETTER > 0 && {
           key: 'register',
           level: 'urgent',
           title: `외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건`,
-          description: ['결제로 못 넘어가요', !scoped && failuresByPreorder]
+          description: ['결제로 못 넘어가요', failuresByPreorder]
             .filter(Boolean)
             .join(' · '),
-          // 재처리는 예약 현황에서 한 건씩 골라서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
-          action: {
-            label: '재처리하기',
-            to: adminReservationsPath(
-              'REPROCESS_NEEDED',
-              selected ?? undefined,
-            ),
-          },
+          // 재처리는 예약 현황에서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
+          action: { label: '재처리', to: reprocessPath },
         },
         t.deadLetters.waiting > 0 && {
           key: 'dead-letters',
           level: 'check',
           title: `상태 반영 실패 ${formatNumber(t.deadLetters.waiting)}건`,
-          // 원인은 메시지 원문을 봐야 알 수 있어 개발팀이 맡는다 — 운영 홈은 관리자 화면이라
+          // 원인은 메시지 원문을 봐야 알 수 있어 개발팀이 맡는다 — 운영 대시보드는 관리자 화면이라
           // 개발자 기능(이벤트 DLQ)으로 보내지 않고, 알릴 때 쓸 건수·시각만 보인다.
           description: [
             '결제·만료가 예약에 반영 안 됨',
@@ -225,7 +243,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           level: 'check',
           title: `외부 등록 ${slowAge} 밀림 · ${formatNumber(waitingRegister)}건 대기`,
           description: '계속 늘면 입장 속도를 줄이세요',
-          action: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
+          action: { label: '속도 조절', to: ADMIN_WAITINGROOM_PATH },
         },
         ...longWaits.map((product): Task => ({
           key: `wait-${product.productId}`,
@@ -235,7 +253,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             product.credit <= 0
               ? '입장이 멈춰 있어요'
               : `초당 ${formatNumber(product.credit)}명 입장 중 · 외부 등록이 여유 있으면 올리세요`,
-          action: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
+          action: { label: '속도 조절', to: ADMIN_WAITINGROOM_PATH },
         })),
         t.paymentOverdue > 0 && {
           key: 'overdue',
@@ -244,45 +262,39 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           description: '곧 자동 만료돼요',
           action: { label: '예약 보기', to: adminReservationsPath('all') },
         },
-        shipping !== null &&
-          shipping.preparing + shipping.ready > 0 && {
-            key: 'shipping',
-            level: 'todo',
-            title: `배송 대기 주문 ${formatNumber(shipping.preparing + shipping.ready)}건`,
-            description: `상품 준비 ${formatNumber(shipping.preparing)} · 출고 대기 ${formatNumber(shipping.ready)}`,
-            scope: scoped ? '전체 기준' : undefined,
-            action: {
-              label: '주문 처리',
-              to: `${ADMIN_ORDERS_PATH}?status=PREPARING_ITEMS`,
-            },
-          },
       ]
     : []
   const tasks = candidates.filter((task) => task !== false)
+  const urgentTasks = tasks.filter((task) => task.level === 'urgent')
 
   // 마감 뒤 결과가 나올 시간이 지난 회차만 진행을 받아 본다.
   const stuckCandidates = (draws.data ?? []).filter((draw) => {
     const sinceClose = now - Date.parse(draw.closesAt)
-    return sinceClose > DRAW_STUCK_AFTER_MS && sinceClose < STUCK_LOOKBACK_MS
+    return sinceClose > 0 && sinceClose < STUCK_LOOKBACK_MS
   })
 
   const refresh = () => {
     void stats.refetch()
     void queue.refetch()
     void draws.refetch()
-    void preparing.refetch()
-    void readyToShip.refetch()
+    orders.refetch()
+    void activeProducts.refetch()
+    void pausedProducts.refetch()
   }
 
   const statsError = pollingError(stats)
+  const queueError = pollingError(queue)
 
   return (
     <div className={styles.root}>
-      <RefreshStatus
-        updatedAt={stats.dataUpdatedAt}
-        onRefresh={refresh}
-        note="5초마다 자동 갱신"
-      />
+      <header className={styles.topBar}>
+        <h1 className={styles.pageTitle}>운영 대시보드</h1>
+        <RefreshStatus
+          updatedAt={stats.dataUpdatedAt}
+          onRefresh={refresh}
+          note="5초마다 자동 갱신"
+        />
+      </header>
 
       {statsError !== null && (
         <InlineAlert status={s ? 'warning' : 'error'}>
@@ -291,89 +303,113 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         </InlineAlert>
       )}
 
-      <InlineAlert status={verdict.status} icon={verdictIcon[verdict.status]}>
-        {verdict.message}
-      </InlineAlert>
+      {/* 결제를 막는 일은 어디를 보든 먼저 보이게 맨 위에 한 번 더 둔다. */}
+      {urgentTasks.length > 0 && (
+        <div className={styles.urgentBar}>
+          {urgentTasks.map(({ key, ...task }) => (
+            <OpsTaskCard key={key} {...task} />
+          ))}
+        </div>
+      )}
 
       <section className={styles.section} aria-labelledby="ops-open">
         <h2 id="ops-open" className={styles.sectionTitle}>
           진행 중인 사전예약
         </h2>
         {queue.isPending ? (
-          <Skeleton height={96} />
+          <Skeleton height={38} width={320} />
         ) : (
-          <OpenPreorderStrip
-            items={strip}
+          <OpenPreorderPicker
+            items={openPreorders}
             selected={selected}
             onSelect={setPicked}
-            now={now}
           />
         )}
-        {pollingError(queue) !== null && (
+        {queueError !== null && (
           <InlineAlert status={q ? 'warning' : 'error'}>
-            {getErrorMessage(
-              pollingError(queue),
-              '대기열 현황을 불러오지 못했어요.',
-            )}
+            {getErrorMessage(queueError, '대기열 현황을 불러오지 못했어요.')}
           </InlineAlert>
         )}
       </section>
 
-      <section className={styles.section} aria-labelledby="ops-todo">
-        <h2 id="ops-todo" className={styles.sectionTitle}>
-          지금 처리할 일
-        </h2>
-        {stats.isPending ? (
-          <SkeletonGroup className={styles.taskSkeleton}>
-            {[0, 1].map((row) => (
-              <Skeleton key={row} height={76} />
-            ))}
-          </SkeletonGroup>
-        ) : (
-          <>
-            {tasks
-              .filter((task) => task.level !== 'todo')
-              .map(({ key, ...task }) => (
-                <OpsTaskCard key={key} {...task} />
-              ))}
-            {/* 멈춘 추첨은 '확인' 단계라 실패 뒤, 일상 업무 앞에 둔다. */}
-            {stuckCandidates.map((draw) => (
-              <StuckDrawTask key={draw.drawId} draw={draw} now={now} />
-            ))}
-            {tasks
-              .filter((task) => task.level === 'todo')
-              .map(({ key, ...task }) => (
-                <OpsTaskCard key={key} {...task} />
-              ))}
-            {/* 집계를 못 받았으면 이상 없음이라고 말하지 않는다. */}
-            {t && tasks.length === 0 && (
-              <div className={styles.allClear}>
-                <CircleCheck size={18} aria-hidden="true" />
-                밀린 일이 없어요.
-              </div>
-            )}
-            {/* 못 받았으면 빈칸으로 두지 않는다 — 비어 있으면 "할 일 없음"으로 읽힌다. */}
-            {!t && (
-              <div className={styles.allClear}>
-                <TriangleAlert size={18} aria-hidden="true" />
-                현황을 받지 못해 판단할 수 없어요.
-              </div>
-            )}
-          </>
-        )}
-      </section>
+      <div className={styles.kpis}>
+        <OpsKpiCard
+          label="대기 인원"
+          to={ADMIN_WAITINGROOM_PATH}
+          linkLabel="대기열 관리"
+          value={waiting}
+          unit="명"
+          loading={queue.isPending}
+          description={
+            wait
+              ? `맨 뒤 예상 대기 ${wait} · 초당 ${formatNumber(credit)}명 입장`
+              : '기다리는 사람이 없어요'
+          }
+        />
+        <OpsKpiCard
+          label="예약 접수"
+          to={adminReservationsPath(undefined, selected ?? undefined)}
+          linkLabel="예약 현황"
+          value={t ? sum(t.preorders) : null}
+          unit="건"
+          loading={stats.isPending}
+          description={
+            t &&
+            `결제 완료 ${formatNumber(t.preorders.RESERVED)} · 외부 등록 대기 ${formatNumber(t.preorders.PENDING_SYNC)}`
+          }
+        />
+        <OpsKpiCard
+          label="외부 등록 실패"
+          to={reprocessPath}
+          linkLabel={failures ? '재처리 →' : '예약 현황'}
+          value={failures}
+          unit="건"
+          tone={failures ? 'danger' : 'default'}
+          loading={stats.isPending}
+          description={
+            failures
+              ? ['결제로 못 넘어가요', failuresByPreorder]
+                  .filter(Boolean)
+                  .join(' · ')
+              : failures === 0 && '재처리할 예약이 없어요'
+          }
+        />
+        <OpsKpiCard
+          label="배송 대기 주문"
+          to={`${ADMIN_ORDERS_PATH}?status=PREPARING_ITEMS`}
+          linkLabel="주문 관리"
+          value={shipping && shipping.preparing + shipping.ready}
+          unit="건"
+          description={
+            shipping &&
+            [
+              `상품 준비 ${formatNumber(shipping.preparing)} · 출고 대기 ${formatNumber(shipping.ready)}`,
+              // 주문은 상품으로 거를 수 없어 고른 사전예약과 상관없이 전체다.
+              scoped && '전체 기준',
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          }
+        />
+      </div>
 
-      {/* 다른 섹션처럼 제목은 카드 밖에 두고, 카드에는 그래프만 담는다. */}
-      <section className={styles.section} aria-labelledby="ops-flow">
-        <div className={styles.cardHeader}>
-          <h2 id="ops-flow" className={styles.sectionTitle}>
-            접수·처리 속도
-          </h2>
-          <span className={styles.caption}>
-            관리자 화면을 연 뒤부터 · 건/초
-          </span>
-        </div>
-        <div className={styles.card}>
+      <div className={styles.mainRow}>
+        <section className={styles.flowPanel} aria-labelledby="ops-flow">
+          <div className={styles.panelHeader}>
+            <h2 id="ops-flow" className={styles.panelTitle}>
+              접수·외부 등록 처리 속도
+              <span className={styles.caption}> 건/초 · 화면을 연 뒤부터</span>
+            </h2>
+            <Tag
+              variant="subtle"
+              color={verdictColor[verdict.status]}
+              rounded={false}
+              className={styles.verdict}
+            >
+              <VerdictIcon size={14} aria-hidden="true" />
+              {verdict.message}
+            </Tag>
+          </div>
           <ThroughputChart
             // 고른 사전예약이 바뀌면 그래프 상태(올린 지점)를 새로 시작한다.
             key={selected ?? 'all'}
@@ -391,9 +427,77 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
               },
             ]}
           />
-          <div className={styles.caption}>두 선이 벌어지면 대기가 쌓여요</div>
-        </div>
-      </section>
+          <div className={styles.caption}>
+            두 선이 벌어지면 외부 등록 대기가 쌓여요. 계속 벌어지면 대기열 입장
+            속도를 줄이세요.
+          </div>
+        </section>
+        <OpenPreorderTable items={openPreorders} now={now} />
+      </div>
+
+      <div className={styles.bottomRow}>
+        <section className={styles.taskPanel} aria-labelledby="ops-todo">
+          <div className={styles.panelHeader}>
+            <h2 id="ops-todo" className={styles.panelTitle}>
+              지금 처리할 일
+            </h2>
+            <span className={styles.caption}>급한 순</span>
+          </div>
+          {stats.isPending ? (
+            <SkeletonGroup className={styles.taskSkeleton}>
+              {[0, 1].map((row) => (
+                <Skeleton key={row} height={52} />
+              ))}
+            </SkeletonGroup>
+          ) : (
+            <div>
+              {tasks
+                .filter((task) => task.level !== 'todo')
+                .map(({ key, ...task }) => (
+                  <OpsTaskCard key={key} {...task} />
+                ))}
+              {/* 멈춘 추첨은 '확인' 단계라 실패 뒤, 일상 업무 앞에 둔다. */}
+              {stuckCandidates.map((draw) => (
+                <StuckDrawTask key={draw.drawId} draw={draw} now={now} />
+              ))}
+              {tasks
+                .filter((task) => task.level === 'todo')
+                .map(({ key, ...task }) => (
+                  <OpsTaskCard key={key} {...task} />
+                ))}
+              {/* 집계를 못 받았으면 이상 없음이라고 말하지 않는다. */}
+              {t && tasks.length === 0 && (
+                <div className={styles.allClear}>
+                  <CircleCheck size={18} aria-hidden="true" />
+                  밀린 일이 없어요.
+                </div>
+              )}
+              {/* 못 받았으면 빈칸으로 두지 않는다 — 비어 있으면 "할 일 없음"으로 읽힌다. */}
+              {!t && (
+                <div className={styles.allClear}>
+                  <TriangleAlert size={18} aria-hidden="true" />
+                  현황을 받지 못해 판단할 수 없어요.
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+
+        <DrawSummaryCard
+          draws={draws.data}
+          isPending={draws.isPending}
+          now={now}
+          stuckLookbackMs={STUCK_LOOKBACK_MS}
+        />
+
+        <OrderSummaryCard
+          orders={orders.counts}
+          products={{
+            active: activeProducts.data ?? null,
+            paused: pausedProducts.data ?? null,
+          }}
+        />
+      </div>
     </div>
   )
 }
