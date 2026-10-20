@@ -24,7 +24,7 @@ export const caption = style([
 const tint: Record<Status, string> = {
   rising: color.background.subtleWarning,
   falling: color.background.subtleSuccess,
-  steady: color.background.surface,
+  steady: color.background.subSurface,
   measuring: color.background.surface,
 }
 
@@ -93,12 +93,12 @@ export const verdictSide = style({
 })
 
 export const hint = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { color: color.text.secondary },
 ])
 
 export const braking = style([
-  typography.body.subMedium,
+  typography.body.defaultMedium,
   { color: color.text.primary },
 ])
 
@@ -108,8 +108,8 @@ export const action = style([
     flexShrink: 0,
     display: 'inline-flex',
     alignItems: 'center',
-    minHeight: '36px',
-    padding: `0 ${spacing[14]}`,
+    minHeight: '40px',
+    padding: `0 ${spacing[16]}`,
     borderRadius: '9999px',
     border: `1px solid ${color.border.default}`,
     background: color.background.base,

@@ -54,6 +54,37 @@ export const Falling: Story = {
   },
 }
 
+/** 유지 — 들어오는 만큼 처리 중. 대기는 남아 있지만 늘지도 줄지도 않는다 */
+export const Steady: Story = {
+  args: {
+    backlog: 320,
+    perMinute: 0.4,
+    history: {
+      times,
+      values: [310, 330, 315, 325, 318, 322, 316, 324, 319, 321, 320],
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('들어오는 만큼 처리 중')).toBeVisible()
+    await expect(canvas.queryByRole('link')).toBeNull()
+  },
+}
+
+/** 대기 없음 — 접수되는 대로 바로 외부 등록된다 */
+export const Empty: Story = {
+  args: {
+    backlog: 0,
+    perMinute: 0,
+    history: {
+      times,
+      values: [40, 30, 20, 10, 0, 0, 0, 0, 0, 0, 0],
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('대기 없음')).toBeVisible()
+  },
+}
+
 /** 서버가 부하로 입장을 줄이는 중이면 한 줄 더 */
 export const Braking: Story = {
   args: { braking: true },

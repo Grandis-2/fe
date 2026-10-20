@@ -70,33 +70,29 @@ export const baseline = style({
   strokeWidth: 1,
 })
 
-// 처음 나타날 때 왼쪽부터 선이 그려지고, 면이 따라 차오른다. 값이 바뀔 때는 다시 하지 않는다.
-const draw = keyframes({
-  from: { strokeDashoffset: 1 },
-  to: { strokeDashoffset: 0 },
+// 처음 나타날 때 면과 선을 왼쪽부터 함께 펼친다. 값이 바뀔 때는 다시 하지 않는다.
+// 선 길이(stroke-dasharray)로 그리면 굵기 고정(non-scaling-stroke)과 겹쳐 길이가 틀어져
+// 선 끝이 잘린 채 남는다 — 그래서 가리는 영역(clip-path)을 넓히는 방식으로 한다.
+const reveal = keyframes({
+  from: { clipPath: 'inset(0 100% 0 0)' },
+  to: { clipPath: 'inset(0 0 0 0)' },
 })
-const fadeIn = keyframes({ from: { opacity: 0 }, to: { opacity: 1 } })
 
-const motionSafe = (rules: Record<string, string | number>) => ({
-  '@media': { '(prefers-reduced-motion: no-preference)': rules },
+export const marks = style({
+  '@media': {
+    '(prefers-reduced-motion: no-preference)': {
+      animation: `${reveal} 900ms cubic-bezier(0.22, 1, 0.36, 1) both`,
+    },
+  },
 })
 
 const lineBase = style({
   strokeWidth: 2.5,
   strokeLinecap: 'round',
   strokeLinejoin: 'round',
-  strokeDasharray: 1,
-  strokeDashoffset: 0,
-  ...motionSafe({
-    animation: `${draw} 900ms cubic-bezier(0.22, 1, 0.36, 1) both`,
-  }),
 })
 
 export const line = styleVariants(toneColor, (stroke) => [lineBase, { stroke }])
-
-export const area = style({
-  ...motionSafe({ animation: `${fadeIn} 900ms ease-out both` }),
-})
 
 export const stopTop = styleVariants(toneColor, (stopColor) => ({
   stopColor,

@@ -135,18 +135,16 @@ export function TrendChart({
                 vectorEffect="non-scaling-stroke"
               />
             ))}
-            <path
-              className={styles.area}
-              d={area}
-              fill={`url(#${gradientId})`}
-            />
-            <path
-              className={styles.line[tone]}
-              d={line}
-              fill="none"
-              pathLength={1}
-              vectorEffect="non-scaling-stroke"
-            />
+            {/* 면과 선을 묶어 처음 나타날 때 왼쪽부터 함께 펼친다. */}
+            <g className={styles.marks}>
+              <path d={area} fill={`url(#${gradientId})`} />
+              <path
+                className={styles.line[tone]}
+                d={line}
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
           </svg>
 
           {hover !== null && (
