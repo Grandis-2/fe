@@ -3,7 +3,6 @@ export { useCreateAdminBanner } from './api/useAdminBanners'
 // upload로 넘기기만 한다(admin-product의 uploadProductImage와 같다).
 export { uploadBannerImage } from './api/adminBanner'
 export {
-  BANNER_ICONS,
   BANNER_TEXT_MAX,
   bannerFormProblem,
   createEmptyBannerFormValue,

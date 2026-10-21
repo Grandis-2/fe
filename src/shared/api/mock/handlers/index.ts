@@ -1,5 +1,5 @@
 import { addressHandlers } from './address'
-import { adminBannerHandlers } from './admin-banner'
+import { adminBannerHandlers, bannerHandlers } from './admin-banner'
 import { adminDeadLetterHandlers } from './admin-dead-letter'
 import { adminDrawHandlers } from './admin-draw'
 import { adminOrderHandlers } from './admin-order'
@@ -40,6 +40,7 @@ export const handlers: RequestHandler[] = [
   ...adminBannerHandlers,
   ...adminPromotionHandlers,
   ...productHandlers,
+  ...bannerHandlers,
   ...promotionHandlers,
   ...reviewHandlers,
   // 대기열(/preorders/queue)이 예약 상세(/preorders/:preorderId)보다 먼저 잡혀야 한다.
