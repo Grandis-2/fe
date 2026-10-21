@@ -1,6 +1,11 @@
 import { http } from 'msw'
 
-import { categories, products, shipmentBatches } from '../fixtures/product'
+import {
+  categories,
+  popularKeywords,
+  products,
+  shipmentBatches,
+} from '../fixtures/product'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 import { isUuid, readPaging, toPage, uuidViolation } from '../validate'
@@ -9,8 +14,10 @@ import type {
   ApiViolation,
   CategoryTreeResponse,
   PageResponse,
+  PopularKeywords,
   ProductDetailView,
   ProductListItem,
+  ProductRankingResponse,
   ShipmentBatchListResponse,
 } from '../../types'
 import type { RequestHandler } from 'msw'
@@ -159,6 +166,27 @@ export const productHandlers: RequestHandler[] = [
 
     return ok<PageResponse<ProductListItem>>(toPage(matched, page, size))
   }),
+
+  // 목엔 검색·조회 집계가 없어 고정 순위를 준다 — 누르면 목 검색에 결과가 나오는 검색어만 둔다.
+  http.get(url('/api/v1/products/searches/popular'), () =>
+    ok<PopularKeywords>({ keywords: popularKeywords }),
+  ),
+
+  // 실제 순위는 최근 3일 조회수다. 목은 목록에 나오는 상품(일반 상품·접수 중 사전예약)을 몇 칸씩 건너 골라
+  // 최신순 목록과 다른 순서로 보이게 한다. /:productId보다 앞에 둬야 'ranking'이 id로 잡히지 않는다.
+  http.get(url('/api/v1/products/ranking'), () =>
+    ok<ProductRankingResponse>({
+      items: products
+        .filter((product) => product.status === 'ACTIVE')
+        .map(toListItem)
+        .filter(
+          (item) =>
+            item.saleMode === 'IN_STOCK' || item.preorderStatus === 'OPEN',
+        )
+        .filter((_, i) => i % 3 === 0)
+        .slice(0, 10),
+    }),
+  ),
 
   http.get(
     url('/api/v1/products/:productId/variants/:variantId'),
