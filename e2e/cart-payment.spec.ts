@@ -1,7 +1,12 @@
 import {
+  CART_TOTAL,
+  CART_TOTAL_TEXT,
+  cartPayButton,
   expect,
+  fillPaymentForm,
   loginAs,
   NOVA_PHONE_1,
+  openCartPayment,
   PROFILE,
   readTossRequest,
   setMockFault,
@@ -12,30 +17,8 @@ import {
 
 import type { Page } from '@playwright/test'
 
-// 목 장바구니(fixtures/preorder.ts)는 5줄이다 — 살 수 있는 3줄(스마트폰 1 ×2, 스마트폰 1 보증 포함,
-// 노트북 1)과 판매 중지·품절 1줄씩. 살 수 있는 3줄의 합계가 4,593,500원이다.
-const CART_TOTAL = 4_593_500
-const CART_TOTAL_TEXT = '4,593,500원'
-
 const summaryTotal = (page: Page) =>
   page.getByText('결제 예정 금액').locator('..')
-
-async function openCartPayment(page: Page) {
-  await loginAs(page, '/mypage?state=cart')
-  await page.getByText('전체 선택').click()
-  await page.getByRole('button', { name: '결제하기', exact: true }).click()
-  await expect(page).toHaveURL(/\/payment\?cart=/)
-}
-
-async function fillShippingAndAgree(page: Page) {
-  await page.getByRole('button', { name: '주소 찾기' }).click()
-  await page.getByRole('button', { name: '테스트 주소 선택' }).click()
-  await page.getByLabel('상세 주소').fill('101동 101호')
-  await page.getByText('아래 내용에 모두 동의합니다.').click()
-}
-
-const payButton = (page: Page) =>
-  page.getByRole('button', { name: `${CART_TOTAL_TEXT} 결제하기` })
 
 test.describe('장바구니', () => {
   test('전체 선택하면 살 수 있는 상품만 골라 합계를 낸다', async ({ page }) => {
@@ -75,10 +58,10 @@ test.describe('장바구니 → 결제 페이지', () => {
     page,
   }) => {
     await openCartPayment(page)
-    await expect(payButton(page)).toBeDisabled()
+    await expect(cartPayButton(page)).toBeDisabled()
 
     await page.getByText('아래 내용에 모두 동의합니다.').click()
-    await payButton(page).click()
+    await cartPayButton(page).click()
 
     await expect(
       page.getByText('기본 주소을(를) 필수로 작성해주세요'),
@@ -91,8 +74,8 @@ test.describe('장바구니 → 결제 페이지', () => {
 
   test('결제창에는 화면에 보인 금액 그대로 넘긴다', async ({ page }) => {
     await openCartPayment(page)
-    await fillShippingAndAgree(page)
-    await payButton(page).click()
+    await fillPaymentForm(page)
+    await cartPayButton(page).click()
 
     await expect(page).toHaveURL(/\/result\?status=paid/)
     const request = await readTossRequest(page)
@@ -132,8 +115,8 @@ test.describe('결제 승인', () => {
   }) => {
     await stubTossPayments(page)
     await openCartPayment(page)
-    await fillShippingAndAgree(page)
-    await payButton(page).click()
+    await fillPaymentForm(page)
+    await cartPayButton(page).click()
 
     await expect(
       page.getByRole('heading', { name: '주문이 완료되었어요' }),
@@ -152,8 +135,8 @@ test.describe('결제 승인', () => {
   }) => {
     await stubTossPayments(page)
     await openCartPayment(page)
-    await fillShippingAndAgree(page)
-    await payButton(page).click()
+    await fillPaymentForm(page)
+    await cartPayButton(page).click()
     await expect(page).toHaveURL(/\/result\?status=paid/)
 
     const request = await readTossRequest(page)
@@ -174,8 +157,8 @@ test.describe('결제 승인', () => {
   }) => {
     await stubTossPayments(page, { amountOverride: 1000 })
     await openCartPayment(page)
-    await fillShippingAndAgree(page)
-    await payButton(page).click()
+    await fillPaymentForm(page)
+    await cartPayButton(page).click()
 
     await expect(
       page.getByRole('heading', { name: '결제에 실패했어요' }),
@@ -190,8 +173,8 @@ test.describe('결제 승인', () => {
     await stubTossPayments(page)
     await openCartPayment(page)
     await setMockFault(page, 'confirm')
-    await fillShippingAndAgree(page)
-    await payButton(page).click()
+    await fillPaymentForm(page)
+    await cartPayButton(page).click()
 
     await expect(
       page.getByRole('heading', { name: '결제에 실패했어요' }),
