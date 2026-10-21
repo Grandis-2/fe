@@ -37,6 +37,7 @@ test('H2 사전예약하기를 같은 순간에 두 번 눌러도 예약은 하�
   await expect(page).toHaveURL(/\/payment\?preorderId=/, { timeout: 15_000 })
   // 요청이 두 번 나갔다면 같은 멱등키여야 한다.
   expect(submits.length).toBeGreaterThanOrEqual(1)
+  expect(submits[0].idempotencyKey).toBeTruthy()
   expect(new Set(submits.map((submit) => submit.idempotencyKey)).size).toBe(1)
   await expectSingleNewReservation(page)
 })
@@ -62,6 +63,7 @@ test('H3 서버가 잠깐 실패한 뒤 다시 누르면 같은 멱등키로 한
 
   await expect(page).toHaveURL(/\/payment\?preorderId=/, { timeout: 15_000 })
   expect(submits).toHaveLength(2)
+  expect(submits[0].idempotencyKey).toBeTruthy()
   expect(submits[1].idempotencyKey).toBe(submits[0].idempotencyKey)
   await expectSingleNewReservation(page)
 })
