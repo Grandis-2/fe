@@ -1,0 +1,77 @@
+import {
+  cartPayButton,
+  expect,
+  fillPaymentForm,
+  loginAs,
+  loginAsAdmin,
+  openCartPayment,
+  readTossRequest,
+  stubDaumPostcode,
+  stubTossPayments,
+  test,
+} from './fixtures'
+
+import type { Page } from '@playwright/test'
+
+// 페르소나 박성민(운영 & 트래픽 관리자) — e2e/persona-scenarios.md M2·M7
+// 관리자 목 데이터는 메모리에만 있어 page.goto/새로고침이면 시드로 돌아간다. 화면 사이는 사이드바로 옮긴다.
+
+const openAdminMenu = (page: Page, name: string) =>
+  page
+    .getByRole('navigation', { name: '관리자 메뉴' })
+    .getByRole('link', { name })
+    .click()
+
+test('M2 예약 현황에서 외부 등록 실패 건을 찾아 실패 사유를 본다', async ({
+  page,
+}) => {
+  await loginAsAdmin(page)
+  await openAdminMenu(page, '예약 현황')
+
+  // 시드: 외부 등록 실패 3건(RSV-93355·93297·93260), 모두 503으로 세 번 실패.
+  await page
+    .getByRole('button', { name: '외부 등록 실패', exact: true })
+    .click()
+  await page.getByRole('button', { name: 'RSV-93355 상세 보기' }).click()
+
+  await expect(page.getByRole('heading', { name: /RSV-93355/ })).toBeVisible()
+  await expect(
+    page.getByText('HTTP_503 — Service Unavailable').first(),
+  ).toBeVisible()
+  await expect(page.getByText('시도 3회')).toBeVisible()
+})
+
+test('M7 회원이 결제한 주문을 관리자가 배송 완료까지 처리하면 회원 주문 내역도 바뀐다', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await stubDaumPostcode(page)
+  await stubTossPayments(page)
+  await openCartPayment(page)
+  await fillPaymentForm(page)
+  await cartPayButton(page).click()
+  await expect(
+    page.getByRole('heading', { name: '주문이 완료되었어요' }),
+  ).toBeVisible()
+  const orderId = new URL(
+    (await readTossRequest(page)).successUrl,
+  ).searchParams.get('orderToken')!
+
+  // 관리자로 로그인하면 회원 로그인은 풀린다.
+  await loginAsAdmin(page)
+  await openAdminMenu(page, '주문 관리')
+  await page.getByLabel('주문 id로 열기').fill(orderId)
+  await page.getByRole('button', { name: '열기', exact: true }).click()
+
+  for (const step of ['배송 준비 시작', '포장 완료', '출고', '배송 완료']) {
+    await page.getByRole('button', { name: step, exact: true }).click()
+    await page
+      .getByRole('dialog', { name: step })
+      .getByRole('button', { name: step, exact: true })
+      .click()
+    await expect(page.getByText(`${step} 처리했습니다.`)).toBeVisible()
+  }
+
+  await loginAs(page, '/mypage?state=history')
+  await expect(page.getByText('배송 완료').first()).toBeVisible()
+})
