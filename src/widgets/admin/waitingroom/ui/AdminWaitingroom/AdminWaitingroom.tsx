@@ -136,6 +136,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
             loading={status.isPending}
             globalSetting={rates.data?.globalCredit}
             maxCredit={maxCredit}
+            productIds={products.map((product) => product.productId)}
             admission={admission}
             inputId={SPEED_INPUT_ID}
           />

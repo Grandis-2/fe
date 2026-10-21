@@ -10,7 +10,7 @@ export type WaitingroomSetting = {
 
 export type ProductRate = {
   productId: string
-  /** 이 상품의 초당 입장 상한. 기본 150 */
+  /** 이 상품의 초당 입장 상한. 기본 15(서버가 150에서 낮춤, 명세는 아직 150) */
   cap: WaitingroomSetting
   /** 줄 최대 길이(명). 최대 대기 시간이 없으면 null */
   queueLimit: number | null
@@ -18,7 +18,7 @@ export type ProductRate = {
 
 /** GET /admin/waitingroom/admission-rate — 바꾸는 API들도 바뀐 뒤의 이 값을 돌려준다 */
 export type AdmissionRateView = {
-  /** 전역 초당 입장 인원(브레이크 적용 전). 기본 150 */
+  /** 전역 초당 입장 인원(브레이크 적용 전). 기본 15(서버가 150에서 낮춤, 명세는 아직 150) */
   globalCredit: WaitingroomSetting
   /** 전역 속도·상품 상한으로 정할 수 있는 최댓값(배포 설정, 기본 1500) */
   maxGlobalCredit: number
@@ -43,7 +43,7 @@ export type ProductStatus = {
   /** 이번에 배분된 초당 입장 인원. IDLE·HIDDEN·CLOSED면 0 */
   credit: number
   /**
-   * 초당 입장 상한. 명세는 "운영값이 없으면 기본 150"인 정수지만, 실서버가 운영값이 없을 때
+   * 초당 입장 상한. 명세는 "운영값이 없으면 기본값"인 정수지만, 실서버가 운영값이 없을 때
    * null을 줄 수 있다(코드 리뷰 지적) — entities가 기본값으로 채운다.
    */
   cap: number | null

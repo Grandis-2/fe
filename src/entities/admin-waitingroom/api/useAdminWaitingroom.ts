@@ -68,18 +68,31 @@ export const useAdmissionRates = () =>
   })
 
 export type AdmissionRateChange =
-  | { kind: 'globalCredit'; value: number | null }
+  | {
+      kind: 'globalCredit'
+      value: number | null
+      /** 주면 이 상품들의 상한도 같은 값으로 맞춘다(null이면 기본값으로) */
+      productIds?: readonly string[]
+    }
   | { kind: 'maxWait'; value: number | null }
   | { kind: 'leaveGrace'; value: number | null }
   | { kind: 'productCap'; productId: string; value: number | null }
 
 // value가 null이면 기본값으로 되돌린다(최대 대기 시간은 제한 해제).
-const applyChange = (change: AdmissionRateChange) => {
+const applyChange = async (change: AdmissionRateChange) => {
   switch (change.kind) {
-    case 'globalCredit':
-      return change.value === null
+    case 'globalCredit': {
+      const { value } = change
+      let view = await (value === null
         ? resetGlobalCredit()
-        : setGlobalCredit(change.value)
+        : setGlobalCredit(value))
+      // 상품 상한은 한 건씩 바꾼다 — 응답마다 바뀐 뒤의 전체 운영값이라 마지막 것이 최신이다.
+      for (const productId of change.productIds ?? [])
+        view = await (value === null
+          ? resetProductCap(productId)
+          : setProductCap(productId, value))
+      return view
+    }
     case 'maxWait':
       return change.value === null ? clearMaxWait() : setMaxWait(change.value)
     case 'leaveGrace':
@@ -103,9 +116,10 @@ export const useChangeAdmissionRate = () => {
     mutationFn: applyChange,
     onSuccess: (view: AdmissionRateView) => {
       queryClient.setQueryData(RATES_KEY, view)
-      return queryClient.invalidateQueries({
-        queryKey: [...WAITINGROOM_KEY, 'status'],
-      })
     },
+    // 여러 건을 바꾸다 중간에 실패하면 일부만 바뀌어 있다 — 성공·실패 모두 운영값과 현황을
+    // 다시 받는다.
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: WAITINGROOM_KEY }),
   })
 }

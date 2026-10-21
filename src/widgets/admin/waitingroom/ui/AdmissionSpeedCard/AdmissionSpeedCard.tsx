@@ -26,6 +26,8 @@ export type AdmissionSpeedCardProps = {
   globalSetting: WaitingroomSetting | undefined
   /** 정할 수 있는 최댓값(운영값 조회의 maxGlobalCredit) */
   maxCredit: number
+  /** 전체 상한을 바꾸면 함께 맞출 상품들 */
+  productIds: readonly string[]
   admission: AdmissionChange
   /** 맨 위 판정의 '속도 낮추기'가 이 칸으로 옮겨 온다 */
   inputId: string
@@ -45,6 +47,7 @@ export function AdmissionSpeedCard({
   loading,
   globalSetting,
   maxCredit,
+  productIds,
   admission,
   inputId,
 }: AdmissionSpeedCardProps) {
@@ -103,14 +106,14 @@ export function AdmissionSpeedCard({
           event.preventDefault()
           if (!canApply || draftValue === null) return
           admission.apply(
-            { kind: 'globalCredit', value: draftValue },
-            '전역 입장 속도를 바꿨습니다.',
+            { kind: 'globalCredit', value: draftValue, productIds },
+            '전체 상한과 모든 상품 상한을 바꿨습니다.',
             () => setDraft(''),
           )
         }}
       >
         <div className={styles.current}>
-          <span className={styles.caption}>지금 설정</span>
+          <span className={styles.caption}>전체 상한 설정</span>
           <span className={styles.currentValue}>
             {globalSetting?.value == null
               ? '—'
@@ -122,6 +125,9 @@ export function AdmissionSpeedCard({
               {settingSourceLabel[globalSetting.source]}
             </Tag>
           )}
+          <span className={styles.caption}>
+            바꾸면 모든 상품 상한도 같은 값으로 바뀌어요
+          </span>
         </div>
         <div className={styles.stepper}>
           <button
@@ -194,13 +200,13 @@ export function AdmissionSpeedCard({
             disabled={admission.isPending}
             onClick={() =>
               admission.confirm(
-                '전역 입장 속도를 기본값으로 되돌릴까요?',
-                `${WAITINGROOM_DEFAULTS.globalCredit}명/초로 돌아가고 1초 안에 반영됩니다.`,
+                '전체 상한을 기본값으로 되돌릴까요?',
+                `전체 상한과 모든 상품 상한이 ${WAITINGROOM_DEFAULTS.globalCredit}명/초로 돌아가고 1초 안에 반영됩니다.`,
                 '되돌리기',
                 () =>
                   admission.apply(
-                    { kind: 'globalCredit', value: null },
-                    '전역 입장 속도를 기본값으로 되돌렸습니다.',
+                    { kind: 'globalCredit', value: null, productIds },
+                    '전체 상한과 모든 상품 상한을 기본값으로 되돌렸습니다.',
                   ),
               )
             }

@@ -20,6 +20,7 @@ const meta = {
     loading: false,
     globalSetting: { value: 120, source: 'OPERATIONAL' },
     maxCredit: 1500,
+    productIds: ['p-iphone', 'p-galaxy'],
     admission: { apply: fn(), confirm: fn(), isPending: false, error: null },
     inputId: 'wr-speed-input',
   },
@@ -43,8 +44,12 @@ export const TypeToApply: Story = {
     await expect(canvas.getByText('여유 안이에요')).toBeVisible()
     await userEvent.click(apply)
     await expect(args.admission.apply).toHaveBeenCalledWith(
-      { kind: 'globalCredit', value: 100 },
-      '전역 입장 속도를 바꿨습니다.',
+      {
+        kind: 'globalCredit',
+        value: 100,
+        productIds: ['p-iphone', 'p-galaxy'],
+      },
+      '전체 상한과 모든 상품 상한을 바꿨습니다.',
       expect.any(Function),
     )
     // 지금과 같은 값이면 적용할 게 없다.
@@ -72,11 +77,14 @@ export const OutOfRange: Story = {
   },
 }
 
-/** 운영값이면 기본값으로 되돌리기가 보이고, 입장 멈춤은 언제나 확인을 거친다 */
+/** 운영값이면 기본값으로 되돌리기가 보이고, 입장 멈춤은 언제나 확인을 거친다. 전체 상한을 바꾸면 상품 상한도 바뀐다고 알린다 */
 export const Operational: Story = {
   play: async ({ canvas, args, userEvent }) => {
     await expect(
-      canvas.getByRole('button', { name: /기본값\(150명\/초\)으로/ }),
+      canvas.getByRole('button', { name: /기본값\(15명\/초\)으로/ }),
+    ).toBeVisible()
+    await expect(
+      canvas.getByText('바꾸면 모든 상품 상한도 같은 값으로 바뀌어요'),
     ).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: '입장 멈춤' }))
     await expect(args.admission.confirm).toHaveBeenCalled()

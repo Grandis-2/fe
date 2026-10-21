@@ -18,10 +18,13 @@ export type AdmissionRates = AdmissionRateView
 export type WaitingroomProductRate = ProductRate
 export type { WaitingroomSetting }
 
-/** 서버 기본값 — 되돌리기 버튼 옆에 무엇으로 돌아가는지 보여준다 */
+/**
+ * 서버 기본값 — 되돌리기 버튼 옆에 무엇으로 돌아가는지 보여준다. 입장 속도·상품 상한은 서버가
+ * 2026-10-21에 150에서 15로 낮췄다(명세 문서는 아직 150).
+ */
 export const WAITINGROOM_DEFAULTS = {
-  globalCredit: 150,
-  productCap: 150,
+  globalCredit: 15,
+  productCap: 15,
   leaveGraceSeconds: 250,
 } as const
 
