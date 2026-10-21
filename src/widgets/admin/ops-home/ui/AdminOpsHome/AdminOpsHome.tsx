@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { CircleCheck, TriangleAlert } from 'lucide-react'
 
-import { useAdminDraws } from '@entities/admin-draw'
+import { useAdminDraws, useStuckDraws } from '@entities/admin-draw'
 import { useAdminOrderCounts } from '@entities/admin-order'
 import { useAdminProductCount } from '@entities/admin-product'
 import {
@@ -94,6 +94,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     items: openPreorders,
     nameOf,
     statsOf,
+    refetchStats,
   } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
   // 대시보드가 보는 범위 — 처음엔 전체(null). 고른 사전예약이 마감돼 목록에서 빠지면 전체로
@@ -256,10 +257,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     const sinceClose = now - Date.parse(draw.closesAt)
     return sinceClose > 0 && sinceClose < STUCK_LOOKBACK_MS
   })
+  const stuckDraws = useStuckDraws(stuckCandidates, now)
 
   const refresh = () => {
     void stats.refetch()
     void queue.refetch()
+    refetchStats()
     void draws.refetch()
     orders.refetch()
     void activeProducts.refetch()
@@ -443,21 +446,25 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
                   <OpsTaskCard key={key} {...task} />
                 ))}
               {/* 멈춘 추첨은 '확인' 단계라 실패 뒤, 일상 업무 앞에 둔다. */}
-              {stuckCandidates.map((draw) => (
-                <StuckDrawTask key={draw.drawId} draw={draw} now={now} />
+              {stuckDraws.stuck.map((draw) => (
+                <StuckDrawTask key={draw.drawId} draw={draw} />
               ))}
               {tasks
                 .filter((task) => task.level === 'todo')
                 .map(({ key, ...task }) => (
                   <OpsTaskCard key={key} {...task} />
                 ))}
-              {/* 집계를 못 받았으면 이상 없음이라고 말하지 않는다. */}
-              {t && tasks.length === 0 && (
-                <div className={styles.allClear}>
-                  <CircleCheck size={18} aria-hidden="true" />
-                  밀린 일이 없어요.
-                </div>
-              )}
+              {/* 집계·추첨 진행을 다 받기 전엔 이상 없음이라고 말하지 않는다. */}
+              {t &&
+                tasks.length === 0 &&
+                stuckDraws.stuck.length === 0 &&
+                !draws.isPending &&
+                !stuckDraws.isPending && (
+                  <div className={styles.allClear}>
+                    <CircleCheck size={18} aria-hidden="true" />
+                    밀린 일이 없어요.
+                  </div>
+                )}
               {/* 못 받았으면 빈칸으로 두지 않는다 — 비어 있으면 "할 일 없음"으로 읽힌다. */}
               {!t && (
                 <div className={styles.allClear}>

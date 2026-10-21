@@ -137,12 +137,16 @@ type Feedback = { status: 'success' | 'error'; message: string }
 export function AdminReservationsPage() {
   const navigate = useNavigate()
   // 탭·상품은 주소(?status=·?product=)에 둔다 — 운영 대시보드에서 실패 탭을 고른
-  // 사전예약 그대로 열고, 상세에서 돌아와도 남는다. 모르는 탭이면 전체.
+  // 사전예약 그대로 열고, 상세에서 돌아와도 남는다.
   const [searchParams, setSearchParams] = useSearchParams()
-  // 처음 들어오면 할 일이 있는 외부 등록 실패부터 — 전체는 주소에 status=all로 남긴다.
+  // 처음 들어오면(status 없음) 할 일이 있는 외부 등록 실패부터. 모르는 값(옛 링크·잘못 친
+  // 주소)이면 전체 — 실패 탭으로 열면 일반 예약이 다 빠져 보인다.
+  const statusParam = searchParams.get('status')
   const statusFilter: StatusFilter =
-    statusFilters.find(({ value }) => value === searchParams.get('status'))
-      ?.value ?? 'REPROCESS_NEEDED'
+    statusParam === null
+      ? 'REPROCESS_NEEDED'
+      : (statusFilters.find(({ value }) => value === statusParam)?.value ??
+        'all')
   const setParam = (key: string, value: string | undefined) =>
     setSearchParams(
       (prev) => {

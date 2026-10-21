@@ -55,5 +55,10 @@ export function useOpenPreorders(
     }
   })
 
-  return { queue, openProducts, items, nameOf, statsOf }
+  /** 사전예약마다 받는 집계를 지금 다시 받는다 — 화면의 새로 고침이 같이 부른다 */
+  const refetchStats = () => {
+    for (const query of productStats) void query.refetch()
+  }
+
+  return { queue, openProducts, items, nameOf, statsOf, refetchStats }
 }
