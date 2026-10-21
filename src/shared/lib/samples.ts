@@ -23,11 +23,11 @@ export function slopePerSecond(
   samples: readonly Sample<number>[],
   windowMs = 30_000,
 ): Sample<number>[] {
+  // 비교할 앞 표본은 시각 순이라 뒤로만 움직인다 — 표본마다 처음부터 다시 찾지 않는다.
+  let from = 0
   return samples.slice(1).map((sample, index) => {
-    const base =
-      samples
-        .slice(0, index + 1)
-        .find((prev) => sample.at - prev.at <= windowMs) ?? samples[index]
+    while (from < index && sample.at - samples[from].at > windowMs) from += 1
+    const base = samples[from]
     const seconds = (sample.at - base.at) / 1000
     return {
       at: sample.at,
@@ -61,6 +61,8 @@ export function sumSeries(
   ]
     .filter((at) => at >= start)
     .toSorted((a, b) => a - b)
+    // 기록마다 시각이 달라 합치면 늘어난다 — 하나일 때와 같은 수만 남긴다.
+    .slice(-MAX_SAMPLES)
   const cursors = series.map(() => 0)
   return times.map((at) => ({
     at,

@@ -94,6 +94,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     items: openPreorders,
     nameOf,
     statsOf,
+    statsQueryOf,
     refetchStats,
   } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
@@ -114,7 +115,16 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const scopeStats = scopeIds
     .map(statsOf)
     .filter((value) => value !== undefined)
-  const scopeLoaded = scopeStats.length === scopeIds.length
+  // 대기열 현황을 못 받으면 진행 중인 사전예약을 몰라 범위가 비는데, 그걸 0건으로 세지 않는다.
+  const scopeLoaded = q !== undefined && scopeStats.length === scopeIds.length
+  const scopeQueries = scopeIds.map(statsQueryOf)
+  const scopePending =
+    queue.isPending || scopeQueries.some((query) => query?.isPending)
+  // 사전예약별 집계가 하나라도 실패하면 위 숫자가 비거나 멈춘다 — 전체 집계와 따로 알린다.
+  const scopeError =
+    scopeQueries
+      .map((query) => (query ? pollingError(query) : null))
+      .find((error) => error !== null) ?? null
   const countOf = (status: keyof (typeof scopeStats)[number]['preorders']) =>
     scopeLoaded
       ? scopeStats.reduce((total, value) => total + value.preorders[status], 0)
@@ -312,6 +322,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           {s && ' 아래 숫자는 마지막으로 받은 값이에요.'}
         </InlineAlert>
       )}
+      {scopeError !== null && (
+        <InlineAlert status={scopeLoaded ? 'warning' : 'error'}>
+          {getErrorMessage(scopeError, '사전예약별 집계를 불러오지 못했어요.')}
+          {scopeLoaded && ' 예약 숫자는 마지막으로 받은 값이에요.'}
+        </InlineAlert>
+      )}
       {slowFailed && (
         <InlineAlert status="warning">
           주문·상품 수나 럭키드로우를 새로 받지 못했어요. 그 숫자는 마지막으로
@@ -371,7 +387,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           linkLabel="예약 현황"
           value={received}
           unit="건"
-          loading={queue.isPending}
+          loading={scopePending}
         />
         <OpsKpiCard
           label="외부 등록 실패"

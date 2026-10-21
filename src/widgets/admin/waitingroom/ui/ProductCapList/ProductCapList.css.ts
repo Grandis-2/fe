@@ -98,7 +98,10 @@ export const actions = style({
   display: 'flex',
   justifyContent: 'flex-end',
   gap: spacing[6],
-  '@container': { [narrow]: { gridColumn: 2, gridRow: 1 } },
+  // 좁으면 이름과 반씩 나눠 쓰는 칸이라, 버튼 둘이 안 들어가면 넘치지 않고 아래로 내린다.
+  '@container': {
+    [narrow]: { gridColumn: 2, gridRow: 1, flexWrap: 'wrap', minWidth: 0 },
+  },
 })
 
 const buttonBase = style([
