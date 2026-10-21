@@ -15,6 +15,11 @@ import type {
 } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
+import {
+  failedShippingOutcome,
+  type ShippingOutcome,
+} from '../lib/shippingOutcome'
+
 import { advanceShipping, getAdminOrder, getAdminOrders } from './adminOrder'
 
 const ADMIN_ORDERS_KEY = ['admin', 'orders'] as const
@@ -97,5 +102,48 @@ export const useAdvanceShipping = () => {
       if (caught instanceof ApiRequestError && caught.status === 409)
         void refresh()
     },
+  })
+}
+
+export type ShippingBatchResult = { orderId: string; outcome: ShippingOutcome }
+
+/**
+ * 여러 주문을 같은 단계로 옮긴다. 일괄 API가 없어 한 건씩 차례로 보내고, 실패는 던지지 않고
+ * 건마다 결과로 남긴다. 목록은 끝난 뒤 한 번만 다시 받는다(건마다 받으면 요청이 몰린다).
+ */
+export const useAdvanceShippingBatch = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async ({
+      orderIds,
+      step,
+      reason,
+      onProgress,
+      shouldStop,
+    }: {
+      orderIds: readonly string[]
+      step: ShippingStep
+      reason: string
+      /** 한 건 끝날 때마다 지금까지의 결과 */
+      onProgress: (results: ShippingBatchResult[]) => void
+      /** 참이면 남은 건을 보내지 않는다(이미 보낸 건은 그대로) */
+      shouldStop: () => boolean
+    }) => {
+      const results: ShippingBatchResult[] = []
+      for (const orderId of orderIds) {
+        if (shouldStop()) break
+        const outcome = await advanceShipping(orderId, { step, reason }).then(
+          ({ applied }): ShippingOutcome => ({
+            kind: applied ? 'moved' : 'already',
+          }),
+          failedShippingOutcome,
+        )
+        results.push({ orderId, outcome })
+        onProgress([...results])
+      }
+      return results
+    },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_ORDERS_KEY }),
   })
 }
