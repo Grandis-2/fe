@@ -287,6 +287,7 @@ function toOrderItems(items: CartOrderItem[]): OrderItem[] {
     if (!found) continue
     const { product, variant } = found
     const row = merged.get(item.variantId) ?? {
+      orderItemId: crypto.randomUUID(),
       productId: product.productId,
       optionId: variant.variantId,
       productTitle: product.title,
@@ -474,6 +475,7 @@ function placePreorderOrder(
     paymentDueAt: null,
     items: [
       {
+        orderItemId: crypto.randomUUID(),
         productId: preorder.productId,
         optionId: preorder.optionId,
         productTitle: preorder.productTitle,

@@ -24,6 +24,7 @@ function winnerOrderOf(draw: DrawRecord, entry: DrawEntryRecord): OrderRecord {
     paymentDueAt: null,
     items: [
       {
+        orderItemId: crypto.randomUUID(),
         productId: draw.gift.productId,
         optionId: draw.gift.variantId,
         productTitle: draw.gift.productTitle,

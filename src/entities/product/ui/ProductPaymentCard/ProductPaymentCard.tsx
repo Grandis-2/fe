@@ -66,7 +66,8 @@ export function ProductPaymentCard({
 }: ProductPaymentCardProps) {
   const isCart = variant === 'cart'
   const isPending = variant === 'preorder-pending'
-  const showAction = isPending || variant === 'checkout'
+  // 그 밖의 variant도 onActionClick을 주면 버튼이 붙는다(주문 내역의 리뷰 쓰기).
+  const showAction = isPending || variant === 'checkout' || !!onActionClick
   const showStepper = isCart && quantity !== undefined && !!onQuantityChange
 
   return (

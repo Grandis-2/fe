@@ -131,6 +131,7 @@ const buildSeedOrders = (): AdminOrderRecord[] =>
           : null,
       items: [
         {
+          orderItemId: mockUuid(5, 2000 + i),
           productId: source === 'DRAW' ? draw.gift.productId : mockUuid(2, i),
           optionId: source === 'DRAW' ? draw.gift.variantId : mockUuid(3, i),
           productTitle:
@@ -164,7 +165,7 @@ const buildSeedOrders = (): AdminOrderRecord[] =>
 
 // 다른 회원의 시드 주문은 배송 단계를 옮긴 결과가 새로고침 뒤에도 남도록 따로 싣는다
 // (회원 주문은 회원 목업의 saveOrderDb가 싣는다). 모양이 바뀌면 키의 버전을 올린다.
-const SEED_DB_KEY = 'nova-admin-order-mock-db-v1'
+const SEED_DB_KEY = 'nova-admin-order-mock-db-v2'
 
 function loadSeedOrders(): AdminOrderRecord[] | null {
   try {

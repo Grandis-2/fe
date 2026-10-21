@@ -16,6 +16,7 @@ const order = {
   paymentDueAt: null,
   items: [
     {
+      orderItemId: '60000003-0000-4000-8000-000000000000',
       productId: '20000003-0000-4000-8000-000000000000',
       optionId: '30000003-0000-4000-8000-000000000000',
       productTitle: '갤럭시 워치 클래식',

@@ -26,8 +26,7 @@ const toItem = (review: Review) => ({
   priceLabel: '',
 })
 
-// 내가 쓴 리뷰(GET /reviews/mine). 리뷰 쓰기는 배송 완료된 일반 구매 주문상품(orderItemId)이 있어야 하는데,
-// 주문 API가 아직 사전예약 주문만 주고 주문상품 id도 내려주지 않아 여기서는 쓴 리뷰의 수정·삭제만 한다.
+// 내가 쓴 리뷰(GET /reviews/mine) — 수정·삭제만 한다. 새 리뷰는 주문 내역의 배송 완료 주문상품에서 쓴다.
 export function MypageReviews() {
   const { data, isPending, isError, error } = useMyReviews()
   const removeReview = useDeleteReview()

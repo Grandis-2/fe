@@ -2,9 +2,8 @@ import { mockUuid, products } from './product'
 
 import type { ReviewView } from '../../types'
 
-// 리뷰를 쓸 수 있는지 판단할 내 주문상품. 주문 서비스 데이터라 리뷰 목업이 따로 들고 있는다.
-// 주문 API가 주문상품 id(orderItemId)를 내려주지 않아 화면에서 리뷰 쓰기로 이어지지는 않는다 — 목업 리뷰의 주인 표시용이다.
-// ponytail: 주문 API 목업이 생기면 그쪽 주문상품을 읽는다.
+// 시드 리뷰의 주인인 내 주문상품 — 주문 목업에는 없는 옛 주문이다. 주문 내역에서 쓰는 리뷰는
+// 리뷰 목업이 주문 목업(fixtures/preorder의 orders)의 주문상품을 직접 찾는다.
 export type MockOrderItem = {
   orderItemId: string
   productId: string

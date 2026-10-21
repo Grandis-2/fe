@@ -15,7 +15,9 @@ import {
   ProductPaymentCard,
   type ProductPaymentCardItem,
 } from '@entities/product'
+import { useMyReviews, type Review } from '@entities/review'
 import { startOrderPayment } from '@features/payment'
+import { openReviewForm } from '@features/review-write'
 import { getErrorMessage } from '@shared/api/client'
 import { formatDotDate } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
@@ -72,24 +74,25 @@ const formatTime = (iso: string) =>
     minute: '2-digit',
   })
 
-const toItems = ({ items }: Order): ProductPaymentCardItem[] =>
-  items.map((item) => ({
-    productId: item.productId,
-    name: item.productTitle,
-    modelNumber: '',
-    optionSummary: [
-      item.optionTitle,
-      item.warrantyQuantity > 0 && `보증 ${item.warrantyQuantity}개`,
-    ]
-      .filter(Boolean)
-      .join(' · '),
-    quantityLabel: `수량 ${item.quantity}개`,
-    priceLabel: formatWon(item.lineAmount),
-  }))
+type OrderItem = Order['items'][number]
 
-const renderItem = (product: ProductPaymentCardItem) => (
-  <ProductPaymentCard product={product} />
-)
+const toCardItem = (item: OrderItem): ProductPaymentCardItem => ({
+  productId: item.productId,
+  name: item.productTitle,
+  modelNumber: '',
+  optionSummary: [
+    item.optionTitle,
+    item.warrantyQuantity > 0 && `보증 ${item.warrantyQuantity}개`,
+  ]
+    .filter(Boolean)
+    .join(' · '),
+  quantityLabel: `수량 ${item.quantity}개`,
+  priceLabel: formatWon(item.lineAmount),
+})
+
+// 리뷰는 배송 완료된 일반 구매(장바구니·바로 구매) 주문상품에만 쓴다 — 사전예약·드로우 증정품은 서버가 409로 막는다.
+const isReviewable = ({ status, source }: Order) =>
+  status === 'DELIVERED' && (source === 'CART' || source === 'BUY_NOW')
 
 // 결제 대기 주문 — 장바구니·바로 구매 주문은 여기서 결제(기한 10분 안)·취소한다. 사전예약 주문은 버튼 없이 상태만 보이고
 // 결제·취소는 사전예약 내역에서 한다(주문 응답엔 예약 id가 없다) — 마이페이지 메뉴의 '사전예약 내역' 숫자가 그쪽으로 이끈다.
@@ -118,6 +121,35 @@ export function MypageHistory() {
   const [statusFilter, setStatusFilter] = useState('전체')
   const [period, setPeriod] = useState<number>(6)
   const { data, isPending, isError, error } = useOrders()
+  // 주문상품마다 쓴 리뷰가 있으면 '리뷰 수정'으로 연다. 내 리뷰를 받기 전엔 버튼을 막는다.
+  const myReviews = useMyReviews()
+  const reviewByItem = new Map<string, Review>(
+    (myReviews.data?.items ?? []).map((review) => [
+      review.orderItemId ?? '',
+      review,
+    ]),
+  )
+
+  const renderItem = (order: Order) => (item: OrderItem) => {
+    if (!isReviewable(order))
+      return <ProductPaymentCard product={toCardItem(item)} />
+    const review = reviewByItem.get(item.orderItemId)
+    return (
+      <ProductPaymentCard
+        product={toCardItem(item)}
+        actionLabel={review ? '리뷰 수정' : '리뷰 쓰기'}
+        actionDisabled={myReviews.isPending}
+        onActionClick={() =>
+          openReviewForm({
+            orderItemId: item.orderItemId,
+            productName: item.productTitle,
+            optionSummary: item.optionTitle,
+            review,
+          })
+        }
+      />
+    )
+  }
 
   const orders = data?.items ?? []
   const visibleOrders = orders.filter(
@@ -199,8 +231,8 @@ export function MypageHistory() {
             preorder={order.source === 'PREORDER'}
             orderDate={formatDotDate(order.createdAt)}
             orderNumber={shortId(order.orderId)}
-            items={toItems(order)}
-            renderItem={renderItem}
+            items={order.items}
+            renderItem={renderItem(order)}
             footer={
               <>
                 <div className={styles.totalRow}>

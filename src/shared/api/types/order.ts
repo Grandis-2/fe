@@ -22,6 +22,8 @@ export type OrderSource = 'PREORDER' | 'BUY_NOW' | 'CART' | 'DRAW'
 
 // 주문상품 한 줄(옵션마다 한 줄). 이름·단가·보증가는 주문 당시 값(사전예약은 예약 접수 당시)이다.
 export type OrderItem = {
+  // 주문상품 id — 리뷰 쓰기(POST /reviews)에 쓴다. 명세(order.json)엔 아직 없지만 서버는 내려준다.
+  orderItemId: string
   productId: string
   // 장바구니의 variantId와 같은 값.
   optionId: string
