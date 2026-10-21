@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
 import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
@@ -7,7 +12,7 @@ import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
 
 import { toCreateDrawRequest, type AdminDrawFormValue } from '../model/form'
-import { isDrawSettled } from '../model/stage'
+import { drawStageOf, isDrawSettled } from '../model/stage'
 
 import {
   createAdminDraw,
@@ -16,13 +21,18 @@ import {
   getAdminDraws,
 } from './adminDraw'
 
+import type { AdminDraw } from '../model/types'
+
 const ADMIN_DRAWS_KEY = ['admin', 'draws'] as const
 
 /**
  * 회차 전체. 단계 필터가 화면에서 걸러서 쪽을 끝까지 이어 받는다 — 회차는 많아야 수십
  * 개다. 단계(phase)는 응답 시점 값이라 재고(live)처럼 매번 다시 받는다.
  */
-export const useAdminDraws = () =>
+export const useAdminDraws = (
+  /** 자동으로 다시 받는 간격. 운영 대시보드처럼 열어 두는 화면이 준다 */
+  intervalMs: RefreshInterval = false,
+) =>
   useQuery({
     queryKey: [...ADMIN_DRAWS_KEY, 'list'] as const,
     queryFn: ({ signal }) =>
@@ -30,6 +40,7 @@ export const useAdminDraws = () =>
         getAdminDraws({ page, size: PAGE_SIZE_MAX }, signal),
       ),
     ...queryPolicy.live,
+    refetchInterval: intervalMs,
   })
 
 export const useAdminDraw = (drawId: string) =>
@@ -39,13 +50,20 @@ export const useAdminDraw = (drawId: string) =>
     ...queryPolicy.live,
   })
 
+const progressQuery = (drawId: string) => ({
+  queryKey: [...ADMIN_DRAWS_KEY, 'progress', drawId] as const,
+  queryFn: ({ signal }: { signal: AbortSignal }) =>
+    getAdminDrawProgress(drawId, signal),
+  ...queryPolicy.live,
+})
+
 /** 응모·추첨 진행. 결과가 반영되면 더 바뀔 게 없어 자동 갱신을 멈춘다 */
 export const useAdminDrawProgress = (
   drawId: string,
   intervalMs: RefreshInterval,
 ) => {
   const queryClient = useQueryClient()
-  const queryKey = [...ADMIN_DRAWS_KEY, 'progress', drawId] as const
+  const { queryKey, ...query } = progressQuery(drawId)
   // 보여 줄 진행이 아직 없거나 결과가 반영됐으면 폴링 중이 아니다.
   const pollMs = (
     data: Awaited<ReturnType<typeof getAdminDrawProgress>> | undefined,
@@ -53,11 +71,28 @@ export const useAdminDrawProgress = (
     !data || intervalMs === false || isDrawSettled(data) ? null : intervalMs
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getAdminDrawProgress(drawId, signal),
-    ...queryPolicy.live,
+    ...query,
     refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
     ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
   })
+}
+
+/**
+ * 결과가 나올 시간이 지났는데 반영이 안 된 회차만 골라낸다. 멈췄는지는 회차마다 진행을
+ * 받아야 알 수 있다. 진행은 한 번만 받는다 — 멈춘 회차는 저절로 풀리지 않는다.
+ * @returns stuck: 멈춘 회차, isPending: 진행을 아직 다 못 받았다
+ */
+export const useStuckDraws = (draws: readonly AdminDraw[], now: number) => {
+  const queries = useQueries({
+    queries: draws.map((draw) => progressQuery(draw.drawId)),
+  })
+  return {
+    stuck: draws.filter((draw, index) => {
+      const progress = queries[index]?.data
+      return progress && drawStageOf(draw, progress, now) === 'STUCK'
+    }),
+    isPending: queries.some((query) => query.isPending),
+  }
 }
 
 /** 서버가 본문을 보고 거절해 회차가 안 생긴 게 확실한 실패 — 고쳐서 새 키로 보낸다 */

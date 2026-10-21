@@ -32,6 +32,13 @@ export type DropdownProps<TValue> = {
   onToggle?: () => void
   onSelect?: (value: TValue) => void
   className?: string
+  /**
+   * 칸 위에 따로 보이는 제목(예: '배송 차수'). 주면 스크린리더가 '배송 차수: 1차'처럼
+   * 제목과 고른 값을 같이 읽는다 — 트리거엔 고른 값만 보여서 무엇을 고르는 칸인지 모른다.
+   */
+  fieldLabel?: string
+  /** 아직 고를 수 없는 칸(예: 상품을 골라야 차수가 생김) */
+  disabled?: boolean
 }
 
 /**
@@ -50,6 +57,8 @@ export function Dropdown<TValue>({
   onToggle,
   onSelect,
   className,
+  fieldLabel,
+  disabled = false,
 }: DropdownProps<TValue>) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -168,6 +177,10 @@ export function Dropdown<TValue>({
           className={styles.trigger[size]}
           onClick={() => setOpen(!isOpen)}
           aria-expanded={isOpen}
+          disabled={disabled}
+          aria-label={
+            fieldLabel ? `${fieldLabel}: ${selectedLabel ?? label}` : undefined
+          }
         >
           <span className={styles.triggerLabel}>{selectedLabel ?? label}</span>
           {isOpen ? (

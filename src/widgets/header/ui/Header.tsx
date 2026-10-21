@@ -1,10 +1,4 @@
-import {
-  Bell,
-  ChevronLeft,
-  CircleUser,
-  LogOut,
-  ShoppingCart,
-} from 'lucide-react'
+import { ChevronLeft, CircleUser, LogOut, ShoppingCart } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router'
 
 import { logout, useSession } from '@entities/auth'
@@ -26,21 +20,17 @@ import { CategoryNav } from '@widgets/category-nav'
 import { getMobileTitle } from '../lib/getMobileTitle'
 import { useHeaderTheme } from '../lib/useHeaderTheme'
 
+import { AdminNotification } from './AdminNotification'
 import * as styles from './Header.css'
 import { HeaderNotification } from './HeaderNotification'
 import { HeaderSearch } from './HeaderSearch'
 
 export type HeaderProps = {
   onSearchClick?: () => void
-  onNotificationClick?: () => void
   className?: string
 }
 
-export function Header({
-  onSearchClick,
-  onNotificationClick,
-  className,
-}: HeaderProps) {
+export function Header({ onSearchClick, className }: HeaderProps) {
   const { pathname, search, key } = useLocation()
   const navigate = useNavigate()
   // 모바일은 홈을 뺀 화면에서 로고 대신 '< 제목'을 띄운다 — 데스크톱은 그대로 로고.
@@ -145,15 +135,7 @@ export function Header({
         <div className={styles.actions}>
           {isAdminLogin ? null : isAdminPage ? (
             <>
-              {/* 관리자 알림은 회원 알림과 대상이 달라 패널을 열지 않고 밖에 알리기만 한다. */}
-              <button
-                type="button"
-                className={styles.iconButton}
-                aria-label="알림"
-                onClick={onNotificationClick}
-              >
-                <Bell className={styles.icon} aria-hidden="true" />
-              </button>
+              <AdminNotification />
               <button
                 type="button"
                 className={styles.iconButton}

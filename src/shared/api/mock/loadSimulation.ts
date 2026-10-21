@@ -23,9 +23,14 @@ const inFlight: InFlight[] = []
 
 const iso = (ms: number) => new Date(ms).toISOString()
 
-/** 기존 예약을 본떠 방금 접수된 예약을 만든다(상품·옵션·회원은 돌아가며 쓴다) */
-function receive(now: number): AdminPreorderDetail {
-  const template = reservationStore[sequence % reservationStore.length]
+/**
+ * 기존 예약을 본떠 방금 접수된 예약을 만든다. 본뜰 예약을 안 주면 상품·옵션·회원을
+ * 돌아가며 쓴다(오픈 시나리오는 상품을 골라 넘긴다).
+ */
+export function receive(
+  now: number,
+  template = reservationStore[sequence % reservationStore.length],
+): AdminPreorderDetail {
   sequence += 1
   const queuePosition =
     Math.max(
@@ -76,23 +81,37 @@ function receive(now: number): AdminPreorderDetail {
   }
 }
 
-/** 외부 등록을 마친다 — Mock 실패율만큼은 재시도 끝에 실패(DEAD_LETTER)로 남는다 */
-function settle(detail: AdminPreorderDetail, now: number) {
+/** Mock 설정의 실패율만큼 실패 코드를, 아니면 null(성공)을 고른다 */
+function pickFailure() {
   const config = currentMockConfig()
+  if (Math.random() >= config.failureRate) return null
+  return config.failureMode === 'TIMEOUT' ? 'TIMEOUT' : 'HTTP_503'
+}
+
+/**
+ * 외부 등록을 마친다. errorCode가 있으면 재시도 끝에 실패(DEAD_LETTER)로 남고, null이면
+ * 등록돼 결제할 수 있게 된다.
+ */
+export function settle(
+  detail: AdminPreorderDetail,
+  now: number,
+  errorCode: string | null,
+) {
   const [job] = detail.syncJobs
-  const failed = Math.random() < config.failureRate
-  const errorCode = config.failureMode === 'TIMEOUT' ? 'TIMEOUT' : 'HTTP_503'
-  job.attemptCount = 1
+  const failed = errorCode !== null
+  job.attemptCount += 1
   job.updatedAt = iso(now)
   job.attempts = [
+    ...job.attempts,
     {
-      attemptNumber: 1,
+      attemptNumber: job.attemptCount,
       actor: 'SYSTEM',
       result: failed ? 'FAILED' : 'SUCCEEDED',
-      httpStatus: failed ? 503 : 200,
-      errorCode: failed ? errorCode : null,
+      // 거절은 요청 내용 문제(422), 나머지 실패는 외부 시스템 일시 장애(503)로 둔다.
+      httpStatus: !failed ? 200 : errorCode.endsWith('REJECTED') ? 422 : 503,
+      errorCode,
       errorMessage: failed ? 'Service Unavailable' : null,
-      startedAt: detail.createdAt,
+      startedAt: iso(now),
       finishedAt: iso(now),
     },
   ]
@@ -102,7 +121,10 @@ function settle(detail: AdminPreorderDetail, now: number) {
     job.deadLetteredAt = iso(now)
     return
   }
+  // 다시 보내 성공한 작업도 있어 실패 흔적을 지운다(명세: 성공이면 lastErrorCode는 null).
   job.status = 'SUCCEEDED'
+  job.lastErrorCode = null
+  job.deadLetteredAt = null
   detail.status = 'REGISTERED'
   detail.displayStatus = 'PAYABLE'
   detail.payableFrom = iso(now)
@@ -110,7 +132,7 @@ function settle(detail: AdminPreorderDetail, now: number) {
   detail.version = 2
   detail.externalReference = `R-L${sequence}`
   detail.events.push({
-    eventSequence: 2,
+    eventSequence: detail.events.length + 1,
     fromStatus: 'PENDING_SYNC',
     toStatus: 'REGISTERED',
     actor: 'SYSTEM',
@@ -144,7 +166,7 @@ function tick() {
   for (let processed = 0; processed < PROCESS_PER_TICK; processed += 1) {
     if (!inFlight[0] || inFlight[0].readyAt > now) break
     const next = inFlight.shift()
-    if (next) settle(next.detail, now)
+    if (next) settle(next.detail, now, pickFailure())
   }
 
   // 시험이 끝났고 남은 접수도 다 처리했으면 멈춘다.

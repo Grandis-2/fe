@@ -8,61 +8,37 @@ export const root = style({
   gap: spacing[20],
 })
 
-export const cards = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-  gap: spacing[16],
-})
-
-/** 섹션 내용을 감싸는 흰 카드 */
-export const card = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[16],
-  padding: spacing[20],
-  borderRadius: '12px',
-  border: `1px solid ${color.border.subtle}`,
-  background: color.background.base,
-})
-
-// 좁은 화면에선 이름 · 값 · 버튼이 차례로 줄바꿈된다.
-export const settingRow = style({
+// 제목과 갱신 시각을 한 줄에 — 운영 대시보드와 같은 모양이다.
+export const topBar = style({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
-  gap: spacing[12],
-})
-
-export const settingLabel = style([
-  typography.body.defaultMedium,
-  { minWidth: '120px', color: color.text.primary },
-])
-
-export const settingValue = style([
-  typography.body.defaultRegular,
-  {
-    display: 'flex',
-    alignItems: 'center',
-    gap: spacing[8],
-    color: color.text.primary,
-  },
-])
-
-export const rowActions = style({
-  display: 'flex',
-  justifyContent: 'center',
-  gap: spacing[8],
-  marginLeft: 'auto',
-})
-
-export const subText = style([
-  typography.body.sub,
-  { color: color.text.tertiary },
-])
-
-// 불러오는 동안의 줄 — 줄 사이를 실제 설정 줄과 비슷하게 띄운다.
-export const skeletonRows = style({
-  display: 'flex',
-  flexDirection: 'column',
+  justifyContent: 'space-between',
   gap: spacing[16],
 })
+
+// 다른 관리자 화면(예약 현황·상품 관리)의 제목과 같은 크기다.
+export const pageTitle = style([
+  typography.title.xlSemibold,
+  { margin: 0, color: color.text.primary },
+])
+
+// 왼쪽은 자주 보고 바꾸는 것, 오른쪽 좁은 칸은 가끔 바꾸는 설정과 서버 상태.
+export const columns = style({
+  display: 'grid',
+  gridTemplateColumns: 'minmax(0, 1fr) 400px',
+  alignItems: 'start',
+  gap: spacing[20],
+  '@media': {
+    'screen and (max-width: 1100px)': { gridTemplateColumns: 'minmax(0, 1fr)' },
+  },
+})
+
+export const main = style({
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[20],
+})
+
+export const side = style([main])

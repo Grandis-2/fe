@@ -216,11 +216,6 @@ export const reservationStageLabel: Record<ReservationStage, string> = {
   CANCELED: '취소',
 }
 
-// 객체 키 순서가 카드 순서다 — 탭 순서와 같다.
-export const reservationStages = Object.keys(
-  reservationStageLabel,
-) as ReservationStage[]
-
 /**
  * 집계 API로 카드별 건수를 만든다. 외부 등록 실패(REGISTER 작업 DEAD_LETTER) 예약은
  * 원장으로는 처리 중(PENDING_SYNC)이라, 처리 중에서 빼야 카드끼리 겹치지 않는다.

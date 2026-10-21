@@ -1,8 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { pollEvery, queryPolicy } from '@shared/api/queryPolicy'
-import type { AdmissionRateView } from '@shared/api/types'
+import type {
+  AdmissionRateView,
+  WaitingroomStatusView,
+} from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
+
+import { WAITINGROOM_DEFAULTS, type WaitingroomStatus } from '../model/types'
 
 import {
   clearMaxWait,
@@ -18,6 +23,20 @@ import {
 } from './adminWaitingroom'
 
 const WAITINGROOM_KEY = ['admin', 'waitingroom'] as const
+
+/**
+ * 운영값이 없는 상품은 상한이 null로 올 수 있다 — 그때 실제로 걸리는 건 기본 상한이라 그
+ * 값으로 채운다. 비워 두면 화면이 0으로 읽어 "아무도 못 들어가요"라고 잘못 말한다.
+ */
+const toWaitingroomStatus = (
+  view: WaitingroomStatusView,
+): WaitingroomStatus => ({
+  ...view,
+  products: view.products.map((product) => ({
+    ...product,
+    cap: product.cap ?? WAITINGROOM_DEFAULTS.productCap,
+  })),
+})
 const RATES_KEY = [...WAITINGROOM_KEY, 'rates'] as const
 // 서버 안내: 1초보다 자주 묻지 않는다.
 const MIN_POLL_MS = 1_000
@@ -28,7 +47,8 @@ export const useWaitingroomStatus = (intervalMs: RefreshInterval) => {
   const queryKey = [...WAITINGROOM_KEY, 'status'] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getWaitingroomStatus(signal),
+    queryFn: ({ signal }) =>
+      getWaitingroomStatus(signal).then(toWaitingroomStatus),
     ...queryPolicy.live,
     ...pollEvery(
       queryClient,

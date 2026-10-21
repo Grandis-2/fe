@@ -24,6 +24,7 @@ export type AdminProductDetailModel = Pick<
   | 'status'
   | 'campaign'
   | 'basePrice'
+  | 'discountRate'
   | 'optionAxes'
   | 'variants'
   | 'description'

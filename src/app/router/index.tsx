@@ -20,11 +20,11 @@ import {
   ADMIN_MOCK_SETTINGS_PATH,
   ADMIN_DRAW_NEW_PATH,
   ADMIN_DRAWS_PATH,
-  ADMIN_NOTIFICATIONS_PATH,
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PRODUCTS_PATH,
   ADMIN_PROMOTION_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
+  ADMIN_BANNERS_PATH,
   ADMIN_ORDERS_PATH,
   ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
@@ -234,18 +234,14 @@ const browserRouter = createBrowserRouter([
                 // 관리자 페이지도 사이드바는 남기고 본문 자리에만 에러 화면을 그린다.
                 errorElement: <ErrorPage placement="panel" />,
                 children: [
-                  // 홈은 다른 용도로 바꿀 예정이라 비워 둔다. 메뉴 목록은 사이드바 한 곳에만 둔다.
+                  // 운영 홈 — 오픈 중 지금 처리할 일과 처리 흐름. 메뉴 목록은 사이드바 한 곳에만 둔다.
                   {
                     path: ADMIN_HOME_PATH,
                     lazy: () =>
-                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                        (m) => ({
-                          element: <m.AdminPlaceholderPage title="관리자 홈" />,
-                        }),
-                      ),
+                      import('@pages/admin/home/AdminHomePage').then((m) => ({
+                        Component: m.AdminHomePage,
+                      })),
                   },
-                  // 홈을 제외한 나머지는 아직 기능 범위가 안 정해져서 전부 placeholder —
-                  // 스코프가 정해지는 대로 각자 전용 페이지로 교체.
                   {
                     path: ADMIN_PRODUCTS_PATH,
                     lazy: () =>
@@ -286,6 +282,13 @@ const browserRouter = createBrowserRouter([
                     lazy: () =>
                       import('@pages/admin/promotion-edit/AdminPromotionEditPage').then(
                         (m) => ({ Component: m.AdminPromotionEditPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_BANNERS_PATH,
+                    lazy: () =>
+                      import('@pages/admin/banners/AdminBannersPage').then(
+                        (m) => ({ Component: m.AdminBannersPage }),
                       ),
                   },
                   {
@@ -370,17 +373,6 @@ const browserRouter = createBrowserRouter([
                     lazy: () =>
                       import('@pages/admin/load-test/AdminLoadTestPage').then(
                         (m) => ({ Component: m.AdminLoadTestPage }),
-                      ),
-                  },
-                  {
-                    path: ADMIN_NOTIFICATIONS_PATH,
-                    lazy: () =>
-                      import('@pages/admin/placeholder/AdminPlaceholderPage').then(
-                        (m) => ({
-                          element: (
-                            <m.AdminPlaceholderPage title="관리자 알림 내역 확인" />
-                          ),
-                        }),
                       ),
                   },
                   {

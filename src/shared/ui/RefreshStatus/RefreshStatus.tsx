@@ -10,7 +10,7 @@ export type RefreshStatusProps = {
   onRefresh: () => void
   /** 갱신 규칙 안내(예: '10초마다 자동 갱신') */
   note?: string
-  /** 줄 끝에 붙일 조작(예: 갱신 간격 선택) */
+  /** 새로 고침 버튼 앞에 붙일 조작(예: 갱신 간격 선택) */
   children?: ReactNode
 }
 
@@ -23,7 +23,7 @@ const timeFormatter = new Intl.DateTimeFormat('ko-KR', {
 
 /**
  * 자동으로 다시 받는 화면의 '마지막 갱신 시각' 줄. 멈춘 값을 최신으로 읽지 않게 언제
- * 받은 값인지 보여주고, 누르면 바로 다시 받는다.
+ * 받은 값인지 보여주고, 줄 끝의 버튼을 누르면 바로 다시 받는다.
  */
 export function RefreshStatus({
   updatedAt,
@@ -33,12 +33,20 @@ export function RefreshStatus({
 }: RefreshStatusProps) {
   return (
     <div className={styles.root}>
-      <button type="button" className={styles.button} onClick={onRefresh}>
-        <RefreshCw className={styles.icon} aria-hidden="true" />
+      <span>
         마지막 갱신 {updatedAt ? timeFormatter.format(updatedAt) : '—'}
-      </button>
-      {note && <span>{note}</span>}
+        {note && ` · ${note}`}
+      </span>
       {children}
+      <button
+        type="button"
+        className={styles.button}
+        onClick={onRefresh}
+        aria-label="지금 새로 고침"
+        title="지금 새로 고침"
+      >
+        <RefreshCw className={styles.icon} aria-hidden="true" />
+      </button>
     </div>
   )
 }

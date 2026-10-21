@@ -1,8 +1,7 @@
 import type { ApiViolation } from '@shared/api/types'
 
+import { getProductVariants, type AdminProductFormValue } from './form'
 import { brandCodeOf, MODEL_NAME_MAX } from './types'
-
-import type { AdminProductFormValue } from './form'
 
 /** 오류를 붙일 폼 칸. 화면은 이 이름으로 칸을 찾아 그 아래에 문구를 띄우고 스크롤한다 */
 export type FormField =
@@ -16,10 +15,15 @@ export type FormField =
   | 'variants'
   | 'tags'
   | 'images'
+  | 'discountRate'
 
 export type FormIssue = Omit<ApiViolation, 'field'> & { field: FormField }
 
 const TITLE_MAX = 100
+/** 서버 할인율 범위(정수 %) */
+export const DISCOUNT_RATE_MAX = 99
+/** 서버는 할인가가 이보다 작은 옵션이 생기면 400이다 */
+const DISCOUNTED_PRICE_MIN = 100
 const TAGS_MAX = 500
 
 /**
@@ -54,6 +58,35 @@ export function validateProductBasics(
     issues.push({ field: 'brand', message: '브랜드를 골라 주세요.' })
   }
 
+  if (
+    !Number.isInteger(value.discountRate) ||
+    value.discountRate < 0 ||
+    value.discountRate > DISCOUNT_RATE_MAX
+  ) {
+    issues.push({
+      field: 'discountRate',
+      message: `할인율은 0~${DISCOUNT_RATE_MAX}% 사이 정수로 적어 주세요.`,
+    })
+  } else if (value.discountRate > 0) {
+    // 실제로 보낼 조합 중 가장 싼 것의 할인가가 100원 아래면 서버가 막는다. 빈 칸 값과 판매를
+    // 끈 조합(등록에선 만들지 않음)은 빼고 본다 — 넣으면 서버는 받는 값을 여기서 막는다.
+    // 수정에선 판매 중지 조합도 서버에 남아 있어 서버가 400을 줄 수 있는데, 그 오류는 이
+    // 칸으로 옮겨 보인다(SERVER_FIELD).
+    const prices = getProductVariants(value)
+      .filter((variant) => !value.pausedKeys.includes(variant.key))
+      .map((variant) => variant.price)
+    const cheapest = prices.length > 0 ? Math.min(...prices) : value.basePrice
+    if (
+      Math.floor((cheapest * (100 - value.discountRate)) / 100) <
+      DISCOUNTED_PRICE_MIN
+    ) {
+      issues.push({
+        field: 'discountRate',
+        message: `할인가가 ${DISCOUNTED_PRICE_MIN}원보다 작아지는 옵션이 있어요.`,
+      })
+    }
+  }
+
   if (value.tags.join(',').length > TAGS_MAX) {
     issues.push({
       field: 'tags',
@@ -70,6 +103,7 @@ const SERVER_FIELD: [prefix: string, field: FormField][] = [
   ['brand', 'brand'],
   ['categoryId', 'category'],
   ['tags', 'tags'],
+  ['discountRate', 'discountRate'],
   ['campaign', 'schedule'],
   ['shipmentBatches', 'firstDelivery'],
   ['optionAxes', 'options'],

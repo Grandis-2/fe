@@ -1,4 +1,9 @@
-import { keyframes, style, styleVariants } from '@vanilla-extract/css'
+import {
+  globalStyle,
+  keyframes,
+  style,
+  styleVariants,
+} from '@vanilla-extract/css'
 
 import {
   color,
@@ -189,4 +194,10 @@ export const optionSelected = style({
       color: color.primary.subtle,
     },
   },
+})
+
+// 고를 수 없는 칸 — 글자를 흐리게 하고 손가락 커서를 뺀다.
+globalStyle(`${box} button:disabled`, {
+  color: color.text.disabled,
+  cursor: 'not-allowed',
 })
