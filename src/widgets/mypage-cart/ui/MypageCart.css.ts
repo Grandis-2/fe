@@ -106,3 +106,84 @@ export const empty = style([
     textAlign: 'center',
   },
 ])
+
+// 불러오는 동안 — 막대 크기는 Cart Skeleton.dc.html을 따르고, 목록·결제 정보 칸은 위 스타일을 그대로 쓴다.
+export const skeleton = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[24],
+  '@media': { [breakpoint.mobile]: { gap: spacing[20] } },
+})
+
+export const skeletonSelectAll = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[10],
+})
+
+export const skeletonRow = style({
+  display: 'flex',
+  gap: '14px',
+  paddingBlock: '18px',
+  selectors: { '& + &': { borderTop: divider } },
+  '@media': {
+    [breakpoint.mobile]: { gap: spacing[12], paddingBlock: spacing[16] },
+  },
+})
+
+// 체크박스는 썸네일 높이의 가운데에 온다.
+export const skeletonCheck = style({
+  flexShrink: 0,
+  marginTop: '27px',
+  '@media': { [breakpoint.mobile]: { marginTop: '23px' } },
+})
+
+// 썸네일과 그 아래 수량 조절기 자리.
+export const skeletonThumb = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[8],
+  width: '76px',
+  flexShrink: 0,
+  '@media': { [breakpoint.mobile]: { width: '68px' } },
+})
+
+export const skeletonInfo = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '10px',
+  flex: 1,
+  minWidth: 0,
+  paddingTop: '2px',
+})
+
+export const skeletonPrice = style({ marginTop: 'auto', alignSelf: 'flex-end' })
+
+export const skeletonSummary = style([
+  card,
+  {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+    padding: spacing[24],
+  },
+])
+
+export const skeletonSummaryRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+})
+
+export const skeletonTotal = style([
+  skeletonSummaryRow,
+  { paddingTop: '14px', borderTop: divider },
+])
+
+// 결제 버튼 자리는 흐르지 않는 판으로 둔다(시안 그대로).
+export const skeletonAction = style({
+  height: '52px',
+  marginTop: '6px',
+  borderRadius: '14px',
+  background: color.background.surface,
+})

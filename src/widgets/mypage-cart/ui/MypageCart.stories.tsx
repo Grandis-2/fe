@@ -47,11 +47,17 @@ const lines: CartLine[] = [
 ]
 
 // Storybook엔 MSW가 없어 장바구니 조회가 실패한다 — 캐시를 미리 채우고 다시 묻지 않게 한다.
-const withCart = (data: CartLine[]) => {
+// data를 안 주면 끝나지 않는 조회를 걸어 두어 불러오는 중으로 멈춘다.
+const withCart = (data?: CartLine[]) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity, retry: false } },
   })
-  queryClient.setQueryData(['cart', 'lines'], data)
+  if (data) queryClient.setQueryData(['cart', 'lines'], data)
+  else
+    void queryClient.prefetchQuery({
+      queryKey: ['cart', 'lines'],
+      queryFn: () => new Promise<never>(() => {}),
+    })
   return (Story: () => React.ReactNode) => (
     <QueryClientProvider client={queryClient}>
       <div
@@ -115,5 +121,15 @@ export const Empty: Story = {
     await expect(
       canvas.getByText('장바구니에 담긴 상품이 없어요.'),
     ).toBeVisible()
+  },
+}
+
+export const Loading: Story = {
+  decorators: [withCart()],
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('status')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
   },
 }
