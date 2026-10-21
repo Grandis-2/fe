@@ -17,9 +17,10 @@ import {
   type PurchaseDraft,
 } from '@features/product-purchase'
 import { PAYMENT_PATH, paymentPath, resultPath } from '@shared/config/routes'
-import { InlineAlert, PageSkeleton, SkeletonGroup } from '@shared/ui'
+import { InlineAlert, SkeletonGroup } from '@shared/ui'
 import {
   ProductDetailImages,
+  ProductDetailSkeleton,
   ProductOverview,
   shipmentStartLabel,
 } from '@widgets/product-detail'
@@ -119,15 +120,15 @@ export function ProductDetailPage() {
   if (!product) {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
-        <div className={styles.content}>
-          {isError || !isPending ? (
+        {isError || !isPending ? (
+          <div className={styles.content}>
             <InlineAlert status={isError ? 'error' : 'info'}>
               상품을 불러오지 못했어요.
             </InlineAlert>
-          ) : (
-            <PageSkeleton />
-          )}
-        </div>
+          </div>
+        ) : (
+          <ProductDetailSkeleton />
+        )}
       </div>
     )
   }
