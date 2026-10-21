@@ -6,14 +6,12 @@ import {
   adminReservationsPath,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Skeleton, Tag, UsageCells, usageCellUnit } from '@shared/ui'
+import { Skeleton, Tag, UsageCells } from '@shared/ui'
 
 import * as styles from './OpenPreorderCard.css'
 
 /** 맨 뒤 예상 대기가 이만큼 길면 고른 사전예약의 대기 상자를 경고 색으로 칠한다 */
 const LONG_WAIT_SECONDS = 10 * 60
-/** 입장 상한 사용 칸 수의 최대값 — 상한이 크면 한 칸에 여러 명을 묶는다 */
-const MAX_CELLS = 10
 
 export type OpenPreorderCardProps = {
   items: readonly OpenPreorder[]
@@ -63,8 +61,6 @@ export function OpenPreorderCard({
       !stopped &&
       picked.credit > 0 &&
       picked.waiting / picked.credit >= LONG_WAIT_SECONDS
-    // 1칸 = 초당 perCell명. 상한이 커도 칸은 MAX_CELLS개를 넘지 않게 묶는다.
-    const perCell = usageCellUnit(picked.cap, MAX_CELLS)
     const capFull = picked.cap > 0 && picked.credit >= picked.cap
 
     return (
@@ -133,7 +129,6 @@ export function OpenPreorderCard({
           <UsageCells
             used={picked.credit}
             total={picked.cap}
-            maxCells={MAX_CELLS}
             label={`입장 상한 ${formatNumber(picked.cap)}명 중 ${formatNumber(picked.credit)}명 사용`}
           />
           <span className={picked.cap > 0 ? styles.hint : styles.hintBad}>
@@ -146,12 +141,6 @@ export function OpenPreorderCard({
                 초당 <b>{formatNumber(picked.cap - picked.credit)}명</b> 더 들일
                 수 있어요
               </>
-            )}
-            {perCell > 1 && (
-              <span className={styles.hintSub}>
-                {' '}
-                · 1칸 = 초당 {formatNumber(perCell)}명
-              </span>
             )}
           </span>
         </div>

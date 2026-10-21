@@ -9,7 +9,7 @@ import { SLOW_AFTER_MS } from '@features/open-preorder-picker'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
-import { Skeleton, Tag, UsageCells, usageCellUnit } from '@shared/ui'
+import { Skeleton, Tag, UsageCells } from '@shared/ui'
 
 import { formatSeconds, oldestSeconds } from '../../lib/duration'
 import { NumberSettingForm } from '../NumberSettingForm'
@@ -17,9 +17,6 @@ import { NumberSettingForm } from '../NumberSettingForm'
 import * as styles from './ProductCapList.css'
 
 import type { AdmissionChange } from '../../lib/useAdmissionChange'
-
-/** 입장 상한 사용 칸 수의 최대값 — 상한이 크면 한 칸에 여러 명을 묶는다(운영 대시보드와 같다) */
-const MAX_CELLS = 10
 
 export type ProductCapListProps = {
   /** 대기가 많은 순으로 정렬된 상품별 대기열 */
@@ -124,8 +121,11 @@ export function ProductCapList({
         <ul className={styles.list}>
           {products.map((product) => {
             const name = nameOf(product.productId)
-            const atCap = product.cap > 0 && product.credit >= product.cap
-            const unit = usageCellUnit(product.cap, MAX_CELLS)
+            // 상한은 설정값(입장 속도 API)으로 보인다 — 운영값이 없으면 서버 기본값이 온다.
+            // 현황의 cap이 다르면 서버가 지금 그보다 낮게 적용 중이라 따로 알린다.
+            const cap = capOf(product.productId)?.value ?? product.cap
+            const applied = product.cap !== cap ? product.cap : null
+            const atCap = cap > 0 && product.credit >= cap
             const query = statsOf(product.productId)
             const oldest = oldestSeconds(
               query?.data?.oldestPendingSyncAt,
@@ -218,28 +218,27 @@ export function ProductCapList({
                   <span className={styles.capHead}>
                     <span className={styles.capLabel}>입장 / 상한</span>
                     <span className={styles.capValue}>
-                      {formatNumber(product.credit)} /{' '}
-                      {formatNumber(product.cap)}
+                      {formatNumber(product.credit)} / {formatNumber(cap)}
                       <span className={styles.capUnit}>(명/초)</span>
                     </span>
                   </span>
                   <UsageCells
                     used={product.credit}
-                    total={product.cap}
-                    maxCells={MAX_CELLS}
-                    label={`${name} 입장 상한 ${formatNumber(product.cap)}명 중 ${formatNumber(product.credit)}명 사용`}
+                    total={cap}
+                    label={`${name} 입장 상한 ${formatNumber(cap)}명 중 ${formatNumber(product.credit)}명 사용`}
                   />
                   <span />
                   <span className={atCap ? styles.hintWarn : styles.hint}>
-                    {product.cap === 0
+                    {cap === 0
                       ? '상한이 0이라 이 상품은 아무도 못 들어가요'
                       : atCap
                         ? '상한에 닿음 · 전역 속도를 올려도 이 상품은 안 빨라져요'
-                        : `초당 ${formatNumber(product.cap - product.credit)}명 여유`}
-                    {unit > 1 && (
+                        : `초당 ${formatNumber(cap - product.credit)}명 여유`}
+                    {applied !== null && (
                       <span className={styles.hintSub}>
                         {' '}
-                        · 1칸 = {formatNumber(unit)}명
+                        · 서버가 지금 적용 중인 상한은 {formatNumber(applied)}
+                        명/초
                       </span>
                     )}
                   </span>
