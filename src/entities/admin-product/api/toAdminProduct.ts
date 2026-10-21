@@ -77,6 +77,7 @@ export const toAdminProductDetail = ({
   status: product.status,
   campaign: product.campaign,
   basePrice: product.basePrice,
+  discountRate: product.discountRate,
   optionAxes: product.optionAxes,
   variants: product.variants,
   description: product.description,

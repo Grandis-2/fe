@@ -202,6 +202,8 @@ export function toRegistrationRequest(
     // 관리자가 고른 대로 보낸다(기본 숨김).
     visible: value.isPreorder || value.publishOnCreate,
     basePrice: value.basePrice,
+    // 0이면 생략해도 같다 — 서버 기본값이 0이다.
+    ...(value.discountRate > 0 && { discountRate: value.discountRate }),
     ...(tags && { tags }),
     ...(axes.length > 0 && { optionAxes: axes }),
     ...(images && { images }),
@@ -291,6 +293,7 @@ export function toPreviewProduct(
     description: null,
     visible: true,
     basePrice: value.basePrice,
+    discountRate: value.discountRate,
     warranty: { offered: false, surcharge: 0 },
     campaign: value.isPreorder
       ? {

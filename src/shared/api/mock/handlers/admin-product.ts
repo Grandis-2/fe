@@ -92,6 +92,10 @@ const STORAGE_PATTERN = /^\d+(MB|GB|TB)$/i
  * 없어 가격에서 구할 수 없으므로 반드시 여기 적어 둔다.
  */
 const basePrices = new Map<string, number>()
+// ponytail: 할인율은 저장·응답만 하고 목의 옵션 가격엔 걸지 않는다. 할인가를 목에서 봐야 하면 recompute에 넣는다.
+const discountRates = new Map<string, number>()
+const isDiscountRate = (value: unknown) =>
+  Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 99
 const surcharges = new Map<string, number>()
 const surchargeKey = (
   productId: string,
@@ -229,6 +233,7 @@ function toAdminProductResponse(
       description: detail.summary,
       visible: detail.displayStatus === 'PUBLISHED',
       basePrice: baseOf(detail),
+      discountRate: discountRates.get(detail.productId) ?? 0,
       warranty: { offered: false, surcharge: 0 },
       campaign: preorder
         ? {
@@ -327,6 +332,9 @@ function registrationViolations(body: Partial<ProductRegistrationRequest>) {
     !body.modelName?.trim()
       ? { field: 'modelName', message: 'must not be blank' }
       : null,
+    body.discountRate !== undefined && !isDiscountRate(body.discountRate)
+      ? { field: 'discountRate', message: '0~99 사이 정수여야 합니다.' }
+      : null,
     body.saleMode !== 'PREORDER' && body.saleMode !== 'IN_STOCK'
       ? { field: 'saleMode', message: 'PREORDER 또는 IN_STOCK' }
       : null,
@@ -409,6 +417,7 @@ function createFromRegistration(
     }),
   }))
   basePrices.set(productId, body.basePrice)
+  discountRates.set(productId, body.discountRate ?? 0)
 
   const combos = optionGroups.reduce<Record<string, string>[]>(
     (acc, group) =>
@@ -712,6 +721,7 @@ export const adminProductHandlers: RequestHandler[] = [
         'description',
         'tags',
         'basePrice',
+        'discountRate',
         'warranty',
         'brand',
         'modelName',
@@ -758,6 +768,14 @@ export const adminProductHandlers: RequestHandler[] = [
       }
       if (body.description !== undefined) {
         product.summary = body.description || null
+      }
+      if (body.discountRate !== undefined) {
+        if (!isDiscountRate(body.discountRate)) {
+          return invalid([
+            { field: 'discountRate', message: '0~99 사이 정수여야 합니다.' },
+          ])
+        }
+        discountRates.set(product.productId, body.discountRate)
       }
       if (body.basePrice !== undefined) {
         pinPrices(product)

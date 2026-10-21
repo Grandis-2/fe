@@ -132,6 +132,8 @@ export type ProductDetailView = Pick<
   // 회원 상세에선 늘 true.
   visible: boolean
   basePrice: number
+  // 할인율(정수 %, 0~99). 모든 옵션 가격에 같이 걸리고 보증 금액엔 안 걸린다. 0이면 할인 없음.
+  discountRate: number
   // 보증은 따로 고르는 상품이라 옵션 price에 들어 있지 않다.
   warranty: { offered: boolean; surcharge: number }
   // 사전예약 회차. 일반 상품(또는 회차가 아직 없으면) null.

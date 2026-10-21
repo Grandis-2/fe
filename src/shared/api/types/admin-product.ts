@@ -204,6 +204,8 @@ export type ProductEditRequest = {
   tags?: string
   /** 바꾸면 모든 옵션 가격이 다시 계산된다 */
   basePrice?: number
+  /** 정수 %, 0~99. 바꾸면 모든 옵션 판매가가 다시 계산된다. 할인가가 100원 아래인 옵션이 생기면 400 */
+  discountRate?: number
   warranty?: { offered: boolean; surcharge?: number }
   /** 문서엔 없지만 실서버가 받는다(2026-10-14 확인) — APPLE·SAMSUNG·LG */
   brand?: ProductBrandCode
@@ -269,6 +271,8 @@ export type ProductRegistrationRequest = {
   /** 준비가 끝나야 실제로 보인다 */
   visible: boolean
   basePrice: number
+  /** 정수 %, 0~99. 생략하면 0이고 모든 옵션에 같이 걸린다(보증 금액엔 안 걸림) */
+  discountRate?: number
   /** 생략하면 서버가 모든 조합을 만든다 */
   optionAxes?: RegistrationOptionAxis[]
   /** 조합별 조정(제외·SKU·재고). 생략한 조합도 만들어진다 */

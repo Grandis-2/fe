@@ -140,6 +140,7 @@ function buildProduct(
     status: 'ACTIVE',
     visible: true,
     basePrice,
+    discountRate: 0,
     warranty: { offered: warranty !== undefined, surcharge: warranty ?? 0 },
     sellable,
     soldOut: !isPreorder && sellable && stock <= 0,

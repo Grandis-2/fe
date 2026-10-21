@@ -16,10 +16,15 @@ export type FormField =
   | 'variants'
   | 'tags'
   | 'images'
+  | 'discountRate'
 
 export type FormIssue = Omit<ApiViolation, 'field'> & { field: FormField }
 
 const TITLE_MAX = 100
+/** 서버 할인율 범위(정수 %) */
+export const DISCOUNT_RATE_MAX = 99
+/** 서버는 할인가가 이보다 작은 옵션이 생기면 400이다 */
+const DISCOUNTED_PRICE_MIN = 100
 const TAGS_MAX = 500
 
 /**
@@ -54,6 +59,38 @@ export function validateProductBasics(
     issues.push({ field: 'brand', message: '브랜드를 골라 주세요.' })
   }
 
+  if (
+    !Number.isInteger(value.discountRate) ||
+    value.discountRate < 0 ||
+    value.discountRate > DISCOUNT_RATE_MAX
+  ) {
+    issues.push({
+      field: 'discountRate',
+      message: `할인율은 0~${DISCOUNT_RATE_MAX}% 사이 정수로 적어 주세요.`,
+    })
+  } else if (value.discountRate > 0) {
+    // 가장 싼 옵션(기본 가격 + 가장 작은 추가금)의 할인가가 100원 아래면 서버가 막는다.
+    const cheapest =
+      value.basePrice +
+      value.optionGroups.reduce(
+        (total, group) =>
+          total +
+          (group.values.length > 0
+            ? Math.min(...group.values.map((item) => item.extraPrice))
+            : 0),
+        0,
+      )
+    if (
+      Math.floor((cheapest * (100 - value.discountRate)) / 100) <
+      DISCOUNTED_PRICE_MIN
+    ) {
+      issues.push({
+        field: 'discountRate',
+        message: `할인가가 ${DISCOUNTED_PRICE_MIN}원보다 작아지는 옵션이 있어요.`,
+      })
+    }
+  }
+
   if (value.tags.join(',').length > TAGS_MAX) {
     issues.push({
       field: 'tags',
@@ -70,6 +107,7 @@ const SERVER_FIELD: [prefix: string, field: FormField][] = [
   ['brand', 'brand'],
   ['categoryId', 'category'],
   ['tags', 'tags'],
+  ['discountRate', 'discountRate'],
   ['campaign', 'schedule'],
   ['shipmentBatches', 'firstDelivery'],
   ['optionAxes', 'options'],

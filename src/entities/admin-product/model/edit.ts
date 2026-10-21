@@ -87,6 +87,9 @@ export function planBasic(
   const tags = value.tags.join(',')
   if (tags !== server.tags.join(',')) body.tags = tags
   if (value.basePrice !== server.basePrice) body.basePrice = value.basePrice
+  if (value.discountRate !== server.discountRate) {
+    body.discountRate = value.discountRate
+  }
   const modelName = value.modelName.trim()
   if (modelName !== server.modelName) body.modelName = modelName
   const brand = brandCodeOf(value.brand)
