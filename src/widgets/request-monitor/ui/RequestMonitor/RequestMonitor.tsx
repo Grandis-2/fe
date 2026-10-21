@@ -253,19 +253,19 @@ export function RequestMonitorPanel({
         </button>
       </div>
 
-      <p className={styles.policy}>
+      <div className={styles.policy}>
         대기열·사전예약·결제·알림 요청만 보여요. 계속 묻는 요청이 실패하면 두
         배씩 늘려 기다리고(최대 30초, 무작위로 최대 1.5배), 4xx는 다시 묻지
         않아요. 결제 승인은 응답을 못 받으면 같은 내용으로 한 번만 다시 보내고,
         알림 SSE가 끊기면 0초~상한(두 배씩, 최대 1분) 사이 무작위로 기다렸다
         다시 연결해요.
-      </p>
+      </div>
 
       {blocked && (
-        <p className={styles.blocked}>
+        <div className={styles.blocked}>
           모달이 열려 있는 동안엔 브라우저가 이 창의 버튼을 막아요. 창을 누르면
           모달이 닫히고, 대기열은 닫아도 계속 순번을 물어요.
-        </p>
+        </div>
       )}
 
       {fault !== undefined && (

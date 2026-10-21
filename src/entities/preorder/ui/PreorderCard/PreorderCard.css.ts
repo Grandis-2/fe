@@ -101,12 +101,13 @@ export const body = style({
   },
 })
 
+// 같은 상품의 회차는 이름 끝(모델·차수)으로 갈려서 자르지 않고 줄을 바꿔 다 보인다.
+// 글 상자가 카드 아래에 붙어 있어 줄이 늘면 위로 자란다.
 export const title = style({
   fontSize: fontSize[20],
   fontWeight: fontWeight.bold,
-  overflow: 'hidden',
-  whiteSpace: 'nowrap',
-  textOverflow: 'ellipsis',
+  wordBreak: 'keep-all',
+  overflowWrap: 'anywhere',
   '@media': {
     [breakpoint.mobile]: { fontSize: fontSize[18] },
   },

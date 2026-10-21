@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { Search } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 
 import { brandMenus, useProducts } from '@entities/product'
 import {
@@ -14,11 +14,7 @@ import {
   toKeyword,
   useRecentSearches,
 } from '@features/search'
-import {
-  productPath,
-  searchPath,
-  searchResultsPath,
-} from '@shared/config/routes'
+import { searchPath, searchResultsPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { Chip, Highlight } from '@shared/ui'
 
@@ -82,6 +78,12 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
     add(label)
   }
 
+  // 엔터와 같다 — 검색 결과 화면으로 간다(주소가 바뀌면 오버레이는 스스로 닫힌다).
+  const submit = (label: string) => {
+    add(label)
+    navigate(searchResultsPath(label))
+  }
+
   return (
     <dialog
       ref={dialogRef}
@@ -95,10 +97,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
             ref={inputRef}
             value={query}
             onChange={setQuery}
-            onSubmit={(submitted) => {
-              add(submitted)
-              navigate(searchResultsPath(submitted))
-            }}
+            onSubmit={submit}
           />
           <button
             type="button"
@@ -185,10 +184,11 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
               <ul className={styles.suggestions}>
                 {results.slice(0, SUGGEST_LIMIT).map((product) => (
                   <li key={product.productId}>
-                    <Link
-                      to={productPath(product.productId)}
+                    {/* 상세로 바로 가지 않고 상품명으로 검색 결과 화면을 연다. */}
+                    <button
+                      type="button"
                       className={styles.suggestion}
-                      onClick={() => add(product.title)}
+                      onClick={() => submit(product.title)}
                     >
                       <Search
                         className={styles.suggestionIcon}
@@ -199,7 +199,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
                         match={keyword}
                         className={styles.match}
                       />
-                    </Link>
+                    </button>
                   </li>
                 ))}
               </ul>

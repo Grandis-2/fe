@@ -15,7 +15,7 @@ import { MEGA_MENU_OPEN, NAV_LINK_PADDING_X } from '@widgets/category-nav'
 
 import { DARK_HEADER_PADDING_X } from '../model/layout'
 
-import { panel as notificationPanel } from './HeaderNotification/HeaderNotification.css'
+import { panel as notificationPanel } from './NotificationPopover/NotificationPopover.css'
 
 import type { StyleRule } from '@vanilla-extract/css'
 

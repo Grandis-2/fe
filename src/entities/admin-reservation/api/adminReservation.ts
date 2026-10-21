@@ -139,7 +139,7 @@ export async function reprocessAdminReservations(preorderIds: string[]) {
     throw new ApiRequestError(
       {
         code: 'NOTHING_TO_REPROCESS',
-        message: '재처리할 작업이 없습니다. 대조를 다시 실행해 확인해 주세요.',
+        message: '재처리할 작업이 없습니다. 목록을 새로 고쳐 확인해 주세요.',
         details: null,
       },
       409,

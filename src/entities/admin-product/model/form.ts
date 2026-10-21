@@ -71,6 +71,8 @@ export type AdminProductFormValue = {
   colors: ProductColorOption[]
   optionGroups: ProductOptionGroup[]
   basePrice: number
+  /** 할인율(정수 %, 0~99). 모든 옵션 가격에 같이 걸린다 */
+  discountRate: number
   /**
    * 조합별 수량. 키는 `색상|옵션값|옵션값` 형태다.
    * 조합 행 자체는 colors × optionGroups에서 매번 파생시키고 수량만 여기 남겨서,
@@ -131,6 +133,7 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     colors: [createColorOption()],
     optionGroups: [],
     basePrice: 0,
+    discountRate: 0,
     quantities: {},
     pausedKeys: [],
     noColorImages: [],
@@ -307,6 +310,7 @@ export function toFormValue(
       })),
     })),
     basePrice: detail.basePrice,
+    discountRate: detail.discountRate,
     pausedKeys: detail.variants
       .filter((variant) => variant.status === 'PAUSED')
       .map((variant) => variantKeyOf(variant)),

@@ -72,6 +72,14 @@ export function useSearchFilters() {
       else prev.set('sort', next)
     })
 
+  // 하위 분류는 필터가 아니라 둘러볼 범위라 초기화·개수에 넣지 않는다. 없으면 대분류 전체다.
+  const subCategory = searchParams.get('subCategory') ?? undefined
+  const setSubCategory = (next?: string) =>
+    update((prev) => {
+      if (next) prev.set('subCategory', next)
+      else prev.delete('subCategory')
+    })
+
   const reset = () =>
     update((prev) => {
       for (const key of ['brand', 'storage']) prev.delete(key)
@@ -79,5 +87,15 @@ export function useSearchFilters() {
 
   const activeCount = selected.brand.length + selected.storage.length
 
-  return { selected, sort, params, activeCount, toggle, setSort, reset }
+  return {
+    selected,
+    sort,
+    params,
+    activeCount,
+    subCategory,
+    toggle,
+    setSort,
+    setSubCategory,
+    reset,
+  }
 }

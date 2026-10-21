@@ -6,6 +6,7 @@ import {
   mockMembers,
   reservationStore,
 } from '../fixtures/admin-reservation'
+import { isOpenScenarioRunning, requeueForReprocess } from '../openScenario'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
@@ -99,9 +100,18 @@ function countStats(productId: string | null): PreorderStats {
     paymentOverdue: matched.filter(
       (detail) => detail.displayStatus === 'PAYMENT_EXPIRED',
     ).length,
+    // 재처리 필요(DEAD_LETTER)로 멈춘 예약은 빼고 아직 처리 중인 것만 본다.
+    // ponytail: 명세가 둘 중 무엇인지 말하지 않아(백엔드 요청서 Q3) 의미상 맞는 쪽으로 가정했다.
     oldestPendingSyncAt:
       matched
-        .filter((detail) => detail.status === 'PENDING_SYNC')
+        .filter(
+          (detail) =>
+            detail.status === 'PENDING_SYNC' &&
+            detail.syncJobs.some(
+              (job) =>
+                job.jobType === 'REGISTER' && job.status !== 'DEAD_LETTER',
+            ),
+        )
         .map((detail) => detail.createdAt)
         .toSorted()[0] ?? null,
     countedAt: new Date().toISOString(),
@@ -166,6 +176,9 @@ export const adminReservationHandlers: RequestHandler[] = [
     const status = query.get('status')
     const productId = query.get('productId')
     const registerJobStatus = query.get('registerJobStatus')
+    const batchNumber = query.get('batchNumber')
+    const externalReference = query.get('externalReference')?.trim()
+    const from = query.get('from')
     const size = Number(query.get('size') ?? 20)
     if (!Number.isInteger(size) || size < 1 || size > 100) {
       return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
@@ -173,12 +186,20 @@ export const adminReservationHandlers: RequestHandler[] = [
     const page = Number(query.get('page') ?? 0)
 
     const matched = reservationStore
+      .filter(
+        (detail) =>
+          !externalReference || detail.externalReference === externalReference,
+      )
       .map(toSummary)
       .filter(
         (item) =>
           (!status || item.status === status) &&
           (!productId || item.productId === productId) &&
-          (!registerJobStatus || item.registerJobStatus === registerJobStatus),
+          (!registerJobStatus ||
+            item.registerJobStatus === registerJobStatus) &&
+          (!batchNumber ||
+            item.shipmentBatch.batchNumber === Number(batchNumber)) &&
+          (!from || Date.parse(item.createdAt) >= Date.parse(from)),
       )
       // 최신 접수가 위로 온다.
       .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
@@ -249,20 +270,29 @@ export const adminReservationHandlers: RequestHandler[] = [
       return invalid([{ field: 'syncJobIds', message: '최대 1000건입니다.' }])
     }
 
-    const targets = reservationStore.flatMap((detail) =>
-      detail.syncJobs
-        .filter(
-          (job) =>
-            job.jobType === 'REGISTER' &&
-            job.status === 'DEAD_LETTER' &&
-            (ids.size === 0 || ids.has(job.syncJobId)) &&
-            detail.status !== 'CANCELING' &&
-            detail.status !== 'CANCELED',
-        )
-        .map((job) => [detail, job] as const),
-    )
-    for (const [detail, job] of targets) markReprocessed(detail, job)
+    const targets = reservationStore
+      .flatMap((detail) =>
+        detail.syncJobs
+          .filter(
+            (job) =>
+              job.jobType === 'REGISTER' &&
+              job.status === 'DEAD_LETTER' &&
+              (ids.size === 0 || ids.has(job.syncJobId)) &&
+              (!body.errorCodeFilter ||
+                job.lastErrorCode === body.errorCodeFilter) &&
+              detail.status !== 'CANCELING' &&
+              detail.status !== 'CANCELED',
+          )
+          .map((job) => [detail, job] as const),
+      )
+      // 서버처럼 한 번에 1000건까지 — 남은 건 같은 요청을 다시 보내야 한다.
+      .slice(0, 1000)
     const rate = body.ratePerSecond ?? 20
+    // 오픈 시나리오 중엔 서버처럼 초당 rate건씩 다시 처리하고 일부는 또 실패한다.
+    for (const [detail, job] of targets) {
+      if (isOpenScenarioRunning()) requeueForReprocess(detail, job, rate)
+      else markReprocessed(detail, job)
+    }
     return ok<BatchReprocess>(
       {
         targetCount: targets.length,
@@ -381,8 +411,11 @@ export const adminReservationHandlers: RequestHandler[] = [
     if (ids.length < 1 || ids.length > 100) {
       return invalid([{ field: 'ids', message: '1~100개여야 합니다.' }])
     }
+    // 서버처럼 첫 글자만 남기고 가린다(김철수 → 김**).
     return ok({
-      items: mockMembers.filter((member) => ids.includes(member.memberId)),
+      items: mockMembers
+        .filter((member) => ids.includes(member.memberId))
+        .map((member) => ({ ...member, name: `${[...member.name][0]}**` })),
     })
   }),
 ]

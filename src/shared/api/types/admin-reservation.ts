@@ -38,6 +38,12 @@ export type AdminPreorderListParams = {
   status?: PreorderStatus
   productId?: string
   registerJobStatus?: SyncJobStatus
+  /** 배송 차수 — 차수 번호는 상품마다 따로라 productId와 같이 보낸다 */
+  batchNumber?: number
+  /** 외부 예약 번호(정확히 같은 것만) */
+  externalReference?: string
+  /** 접수 시각 하한(포함), ISO date-time */
+  from?: string
   page?: number
   /** 1~100(기본 20) */
   size?: number

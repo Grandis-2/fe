@@ -17,13 +17,16 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 받은 시각을 보여주고, 누르면 바로 다시 받는다 */
+/** 받은 시각과 갱신 규칙을 한 줄로 보여주고, 끝의 버튼을 누르면 바로 다시 받는다 */
 export const Default: Story = {
   play: async ({ canvas, args }) => {
-    const button = canvas.getByRole('button', { name: /마지막 갱신 05:32:05/ })
-    await userEvent.click(button)
+    await expect(
+      canvas.getByText('마지막 갱신 05:32:05 · 10초마다 자동 갱신'),
+    ).toBeVisible()
+    await userEvent.click(
+      canvas.getByRole('button', { name: '지금 새로 고침' }),
+    )
     await expect(args.onRefresh).toHaveBeenCalled()
-    await expect(canvas.getByText('10초마다 자동 갱신')).toBeVisible()
   },
 }
 
@@ -31,8 +34,6 @@ export const Default: Story = {
 export const NotYetLoaded: Story = {
   args: { updatedAt: 0, note: undefined },
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getByRole('button', { name: '마지막 갱신 —' }),
-    ).toBeVisible()
+    await expect(canvas.getByText('마지막 갱신 —')).toBeVisible()
   },
 }

@@ -24,6 +24,11 @@ dist-ssr
 *.sw?
 
 *storybook.log
+
+# Playwright E2E 결과물
+test-results
+playwright-report
+blob-report
 storybook-static
 .vercel
 .env*

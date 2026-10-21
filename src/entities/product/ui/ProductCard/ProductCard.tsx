@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type MouseEventHandler } from 'react'
 
 import { Link } from 'react-router'
 
@@ -33,12 +33,15 @@ export type ProductCardData = {
 export type ProductCardProps = {
   product: ProductCardData
   onColorSelect?: (index: number) => void
+  // 상품명 링크를 누를 때 — preventDefault하면 상세로 가지 않는다(사전예약 대기열 등).
+  onLinkClick?: MouseEventHandler<HTMLAnchorElement>
   className?: string
 }
 
 export function ProductCard({
   product,
   onColorSelect,
+  onLinkClick,
   className,
 }: ProductCardProps) {
   const {
@@ -98,7 +101,11 @@ export function ProductCard({
       </div>
       <div className={styles.content}>
         <div className={styles.nameGroup}>
-          <Link to={productPath(productId)} className={styles.name}>
+          <Link
+            to={productPath(productId)}
+            className={styles.name}
+            onClick={onLinkClick}
+          >
             {name}
           </Link>
           {modelNumber && (

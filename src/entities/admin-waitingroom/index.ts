@@ -5,16 +5,12 @@ export {
   useWaitingroomStatus,
 } from './api/useAdminWaitingroom'
 export type { AdmissionRateChange } from './api/useAdminWaitingroom'
+export { waitEstimate } from './lib/waitEstimate'
 export {
   isBraking,
-  LEAVE_GRACE_SECONDS_RANGE,
-  MAX_WAIT_SECONDS_RANGE,
   settingSourceLabel,
   WAITINGROOM_DEFAULTS,
-  waitingroomPhaseLabel,
-  waitingroomRuntimeColor,
   waitingroomRuntimeLabel,
-  waitingroomRuntimeLabels,
 } from './model/types'
 export type {
   AdmissionRates,

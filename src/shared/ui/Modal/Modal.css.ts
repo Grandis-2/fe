@@ -101,8 +101,7 @@ export const scrollBody = style({
   // 비워 둬서, 스크롤하지 않은 상태에선 내용이 흐려지지 않는다.
   paddingBlock: spacing[16],
   maskImage: `linear-gradient(transparent, black ${spacing[16]}, black calc(100% - ${spacing[16]}), transparent)`,
-  scrollbarWidth: 'thin',
-  scrollbarColor: `${color.border.hover} transparent`,
+  // 스크롤바 모양은 전역(theme/scrollbar.css)을 따른다 — 여기서 색을 주면 크롬이 전역 모양을 무시한다.
   scrollbarGutter: 'stable',
 })
 

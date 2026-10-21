@@ -401,11 +401,21 @@ export function AdminProductForm({
               : undefined
           }
         >
-          <NumberField
-            label="기본 가격"
-            value={value.basePrice}
-            onChange={(basePrice) => patch({ basePrice })}
-          />
+          <div className={styles.priceRow}>
+            <NumberField
+              label="기본 가격"
+              value={value.basePrice}
+              onChange={(basePrice) => patch({ basePrice })}
+            />
+            {/* 모든 옵션 가격에 같이 걸린다(보증 금액엔 안 걸림). 0이면 할인 없음. */}
+            <NumberField
+              {...fieldAttr('discountRate')}
+              label="할인율(%)"
+              value={value.discountRate}
+              onChange={(discountRate) => patch({ discountRate })}
+              error={issueOf('discountRate')}
+            />
+          </div>
 
           <div {...fieldAttr('variants')} className={styles.variants}>
             <VariantTable

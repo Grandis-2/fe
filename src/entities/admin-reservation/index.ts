@@ -9,9 +9,11 @@ export {
   useReprocessReservation,
   useReprocessReservations,
   useReservationStats,
+  useReservationStatsByProduct,
   useSaveReservationNote,
   useSyncJobErrorGroups,
 } from './api/useAdminReservations'
+export { useReservationStatsHistory } from './api/useReservationStatsHistory'
 export {
   actorLabel,
   countByStage,
@@ -31,7 +33,6 @@ export {
   paymentStateVariant,
   reservationNo,
   reservationStageLabel,
-  reservationStages,
   reservationStateColor,
   reservationStateLabel,
   reservationStateLabels,

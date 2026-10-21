@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
-const getRemainingMs = (target: Date) => Math.max(target.getTime() - Date.now(), 0)
+const getRemainingMs = (target: Date) =>
+  Math.max(target.getTime() - Date.now(), 0)
 
 export function useCountdown(target: Date) {
   const [remainingMs, setRemainingMs] = useState(() => getRemainingMs(target))

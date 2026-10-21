@@ -157,18 +157,23 @@ function buildDetail(seed: Seed): AdminProductDetail {
   }
 }
 
-// 페이지네이션을 확인할 수 있도록 4종을 반복해 채운다.
-// 이름까지 그대로 베끼면 같은 이름이 3~4개씩 생겨서, 예약 현황의 상품 필터
-// 드롭다운이 '갤럭시 G999'만 네 줄 나오는 모양이 된다(어느 걸 고른 건지 알 수
-// 없다). productId에 붙이는 번호를 이름에도 붙여 서로 구분되게 한다.
-export const adminProductStore: AdminProductDetail[] = Array.from(
-  { length: 13 },
-  (_, index) => {
-    const seed = SEEDS[index % SEEDS.length]
+// 사전예약은 시드의 3종만 하나씩 둔다 — 운영 대시보드의 진행 중인 사전예약 표가 실제처럼 한두세
+// 개로 보이게. 일반 판매 상품은 상품 관리의 페이지네이션을 확인할 수 있게 번호를 붙여 여러
+// 개 채운다(이름에도 번호를 붙여 필터 드롭다운에서 서로 구분되게).
+const preorderSeeds = SEEDS.filter((seed) => seed.preorder)
+const stockSeeds = SEEDS.filter((seed) => !seed.preorder)
+const STOCK_COPIES = 10
+
+export const adminProductStore: AdminProductDetail[] = [
+  ...preorderSeeds.map((seed, index) =>
+    buildDetail({ ...seed, productId: `${seed.productId}-${index + 1}` }),
+  ),
+  ...Array.from({ length: STOCK_COPIES }, (_, index) => {
+    const seed = stockSeeds[index % stockSeeds.length]
     return buildDetail({
       ...seed,
       productId: `${seed.productId}-${index + 1}`,
       name: `${seed.name} ${index + 1}`,
     })
-  },
-)
+  }),
+]

@@ -202,6 +202,8 @@ export function toRegistrationRequest(
     // 관리자가 고른 대로 보낸다(기본 숨김).
     visible: value.isPreorder || value.publishOnCreate,
     basePrice: value.basePrice,
+    // 0이면 생략해도 같다 — 서버 기본값이 0이다.
+    ...(value.discountRate > 0 && { discountRate: value.discountRate }),
     ...(tags && { tags }),
     ...(axes.length > 0 && { optionAxes: axes }),
     ...(images && { images }),
@@ -263,7 +265,9 @@ export function toPreviewProduct(
             .map((name) => name.trim())
             .filter(Boolean)
             .join(' / ') || value.name,
-        price,
+        // 서버처럼 정가에 할인율을 걸고 100원 단위로 버린다.
+        price: Math.floor((price * (100 - value.discountRate)) / 10000) * 100,
+        listPrice: price,
         filterAttributes: {},
         selections: Object.fromEntries(
           Object.entries(combo.selections).map(([axisKey, name]) => [
@@ -292,6 +296,7 @@ export function toPreviewProduct(
     description: null,
     visible: true,
     basePrice: value.basePrice,
+    discountRate: value.discountRate,
     warranty: { offered: false, surcharge: 0 },
     campaign: value.isPreorder
       ? {

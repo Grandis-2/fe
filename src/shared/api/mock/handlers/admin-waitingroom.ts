@@ -1,6 +1,7 @@
 import { http } from 'msw'
 
 import { reservationStore } from '../fixtures/admin-reservation'
+import { isOpenScenarioRunning, scenarioQueue } from '../openScenario'
 import { invalid, ok } from '../response'
 import { url } from '../url'
 
@@ -65,9 +66,13 @@ function view(): AdmissionRateView {
   }
 }
 
+type Snapshot = Pick<
+  WaitingroomStatusView,
+  'globalCredit' | 'brakeFactor' | 'products'
+>
+
 // 1분 주기로 오르내리는 대기 인원과, 가끔 걸리는 브레이크.
-function status(): WaitingroomStatusView {
-  const now = Date.now()
+function waveSnapshot(now: number): Snapshot {
   const wave = (offset: number) =>
     (Math.sin((now / 60_000 + offset) * Math.PI * 2) + 1) / 2
   const brakeFactor = wave(0.3) > 0.85 ? 0.6 : 1
@@ -89,17 +94,46 @@ function status(): WaitingroomStatusView {
       closesAt: new Date(now + 90 * 60_000).toISOString(),
     }
   })
+  return { globalCredit: global, brakeFactor, products }
+}
+
+// 오픈 시나리오의 대기열 — 몰린 사람이 입장 속도만큼 빠지고, 적체가 쌓이면 브레이크가 걸린다.
+function scenarioSnapshot(now: number): Snapshot {
+  const queue = scenarioQueue(state.globalCredit ?? DEFAULT_GLOBAL, capOf)
+  return {
+    globalCredit: Math.round(
+      (state.globalCredit ?? DEFAULT_GLOBAL) * queue.brakeFactor,
+    ),
+    brakeFactor: queue.brakeFactor,
+    products: queue.products.map((product) => ({
+      productId: product.productId,
+      phase: 'OPEN',
+      runtime:
+        product.waiting === 0
+          ? 'IDLE'
+          : product.waiting <= product.credit
+            ? 'DRAINING'
+            : 'QUEUEING',
+      waiting: product.waiting,
+      credit: product.credit,
+      cap: capOf(product.productId),
+      opensAt: new Date(now - 30 * 60_000).toISOString(),
+      closesAt: new Date(now + 90 * 60_000).toISOString(),
+    })),
+  }
+}
+
+function status(): WaitingroomStatusView {
+  const now = Date.now()
   return {
     nodeId: '5d1c2e7a-0b9f-4c3e-8a21-7f6e5d4c3b2a',
     leaderNodeId: '9c8b7a6d-1e2f-4a3b-9c4d-5e6f7a8b9c0d',
     snapshotStale: false,
     snapshotAgeSeconds: 0,
     gateways: 2,
-    globalCredit: global,
-    brakeFactor,
     maxWaitSeconds: state.maxWait,
     leaveGraceSeconds: state.leaveGrace ?? DEFAULT_GRACE,
-    products,
+    ...(isOpenScenarioRunning() ? scenarioSnapshot(now) : waveSnapshot(now)),
   }
 }
 

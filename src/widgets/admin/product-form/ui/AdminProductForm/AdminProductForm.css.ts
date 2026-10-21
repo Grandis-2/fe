@@ -128,6 +128,14 @@ export const footerLink = style([
   },
 ])
 
+// 기본 가격 · 할인율을 한 줄에 — 좁으면 두 줄로 내려간다.
+export const priceRow = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+  gap: spacing[12],
+  alignItems: 'start',
+})
+
 export const variants = style({
   display: 'flex',
   flexDirection: 'column',

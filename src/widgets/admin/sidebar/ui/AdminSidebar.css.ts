@@ -8,7 +8,7 @@ export const root = style({
   flexDirection: 'column',
   // 묶음 사이를 띄워야 바로 위 메뉴와 아래 묶음 이름이 한 덩어리로 안 읽힌다.
   gap: spacing[24],
-  width: '240px',
+  width: '300px',
   flexShrink: 0,
   overflowY: 'auto',
   padding: `${spacing[20]} 0`,
@@ -22,7 +22,7 @@ export const group = style({
 })
 
 export const groupLabel = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   {
     boxSizing: 'border-box',
     padding: `${spacing[8]} ${spacing[40]}`,
@@ -32,7 +32,7 @@ export const groupLabel = style([
 ])
 
 export const navItem = style([
-  typography.title.mdMedium,
+  typography.title.lgSemibold,
   {
     boxSizing: 'border-box',
     display: 'flex',
@@ -53,6 +53,22 @@ export const navItem = style([
         color: color.text.primary,
       },
     },
+  },
+])
+
+// 실패 건수 — 메뉴 이름 오른쪽 끝에 붙는다.
+export const badge = style([
+  typography.body.sub,
+  {
+    marginLeft: 'auto',
+    minWidth: spacing[20],
+    padding: `0 ${spacing[8]}`,
+    borderRadius: '999px',
+    background: color.status.danger,
+    color: color.text.inverse,
+    textAlign: 'center',
+    fontWeight: fontWeight.medium,
+    fontVariantNumeric: 'tabular-nums',
   },
 ])
 

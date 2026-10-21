@@ -8,6 +8,8 @@ import {
   useCategories,
   useProducts,
 } from '@entities/product'
+import { useRequireLogin } from '@features/login'
+import { enterPreorderOnClick } from '@features/preorder-queue'
 import { useProductCardSelection } from '@features/product-card-select'
 import { searchPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
@@ -37,6 +39,7 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
   const isError = categories.isError || products.isError
   const items = isUnknown ? [] : products.data?.items
   const { getCardProps } = useProductCardSelection()
+  const enterPreorder = enterPreorderOnClick(useRequireLogin())
   const { rowRef, onScroll, canPrev, canNext, page } = useScrollArrows(
     items?.length,
   )
@@ -90,6 +93,7 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
                 <ProductCard
                   key={product.productId}
                   {...getCardProps(product)}
+                  onLinkClick={enterPreorder(product)}
                   className={styles.card}
                 />
               ))}

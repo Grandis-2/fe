@@ -1,15 +1,13 @@
-import { Check } from 'lucide-react'
-
 import {
-  formatPreorderDate,
+  formatModelPeriod,
+  isModelReservable,
+  OpenAlertToggle,
   PreorderModelSummary,
   type Preorder,
   type PreorderModel,
   type PreorderStatus,
 } from '@entities/preorder'
 import { BottomSheet, Button } from '@shared/ui'
-
-import { formatOpenTime } from '../../lib/preorderDetailCopy'
 
 import * as styles from './PreorderModelSheet.css'
 
@@ -25,7 +23,10 @@ const COPY: Record<PreorderStatus, { title: string; description: string }> = {
 export type PreorderModelSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  preorder: Pick<Preorder, 'models' | 'opensAt' | 'openTime'>
+  preorder: Pick<
+    Preorder,
+    'models' | 'opensAt' | 'openTime' | 'closesAt' | 'closeTime'
+  >
   /** 현재 시각으로 계산한 값이라 preorder에서 다시 구하지 않고 위젯 것을 받는다(배지와 어긋나지 않게). */
   status: PreorderStatus
   /** 오픈 알림을 신청한 모델 id */
@@ -41,7 +42,7 @@ export type PreorderModelSheetProps = {
 export function PreorderModelSheet({
   open,
   onOpenChange,
-  preorder: { models, opensAt, openTime },
+  preorder,
   status,
   subscribedIds,
   onReserve,
@@ -50,33 +51,28 @@ export function PreorderModelSheet({
 }: PreorderModelSheetProps) {
   const { title, description } = COPY[status]
 
-  // 진행 중엔 모델마다 예약 시작 시각을 보인다 — 홍보의 오픈은 묶인 모델 중 가장 이른 것이다.
+  // 마감 전엔 모델마다 자기 예약 기간을 보인다 — 한 홍보 안에서도 모델끼리 시간이 다를 수 있다.
   const captionOf = (model: PreorderModel) =>
-    ({
-      live: `예약 시작 ${formatPreorderDate(model.opensAt ?? opensAt)} ${formatOpenTime(model.openTime ?? openTime)}`,
-      soon: `예약 오픈 ${formatPreorderDate(opensAt)}`,
-      done: '바로 구매 가능 · 1–2일 내 도착',
-    })[status]
+    status === 'done'
+      ? '바로 구매 가능 · 1–2일 내 도착'
+      : `예약 기간 ${formatModelPeriod(preorder, model)}`
 
   const renderAction = (model: PreorderModel) => {
     if (status === 'soon') {
-      const isSubscribed = subscribedIds.has(model.id)
       return (
-        <button
-          type="button"
-          className={styles.notify[isSubscribed ? 'on' : 'off']}
-          aria-pressed={isSubscribed}
-          onClick={() => onToggleNotify(model)}
-        >
-          {isSubscribed && <Check size={16} aria-hidden="true" />}
-          {isSubscribed ? '신청됨' : '알림 받기'}
-        </button>
+        <OpenAlertToggle
+          subscribed={subscribedIds.has(model.id)}
+          name={model.name}
+          onToggle={() => onToggleNotify(model)}
+        />
       )
     }
     return (
       <Button
         rounded
         className={styles.action}
+        // 홍보가 열려 있어도 모델마다 자기 예약 시간(오픈~마감) 밖이면 막는다.
+        disabled={status === 'live' && !isModelReservable(preorder, model)}
         onClick={() => (status === 'live' ? onReserve : onPurchase)(model)}
       >
         {status === 'live' ? '예약하기' : '구매하기'}
@@ -97,7 +93,7 @@ export function PreorderModelSheet({
             </BottomSheet.Description>
           </div>
           <div className={styles.models}>
-            {models.map((model) => (
+            {preorder.models.map((model) => (
               <PreorderModelSummary
                 key={model.id}
                 model={model}

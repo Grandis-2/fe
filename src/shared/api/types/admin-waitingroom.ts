@@ -42,8 +42,11 @@ export type ProductStatus = {
   waiting: number
   /** 이번에 배분된 초당 입장 인원. IDLE·HIDDEN·CLOSED면 0 */
   credit: number
-  /** 초당 입장 상한 */
-  cap: number
+  /**
+   * 초당 입장 상한. 명세는 "운영값이 없으면 기본 150"인 정수지만, 실서버가 운영값이 없을 때
+   * null을 줄 수 있다(코드 리뷰 지적) — entities가 기본값으로 채운다.
+   */
+  cap: number | null
   opensAt: string
   closesAt: string
 }

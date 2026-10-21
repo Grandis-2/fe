@@ -147,9 +147,13 @@ export const suggestion = style([
     gap: spacing[14],
     height: '48px',
     padding: `0 ${spacing[4]}`,
+    width: '100%',
+    border: 'none',
     borderBottom: divider,
+    background: 'transparent',
     color: label,
-    textDecoration: 'none',
+    textAlign: 'left',
+    cursor: 'pointer',
   },
 ])
 

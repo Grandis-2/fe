@@ -107,6 +107,51 @@ export const period = style({
   '@media': { [mobile]: { fontSize: fontSize[14] } },
 })
 
+const list = style({ margin: 0, padding: 0, listStyle: 'none' })
+
+// 진행 일정의 사전예약 단계 아래 — 이름 아래에 기간을 쌓는다. 모바일은 단계 줄 아래 한 줄을 다 쓴다.
+export const modelPeriods = style([
+  list,
+  {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: spacing[12],
+    marginTop: spacing[8],
+    fontSize: fontSize[14],
+    fontWeight: fontWeight.medium,
+    color: onDark(64),
+    '@media': {
+      [mobile]: {
+        flexBasis: '100%',
+        gap: spacing[8],
+        marginTop: 0,
+        paddingBottom: spacing[14],
+        fontSize: fontSize[12],
+      },
+    },
+  },
+])
+
+export const modelPeriod = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[2],
+})
+
+// 모델 이름은 상품명 그대로라 길면 한 줄로 자른다.
+export const modelPeriodName = style({
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
+})
+
+export const modelPeriodTime = style({
+  flexShrink: 0,
+  fontVariantNumeric: 'tabular-nums',
+  color: color.text.inverse,
+})
+
 export const hero = style({
   position: 'relative',
   marginTop: spacing[32],
@@ -191,8 +236,6 @@ export const ended = style({
   color: onDark(55),
 })
 
-const list = style({ margin: 0, padding: 0, listStyle: 'none' })
-
 // 웹 3열, 모바일은 세로로 쌓는다.
 export const benefits = style([
   list,
@@ -264,8 +307,10 @@ const stepBase = style({
     [mobile]: {
       flexDirection: 'row',
       justifyContent: 'space-between',
+      flexWrap: 'wrap',
       alignItems: 'center',
-      height: '52px',
+      // 사전예약 단계는 모델별 기간이 아래로 붙어 늘어난다.
+      minHeight: '52px',
       marginTop: 0,
       padding: 0,
       borderTop: 'none',

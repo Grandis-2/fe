@@ -1,6 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { expect, fn } from 'storybook/test'
 
+import { diagnose, type LoadTestSignals } from '../../lib/diagnose'
+
 import { AdminLoadTest } from './AdminLoadTest'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
@@ -136,5 +138,43 @@ export const TestRun: Story = {
     await expect(
       canvas.getByRole('button', { name: '새 시험 시작' }),
     ).toBeVisible()
+  },
+}
+
+const calm: LoadTestSignals = {
+  braking: false,
+  backlogPerMinute: 0,
+  newRegisterFailures: 0,
+  newEventFailures: 0,
+  topErrorCode: null,
+}
+
+/** 상태 판정 — 실패 → 브레이크 → 적체 순으로 심각한 것을 먼저 말한다 */
+export const VerdictOrder: Story = {
+  decorators: [withData],
+  play: async () => {
+    await expect(diagnose(calm).status).toBe('success')
+    await expect(diagnose({ ...calm, backlogPerMinute: null }).message).toBe(
+      '값을 모으는 중입니다.',
+    )
+    await expect(diagnose({ ...calm, backlogPerMinute: 30 }).message).toContain(
+      '분당 30건',
+    )
+    await expect(
+      diagnose({ ...calm, backlogPerMinute: 30, braking: true }).message,
+    ).toContain('입장을 자동으로 줄이고')
+    const failed = diagnose({
+      ...calm,
+      braking: true,
+      newRegisterFailures: 3,
+      topErrorCode: 'TIMEOUT',
+    })
+    await expect(failed.status).toBe('error')
+    await expect(failed.message).toContain('3건')
+    await expect(failed.message).toContain('TIMEOUT')
+    // 시험 전(null)에는 실패를 판정하지 않는다.
+    await expect(diagnose({ ...calm, newRegisterFailures: null }).status).toBe(
+      'success',
+    )
   },
 }
