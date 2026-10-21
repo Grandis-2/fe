@@ -32,7 +32,7 @@ export const groupLabel = style([
 ])
 
 export const navItem = style([
-  typography.title.lgSemibold,
+  typography.title.mdMedium,
   {
     boxSizing: 'border-box',
     display: 'flex',
@@ -63,7 +63,7 @@ export const navItemActive = style({
   background: color.primary.subtler,
   borderLeftColor: color.primary.base,
   color: color.primary.base,
-  fontWeight: fontWeight.medium,
+  fontWeight: fontWeight.semibold,
   selectors: {
     '&:hover': {
       background: color.primary.subtler,
