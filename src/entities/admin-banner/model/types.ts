@@ -24,6 +24,7 @@ import {
 
 import type {
   AdminBannerRequest,
+  AdminBannerView,
   BannerIcon,
   BannerTarget,
 } from '@shared/api/types'
@@ -53,6 +54,7 @@ export const BANNER_ICONS: Record<BannerIcon, LucideIcon> = {
   Heart,
 }
 
+export type AdminBanner = AdminBannerView
 export type BannerTargetType = BannerTarget['type']
 
 export type BannerTextField = keyof Pick<
@@ -90,6 +92,28 @@ export const createEmptyBannerFormValue = (): AdminBannerFormValue => ({
   targetType: 'PRODUCT',
   targetId: '',
   visible: true,
+})
+
+/** 고치기 화면의 초기값. 사진은 지금 주소를 그대로 둔다(그대로 보내면 사진이 안 바뀐다) */
+export const toBannerFormValue = (
+  banner: AdminBanner,
+): AdminBannerFormValue => ({
+  badge: banner.badge,
+  title: banner.title,
+  description: banner.description,
+  tabLabel: banner.tabLabel,
+  imageAlt: banner.imageAlt,
+  icon: banner.icon,
+  image: [
+    {
+      id: banner.imageUrl,
+      url: banner.imageUrl,
+      name: banner.imageUrl.split('/').pop() ?? '',
+    },
+  ],
+  targetType: banner.target.type,
+  targetId: banner.target.id,
+  visible: banner.visible,
 })
 
 /**
