@@ -29,6 +29,7 @@ import { slopePerSecond } from '@shared/lib/samples'
 import { InlineAlert, RefreshStatus, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
+import { useReprocessRun } from '../../lib/useReprocessRun'
 import { useScrolledPast } from '../../lib/useScrolledPast'
 import { DrawSummaryCard } from '../DrawSummaryCard'
 import { OpenPreorderCard } from '../OpenPreorderCard'
@@ -36,6 +37,8 @@ import { OpsKpiCard } from '../OpsKpiCard'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
 import { OrderSummaryCard } from '../OrderSummaryCard'
 import { QueueCard } from '../QueueCard'
+import { ReprocessBanner } from '../ReprocessBanner'
+import { ReprocessModal } from '../ReprocessModal'
 import { StuckDrawTask } from '../StuckDrawTask'
 import { UrgentBanner, type UrgentItem } from '../UrgentBanner'
 
@@ -219,6 +222,25 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     'REPROCESS_NEEDED',
     selected ?? undefined,
   )
+  // 재처리는 이 화면에서 모달로 한다 — 고른 사전예약이 있으면 그것만, 없으면 전부.
+  const reprocess = useReprocessRun(failures, now)
+  const reprocessAction = { label: '재처리', onClick: reprocess.show }
+  // 모달의 사전예약별 건수 — 마감돼 목록에서 빠진 회차에 남은 실패는 한 줄로 묶는다.
+  const breakdownTotal = failedPreorders.reduce(
+    (total, item) => total + (item.failures ?? 0),
+    0,
+  )
+  const reprocessBreakdown = scoped
+    ? []
+    : [
+        ...failedPreorders.map((item) => ({
+          name: item.name,
+          count: item.failures ?? 0,
+        })),
+        ...(failures !== null && failures > breakdownTotal
+          ? [{ name: '마감된 회차', count: failures - breakdownTotal }]
+          : []),
+      ]
 
   // 급한 순서대로 쌓는다. 0건인 일은 빼서 이상이 없으면 목록이 비게 한다. 배송 대기는 위
   // 숫자와 주문 카드가 보여 줘 여기엔 두지 않는다.
@@ -228,8 +250,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           key: 'register',
           level: 'urgent',
           title: `결제 막힘 · 외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건`,
-          // 재처리는 예약 현황에서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
-          action: { label: '재처리', to: reprocessPath },
+          action: reprocessAction,
         },
         t.deadLetters.waiting > 0 && {
           key: 'dead-letters',
@@ -272,7 +293,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             label: '외부 등록 실패',
             count: t.syncJobs.REGISTER.DEAD_LETTER,
             breakdown: failureBreakdown,
-            action: { label: '재처리하기', to: reprocessPath },
+            action: { ...reprocessAction, label: '재처리하기' },
           },
         ]
       : []
@@ -339,19 +360,29 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
 
       {/* 결제를 막는 일은 어디를 보든 먼저 보이게 맨 위에 한 번 더 두고, 띠가 스크롤로
           사라지면 헤더 바로 아래에 얇은 한 줄로 따라온다. */}
-      {urgentItems.length > 0 && (
-        <>
-          <div ref={urgentRef}>
-            <UrgentBanner items={urgentItems} />
-          </div>
-          <div className={styles.urgentPin}>
-            {urgentScrolledPast && (
-              <div className={styles.urgentPinned}>
-                <UrgentBanner items={urgentItems} compact />
-              </div>
-            )}
-          </div>
-        </>
+      {/* 재처리하는 동안엔 긴급 띠 대신 진행 띠 — 끝나고 실패가 남으면 긴급 띠로 돌아온다. */}
+      {reprocess.run && reprocess.running ? (
+        <ReprocessBanner
+          sent={reprocess.running.sent}
+          target={reprocess.run.target}
+          remainingSeconds={reprocess.running.remainingSeconds}
+          onOpen={reprocess.show}
+        />
+      ) : (
+        urgentItems.length > 0 && (
+          <>
+            <div ref={urgentRef}>
+              <UrgentBanner items={urgentItems} />
+            </div>
+            <div className={styles.urgentPin}>
+              {urgentScrolledPast && (
+                <div className={styles.urgentPinned}>
+                  <UrgentBanner items={urgentItems} compact />
+                </div>
+              )}
+            </div>
+          </>
+        )
       )}
 
       <section className={styles.section} aria-labelledby="ops-open">
@@ -513,6 +544,21 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           }}
         />
       </div>
+
+      <ReprocessModal
+        open={reprocess.open}
+        onClose={reprocess.close}
+        scopeName={selected ? nameOf(selected) : null}
+        failures={failures ?? 0}
+        breakdown={reprocessBreakdown}
+        run={reprocess.run}
+        running={reprocess.running}
+        result={reprocess.result}
+        isPending={reprocess.isPending}
+        error={reprocess.error}
+        onConfirm={() => reprocess.start(selected)}
+        reservationsPath={reprocessPath}
+      />
     </div>
   )
 }

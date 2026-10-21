@@ -6,6 +6,7 @@ export {
   useAdminReservations,
   useAllAdminReservations,
   useCancelReservation,
+  useReprocessFailedRegistrations,
   useReprocessReservation,
   useReprocessReservations,
   useReservationStats,

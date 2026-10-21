@@ -115,15 +115,19 @@ const getAdminSyncJobs = (
     { signal },
   )
 
+// 일괄 재처리 한 번에 보낼 수 있는 작업 수(명세 syncJobIds maxItems).
+const REPROCESS_BATCH_MAX = 1000
+
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록
 // → POST /api/v1/admin/preorders/sync-jobs/reprocess-batch — 조건으로 일괄 재처리
 /**
- * 여러 예약의 외부 등록을 한 번에 다시 시도한다. 일괄 재처리는 작업 id를 받는데 예약
- * 목록엔 없어서, 재처리 대기(DEAD_LETTER) REGISTER 작업을 받아 예약 id로 골라 보낸다.
- * 서버는 대상 수만 바로 주고 실제 재처리는 이어서 한다.
+ * 여러 예약의 외부 등록을 한 번에 다시 시도한다. preorderIds를 빼면 재처리 대기 전부.
+ * 일괄 재처리는 작업 id를 받는데 예약 목록엔 없어서, 재처리 대기(DEAD_LETTER) REGISTER
+ * 작업을 받아 예약 id로 골라 1000건씩 나눠 보낸다. 서버는 대상 수만 바로 주고 실제
+ * 재처리는 이어서 한다.
  */
-export async function reprocessAdminReservations(preorderIds: string[]) {
-  const wanted = new Set(preorderIds)
+export async function reprocessAdminReservations(preorderIds?: string[]) {
+  const wanted = preorderIds && new Set(preorderIds)
   const deadJobs = await fetchAllPages((page) =>
     getAdminSyncJobs({
       jobType: 'REGISTER',
@@ -133,7 +137,7 @@ export async function reprocessAdminReservations(preorderIds: string[]) {
     }),
   )
   const syncJobIds = deadJobs
-    .filter((job) => wanted.has(job.preorderId))
+    .filter((job) => !wanted || wanted.has(job.preorderId))
     .map((job) => job.syncJobId)
   if (syncJobIds.length === 0) {
     throw new ApiRequestError(
@@ -145,12 +149,47 @@ export async function reprocessAdminReservations(preorderIds: string[]) {
       409,
     )
   }
-  return apiClient.request<BatchReprocess>(
-    `${BASE}/sync-jobs/reprocess-batch`,
-    {
-      method: 'POST',
-      body: { syncJobIds } satisfies ReprocessBatchRequest,
-    },
+  const total: BatchReprocess = {
+    targetCount: 0,
+    skippedCount: 0,
+    estimatedSeconds: 0,
+  }
+  // 차례로 보낸다 — 서버가 요청마다 초당 정해진 수만큼 처리해서 예상 시간은 더해진다.
+  for (let i = 0; i < syncJobIds.length; i += REPROCESS_BATCH_MAX) {
+    const batch = await apiClient.request<BatchReprocess>(
+      `${BASE}/sync-jobs/reprocess-batch`,
+      {
+        method: 'POST',
+        body: {
+          syncJobIds: syncJobIds.slice(i, i + REPROCESS_BATCH_MAX),
+        } satisfies ReprocessBatchRequest,
+      },
+    )
+    total.targetCount += batch.targetCount
+    total.skippedCount += batch.skippedCount
+    total.estimatedSeconds += batch.estimatedSeconds
+  }
+  return total
+}
+
+// [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자) · 재처리 필요만
+// → reprocessAdminReservations
+/**
+ * 외부 등록이 실패한 예약을 다시 시도한다. productId를 주면 그 사전예약만, 빼면 전부.
+ * 일괄 재처리는 상품으로 거를 수 없어 그 사전예약의 실패 예약을 먼저 받아 고른다.
+ */
+export async function reprocessFailedRegistrations(productId?: string) {
+  if (!productId) return reprocessAdminReservations()
+  const failed = await fetchAllPages((page) =>
+    getAdminReservations({
+      productId,
+      registerJobStatus: 'DEAD_LETTER',
+      page,
+      size: PAGE_SIZE_MAX,
+    }),
+  )
+  return reprocessAdminReservations(
+    failed.map((reservation) => reservation.preorderId),
   )
 }
 

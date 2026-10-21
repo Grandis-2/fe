@@ -25,6 +25,7 @@ import {
   getSyncJobErrorGroups,
   reprocessAdminReservation,
   reprocessAdminReservations,
+  reprocessFailedRegistrations,
   toAdminReservationDetail,
   updateAdminReservationNote,
 } from './adminReservation'
@@ -158,6 +159,19 @@ export const useReprocessReservations = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: reprocessAdminReservations,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/**
+ * 외부 등록 실패 전부(productId를 주면 그 사전예약만) 재처리. 운영 대시보드가 목록을
+ * 거치지 않고 바로 부른다. 응답은 시작한 건수와 예상 시간뿐이라 결과는 집계로 본다.
+ */
+export const useReprocessFailedRegistrations = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: reprocessFailedRegistrations,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })
