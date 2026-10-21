@@ -41,10 +41,12 @@ const RATES_KEY = [...WAITINGROOM_KEY, 'rates'] as const
 // 서버 안내: 1초보다 자주 묻지 않는다.
 const MIN_POLL_MS = 1_000
 
+export const waitingroomStatusKey = [...WAITINGROOM_KEY, 'status'] as const
+
 /** 대기열 현황. 간격은 화면이 고르되 1초보다 짧게는 묻지 않는다 */
 export const useWaitingroomStatus = (intervalMs: RefreshInterval) => {
   const queryClient = useQueryClient()
-  const queryKey = [...WAITINGROOM_KEY, 'status'] as const
+  const queryKey = waitingroomStatusKey
   return useQuery({
     queryKey,
     queryFn: ({ signal }) =>

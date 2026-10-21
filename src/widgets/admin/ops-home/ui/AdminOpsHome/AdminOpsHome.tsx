@@ -5,11 +5,12 @@ import { CircleCheck, TriangleAlert } from 'lucide-react'
 import { useAdminDraws, useStuckDraws } from '@entities/admin-draw'
 import { useAdminOrderCounts } from '@entities/admin-order'
 import { useAdminProductCount } from '@entities/admin-product'
+import { useReservationStats } from '@entities/admin-reservation'
 import {
-  useReservationStats,
-  useReservationStatsHistories,
-} from '@entities/admin-reservation'
-import { isBraking, waitEstimate } from '@entities/admin-waitingroom'
+  isBraking,
+  useWaitingroomStatusHistory,
+  waitEstimate,
+} from '@entities/admin-waitingroom'
 import {
   OpenPreorderPicker,
   SLOW_AFTER_MS,
@@ -24,17 +25,17 @@ import {
   adminReservationsPath,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { slopePerSecond, sumSeries } from '@shared/lib/samples'
+import { slopePerSecond } from '@shared/lib/samples'
 import { InlineAlert, RefreshStatus, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
 import { useScrolledPast } from '../../lib/useScrolledPast'
-import { BacklogCard } from '../BacklogCard'
 import { DrawSummaryCard } from '../DrawSummaryCard'
 import { OpenPreorderCard } from '../OpenPreorderCard'
 import { OpsKpiCard } from '../OpsKpiCard'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
 import { OrderSummaryCard } from '../OrderSummaryCard'
+import { QueueCard } from '../QueueCard'
 import { StuckDrawTask } from '../StuckDrawTask'
 import { UrgentBanner, type UrgentItem } from '../UrgentBanner'
 
@@ -133,18 +134,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     ? scopeStats.reduce((total, value) => total + sum(value.preorders), 0)
     : null
 
-  // 외부 등록 대기(적체)는 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도
-  // 이어진다(새로 고치면 처음부터). 사전예약마다 받은 기록을 더한다.
-  const backlogSamples = sumSeries(
-    useReservationStatsHistories(scopeIds).map((samples) =>
-      samples.map(({ at, value }) => ({
-        at,
-        value: value.preorders.PENDING_SYNC,
-      })),
-    ),
-  )
-  const backlogSlope = slopePerSecond(backlogSamples).at(-1)?.value
-
   const s = stats.data
   // 판정 기준 시각 — 받은 응답의 시각을 써서 렌더마다 흔들리지 않게 한다. 회차 단계는 회차
   // 목록만 와도 정해야 해서 둘 중 늦은 쪽을 쓴다. 둘 다 못 받았으면 0이라 판정하지 않는다.
@@ -177,6 +166,19 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const waiting = q
     ? queueScope.reduce((total, product) => total + product.waiting, 0)
     : null
+  // 대기 인원 추이 — 관리자 화면을 연 뒤 받은 현황으로 그린다(새로 고치면 처음부터). 그때그때
+  // 접수 중이던 사전예약만 더한다(고르면 그것만).
+  const queueSamples = useWaitingroomStatusHistory().map(({ at, value }) => ({
+    at,
+    value: value.products
+      .filter(
+        (product) =>
+          product.phase === 'OPEN' &&
+          (selected === null || product.productId === selected),
+      )
+      .reduce((total, product) => total + product.waiting, 0),
+  }))
+  const queueSlope = slopePerSecond(queueSamples).at(-1)?.value
 
   const shipping =
     orders.counts.PREPARING_ITEMS !== null &&
@@ -420,19 +422,19 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       </div>
 
       <div className={styles.mainRow}>
-        <BacklogCard
+        <QueueCard
           // 고른 사전예약이 바뀌면 그래프를 새로 그린다(선이 다시 그려진다).
           key={selected ?? 'all'}
-          backlog={countOf('PENDING_SYNC')}
-          perMinute={backlogSlope === undefined ? null : backlogSlope * 60}
+          waiting={waiting}
+          perMinute={queueSlope === undefined ? null : queueSlope * 60}
           history={{
-            times: backlogSamples.map(({ at }) => at),
-            values: backlogSamples.map(({ value }) => value),
+            times: queueSamples.map(({ at }) => at),
+            values: queueSamples.map(({ value }) => value),
           }}
           // 브레이크는 대기열 전체에 하나라 고른 사전예약과 상관없이 전체 기준이다.
           braking={isBraking(q?.brakeFactor ?? null)}
           flow={{
-            waiting,
+            backlog: countOf('PENDING_SYNC'),
             payable: countOf('REGISTERED'),
             reserved: countOf('RESERVED'),
           }}

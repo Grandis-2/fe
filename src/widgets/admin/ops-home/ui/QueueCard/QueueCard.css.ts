@@ -5,9 +5,9 @@ import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 import { panel, panelHeader, panelTitle } from '../panel.css'
 
-import type { BacklogTrend } from '../../lib/backlogTrend'
+import type { QueueTrend } from '../../lib/queueTrend'
 
-type Status = BacklogTrend['status']
+type Status = QueueTrend['status']
 
 export const root = panel
 export const header = panelHeader

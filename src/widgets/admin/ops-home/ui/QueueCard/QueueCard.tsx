@@ -11,11 +11,11 @@ import { ADMIN_WAITINGROOM_PATH } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { TrendChart } from '@shared/ui'
 
-import { backlogTrend, type BacklogTrend } from '../../lib/backlogTrend'
+import { queueTrend, type QueueTrend } from '../../lib/queueTrend'
 
-import * as styles from './BacklogCard.css'
+import * as styles from './QueueCard.css'
 
-const trendIcon: Record<BacklogTrend['status'], typeof TrendingUp> = {
+const trendIcon: Record<QueueTrend['status'], typeof TrendingUp> = {
   rising: TrendingUp,
   falling: TrendingDown,
   steady: Minus,
@@ -25,55 +25,55 @@ const trendIcon: Record<BacklogTrend['status'], typeof TrendingUp> = {
 const valueOf = (count: number | null, unit = '') =>
   count === null ? '—' : `${formatNumber(count)}${unit}`
 
-export type BacklogCardProps = {
-  /** 지금 외부 등록 대기(PENDING_SYNC). 못 받았으면 null */
-  backlog: number | null
+export type QueueCardProps = {
+  /** 지금 대기 인원. 못 받았으면 null */
+  waiting: number | null
   /** 분당 변화(늘면 +). 표본이 모자라면 null */
   perMinute: number | null
-  /** 대기 건수 기록 — 화면을 연 뒤부터 */
+  /** 대기 인원 기록 — 화면을 연 뒤부터 */
   history: { times: readonly number[]; values: readonly number[] }
   /** 서버가 부하로 대기열 입장을 줄이는 중 */
   braking: boolean
-  /** 예약 흐름 — 대기열 인원, 결제 대기(REGISTERED), 결제 완료(RESERVED) */
+  /** 예약 흐름 — 외부 등록 대기(PENDING_SYNC), 결제 대기(REGISTERED), 결제 완료(RESERVED) */
   flow: {
-    waiting: number | null
+    backlog: number | null
     payable: number | null
     reserved: number | null
   }
 }
 
 /**
- * 외부 등록 대기 카드 — "얼마나 밀렸나, 언제 풀리나". 판정 문장을 먼저 크게 두고, 아래에
- * 대기 건수 추이와 예약이 지나가는 흐름(대기열 → 외부 등록 대기 → 결제 대기 → 결제 완료)을
- * 둔다. 늘고 있으면 대기열 입장 속도 조절로 바로 보낸다.
+ * 대기열 카드 — "줄이 줄고 있나, 언제 비나". 판정 문장을 먼저 크게 두고, 아래에 대기 인원
+ * 추이와 예약이 지나가는 흐름(대기열 → 외부 등록 대기 → 결제 대기 → 결제 완료)을 둔다.
+ * 줄이 늘고 있으면 대기열 입장 속도 조절로 바로 보낸다.
  */
-export function BacklogCard({
-  backlog,
+export function QueueCard({
+  waiting,
   perMinute,
   history,
   braking,
   flow,
-}: BacklogCardProps) {
-  // 지금 건수를 못 받았으면 추이만으로 '대기 없음'이라 말하지 않는다.
-  const trend = backlogTrend({
-    backlog: backlog ?? 0,
-    perMinute: backlog === null ? null : perMinute,
+}: QueueCardProps) {
+  // 지금 인원을 못 받았으면 추이만으로 '대기 없음'이라 말하지 않는다.
+  const trend = queueTrend({
+    waiting: waiting ?? 0,
+    perMinute: waiting === null ? null : perMinute,
   })
   const TrendIcon = trendIcon[trend.status]
   const rising = trend.status === 'rising'
 
   const steps = [
-    { key: 'waiting', label: '대기열', value: valueOf(flow.waiting, '명') },
-    { key: 'backlog', label: '외부 등록 대기', value: valueOf(backlog) },
+    { key: 'waiting', label: '대기열', value: valueOf(waiting, '명') },
+    { key: 'backlog', label: '외부 등록 대기', value: valueOf(flow.backlog) },
     { key: 'payable', label: '결제 대기', value: valueOf(flow.payable) },
     { key: 'reserved', label: '결제 완료', value: valueOf(flow.reserved) },
   ]
 
   return (
-    <section className={styles.root} aria-labelledby="ops-backlog">
+    <section className={styles.root} aria-labelledby="ops-queue">
       <div className={styles.header}>
-        <h2 id="ops-backlog" className={styles.title}>
-          외부 등록 대기
+        <h2 id="ops-queue" className={styles.title}>
+          대기열
         </h2>
         <span className={styles.caption}>5초마다 측정</span>
       </div>
@@ -81,8 +81,8 @@ export function BacklogCard({
       <div className={styles.verdict[trend.status]}>
         <div className={styles.verdictMain}>
           <span className={styles.big}>
-            {valueOf(backlog)}
-            <span className={styles.bigUnit}>건 대기</span>
+            {valueOf(waiting)}
+            <span className={styles.bigUnit}>명 대기</span>
           </span>
           <span className={styles.trend}>
             <TrendIcon
@@ -110,8 +110,8 @@ export function BacklogCard({
       <TrendChart
         times={history.times}
         values={history.values}
-        unit="건"
-        label="외부 등록 대기 건수"
+        unit="명"
+        label="대기 인원"
         tone={rising ? 'warning' : 'primary'}
       />
 
@@ -123,7 +123,7 @@ export function BacklogCard({
             )}
             <span
               className={
-                step.key === 'backlog'
+                step.key === 'waiting'
                   ? styles.flowCurrent[trend.status]
                   : styles.flowStep
               }

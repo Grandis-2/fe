@@ -13,10 +13,7 @@ export {
   useSaveReservationNote,
   useSyncJobErrorGroups,
 } from './api/useAdminReservations'
-export {
-  useReservationStatsHistories,
-  useReservationStatsHistory,
-} from './api/useReservationStatsHistory'
+export { useReservationStatsHistory } from './api/useReservationStatsHistory'
 export {
   actorLabel,
   countByStage,
