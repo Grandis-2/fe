@@ -26,6 +26,9 @@ export type TrendChartProps = {
 const WIDTH = 600
 const HEIGHT = 180
 const PAD_TOP = 10
+// 축 최댓값의 하한 — 값이 모두 0이면 축이 1·1·0(0.5 반올림)으로 찍히고, 0과 1을 오가는 값이
+// 그래프 꼭대기까지 치솟아 보인다.
+const MIN_SCALE = 10
 
 const formatTime = (ms: number) =>
   new Date(ms).toLocaleTimeString('ko-KR', {
@@ -73,7 +76,7 @@ export function TrendChart({
 
   const first = times[0]
   const span = times[times.length - 1] - first || 1
-  const max = niceMax(Math.max(...values))
+  const max = niceMax(Math.max(...values, MIN_SCALE))
   const xOf = (at: number) => ((at - first) / span) * WIDTH
   const yOf = (value: number) => HEIGHT - (value / max) * (HEIGHT - PAD_TOP)
   const points = times.map((at, i) => ({ x: xOf(at), y: yOf(values[i]) }))
