@@ -76,6 +76,16 @@ export type ProductListItem = {
   colors?: { label: string; hex: string; imageUrls: string[] }[]
 }
 
+// GET /api/v1/products/searches/popular — 최근 24시간 검색 수 순 최대 10개. 배열 순서가 순위다.
+export type PopularKeywords = {
+  keywords: string[]
+}
+
+// GET /api/v1/products/ranking — 최근 3일 조회수 순 최대 10개. 카드는 상품 목록 items와 같다.
+export type ProductRankingResponse = {
+  items: ProductListItem[]
+}
+
 export type OptionValue = {
   // UUID 아닌 문자열. 값 이름을 고쳐도 안 바뀐다.
   valueId: string
