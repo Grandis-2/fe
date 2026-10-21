@@ -1,5 +1,5 @@
 import type { WaitingroomSetting } from '@entities/admin-waitingroom'
-import { Skeleton, Tag } from '@shared/ui'
+import { Button, Skeleton, Tag } from '@shared/ui'
 
 import { formatSeconds } from '../../lib/duration'
 
@@ -57,8 +57,9 @@ export function MaxWaitSetting({
           <span className={styles.noteBad}>
             줄이 차면 새로 오는 사람이 거절돼요.
           </span>
-          <button
-            type="button"
+          <Button
+            size="small"
+            rounded
             className={styles.release}
             disabled={admission.isPending}
             onClick={() =>
@@ -75,7 +76,7 @@ export function MaxWaitSetting({
             }
           >
             제한 해제
-          </button>
+          </Button>
         </>
       )}
     </section>

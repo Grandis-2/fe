@@ -1,6 +1,6 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 import {
@@ -61,12 +61,13 @@ export const row = style({
   selectors: { '&:first-child': { borderTop: 'none', paddingTop: spacing[4] } },
 })
 
+// 이름 옆에 단계 태그를 붙인다 — 좁으면 태그가 아래로 내려간다.
 export const name = style({
   minWidth: 0,
   display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'flex-start',
-  gap: spacing[4],
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: `${spacing[4]} ${spacing[8]}`,
 })
 
 export const nameText = style([
@@ -119,52 +120,6 @@ export const actions = style({
   '@container': {
     [narrow]: { gridColumn: 2, gridRow: 1, flexWrap: 'wrap', minWidth: 0 },
   },
-})
-
-const buttonBase = style([
-  typography.button.mdBold,
-  { fontWeight: fontWeight.medium },
-  {
-    minHeight: '34px',
-    padding: `0 ${spacing[14]}`,
-    borderRadius: '999px',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: { '&:disabled': { cursor: 'not-allowed', opacity: 0.5 } },
-  },
-])
-
-export const resetButton = style([
-  buttonBase,
-  {
-    border: 'none',
-    background: 'none',
-    color: color.text.secondary,
-    selectors: { '&:hover': { color: color.text.primary } },
-  },
-])
-
-// 상한에 닿은 상품만 진하게 — 이 상품이 막히는 곳이라는 걸 버튼으로도 보인다.
-export const capButton = styleVariants({
-  plain: [
-    buttonBase,
-    {
-      border: `1px solid ${color.border.default}`,
-      background: color.background.base,
-      color: color.text.primary,
-      selectors: { '&:hover': { background: color.background.surface } },
-    },
-  ],
-  strong: [
-    buttonBase,
-    {
-      border: `1px solid ${color.primary.base}`,
-      background: color.primary.base,
-      color: color.text.inverse,
-      selectors: { '&:hover': { filter: 'brightness(0.92)' } },
-    },
-  ],
 })
 
 // 상한 사용 — 윗줄 상품에 딸린 정보라 회색 바탕으로 묶는다.

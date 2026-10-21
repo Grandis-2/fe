@@ -237,28 +237,27 @@ export function AdmissionSpeedCard({
       >
         <div className={styles.current}>
           <span className={styles.caption}>전체 상한 설정</span>
-          <span className={styles.currentValue}>
-            {current === null ? '—' : formatNumber(current)}
-            <span className={styles.unit}>명/초</span>
-          </span>
-          {globalSetting && (
-            <Tag variant="subtle" size="small" color="gray">
-              {settingSourceLabel[globalSetting.source]}
-            </Tag>
-          )}
-          <span className={styles.caption}>
-            바꾸면 모든 상품 상한도 같은 값으로 바뀌어요
+          <span className={styles.currentRow}>
+            <span className={styles.currentValue}>
+              {current === null ? '—' : formatNumber(current)}
+              <span className={styles.unit}>명/초</span>
+            </span>
+            {globalSetting && (
+              <Tag variant="subtle" size="small" color="gray">
+                {settingSourceLabel[globalSetting.source]}
+              </Tag>
+            )}
           </span>
         </div>
         <div className={styles.stepper}>
-          <button
-            type="button"
-            className={styles.stepButton}
+          <Button
+            variant="subtle"
+            color="cancel"
             aria-label={`${STEP} 줄이기`}
             onClick={() => step(-STEP)}
           >
             −{STEP}
-          </button>
+          </Button>
           <div className={styles.stepInput}>
             <Input
               id={inputId}
@@ -277,15 +276,15 @@ export function AdmissionSpeedCard({
               }
             />
           </div>
-          <button
-            type="button"
-            className={styles.stepButton}
+          <Button
+            variant="subtle"
+            color="cancel"
             aria-label={`${STEP} 늘리기`}
             disabled={!canStepUp}
             onClick={() => step(STEP)}
           >
             +{STEP}
-          </button>
+          </Button>
         </div>
         <Button type="submit" disabled={!canApply}>
           {admission.isPending ? '적용 중…' : '적용'}
@@ -318,9 +317,9 @@ export function AdmissionSpeedCard({
 
       <div className={styles.foot}>
         {globalSetting?.source === 'OPERATIONAL' ? (
-          <button
-            type="button"
-            className={styles.linkButton}
+          <Button
+            variant="subtle"
+            size="small"
             disabled={admission.isPending}
             onClick={() =>
               admission.confirm(
@@ -336,12 +335,15 @@ export function AdmissionSpeedCard({
             }
           >
             기본값({WAITINGROOM_DEFAULTS.globalCredit}명/초)으로
-          </button>
+          </Button>
         ) : (
           <span />
         )}
-        <button
-          type="button"
+        <Button
+          variant="outline"
+          size="small"
+          rounded
+          // 공통 버튼엔 위험 색이 없어 글자·테두리만 빨강으로 덮는다.
           className={styles.stopButton}
           disabled={admission.isPending || current === 0}
           onClick={() =>
@@ -358,7 +360,7 @@ export function AdmissionSpeedCard({
           }
         >
           입장 멈춤
-        </button>
+        </Button>
       </div>
     </section>
   )

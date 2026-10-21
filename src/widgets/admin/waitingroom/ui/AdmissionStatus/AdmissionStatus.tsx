@@ -1,6 +1,6 @@
 import { waitEstimate } from '@entities/admin-waitingroom'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Skeleton } from '@shared/ui'
+import { Button, Skeleton } from '@shared/ui'
 
 import * as styles from './AdmissionStatus.css'
 
@@ -39,14 +39,15 @@ export function AdmissionStatus({
         <span className={styles.title[verdict.tone]}>{verdict.title}</span>
         <span className={styles.hint}>{verdict.hint}</span>
         {action && (
-          <button
-            type="button"
+          <Button
+            size="small"
+            rounded
             className={styles.action}
             disabled={action.disabled}
             onClick={action.onClick}
           >
             {action.label}
-          </button>
+          </Button>
         )}
       </div>
       <dl className={styles.kpis}>

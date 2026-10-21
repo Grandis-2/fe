@@ -11,7 +11,7 @@ import { SLOW_AFTER_MS } from '@features/open-preorder-picker'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
-import { Chip, Skeleton, Tag, UsageCells } from '@shared/ui'
+import { Button, Chip, Skeleton, Tag, UsageCells } from '@shared/ui'
 
 import { formatSeconds, oldestSeconds } from '../../lib/duration'
 import { NumberSettingForm } from '../NumberSettingForm'
@@ -228,27 +228,29 @@ export function ProductCapList({
                 </div>
                 <div className={styles.actions}>
                   {capOf(product.productId)?.source === 'OPERATIONAL' && (
-                    <button
-                      type="button"
-                      className={styles.resetButton}
+                    <Button
+                      variant="subtle"
+                      color="cancel"
+                      size="small"
+                      rounded
                       aria-label={`${name} 상한 기본값으로`}
                       disabled={admission.isPending}
                       onClick={() => resetCap(product)}
                     >
                       기본값
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    type="button"
-                    className={
-                      atCap ? styles.capButton.strong : styles.capButton.plain
-                    }
+                  <Button
+                    // 상한에 닿은 상품만 진하게 — 이 상품이 막히는 곳이라는 걸 버튼으로도 보인다.
+                    variant={atCap ? 'solid' : 'outline'}
+                    size="small"
+                    rounded
                     aria-label={`${name} 상한 바꾸기`}
                     disabled={admission.isPending || !rates}
                     onClick={() => askCap(product)}
                   >
                     상한 바꾸기
-                  </button>
+                  </Button>
                 </div>
 
                 <div className={styles.capBox}>

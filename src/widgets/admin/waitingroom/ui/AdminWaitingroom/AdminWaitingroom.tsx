@@ -161,12 +161,12 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
             loading={rates.isPending}
             admission={admission}
           />
+          <ServerStatusCard view={view} loading={status.isPending} />
           <MaxWaitSetting
             setting={rates.data?.maxWaitSeconds}
             loading={rates.isPending}
             admission={admission}
           />
-          <ServerStatusCard view={view} loading={status.isPending} />
         </aside>
       </div>
     </div>

@@ -2,7 +2,7 @@ import {
   WAITINGROOM_DEFAULTS,
   type WaitingroomSetting,
 } from '@entities/admin-waitingroom'
-import { Skeleton } from '@shared/ui'
+import { Chip, Skeleton } from '@shared/ui'
 
 import { formatSeconds } from '../../lib/duration'
 
@@ -84,20 +84,15 @@ export function LeaveGraceSetting({
           aria-label="자리 지켜 주는 시간"
         >
           {items.map((item) => (
-            <button
+            <Chip
               key={item.value}
-              type="button"
-              className={
-                item.value === String(current)
-                  ? styles.choice.on
-                  : styles.choice.off
-              }
-              aria-pressed={item.value === String(current)}
+              className={styles.choice}
+              selected={item.value === String(current)}
               disabled={admission.isPending}
               onClick={() => pick(item.value)}
             >
               {item.label}
-            </button>
+            </Chip>
           ))}
         </div>
       )}

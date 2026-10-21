@@ -1,6 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 import {
@@ -91,6 +91,13 @@ export const current = style({
   gap: spacing[2],
 })
 
+// 숫자 옆에 기본값·운영값 태그를 붙인다.
+export const currentRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[8],
+})
+
 export const currentValue = style([
   typography.title.xlSemibold,
   {
@@ -112,27 +119,6 @@ export const stepper = style({
   alignItems: 'flex-start',
   gap: spacing[4],
 })
-
-export const stepButton = style([
-  typography.button.mdBold,
-  { fontWeight: fontWeight.medium },
-  {
-    minWidth: '48px',
-    height: '46px',
-    padding: `0 ${spacing[10]}`,
-    border: `1px solid ${color.border.default}`,
-    borderRadius: '8px',
-    background: color.background.surface,
-    color: color.text.secondary,
-    cursor: 'pointer',
-    fontVariantNumeric: 'tabular-nums',
-    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover:not(:disabled)': { background: color.background.subSurface },
-      '&:disabled': { cursor: 'not-allowed', color: color.text.tertiary },
-    },
-  },
-])
 
 export const stepInput = style({ width: '120px' })
 
@@ -172,37 +158,11 @@ export const foot = style({
   gap: spacing[12],
 })
 
-// 자주 쓰지 않는 동작이라 버튼보다 작은 글자 링크로 둔다.
-export const linkButton = style([
-  typography.body.defaultMedium,
-  { fontWeight: fontWeight.semibold },
-  {
-    minHeight: '36px',
-    padding: 0,
-    border: 'none',
-    background: 'none',
-    color: color.primary.base,
-    cursor: 'pointer',
-    selectors: { '&:disabled': { cursor: 'not-allowed', opacity: 0.5 } },
-  },
-])
-
 // 입장을 멈추는 동작 — 적용과 떨어뜨리고, 빨간 테두리로 위험하다는 걸 먼저 보인다.
-export const stopButton = style([
-  typography.button.mdBold,
-  { fontWeight: fontWeight.medium },
-  {
-    minHeight: '36px',
-    padding: `0 ${spacing[16]}`,
-    border: `1px solid ${color.status.danger}`,
-    borderRadius: '999px',
-    background: color.background.base,
-    color: color.status.danger,
-    cursor: 'pointer',
-    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { background: color.background.subtleDanger },
-      '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
-    },
+export const stopButton = style({
+  borderColor: color.status.danger,
+  color: color.status.danger,
+  selectors: {
+    '&:hover:not(:disabled)': { background: color.background.subtleDanger },
   },
-])
+})
