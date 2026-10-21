@@ -63,7 +63,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
 
   // 급할 때만 판정 줄에 할 일을 붙인다.
   const action =
-    flow.verdict.title === '입장 멈춤'
+    flow.verdict.kind === 'stopped'
       ? {
           label: '다시 열기',
           disabled: admission.isPending,
@@ -79,7 +79,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
                 ),
             ),
         }
-      : flow.verdict.title === '처리보다 빨라요'
+      : flow.verdict.kind === 'congested'
         ? {
             label: '속도 낮추기',
             onClick: () => document.getElementById(SPEED_INPUT_ID)?.focus(),

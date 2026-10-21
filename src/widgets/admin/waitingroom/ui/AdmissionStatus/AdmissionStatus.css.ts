@@ -107,6 +107,12 @@ export const kpiValue = style([
   },
 ])
 
+// 외부 등록 대기 아래 분당 변화 — 늘고 있는지는 맨 위 판정이 말하니 회색으로만 둔다.
+export const kpiNote = style([
+  typography.body.sub,
+  { margin: 0, color: color.text.secondary },
+])
+
 export const unit = style([
   typography.body.sub,
   { marginLeft: spacing[2], color: color.text.secondary },
