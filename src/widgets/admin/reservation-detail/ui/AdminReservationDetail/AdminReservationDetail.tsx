@@ -17,6 +17,7 @@ import {
   RESERVATION_NOTE_MAX,
   reservationNo,
   reservationStateColor,
+  reservationStateVariant,
   reservationStateLabel,
   reservationStateOf,
   useAdminMembers,
@@ -165,7 +166,7 @@ export function AdminReservationDetail({
       <div className={styles.titleRow}>
         <h1 className={styles.title}>{number}</h1>
         <Tag
-          variant="subtle"
+          variant={reservationStateVariant[state]}
           size="medium"
           rounded={false}
           color={reservationStateColor[state]}

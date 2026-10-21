@@ -91,15 +91,27 @@ export const reservationStateLabel: Record<ReservationState, string> = {
   CANCELED: '취소',
 }
 
+// 처리 중은 테두리만, 확정은 채운 브랜드 색 — 같은 색 안에서 진행 중과 끝남을 나눈다.
 export const reservationStateColor: Record<
   ReservationState,
-  'blue' | 'green' | 'red' | 'gray'
+  'primary' | 'red' | 'gray'
 > = {
-  PROCESSING: 'blue',
-  CONFIRMED: 'green',
+  PROCESSING: 'primary',
+  CONFIRMED: 'primary',
   REPROCESS_NEEDED: 'red',
   CANCELING: 'gray',
   CANCELED: 'gray',
+}
+
+export const reservationStateVariant: Record<
+  ReservationState,
+  'subtle' | 'outline'
+> = {
+  PROCESSING: 'outline',
+  CONFIRMED: 'subtle',
+  REPROCESS_NEEDED: 'subtle',
+  CANCELING: 'subtle',
+  CANCELED: 'subtle',
 }
 
 const STATE_OF_STATUS: Record<PreorderStatus, ReservationState> = {

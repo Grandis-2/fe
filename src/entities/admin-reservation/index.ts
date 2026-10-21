@@ -33,6 +33,7 @@ export {
   reservationNo,
   reservationStageLabel,
   reservationStateColor,
+  reservationStateVariant,
   reservationStateLabel,
   reservationStateOf,
 } from './model/types'

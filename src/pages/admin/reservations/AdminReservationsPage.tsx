@@ -15,6 +15,8 @@ import {
   paymentStateOf,
   reservationNo,
   reservationStageLabel,
+  reservationStateColor,
+  reservationStateVariant,
   reservationStateLabel,
   reservationStateOf,
   useAdminMembers,
@@ -400,20 +402,21 @@ export function AdminReservationsPage() {
         </span>
       ),
     },
-    // 평소 상태는 글씨로만 두고 색은 손볼 일(외부 등록 실패)에만 쓴다 — 봐야 할 행이 눈에 띈다.
+    // 상태는 의미별 색 태그로 구분한다. 외부 등록 실패는 행 배경까지 깔려 따로 눈에 띈다.
     {
       key: 'status',
       header: '상태',
       render: (reservation) => {
         const state = reservationStateOf(reservation)
-        return state === 'REPROCESS_NEEDED' ? (
-          <Tag variant="subtle" size="medium" rounded={false} color="red">
+        return (
+          <Tag
+            variant={reservationStateVariant[state]}
+            size="medium"
+            rounded={false}
+            color={reservationStateColor[state]}
+          >
             {reservationStateLabel[state]}
           </Tag>
-        ) : (
-          <span className={styles.cellText}>
-            {reservationStateLabel[state]}
-          </span>
         )
       },
     },
