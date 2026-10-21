@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 
 import {
-  BANNER_ICONS,
   BANNER_TEXT_MAX,
   bannerFormProblem,
   createEmptyBannerFormValue,
@@ -9,6 +8,7 @@ import {
   type AdminBannerFormValue,
   type BannerTargetType,
 } from '@entities/admin-banner'
+import { BANNER_ICONS } from '@entities/banner'
 import {
   Button,
   FieldError,
