@@ -38,6 +38,7 @@ import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
   Checkbox,
+  CountBadge,
   Dropdown,
   InlineAlert,
   Input,
@@ -308,17 +309,16 @@ export function AdminReservationsPage() {
     label: (
       <span className={styles.tabLabel}>
         {reservationStageLabel[stage]}
-        {stageCounts && (
-          <span
-            className={
-              stage === 'REPROCESS_NEEDED' && stageCounts[stage] > 0
-                ? styles.tabCountDanger
-                : styles.tabCount
-            }
-          >
-            {stageCounts[stage].toLocaleString('ko-KR')}
-          </span>
-        )}
+        {stageCounts &&
+          (stage === 'REPROCESS_NEEDED' && stageCounts[stage] > 0 ? (
+            <CountBadge>
+              {stageCounts[stage].toLocaleString('ko-KR')}
+            </CountBadge>
+          ) : (
+            <span className={styles.tabCount}>
+              {stageCounts[stage].toLocaleString('ko-KR')}
+            </span>
+          ))}
       </span>
     ),
   }))
