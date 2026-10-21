@@ -62,7 +62,9 @@ export const useAdminOrderCounts = <TStatus extends OrderStatus>(
   const refetch = () => {
     for (const query of queries) void query.refetch()
   }
-  return { counts, refetch }
+  /** 하나라도 받지 못했다 — 화면이 "마지막으로 받은 값"이라고 알린다 */
+  const isError = queries.some((query) => query.isError)
+  return { counts, refetch, isError }
 }
 
 export const useAdminOrder = (orderId: string) =>

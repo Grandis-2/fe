@@ -1,8 +1,7 @@
 import type { ApiViolation } from '@shared/api/types'
 
+import { getProductVariants, type AdminProductFormValue } from './form'
 import { brandCodeOf, MODEL_NAME_MAX } from './types'
-
-import type { AdminProductFormValue } from './form'
 
 /** 오류를 붙일 폼 칸. 화면은 이 이름으로 칸을 찾아 그 아래에 문구를 띄우고 스크롤한다 */
 export type FormField =
@@ -69,17 +68,14 @@ export function validateProductBasics(
       message: `할인율은 0~${DISCOUNT_RATE_MAX}% 사이 정수로 적어 주세요.`,
     })
   } else if (value.discountRate > 0) {
-    // 가장 싼 옵션(기본 가격 + 가장 작은 추가금)의 할인가가 100원 아래면 서버가 막는다.
-    const cheapest =
-      value.basePrice +
-      value.optionGroups.reduce(
-        (total, group) =>
-          total +
-          (group.values.length > 0
-            ? Math.min(...group.values.map((item) => item.extraPrice))
-            : 0),
-        0,
-      )
+    // 실제로 보낼 조합 중 가장 싼 것의 할인가가 100원 아래면 서버가 막는다. 빈 칸 값과 판매를
+    // 끈 조합(등록에선 만들지 않음)은 빼고 본다 — 넣으면 서버는 받는 값을 여기서 막는다.
+    // 수정에선 판매 중지 조합도 서버에 남아 있어 서버가 400을 줄 수 있는데, 그 오류는 이
+    // 칸으로 옮겨 보인다(SERVER_FIELD).
+    const prices = getProductVariants(value)
+      .filter((variant) => !value.pausedKeys.includes(variant.key))
+      .map((variant) => variant.price)
+    const cheapest = prices.length > 0 ? Math.min(...prices) : value.basePrice
     if (
       Math.floor((cheapest * (100 - value.discountRate)) / 100) <
       DISCOUNTED_PRICE_MIN

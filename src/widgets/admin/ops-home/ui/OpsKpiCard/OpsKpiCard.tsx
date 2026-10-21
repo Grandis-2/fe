@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react'
-
 import { Link } from 'react-router'
 
 import { srOnly } from '@shared/config/theme'
@@ -16,7 +14,8 @@ export type OpsKpiCardProps = {
   /** 못 받았으면 null — '—'로 보여 0건과 구분한다 */
   value: number | null
   unit: string
-  description?: ReactNode
+  /** 값이 아직 없는 이유(예: '집계 준비 중'). 주면 '—' 대신 이 문구를 보인다 */
+  emptyText?: string
   /** danger면 바탕까지 칠해 줄에서 먼저 보이게 한다 */
   tone?: 'default' | 'danger'
   loading?: boolean
@@ -29,7 +28,7 @@ export function OpsKpiCard({
   linkLabel,
   value,
   unit,
-  // description,
+  emptyText,
   tone = 'default',
   loading = false,
 }: OpsKpiCardProps) {
@@ -50,11 +49,18 @@ export function OpsKpiCard({
         </span>
       ) : (
         <span className={styles.value}>
-          {value === null ? '—' : value.toLocaleString('ko-KR')}
+          {value === null ? (
+            emptyText ? (
+              <span className={styles.emptyText}>{emptyText}</span>
+            ) : (
+              '—'
+            )
+          ) : (
+            value.toLocaleString('ko-KR')
+          )}
           {value !== null && <span className={styles.unit}>{unit}</span>}
         </span>
       )}
-      {/* {description && <span className={styles.description}>{description}</span>} */}
     </Link>
   )
 }

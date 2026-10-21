@@ -136,7 +136,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             : []),
         ]
       : []
-  const failuresByPreorder = failureBreakdown.join(' · ')
 
   // 대기열 — 고른 사전예약이 있으면 그것만, 없으면 접수 중인 사전예약 합.
   const queueScope = openProducts.filter(
@@ -145,11 +144,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const waiting = q
     ? queueScope.reduce((total, product) => total + product.waiting, 0)
     : null
-  const credit = queueScope.reduce(
-    (total, product) => total + product.credit,
-    0,
-  )
-  const wait = waiting === null ? null : waitEstimate(waiting, credit)
 
   const shipping =
     orders.counts.PREPARING_ITEMS !== null &&
@@ -271,6 +265,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
 
   const statsError = pollingError(stats)
   const queueError = pollingError(queue)
+  // 느리게 다시 받는 숫자(주문·상품 수, 럭키드로우)도 실패하면 멈춘 값이라고 알린다.
+  const slowFailed =
+    orders.isError ||
+    activeProducts.isError ||
+    pausedProducts.isError ||
+    draws.isError
 
   return (
     <div className={styles.root}>
@@ -287,6 +287,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         <InlineAlert status={s ? 'warning' : 'error'}>
           {getErrorMessage(statsError, '운영 현황을 불러오지 못했어요.')}
           {s && ' 아래 숫자는 마지막으로 받은 값이에요.'}
+        </InlineAlert>
+      )}
+      {slowFailed && (
+        <InlineAlert status="warning">
+          주문·상품 수나 럭키드로우를 새로 받지 못했어요. 그 숫자는 마지막으로
+          받은 값이에요.
         </InlineAlert>
       )}
 
@@ -335,11 +341,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           value={waiting}
           unit="명"
           loading={queue.isPending}
-          description={
-            wait
-              ? `맨 뒤 예상 대기 ${wait} · 초당 ${formatNumber(credit)}명 입장`
-              : '기다리는 사람이 없어요'
-          }
         />
         <OpsKpiCard
           label="예약 접수"
@@ -348,10 +349,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           value={t ? sum(t.preorders) : null}
           unit="건"
           loading={stats.isPending}
-          description={
-            t &&
-            `결제 완료 ${formatNumber(t.preorders.RESERVED)} · 외부 등록 대기 ${formatNumber(t.preorders.PENDING_SYNC)}`
-          }
         />
         <OpsKpiCard
           label="외부 등록 실패"
@@ -361,13 +358,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           unit="건"
           tone={failures ? 'danger' : 'default'}
           loading={stats.isPending}
-          description={
-            failures
-              ? ['결제로 못 넘어가요', failuresByPreorder]
-                  .filter(Boolean)
-                  .join(' · ')
-              : failures === 0 && '재처리할 예약이 없어요'
-          }
         />
         {/* ponytail: 불일치 건수를 주는 API가 없어 자리만 둔다(값은 '—'). 대조는 예약 전체와
             외부 원장 전체를 받아야 해서 5초 갱신에 넣지 않는다 — 백엔드에 stats 응답의 대조
@@ -378,24 +368,15 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           linkLabel="대조하기"
           value={null}
           unit="건"
-          description="불일치 건수는 집계 준비 중 · 눌러서 대조"
+          emptyText="집계 준비 중"
         />
         <OpsKpiCard
-          label="배송 대기 주문"
+          // 주문은 상품으로 거를 수 없어 고른 사전예약과 상관없이 전체다.
+          label={scoped ? '배송 대기 주문 · 전체' : '배송 대기 주문'}
           to={`${ADMIN_ORDERS_PATH}?status=PREPARING_ITEMS`}
           linkLabel="주문 관리"
           value={shipping && shipping.preparing + shipping.ready}
           unit="건"
-          description={
-            shipping &&
-            [
-              `상품 준비 ${formatNumber(shipping.preparing)} · 출고 대기 ${formatNumber(shipping.ready)}`,
-              // 주문은 상품으로 거를 수 없어 고른 사전예약과 상관없이 전체다.
-              scoped && '전체 기준',
-            ]
-              .filter(Boolean)
-              .join(' · ')
-          }
         />
       </div>
 

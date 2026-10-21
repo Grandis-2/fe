@@ -7,9 +7,13 @@ import type {
   WaitingroomStatusView,
 } from '@shared/api/types'
 
-// 서버 응답과 화면이 쓰는 모양이 같아서 매퍼 없이 그대로 재노출한다.
-export type WaitingroomStatus = WaitingroomStatusView
-export type WaitingroomProductStatus = ProductStatus
+// 상한(cap)만 서버가 비워 보낼 수 있어 기본값으로 채운 모양을 쓴다(toWaitingroomStatus).
+export type WaitingroomProductStatus = Omit<ProductStatus, 'cap'> & {
+  cap: number
+}
+export type WaitingroomStatus = Omit<WaitingroomStatusView, 'products'> & {
+  products: WaitingroomProductStatus[]
+}
 export type AdmissionRates = AdmissionRateView
 export type WaitingroomProductRate = ProductRate
 export type { WaitingroomSetting }

@@ -61,3 +61,9 @@ export const unit = style([
   typography.body.defaultMedium,
   { marginLeft: spacing[2], color: color.text.secondary },
 ])
+
+// 값 자리에 숫자 대신 이유를 적을 때 — 숫자보다 작게, 흐리게.
+export const emptyText = style([
+  typography.body.defaultMedium,
+  { color: color.text.secondary },
+])
