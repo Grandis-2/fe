@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router'
 
 import { useReservationStats } from '@entities/admin-reservation'
 import {
+  ADMIN_BANNERS_PATH,
   ADMIN_DEAD_LETTERS_PATH,
   ADMIN_DRAWS_PATH,
   ADMIN_HOME_PATH,
@@ -44,6 +45,7 @@ const navGroups = [
       { path: ADMIN_PROMOTIONS_PATH, label: '사전예약 관리' },
       { path: ADMIN_DRAWS_PATH, label: '럭키드로우 관리' },
       { path: ADMIN_ORDERS_PATH, label: '주문 관리' },
+      { path: ADMIN_BANNERS_PATH, label: '배너 관리' },
     ],
   },
   {
