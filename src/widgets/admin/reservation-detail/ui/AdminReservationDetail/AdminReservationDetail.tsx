@@ -33,15 +33,20 @@ import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-import { Button, InlineAlert, ReasonForm, Tag } from '@shared/ui'
+import {
+  Button,
+  InlineAlert,
+  NoticeBanner,
+  ProgressSteps,
+  ReasonForm,
+  Tag,
+} from '@shared/ui'
 
 import { historyEntries } from '../../lib/history'
 import { progressSteps } from '../../lib/progress'
 import { ReservationDeadLetters } from '../ReservationDeadLetters'
 import { ReservationHistory } from '../ReservationHistory'
 import { ReservationNoteForm } from '../ReservationNoteForm'
-import { ReservationNotice } from '../ReservationNotice'
-import { ReservationProgress } from '../ReservationProgress'
 
 import * as styles from './AdminReservationDetail.css'
 
@@ -222,7 +227,7 @@ export function AdminReservationDetail({
       {/* 지금 할 일 — 문제가 있을 때만 나온다. 빨강은 눌러야 하는 것, 주황은 알아 둘 것,
           회색은 상황 설명이다. */}
       {isReprocessable(reservation) && (
-        <ReservationNotice
+        <NoticeBanner
           tone="danger"
           title="외부 등록에 실패해 결제로 넘어가지 못하고 있어요"
           description={[
@@ -244,7 +249,7 @@ export function AdminReservationDetail({
 
       {/* 결제했는데 반영이 안 된 것 같은 건이라 예약 정보보다 먼저 보인다. */}
       {deadLetterItems.length > 0 && (
-        <ReservationNotice
+        <NoticeBanner
           tone="danger"
           title="결제·기한 만료 같은 처리가 이 예약에 반영되지 않았어요"
           description="다시 처리를 누르면 같은 처리를 한 번 더 시도해요."
@@ -259,7 +264,7 @@ export function AdminReservationDetail({
             onRedrive={confirmRedrive}
             busy={busy}
           />
-        </ReservationNotice>
+        </NoticeBanner>
       )}
       {deadLetterError !== null && (
         <InlineAlert status="warning">
@@ -271,7 +276,7 @@ export function AdminReservationDetail({
       )}
 
       {due && isPaymentDueSoon(reservation.paymentDueAt) && (
-        <ReservationNotice
+        <NoticeBanner
           tone="warning"
           title={`결제 기한이 ${due.replace(' 남음', '')} 남았어요`}
           description={`${dateTimeOrDash(reservation.paymentDueAt)}까지 결제하지 않으면 자동으로 취소돼요. 관리자가 할 일은 없어요.`}
@@ -279,14 +284,14 @@ export function AdminReservationDetail({
       )}
 
       {reservation.status === 'CANCELING' && (
-        <ReservationNotice
+        <NoticeBanner
           tone="info"
           title="외부 예약 시스템에 취소를 보내고 있어요"
           description="끝나면 취소로 바뀌어요. 결제를 마친 예약이면 환불이 이어서 처리돼요."
         />
       )}
       {reservation.status === 'CANCELED' && (
-        <ReservationNotice
+        <NoticeBanner
           tone="info"
           title="취소된 예약이에요"
           description={
@@ -306,7 +311,7 @@ export function AdminReservationDetail({
         <h2 id="reservation-progress" className={styles.panelTitle}>
           진행
         </h2>
-        <ReservationProgress steps={progressSteps(reservation)} />
+        <ProgressSteps steps={progressSteps(reservation)} />
       </section>
 
       <div className={styles.columns}>

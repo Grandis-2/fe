@@ -39,6 +39,8 @@ export { PollingNotice } from './PollingNotice'
 export type { PollingNoticeProps } from './PollingNotice'
 export { Navigator } from './Navigator'
 export type { NavigatorProps } from './Navigator'
+export { NoticeBanner } from './NoticeBanner'
+export type { NoticeBannerProps } from './NoticeBanner'
 export { PlanetIcon } from './PlanetIcon'
 export type { PlanetIconProps } from './PlanetIcon'
 export { SwirlBackground } from './SwirlBackground'
@@ -61,6 +63,12 @@ export { QuantityStepper } from './QuantityStepper'
 export type { QuantityStepperProps } from './QuantityStepper'
 export { PriceText } from './PriceText'
 export type { PriceTextProps } from './PriceText'
+export { ProgressSteps } from './ProgressSteps'
+export type {
+  ProgressStep,
+  ProgressStepsProps,
+  ProgressTone,
+} from './ProgressSteps'
 export { Modal, ModalActions } from './Modal'
 export { ActionButton } from './ActionButton'
 export type { ActionButtonProps } from './ActionButton'

@@ -8,16 +8,7 @@ import {
   type ReservationSyncJob,
 } from '@entities/admin-reservation'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
-
-/** 끝남 / 지금 진행 중 / 곧 기한 / 막힘 / 아직 */
-export type ProgressTone = 'done' | 'now' | 'warn' | 'stuck' | 'todo'
-
-export type ProgressStep = {
-  key: string
-  label: string
-  detail: string
-  tone: ProgressTone
-}
+import type { ProgressStep } from '@shared/ui'
 
 /** 작업이 마지막으로 움직인 시각 — 끝난 시도가 있으면 그 시각 */
 const lastAt = (job: ReservationSyncJob) => {

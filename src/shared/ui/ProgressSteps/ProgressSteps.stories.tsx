@@ -1,11 +1,11 @@
 import { expect } from 'storybook/test'
 
-import { ReservationProgress } from './ReservationProgress'
+import { ProgressSteps } from './ProgressSteps'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {
-  component: ReservationProgress,
+  component: ProgressSteps,
   tags: ['ai-generated'],
   args: {
     steps: [
@@ -30,7 +30,7 @@ const meta = {
       { key: 'reserved', label: '예약 확정', detail: '—', tone: 'todo' },
     ],
   },
-} satisfies Meta<typeof ReservationProgress>
+} satisfies Meta<typeof ProgressSteps>
 
 export default meta
 type Story = StoryObj<typeof meta>

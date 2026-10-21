@@ -2,12 +2,12 @@ import { expect } from 'storybook/test'
 
 import { Button } from '@shared/ui'
 
-import { ReservationNotice } from './ReservationNotice'
+import { NoticeBanner } from './NoticeBanner'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {
-  component: ReservationNotice,
+  component: NoticeBanner,
   tags: ['ai-generated'],
   args: {
     tone: 'danger',
@@ -15,7 +15,7 @@ const meta = {
     description: '자동 시도 5회 모두 실패 · 마지막 오류 EXT_TIMEOUT',
     action: <Button size="small">재처리</Button>,
   },
-} satisfies Meta<typeof ReservationNotice>
+} satisfies Meta<typeof NoticeBanner>
 
 export default meta
 type Story = StoryObj<typeof meta>
