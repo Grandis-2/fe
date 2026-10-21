@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import { useReservationStatsByProduct } from '@entities/admin-reservation'
 import {
   waitEstimate,
@@ -9,7 +11,7 @@ import { SLOW_AFTER_MS } from '@features/open-preorder-picker'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
-import { Skeleton, Tag, UsageCells } from '@shared/ui'
+import { Chip, Skeleton, Tag, UsageCells } from '@shared/ui'
 
 import { formatSeconds, oldestSeconds } from '../../lib/duration'
 import { NumberSettingForm } from '../NumberSettingForm'
@@ -33,11 +35,20 @@ export type ProductCapListProps = {
   admission: AdmissionChange
 }
 
-const phaseLabel: Record<WaitingroomProductStatus['phase'], string> = {
+type Phase = WaitingroomProductStatus['phase']
+
+const phaseLabel: Record<Phase, string> = {
   BEFORE_OPEN: '오픈 전',
   OPEN: '접수 중',
   CLOSED: '마감',
 }
+
+// 칩 순서 — 지금 손볼 진행 중이 먼저다.
+const phaseFilters: { phase: Phase; label: string }[] = [
+  { phase: 'OPEN', label: '진행 중' },
+  { phase: 'BEFORE_OPEN', label: '예정' },
+  { phase: 'CLOSED', label: '마감' },
+]
 
 /**
  * 상품별 입장 상한 — 상품마다 윗줄에 대기·맨 뒤 대기·외부 등록 상태, 아랫줄에 상한을 얼마나
@@ -54,12 +65,14 @@ export function ProductCapList({
   emptyMessage,
   admission,
 }: ProductCapListProps) {
+  const [phase, setPhase] = useState<Phase>('OPEN')
+  const shown = products.filter((product) => product.phase === phase)
   const productStats = useReservationStatsByProduct(
-    products.map((product) => product.productId),
+    shown.map((product) => product.productId),
     refreshInterval,
   )
   const statsOf = (productId: string) =>
-    productStats[products.findIndex((item) => item.productId === productId)]
+    productStats[shown.findIndex((item) => item.productId === productId)]
   const capOf = (productId: string) =>
     rates?.find((item) => item.productId === productId)?.cap
 
@@ -113,13 +126,37 @@ export function ProductCapList({
         <span className={styles.caption}>대기 많은 순</span>
       </div>
 
+      <div className={styles.filters} role="group" aria-label="사전예약 단계">
+        {phaseFilters.map((filter) => (
+          <Chip
+            key={filter.phase}
+            className={styles.chip}
+            selected={phase === filter.phase}
+            count={
+              loading
+                ? undefined
+                : products.filter((product) => product.phase === filter.phase)
+                    .length
+            }
+            onClick={() => setPhase(filter.phase)}
+          >
+            {filter.label}
+          </Chip>
+        ))}
+      </div>
+
       {loading ? (
         <Skeleton height={160} />
       ) : products.length === 0 ? (
         <span className={styles.caption}>{emptyMessage}</span>
+      ) : shown.length === 0 ? (
+        <span className={styles.caption}>
+          {phaseFilters.find((filter) => filter.phase === phase)?.label}인
+          사전예약이 없어요.
+        </span>
       ) : (
         <ul className={styles.list}>
-          {products.map((product) => {
+          {shown.map((product) => {
             const name = nameOf(product.productId)
             // 상한은 설정값(입장 속도 API)으로 보인다 — 운영값이 없으면 서버 기본값이 온다.
             // 현황의 cap이 다르면 서버가 지금 그보다 낮게 적용 중이라 따로 알린다.
@@ -233,7 +270,7 @@ export function ProductCapList({
                       ? '상한이 0이라 이 상품은 아무도 못 들어가요'
                       : atCap
                         ? '상한에 닿음 · 전역 속도를 올려도 이 상품은 안 빨라져요'
-                        : `초당 ${formatNumber(cap - product.credit)}명 여유`}
+                        : null}
                     {applied !== null && (
                       <span className={styles.hintSub}>
                         {' '}

@@ -18,6 +18,23 @@ export const caption = style([
   { color: color.text.secondary },
 ])
 
+export const filters = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[8],
+})
+
+// 고른 단계가 한눈에 보이게 남색으로 채운다(운영 대시보드의 사전예약 칩과 같다).
+export const chip = style({
+  selectors: {
+    '&[aria-pressed="true"], &[aria-pressed="true"]:hover:not(:disabled)': {
+      background: color.primary.base,
+      borderColor: color.primary.base,
+      color: color.text.inverse,
+    },
+  },
+})
+
 export const list = style({
   containerType: 'inline-size',
   display: 'flex',
