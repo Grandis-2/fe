@@ -34,7 +34,7 @@ export type AdmissionSpeedCardProps = {
 }
 
 /** −/+ 버튼 한 번에 바꾸는 양 */
-const STEP = 10
+const STEP = 5
 
 /**
  * 입장 속도 카드 — 색 구간 막대로 지금 위치와 처리 한계를 보이고, 그 아래에서 전역 입장

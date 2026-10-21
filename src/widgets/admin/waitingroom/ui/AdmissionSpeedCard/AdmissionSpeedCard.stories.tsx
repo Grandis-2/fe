@@ -59,11 +59,11 @@ export const TypeToApply: Story = {
   },
 }
 
-/** −10 / +10은 비어 있으면 지금 설정에서 시작한다 */
+/** −5 / +5는 비어 있으면 지금 설정에서 시작한다 */
 export const Step: Story = {
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: '10 늘리기' }))
-    await expect(canvas.getByLabelText('바꿀 속도(명/초)')).toHaveValue('130')
+    await userEvent.click(canvas.getByRole('button', { name: '5 늘리기' }))
+    await expect(canvas.getByLabelText('바꿀 속도(명/초)')).toHaveValue('125')
     await expect(canvas.getByText('한계 근처예요')).toBeVisible()
   },
 }
