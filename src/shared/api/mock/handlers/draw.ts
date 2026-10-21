@@ -7,6 +7,7 @@ import {
   draws,
   saveDrawDb,
 } from '../fixtures/draw'
+import { orders } from '../fixtures/preorder'
 import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 import { isUuid, readPaging, toPage, uuidViolation } from '../validate'
@@ -20,6 +21,9 @@ import type {
   DrawPhase,
   EntryConfirmResponse,
   EntryPaymentAttempt,
+  MyDrawEntriesResponse,
+  MyDrawEntryItem,
+  MyDrawEntryState,
 } from '../../types'
 import type { DrawEntryRecord, DrawRecord } from '../fixtures/draw'
 import type { RequestHandler } from 'msw'
@@ -88,6 +92,38 @@ const findEntry = (drawId: unknown) => {
   return entry
 }
 
+// 내 응모 목록 줄의 상태 배지 — 응답 시점 기준.
+const entryState = (
+  entry: DrawEntryRecord,
+  draw: DrawRecord,
+): MyDrawEntryState => {
+  if (entry.status === 'AUTHORIZING') return 'PAYMENT_CONFIRMING'
+  if (entry.status === 'AWAITING_PAYMENT')
+    return phaseOf(draw) === 'CLOSED' ? 'CLOSED_UNPAID' : 'AWAITING_PAYMENT'
+  return entry.result ?? 'AWAITING_RESULT'
+}
+
+const toListItem = (entry: DrawEntryRecord): MyDrawEntryItem => {
+  const draw = findDraw(entry.drawId) as DrawRecord
+  const state = entryState(entry, draw)
+  // 당첨 주문은 응모 id를 따로 남기지 않아(drawSettlement) 증정품 옵션으로 찾는다. 시드 당첨은 주문이 없어 null.
+  const wonOrder =
+    state === 'WON'
+      ? orders.find(
+          (order) =>
+            order.source === 'DRAW' &&
+            order.items[0]?.optionId === draw.gift.variantId,
+        )
+      : undefined
+  return {
+    entryId: entry.entryId,
+    state,
+    enteredAt: entry.createdAt,
+    wonOrderId: wonOrder?.orderId ?? null,
+    draw: toDraw(draw),
+  }
+}
+
 export const drawHandlers: RequestHandler[] = [
   // 회차 목록 — 최신순. 로그인 없이 부를 수 있다.
   http.get(url('/api/v1/draws'), ({ request }) => {
@@ -100,6 +136,37 @@ export const drawHandlers: RequestHandler[] = [
     )
     const { items, total } = toPage(sorted, page, size)
     return ok({ items: items.map(toDraw), page, size, total })
+  }),
+
+  // 내 응모 목록 — 응모 최신순(같은 시각이면 응모 id 역순). counts는 탭과 상관없이 둘 다 준다.
+  http.get(url('/api/v1/draws/entries/me'), ({ request }) => {
+    if (!hasToken(request)) return unauthenticated()
+    const searchParams = new URL(request.url).searchParams
+    const filter = searchParams.get('filter') || 'ALL'
+    const { page, size, violations } = readPaging(searchParams)
+    if (filter !== 'ALL' && filter !== 'WON')
+      violations.push({
+        field: 'filter',
+        message: 'ALL 또는 WON이어야 합니다.',
+      })
+    if (violations.length > 0) return invalid(violations)
+    settleDueDraws()
+    const rows = entries
+      .map((it) => toListItem(findEntry(it.drawId) as DrawEntryRecord))
+      .sort(
+        (a, b) =>
+          b.enteredAt.localeCompare(a.enteredAt) ||
+          b.entryId.localeCompare(a.entryId),
+      )
+    const won = rows.filter((it) => it.state === 'WON')
+    const { items, total } = toPage(filter === 'WON' ? won : rows, page, size)
+    return ok<MyDrawEntriesResponse>({
+      items,
+      page,
+      size,
+      total,
+      counts: { all: rows.length, won: won.length },
+    })
   }),
 
   http.get(url('/api/v1/draws/:drawId'), ({ params }) => {

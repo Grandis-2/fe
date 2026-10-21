@@ -32,4 +32,6 @@ export type {
   DrawPaymentResult,
   DrawPhase,
   EnterDrawRequest,
+  MyDrawEntry,
+  MyDrawEntryFilter,
 } from './model/draw'

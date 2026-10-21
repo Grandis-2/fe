@@ -16,10 +16,15 @@ export type AdmissionBarProps = {
 const pct = (value: number, axis: number) =>
   `${Math.round((value / axis) * 1000) / 10}%`
 
+/** 라벨을 어느 쪽에 붙일지 — 끝 가까이면 그쪽으로 붙여 막대 밖으로 넘치지 않게 한다 */
+const alignOf = (value: number, axis: number) =>
+  value / axis < 0.2 ? 'start' : value / axis > 0.8 ? 'end' : 'center'
+
 /**
  * 입장 속도 여유 막대 — 바탕을 여유(초록) · 한계 근처(노랑) · 처리보다 빠름(빨강) 세 구간으로
  * 칠하고, 채운 막대가 지금 입장, 세로선이 외부 등록 처리 속도다. 막대 끝이 어느 색에 있는지만
- * 보면 올려도 되는지 읽힌다. 바꿀 값을 주면 지금과의 차이를 빗금으로 겹친다.
+ * 보면 올려도 되는지 읽힌다. 바꿀 값을 주면 지금과의 차이를 빗금으로 겹친다(바꿀 숫자는 입력
+ * 칸에 있어 라벨은 달지 않는다). 처리 한계는 막대 위, 지금은 아래에 달아 둘이 가까워도 안 겹친다.
  */
 export function AdmissionBar({
   admitting,
@@ -33,6 +38,14 @@ export function AdmissionBar({
 
   return (
     <div className={styles.root}>
+      <div className={styles.labels} aria-hidden="true">
+        <span
+          className={styles.labelLine[alignOf(processing, axis)]}
+          style={{ left: pct(processing, axis) }}
+        >
+          처리 한계 {formatNumber(processing)}
+        </span>
+      </div>
       <div
         className={styles.track}
         role="img"
@@ -70,21 +83,10 @@ export function AdmissionBar({
       </div>
       <div className={styles.labels} aria-hidden="true">
         <span
-          className={styles.labelNow}
+          className={styles.labelNow[alignOf(admitting, axis)]}
           style={{ left: pct(admitting, axis) }}
         >
           지금 {formatNumber(admitting)}
-        </span>
-        {hasNext && (
-          <span className={styles.labelNext} style={{ left: pct(next, axis) }}>
-            바꾸면 {formatNumber(next)}
-          </span>
-        )}
-        <span
-          className={styles.labelLine}
-          style={{ left: pct(processing, axis) }}
-        >
-          처리 한계 {formatNumber(processing)}
         </span>
       </div>
       <div className={styles.legend} aria-hidden="true">

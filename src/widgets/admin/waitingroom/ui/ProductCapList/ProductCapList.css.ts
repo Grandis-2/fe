@@ -14,11 +14,12 @@ export const head = panelHead
 export const title = panelTitle
 
 export const caption = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { color: color.text.secondary },
 ])
 
 export const list = style({
+  containerType: 'inline-size',
   display: 'flex',
   flexDirection: 'column',
   margin: 0,
@@ -26,10 +27,16 @@ export const list = style({
   listStyle: 'none',
 })
 
+// 좁으면(목록 폭 기준) 한 줄에 다 못 놓아 이름·버튼 / 대기 둘 / 외부 등록 / 상한으로 쌓는다.
+const narrow = '(max-width: 680px)'
+
 // 윗줄: 이름 · 대기 · 맨 뒤 대기 · 외부 등록 · 버튼. 아랫줄: 상한 사용(줄 전체 너비).
 export const row = style({
   display: 'grid',
   gridTemplateColumns: 'minmax(0, 1fr) 96px 96px 180px auto',
+  '@container': {
+    [narrow]: { gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)' },
+  },
   alignItems: 'center',
   gap: `${spacing[10]} ${spacing[16]}`,
   padding: `${spacing[14]} 0`,
@@ -46,7 +53,7 @@ export const name = style({
 })
 
 export const nameText = style([
-  typography.body.defaultMedium,
+  typography.title.mdMedium,
   {
     maxWidth: '100%',
     fontWeight: fontWeight.semibold,
@@ -64,12 +71,12 @@ export const stat = style({
 })
 
 export const statLabel = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
 
 export const statValue = style([
-  typography.body.defaultMedium,
+  typography.title.mdMedium,
   {
     fontWeight: fontWeight.bold,
     color: color.text.primary,
@@ -78,20 +85,28 @@ export const statValue = style([
 ])
 
 export const unit = style([
-  typography.body.caption,
+  typography.body.sub,
   { marginLeft: spacing[2], color: color.text.secondary },
 ])
 
-export const register = style({ display: 'flex' })
+export const register = style({
+  display: 'flex',
+  '@container': { [narrow]: { gridColumn: '1 / -1' } },
+})
 
 export const actions = style({
   display: 'flex',
   justifyContent: 'flex-end',
   gap: spacing[6],
+  // 좁으면 이름과 반씩 나눠 쓰는 칸이라, 버튼 둘이 안 들어가면 넘치지 않고 아래로 내린다.
+  '@container': {
+    [narrow]: { gridColumn: 2, gridRow: 1, flexWrap: 'wrap', minWidth: 0 },
+  },
 })
 
 const buttonBase = style([
-  typography.button.smMedium,
+  typography.button.mdBold,
+  { fontWeight: fontWeight.medium },
   {
     minHeight: '34px',
     padding: `0 ${spacing[14]}`,
@@ -139,8 +154,9 @@ export const capButton = styleVariants({
 export const capBox = style({
   gridColumn: '1 / -1',
   display: 'grid',
-  gridTemplateColumns: '150px minmax(0, 1fr)',
+  gridTemplateColumns: '170px minmax(0, 1fr)',
   alignItems: 'center',
+  '@container': { [narrow]: { gridTemplateColumns: 'minmax(0, 1fr)' } },
   gap: `${spacing[4]} ${spacing[16]}`,
   padding: `${spacing[10]} ${spacing[14]}`,
   borderRadius: '10px',
@@ -150,21 +166,37 @@ export const capBox = style({
 export const capHead = style({
   display: 'flex',
   flexDirection: 'column',
+  gap: spacing[2],
 })
 
+export const capLabel = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary },
+])
+
 export const capValue = style([
+  typography.title.lgSemibold,
+  {
+    whiteSpace: 'nowrap',
+    color: color.text.primary,
+    fontVariantNumeric: 'tabular-nums',
+  },
+])
+
+// 단위는 숫자보다 작고 옅게 — 숫자 둘이 먼저 읽힌다.
+export const capUnit = style([
   typography.body.sub,
-  { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
+  { marginLeft: spacing[4], color: color.text.secondary },
 ])
 
 export const hint = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
 
 // 주황 칸과 짝 — 글자는 읽히게 기본 색에 굵기만 올린다.
 export const hintWarn = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.primary, fontWeight: fontWeight.semibold },
 ])
 

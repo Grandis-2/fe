@@ -8,6 +8,6 @@ export { useSearchFilters } from './lib/useSearchFilters'
 export type { PreorderLinksProps } from './ui/PreorderLinks'
 export { useRecentSearches } from './lib/useRecentSearches'
 export { toKeyword } from './lib/toKeyword'
-export { ONGOING_PREORDERS, POPULAR_KEYWORDS } from './model/searchSuggestions'
+export { ONGOING_PREORDERS } from './model/searchSuggestions'
 // 검색창·검색 결과 위젯이 같은 어두운 검색 화면 스타일을 쓴다.
 export * as searchStyles from './ui/search.css'

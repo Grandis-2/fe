@@ -27,12 +27,13 @@ export const row = style({
 })
 
 export const label = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { color: color.text.secondary },
 ])
 
 export const value = style([
-  typography.body.subSemibold,
+  typography.body.defaultMedium,
+  { fontWeight: fontWeight.semibold },
   { margin: 0, color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
 ])
 
@@ -42,11 +43,11 @@ export const valueBad = style([
 ])
 
 export const note = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
 
 export const noteBad = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.status.danger },
 ])

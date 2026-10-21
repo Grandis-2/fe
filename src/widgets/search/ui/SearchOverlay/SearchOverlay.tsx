@@ -3,10 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router'
 
-import { brandMenus, useProducts } from '@entities/product'
+import { brandMenus, usePopularKeywords, useProducts } from '@entities/product'
 import {
   ONGOING_PREORDERS,
-  POPULAR_KEYWORDS,
   PreorderLinks,
   ProductResults,
   SearchField,
@@ -67,6 +66,8 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
     { enabled: keyword !== '' },
   )
   const results = search.data?.items
+  // 실패(503 등)·빈 목록이면 명세대로 영역째 숨긴다.
+  const { data: popularKeywords } = usePopularKeywords()
 
   const pick = (label: string) => {
     setQuery(label)
@@ -140,29 +141,31 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
               </section>
             )}
 
-            <section className={shared.section}>
-              <h2 className={shared.sectionTitle}>인기 검색어</h2>
-              <ol className={styles.popular}>
-                {POPULAR_KEYWORDS.map((label, index) => (
-                  <li key={label}>
-                    <button
-                      type="button"
-                      className={styles.popularItem}
-                      onClick={() => commit(label)}
-                    >
-                      <span
-                        className={
-                          styles.popularRank[index < 3 ? 'top' : 'rest']
-                        }
+            {popularKeywords && popularKeywords.length > 0 && (
+              <section className={shared.section}>
+                <h2 className={shared.sectionTitle}>인기 검색어</h2>
+                <ol className={styles.popular}>
+                  {popularKeywords.map((label, index) => (
+                    <li key={label}>
+                      <button
+                        type="button"
+                        className={styles.popularItem}
+                        onClick={() => commit(label)}
                       >
-                        {index + 1}
-                      </span>
-                      <span className={styles.popularLabel}>{label}</span>
-                    </button>
-                  </li>
-                ))}
-              </ol>
-            </section>
+                        <span
+                          className={
+                            styles.popularRank[index < 3 ? 'top' : 'rest']
+                          }
+                        >
+                          {index + 1}
+                        </span>
+                        <span className={styles.popularLabel}>{label}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            )}
 
             <section className={shared.section}>
               <h2 className={shared.sectionTitle}>카테고리</h2>

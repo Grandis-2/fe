@@ -7,7 +7,7 @@ import { useAdminOrderCounts } from '@entities/admin-order'
 import { useAdminProductCount } from '@entities/admin-product'
 import {
   useReservationStats,
-  useReservationStatsHistory,
+  useReservationStatsHistories,
 } from '@entities/admin-reservation'
 import { isBraking, waitEstimate } from '@entities/admin-waitingroom'
 import {
@@ -24,7 +24,7 @@ import {
   adminReservationsPath,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { slopePerSecond } from '@shared/lib/samples'
+import { slopePerSecond, sumSeries } from '@shared/lib/samples'
 import { InlineAlert, RefreshStatus, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
@@ -94,6 +94,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     items: openPreorders,
     nameOf,
     statsOf,
+    statsQueryOf,
     refetchStats,
   } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
@@ -105,10 +106,42 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     : null
   const scoped = selected !== null
 
+  // 예약 숫자와 외부 등록 대기는 진행 중인 사전예약만 센다(고르면 그것만). 상품 없이 받은
+  // 집계엔 마감된 회차까지 들어 있어, 하나만 열려 있어도 그 사전예약과 숫자가 달라진다.
+  // 외부 등록 실패와 할 일은 마감된 회차에 남은 것도 처리해야 해서 아래 t(전체)로 센다.
+  const scopeIds = selected
+    ? [selected]
+    : openProducts.map((product) => product.productId)
+  const scopeStats = scopeIds
+    .map(statsOf)
+    .filter((value) => value !== undefined)
+  // 대기열 현황을 못 받으면 진행 중인 사전예약을 몰라 범위가 비는데, 그걸 0건으로 세지 않는다.
+  const scopeLoaded = q !== undefined && scopeStats.length === scopeIds.length
+  const scopeQueries = scopeIds.map(statsQueryOf)
+  const scopePending =
+    queue.isPending || scopeQueries.some((query) => query?.isPending)
+  // 사전예약별 집계가 하나라도 실패하면 위 숫자가 비거나 멈춘다 — 전체 집계와 따로 알린다.
+  const scopeError =
+    scopeQueries
+      .map((query) => (query ? pollingError(query) : null))
+      .find((error) => error !== null) ?? null
+  const countOf = (status: keyof (typeof scopeStats)[number]['preorders']) =>
+    scopeLoaded
+      ? scopeStats.reduce((total, value) => total + value.preorders[status], 0)
+      : null
+  const received = scopeLoaded
+    ? scopeStats.reduce((total, value) => total + sum(value.preorders), 0)
+    : null
+
   // 외부 등록 대기(적체)는 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도
-  // 이어진다(새로 고치면 처음부터). 고른 사전예약이 있으면 그 사전예약만.
-  const backlogSamples = useReservationStatsHistory(selected ?? undefined).map(
-    ({ at, value }) => ({ at, value: value.preorders.PENDING_SYNC }),
+  // 이어진다(새로 고치면 처음부터). 사전예약마다 받은 기록을 더한다.
+  const backlogSamples = sumSeries(
+    useReservationStatsHistories(scopeIds).map((samples) =>
+      samples.map(({ at, value }) => ({
+        at,
+        value: value.preorders.PENDING_SYNC,
+      })),
+    ),
   )
   const backlogSlope = slopePerSecond(backlogSamples).at(-1)?.value
 
@@ -289,6 +322,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           {s && ' 아래 숫자는 마지막으로 받은 값이에요.'}
         </InlineAlert>
       )}
+      {scopeError !== null && (
+        <InlineAlert status={scopeLoaded ? 'warning' : 'error'}>
+          {getErrorMessage(scopeError, '사전예약별 집계를 불러오지 못했어요.')}
+          {scopeLoaded && ' 예약 숫자는 마지막으로 받은 값이에요.'}
+        </InlineAlert>
+      )}
       {slowFailed && (
         <InlineAlert status="warning">
           주문·상품 수나 럭키드로우를 새로 받지 못했어요. 그 숫자는 마지막으로
@@ -346,9 +385,9 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           label="예약 접수"
           to={adminReservationsPath(undefined, selected ?? undefined)}
           linkLabel="예약 현황"
-          value={t ? sum(t.preorders) : null}
+          value={received}
           unit="건"
-          loading={stats.isPending}
+          loading={scopePending}
         />
         <OpsKpiCard
           label="외부 등록 실패"
@@ -384,7 +423,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         <BacklogCard
           // 고른 사전예약이 바뀌면 그래프를 새로 그린다(선이 다시 그려진다).
           key={selected ?? 'all'}
-          backlog={t ? t.preorders.PENDING_SYNC : null}
+          backlog={countOf('PENDING_SYNC')}
           perMinute={backlogSlope === undefined ? null : backlogSlope * 60}
           history={{
             times: backlogSamples.map(({ at }) => at),
@@ -394,8 +433,8 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           braking={isBraking(q?.brakeFactor ?? null)}
           flow={{
             waiting,
-            payable: t ? t.preorders.REGISTERED : null,
-            reserved: t ? t.preorders.RESERVED : null,
+            payable: countOf('REGISTERED'),
+            reserved: countOf('RESERVED'),
           }}
         />
         <OpenPreorderCard

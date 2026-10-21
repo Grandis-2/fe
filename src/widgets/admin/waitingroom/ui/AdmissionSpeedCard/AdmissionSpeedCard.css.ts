@@ -14,7 +14,7 @@ export const head = panelHead
 export const title = panelTitle
 
 export const caption = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { color: color.text.secondary },
 ])
 
@@ -37,7 +37,7 @@ export const current = style({
 })
 
 export const currentValue = style([
-  typography.title.lgSemibold,
+  typography.title.xlSemibold,
   {
     fontWeight: fontWeight.bold,
     color: color.text.primary,
@@ -46,7 +46,7 @@ export const currentValue = style([
 ])
 
 export const unit = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { marginLeft: spacing[2], color: color.text.secondary },
 ])
 
@@ -59,7 +59,8 @@ export const stepper = style({
 })
 
 export const stepButton = style([
-  typography.button.smMedium,
+  typography.button.mdBold,
+  { fontWeight: fontWeight.medium },
   {
     minWidth: '48px',
     height: '46px',
@@ -78,7 +79,8 @@ export const stepButton = style([
 export const stepInput = style({ width: '120px' })
 
 const previewBase = style([
-  typography.body.defaultRegular,
+  typography.title.mdMedium,
+  { fontWeight: fontWeight.regular },
   {
     display: 'flex',
     flexWrap: 'wrap',
@@ -103,7 +105,8 @@ export const preview = styleVariants({
 export const previewValue = style({ fontWeight: fontWeight.semibold })
 
 const noteBase = style([
-  typography.body.subSemibold,
+  typography.body.defaultMedium,
+  { fontWeight: fontWeight.semibold },
   { padding: `${spacing[2]} ${spacing[10]}`, borderRadius: '999px' },
 ])
 
@@ -131,7 +134,8 @@ export const foot = style({
 
 // 자주 쓰지 않는 동작이라 버튼보다 작은 글자 링크로 둔다.
 export const linkButton = style([
-  typography.body.subSemibold,
+  typography.body.defaultMedium,
+  { fontWeight: fontWeight.semibold },
   {
     minHeight: '36px',
     padding: 0,
@@ -145,7 +149,8 @@ export const linkButton = style([
 
 // 입장을 멈추는 동작 — 적용과 떨어뜨리고, 빨간 테두리로 위험하다는 걸 먼저 보인다.
 export const stopButton = style([
-  typography.button.smMedium,
+  typography.button.mdBold,
+  { fontWeight: fontWeight.medium },
   {
     minHeight: '36px',
     padding: `0 ${spacing[16]}`,

@@ -18,6 +18,9 @@ import * as styles from './ProductCapList.css'
 
 import type { AdmissionChange } from '../../lib/useAdmissionChange'
 
+/** 입장 상한 사용 칸 수의 최대값 — 상한이 크면 한 칸에 여러 명을 묶는다(운영 대시보드와 같다) */
+const MAX_CELLS = 10
+
 export type ProductCapListProps = {
   /** 대기가 많은 순으로 정렬된 상품별 대기열 */
   products: readonly WaitingroomProductStatus[]
@@ -122,7 +125,7 @@ export function ProductCapList({
           {products.map((product) => {
             const name = nameOf(product.productId)
             const atCap = product.cap > 0 && product.credit >= product.cap
-            const unit = usageCellUnit(product.cap)
+            const unit = usageCellUnit(product.cap, MAX_CELLS)
             const query = statsOf(product.productId)
             const oldest = oldestSeconds(
               query?.data?.oldestPendingSyncAt,
@@ -213,15 +216,17 @@ export function ProductCapList({
 
                 <div className={styles.capBox}>
                   <span className={styles.capHead}>
-                    <span className={styles.statLabel}>입장 / 상한</span>
+                    <span className={styles.capLabel}>입장 / 상한</span>
                     <span className={styles.capValue}>
-                      <b>{formatNumber(product.credit)}</b> /{' '}
-                      {formatNumber(product.cap)}명/초
+                      {formatNumber(product.credit)} /{' '}
+                      {formatNumber(product.cap)}
+                      <span className={styles.capUnit}>(명/초)</span>
                     </span>
                   </span>
                   <UsageCells
                     used={product.credit}
                     total={product.cap}
+                    maxCells={MAX_CELLS}
                     label={`${name} 입장 상한 ${formatNumber(product.cap)}명 중 ${formatNumber(product.credit)}명 사용`}
                   />
                   <span />

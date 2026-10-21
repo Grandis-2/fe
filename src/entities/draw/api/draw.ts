@@ -1,6 +1,10 @@
 import { ApiRequestError, apiClient } from '@shared/api/client'
 import { toQueryString } from '@shared/api/queryString'
-import type { ConfirmPaymentRequest, DrawListParams } from '@shared/api/types'
+import type {
+  ConfirmPaymentRequest,
+  DrawListParams,
+  MyDrawEntriesParams,
+} from '@shared/api/types'
 
 import type {
   Draw,
@@ -9,6 +13,7 @@ import type {
   DrawPaymentAttempt,
   DrawPaymentResult,
   EnterDrawRequest,
+  MyDrawEntryPage,
 } from '../model/draw'
 
 const path = (drawId: string) => `/api/v1/draws/${encodeURIComponent(drawId)}`
@@ -23,6 +28,17 @@ export const getDraws = (params: DrawListParams, signal?: AbortSignal) =>
 // [order] GET /api/v1/draws/{drawId} — 회차 상세
 export const getDraw = (drawId: string, signal?: AbortSignal) =>
   apiClient.request<Draw>(path(drawId), { signal })
+
+// [order] GET /api/v1/draws/entries/me — 내 응모 목록
+// 응모 최신순, 회원 토큰이 필요하다. 줄마다 회차와 상태 배지(state)가 함께 온다.
+export const getMyDrawEntries = (
+  params: MyDrawEntriesParams,
+  signal?: AbortSignal,
+) =>
+  apiClient.request<MyDrawEntryPage>(
+    `/api/v1/draws/entries/me${toQueryString(params)}`,
+    { signal },
+  )
 
 // [order] GET /api/v1/draws/{drawId}/entries/me — 내 응모
 // 내 응모와 추첨 결과. 응모하지 않았으면 서버가 404 DRAW_ENTRY_NOT_FOUND를 주는데 오류가 아니라 "응모 전"이라
