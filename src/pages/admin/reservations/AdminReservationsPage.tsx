@@ -384,7 +384,11 @@ export function AdminReservationsPage() {
     {
       key: 'member',
       header: '예약자',
-      render: (reservation) => memberName(reservation.customerId),
+      render: (reservation) => (
+        <span className={styles.cellText}>
+          {memberName(reservation.customerId)}
+        </span>
+      ),
     },
     {
       key: 'seq',
@@ -403,11 +407,13 @@ export function AdminReservationsPage() {
       render: (reservation) => {
         const state = reservationStateOf(reservation)
         return state === 'REPROCESS_NEEDED' ? (
-          <Tag variant="subtle" size="small" rounded={false} color="red">
+          <Tag variant="subtle" size="medium" rounded={false} color="red">
             {reservationStateLabel[state]}
           </Tag>
         ) : (
-          reservationStateLabel[state]
+          <span className={styles.cellText}>
+            {reservationStateLabel[state]}
+          </span>
         )
       },
     },
@@ -429,7 +435,9 @@ export function AdminReservationsPage() {
 
         return (
           <span className={styles.stacked}>
-            {paymentStateLabel[payment]}
+            <span className={styles.cellText}>
+              {paymentStateLabel[payment]}
+            </span>
             {due && (
               <span className={soon ? styles.dueSoon : styles.subText}>
                 {due}

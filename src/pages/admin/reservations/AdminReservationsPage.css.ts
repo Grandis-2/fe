@@ -25,7 +25,7 @@ export const title = style([
 // 탭 이름 옆에 그 상태의 전체 건수를 붙인다.
 export const tabLabel = style({
   display: 'inline-flex',
-  alignItems: 'baseline',
+  alignItems: 'center',
   gap: spacing[6],
 })
 
@@ -35,11 +35,20 @@ export const tabCount = style({
 })
 
 // 외부 등록 실패 건수 — 손볼 일이 있으면 빨간 배지로 띄운다.
+// 높이를 고정하고 최소 너비를 높이와 같게 둬 한 자리면 원, 두 자리부터는 옆으로 늘어난
+// 알약이 된다. 숫자는 flex로 가운데에 둔다.
 export const tabCountDanger = style([
   typography.body.caption,
   {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxSizing: 'border-box',
+    height: '20px',
+    minWidth: '20px',
+    padding: `0 ${spacing[6]}`,
+    lineHeight: 1,
     fontVariantNumeric: 'tabular-nums',
-    padding: `1px ${spacing[6]}`,
     borderRadius: '9999px',
     background: color.status.danger,
     color: color.text.inverse,
@@ -82,21 +91,30 @@ export const stacked = style({
   gap: spacing[2],
 })
 
+// 표 글씨는 공통 Table 기본(14)보다 한 단계 크게 — 오래 띄워 두고 훑는 화면이다.
 export const mainText = style([
-  typography.body.subMedium,
+  typography.body.defaultMedium,
   { color: color.text.primary },
 ])
 
-export const number = style({ fontVariantNumeric: 'tabular-nums' })
+export const cellText = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary },
+])
+
+export const number = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
+])
 
 export const subText = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
 ])
 
 export const dueSoon = style([
-  typography.body.caption,
-  { color: color.status.danger, fontWeight: 600 },
+  typography.body.subSemibold,
+  { color: color.status.danger },
 ])
 
 // 외부 등록 실패 행 — 태그만으로도 보이지만 표를 훑을 때 행 단위로 걸리게 옅게 깐다.
