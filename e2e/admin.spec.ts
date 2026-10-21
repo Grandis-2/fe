@@ -72,6 +72,10 @@ test('M7 회원이 결제한 주문을 관리자가 배송 완료까지 처리�
     await expect(page.getByText(`${step} 처리했습니다.`)).toBeVisible()
   }
 
+  // 요약 칸·필터 칩에도 '배송 완료'가 늘 있으니, 이 주문의 카드 안에서 찾는다(주문번호 = id 끝 8자리).
   await loginAs(page, '/mypage?state=history')
-  await expect(page.getByText('배송 완료').first()).toBeVisible()
+  const orderCard = page
+    .getByRole('article')
+    .filter({ hasText: `주문번호 ${orderId.slice(-8).toUpperCase()}` })
+  await expect(orderCard.getByText('배송 완료', { exact: true })).toBeVisible()
 })
