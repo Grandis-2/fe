@@ -2,6 +2,7 @@ import { keyframes, style } from '@vanilla-extract/css'
 
 import {
   color,
+  lineClamp,
   motion,
   spacing,
   sprinkles,
@@ -121,9 +122,16 @@ export const badgeDesktop = sprinkles({
   display: { mobile: 'none', desktop: 'inline-flex' },
 })
 
+// 배너 수만큼 칸을 같은 폭으로 나눠 진행 바가 늘 끝까지 이어진다. 칸이 최소 폭보다 좁아지는
+// 개수부터는(데스크톱 5개·모바일 4개쯤) 옆으로 넘겨 보고, 걸친 칸이 더 있다는 걸 알려 준다.
 export const tabs = style({
+  position: 'relative',
   display: 'grid',
-  gridTemplateColumns: 'repeat(3, 1fr)',
+  gridAutoFlow: 'column',
+  gridAutoColumns: 'minmax(100px, 1fr)',
+  overflowX: 'auto',
+  scrollSnapType: 'x mandatory',
+  scrollbarWidth: 'none',
 })
 
 export const tab = style([
@@ -137,6 +145,7 @@ export const tab = style([
     border: 'none',
     background: 'transparent',
     textAlign: 'left',
+    scrollSnapAlign: 'start',
     color: color.text.tertiary,
     cursor: 'pointer',
     transition: `color ${motion.duration.fast} ${motion.easing.default}`,
@@ -149,9 +158,10 @@ export const tab = style([
   },
 ])
 
-export const tabLabel = style({ whiteSpace: 'pre-line' })
+// 문구는 60자까지 올 수 있어 두 줄에서 자른다 — 탭 높이가 배너마다 들쭉날쭉하지 않게.
+export const tabLabel = style({ ...lineClamp(2), whiteSpace: 'pre-line' })
 
-// 탭 세 칸의 트랙이 간격 없이 이어져 하나의 진행 바처럼 보인다 — 지난 탭은 꽉 채우고,
+// 탭 칸의 트랙이 간격 없이 이어져 하나의 진행 바처럼 보인다 — 지난 탭은 꽉 채우고,
 // 지금 탭만 0 → 100%로 차오른다.
 export const progressTrack = style({
   alignSelf: 'stretch',
