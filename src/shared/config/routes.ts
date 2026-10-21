@@ -100,8 +100,12 @@ export const adminPromotionPath = (promotionId: string) =>
   `${ADMIN_PROMOTIONS_PATH}/${promotionId}`
 
 export const ADMIN_DRAWS_PATH = '/admin/draws'
-/** 배너 관리 — 아직 빈 화면(팀원이 채울 예정) */
+/** 배너 관리 — 메인 배너 목록·순서 */
 export const ADMIN_BANNERS_PATH = '/admin/banners'
+export const ADMIN_BANNER_NEW_PATH = '/admin/banners/new'
+/** 배너 고치기 */
+export const adminBannerPath = (bannerId: string) =>
+  `${ADMIN_BANNERS_PATH}/${bannerId}`
 export const ADMIN_DRAW_NEW_PATH = '/admin/draws/new'
 /** 럭키 드로우 회차 상세(응모·추첨 진행) */
 export const adminDrawPath = (drawId: string) => `${ADMIN_DRAWS_PATH}/${drawId}`

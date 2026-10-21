@@ -8,7 +8,4 @@ export const root = style({
   gap: spacing[8],
 })
 
-export const hint = style([
-  typography.body.caption,
-  { color: color.text.tertiary },
-])
+export const hint = style([typography.body.sub, { color: color.text.tertiary }])

@@ -41,6 +41,16 @@ export const root = style({
   },
 })
 
+// 배너가 없을 때 — 헤더가 투명하게 겹쳐 올라가므로(bannerOverlap) 헤더 높이만큼만 비운다.
+// root와 같은 이유로 headerHeight 대신 고정값(Header.css.ts의 68px · 모바일 52px)을 쓴다.
+export const collapsed = style({
+  height: '68px',
+  background: color.backgroundDark.base,
+  '@media': {
+    [breakpoint.mobile]: { height: '52px' },
+  },
+})
+
 export const inner = style({
   display: 'flex',
   alignItems: 'center',

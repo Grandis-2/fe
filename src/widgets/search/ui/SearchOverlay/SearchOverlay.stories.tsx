@@ -40,6 +40,10 @@ const withCache = (keywords: Record<string, ProductListItem[]>) => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { enabled: false } },
   })
+  queryClient.setQueryData(
+    ['products', 'popular-keywords'],
+    ['맥북 프로 14', 'NOVA 스마트폰', '폴더블', '무선이어폰', '노트북'],
+  )
   // 0건일 때 대신 보여 주는 상품(ProductResults의 fallback).
   queryClient.setQueryData(
     ['products', 'list', { size: 4 }],

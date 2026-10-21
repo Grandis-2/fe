@@ -36,10 +36,12 @@ export function useOpenPreorders(
     intervalMs,
   )
   const nameOf = (productId: string) => productNames.get(productId) ?? productId
-  const statsOf = (productId: string) =>
+  /** 그 사전예약의 집계 요청 — 받는 중·실패를 보려면 이걸, 값만 필요하면 statsOf를 쓴다 */
+  const statsQueryOf = (productId: string) =>
     productStats[
       openProducts.findIndex((product) => product.productId === productId)
-    ]?.data
+    ]
+  const statsOf = (productId: string) => statsQueryOf(productId)?.data
 
   const items: OpenPreorder[] = openProducts.map((product, index) => {
     const data = productStats[index]?.data
@@ -60,5 +62,13 @@ export function useOpenPreorders(
     for (const query of productStats) void query.refetch()
   }
 
-  return { queue, openProducts, items, nameOf, statsOf, refetchStats }
+  return {
+    queue,
+    openProducts,
+    items,
+    nameOf,
+    statsOf,
+    statsQueryOf,
+    refetchStats,
+  }
 }

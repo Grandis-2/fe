@@ -2,7 +2,7 @@ import type { TagProps } from '@shared/ui'
 
 import { getDrawPhase } from './drawSchedule'
 
-import type { DrawEntry } from '../model/draw'
+import type { DrawEntry, MyDrawEntryState } from '../model/draw'
 
 // none 응모하지 않음 · unpaid 응모비 결제 전 · authorizing 결제 확인 중 · missed 결제 없이 마감(추첨 대상 아님)
 // waiting 응모 완료(결과 발표 전) · won 당첨 · lost 낙첨.
@@ -22,15 +22,15 @@ export function getDrawEntryState(
   return entry.result === 'LOST' ? 'lost' : 'waiting'
 }
 
-// 응모 목록 카드의 상태 태그 하나(문구·색).
+// 내 응모 목록 카드의 상태 태그 하나(문구·색) — 서버가 준 state 그대로 고른다.
 export const drawEntryTag: Record<
-  Exclude<DrawEntryState, 'none'>,
+  MyDrawEntryState,
   { label: string; color: TagProps['color'] }
 > = {
-  unpaid: { label: '결제 대기', color: 'yellow' },
-  authorizing: { label: '결제 확인 중', color: 'yellow' },
-  missed: { label: '응모 미완료', color: 'gray' },
-  waiting: { label: '발표 대기', color: 'gray' },
-  won: { label: '당첨', color: 'primary' },
-  lost: { label: '미당첨', color: 'gray' },
+  AWAITING_PAYMENT: { label: '결제 대기', color: 'yellow' },
+  PAYMENT_CONFIRMING: { label: '결제 확인 중', color: 'yellow' },
+  CLOSED_UNPAID: { label: '응모 미완료', color: 'gray' },
+  AWAITING_RESULT: { label: '발표 대기', color: 'gray' },
+  WON: { label: '당첨', color: 'primary' },
+  LOST: { label: '미당첨', color: 'gray' },
 }

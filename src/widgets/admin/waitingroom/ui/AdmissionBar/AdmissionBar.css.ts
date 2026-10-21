@@ -55,41 +55,39 @@ export const capLine = style({
 
 export const labels = style({
   position: 'relative',
-  height: '18px',
+  height: '22px',
 })
 
 const labelBase = style([
-  typography.body.caption,
+  typography.body.sub,
   {
     position: 'absolute',
-    transform: 'translateX(-50%)',
     whiteSpace: 'nowrap',
     fontVariantNumeric: 'tabular-nums',
   },
 ])
 
-export const labelNow = style([
+// 기준점에 라벨의 어디를 맞출지 — 끝 가까이면 그쪽 끝을 맞춰 막대 밖으로 넘치지 않게 한다.
+const anchor = {
+  start: { transform: 'none' },
+  center: { transform: 'translateX(-50%)' },
+  end: { transform: 'translateX(-100%)' },
+}
+
+export const labelNow = styleVariants(anchor, (value) => [
   labelBase,
+  value,
   { fontWeight: fontWeight.bold, color: color.primary.base },
 ])
 
-// 바꿀 값은 지금 값과 겹치지 않게 왼쪽으로 민다.
-export const labelNext = style([
+export const labelLine = styleVariants(anchor, (value) => [
   labelBase,
-  {
-    transform: 'translateX(-110%)',
-    fontWeight: fontWeight.semibold,
-    color: color.text.secondary,
-  },
-])
-
-export const labelLine = style([
-  labelBase,
+  value,
   { fontWeight: fontWeight.bold, color: color.text.primary },
 ])
 
 export const legend = style([
-  typography.body.caption,
+  typography.body.sub,
   {
     display: 'flex',
     flexWrap: 'wrap',

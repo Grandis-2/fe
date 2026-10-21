@@ -277,6 +277,20 @@ export const products: ProductDetailView[] = seeds.map((seed, i) =>
   buildProduct(i + 1, seed),
 )
 
+// 인기 검색어(순위 순). 목 검색(상품명·모델명·브랜드 부분 일치)에 결과가 있는 것만 둔다.
+export const popularKeywords = [
+  '맥북 프로 14',
+  'NOVA 스마트폰',
+  '폴더블',
+  '무선이어폰',
+  '노트북',
+  '스마트워치',
+  '태블릿',
+  'SAMSUNG',
+  '모니터',
+  '키보드',
+]
+
 // 사전예약 상품의 배송 차수 — 1~500번은 1차, 그 뒤는 2차(상한 없음).
 export const shipmentBatches: ShipmentBatch[] = [
   {
