@@ -159,6 +159,8 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
           <LeaveGraceSetting
             setting={rates.data?.leaveGraceSeconds}
             loading={rates.isPending}
+            // 현황을 못 받았거나 오래됐으면 줄이 있는지 모른다 — 모르면 줄이기를 막는다.
+            waiting={view && !view.snapshotStale ? flow.waiting : null}
             admission={admission}
           />
           <ServerStatusCard view={view} loading={status.isPending} />

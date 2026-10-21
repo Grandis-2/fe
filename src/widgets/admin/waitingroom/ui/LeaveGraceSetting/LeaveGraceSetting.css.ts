@@ -28,6 +28,13 @@ export const choices = style({
 export const choice = style({
   justifyContent: 'center',
   selectors: {
+    // 줄이 있어 막힌 칸 — 누를 수 없다는 게 바로 보이게 회색으로 채운다.
+    '&:disabled:not([aria-pressed="true"])': {
+      cursor: 'not-allowed',
+      background: color.background.surface,
+      borderColor: color.background.surface,
+      color: color.text.disabled,
+    },
     '&[aria-pressed="true"], &[aria-pressed="true"]:hover:not(:disabled)': {
       background: color.primary.base,
       borderColor: color.primary.base,

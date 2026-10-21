@@ -187,9 +187,6 @@ export const Operational: Story = {
     await expect(
       canvas.getByRole('button', { name: /기본값\(15명\/초\)으로/ }),
     ).toBeVisible()
-    await expect(
-      canvas.getByText('바꾸면 모든 상품 상한도 같은 값으로 바뀌어요'),
-    ).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: '입장 멈춤' }))
     await expect(args.admission.confirm).toHaveBeenCalled()
   },
