@@ -13,7 +13,7 @@ export const head = panelHead
 export const title = panelTitle
 
 export const lead = style([
-  typography.body.sub,
+  typography.body.defaultRegular,
   { color: color.text.secondary },
 ])
 
@@ -25,7 +25,7 @@ export const choices = style({
 })
 
 const choiceBase = style([
-  typography.body.subMedium,
+  typography.body.defaultMedium,
   {
     minHeight: '38px',
     padding: `0 ${spacing[8]}`,
@@ -58,12 +58,12 @@ export const choice = styleVariants({
 })
 
 export const note = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
 
 // 늘려 둔 상태 — 대기 인원이 부풀어 보인다는 대가를 빨간 글자로 알린다.
 export const noteWarn = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.status.danger },
 ])

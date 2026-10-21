@@ -89,3 +89,23 @@ export function useReservationStatsHistory(
     () => store.samples,
   )
 }
+
+/**
+ * 여러 상품의 기록을 한 번에(productIds 순서대로) — 진행 중인 사전예약처럼 개수가 바뀌는
+ * 묶음의 추이를 합칠 때 쓴다. 상품은 처음 넘긴 때부터 쌓인다.
+ */
+export function useReservationStatsHistories(
+  productIds: readonly string[],
+): readonly (readonly Sample<PreorderStats>[])[] {
+  const client = useQueryClient()
+  const stores = productIds.map((productId) => storeOf(client, productId))
+  // 스냅샷은 값 하나여야 해서 기록마다 마지막 표본 시각을 이어 붙인다 — 새 표본이 오면 바뀐다.
+  useSyncExternalStore(
+    (listener) => {
+      stores.forEach((store) => store.listeners.add(listener))
+      return () => stores.forEach((store) => store.listeners.delete(listener))
+    },
+    () => stores.map((store) => store.samples.at(-1)?.at ?? '').join(),
+  )
+  return stores.map((store) => store.samples)
+}
