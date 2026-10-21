@@ -159,7 +159,7 @@ export function startTelescopeScene(
     ctx.fill()
   }
 
-  function draw() {
+  const draw = () => {
     ctx.setTransform(1, 0, 0, 1, 0, 0)
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(rings, 0, 0)
