@@ -258,6 +258,7 @@ export function MypagePreorder() {
           <div className={styles.actions}>
             {cancelButton(reservation)}
             <ActionButton
+              variant="preorder"
               size="md"
               disabled={isCanceling(reservation)}
               onClick={() => navigate(paymentPath(reservation.preorderId))}

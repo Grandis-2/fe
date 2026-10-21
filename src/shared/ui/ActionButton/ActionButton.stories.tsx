@@ -27,6 +27,10 @@ export const CartAdded: Story = {
   args: { ...Cart.args, added: true, children: '담았어요' },
 }
 
+export const Preorder: Story = {
+  args: { variant: 'preorder', size: 'md', children: '구매 확정하기' },
+}
+
 export const CartIconOnly: Story = {
   args: {
     variant: 'cart',
