@@ -25,6 +25,7 @@ import {
   ADMIN_PROMOTION_NEW_PATH,
   ADMIN_PROMOTIONS_PATH,
   ADMIN_BANNERS_PATH,
+  ADMIN_BANNER_NEW_PATH,
   ADMIN_ORDERS_PATH,
   ADMIN_RECONCILIATION_PATH,
   ADMIN_RESERVATIONS_PATH,
@@ -33,6 +34,7 @@ import {
   adminDeadLetterPath,
   adminReservationPath,
   adminPromotionPath,
+  adminBannerPath,
   adminDrawPath,
   adminOrderPath,
   DRAW_PATH,
@@ -289,6 +291,20 @@ const browserRouter = createBrowserRouter([
                     lazy: () =>
                       import('@pages/admin/banners/AdminBannersPage').then(
                         (m) => ({ Component: m.AdminBannersPage }),
+                      ),
+                  },
+                  {
+                    path: ADMIN_BANNER_NEW_PATH,
+                    lazy: () =>
+                      import('@pages/admin/banner-new/AdminBannerNewPage').then(
+                        (m) => ({ Component: m.AdminBannerNewPage }),
+                      ),
+                  },
+                  {
+                    path: adminBannerPath(':bannerId'),
+                    lazy: () =>
+                      import('@pages/admin/banner-edit/AdminBannerEditPage').then(
+                        (m) => ({ Component: m.AdminBannerEditPage }),
                       ),
                   },
                   {

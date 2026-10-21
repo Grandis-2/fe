@@ -56,3 +56,40 @@ test('이미 예약한 모델을 다시 접수하면 알려 주고 사전예약 
   ).toBeVisible()
   await expect(page).toHaveURL('/mypage?state=preorder-check')
 })
+
+test('입장권이 남아 있어 진입에서 바로 입장(200)하면 대기열을 띄우지 않고 상품으로 간다', async ({
+  page,
+}) => {
+  await loginAs(page)
+  await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
+
+  // 새로고침 없이 돌아가야 목 대기열이 발급한 입장권을 기억한다 — 다시 서면 같은 입장권을 200으로 준다.
+  await page.goBack()
+  // 대기열 모달은 닫혀도 DOM에 남아 있어서, 한 번이라도 열렸는지를 기록해 둔다.
+  await page.evaluate(() => {
+    new MutationObserver(() => {
+      const opened = document.querySelector('dialog[open]')
+      if (opened?.textContent?.includes('조금만 기다려주세요'))
+        document.body.dataset.queueShown = 'true'
+    }).observe(document.body, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+    })
+  })
+  await page.getByRole('button', { name: '사전예약 하러가기' }).click()
+  const sheet = page.getByRole('dialog', { name: '사전예약' })
+  await sheet
+    .locator('div')
+    .filter({ hasText: '맥북 프로 14' })
+    .filter({ has: page.getByRole('button', { name: '예약하기' }) })
+    .last()
+    .getByRole('button', { name: '예약하기' })
+    .click()
+
+  await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
+  await expect(page.locator('body')).not.toHaveAttribute(
+    'data-queue-shown',
+    'true',
+  )
+})
