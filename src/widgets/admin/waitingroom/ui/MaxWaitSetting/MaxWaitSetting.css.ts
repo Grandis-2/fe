@@ -1,6 +1,7 @@
 import { style } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@shared/config/theme'
+import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 import {
   card as panel,
@@ -13,17 +14,18 @@ export const head = panelHead
 export const title = panelTitle
 
 export const note = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.text.secondary },
 ])
 
 export const noteBad = style([
-  typography.body.caption,
+  typography.body.sub,
   { color: color.status.danger },
 ])
 
 export const release = style([
-  typography.button.smMedium,
+  typography.button.mdBold,
+  { fontWeight: fontWeight.medium },
   {
     alignSelf: 'flex-start',
     minHeight: '36px',
