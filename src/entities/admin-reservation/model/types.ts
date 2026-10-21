@@ -203,6 +203,19 @@ export function paymentDueLabel(
   return `${Math.floor(minutes / 60)}시간 남음`
 }
 
+/** 결제 기한이 이만큼 안 남았으면 강조한다 */
+const PAYMENT_DUE_SOON_MS = 3 * 60 * 60 * 1000
+
+/** 결제 기한이 곧인지 — 기한이 없거나 이미 지났으면 false */
+export function isPaymentDueSoon(
+  paymentDueAt: string | null,
+  now = Date.now(),
+): boolean {
+  if (!paymentDueAt) return false
+  const remaining = Date.parse(paymentDueAt) - now
+  return remaining > 0 && remaining < PAYMENT_DUE_SOON_MS
+}
+
 /* ------------------------------------------------------------------ *
  * 지표 카드
  * ------------------------------------------------------------------ */

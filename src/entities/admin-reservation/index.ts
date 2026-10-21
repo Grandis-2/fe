@@ -26,6 +26,7 @@ export {
   syncJobStatusLabel,
   syncJobTypeLabel,
   isReprocessable,
+  isPaymentDueSoon,
   paymentDueLabel,
   paymentStateColor,
   paymentStateLabel,

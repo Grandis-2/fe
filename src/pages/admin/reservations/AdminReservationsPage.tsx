@@ -10,6 +10,7 @@ import {
 import {
   countByStage,
   isReprocessable,
+  isPaymentDueSoon,
   paymentDueLabel,
   paymentStateLabel,
   paymentStateOf,
@@ -54,8 +55,6 @@ import * as styles from './AdminReservationsPage.css'
 const ALL_PRODUCTS = '전체 상품'
 // 오픈 중엔 실패가 쌓이는 걸 바로 봐야 해서, 집계 캐시 하한(5초)을 기본으로 둔다.
 const DEFAULT_INTERVAL: RefreshInterval = 5_000
-// 결제 기한이 이만큼 안 남았으면 남은 시간을 강조한다.
-const DUE_SOON_MS = 3 * 60 * 60 * 1000
 
 /** 접수 기간 — 고른 순간을 기준으로 하한(from)을 잡는다 */
 type Period = 'all' | 'hour' | 'today' | 'week' | 'month'
@@ -432,9 +431,7 @@ export function AdminReservationsPage() {
           payment === 'PENDING'
             ? paymentDueLabel(reservation.paymentDueAt)
             : null
-        const soon =
-          due !== null &&
-          Date.parse(reservation.paymentDueAt ?? '') - Date.now() < DUE_SOON_MS
+        const soon = due !== null && isPaymentDueSoon(reservation.paymentDueAt)
 
         return (
           <span className={styles.stacked}>
