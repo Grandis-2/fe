@@ -62,6 +62,8 @@ const toListItem = (detail: AdminProductDetail): AdminProductListItem => ({
   productId: detail.productId,
   saleMode: detail.saleMode,
   title: detail.name,
+  brand: detail.brand.toUpperCase() as ProductBrandCode,
+  modelName: detail.modelNumber,
   imageUrl: detail.thumbnailUrl,
   // 판매 상태는 접수 단계와도, 숨김(공개 여부)과도 다른 축이다.
   status: saleStatusOf(detail.productId),
@@ -69,6 +71,9 @@ const toListItem = (detail: AdminProductDetail): AdminProductListItem => ({
   registrationCompleted: detail.displayStatus !== 'DRAFT',
   optionCount: detail.variants.length,
   minPrice: detail.priceRange.min,
+  // 목은 할인을 옵션 가격에 걸지 않아 정가와 판매가가 같다(위 discountRates 주석).
+  minListPrice: detail.priceRange.min,
+  discountRate: discountRates.get(detail.productId) ?? 0,
   sellable: detail.saleStatus === 'OPEN',
   soldOut: false,
   // 저장된 상세의 saleStatus는 값이 접수 단계와 같다(BEFORE_OPEN·OPEN·CLOSED).
@@ -531,6 +536,7 @@ export const adminProductHandlers: RequestHandler[] = [
     const size = Number(params.get('size') ?? 20)
     const saleMode = params.get('saleMode')
     const status = params.get('status')
+    const brand = params.get('brand')
     const keyword = params.get('q') ?? ''
 
     const violations = [
@@ -564,6 +570,7 @@ export const adminProductHandlers: RequestHandler[] = [
       .map(toListItem)
       .filter((product) => !saleMode || product.saleMode === saleMode)
       .filter((product) => !status || product.status === status)
+      .filter((product) => !brand || product.brand === brand)
       // 태그는 검색용이라 이름과 같이 본다 — 구매자 목록에는 안 나오고 검색어로만 걸린다.
       .filter((product) => {
         const trimmed = keyword.trim()
@@ -571,6 +578,8 @@ export const adminProductHandlers: RequestHandler[] = [
         const tags = findProduct(product.productId)?.tags ?? []
         return (
           product.title.includes(trimmed) ||
+          product.modelName.toLowerCase().includes(trimmed.toLowerCase()) ||
+          product.brand === trimmed.toUpperCase() ||
           tags.some((tag) => tag.includes(trimmed))
         )
       })

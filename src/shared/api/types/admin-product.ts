@@ -119,6 +119,8 @@ export type AdminProductListItem = {
   productId: string
   saleMode: SaleMode
   title: string
+  brand: ProductBrandCode
+  modelName: string
   /** 대표 사진. 없으면 null */
   imageUrl: string | null
   /** 상품 판매 상태 */
@@ -129,8 +131,12 @@ export type AdminProductListItem = {
   registrationCompleted: boolean
   /** 판매 중지를 포함한 전체 옵션 수 */
   optionCount: number
-  /** 판매 중인 옵션의 최저가(원). 없으면 null */
+  /** 판매 중인 옵션의 최저가(원, 할인가). 없으면 null */
   minPrice: number | null
+  /** minPrice 옵션의 정가(원, 할인 전). 없으면 null */
+  minListPrice: number | null
+  /** 할인율(정수 %, 0~99). 0이면 할인 없음 */
+  discountRate: number
   sellable: boolean
   /** 일반 상품 품절 여부. 사전예약은 늘 false */
   soldOut: boolean
@@ -403,10 +409,11 @@ export type GiftCandidateParams = Pick<
 >
 
 export type AdminProductListParams = {
-  /** 상품명과 태그에서 대소문자 없이 부분 일치. 비우면 무시한다 */
+  /** 상품명·태그·모델명·브랜드 코드에서 대소문자 없이 부분 일치. 비우면 무시한다 */
   q?: string
   saleMode?: SaleMode
   status?: ProductSaleStatus
+  brand?: ProductBrandCode
   /** 0부터 시작한다 */
   page?: number
   /** 1~100(기본 20) */

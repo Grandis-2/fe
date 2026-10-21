@@ -64,8 +64,16 @@ export type AdminProduct = {
   /** 사전예약 접수 단계. 일반 상품이거나 회차가 아직 없으면 null */
   preorderStatus: PreorderSaleStatus | null
   displayStatus: AdminDisplayStatus
-  /** 판매 중인 옵션의 최저가(원). 없으면 null */
+  /** 판매 중인 옵션의 최저가(원, 할인가). 없으면 null */
   minPrice: number | null
+  /** minPrice 옵션의 정가(할인 전). 없으면 null */
+  minListPrice: number | null
+  /** 할인율(정수 %). 0이면 할인 없음 */
+  discountRate: number
+  /** 일반 상품 품절 여부. 사전예약은 늘 false */
+  soldOut: boolean
+  brand: ProductBrandCode
+  modelName: string
   thumbnailUrl: string | null
 }
 
@@ -116,9 +124,14 @@ export const preorderStageColor: Record<
   CLOSED: 'gray',
 }
 
+/**
+ * 공개 여부에서 나온 이름(공개 예정·공개 중·공개 종료·숨김)은 같은 '공개'라는 말로 맞춘다.
+ * DRAFT는 관리자가 덜 써 둔 게 아니라 등록 직후 서버가 판매 준비를 하는 몇 초다 —
+ * 끝나면 고른 공개 여부대로 저절로 바뀐다.
+ */
 export const displayStatusLabel: Record<AdminDisplayStatus, string> = {
-  DRAFT: '초안',
-  PUBLISHED: '게시중',
+  DRAFT: '준비 중',
+  PUBLISHED: '공개 중',
   SCHEDULED: '공개 예정',
   ENDED: '공개 종료',
   HIDDEN: '숨김',
@@ -129,9 +142,9 @@ export const displayStatusLabel: Record<AdminDisplayStatus, string> = {
  * 판매 상태 열(초록·파랑·회색)과 나란히 서는 자리라, 전시까지 의미색을 쓰면
  * 두 열이 한 덩어리로 읽힌다.
  *
- * - 게시중: secondary + subtle(채움) — 지금 구매자에게 보이는 중
+ * - 공개 중: secondary + subtle(채움) — 지금 구매자에게 보이는 중
  * - 숨김:   secondary + outline(테두리) — 냈다가 내림
- * - 초안:   gray + outline — 아직 한 번도 낸 적 없어 브랜드 색을 줄 자리가 아니다
+ * - 준비 중: gray + outline — 서버가 판매 준비를 끝내기 전이라 브랜드 색을 줄 자리가 아니다
  * - 공개 예정: primary + outline — 공개로 뒀지만 아직 안 보임(오픈 전)
  * - 공개 종료: gray + subtle — 공개로 뒀지만 접수가 끝나 더는 안 보임
  */
@@ -243,6 +256,12 @@ export const brandCodeOf = (name: string) =>
 export const brandNameOf = (code: ProductBrandCode | null | undefined) =>
   Object.entries(BRAND_CODE).find(([, brandCode]) => brandCode === code)?.[0] ??
   ''
+
+/** 목록 필터의 브랜드 — 드롭다운 이름과 서버 코드 */
+export const brandFilterOptions = PRODUCT_BRANDS.map((name) => ({
+  label: name,
+  value: BRAND_CODE[name],
+}))
 
 /** 모델명 길이 — 서버가 1~40자만 받는다 */
 export const MODEL_NAME_MAX = 40

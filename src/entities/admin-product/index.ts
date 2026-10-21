@@ -57,6 +57,8 @@ export {
 } from './model/shipment'
 export type { AdminShipmentBatch, ShipmentBatchDraft } from './model/shipment'
 export {
+  brandFilterOptions,
+  brandNameOf,
   isPreorder,
   isPublicSetting,
   MODEL_NAME_MAX,

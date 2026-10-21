@@ -23,7 +23,7 @@ type Story = StoryObj<typeof meta>
 export const Published: Story = {
   args: { status: 'PUBLISHED' },
   play: async ({ canvas }) => {
-    await expect(visibleLabel(canvas, '게시중')).toBeVisible()
+    await expect(visibleLabel(canvas, '공개 중')).toBeVisible()
   },
 }
 
@@ -35,11 +35,11 @@ export const Hidden: Story = {
   },
 }
 
-/** 아직 한 번도 낸 적 없음 — 브랜드 색을 줄 자리가 아니라 회색이다 */
+/** 등록 직후 서버가 판매 준비 중 — 몇 초 뒤 저절로 바뀐다. 브랜드 색을 줄 자리가 아니라 회색이다 */
 export const Draft: Story = {
   args: { status: 'DRAFT' },
   play: async ({ canvas }) => {
-    await expect(visibleLabel(canvas, '초안')).toBeVisible()
+    await expect(visibleLabel(canvas, '준비 중')).toBeVisible()
   },
 }
 
