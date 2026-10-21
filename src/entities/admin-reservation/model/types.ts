@@ -102,9 +102,6 @@ export const reservationStateColor: Record<
   CANCELED: 'gray',
 }
 
-// 표의 상태 열 너비를 가장 긴 문구에 맞출 때 쓴다(Tag의 widthOptions).
-export const reservationStateLabels = Object.values(reservationStateLabel)
-
 const STATE_OF_STATUS: Record<PreorderStatus, ReservationState> = {
   PENDING_SYNC: 'PROCESSING',
   REGISTERED: 'CONFIRMED',
@@ -155,8 +152,6 @@ export const paymentStateVariant: Record<PaymentState, 'subtle' | 'outline'> = {
   PAID: 'subtle',
   EXPIRED: 'outline',
 }
-
-export const paymentStateLabels = Object.values(paymentStateLabel)
 
 /**
  * 결제 단계. 외부 등록 전(처리 중)과 취소된 예약은 결제할 게 없어 null이다 — 취소 전에

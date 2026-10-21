@@ -28,14 +28,12 @@ export {
   paymentDueLabel,
   paymentStateColor,
   paymentStateLabel,
-  paymentStateLabels,
   paymentStateOf,
   paymentStateVariant,
   reservationNo,
   reservationStageLabel,
   reservationStateColor,
   reservationStateLabel,
-  reservationStateLabels,
   reservationStateOf,
 } from './model/types'
 export type {
