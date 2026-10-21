@@ -128,7 +128,18 @@ export function ProductCapList({
               query?.data?.oldestPendingSyncAt,
               query?.dataUpdatedAt ?? 0,
             )
-            const slow = oldest !== null && oldest * 1000 > SLOW_AFTER_MS
+            const register = query?.data?.syncJobs.REGISTER
+            // 가장 오래 기다린 시각엔 재처리 필요(DEAD_LETTER) 건도 들어 있어, 처리 중인
+            // 작업이 있고 실패가 없을 때만 밀림으로 본다(운영 대시보드와 같은 기준).
+            const slow =
+              register !== undefined &&
+              register.PENDING +
+                register.PROCESSING +
+                register.RETRY_SCHEDULED >
+                0 &&
+              register.DEAD_LETTER === 0 &&
+              oldest !== null &&
+              oldest * 1000 > SLOW_AFTER_MS
             return (
               <li key={product.productId} className={styles.row}>
                 <div className={styles.name}>
@@ -155,15 +166,23 @@ export function ProductCapList({
                   </span>
                 </div>
                 <div className={styles.register}>
-                  {query?.data && (
+                  {register && (
                     <Tag
                       variant="subtle"
                       size="medium"
-                      color={slow ? 'yellow' : 'green'}
+                      color={
+                        register.DEAD_LETTER > 0
+                          ? 'red'
+                          : slow
+                            ? 'yellow'
+                            : 'green'
+                      }
                     >
-                      {slow && oldest !== null
-                        ? `외부 등록 밀림 · ${formatSeconds(oldest)}째`
-                        : '외부 등록 정상'}
+                      {register.DEAD_LETTER > 0
+                        ? `외부 등록 실패 ${formatNumber(register.DEAD_LETTER)}건`
+                        : slow && oldest !== null
+                          ? `외부 등록 밀림 · ${formatSeconds(oldest)}째`
+                          : '외부 등록 정상'}
                     </Tag>
                   )}
                 </div>

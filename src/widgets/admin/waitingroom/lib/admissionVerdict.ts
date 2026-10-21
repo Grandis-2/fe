@@ -18,11 +18,14 @@ export const TIGHT_RATIO = 0.7
  * 대기열 관리 맨 위 판정 — 지금 입장 속도를 올려도 되는지. 모든 사전예약이 같은 예약 서버와
  * 외부 예약 시스템을 쓰므로 전체 기준 하나로 본다.
  * - 줄이 있는데 입장이 0이면 아무도 못 들어가니 가장 먼저 말한다.
+ * - 현황이 오래됐으면(snapshotStale) 새로 오는 사람이 모두 줄에 서서, 지금 숫자로 올려도
+ *   된다고 말할 수 없다.
  * - 브레이크가 걸렸으면 서버가 이미 버거운 것이라 다음으로 말한다.
  * - 외부 등록 대기가 늘고 있으면 처리보다 빨리 들이는 중이다.
  * - 대기가 있고 입장이 처리 속도의 70%를 넘으면 한계 근처다.
  * - 들어오는 양이 거의 없으면 처리 속도가 한계가 아니라 들어온 만큼이라 판단하지 않는다.
  * @param waiting 기다리는 사람 수
+ * @param stale 대기열 현황이 오래됐는지(snapshotStale)
  * @param brakeFactor 브레이크 배율. 1보다 작으면 브레이크
  * @param backlogPerMinute 외부 등록 대기의 분당 변화. 표본이 모자라면 null
  * @param backlog 지금 외부 등록 대기 건수
@@ -32,6 +35,7 @@ export const TIGHT_RATIO = 0.7
  */
 export function admissionVerdict({
   waiting,
+  stale,
   brakeFactor,
   backlogPerMinute,
   backlog,
@@ -40,6 +44,7 @@ export function admissionVerdict({
   receiving,
 }: {
   waiting: number
+  stale: boolean
   brakeFactor: number | null
   backlogPerMinute: number | null
   backlog: number
@@ -52,6 +57,13 @@ export function admissionVerdict({
       tone: 'danger',
       title: '입장 멈춤',
       hint: `${formatNumber(waiting)}명이 기다리는데 아무도 못 들어가요`,
+    }
+  }
+  if (stale) {
+    return {
+      tone: 'warning',
+      title: '현황 정보가 오래됐어요',
+      hint: '지금 새로 오는 사람은 모두 줄에 서요 · 속도는 그대로 두세요',
     }
   }
   if (isBraking(brakeFactor)) {

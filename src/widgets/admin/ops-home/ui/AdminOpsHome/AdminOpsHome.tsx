@@ -43,6 +43,8 @@ import * as styles from './AdminOpsHome.css'
 // 집계는 서버가 5초까지 캐시해(명세: "5초 이상이면 충분") 그보다 자주 받아도 같은 값이다.
 // 문제를 처음 알아채는 화면이라 그 하한에 맞춘다.
 const POLL_INTERVAL_MS = 5_000
+// 주문·상품 수, 럭키드로우 단계는 몇 초 사이엔 잘 안 바뀌어 느리게 다시 받는다.
+const SLOW_POLL_MS = 30_000
 /** 실패 숫자에 나눠 적을 사전예약 수 — 넘으면 '외 N곳'으로 줄인다 */
 const BREAKDOWN_MAX = 3
 // shortcut: 마감 뒤 하루 안의 회차만 멈췄는지 본다(회차마다 진행을 따로 받아서). 회차가 많아지면 서버 집계로 바꾼다.
@@ -74,10 +76,16 @@ export type AdminOpsHomeProps = {
  */
 export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const stats = useReservationStats(undefined, POLL_INTERVAL_MS)
-  const draws = useAdminDraws()
-  const orders = useAdminOrderCounts(ORDER_SUMMARY_STEPS)
-  const activeProducts = useAdminProductCount({ status: 'ACTIVE' })
-  const pausedProducts = useAdminProductCount({ status: 'PAUSED' })
+  const draws = useAdminDraws(SLOW_POLL_MS)
+  const orders = useAdminOrderCounts(ORDER_SUMMARY_STEPS, SLOW_POLL_MS)
+  const activeProducts = useAdminProductCount(
+    { status: 'ACTIVE' },
+    SLOW_POLL_MS,
+  )
+  const pausedProducts = useAdminProductCount(
+    { status: 'PAUSED' },
+    SLOW_POLL_MS,
+  )
 
   // 진행 중인 사전예약 — 동시에 여럿 열릴 수 있어 각각의 집계를 따로 받는다.
   const {
@@ -104,9 +112,9 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const backlogSlope = slopePerSecond(backlogSamples).at(-1)?.value
 
   const s = stats.data
-  // 판정 기준 시각 — 받은 집계의 시각을 써서 렌더마다 흔들리지 않게 한다. 아직 못 받았으면
-  // 0이라 멈춘 추첨·경과 시간을 판정하지 않는다.
-  const now = stats.dataUpdatedAt
+  // 판정 기준 시각 — 받은 응답의 시각을 써서 렌더마다 흔들리지 않게 한다. 회차 단계는 회차
+  // 목록만 와도 정해야 해서 둘 중 늦은 쪽을 쓴다. 둘 다 못 받았으면 0이라 판정하지 않는다.
+  const now = Math.max(stats.dataUpdatedAt, draws.dataUpdatedAt)
 
   // 사전예약을 골랐으면 숫자·할 일도 그 사전예약 집계로 센다.
   const t = selected ? statsOf(selected) : s
@@ -158,9 +166,13 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       t.syncJobs.REGISTER.PROCESSING +
       t.syncJobs.REGISTER.RETRY_SCHEDULED
     : 0
+  // ponytail: oldestPendingSyncAt엔 재처리 필요(DEAD_LETTER) 예약도 들어 있어, 실패가 있으면
+  // 그 접수 시각을 밀림으로 잘못 읽는다 — 실패가 있으면 밀림을 띄우지 않는다(실패 할 일이
+  // 먼저 뜬다). 서버가 처리 중인 것만의 시각을 주면 이 조건을 뺀다.
   const slowAge =
     t?.oldestPendingSyncAt &&
     waitingRegister > 0 &&
+    t.syncJobs.REGISTER.DEAD_LETTER === 0 &&
     now - Date.parse(t.oldestPendingSyncAt) > SLOW_AFTER_MS
       ? ageOf(t.oldestPendingSyncAt, now)
       : null

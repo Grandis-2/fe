@@ -53,12 +53,16 @@ export function AdmissionSpeedCard({
   const draftValue = draft === '' ? null : Number(draft)
   const inRange =
     draftValue !== null && draftValue >= 1 && draftValue <= maxCredit
+  // 지금 값을 받기 전(조회 중·실패)엔 무엇을 덮어쓰는지 모르니 바꾸지 못하게 한다.
   const canApply =
-    inRange && draftValue !== globalSetting?.value && !admission.isPending
-  // 실제 입장은 운영값 × 브레이크 배율이라 바꾼 값에도 지금 배율을 곱해 본다.
+    globalSetting !== undefined &&
+    inRange &&
+    draftValue !== globalSetting.value &&
+    !admission.isPending
+  // 실제 입장은 운영값 × 브레이크 배율 — 서버처럼 내림하고, 0이 아니면 최소 1로 본다.
   const nextAdmitting =
     inRange && draftValue !== null
-      ? Math.round(draftValue * (brakeFactor ?? 1))
+      ? Math.max(1, Math.floor(draftValue * (brakeFactor ?? 1)))
       : null
   const note =
     nextAdmitting !== null && processing !== null

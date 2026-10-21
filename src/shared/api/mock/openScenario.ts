@@ -36,6 +36,8 @@ let timer: ReturnType<typeof setInterval> | null = null
 let arrived = 0
 /** 대기열 관리에서 정한 전역 입장 속도 — 대기열 현황 응답을 만들 때마다 받아 둔다 */
 let globalCredit = DEFAULT_GLOBAL_CREDIT
+/** 대기열 관리에서 정한 상품별 상한 — 대기열 현황 응답을 만들 때마다 받아 둔다 */
+let capOf: (productId: string) => number = () => PRODUCT_CAP
 const waiting = new Map<string, number>()
 const credits = new Map<string, number>()
 const inFlight: InFlight[] = []
@@ -92,7 +94,7 @@ function admit(now: number) {
   for (const productId of active) {
     const admitted = Math.min(
       waiting.get(productId) ?? 0,
-      Math.min(share, PRODUCT_CAP),
+      Math.min(share, capOf(productId)),
     )
     waiting.set(productId, (waiting.get(productId) ?? 0) - admitted)
     credits.set(productId, admitted)
@@ -119,6 +121,8 @@ function tick() {
   for (let processed = 0; processed < reprocessPerTick; processed += 1) {
     const next = reprocessQueue.shift()
     if (!next) break
+    // 다시 처리되기 전에 관리자가 취소했으면 등록하지 않는다(취소한 예약이 결제 대기로 돌아온다).
+    if (next.detail.status !== 'PENDING_SYNC') continue
     const code = next.job.lastErrorCode ?? 'HTTP_503'
     const refailed = code.endsWith('REJECTED') || Math.random() < REFAIL_RATE
     settle(next.detail, now, refailed ? code : null)
@@ -163,15 +167,19 @@ export function requeueForReprocess(
 }
 
 /** 대기열 현황 — 상품별 대기·입장과 브레이크. 대기열 관리의 전역 값을 받아 다음 입장에 쓴다 */
-export function scenarioQueue(currentGlobalCredit: number) {
+export function scenarioQueue(
+  currentGlobalCredit: number,
+  currentCapOf: (productId: string) => number,
+) {
   globalCredit = currentGlobalCredit
+  capOf = currentCapOf
   return {
     brakeFactor: brakeFactor(),
     products: productIds.map((productId) => ({
       productId,
       waiting: waiting.get(productId) ?? 0,
       credit: credits.get(productId) ?? 0,
-      cap: PRODUCT_CAP,
+      cap: capOf(productId),
     })),
   }
 }

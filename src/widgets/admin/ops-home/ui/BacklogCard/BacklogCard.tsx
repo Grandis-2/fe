@@ -54,7 +54,11 @@ export function BacklogCard({
   braking,
   flow,
 }: BacklogCardProps) {
-  const trend = backlogTrend({ backlog: backlog ?? 0, perMinute })
+  // 지금 건수를 못 받았으면 추이만으로 '대기 없음'이라 말하지 않는다.
+  const trend = backlogTrend({
+    backlog: backlog ?? 0,
+    perMinute: backlog === null ? null : perMinute,
+  })
   const TrendIcon = trendIcon[trend.status]
   const rising = trend.status === 'rising'
 

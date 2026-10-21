@@ -72,6 +72,11 @@ export function LeaveGraceSetting({
       </span>
       {loading ? (
         <Skeleton height={84} />
+      ) : !setting ? (
+        // 못 받았으면 기본값을 지금 값처럼 보이지 않는다.
+        <span className={styles.noteWarn}>
+          운영값을 받지 못해 지금 값을 알 수 없어요.
+        </span>
       ) : (
         <div
           className={styles.choices}
@@ -96,11 +101,13 @@ export function LeaveGraceSetting({
           ))}
         </div>
       )}
-      <span className={extended ? styles.noteWarn : styles.note}>
-        {extended
-          ? '늘려 둔 만큼 정말 떠난 사람도 줄에 남아 대기 인원·예상 시간이 늘어 보여요'
-          : `조회가 ${formatSeconds(current)} 끊기면 줄에서 빠지고, 다시 오면 맨 뒤에 서요`}
-      </span>
+      {setting && (
+        <span className={extended ? styles.noteWarn : styles.note}>
+          {extended
+            ? '늘려 둔 만큼 정말 떠난 사람도 줄에 남아 대기 인원·예상 시간이 늘어 보여요'
+            : `조회가 ${formatSeconds(current)} 끊기면 줄에서 빠지고, 다시 오면 맨 뒤에 서요`}
+        </span>
+      )}
     </section>
   )
 }

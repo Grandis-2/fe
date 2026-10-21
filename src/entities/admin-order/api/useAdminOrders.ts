@@ -13,6 +13,7 @@ import type {
   OrderStatus,
   ShippingStep,
 } from '@shared/api/types'
+import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import { advanceShipping, getAdminOrder, getAdminOrders } from './adminOrder'
 
@@ -37,6 +38,8 @@ export const useAdminOrders = (params: AdminOrderListParams) =>
  */
 export const useAdminOrderCounts = <TStatus extends OrderStatus>(
   statuses: readonly TStatus[],
+  /** 자동으로 다시 받는 간격. 운영 대시보드처럼 열어 두는 화면이 준다 */
+  intervalMs: RefreshInterval = false,
 ) => {
   const queries = useQueries({
     queries: statuses.map((status) => {
@@ -46,6 +49,7 @@ export const useAdminOrderCounts = <TStatus extends OrderStatus>(
         queryFn: ({ signal }: { signal: AbortSignal }) =>
           getAdminOrders(params, signal),
         ...queryPolicy.live,
+        refetchInterval: intervalMs,
       }
     }),
   })

@@ -43,6 +43,11 @@ export function MaxWaitSetting({
       </div>
       {loading ? (
         <Skeleton height={20} />
+      ) : !setting ? (
+        // 못 받은 걸 꺼짐으로 보이면 걸려 있는 제한을 숨기게 된다.
+        <span className={styles.noteBad}>
+          운영값을 받지 못해 제한이 걸려 있는지 알 수 없어요.
+        </span>
       ) : seconds === null ? (
         <span className={styles.note}>
           사전예약은 모두 받아요. 줄이 길어도 거절하지 않아요.

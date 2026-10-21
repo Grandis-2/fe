@@ -4,6 +4,7 @@ import { admissionVerdict, previewNote } from './admissionVerdict'
 
 const base = {
   waiting: 5000,
+  stale: false,
   brakeFactor: 1,
   backlogPerMinute: -5,
   backlog: 3000,
@@ -31,6 +32,13 @@ describe('admissionVerdict', () => {
     expect(
       admissionVerdict({ ...base, waiting: 0, admitting: 0 }).title,
     ).not.toBe('입장 멈춤')
+  })
+
+  it('현황이 오래되면 여유가 있어 보여도 올리라고 하지 않는다', () => {
+    expect(admissionVerdict({ ...base, stale: true })).toMatchObject({
+      tone: 'warning',
+      title: '현황 정보가 오래됐어요',
+    })
   })
 
   it('브레이크가 걸리면 올려도 안 빨라진다고 한다', () => {

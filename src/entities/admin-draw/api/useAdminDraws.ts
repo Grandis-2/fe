@@ -22,7 +22,10 @@ const ADMIN_DRAWS_KEY = ['admin', 'draws'] as const
  * 회차 전체. 단계 필터가 화면에서 걸러서 쪽을 끝까지 이어 받는다 — 회차는 많아야 수십
  * 개다. 단계(phase)는 응답 시점 값이라 재고(live)처럼 매번 다시 받는다.
  */
-export const useAdminDraws = () =>
+export const useAdminDraws = (
+  /** 자동으로 다시 받는 간격. 운영 대시보드처럼 열어 두는 화면이 준다 */
+  intervalMs: RefreshInterval = false,
+) =>
   useQuery({
     queryKey: [...ADMIN_DRAWS_KEY, 'list'] as const,
     queryFn: ({ signal }) =>
@@ -30,6 +33,7 @@ export const useAdminDraws = () =>
         getAdminDraws({ page, size: PAGE_SIZE_MAX }, signal),
       ),
     ...queryPolicy.live,
+    refetchInterval: intervalMs,
   })
 
 export const useAdminDraw = (drawId: string) =>

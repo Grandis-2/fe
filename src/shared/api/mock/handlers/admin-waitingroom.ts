@@ -99,7 +99,7 @@ function waveSnapshot(now: number): Snapshot {
 
 // 오픈 시나리오의 대기열 — 몰린 사람이 입장 속도만큼 빠지고, 적체가 쌓이면 브레이크가 걸린다.
 function scenarioSnapshot(now: number): Snapshot {
-  const queue = scenarioQueue(state.globalCredit ?? DEFAULT_GLOBAL)
+  const queue = scenarioQueue(state.globalCredit ?? DEFAULT_GLOBAL, capOf)
   return {
     globalCredit: Math.round(
       (state.globalCredit ?? DEFAULT_GLOBAL) * queue.brakeFactor,

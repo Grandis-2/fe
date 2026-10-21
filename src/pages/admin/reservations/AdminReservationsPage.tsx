@@ -486,7 +486,7 @@ export function AdminReservationsPage() {
         </InlineAlert>
       )}
 
-      {/* 실패는 어느 탭에서든 먼저 보이게 — 실패 탭이 아니면 그 탭으로 가는 단추를 단다. */}
+      {/* 실패는 어느 탭에서든 먼저 보이게 알린다. */}
       {failures > 0 && (
         <InlineAlert status="error">
           <span className={styles.alertRow}>

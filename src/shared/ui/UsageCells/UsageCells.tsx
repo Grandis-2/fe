@@ -1,5 +1,5 @@
 import * as styles from './UsageCells.css'
-import { usageCellUnit } from './usageCellUnit'
+import { usageCells } from './usageCellUnit'
 
 export type UsageCellsProps = {
   /** 쓰고 있는 양 */
@@ -25,10 +25,7 @@ export function UsageCells({
   if (total <= 0) {
     return <div className={styles.empty} role="img" aria-label={label} />
   }
-  const unit = usageCellUnit(total, maxCells)
-  const count = Math.ceil(total / unit)
-  const on = Math.min(count, Math.round(used / unit))
-  const full = used >= total
+  const { count, on, full } = usageCells(used, total, maxCells)
 
   return (
     <div className={styles.root} role="img" aria-label={label}>

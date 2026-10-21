@@ -26,11 +26,12 @@ function record(client: QueryClient, store: Store, productId?: string) {
   const state = client.getQueryState<PreorderStats>(
     reservationStatsKey(productId),
   )
-  if (!state?.data || store.samples.at(-1)?.at === state.dataUpdatedAt) return
-  store.samples = appendSample(store.samples, {
-    at: state.dataUpdatedAt,
-    value: state.data,
-  })
+  if (!state?.data) return
+  // 서버가 센 시각(countedAt)으로 둔다 — 받은 시각을 쓰면 응답이 늦거나 서버 캐시(최대 5초)가
+  // 같은 집계를 다시 주는 동안에도 간격이 생겨 속도가 흔들린다. 같은 집계면 넣지 않는다.
+  const at = Date.parse(state.data.countedAt) || state.dataUpdatedAt
+  if (store.samples.at(-1)?.at === at) return
+  store.samples = appendSample(store.samples, { at, value: state.data })
   store.listeners.forEach((listener) => listener())
 }
 
