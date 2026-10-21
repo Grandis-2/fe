@@ -151,6 +151,10 @@ export function usePreorderQueue({
       setStartPosition(waiting.position)
   }
 
+  // 진입에서 바로 입장(200)하면 대기열을 보여 주지 않고 넘어간다. 그래서 첫 응답 전에도 띄우지 않는다
+  // (띄웠다 바로 닫히며 깜빡이지 않게). 한 번이라도 기다렸거나 다시 진입을 예약했으면 보여 준다.
+  const isHidden = lastWaiting === null && retry === null
+
   const status: QueueStatus =
     current?.status === 'ADMITTED' ? 'mine' : 'waiting'
   // 입장했으면 맨 앞(1번), 진입 응답 전이면 모른다(null).
@@ -174,6 +178,10 @@ export function usePreorderQueue({
         idempotencyKey: crypto.randomUUID(),
         expiresAt: Date.now() + expiresIn * 1000,
       })
+    if (isHidden) {
+      complete()
+      return
+    }
     if (isOpen) {
       const id = setTimeout(complete, COMPLETE_DELAY_MS)
       return () => clearTimeout(id)
@@ -184,10 +192,11 @@ export function usePreorderQueue({
     }
     const id = setTimeout(() => setMoveIn((s) => s - 1), TICK_MS)
     return () => clearTimeout(id)
-  }, [productId, admissionTicket, expiresIn, isOpen, moveIn, hasLeft])
+  }, [productId, admissionTicket, expiresIn, isHidden, isOpen, moveIn, hasLeft])
 
   return {
     status,
+    isHidden,
     // 조회가 실패하고 있을 때의 안내용(PollingNotice).
     poll: { fetchStatus: poll.fetchStatus, failureCount: poll.failureCount },
     mayHaveLeftQueue,

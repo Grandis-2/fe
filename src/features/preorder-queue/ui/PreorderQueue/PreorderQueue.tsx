@@ -34,7 +34,7 @@ export function PreorderQueue({
   return (
     <>
       <Modal
-        open={queue.isOpen}
+        open={queue.isOpen && !queue.isHidden}
         onClose={queue.close}
         title={
           <>
