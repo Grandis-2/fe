@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 
 import { formatNumber } from '@shared/lib/formatNumber'
+import { ImageWithFallback } from '@shared/ui'
 
 import * as styles from './PreorderModelSummary.css'
 
@@ -27,17 +28,21 @@ export function PreorderModelSummary({
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
       <div className={styles.thumbnail}>
-        {imageSrc && (
-          <img src={imageSrc} alt={imageAlt} className={styles.image} />
-        )}
+        <ImageWithFallback
+          src={imageSrc}
+          alt={imageAlt}
+          className={styles.image}
+        />
       </div>
       <div className={styles.body}>
         <span className={styles.name}>{name}</span>
         <span className={styles.caption}>{caption}</span>
-        <span className={styles.price}>
-          {formatNumber(price)}
-          <span className={styles.priceUnit}> 원부터</span>
-        </span>
+        {price !== null && (
+          <span className={styles.price}>
+            {formatNumber(price)}
+            <span className={styles.priceUnit}> 원부터</span>
+          </span>
+        )}
       </div>
       {action}
     </div>

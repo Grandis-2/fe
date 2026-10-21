@@ -265,7 +265,9 @@ export function toPreviewProduct(
             .map((name) => name.trim())
             .filter(Boolean)
             .join(' / ') || value.name,
-        price,
+        // 서버처럼 정가에 할인율을 걸고 100원 단위로 버린다.
+        price: Math.floor((price * (100 - value.discountRate)) / 10000) * 100,
+        listPrice: price,
         filterAttributes: {},
         selections: Object.fromEntries(
           Object.entries(combo.selections).map(([axisKey, name]) => [
@@ -284,6 +286,7 @@ export function toPreviewProduct(
     productId: 'preview',
     saleMode: value.isPreorder ? 'PREORDER' : 'IN_STOCK',
     title: value.name,
+    brand: brandCodeOf(value.brand) ?? 'APPLE',
     imageUrl: images.gallery[0]?.items[0]?.url ?? null,
     status: 'ACTIVE',
     sellable: variants.some((variant) => variant.status === 'ACTIVE'),

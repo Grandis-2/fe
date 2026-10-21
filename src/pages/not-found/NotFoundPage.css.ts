@@ -1,40 +1,25 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@shared/config/theme'
-import { fontSize } from '@shared/config/theme/tokens/typography/base'
+import {
+  breakpoint,
+  color,
+  TAB_BAR_HEIGHT,
+  TAB_BAR_OFFSET,
+} from '@shared/config/theme'
+import { headerHeight } from '@widgets/header'
 
-// 결제 실패 화면(ResultPage의 failure)과 같은 결 — 행성 일러스트 + 워드마크로 가운데 모은다.
+// 어두운 페이지 — 바탕을 헤더 높이만큼 끌어올려 헤더 뒤까지 깔고(data-header-theme="dark"),
+// 장면은 헤더 아래부터 화면 끝까지 채운다.
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  alignItems: 'center',
-  gap: spacing[24],
-  paddingTop: spacing[40],
-  paddingBottom: spacing[40],
-  textAlign: 'center',
+  boxSizing: 'border-box',
+  // 모바일은 하단 탭바가 떠 있다 — 버튼이 가려지지 않게 탭바 위에서 끝낸다.
+  minHeight: `calc(100vh - ${TAB_BAR_HEIGHT} - ${TAB_BAR_OFFSET})`,
+  marginTop: `calc(-1 * ${headerHeight})`,
+  paddingTop: headerHeight,
+  background: color.backgroundDark.base,
+  '@media': {
+    [breakpoint.desktop]: { minHeight: '100vh' },
+  },
 })
-
-export const illustration = style({
-  color: color.secondary.subtle,
-})
-
-export const code = style([
-  typography.logo.wordmark,
-  { fontSize: fontSize[32], color: color.primary.focus },
-])
-
-export const texts = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[8],
-})
-
-export const title = style([
-  typography.title.xlSemibold,
-  { color: color.text.primary },
-])
-
-export const description = style([
-  typography.body.defaultRegular,
-  { color: color.text.tertiary },
-])

@@ -21,7 +21,10 @@ npm run lint:fix          # eslint . --fix
 npm run storybook         # Storybook dev server on :6006
 npm run format:fix        # prettier --write .
 npm run test              # vitest unit (src/**/*.test.ts)
+npm run e2e               # Playwright E2E (e2e/*.spec.ts) — MSW를 켠 개발 서버를 :5174에 따로 띄운다
 ```
+
+- `npm run e2e`는 `.env.local`과 무관하게 목(MSW)으로 돈다. 토스 결제창·다음 우편번호는 `e2e/fixtures.ts`의 가짜로 바꾸고, 목 DB는 테스트마다 새 브라우저라 시드에서 시작한다. 처음이면 `npx playwright install chromium`.
 
 - `npm run test`는 순수 로직 단위 테스트(`src/**/*.test.ts`, node)만 돈다 — 결제 승인처럼 돈·재시도가 걸린 로직에 둔다. 화면 검증은 `npm run lint` + `npm run build` + 브라우저 확인.
 - 목 결제 승인을 느리게 하려면 `.env.local`에 `VITE_MOCK_CONFIRM_DELAY_MS=15000` — 승인 중 폴링·재전송·새로고침을 재현한다.

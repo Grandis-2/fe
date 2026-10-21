@@ -118,3 +118,21 @@ export type PreorderEvent = {
 export type PreorderEventListResponse = {
   items: PreorderEvent[]
 }
+
+// GET·PUT /api/v1/preorders/products/{productId}/open-alert — productId는 모델 id다.
+export type OpenAlert = {
+  productId: string
+  subscribed: boolean
+}
+
+// GET /api/v1/preorders/open-alerts 한 줄. 오픈 전·공개 상품만, 오픈이 이른 순(최대 100건, 페이지 없음).
+export type OpenAlertItem = {
+  productId: string
+  title: string
+  opensAt: string
+  closesAt: string
+}
+
+export type OpenAlertListResponse = {
+  items: OpenAlertItem[]
+}

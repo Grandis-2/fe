@@ -1,12 +1,9 @@
 import { setupWorker } from 'msw/browser'
 
-import { handlers, pendingBackendHandlers } from './handlers'
+import { handlers } from './handlers'
 
-/** all: 전부 목, pending: 백엔드에 아직 없는 API만 목(나머지는 실서버로 흘려보낸다) */
-export function startWorker(scope: 'all' | 'pending') {
-  const worker = setupWorker(
-    ...(scope === 'all' ? handlers : pendingBackendHandlers),
-  )
+export function startWorker() {
+  const worker = setupWorker(...handlers)
 
   // 브라우저는 Service Worker가 만든 합성 응답의 Set-Cookie를 실제 쿠키로 반영하지
   // 않는다(임의의 SW가 쿠키를 심는 걸 막는 의도된 보안 제약 — MSW 한계가 아니다).
@@ -20,8 +17,5 @@ export function startWorker(scope: 'all' | 'pending') {
   })
 
   // 핸들러가 없는 요청은 그대로 네트워크로 흘려보낸다(정적 자산 경고 방지).
-  return worker.start({
-    onUnhandledRequest: 'bypass',
-    quiet: scope === 'pending',
-  })
+  return worker.start({ onUnhandledRequest: 'bypass' })
 }

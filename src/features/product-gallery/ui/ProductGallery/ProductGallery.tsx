@@ -1,6 +1,7 @@
 import { useState } from 'react'
 
-import { Slider } from '@shared/ui'
+import { usePreloadedSrcs } from '@shared/lib/usePreloadedSrcs'
+import { ImageWithFallback, Slider } from '@shared/ui'
 
 import * as styles from './ProductGallery.css'
 
@@ -12,27 +13,36 @@ export type ProductGalleryProps = {
 
 // 상품 이미지 슬라이더 + 그 밑 미리보기(웹 전용). 둘이 같은 이미지를 가리키도록 현재 번호를
 // 여기서 들고 있는다 — 페이지는 이미지 목록만 넘긴다.
-export function ProductGallery({ images, productName }: ProductGalleryProps) {
+export function ProductGallery({
+  images: nextImages,
+  productName,
+}: ProductGalleryProps) {
   const [imageIndex, setImageIndex] = useState(0)
+  // 색을 바꿔도 새 사진을 다 받기 전까진 이전 사진을 둔다.
+  const images = usePreloadedSrcs(nextImages)
 
   return (
     <>
       <div className={styles.imageFrame}>
         <div className={styles.sliderFill}>
-          <Slider
-            navigation
-            activeIndex={imageIndex}
-            onActiveIndexChange={setImageIndex}
-          >
-            {images.map((src) => (
-              <img
-                key={src}
-                src={src}
-                alt={productName}
-                className={styles.image}
-              />
-            ))}
-          </Slider>
+          {images.length > 0 ? (
+            <Slider
+              navigation
+              activeIndex={imageIndex}
+              onActiveIndexChange={setImageIndex}
+            >
+              {images.map((src) => (
+                <ImageWithFallback
+                  key={src}
+                  src={src}
+                  alt={productName}
+                  className={styles.image}
+                />
+              ))}
+            </Slider>
+          ) : (
+            <ImageWithFallback alt={productName} className={styles.image} />
+          )}
         </div>
       </div>
       {/* 웹에서만 슬라이더 밑에 미리보기를 보여준다. 누르면 그 이미지로 이동한다. */}
@@ -51,7 +61,7 @@ export function ProductGallery({ images, productName }: ProductGalleryProps) {
               .join(' ')}
             onClick={() => setImageIndex(index)}
           >
-            <img src={src} alt="" className={styles.thumbnailImage} />
+            <ImageWithFallback src={src} className={styles.thumbnailImage} />
           </button>
         ))}
       </div>

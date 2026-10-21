@@ -11,6 +11,7 @@ import {
   SEARCH_RESULTS_PATH,
   SIGNUP_PATH,
 } from '@shared/config/routes'
+import { ScrollTopButton } from '@shared/ui'
 import { Footer } from '@widgets/footer'
 
 import { isCallbackPath } from './callbackPaths'
@@ -58,6 +59,10 @@ export function MainLayout() {
         <Outlet />
       </div>
       {!isCallback && <Footer />}
+      {/* 사전예약 상세는 하단에 붙는 신청 버튼(PreorderDetail.bottomBar)과 자리가 겹쳐 띄우지 않는다. */}
+      {!isCallback && !pathname.startsWith(`${PREORDER_PATH}/`) && (
+        <ScrollTopButton />
+      )}
     </div>
   )
 }

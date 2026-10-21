@@ -193,6 +193,8 @@ function toVariantView(
     sku: variant.optionCode,
     title: variant.name,
     price: variant.price,
+    // 관리자 저장소엔 할인율이 없다 — 정가 그대로 판다.
+    listPrice: variant.price,
     filterAttributes: {},
     selections: Object.fromEntries(
       Object.entries(variant.optionValues).map(([groupCode, valueCode]) => [
@@ -1147,10 +1149,18 @@ export const adminProductHandlers: RequestHandler[] = [
     const folders: Record<AdminImagePurpose, string> = {
       PRODUCT: 'products',
       PROMOTION: 'promotions',
+      BANNER: 'banners',
     }
-    if (purpose !== 'PRODUCT' && purpose !== 'PROMOTION') {
+    if (
+      purpose !== 'PRODUCT' &&
+      purpose !== 'PROMOTION' &&
+      purpose !== 'BANNER'
+    ) {
       return invalid([
-        { field: 'purpose', message: 'PRODUCT, PROMOTION 중 하나여야 합니다.' },
+        {
+          field: 'purpose',
+          message: 'PRODUCT, PROMOTION, BANNER 중 하나여야 합니다.',
+        },
       ])
     }
     const files = (await request.formData()).getAll('file')

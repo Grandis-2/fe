@@ -1,7 +1,10 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
 import { breakpoint, color, spacing, typography } from '@shared/config/theme'
-import { fontWeight } from '@shared/config/theme/tokens/typography/base'
+import {
+  fontSize,
+  fontWeight,
+} from '@shared/config/theme/tokens/typography/base'
 
 const divider = `1px solid ${color.border.subtle}`
 // HistoryCard 안쪽 여백과 맞춘다.
@@ -38,9 +41,12 @@ export const sectionTitle = style([
   { margin: 0, fontSize: '17px', fontWeight: fontWeight.bold },
 ])
 
-export const count = style({
-  marginLeft: spacing[4],
-  color: color.primary.subtle,
+// 사전예약 목록(PreorderList)의 상태 칩과 같은 모양.
+export const tabs = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[8],
+  marginBottom: spacing[8],
 })
 
 // 버튼 둘을 반씩 나눈다.
@@ -76,7 +82,11 @@ export const factLabel = style([
 
 export const factValue = style([
   typography.body.defaultMedium,
-  { margin: 0, fontSize: '15px', fontWeight: fontWeight.bold },
+  {
+    margin: 0,
+    fontSize: '15px',
+    '@media': { [breakpoint.mobile]: { fontSize: fontSize[14] } },
+  },
 ])
 
 export const steps = style([
@@ -151,15 +161,3 @@ export const alertDate = style([
 
 // SelectButton small에 테두리를 둘러 꺼진 상태도 버튼으로 읽히게 한다.
 // 테두리·배경 없이 벨 아이콘만 — 켜져 있으면 브랜드색, 꺼져 있으면 흐리게.
-export const alertToggle = style({
-  display: 'flex',
-  flexShrink: 0,
-  padding: spacing[4],
-  border: 'none',
-  background: 'transparent',
-  color: color.text.tertiary,
-  cursor: 'pointer',
-  selectors: {
-    '&[aria-pressed="true"]': { color: color.primary.subtle },
-  },
-})

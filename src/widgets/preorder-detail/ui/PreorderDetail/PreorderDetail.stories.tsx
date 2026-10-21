@@ -1,7 +1,8 @@
-import { expect, within } from 'storybook/test'
+import { expect, waitFor, within } from 'storybook/test'
 
 import { useSessionStore } from '@entities/auth/model/sessionStore'
 import type { Preorder } from '@entities/preorder'
+import { products } from '@shared/api/mock/fixtures/product'
 import { useModalStore } from '@shared/model/modalStore'
 
 import { PreorderPromotion } from './PreorderDetail'
@@ -22,8 +23,10 @@ const BASE: Preorder = {
   imageSrc: '/images/banner1.png',
   title: '아이폰 18 Pro · Pro Max',
   opensAt: '',
-  openTime: '10:00',
+  openTime: '09:00',
   closesAt: '',
+  closeTime: '23:59',
+  detailImageSrcs: [],
   benefits: [
     {
       title: '사전예약 시 맥세이프 케이스 증정',
@@ -87,21 +90,41 @@ export const Live: Story = {
 }
 
 // 회원은 시트에서 모델별 오픈 알림을 켠다.
+// 알림 신청은 목 서버로 간다 — 목의 오픈 전 상품이어야 409 없이 신청된다.
+const beforeOpenProduct = products.find(
+  ({ campaign }) => campaign?.status === 'BEFORE_OPEN',
+)!
+
 export const Soon: Story = {
-  args: { preorder: withDates([15, 28, 32, 35]) },
+  args: {
+    preorder: {
+      ...withDates([15, 28, 32, 35]),
+      models: [
+        {
+          ...BASE.models[0],
+          id: beforeOpenProduct.productId,
+          productId: beforeOpenProduct.productId,
+        },
+      ],
+    },
+  },
   beforeEach: () => {
-    useSessionStore.setState({ sessionToken: 'story-session' })
+    useSessionStore.setState({
+      sessionToken: 'story-session',
+      role: 'USER',
+      profileComplete: true,
+    })
     return () => useSessionStore.getState().clearSession()
   },
   play: async ({ canvas, userEvent }) => {
     await userEvent.click(
       canvas.getByRole('button', { name: '오픈 알림 받기' }),
     )
-    await userEvent.click(
-      await body.findByRole('button', { name: '알림 받기' }),
-    )
-    const subscribed = await body.findByRole('button', { name: '신청됨' })
-    await expect(subscribed).toHaveAttribute('aria-pressed', 'true')
+    const toggle = await body.findByRole('button', {
+      name: '아이폰 18 Pro 오픈 알림',
+    })
+    await userEvent.click(toggle)
+    await waitFor(() => expect(toggle).toHaveAttribute('aria-pressed', 'true'))
   },
 }
 
@@ -115,5 +138,67 @@ export const Done: Story = {
     await expect(
       await body.findByText('구매할 모델을 선택해주세요.'),
     ).toBeVisible()
+  },
+}
+
+// 한 홍보에 모델끼리 예약 시간이 다르면 진행 일정의 사전예약 단계 아래에 모델별 기간이 붙는다.
+export const ModelPeriods: Story = {
+  args: {
+    preorder: {
+      ...withDates([0, 1, 9, 12]),
+      openTime: '14:01',
+      closeTime: '02:31',
+      models: [
+        {
+          ...BASE.models[0],
+          id: 'lt-0531',
+          name: '[부하 시험] 무선 이어폰 LT 1020-0531 (진입)',
+          opensAt: fromToday(0),
+          openTime: '14:31',
+          closeTime: '02:31',
+        },
+        {
+          ...BASE.models[0],
+          id: 'lt-0501',
+          name: '[부하 시험] 무선 이어폰 LT 1020-0501 (준비)',
+          opensAt: fromToday(0),
+          openTime: '14:01',
+          closeTime: '02:31',
+        },
+      ],
+    },
+  },
+  play: async ({ canvas }) => {
+    const schedule = within(
+      canvas.getByRole('heading', { name: '진행 일정' }).parentElement!,
+    )
+    await expect(
+      schedule.getByText('[부하 시험] 무선 이어폰 LT 1020-0531 (진입)'),
+    ).toBeVisible()
+  },
+}
+
+// 오픈 1시간 전부터 오픈까지 — 알림 신청은 닫히고, 예약 버튼은 보이지만 오픈 순간까지 막혀 있다.
+const inMinutes = (minutes: number) => {
+  const date = new Date(Date.now() + minutes * 60 * 1000)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return {
+    opensAt: `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`,
+    openTime: `${pad(date.getHours())}:${pad(date.getMinutes())}`,
+  }
+}
+
+export const BeforeOpen: Story = {
+  args: {
+    preorder: {
+      ...withDates([0, 1, 9, 12]),
+      ...inMinutes(30),
+    },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('오픈까지')).toBeVisible()
+    await expect(
+      canvas.getByRole('button', { name: '사전예약 하러가기' }),
+    ).toBeDisabled()
   },
 }

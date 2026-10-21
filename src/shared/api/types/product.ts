@@ -1,3 +1,4 @@
+import type { ProductBrandCode } from './admin-product'
 import type { Paged } from './common'
 
 // 구매자용 상품·카테고리 API(catalog 서비스 — api-docs의 catalog.json) 응답 모양.
@@ -30,11 +31,13 @@ export type CategoryTreeResponse = {
 // GET /api/v1/products 쿼리.
 // color·storage는 같은 이름을 반복해 여러 값을 보낸다(?color=블랙&color=화이트). 축 안은 OR, 축끼리는 AND.
 export type ProductListParams = {
-  // 상품명·태그 부분 일치(대소문자 무시).
+  // 상품명·태그·모델명·브랜드 코드 부분 일치(대소문자 무시).
   q?: string
   // 상위 카테고리면 하위 상품까지 나온다. 없는 id는 빈 목록.
   categoryId?: string
   saleMode?: SaleMode
+  // 여러 값은 OR. 대문자 코드만 받는다(그 밖은 400).
+  brand?: ProductBrandCode[]
   color?: string[]
   storage?: string[]
   // 기본 NEWEST. 가격순은 minPrice 기준이고 null은 늘 맨 뒤.
@@ -51,6 +54,8 @@ export type ProductListItem = {
   productId: string
   saleMode: SaleMode
   title: string
+  // 화면 표시 이름은 프론트가 정한다.
+  brand: ProductBrandCode
   // 첫 색상 묶음의 첫 장(색상 축이 없으면 기본 묶음 첫 장). 없으면 null — 화면이 대체 이미지.
   imageUrl: string | null
   // 회원 목록엔 ACTIVE만 나온다.
@@ -96,8 +101,10 @@ export type Variant = {
   sku: string
   // 값 이름을 축 순서대로 ' / '로 이은 것(축이 없으면 상품명).
   title: string
-  // 기본가 + 고른 값의 추가금. 보증은 들어 있지 않다.
+  // 회원이 내는 가격 — listPrice에 상품 discountRate를 걸고 100원 단위로 버린 값. 보증은 들어 있지 않다.
   price: number
+  // 정가(기본가 + 고른 값의 추가금). 할인율이 0이면 price와 같다.
+  listPrice: number
   // 목록 필터 축(color·storage)의 정규화값.
   filterAttributes: Record<string, string>
   // 축 키 → 고른 값의 normalizedValue. 선택기가 조합을 찾는 키다.
@@ -121,6 +128,7 @@ export type ProductDetailView = Pick<
   | 'productId'
   | 'saleMode'
   | 'title'
+  | 'brand'
   | 'imageUrl'
   | 'status'
   | 'sellable'
@@ -132,7 +140,7 @@ export type ProductDetailView = Pick<
   // 회원 상세에선 늘 true.
   visible: boolean
   basePrice: number
-  // 할인율(정수 %, 0~99). 모든 옵션 가격에 같이 걸리고 보증 금액엔 안 걸린다. 0이면 할인 없음.
+  // 할인율(정수 %, 0~99). 모든 옵션 가격에 걸리고 보증엔 안 걸린다. 0이면 할인 없음.
   discountRate: number
   // 보증은 따로 고르는 상품이라 옵션 price에 들어 있지 않다.
   warranty: { offered: boolean; surcharge: number }

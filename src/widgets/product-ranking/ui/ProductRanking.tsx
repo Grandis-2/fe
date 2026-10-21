@@ -2,11 +2,18 @@ import { Package, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { useProducts } from '@entities/product'
+import { useRequireLogin } from '@features/login'
+import { enterPreorderOnClick } from '@features/preorder-queue'
 import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
 import { useScrollArrows } from '@shared/lib/useScrollArrows'
-import { InlineAlert, PriceText, ScrollArrows } from '@shared/ui'
+import {
+  ImageWithFallback,
+  InlineAlert,
+  PriceText,
+  ScrollArrows,
+} from '@shared/ui'
 
 import * as styles from './ProductRanking.css'
 
@@ -19,6 +26,7 @@ const cardClass = (rank: number) =>
 export function ProductRanking() {
   const { data, isPending, isError } = useProducts({ size: RANK_LIMIT })
   const ranked = data?.items
+  const enterPreorder = enterPreorderOnClick(useRequireLogin())
 
   const { rowRef, onScroll, canPrev, canNext, page } = useScrollArrows(
     ranked?.length,
@@ -87,19 +95,17 @@ export function ProductRanking() {
                   key={product.productId}
                   to={productPath(product.productId)}
                   className={cardClass(rank)}
+                  onClick={enterPreorder(product)}
                 >
                   <div className={styles.visual}>
                     <span className={styles.rank} aria-hidden>
                       {rank}
                     </span>
                     <div className={styles.tile}>
-                      {product.imageUrl && (
-                        <img
-                          src={product.imageUrl}
-                          alt=""
-                          className={styles.image}
-                        />
-                      )}
+                      <ImageWithFallback
+                        src={product.imageUrl}
+                        className={styles.image}
+                      />
                     </div>
                   </div>
                   <div className={styles.info}>

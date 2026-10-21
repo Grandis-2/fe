@@ -17,6 +17,7 @@ import {
   ADMIN_PRODUCT_NEW_PATH,
   ADMIN_PROMOTION_NEW_PATH,
   adminPromotionPath,
+  preorderPath,
 } from '@shared/config/routes'
 import { copyText } from '@shared/lib/copyText'
 import { closeModal, openModal } from '@shared/model/modalStore'
@@ -73,8 +74,9 @@ export function AdminPromotionsPage() {
 
   // 버튼은 그대로 두고 결과만 토스트로 알린다 — 여러 번 눌러도 매번 같은 피드백을 준다.
   // 클립보드는 권한·비보안 컨텍스트(http)에서 거절될 수 있어 실패도 알린다.
+  // 고객 사전예약 상세(/preorder/{promotionId})가 곧 홍보 페이지다.
   const copyLink = (promotion: AdminPromotion) =>
-    void copyText(promotion.publicUrl)
+    void copyText(`${location.origin}${preorderPath(promotion.promotionId)}`)
       .then(() => showToast('링크가 복사되었습니다!'))
       .catch(() => showToast('링크를 복사하지 못했습니다. 다시 시도해 주세요.'))
 
@@ -91,7 +93,7 @@ export function AdminPromotionsPage() {
       key: 'products',
       header: '연결 상품',
       align: 'center',
-      render: (promotion) => `${promotion.linkedProductIds.length}개`,
+      render: (promotion) => `${promotion.products.length}개`,
     },
     {
       key: 'period',

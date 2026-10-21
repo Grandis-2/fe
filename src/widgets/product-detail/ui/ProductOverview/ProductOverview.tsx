@@ -7,7 +7,6 @@ import {
 } from '@entities/product'
 import { ProductGallery } from '@features/product-gallery'
 import {
-  PREORDER_BENEFIT_RATE,
   PurchaseSummary,
   QuantityControl,
   type ProductPurchase,
@@ -61,6 +60,7 @@ export function ProductOverview({
     colorLabel,
     totalPrice,
     benefitAmount,
+    discountLabel,
     payAmount,
   } = purchase
   const selectedColor = colorAxis?.values.find(
@@ -137,10 +137,10 @@ export function ProductOverview({
           rows={[
             { label: '상품 금액', value: formatWon(totalPrice) },
             { label: '수량', value: `${quantity}개` },
-            ...(isPreorder
+            ...(discountLabel
               ? [
                   {
-                    label: `사전예약 혜택 (${PREORDER_BENEFIT_RATE * 100}%)`,
+                    label: discountLabel,
                     value: `-${formatWon(benefitAmount)}`,
                     accent: true,
                   },
@@ -173,7 +173,7 @@ export function ProductOverview({
             <ActionButton
               fullWidth
               className={isPreorder ? styles.checkoutFull : undefined}
-              // 사전예약은 입장권 유무로 대기열·신청이 갈려 usePreorderSubmit이 이름을 단다.
+              // 사전예약은 입장권 유무로 신청·안내가 갈려 usePreorderSubmit이 이름을 단다.
               data-faro-user-action-name={
                 isPreorder ? undefined : 'order-buy-now'
               }

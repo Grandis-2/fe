@@ -13,6 +13,8 @@ export type PreorderQueueProps = {
   onComplete: (admission: PreorderAdmission) => void
   // 줄을 설 수 없으면(마감·오픈 전 등) 서버 문구와 함께 호출된다.
   onFail: (message: string) => void
+  // 나가기를 누르면 호출된다 — 줄을 비워 다른 상품에 설 수 있게 한다.
+  onLeave: () => void
 }
 
 // 대기열 한 번(줄 서기 → 대기 → 이동/나가기). 전역 모달(useModalStore)을 쓰지 않고 자기 Modal을
@@ -25,8 +27,9 @@ export function PreorderQueue({
   productName,
   onComplete,
   onFail,
+  onLeave,
 }: PreorderQueueProps) {
-  const queue = usePreorderQueue({ productId, onComplete, onFail })
+  const queue = usePreorderQueue({ productId, onComplete, onFail, onLeave })
 
   return (
     <>

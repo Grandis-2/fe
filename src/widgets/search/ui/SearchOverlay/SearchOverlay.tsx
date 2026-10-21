@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { Search } from 'lucide-react'
-import { Link, useLocation, useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 
-import { useBrandMenus, useProducts } from '@entities/product'
+import { brandMenus, useProducts } from '@entities/product'
 import {
   ONGOING_PREORDERS,
   POPULAR_KEYWORDS,
@@ -14,11 +14,7 @@ import {
   toKeyword,
   useRecentSearches,
 } from '@features/search'
-import {
-  productPath,
-  searchPath,
-  searchResultsPath,
-} from '@shared/config/routes'
+import { searchPath, searchResultsPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { Chip, Highlight } from '@shared/ui'
 
@@ -37,7 +33,6 @@ export type SearchOverlayProps = {
 // 검색 아이콘을 누르면 화면 전체를 덮는다. 열 때 마운트하고 닫을 때 언마운트한다 —
 // 그래서 다시 열면 검색어가 비어 있다. Esc·취소와 페이지 이동으로 닫힌다.
 export function SearchOverlay({ onClose }: SearchOverlayProps) {
-  const brandMenus = useBrandMenus()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
@@ -83,6 +78,12 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
     add(label)
   }
 
+  // 엔터와 같다 — 검색 결과 화면으로 간다(주소가 바뀌면 오버레이는 스스로 닫힌다).
+  const submit = (label: string) => {
+    add(label)
+    navigate(searchResultsPath(label))
+  }
+
   return (
     <dialog
       ref={dialogRef}
@@ -96,10 +97,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
             ref={inputRef}
             value={query}
             onChange={setQuery}
-            onSubmit={(submitted) => {
-              add(submitted)
-              navigate(searchResultsPath(submitted))
-            }}
+            onSubmit={submit}
           />
           <button
             type="button"
@@ -186,10 +184,11 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
               <ul className={styles.suggestions}>
                 {results.slice(0, SUGGEST_LIMIT).map((product) => (
                   <li key={product.productId}>
-                    <Link
-                      to={productPath(product.productId)}
+                    {/* 상세로 바로 가지 않고 상품명으로 검색 결과 화면을 연다. */}
+                    <button
+                      type="button"
                       className={styles.suggestion}
-                      onClick={() => add(product.title)}
+                      onClick={() => submit(product.title)}
                     >
                       <Search
                         className={styles.suggestionIcon}
@@ -200,7 +199,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
                         match={keyword}
                         className={styles.match}
                       />
-                    </Link>
+                    </button>
                   </li>
                 ))}
               </ul>

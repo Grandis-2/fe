@@ -5,7 +5,7 @@ import { Link } from 'react-router'
 import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
-import { PriceText } from '@shared/ui'
+import { ImageWithFallback, PriceText } from '@shared/ui'
 
 import * as styles from './ProductTile.css'
 
@@ -29,17 +29,7 @@ export function ProductTile({
   return (
     <Link to={productPath(productId)} className={styles.tile}>
       <div className={styles.media}>
-        {imageUrl && (
-          <img
-            src={imageUrl}
-            alt=""
-            className={styles.image}
-            // 이미지를 못 받으면 깨진 아이콘 대신 빈 타일로 둔다.
-            onError={(event) => {
-              event.currentTarget.style.visibility = 'hidden'
-            }}
-          />
-        )}
+        <ImageWithFallback src={imageUrl} className={styles.image} />
       </div>
       <span className={[typography.body.subSemibold, styles.name].join(' ')}>
         {name}

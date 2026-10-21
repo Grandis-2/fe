@@ -1,6 +1,7 @@
 import type {
   CategoryNode,
   OptionAxis,
+  ProductBrandCode,
   ProductDetailView,
   SaleMode,
   ShipmentBatch,
@@ -8,27 +9,35 @@ import type {
 } from '../../types'
 
 // 목업 id도 서버처럼 UUID 모양으로 만든다 — 핸들러가 형식 오류(400)를 흉내 내고, 다른 목업이 같은 id를 다시 만들 수 있게
-// 규칙을 고정한다. 첫 글자로 종류를 나눈다(1 카테고리 · 2 상품 · 3 옵션 · 4 리뷰 · 5 주문상품).
-export const mockUuid = (kind: 1 | 2 | 3 | 4 | 5, n: number) =>
+// 규칙을 고정한다. 첫 글자로 종류를 나눈다(1 카테고리 · 2 상품 · 3 옵션 · 4 리뷰 · 5 주문상품 · 6 홍보).
+export const mockUuid = (kind: 1 | 2 | 3 | 4 | 5 | 6, n: number) =>
   `${kind}0000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 
-// ponytail: 카테고리 이름이 아직 백엔드와 확정되지 않았다. 목업은 헤더 메뉴(brandMenus)의 상위 이름 + 브랜드 하위로
-// 트리를 만든다 — 확정되면 이름을 맞춘다.
-const TREE: [name: string, brands: string[]][] = [
-  ['모바일', ['Apple', 'Samsung']],
-  ['PC/주변기기', ['Apple', 'Samsung', 'LG']],
-  ['웨어러블', ['Apple', 'Samsung']],
+// 명세처럼 상위 > 하위 카테고리 2단계다. 이름은 헤더 메뉴(brandMenus)와 같게 둔다.
+// 브랜드는 카테고리가 아니라 상품의 brand 칸이다 — 상위마다 번갈아 배정할 브랜드를 같이 둔다.
+const TREE: [name: string, children: string[], brands: ProductBrandCode[]][] = [
+  ['모바일', ['스마트폰', '태블릿', '폴더블'], ['APPLE', 'SAMSUNG']],
+  [
+    'PC/주변기기',
+    ['노트북', '데스크탑', '모니터', '키보드', '마우스'],
+    ['APPLE', 'SAMSUNG', 'LG'],
+  ],
+  [
+    '웨어러블',
+    ['스마트워치', '무선이어폰', '스마트밴드'],
+    ['APPLE', 'SAMSUNG'],
+  ],
 ]
 
-export const categories: CategoryNode[] = TREE.map(([name, brands], i) => {
+export const categories: CategoryNode[] = TREE.map(([name, children], i) => {
   const categoryId = mockUuid(1, (i + 1) * 10)
   return {
     categoryId,
     name,
     parentId: null,
-    children: brands.map((brand, j) => ({
+    children: children.map((child, j) => ({
       categoryId: mockUuid(1, (i + 1) * 10 + j + 1),
-      name: brand,
+      name: child,
       parentId: categoryId,
       children: [],
     })),
@@ -79,6 +88,7 @@ const optionAxes: OptionAxis[] = [
 type Seed = {
   title: string
   categoryId: string
+  brand: ProductBrandCode
   basePrice: number
   saleMode?: SaleMode
   // 일반 상품의 재고. 0이면 품절.
@@ -87,6 +97,26 @@ type Seed = {
   paused?: boolean
   // 따로 고르는 보증 금액. 없으면 보증을 팔지 않는다.
   warranty?: number
+  // 할인율(%). 없으면 사전예약 10, 일반 상품 0.
+  discountRate?: number
+  // 사전예약을 오늘부터 며칠 뒤 오전 9시(KST)에 열어 그날 23:59에 닫는다 — 오픈 전 화면·오픈 알림 확인용.
+  opensInDays?: number
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000
+// 사전예약은 하루만 받는다 — 09:00(KST)에 열어 23:59:59에 닫는다.
+const OPEN_MS = (15 * 60 * 60 - 1) * 1000
+
+// 회차는 지금 기준으로 날짜를 잡아야 시간이 지나도 오픈 전·진행 중으로 남는다.
+// 한국 날짜로 며칠 뒤 09:00(= 00:00Z)를 잡는다 — 한국 새벽엔 UTC 날짜가 하루 늦다.
+const campaignIn = (days: number) => {
+  const opensAt = new Date(Date.now() + 9 * 60 * 60 * 1000 + days * DAY_MS)
+  opensAt.setUTCHours(0, 0, 0, 0)
+  return {
+    opensAt: opensAt.toISOString(),
+    closesAt: new Date(opensAt.getTime() + OPEN_MS).toISOString(),
+    status: 'BEFORE_OPEN' as const,
+  }
 }
 
 function buildProduct(
@@ -94,11 +124,14 @@ function buildProduct(
   {
     title,
     categoryId,
+    brand,
     basePrice,
     saleMode = 'IN_STOCK',
     stock = 10,
     paused,
     warranty,
+    opensInDays,
+    discountRate = saleMode === 'PREORDER' ? 10 : 0,
   }: Seed,
 ): ProductDetailView {
   const isPreorder = saleMode === 'PREORDER'
@@ -108,11 +141,14 @@ function buildProduct(
         color: normalize(color.label),
         storage: normalize(storage.label),
       }
+      const listPrice = basePrice + storage.surcharge
       return {
         variantId: mockUuid(3, n * 100 + c * 10 + s),
         sku: `NV${n}-${color.slug}-${storage.label}`,
         title: `${color.label} / ${storage.label}`,
-        price: basePrice + storage.surcharge,
+        // 서버처럼 정가에 할인율을 걸고 100원 단위로 버린다.
+        price: Math.floor((listPrice * (100 - discountRate)) / 10000) * 100,
+        listPrice,
         filterAttributes: selections,
         selections,
         status: paused ? 'PAUSED' : 'ACTIVE',
@@ -134,35 +170,34 @@ function buildProduct(
     categoryId,
     saleMode,
     title,
+    brand,
     modelNumber: `NV-${n}`,
     description: null,
     imageUrl: gallery[0].items[0].url,
     status: 'ACTIVE',
     visible: true,
     basePrice,
-    discountRate: 0,
+    discountRate,
     warranty: { offered: warranty !== undefined, surcharge: warranty ?? 0 },
     sellable,
     soldOut: !isPreorder && sellable && stock <= 0,
-    campaign: isPreorder
-      ? {
-          opensAt: '2026-10-01T01:00:00Z',
-          closesAt: '2026-12-31T14:59:59Z',
-          status: 'OPEN',
-        }
-      : null,
+    campaign: !isPreorder
+      ? null
+      : opensInDays !== undefined
+        ? campaignIn(opensInDays)
+        : { ...campaignIn(0), status: 'OPEN' },
     optionAxes,
     variants,
     images: { gallery, detail: [] },
   }
 }
 
-const brandId = (parent: string, brand: string) =>
+const childId = (parent: string, child: string) =>
   categories
     .find((node) => node.name === parent)
-    ?.children.find((child) => child.name === brand)?.categoryId ?? ''
+    ?.children.find((node) => node.name === child)?.categoryId ?? ''
 
-// 상위 카테고리별 [하위 상품군, 개수, 시작가, 판매 방식]. 브랜드는 하위 카테고리를 번갈아 쓴다.
+// 상위 카테고리별 [하위 카테고리, 개수, 시작가, 판매 방식]. 브랜드는 상위의 브랜드를 번갈아 쓴다.
 const LINES: [
   parent: string,
   line: string,
@@ -186,32 +221,55 @@ const LINES: [
 const seeds: Seed[] = [
   {
     title: '맥북 프로 14',
-    categoryId: brandId('PC/주변기기', 'Apple'),
+    categoryId: childId('PC/주변기기', '노트북'),
+    brand: 'APPLE',
     basePrice: 2390000,
     saleMode: 'PREORDER',
   },
   ...LINES.flatMap(([parent, line, count, price, saleMode, warranty]) => {
-    const brands = TREE.find(([name]) => name === parent)?.[1] ?? []
+    const brands = TREE.find(([name]) => name === parent)?.[2] ?? ['APPLE']
     return Array.from({ length: count }, (_, i) => ({
       title: `NOVA ${line} ${i + 1}`,
-      categoryId: brandId(parent, brands[i % brands.length]),
+      categoryId: childId(parent, line),
+      brand: brands[i % brands.length],
       basePrice: price + i * 50000,
       saleMode,
       warranty,
+      // 일반 상품 줄마다 첫 상품은 할인 중 — 할인율 표시 확인용.
+      ...(saleMode !== 'PREORDER' && i === 0 && { discountRate: 15 }),
     }))
   }),
   // 목록의 품절 · 판매 중지 표시를 확인하는 용도.
   {
     title: 'NOVA 스마트밴드 (품절)',
-    categoryId: brandId('웨어러블', 'Samsung'),
+    categoryId: childId('웨어러블', '스마트밴드'),
+    brand: 'SAMSUNG',
     basePrice: 79000,
     stock: 0,
   },
   {
     title: 'NOVA 마우스 (판매 중지)',
-    categoryId: brandId('PC/주변기기', 'LG'),
+    categoryId: childId('PC/주변기기', '마우스'),
+    brand: 'LG',
     basePrice: 59000,
     paused: true,
+  },
+  // 오픈 전 사전예약 — 오픈 알림을 신청해 볼 수 있다. 맨 뒤에 둬야 앞 상품들의 id가 그대로다.
+  {
+    title: '갤럭시 Z 폴드8',
+    categoryId: childId('모바일', '폴더블'),
+    brand: 'SAMSUNG',
+    basePrice: 2390000,
+    saleMode: 'PREORDER',
+    opensInDays: 3,
+  },
+  {
+    title: '아이폰 18 Pro',
+    categoryId: childId('모바일', '스마트폰'),
+    brand: 'APPLE',
+    basePrice: 1790000,
+    saleMode: 'PREORDER',
+    opensInDays: 14,
   },
 ]
 

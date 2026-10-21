@@ -4,7 +4,11 @@ import { MessageSquare } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
 import { useProduct, useShipmentBatches } from '@entities/product'
-import { ReviewCard, useProductReviews } from '@entities/review'
+import {
+  ReviewCard,
+  ReviewCardSkeleton,
+  useProductReviews,
+} from '@entities/review'
 import { useRequireLogin } from '@features/login'
 import { usePreorderSubmit } from '@features/preorder-queue'
 import {
@@ -12,13 +16,8 @@ import {
   useProductPurchase,
   type PurchaseDraft,
 } from '@features/product-purchase'
-import {
-  PAYMENT_PATH,
-  paymentPath,
-  productPath,
-  resultPath,
-} from '@shared/config/routes'
-import { InlineAlert } from '@shared/ui'
+import { PAYMENT_PATH, paymentPath, resultPath } from '@shared/config/routes'
+import { InlineAlert, PageSkeleton, SkeletonGroup } from '@shared/ui'
 import {
   ProductDetailImages,
   ProductOverview,
@@ -91,15 +90,13 @@ export function ProductDetailPage() {
         navigate(PAYMENT_PATH, { state: [purchasePayload] })
         return
       }
-      // 사전예약은 대기열 입장권으로 접수한다 — 입장권이 없으면 줄을 서고, 차례가 오면 이 상세로 돌아온다.
+      // 사전예약은 대기열 입장권으로 접수한다 — 입장권이 없으면 사전예약 페이지로 보낸다(줄은 거기서 선다).
       // 접수 뒤 5초 안에 외부 등록되면 바로 결제로, 아니면 예약 접수 화면(나중에 구매 확정)으로 간다.
       // 접수 후엔 뒤로가기로 상세에 돌아와 다시 제출하지 않게 기록을 바꾼다.
       preorderSubmit.submitPreorder(
         {
           productId: product.productId,
-          productName: product.title,
           optionId: variant.variantId,
-          returnTo: productPath(product.productId),
         },
         ({ preorderId }, registered) =>
           navigate(
@@ -123,11 +120,13 @@ export function ProductDetailPage() {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
         <div className={styles.content}>
-          <InlineAlert status={isError ? 'error' : 'info'}>
-            {isError || !isPending
-              ? '상품을 불러오지 못했어요.'
-              : '상품을 불러오는 중이에요.'}
-          </InlineAlert>
+          {isError || !isPending ? (
+            <InlineAlert status={isError ? 'error' : 'info'}>
+              상품을 불러오지 못했어요.
+            </InlineAlert>
+          ) : (
+            <PageSkeleton />
+          )}
         </div>
       </div>
     )
@@ -192,9 +191,11 @@ export function ProductDetailPage() {
                       후기를 불러오지 못했어요.
                     </InlineAlert>
                   ) : reviews.isPending ? (
-                    <InlineAlert status="info">
-                      후기를 불러오고 있어요.
-                    </InlineAlert>
+                    <SkeletonGroup className={styles.reviewList}>
+                      {[0, 1].map((i) => (
+                        <ReviewCardSkeleton key={i} />
+                      ))}
+                    </SkeletonGroup>
                   ) : reviews.data.items.length === 0 ? (
                     <InlineAlert
                       status="info"

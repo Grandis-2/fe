@@ -1,6 +1,6 @@
 import { MessageSquare } from 'lucide-react'
 
-import { HistoryCard } from '@entities/order'
+import { HistoryCard, HistoryListSkeleton } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
 import { useDeleteReview, useMyReviews, type Review } from '@entities/review'
 import { openReviewForm } from '@features/review-write'
@@ -54,7 +54,7 @@ export function MypageReviews() {
           {getErrorMessage(error, '리뷰를 불러오지 못했어요.')}
         </div>
       ) : isPending ? (
-        <div className={styles.empty}>리뷰를 불러오는 중이에요.</div>
+        <HistoryListSkeleton />
       ) : (
         reviews.length === 0 && (
           <InlineAlert

@@ -1,9 +1,12 @@
+import { useState, type MouseEventHandler } from 'react'
+
 import { Link } from 'react-router'
 
 import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Slider, Tag } from '@shared/ui'
+import { usePreloadedSrcs } from '@shared/lib/usePreloadedSrcs'
+import { ImageWithFallback, Slider, Tag } from '@shared/ui'
 
 import { ProductColorSwatches } from '../ProductColorSwatches'
 
@@ -21,6 +24,8 @@ export type ProductCardData = {
   colorName: string
   colorSwatches: ProductColorSwatchItem[]
   basePrice: number
+  // 0~100(%). 0이면 할인 표시 없이 basePrice만 그린다.
+  discountRate?: number
   priceUnit?: string
   saleMode: SaleMode
 }
@@ -28,27 +33,41 @@ export type ProductCardData = {
 export type ProductCardProps = {
   product: ProductCardData
   onColorSelect?: (index: number) => void
+  // 상품명 링크를 누를 때 — preventDefault하면 상세로 가지 않는다(사전예약 대기열 등).
+  onLinkClick?: MouseEventHandler<HTMLAnchorElement>
   className?: string
 }
 
 export function ProductCard({
   product,
   onColorSelect,
+  onLinkClick,
   className,
 }: ProductCardProps) {
   const {
     productId,
-    imageSrcs,
+    imageSrcs: nextImageSrcs,
     imageAlt = '',
     name,
     modelNumber,
     colorName,
     colorSwatches,
     basePrice,
+    discountRate = 0,
     priceUnit = '원',
     saleMode,
   } = product
   const isPreorder = saleMode === 'PREORDER'
+  // 색을 바꿔도 새 사진을 다 받기 전까진 이전 사진을 둔다.
+  const imageSrcs = usePreloadedSrcs(nextImageSrcs)
+  // 지금 보고 있는 슬라이드. 색을 고르면 0으로 돌려 첫 장부터 보인다 — 슬라이더(Swiper)는 그대로 두고
+  // 사진만 바꾼다. key로 다시 마운트하면 색을 고를 때마다 Swiper를 새로 만들어 버벅인다.
+  const [slideIndex, setSlideIndex] = useState(0)
+  const selectColor = (index: number) => {
+    setSlideIndex(0)
+    onColorSelect?.(index)
+  }
+  const salePrice = Math.round(basePrice * (1 - discountRate / 100))
   return (
     <div
       data-theme="dark"
@@ -56,29 +75,37 @@ export function ProductCard({
     >
       <div className={styles.media}>
         {isPreorder && (
-          <Tag color="primary" size="small" className={styles.badge}>
+          <Tag color="preorder" size="small" className={styles.badge}>
             사전예약
           </Tag>
         )}
         <div className={styles.sliderFill}>
-          {/* key를 imageSrcs에 묶어 Slider를 다시 마운트시킨다 — imageSrcs를 바꾸는 건
-              색상 선택뿐이라(옵션 선택은 안 건드림), 이렇게 하면 색상 바뀔 때만
-              슬라이더가 첫 장으로 리셋된다. */}
-          <Slider key={imageSrcs.join('|')}>
-            {imageSrcs.map((src) => (
-              <img
-                key={src}
-                src={src}
-                alt={imageAlt}
-                className={styles.image}
-              />
-            ))}
-          </Slider>
+          {imageSrcs.length > 0 ? (
+            <Slider
+              activeIndex={slideIndex}
+              onActiveIndexChange={setSlideIndex}
+            >
+              {imageSrcs.map((src) => (
+                <ImageWithFallback
+                  key={src}
+                  src={src}
+                  alt={imageAlt}
+                  className={styles.image}
+                />
+              ))}
+            </Slider>
+          ) : (
+            <ImageWithFallback alt={imageAlt} className={styles.image} />
+          )}
         </div>
       </div>
       <div className={styles.content}>
         <div className={styles.nameGroup}>
-          <Link to={productPath(productId)} className={styles.name}>
+          <Link
+            to={productPath(productId)}
+            className={styles.name}
+            onClick={onLinkClick}
+          >
             {name}
           </Link>
           {modelNumber && (
@@ -93,17 +120,37 @@ export function ProductCard({
           colorName={colorName}
           size="small"
           colors={colorSwatches}
-          onSelect={onColorSelect}
+          onSelect={onColorSelect && selectColor}
         />
         <div
           className={[typography.body.subSemibold, styles.priceRow].join(' ')}
         >
+          {discountRate > 0 && (
+            <>
+              <del
+                className={[typography.body.sub, styles.originalPrice].join(
+                  ' ',
+                )}
+              >
+                {formatNumber(basePrice)}
+                {priceUnit}
+              </del>
+              <span
+                className={[
+                  typography.title.mdSemibold,
+                  styles.discountRate,
+                ].join(' ')}
+              >
+                {discountRate}%
+              </span>
+            </>
+          )}
           <span
             className={[typography.title.mdSemibold, styles.priceAmount].join(
               ' ',
             )}
           >
-            {formatNumber(basePrice)}
+            {formatNumber(salePrice)}
           </span>
           {/* 색상·옵션에 따라 오르는 시작가라 '부터'를 붙인다. */}
           <span

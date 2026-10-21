@@ -1,12 +1,6 @@
-import { globalStyle, style, styleVariants } from '@vanilla-extract/css'
+import { globalStyle, style } from '@vanilla-extract/css'
 
-import {
-  breakpoint,
-  color,
-  motion,
-  onDark,
-  spacing,
-} from '@shared/config/theme'
+import { breakpoint, color, onDark, spacing } from '@shared/config/theme'
 import {
   fontFamily,
   fontSize,
@@ -67,31 +61,6 @@ export const models = style({
 })
 
 export const action = style({ flexShrink: 0, whiteSpace: 'nowrap' })
-
-const notifyBase = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[4],
-  flexShrink: 0,
-  height: '46px',
-  padding: `0 ${spacing[16]}`,
-  borderRadius: '999px',
-  border: `1px solid ${color.primary.base}`,
-  fontFamily: fontFamily.pretendard,
-  fontSize: fontSize[14],
-  fontWeight: fontWeight.bold,
-  whiteSpace: 'nowrap',
-  cursor: 'pointer',
-  transition: `background ${motion.duration.fast} ${motion.easing.default}`,
-})
-
-export const notify = styleVariants({
-  off: [
-    notifyBase,
-    { background: color.primary.base, color: color.text.inverse },
-  ],
-  on: [notifyBase, { background: 'transparent', color: color.primary.subtle }],
-})
 
 // Button medium(46px)보다 크게 — 시트 맨 아래 손 닿기 쉬운 크기.
 export const close = style({

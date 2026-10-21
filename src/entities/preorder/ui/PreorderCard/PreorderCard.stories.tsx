@@ -16,8 +16,10 @@ const base: PreorderCardData = {
   imageSrc: '/images/banner1.png',
   title: '아이폰 18 Pro · Pro Max',
   benefit: '사전예약 시 맥세이프 케이스 증정',
-  opensAt: fromToday(-9),
-  closesAt: fromToday(5),
+  opensAt: fromToday(0),
+  openTime: '09:00',
+  closesAt: fromToday(0),
+  closeTime: '23:59',
 }
 
 const meta = {
@@ -44,7 +46,7 @@ export const Soon: Story = {
       title: '아이폰 Duo',
       benefit: '알림 신청자 대상 쿠폰 지급',
       opensAt: fromToday(15),
-      closesAt: fromToday(28),
+      closesAt: fromToday(15),
     },
   },
 }
@@ -55,8 +57,18 @@ export const Done: Story = {
       ...base,
       title: '에어팟 프로 3',
       benefit: '각인 서비스 무료',
-      opensAt: fromToday(-34),
+      opensAt: fromToday(-21),
       closesAt: fromToday(-21),
+    },
+  },
+}
+
+// 제목이 길어도 자르지 않는다 — 회차는 이름 끝으로 갈린다.
+export const LongTitle: Story = {
+  args: {
+    data: {
+      ...base,
+      title: '[부하 시험] 무선 이어폰 LT 1020-0531 (진입) · 1020-0501 (준비)',
     },
   },
 }

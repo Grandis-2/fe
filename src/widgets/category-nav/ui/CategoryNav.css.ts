@@ -271,7 +271,7 @@ export const megaTile = style({
     .map((p) => `${p} ${motion.duration.fast} ${motion.easing.default}`)
     .join(', '),
   selectors: {
-    // aria-current: 지금 보고 있는 하위 카테고리(CategoryNav.tsx가 URL로 판단).
+    // aria-current: 지금 보고 있는 하위 카테고리·브랜드(CategoryNav.tsx가 URL로 판단).
     '&:hover, &[aria-current="page"]': {
       borderColor: color.primary.base,
       background: `color-mix(in srgb, ${color.primary.base} 8%, ${color.backgroundDark.surface})`,

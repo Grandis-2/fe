@@ -14,6 +14,7 @@ const PAGE = { page: 0, size: 12 }
 const product = (productId: string, title: string): ProductListItem => ({
   productId,
   saleMode: 'IN_STOCK',
+  brand: 'APPLE',
   title,
   imageUrl: '/images/macbook_neo_sliver1.png',
   status: 'ACTIVE',

@@ -1,4 +1,4 @@
-import { ChevronRight, Loader, Package, TriangleAlert } from 'lucide-react'
+import { ChevronRight, Package, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 
 import {
@@ -8,6 +8,8 @@ import {
   useCategories,
   useProducts,
 } from '@entities/product'
+import { useRequireLogin } from '@features/login'
+import { enterPreorderOnClick } from '@features/preorder-queue'
 import { useProductCardSelection } from '@features/product-card-select'
 import { searchPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
@@ -37,6 +39,7 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
   const isError = categories.isError || products.isError
   const items = isUnknown ? [] : products.data?.items
   const { getCardProps } = useProductCardSelection()
+  const enterPreorder = enterPreorderOnClick(useRequireLogin())
   const { rowRef, onScroll, canPrev, canNext, page } = useScrollArrows(
     items?.length,
   )
@@ -47,14 +50,12 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
         title: `${category} 상품을 불러오지 못했어요`,
         description: '일시적인 오류예요. 잠시 후 다시 시도해 주세요.',
       }
-    : isPending
-      ? { title: '불러오는 중이에요' }
-      : items?.length === 0
-        ? {
-            title: `아직 등록된 ${category} 상품이 없어요`,
-            description: '새 상품이 등록되면 이곳에서 가장 먼저 보여드릴게요.',
-          }
-        : null
+    : items?.length === 0
+      ? {
+          title: `아직 등록된 ${category} 상품이 없어요`,
+          description: '새 상품이 등록되면 이곳에서 가장 먼저 보여드릴게요.',
+        }
+      : null
 
   return (
     <section className={styles.root}>
@@ -77,7 +78,7 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
         <InlineAlert
           status={isError ? 'error' : 'info'}
           variant="big"
-          icon={isError ? TriangleAlert : isPending ? Loader : Package}
+          icon={isError ? TriangleAlert : Package}
           description={message.description}
         >
           {message.title}
@@ -92,6 +93,7 @@ export function CategoryProducts({ category }: CategoryProductsProps) {
                 <ProductCard
                   key={product.productId}
                   {...getCardProps(product)}
+                  onLinkClick={enterPreorder(product)}
                   className={styles.card}
                 />
               ))}

@@ -199,6 +199,29 @@ export default defineConfig([
     },
   },
 
+  // Playwright E2E(Node 런타임). page.evaluate·addInitScript 안의 코드는 브라우저에서 돌아 browser 전역도 둔다.
+  {
+    files: ['e2e/**/*.ts', 'playwright.config.ts'],
+    extends: [js.configs.recommended, tseslint.configs.recommended],
+    plugins: {
+      'unused-imports': unusedImports,
+    },
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+    settings: {
+      'import-x/resolver': {
+        typescript: {
+          project: './tsconfig.e2e.json',
+        },
+      },
+    },
+    rules: {
+      ...importOrderRules,
+      ...unusedImportsRules,
+    },
+  },
+
   // Prettier와 충돌하는 ESLint 스타일 규칙 비활성화 (항상 마지막)
   prettierConfig,
   ...storybook.configs['flat/recommended'],

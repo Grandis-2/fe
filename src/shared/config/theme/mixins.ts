@@ -24,18 +24,19 @@ export const statusOnDark = {
 export const primaryGradient = `linear-gradient(135deg, ${color.primary.base}, color-mix(in srgb, ${color.primary.base} 65%, ${color.secondary.subtle}))`
 export const primaryGlow = `0 8px 28px color-mix(in srgb, ${color.primary.base} 55%, transparent), inset 0 1px 0 ${onDark(18)}`
 
-// 어두운 페이지 바탕 — 남색(왼쪽 위)·보라(오른쪽 위) 빛이 위에서 번진다. 모바일은 빛을 넓고 낮게.
-const glow = (indigo: string, violet: string) =>
-  [
-    `radial-gradient(${indigo}, color-mix(in srgb, ${color.primary.base} 55%, transparent), transparent 70%)`,
-    `radial-gradient(${violet}, color-mix(in srgb, ${color.secondary.subtle} 30%, transparent), transparent 70%)`,
-    color.backgroundDark.base,
-  ].join(', ')
+// 어두운 페이지 바탕 — 위 720px 안에서 왼쪽 위 모서리에 보라·남색 빛이 번진다(mypage-background 시안).
+// 빛 크기가 화면 폭 %라 모바일도 같은 값으로 줄어든다. 색은 시안 값 그대로 — 맞는 토큰이 없다.
+const glowLayer = (gradient: string) => `${gradient} 0 0 / 100% 720px no-repeat`
 
-export const glowBackground = {
-  desktop: glow('ellipse 55% 420px at 12% 0%', 'ellipse 45% 360px at 88% 0%'),
-  mobile: glow('ellipse 90% 300px at 10% 0%', 'ellipse 70% 260px at 100% 0%'),
-}
+export const glowBackground = [
+  glowLayer(
+    'radial-gradient(ellipse 55% 70% at 4% 0%, rgba(98, 80, 160, 0.45) 0%, rgba(60, 50, 120, 0.14) 45%, transparent 75%)',
+  ),
+  glowLayer(
+    'radial-gradient(ellipse 40% 55% at 30% -10%, rgba(64, 74, 150, 0.35) 0%, transparent 70%)',
+  ),
+  color.backgroundDark.base,
+].join(', ')
 
 // 가로 스크롤 줄을 화면 양 끝까지 넓히고 늘린 만큼 안쪽 패딩으로 되돌린다 — 첫 카드는 타이틀 밑에 맞고,
 // 카드는 컨테이너 경계가 아니라 화면 끝에서 잘려 "더 있다"로 읽힌다(ProductRanking·CategoryProducts).

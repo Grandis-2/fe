@@ -10,13 +10,17 @@ import {
   useCategories,
   useProducts,
 } from '@entities/product'
+import { useRequireLogin } from '@features/login'
+import { enterPreorderOnClick } from '@features/preorder-queue'
 import { useProductCardSelection } from '@features/product-card-select'
 import {
   ONGOING_PREORDERS,
   PreorderLinks,
   SearchField,
+  SearchFilters,
   toKeyword,
   useRecentSearches,
+  useSearchFilters,
 } from '@features/search'
 import { searchResultsPath } from '@shared/config/routes'
 import { InlineAlert, Navigator } from '@shared/ui'
@@ -28,6 +32,7 @@ const PAGE_SIZE = 12
 // 검색 화면 하나가 두 가지를 그린다. 검색어·필터·페이지는 URL에 둬서 새로고침·공유해도 유지된다.
 // - 키워드 검색(/search/results?q=): 검색창에서 엔터. 검색어가 바뀌면 페이지가 key로 다시 그려 입력값을 맞춘다.
 // - 카테고리 둘러보기(/search?category=&subCategory=&brand=): 헤더 메가 메뉴·메인 카테고리 제목에서 온다.
+// 두 모드 모두 브랜드·용량·정렬 필터(SearchFilters)로 좁힌다.
 export function SearchResults() {
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -36,31 +41,32 @@ export function SearchResults() {
   const category = keyword ? undefined : searchParams.get('category')
   const isCategoryMode = Boolean(category)
   const subCategory = searchParams.get('subCategory') ?? undefined
-  const brand = searchParams.get('brand') ?? undefined
+  const filters = useSearchFilters()
   // URL은 1부터, API는 0부터 센다.
   const page = Math.max(1, Math.floor(Number(searchParams.get('page'))) || 1)
 
   const [query, setQuery] = useState(keyword)
   const { add } = useRecentSearches()
-  // URL은 카테고리를 이름으로 들고 있어 트리에서 id를 찾는다 — 브랜드가 있으면 그 하위 카테고리.
-  // ponytail: 백엔드 트리는 2단계(상위 > 브랜드)라 subCategory(스마트폰 등)로는 좁히지 못한다 —
-  // 카테고리 이름·단계가 백엔드와 확정되면 메뉴(brandMenus)와 함께 맞춘다.
+  // URL은 카테고리를 이름으로 들고 있어 트리(상위 > 하위)에서 id를 찾는다. 브랜드는 카테고리가 아니라 필터다.
   const categories = useCategories()
   const categoryId =
     category && categories.data
-      ? findCategoryId(categories.data, category, brand)
+      ? findCategoryId(categories.data, category, subCategory)
       : undefined
   // 트리에 없는 이름이면 목록을 묻지 않고 0건으로 둔다(전체 목록이 그 카테고리처럼 보이지 않게).
   const isUnknownCategory =
     isCategoryMode && Boolean(categories.data) && categoryId === undefined
-  // 두 모드 모두 같은 목록 API로 받아 ProductCard로 그린다. 정렬은 백엔드가 최신 등록순으로 고정한다.
-  const pageQuery = { page: page - 1, size: PAGE_SIZE }
+  // 두 모드 모두 같은 목록 API로 받아 ProductCard로 그린다.
+  const scope = keyword ? { q: keyword } : { categoryId }
+  const enabled = Boolean(keyword) || categoryId !== undefined
   const productList = useProducts(
-    keyword ? { q: keyword, ...pageQuery } : { categoryId, ...pageQuery },
-    { enabled: Boolean(keyword) || categoryId !== undefined },
+    { ...scope, ...filters.params, page: page - 1, size: PAGE_SIZE },
+    { enabled },
   )
 
   const { getCardProps } = useProductCardSelection()
+
+  const enterPreorder = enterPreorderOnClick(useRequireLogin())
 
   const cards = isUnknownCategory ? [] : productList.data?.items
   const total = isUnknownCategory ? 0 : productList.data?.total
@@ -70,13 +76,13 @@ export function SearchResults() {
   const preorders = ONGOING_PREORDERS.filter(({ title }) =>
     title.toLowerCase().includes(keyword.toLowerCase()),
   )
-  const breadcrumb = [category, brand, subCategory].filter(
-    (label): label is string => Boolean(label),
+  const breadcrumb = [category, subCategory].filter((label): label is string =>
+    Boolean(label),
   )
   const cardMessage = isError
     ? '상품을 불러오지 못했어요.'
     : cards?.length === 0
-      ? isCategoryMode
+      ? isCategoryMode || filters.activeCount > 0
         ? '조건에 맞는 상품이 없어요.'
         : `'${keyword}' 검색 결과가 없어요.`
       : null
@@ -127,6 +133,10 @@ export function SearchResults() {
         </div>
       )}
 
+      {(keyword || isCategoryMode) && (
+        <SearchFilters category={category ?? undefined} />
+      )}
+
       {keyword && preorders.length > 0 && (
         <PreorderLinks preorders={preorders} />
       )}
@@ -148,6 +158,7 @@ export function SearchResults() {
                     <ProductCard
                       key={product.productId}
                       {...getCardProps(product)}
+                      onLinkClick={enterPreorder(product)}
                     />
                   ))
                 : Array.from({ length: PAGE_SIZE }, (_, i) => (

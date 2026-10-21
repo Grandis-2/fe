@@ -3,7 +3,7 @@ import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react'
 import { X } from 'lucide-react'
 import { Link } from 'react-router'
 
-import { useBrandMenus } from '@entities/product'
+import { brandMenus } from '@entities/product'
 import { searchPath } from '@shared/config/routes'
 
 import { categoryThumbnails } from '../../model/menu'
@@ -26,7 +26,6 @@ export type MobileMenuProps = {
 // 위에 그대로 떠 있어 다른 탭으로 바로 가거나 '메뉴'를 다시 눌러 닫을 수 있다 — 그래서
 // <dialog> 최상위 레이어(탭바까지 덮고 막는다) 대신 탭바 아래 z-index의 고정 레이어로 띄운다.
 export function MobileMenu({ onClose }: MobileMenuProps) {
-  const brandMenus = useBrandMenus()
   const [tab, setTab] = useState<MenuTab>('category')
   const rootRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)

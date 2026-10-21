@@ -1,4 +1,4 @@
-import { Info, Package } from 'lucide-react'
+import { Package } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import {
@@ -9,18 +9,19 @@ import {
   type PreorderStatus,
 } from '@entities/preorder'
 import { getErrorMessage } from '@shared/api/client'
-import { Chip, InlineAlert } from '@shared/ui'
+import { useNow } from '@shared/lib/useNow'
+import { Chip, InlineAlert, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './PreorderList.css'
 
 const TABS: { value: PreorderStatus; label: string }[] = [
-  { value: 'live', label: '진행 중' },
+  { value: 'live', label: '오늘 오픈' },
   { value: 'soon', label: '오픈 예정' },
   { value: 'done', label: '마감' },
 ]
 
 // 사전예약 제목 + 그 아래 상태 칩(개수) + 카드 그리드. 고른 탭은 URL(?status=)에 남겨
-// 새로고침·뒤로 가기·공유해도 유지된다. 상태는 카드와 같은 규칙(날짜)으로 나눈다.
+// 새로고침·뒤로 가기·공유해도 유지된다. 상태는 카드와 같은 규칙(날짜·시각)으로 나눈다.
 export function PreorderList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { data: preorders = [], isPending, error } = usePreorders()
@@ -28,8 +29,10 @@ export function PreorderList() {
     TABS.find(({ value }) => value === searchParams.get('status'))?.value ??
     'live'
 
+  // 열어 둔 채 오픈·마감 시각을 지나도 탭·카드가 바뀌게 30초마다 다시 센다.
+  const now = useNow(30_000)
   const statusOf = (preorder: PreorderCardData) =>
-    getPreorderSchedule(preorder.opensAt, preorder.closesAt).status
+    getPreorderSchedule(preorder, now).status
   const count = (status: PreorderStatus) =>
     preorders.filter((preorder) => statusOf(preorder) === status).length
   const visible = preorders.filter((preorder) => statusOf(preorder) === active)
@@ -73,9 +76,11 @@ export function PreorderList() {
           {getErrorMessage(error, '사전예약을 불러오지 못했어요.')}
         </InlineAlert>
       ) : isPending ? (
-        <InlineAlert status="info" variant="big" icon={Info}>
-          사전예약을 불러오는 중이에요.
-        </InlineAlert>
+        <SkeletonGroup className={styles.grid}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} tone="dark" aspectRatio="3 / 4" radius={16} />
+          ))}
+        </SkeletonGroup>
       ) : visible.length === 0 ? (
         <InlineAlert status="info" variant="big" icon={Package}>
           해당하는 사전예약이 없어요
@@ -83,7 +88,7 @@ export function PreorderList() {
       ) : (
         <div className={styles.grid}>
           {visible.map((preorder) => (
-            <PreorderCard key={preorder.id} data={preorder} />
+            <PreorderCard key={preorder.id} data={preorder} now={now} />
           ))}
         </div>
       )}

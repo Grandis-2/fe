@@ -14,23 +14,15 @@ export async function setMockLoad(running: boolean) {
 }
 
 export async function startMockWorker() {
-  if (isMockEnabled) {
-    const { startWorker } = await import('./browser')
-    await startWorker('all')
-    // 주소에 ?mockScenario=open 을 붙여 열면 오픈 상황(사전예약 3개 · 5,000명 · 실패 5%)을 흉내 낸다.
-    // 새로 고치면 목 데이터가 처음으로 돌아가므로 다시 붙여 연다.
-    if (
-      new URLSearchParams(window.location.search).get('mockScenario') === 'open'
-    ) {
-      const { startOpenScenario } = await import('./openScenario')
-      startOpenScenario()
-    }
-    return
-  }
-  // 실서버에 붙어도 dev에서는 백엔드에 아직 없는 API(사전예약 프로모션)만 목으로 받는다.
-  // 배포에서는 켜지 않는다 — 없는 API는 실패로 보여야 한다.
-  if (import.meta.env.DEV) {
-    const { startWorker } = await import('./browser')
-    await startWorker('pending')
+  if (!isMockEnabled) return
+  const { startWorker } = await import('./browser')
+  await startWorker()
+  // 주소에 ?mockScenario=open 을 붙여 열면 오픈 상황(사전예약 3개 · 5,000명 · 실패 5%)을 흉내 낸다.
+  // 새로 고치면 목 데이터가 처음으로 돌아가므로 다시 붙여 연다.
+  if (
+    new URLSearchParams(window.location.search).get('mockScenario') === 'open'
+  ) {
+    const { startOpenScenario } = await import('./openScenario')
+    startOpenScenario()
   }
 }

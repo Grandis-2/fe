@@ -16,11 +16,8 @@ export const root = style({
   minHeight: '100vh',
   marginTop: `calc(-1 * ${headerHeight})`,
   paddingTop: headerHeight,
-  background: glowBackground.desktop,
+  background: glowBackground,
   color: color.text.primary,
-  '@media': {
-    [breakpoint.mobile]: { background: glowBackground.mobile },
-  },
 })
 
 export const title = style([
@@ -33,6 +30,15 @@ export const title = style([
     },
   },
 ])
+
+// 카드 위 경고 묶음 — 경고끼리, 그리고 카드와 띄운다. 경고가 없으면 자리를 차지하지 않는다.
+export const notices = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+  marginBottom: spacing[24],
+  selectors: { '&:empty': { display: 'none' } },
+})
 
 // 두 칸은 왼쪽 폼이 숨 쉴 폭이 나올 때만 — 배너(Banner.css.ts)와 같은 1025px 기준.
 // 그보다 좁으면 결제 요약이 폼 아래로 쌓인다.

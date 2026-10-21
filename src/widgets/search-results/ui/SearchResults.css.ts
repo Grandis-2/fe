@@ -65,7 +65,7 @@ export const total = style([
 
 export const count = style({ color: color.text.inverse, fontWeight: 700 })
 
-// 카테고리 둘러보기 제목(모바일 › Apple › 스마트폰)의 구분 화살표 — 글자 크기를 따라간다.
+// 카테고리 둘러보기 제목(모바일 › 스마트폰)의 구분 화살표 — 글자 크기를 따라간다.
 export const chevron = style({
   width: '0.8em',
   height: '0.8em',

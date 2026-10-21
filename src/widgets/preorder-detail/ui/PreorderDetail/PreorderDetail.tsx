@@ -3,10 +3,15 @@ import { useMemo, useState } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 
+import { useSession } from '@entities/auth'
 import {
-  formatPreorderDate,
+  formatModelPeriod,
+  formatPreorderPeriod,
   getPreorderSchedule,
+  kstInstant,
   usePreorder,
+  useSubscribedOpenAlerts,
+  useToggleOpenAlert,
   type Preorder,
   type PreorderModel,
   type PreorderStatus,
@@ -16,20 +21,21 @@ import { joinPreorderQueue } from '@features/preorder-queue'
 import { getErrorMessage } from '@shared/api/client'
 import { PREORDER_PATH, productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
-import { Button, InlineAlert } from '@shared/ui'
-
+import { showToast } from '@shared/model/toastStore'
 import {
-  formatOpenTime,
-  getNotices,
-  getScheduleSteps,
-  monthDay,
-} from '../../lib/preorderDetailCopy'
+  Button,
+  ImageWithFallback,
+  InlineAlert,
+  PageSkeleton,
+} from '@shared/ui'
+
+import { getNotices, getScheduleSteps } from '../../lib/preorderDetailCopy'
 import { PreorderModelSheet } from '../PreorderModelSheet'
 
 import * as styles from './PreorderDetail.css'
 
 const STATUS_LABEL: Record<PreorderStatus, string> = {
-  live: '진행 중',
+  live: '오늘 오픈',
   soon: '오픈 예정',
   done: '종료',
 }
@@ -41,13 +47,13 @@ const CTA_LABEL: Record<PreorderStatus, string> = {
 }
 
 export type PreorderDetailProps = {
-  /** 사전예약 상품 id(라우트 파라미터) */
+  /** 사전예약 홍보 id(라우트 파라미터) */
   preorderId: string
 }
 
-// 사전예약 상품을 불러와 프로모션 상세를 그린다. 사전예약 상품이 아니거나 회차가 없으면 찾을 수 없다고 한다.
+// 사전예약 홍보를 불러와 상세를 그린다. 없거나 기간 밖이면 서버가 404를 준다.
 export function PreorderDetail({ preorderId }: PreorderDetailProps) {
-  const { data: preorder, isPending, error } = usePreorder(preorderId)
+  const { data: preorder, error } = usePreorder(preorderId)
 
   if (error) {
     return (
@@ -56,14 +62,8 @@ export function PreorderDetail({ preorderId }: PreorderDetailProps) {
       </InlineAlert>
     )
   }
-  if (isPending) {
-    return (
-      <InlineAlert status="info">사전예약을 불러오는 중이에요.</InlineAlert>
-    )
-  }
-  if (!preorder) {
-    return <InlineAlert status="error">사전예약을 찾을 수 없어요.</InlineAlert>
-  }
+  // 실패는 위에서 걸렀으니 데이터가 없으면 아직 받는 중이다.
+  if (!preorder) return <PageSkeleton tone="dark" />
   return <PreorderPromotion preorder={preorder} />
 }
 
@@ -76,22 +76,24 @@ export type PreorderPromotionProps = {
 export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
   const navigate = useNavigate()
   const requireLogin = useRequireLogin()
-  const { status, ddayLabel } = getPreorderSchedule(
-    preorder.opensAt,
-    preorder.closesAt,
-  )
+  const { status, ddayLabel } = getPreorderSchedule(preorder)
   const [isSheetOpen, setIsSheetOpen] = useState(false)
-  // ponytail: 오픈 알림 API가 없어 신청 상태를 화면에만 둔다 — 새로고침하면 사라진다. API 연동 시 교체.
-  const [subscribedIds, setSubscribedIds] = useState<ReadonlySet<string>>(
-    () => new Set(),
+  const { isLoggedIn } = useSession()
+  // 오픈 알림은 모델(상품)마다 따로 신청한다.
+  const subscribedIds = useSubscribedOpenAlerts(
+    preorder.models.map((model) => model.productId),
+    isLoggedIn && status === 'soon',
   )
+  const toggleOpenAlert = useToggleOpenAlert()
 
   // 매 렌더 새 Date면 useCountdown의 interval이 매초 다시 걸린다 — 날짜가 바뀔 때만 만든다.
   const openAt = useMemo(
-    () => new Date(`${preorder.opensAt}T${preorder.openTime}:00`),
+    () => kstInstant(preorder.opensAt, preorder.openTime),
     [preorder.opensAt, preorder.openTime],
   )
   const countdown = useCountdown(openAt)
+  // 알림 마감(오픈 1시간 전)부터 오픈까지 — 예약 버튼은 보이되 막아 둔다. 카운트다운이 매초 다시 그려 오픈 순간 풀린다.
+  const isBeforeOpen = status === 'live' && !countdown.isOver
 
   // 예약·오픈 알림은 회원 전용, 마감 후 일반 구매는 상품 페이지로 바로 간다.
   const openSheet = () =>
@@ -100,19 +102,26 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
       : requireLogin(() => setIsSheetOpen(true))
 
   const toggleNotify = (model: PreorderModel) =>
-    setSubscribedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(model.id)) next.delete(model.id)
-      else next.add(model.id)
-      return next
-    })
+    toggleOpenAlert.mutate(
+      { productId: model.id, subscribed: !subscribedIds.has(model.id) },
+      {
+        onError: (caught) =>
+          showToast(getErrorMessage(caught, '오픈 알림을 바꾸지 못했어요.')),
+      },
+    )
+
+  // 모델마다 예약 시간이 다르면 진행 일정의 사전예약 단계 아래에 모델별 기간을 따로 보인다.
+  const modelPeriods = preorder.models.map((model) => ({
+    model,
+    period: formatModelPeriod(preorder, model),
+  }))
+  const hasModelPeriods =
+    new Set(modelPeriods.map(({ period }) => period)).size > 1
 
   const ctaLabel =
     status === 'soon' && subscribedIds.size > 0
       ? `알림 신청 완료 · ${subscribedIds.size}개 모델`
       : CTA_LABEL[status]
-
-  const period = `${formatPreorderDate(preorder.opensAt)} ~ ${formatPreorderDate(preorder.closesAt)}`
 
   return (
     <div className={styles.root}>
@@ -129,30 +138,36 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
             <span className={styles.dday[status]}>{ddayLabel}</span>
           )}
         </div>
-        <h1 className={styles.title}>{preorder.title} 사전예약 프로모션</h1>
-        <div className={styles.period}>
-          {period}
-          {status === 'soon' &&
-            ` · ${monthDay(preorder.opensAt)} ${formatOpenTime(preorder.openTime)} 오픈`}
-        </div>
+        <h1 className={styles.title}>{preorder.title}</h1>
+        <div className={styles.period}>{formatPreorderPeriod(preorder)}</div>
       </div>
 
       <div className={styles.hero}>
-        {preorder.imageSrc && (
-          <img
-            src={preorder.imageSrc}
-            alt={preorder.imageAlt ?? ''}
-            className={
-              styles.heroImage[status === 'done' ? 'dimmed' : 'normal']
-            }
-          />
-        )}
+        <ImageWithFallback
+          src={preorder.imageSrc}
+          alt={preorder.imageAlt ?? ''}
+          className={styles.heroImage[status === 'done' ? 'dimmed' : 'normal']}
+        />
         {status === 'done' && (
           <span className={styles.closedNotice}>사전예약이 마감되었어요</span>
         )}
       </div>
 
       <div className={styles.sections}>
+        {preorder.detailImageSrcs.length > 0 && (
+          <div className={styles.detailImages}>
+            {preorder.detailImageSrcs.map((src, index) => (
+              <img
+                key={src}
+                src={src}
+                alt={`${preorder.title} 안내 ${index + 1}`}
+                loading="lazy"
+                className={styles.detailImage}
+              />
+            ))}
+          </div>
+        )}
+
         {/* 혜택 API가 없어 지금은 비어 온다 — 비면 섹션째 뺀다. */}
         {preorder.benefits.length > 0 && (
           <section className={styles.section}>
@@ -193,6 +208,18 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
               >
                 <span className={styles.stepLabel}>{step.label}</span>
                 <span className={styles.stepDate}>{step.date}</span>
+                {step.isPreorder && hasModelPeriods && (
+                  <ul className={styles.modelPeriods}>
+                    {modelPeriods.map(({ model, period }) => (
+                      <li key={model.id} className={styles.modelPeriod}>
+                        <span className={styles.modelPeriodName}>
+                          {model.name}
+                        </span>
+                        <span className={styles.modelPeriodTime}>{period}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             ))}
           </ol>
@@ -209,7 +236,7 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
       </div>
 
       <div className={styles.bottomBar}>
-        {status === 'soon' && !countdown.isOver && (
+        {(status === 'soon' || isBeforeOpen) && (
           <div className={styles.countdown}>
             <span className={styles.countdownLabel}>오픈까지</span>
             <span className={styles.countdownTime}>
@@ -225,7 +252,12 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
             사전예약은 종료되었어요. 지금은 일반 구매로 만나보세요.
           </div>
         )}
-        <Button size="large" className={styles.cta} onClick={openSheet}>
+        <Button
+          size="large"
+          className={styles.cta}
+          disabled={isBeforeOpen}
+          onClick={openSheet}
+        >
           {ctaLabel}
         </Button>
       </div>

@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 
-import { Info } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import { useSession } from '@entities/auth'
@@ -22,7 +21,13 @@ import { drawPaymentPath, mypagePath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { useCountdown } from '@shared/lib/useCountdown'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, InlineAlert, PollingNotice } from '@shared/ui'
+import {
+  ActionButton,
+  ImageWithFallback,
+  InlineAlert,
+  PageSkeleton,
+  PollingNotice,
+} from '@shared/ui'
 
 import { NOTICES, STEPS } from '../../lib/drawDetailCopy'
 import { getDrawView } from '../../lib/getDrawAction'
@@ -55,12 +60,7 @@ export function DrawDetail({ drawId }: DrawDetailProps) {
         {getErrorMessage(draw.error, '럭키드로우를 불러오지 못했어요.')}
       </InlineAlert>
     )
-  if (!draw.data)
-    return (
-      <InlineAlert status="info" variant="big" icon={Info}>
-        럭키드로우를 불러오는 중이에요.
-      </InlineAlert>
-    )
+  if (!draw.data) return <PageSkeleton />
 
   return (
     <DrawDetailBody
@@ -159,9 +159,10 @@ function DrawDetailBody({
       <section>
         <div className={styles.hero}>
           <div className={styles.imageBox}>
-            {draw.gift.imageUrl && (
-              <img src={draw.gift.imageUrl} alt="" className={styles.image} />
-            )}
+            <ImageWithFallback
+              src={draw.gift.imageUrl}
+              className={styles.image}
+            />
             <span className={styles.imageTag}>LUCKY DRAW</span>
           </div>
 

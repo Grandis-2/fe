@@ -27,3 +27,10 @@ export const reservationStatusTag: Record<
   CANCELING: { label: '취소 처리 중', color: 'gray' },
   CANCELED: { label: '취소 완료', color: 'gray' },
 }
+
+// 구매 확정(결제)이 필요한 단계 — 결제창을 열었다 닫아 결제 진행 중으로 남은 예약도 다시 결제해야 한다.
+// 사전예약 내역의 '구매 확정이 필요해요' 묶음과 헤더·마이페이지 메뉴의 숫자가 같이 쓴다.
+export const NEEDS_PURCHASE: ReservationDisplayStatus[] = [
+  'PAYABLE',
+  'PAYMENT_IN_PROGRESS',
+]

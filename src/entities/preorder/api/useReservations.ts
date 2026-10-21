@@ -3,14 +3,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { keepNewer, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { PreorderStatus } from '@shared/api/types'
 
+import { NEEDS_PURCHASE, type ReservationDetail } from '../model/reservation'
+
 import {
   cancelReservation,
   getMyReservations,
   getReservation,
   getReservationHistory,
 } from './reservation'
-
-import type { ReservationDetail } from '../model/reservation'
 
 // 외부 등록·취소는 서버가 비동기로 끝낸다 — 이 상태면 상세를 다시 물어 바뀐 상태를 받는다.
 const SETTLING: PreorderStatus[] = ['PENDING_SYNC', 'CANCELING']
@@ -38,6 +38,18 @@ export const useMyReservations = ({
     enabled,
     ...queryPolicy.live,
   })
+
+// 구매 확정(결제)이 필요한 사전예약 수 — 헤더 마이페이지 아이콘과 마이페이지 메뉴의 숫자가 같이 써서
+// 둘이 어긋나지 않는다.
+export const usePendingPurchaseCount = (enabled = true) => {
+  const { data } = useMyReservations({ enabled })
+  if (!enabled) return 0
+  return (
+    data?.items.filter(({ displayStatus }) =>
+      NEEDS_PURCHASE.includes(displayStatus),
+    ).length ?? 0
+  )
+}
 
 const settlePollMs = (data: ReservationDetail | undefined) =>
   data && SETTLING.includes(data.status) ? SETTLE_POLL_MS : null
