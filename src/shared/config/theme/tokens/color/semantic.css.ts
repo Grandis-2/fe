@@ -1,6 +1,8 @@
 import { createGlobalTheme, globalStyle } from '@vanilla-extract/css'
 
-export const color = createGlobalTheme(':root', {
+// 밝은 값이 기본이다. 어두운 구간(data-theme="dark") 안에 밝은 조각(주소 검색 모달 등)을 띄울 땐
+// data-theme="light"로 밝은 값을 다시 꽂는다 — 안 그러면 변수가 바깥 어두운 값을 물려받는다.
+export const color = createGlobalTheme(':root, [data-theme="light"]', {
   primary: {
     base: '#3F4891',
     focus: '#282F64',
