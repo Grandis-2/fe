@@ -33,13 +33,7 @@ const withProducts = (data?: ProductListItem[]) => {
     },
   })
   if (data) {
-    queryClient.setQueryData(['products', 'list', { size: 10 }], {
-      page: 0,
-      size: 10,
-      total: data.length,
-      hasNext: false,
-      items: data,
-    })
+    queryClient.setQueryData(['products', 'ranking'], data)
   }
   return (Story: () => React.ReactNode) => (
     <QueryClientProvider client={queryClient}>
@@ -69,10 +63,11 @@ export const Default: Story = {
   decorators: [withProducts(tenProducts)],
 }
 
-export const Loading: Story = {
-  decorators: [withProducts()],
+// 10개보다 적게 오면 제목도 그 수를 따른다. 0개거나 실패면 영역째 숨긴다.
+export const Fewer: Story = {
+  decorators: [withProducts(tenProducts.slice(0, 3))],
 }
 
-export const Empty: Story = {
-  decorators: [withProducts([])],
+export const Loading: Story = {
+  decorators: [withProducts()],
 }
