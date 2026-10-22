@@ -5,6 +5,7 @@ import { ReceiptText } from 'lucide-react'
 import {
   HistoryCard,
   HistoryListSkeleton,
+  isReviewableOrder,
   orderStatusTag,
   useCancelOrder,
   useOrders,
@@ -91,10 +92,6 @@ const toCardItem = (item: OrderItem): ProductPaymentCardItem => ({
   priceLabel: formatWon(item.lineAmount),
 })
 
-// 리뷰는 배송 완료된 일반 구매(장바구니·바로 구매) 주문상품에만 쓴다 — 사전예약·드로우 증정품은 서버가 409로 막는다.
-const isReviewable = ({ status, source }: Order) =>
-  status === 'DELIVERED' && (source === 'CART' || source === 'BUY_NOW')
-
 // 결제 대기 주문 — 장바구니·바로 구매 주문은 여기서 결제(기한 10분 안)·취소한다. 사전예약 주문은 버튼 없이 상태만 보이고
 // 결제·취소는 사전예약 내역에서 한다(주문 응답엔 예약 id가 없다) — 마이페이지 메뉴의 '사전예약 내역' 숫자가 그쪽으로 이끈다.
 export function MypageHistory() {
@@ -131,16 +128,16 @@ export function MypageHistory() {
     ]),
   )
 
-  const renderItem = (order: Order) => (item: OrderItem) => {
-    if (!isReviewable(order))
-      return <ProductPaymentCard product={toCardItem(item)} />
+  // 리뷰 버튼 — 쓴 리뷰가 있으면 내 리뷰 카드의 '리뷰 수정'과 같은 모양이다.
+  const renderReviewButton = (item: OrderItem) => {
     const review = reviewByItem.get(item.orderItemId)
     return (
-      <ProductPaymentCard
-        product={toCardItem(item)}
-        actionLabel={review ? '리뷰 수정' : '리뷰 쓰기'}
-        actionDisabled={myReviews.isPending}
-        onActionClick={() =>
+      <Button
+        size="small"
+        variant={review ? 'subtle' : 'solid'}
+        color={review ? 'cancel' : 'primary'}
+        disabled={myReviews.isPending}
+        onClick={() =>
           openReviewForm({
             orderItemId: item.orderItemId,
             productName: item.productTitle,
@@ -148,9 +145,21 @@ export function MypageHistory() {
             review,
           })
         }
-      />
+      >
+        {review ? '리뷰 수정' : '리뷰 쓰기'}
+      </Button>
     )
   }
+
+  // 리뷰 쓰기·수정 버튼은 가격 밑에 둔다.
+  const renderItem = (order: Order) => (item: OrderItem) => (
+    <ProductPaymentCard
+      product={toCardItem(item)}
+      priceAction={
+        isReviewableOrder(order) ? renderReviewButton(item) : undefined
+      }
+    />
+  )
 
   const orders = data?.items ?? []
   const visibleOrders = orders.filter(

@@ -1,3 +1,5 @@
+import { type ReactNode } from 'react'
+
 import { X } from 'lucide-react'
 import { Link } from 'react-router'
 
@@ -40,6 +42,10 @@ export type ProductPaymentCardProps = {
   onQuantityChange?: (quantity: number) => void
   /** variant가 'cart'일 때만 삭제 버튼을 보여준다. */
   onRemove?: () => void
+  /** 가격 밑에 붙는 버튼(주문 내역의 리뷰 쓰기·수정) — 붙으면 가격은 위 끝, 버튼은 아래 끝으로 갈라진다. cart엔 없다. */
+  priceAction?: ReactNode
+  /** 상품명·옵션 아래 붙는 본문(내 리뷰의 별점·글). cart엔 없다. */
+  children?: ReactNode
   className?: string
 }
 
@@ -62,13 +68,27 @@ export function ProductPaymentCard({
   quantity,
   onQuantityChange,
   onRemove,
+  priceAction,
+  children,
   className,
 }: ProductPaymentCardProps) {
   const isCart = variant === 'cart'
   const isPending = variant === 'preorder-pending'
-  // 그 밖의 variant도 onActionClick을 주면 버튼이 붙는다(주문 내역의 리뷰 쓰기).
-  const showAction = isPending || variant === 'checkout' || !!onActionClick
+  const showAction = isPending || variant === 'checkout'
   const showStepper = isCart && quantity !== undefined && !!onQuantityChange
+
+  // cart 밖에선 상품명·옵션을 한 줄로 자른다 — 셋을 75px 칸에 넣는다.
+  const clamp = !isCart && styles.singleLine
+  const nameNode = productId ? (
+    <Link
+      to={productPath(productId)}
+      className={[styles.nameLink, clamp].filter(Boolean).join(' ')}
+    >
+      {name}
+    </Link>
+  ) : (
+    <div className={[styles.name, clamp].filter(Boolean).join(' ')}>{name}</div>
+  )
 
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
@@ -81,56 +101,90 @@ export function ProductPaymentCard({
             onChange={(event) => onCheckedChange?.(event.target.checked)}
           />
         )}
-        <ImageWithFallback src={imageSrc} className={styles.thumbnail} />
-        <div
-          className={[styles.body_, isCart && styles.bodyCart]
+        <ImageWithFallback
+          src={imageSrc}
+          className={[styles.thumbnail, !isCart && styles.thumbnailCompact]
             .filter(Boolean)
             .join(' ')}
-        >
-          <div className={styles.infoGroup}>
-            <div>
-              <div className={styles.titleRow}>
-                {productId ? (
-                  <Link to={productPath(productId)} className={styles.nameLink}>
-                    {name}
-                  </Link>
-                ) : (
-                  <div className={styles.name}>{name}</div>
-                )}
-                {isCart && onRemove && (
-                  <button
-                    type="button"
-                    className={styles.remove}
-                    aria-label={`${name} 삭제`}
-                    onClick={onRemove}
-                  >
-                    <X size={18} aria-hidden="true" />
-                  </button>
+        />
+        {isCart ? (
+          // 장바구니 — 아래 줄에 수량 조절기와 가격, 상품명 줄 오른쪽에 삭제 버튼.
+          <div className={styles.body_}>
+            <div className={styles.infoGroup}>
+              <div>
+                <div className={styles.titleRow}>
+                  {nameNode}
+                  {onRemove && (
+                    <button
+                      type="button"
+                      className={styles.remove}
+                      aria-label={`${name} 삭제`}
+                      onClick={onRemove}
+                    >
+                      <X size={18} aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
+                {modelNumber && (
+                  <div className={styles.modelNumber}>{modelNumber}</div>
                 )}
               </div>
-              {modelNumber && (
-                <div className={styles.modelNumber}>{modelNumber}</div>
-              )}
+              <div className={styles.optionSummary}>{optionSummary}</div>
             </div>
-            <div className={styles.optionSummary}>{optionSummary}</div>
+            <div className={styles.quantityPriceRow}>
+              {showStepper ? (
+                <QuantityStepper
+                  value={quantity}
+                  onChange={onQuantityChange}
+                  label={name}
+                />
+              ) : (
+                <span className={styles.quantityLabel}>{quantityLabel}</span>
+              )}
+              <div className={styles.priceActionGroup}>
+                <span className={styles.price}>
+                  <PriceText value={priceLabel} />
+                </span>
+              </div>
+            </div>
           </div>
-          <div className={styles.quantityPriceRow}>
-            {showStepper ? (
-              <QuantityStepper
-                value={quantity}
-                onChange={onQuantityChange}
-                label={name}
-              />
-            ) : (
-              <span className={styles.quantityLabel}>{quantityLabel}</span>
-            )}
-            <div className={styles.priceActionGroup}>
+        ) : (
+          <>
+            <div className={styles.details}>
+              <div className={styles.summary}>
+                {nameNode}
+                <div
+                  className={[styles.optionSummary, styles.singleLine].join(
+                    ' ',
+                  )}
+                >
+                  {optionSummary}
+                </div>
+                {quantityLabel && (
+                  <span
+                    className={[
+                      styles.quantityLabel,
+                      styles.summaryQuantity,
+                    ].join(' ')}
+                  >
+                    {quantityLabel}
+                  </span>
+                )}
+              </div>
+              {children}
+            </div>
+            <div
+              className={[styles.side, priceAction && styles.sideSplit]
+                .filter(Boolean)
+                .join(' ')}
+            >
               <span className={styles.price}>
                 <PriceText value={priceLabel} />
               </span>
+              {priceAction}
             </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
       {showAction && (
         <div className={styles.actionRow}>
