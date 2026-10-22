@@ -60,8 +60,10 @@ const imageUrls = (value: AdminPromotionFormValue) =>
 
 /** 저장된 값과 비교해 바뀐 섹션과 저장 줄에 보일 요약을 만든다 */
 function diff(saved: AdminPromotionFormValue, value: AdminPromotionFormValue) {
+  // 저장은 이름을 다듬어(trim) 보내므로 앞뒤 공백만 다른 이름은 바뀐 게 아니다.
+  const nameChanged = saved.name.trim() !== value.name.trim()
   const notes: string[] = []
-  if (saved.name !== value.name) notes.push('사전예약명')
+  if (nameChanged) notes.push('사전예약명')
   if (saved.startDate !== value.startDate)
     notes.push(
       `노출 시작 ${formatMonthDay(saved.startDate)} → ${formatMonthDay(value.startDate)}`,
@@ -88,7 +90,7 @@ function diff(saved: AdminPromotionFormValue, value: AdminPromotionFormValue) {
 
   const changed: Record<SectionKey, boolean> = {
     basic:
-      saved.name !== value.name ||
+      nameChanged ||
       saved.startDate !== value.startDate ||
       saved.endDate !== value.endDate,
     images,

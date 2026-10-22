@@ -6,6 +6,7 @@ import { showToast } from '@shared/model/toastStore'
 
 import {
   reprocessProgress,
+  type RegisterCounts,
   type ReprocessProgress,
   type ReprocessRun,
 } from './reprocessProgress'
@@ -22,15 +23,15 @@ const resultMessage = (run: ReprocessRun, progress: ReprocessProgress) =>
  * 진행은 대시보드가 들고 있고, 닫힌 채로 끝나면 토스트로 한 번 알린다.
  */
 export function useReprocessRun(
-  /** 재처리 범위의 재처리 필요 건수(고른 사전예약 또는 전체). 못 받았으면 null */
-  deadLetter: number | null,
-  /** 마지막으로 집계를 받은 시각 */
-  now: number,
+  /** 재처리 범위(고른 사전예약 또는 전체)의 외부 등록 집계. 못 받았으면 null */
+  counts: RegisterCounts | null,
+  /** 그 집계를 낸 쿼리의 갱신 시각 — 다른 쿼리(추첨 목록 등)의 시각을 넣으면 안 된다 */
+  countsAt: number,
 ) {
   const mutation = useReprocessFailedRegistrations()
   const [run, setRun] = useState<ReprocessRun | null>(null)
   const [open, setOpen] = useState(false)
-  const progress = run && reprocessProgress(run, deadLetter, now)
+  const progress = run && reprocessProgress(run, counts, countsAt)
   const finished = progress?.finished ?? false
 
   // 같은 재처리를 두 번 알리지 않게 알린 것의 시작 시각을 남긴다.
@@ -61,6 +62,8 @@ export function useReprocessRun(
     },
     close: () => {
       setOpen(false)
+      // 요청이 나가 있으면 그대로 둔다 — reset하면 결과를 받을 콜백이 떨어지고 pending이 풀려 중복 제출이 열린다.
+      if (mutation.isPending) return
       // 진행 중이 아니면 다음엔 확인부터 연다.
       if (!run || finished) {
         setRun(null)

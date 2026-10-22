@@ -54,6 +54,17 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
     (a, b) => b.waiting - a.waiting,
   )
   const maxCredit = rates.data?.maxGlobalCredit ?? 1500
+  // 전체 상한은 대기열 상품과 상한을 정한 상품 모두에 건다. 둘 중 하나라도 못 받았으면 빠진
+  // 상품이 있을 수 있어 null로 두고 폼을 막는다.
+  const allProductIds =
+    view && rates.data
+      ? [
+          ...new Set([
+            ...products.map((product) => product.productId),
+            ...rates.data.products.map((product) => product.productId),
+          ]),
+        ]
+      : null
 
   const refresh = () => {
     void status.refetch()
@@ -136,7 +147,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
             loading={status.isPending}
             globalSetting={rates.data?.globalCredit}
             maxCredit={maxCredit}
-            productIds={products.map((product) => product.productId)}
+            productIds={allProductIds}
             admission={admission}
             inputId={SPEED_INPUT_ID}
           />

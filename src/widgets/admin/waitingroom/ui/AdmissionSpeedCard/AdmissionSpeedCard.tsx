@@ -28,8 +28,11 @@ export type AdmissionSpeedCardProps = {
   globalSetting: WaitingroomSetting | undefined
   /** 정할 수 있는 최댓값(운영값 조회의 maxGlobalCredit) */
   maxCredit: number
-  /** 전체 상한을 바꾸면 함께 맞출 상품들 */
-  productIds: readonly string[]
+  /**
+   * 전체 상한을 바꾸면 함께 맞출 상품들. 목록을 못 받았으면 null — 빠진 상품의 상한이 남으니
+   * 바꾸지 못하게 막는다.
+   */
+  productIds: readonly string[] | null
   admission: AdmissionChange
   /** 맨 위 판정의 '속도 낮추기'가 이 칸으로 옮겨 온다 */
   inputId: string
@@ -79,6 +82,7 @@ export function AdmissionSpeedCard({
   // 지금 값을 받기 전(조회 중·실패)엔 무엇을 덮어쓰는지 모르니 바꾸지 못하게 한다.
   const canApply =
     globalSetting !== undefined &&
+    productIds !== null &&
     inRange &&
     draftValue !== current &&
     !blocked &&
@@ -227,7 +231,7 @@ export function AdmissionSpeedCard({
         className={styles.control}
         onSubmit={(event) => {
           event.preventDefault()
-          if (!canApply || draftValue === null) return
+          if (!canApply || draftValue === null || productIds === null) return
           admission.apply(
             { kind: 'globalCredit', value: draftValue, productIds },
             '전체 상한과 모든 상품 상한을 바꿨습니다.',
@@ -320,8 +324,9 @@ export function AdmissionSpeedCard({
           <Button
             variant="subtle"
             size="small"
-            disabled={admission.isPending}
-            onClick={() =>
+            disabled={admission.isPending || productIds === null}
+            onClick={() => {
+              if (productIds === null) return
               admission.confirm(
                 '전체 상한을 기본값으로 되돌릴까요?',
                 `전체 상한과 모든 상품 상한이 ${WAITINGROOM_DEFAULTS.globalCredit}명/초로 돌아가고 1초 안에 반영됩니다.`,
@@ -332,7 +337,7 @@ export function AdmissionSpeedCard({
                     '전체 상한과 모든 상품 상한을 기본값으로 되돌렸습니다.',
                   ),
               )
-            }
+            }}
           >
             기본값({WAITINGROOM_DEFAULTS.globalCredit}명/초)으로
           </Button>

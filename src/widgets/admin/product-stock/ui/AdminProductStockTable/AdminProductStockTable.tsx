@@ -81,7 +81,9 @@ export function AdminProductStockTable({
       : rows.filter((row) => stockLevelOf(row) === target).length
   const visibleRows =
     filter === 'all' ? rows : rows.filter((row) => stockLevelOf(row) === filter)
-  const driftIds = new Set((drifts.data ?? []).map((item) => item.optionId))
+  const driftIds = new Set(
+    (drifts.data?.options ?? []).map((item) => item.optionId),
+  )
 
   const confirmCorrect = (drift: AdminStockDrift, row?: AdminProductStock) => {
     correct.reset()
@@ -194,7 +196,7 @@ export function AdminProductStockTable({
     },
   ]
 
-  const firstDrift = drifts.data?.[0]
+  const firstDrift = drifts.data?.options[0]
   const firstDriftRow = rows.find(
     (row) => row.optionId === firstDrift?.optionId,
   )
@@ -243,7 +245,7 @@ export function AdminProductStockTable({
       {firstDrift && (
         <NoticeBanner
           tone="warning"
-          title={`오늘 새벽 장부 대조에서 주문과 다른 옵션 ${drifts.data?.length}개`}
+          title={`오늘 새벽 장부 대조에서 주문과 다른 옵션 ${drifts.data?.options.length}개`}
           description={`${firstDriftRow ? optionName(firstDriftRow) : '옵션'} — 결제 대기 장부 ${formatNumber(firstDrift.stockReserved)} / 주문 기준 ${formatNumber(firstDrift.expectedReserved)}. 보정하면 결제 대기·판매 완료만 주문 기준으로 바뀌고 전체 수량은 그대로예요.`}
           action={
             <Button
@@ -268,6 +270,12 @@ export function AdminProductStockTable({
             drifts.error,
             '장부 대조 결과를 불러오지 못했습니다.',
           )}
+        </InlineAlert>
+      )}
+      {drifts.data?.truncated && (
+        <InlineAlert status="warning">
+          어긋난 옵션이 1000개를 넘어 앞의 1000개만 확인했어요. 이 상품에 어긋난
+          옵션이 없어도 빠졌을 수 있어요.
         </InlineAlert>
       )}
 

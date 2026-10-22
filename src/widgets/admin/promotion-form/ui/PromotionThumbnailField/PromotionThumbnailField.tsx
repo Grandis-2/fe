@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 import { ImagePlus } from 'lucide-react'
 
@@ -28,6 +28,10 @@ export function PromotionThumbnailField({
   const { create, release } = useObjectUrls()
   // 올리는 사이 다른 사진으로 바꾸거나 지우면 늦게 끝난 결과가 덮어쓰지 않게 한다.
   const currentIdRef = useRef<string | null>(null)
+  // 바깥(되돌리기 등)에서 값이 다른 사진으로 바뀌면 올리던 사진의 결과는 버린다.
+  useEffect(() => {
+    if (value?.id !== currentIdRef.current) currentIdRef.current = null
+  }, [value])
 
   const pick = (files: FileList | null) => {
     const file = files?.[0]

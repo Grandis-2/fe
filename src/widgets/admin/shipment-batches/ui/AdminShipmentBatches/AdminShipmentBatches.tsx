@@ -96,8 +96,9 @@ export function AdminShipmentBatches({ productId }: AdminShipmentBatchesProps) {
           </>
         ) : (
           <ShipmentBatchEditor
-            // 서버 값이 바뀌면(저장·다른 관리자) 초안을 새로 채운다.
-            key={shipmentBatches.dataUpdatedAt}
+            // 서버 내용이 바뀌면(저장·다른 관리자) 초안을 새로 채운다. 같은 내용을 다시 받은 것만으론
+            // 편집 중인 초안을 지우지 않게 시각이 아닌 내용으로 본다.
+            key={JSON.stringify(batches)}
             batches={batches}
             saving={save.isPending}
             saveError={save.error}
@@ -115,9 +116,16 @@ export function AdminShipmentBatches({ productId }: AdminShipmentBatchesProps) {
 
   return (
     <div className={styles.root}>
+      {/* 상품을 못 받으면 오픈 여부를 몰라 편집기는 띄우지 않는다 — 받은 차수만 읽기로 보인다. */}
+      {product.isError && shipmentBatches.data && (
+        <InlineAlert status="warning">
+          {getErrorMessage(product.error, '상품 정보를 불러오지 못했습니다.')}{' '}
+          이전에 불러온 차수를 표시하고 있습니다.
+        </InlineAlert>
+      )}
       <Table
         columns={readColumns}
-        rows={[]}
+        rows={shipmentBatches.data ?? []}
         rowKey={(batch) => String(batch.batchNumber)}
         // 조회 실패를 '차수 없음'으로 보이면 운영 판단이 정반대가 된다.
         // 회차가 없으면 조회를 안 해 계속 pending이다 — 그때는 로딩이 아니라 안내를 띄운다.

@@ -41,14 +41,19 @@ export function drawTimingOf(
 ): { text: string; soon: boolean } {
   const opensIn = Date.parse(draw.opensAt) - now
   const closesIn = Date.parse(draw.closesAt) - now
+  // 단계는 목록을 받은 때의 값이라, 화면을 열어 둔 채 경계를 넘으면 시각만 지나 있다 — 그러면 지난 쪽으로 말한다.
   if (draw.phase === 'SCHEDULED') {
-    return { text: `${formatDistance(opensIn)} 뒤 시작`, soon: false }
+    return opensIn > 0
+      ? { text: `${formatDistance(opensIn)} 뒤 시작`, soon: false }
+      : { text: `${formatDistance(opensIn)} 전 시작`, soon: false }
   }
   if (draw.phase === 'OPEN') {
-    return {
-      text: `${formatDistance(closesIn)} 뒤 마감`,
-      soon: closesIn < CLOSING_SOON_MS,
-    }
+    return closesIn > 0
+      ? {
+          text: `${formatDistance(closesIn)} 뒤 마감`,
+          soon: closesIn < CLOSING_SOON_MS,
+        }
+      : { text: `${formatDistance(closesIn)} 전 마감`, soon: false }
   }
   return { text: `${formatDistance(closesIn)} 전 마감`, soon: false }
 }

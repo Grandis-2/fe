@@ -6,6 +6,10 @@ import type { Sample } from '@shared/lib/samples'
  */
 export const CONGESTION_WINDOW_MS = 30_000
 
+// 기간 안의 표본이 이 비율만큼 덮어야 그 기간으로 잰다. 폴링이 끊기면 기록 앞부분과 사이가 떠서
+// 짧은 구간 값으로 판단하지 않게 한다.
+const COVERAGE = 0.9
+
 /** 집계 하나에서 뽑은 세 값 — 모두 누적·현재 건수다 */
 export type FlowCounts = {
   /** 지금까지 접수된 예약(모든 상태 합) */
@@ -64,8 +68,6 @@ export function admissionSignals(
 ): AdmissionSignals {
   const last = samples.at(-1)
   if (!last) return EMPTY
-  const first = samples[0]
-
   let from = 0
   let limit: AdmissionSignals['limit'] = null
   let current = {
@@ -87,7 +89,7 @@ export function admissionSignals(
     let rising = sample.value.backlog > base.value.backlog
     for (let i = from + 1; rising && i <= index; i += 1)
       rising = samples[i].value.backlog >= samples[i - 1].value.backlog
-    const congested = sample.at - first.at >= windowMs && rising
+    const congested = seconds * 1000 >= windowMs * COVERAGE && rising
     current = {
       received: rate('received'),
       processed: rate('processed'),
@@ -98,8 +100,9 @@ export function admissionSignals(
     if (congested) limit = { perSecond: current.processed, at: sample.at }
   })
 
-  const span = last.at - first.at
   const measured = samples.length >= 2 && current.seconds > 0
+  // 판단은 마지막 표본의 기간이 얼마나 채워졌는지로 한다(처음부터 쌓인 기록이 아니라).
+  const coveredMs = current.seconds * 1000
   return {
     at: last.at,
     coveredSeconds: Math.round(current.seconds),
@@ -109,8 +112,8 @@ export function admissionSignals(
     backlogPerMinute: measured
       ? (current.backlogDelta / current.seconds) * 60
       : null,
-    judged: span >= windowMs,
-    judgedInSeconds: Math.max(0, Math.ceil((windowMs - span) / 1000)),
+    judged: coveredMs >= windowMs * COVERAGE,
+    judgedInSeconds: Math.max(0, Math.ceil((windowMs - coveredMs) / 1000)),
     congested: current.congested,
     limit,
   }

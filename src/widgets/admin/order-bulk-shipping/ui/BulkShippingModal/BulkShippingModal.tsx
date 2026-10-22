@@ -62,6 +62,14 @@ export function BulkShippingModal({
     return () => window.removeEventListener('beforeunload', warn)
   }, [running])
 
+  // 뒤로 가기 같은 앱 안 이동은 beforeunload가 안 뜨니, 창이 사라지면 남은 건을 멈춘다.
+  useEffect(
+    () => () => {
+      stopRef.current = true
+    },
+    [],
+  )
+
   const run = (orderIds: string[], why: string) => {
     // 다시 보내는 건은 지난 결과를 지우고 새 결과로 채운다.
     const kept = results.filter(({ orderId }) => !orderIds.includes(orderId))

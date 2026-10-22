@@ -93,4 +93,19 @@ describe('admissionSignals', () => {
     expect(signals.congested).toBe(false)
     expect(signals.limit).toEqual({ perSecond: 30, at: 30_000 })
   })
+
+  it('폴링이 끊긴 뒤에는 새 30초가 찰 때까지 판단하지 않는다', () => {
+    // 0~20초는 밀리다가, 200초에 다시 받았다 — 앞 기록으로 밀림이라 하면 안 된다.
+    const signals = admissionSignals([
+      ...[0, 5, 10, 15, 20].map((sec, i) => ({
+        at: sec * 1000,
+        value: { received: i * 100, processed: i * 50, backlog: 100 + i * 50 },
+      })),
+      { at: 200_000, value: { received: 900, processed: 400, backlog: 400 } },
+      { at: 205_000, value: { received: 950, processed: 430, backlog: 450 } },
+    ])
+    expect(signals.judged).toBe(false)
+    expect(signals.judgedInSeconds).toBe(25)
+    expect(signals.congested).toBe(false)
+  })
 })

@@ -86,8 +86,12 @@ export const useUpdateAdminPromotion = (promotionId: string) => {
   return useMutation({
     mutationFn: (value: AdminPromotionFormValue) =>
       updateAdminPromotion(promotionId, toPromotionRequest(value)),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ADMIN_PROMOTIONS_KEY }),
+    onSuccess: (saved) => {
+      // 응답이 방금 저장된 값이라 그대로 상세 캐시에 넣는다 — 이어지는 조회가 실패해도
+      // 수정 폼의 기준값이 저장 전 값으로 되돌아가지 않게.
+      queryClient.setQueryData([...ADMIN_PROMOTIONS_KEY, promotionId], saved)
+      return queryClient.invalidateQueries({ queryKey: ADMIN_PROMOTIONS_KEY })
+    },
   })
 }
 

@@ -27,7 +27,9 @@ const openEndWeight = (batches: AdminShipmentBatch[], issuedCount: number) => {
       (sum, batch) => sum + (batch.positionTo ?? 0) - batch.positionFrom + 1,
       0,
     ) / Math.max(1, sized.length)
-  const last = batches[batches.length - 1]
+  // 차수가 없으면 꼬리를 그릴 게 없다(표는 빈 안내를 띄운다).
+  const last = batches.at(-1)
+  if (!last) return 1
   return Math.max(average, issuedInBatch(last, issuedCount), 1)
 }
 

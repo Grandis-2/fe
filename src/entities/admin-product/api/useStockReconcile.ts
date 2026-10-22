@@ -7,8 +7,9 @@ import { correctStockOption, getLatestStockReconcileRun } from './adminStock'
 import { adminProductStockKey, stockReconcileRunKey } from './keys'
 
 /**
- * 마지막 장부 대조에서 이 상품의 어긋난 옵션 중 아직 보정하지 않은 것. 대조가 한 번도
- * 끝나지 않았으면(404) 빈 목록이다 — 알릴 게 없는 것과 같다.
+ * 마지막 장부 대조에서 이 상품의 어긋난 옵션 중 아직 보정하지 않은 것(options)과, 대조
+ * 결과가 잘렸는지(truncated). 대조가 한 번도 끝나지 않았으면(404) 빈 목록이다 — 알릴 게
+ * 없는 것과 같다.
  *
  * ponytail: 전체 결과(최대 1000개)를 받아 상품으로 거른다. 상품별 조회가 생기면 바꾼다.
  */
@@ -22,10 +23,13 @@ export const useStockDrifts = (productId: string) =>
         }
         throw caught
       }),
-    select: (run) =>
-      (run?.options ?? []).filter(
+    select: (run) => ({
+      options: (run?.options ?? []).filter(
         (option) => option.productId === productId && !option.correctedAt,
       ),
+      // 어긋난 옵션이 1000개를 넘으면 앞 1000개만 와서, 이 상품의 어긋남이 빠졌을 수 있다.
+      truncated: run?.truncated ?? false,
+    }),
     ...queryPolicy.live,
   })
 
