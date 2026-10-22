@@ -279,6 +279,8 @@ export type ProductRegistrationRequest = {
   basePrice: number
   /** 정수 %, 0~99. 생략하면 0이고 모든 옵션에 같이 걸린다(보증 금액엔 안 걸림) */
   discountRate?: number
+  /** 보증. 생략하면 팔지 않는다. 할인은 걸리지 않는다 */
+  warranty?: { offered: boolean; surcharge?: number }
   /** 생략하면 서버가 모든 조합을 만든다 */
   optionAxes?: RegistrationOptionAxis[]
   /** 조합별 조정(제외·SKU·재고). 생략한 조합도 만들어진다 */
@@ -362,6 +364,18 @@ export type ProductRegistrationResponse = {
 export type PreorderCampaignRequest = {
   opensAt: string
   closesAt: string
+}
+
+/** 모집 일정 조회·변경·마감 응답(preorder 서비스) */
+export type PreorderCampaignResponse = {
+  productId: string
+  opensAt: string
+  /** 마감 시각(제외). 조기 마감하면 그 시각으로 당겨진다 */
+  closesAt: string
+  saleStatus: PreorderSaleStatus
+  /** 지금까지 발급한 순번 수(취소 포함). 다음 순번은 issuedCount + 1 */
+  issuedCount: number
+  openNotifiedAt: string | null
 }
 
 /**

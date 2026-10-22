@@ -20,6 +20,7 @@ import { toRegistrationRequest } from '../model/registration'
 import {
   closePreorderCampaign,
   getAdminProduct,
+  getPreorderCampaign,
   getRegistrationStatus,
   registerAdminProduct,
   setAdminProductSaleStatus,
@@ -28,6 +29,7 @@ import {
 import { getAdminProductStock } from './adminStock'
 import {
   ADMIN_PRODUCTS_KEY,
+  adminPreorderCampaignKey,
   adminProductKey,
   adminProductStockKey,
 } from './keys'
@@ -68,6 +70,21 @@ export const useAdminProductStock = (productId: string) =>
     queryFn: ({ signal }) => getAdminProductStock(productId, signal),
     select: (response) => response.items,
     ...queryPolicy.live,
+  })
+
+/**
+ * 사전예약 회차 — 상품 상세의 campaign에 없는 발급 순번 수(issuedCount)를 여기서 받는다.
+ * 회차가 없으면(일반 상품·등록 직후) 404라, 사전예약일 때만 부르도록 enabled로 막는다.
+ */
+export const useAdminPreorderCampaign = (
+  productId: string,
+  { enabled = true }: { enabled?: boolean } = {},
+) =>
+  useQuery({
+    queryKey: adminPreorderCampaignKey(productId),
+    queryFn: ({ signal }) => getPreorderCampaign(productId, signal),
+    ...queryPolicy.live,
+    enabled,
   })
 
 // 같은 키 요청이 처리 중(409 REGISTRATION_IN_PROGRESS)이면 잠시 뒤 같은 키로 다시

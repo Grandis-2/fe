@@ -265,3 +265,6 @@ export const brandFilterOptions = PRODUCT_BRANDS.map((name) => ({
 
 /** 모델명 길이 — 서버가 1~40자만 받는다 */
 export const MODEL_NAME_MAX = 40
+
+/** 상품 설명 길이 — 서버가 5,000자까지 받는다 */
+export const DESCRIPTION_MAX = 5000

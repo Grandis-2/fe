@@ -381,8 +381,8 @@ export const CreateExcludesVariant: Story = {
 }
 
 /**
- * 사전예약 오픈 3분 전부터는 공개 여부 말고는 서버가 409로 거절한다 — 폼 전체를 읽기
- * 전용으로 두고 이유를 알린다. 취소·미리보기는 눌려야 한다.
+ * 사전예약 오픈 3분 전부터는 공개 여부와 사진 말고는 서버가 409로 거절한다 — 나머지는
+ * 읽기 전용으로 두고 이유를 알린다. 사진은 고쳐서 저장할 수 있다.
  */
 export const EditLocked: Story = {
   args: {
@@ -390,19 +390,52 @@ export const EditLocked: Story = {
     defaultValue: { ...savedProduct, isPreorder: true },
     existingIds: savedIds,
     lockReason:
-      '사전예약은 오픈 3분 전부터 상품 내용을 바꿀 수 없습니다. 공개 전환과 판매 중지는 오른쪽 위 ⋮ 메뉴에서 합니다.',
+      '오픈 3분 전부터 잠겼어요. 가격·옵션·판매·접수 기간은 바꿀 수 없고, 공개 여부는 오른쪽 위 ⋮ 메뉴에서 바꿔요.',
   },
   play: async ({ canvas, args }) => {
     await expect(
-      canvas.getByText(/오픈 3분 전부터 상품 내용을 바꿀 수 없습니다/),
+      canvas.getByText('공개 여부와 사진만 고칠 수 있어요'),
     ).toBeVisible()
     await expect(canvas.getByLabelText(/상품명/)).toBeDisabled()
     await expect(
-      canvas.getByRole('button', { name: '수정하기' }),
+      canvas.getByRole('textbox', { name: '상품 설명' }),
     ).toBeDisabled()
+    await expect(canvas.getAllByText('잠김').length).toBeGreaterThan(0)
 
-    await userEvent.click(canvas.getByRole('button', { name: '취소' }))
-    await expect(args.onCancel).toHaveBeenCalled()
+    await userEvent.click(canvas.getByRole('button', { name: '사진 저장' }))
+    await expect(args.onSubmit).toHaveBeenCalled()
+  },
+}
+
+/** 오픈 3분 전이 다가오면 잠기는 시각을 미리 알린다 */
+export const EditLocksSoon: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: { ...savedProduct, isPreorder: true },
+    existingIds: savedIds,
+    locksAt: new Date(2026, 9, 25, 9, 57),
+  },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByText('오픈 3분 전(10월 25일 09:57)부터 잠겨요'),
+    ).toBeVisible()
+    await expect(canvas.getByLabelText(/상품명/)).toBeEnabled()
+  },
+}
+
+/** 서버와 다른 곳을 저장 줄에 섹션 이름으로 보여준다 */
+export const EditPendingChanges: Story = {
+  args: {
+    mode: 'edit',
+    defaultValue: savedProduct,
+    existingIds: savedIds,
+    pendingChanges: (value) =>
+      value.name === savedProduct.name ? [] : ['기본 정보'],
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText(/저장하지 않은 변경/)).toBeNull()
+    await userEvent.type(canvas.getByLabelText(/상품명/), ' 2')
+    await expect(canvas.getByText(/저장하지 않은 변경 1곳/)).toBeVisible()
   },
 }
 
@@ -534,7 +567,10 @@ export const EditRequiresBasics: Story = {
     await expect(args.onSubmit).not.toHaveBeenCalled()
     await expect(canvas.getByText('모델명을 적어 주세요.')).toBeVisible()
     await expect(canvas.getByText('브랜드를 골라 주세요.')).toBeVisible()
-    await expect(canvas.getByLabelText(/모델명/)).toHaveFocus()
+    // 화면 순서(상품명 · 브랜드 · 모델명)상 첫 오류 칸인 브랜드로 데려간다.
+    await expect(
+      canvas.getByRole('button', { name: /브랜드 선택/ }),
+    ).toHaveFocus()
   },
 }
 

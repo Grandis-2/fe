@@ -8,6 +8,7 @@ import {
   productImageStore,
   toBundle,
 } from '../fixtures/admin-product-image'
+import { reservationStore } from '../fixtures/admin-reservation'
 import { shipmentBatchStore } from '../fixtures/admin-shipment'
 import { adminStockStore, findStockItem } from '../fixtures/admin-stock'
 import { fail, invalid, ok } from '../response'
@@ -25,6 +26,7 @@ import type {
   OptionValueEditRequest,
   PageResponse,
   PreorderCampaignRequest,
+  PreorderCampaignResponse,
   PreorderSaleStatus,
   ProductBrandCode,
   ProductImageAddRequest,
@@ -99,6 +101,8 @@ const STORAGE_PATTERN = /^\d+(MB|GB|TB)$/i
 const basePrices = new Map<string, number>()
 // ponytail: 할인율은 저장·응답만 하고 목의 옵션 가격엔 걸지 않는다. 할인가를 목에서 봐야 하면 recompute에 넣는다.
 const discountRates = new Map<string, number>()
+/** 보증 — 저장소 모양에 칸이 없어 따로 들고 있는다. 없으면 팔지 않는다 */
+const warranties = new Map<string, { offered: boolean; surcharge: number }>()
 const isDiscountRate = (value: unknown) =>
   Number.isInteger(value) && (value as number) >= 0 && (value as number) <= 99
 const surcharges = new Map<string, number>()
@@ -241,7 +245,10 @@ function toAdminProductResponse(
       visible: detail.displayStatus === 'PUBLISHED',
       basePrice: baseOf(detail),
       discountRate: discountRates.get(detail.productId) ?? 0,
-      warranty: { offered: false, surcharge: 0 },
+      warranty: warranties.get(detail.productId) ?? {
+        offered: false,
+        surcharge: 0,
+      },
       campaign: preorder
         ? {
             opensAt: detail.sale.openAt,
@@ -298,6 +305,24 @@ const readBody = <T>(request: Request) =>
 
 const findProduct = (productId: string) =>
   adminProductStore.find((product) => product.productId === productId)
+
+/** 회차 응답. 오픈 전에는 순번을 발급하지 않았다 */
+const campaignOf = (product: AdminProductDetail): PreorderCampaignResponse => ({
+  productId: product.productId,
+  opensAt: product.sale.openAt,
+  closesAt: product.sale.closeAt ?? product.sale.openAt,
+  saleStatus: product.saleStatus as PreorderSaleStatus,
+  issuedCount:
+    product.saleStatus === 'BEFORE_OPEN'
+      ? 0
+      : Math.max(
+          0,
+          ...reservationStore
+            .filter((item) => item.productId === product.productId)
+            .map((item) => item.queuePosition),
+        ),
+  openNotifiedAt: null,
+})
 
 /*
  * 등록 키별 기록. 같은 키로 다시 오면 새로 만들지 않고 처음 상품을 돌려준다. 준비
@@ -425,6 +450,12 @@ function createFromRegistration(
   }))
   basePrices.set(productId, body.basePrice)
   discountRates.set(productId, body.discountRate ?? 0)
+  if (body.warranty?.offered) {
+    warranties.set(productId, {
+      offered: true,
+      surcharge: body.warranty.surcharge ?? 0,
+    })
+  }
 
   const combos = optionGroups.reduce<Record<string, string>[]>(
     (acc, group) =>
@@ -780,6 +811,23 @@ export const adminProductHandlers: RequestHandler[] = [
       if (body.description !== undefined) {
         product.summary = body.description || null
       }
+      if (body.warranty !== undefined) {
+        const { offered, surcharge } = body.warranty
+        // 팔지 않는데 금액을 보내면 400, 금액을 생략하면 기존 값을 유지한다.
+        if (!offered && (surcharge ?? 0) > 0) {
+          return invalid([
+            {
+              field: 'warranty.surcharge',
+              message: '보증을 팔지 않으면 0이어야 합니다.',
+            },
+          ])
+        }
+        const current = warranties.get(product.productId)?.surcharge ?? 0
+        warranties.set(product.productId, {
+          offered,
+          surcharge: offered ? (surcharge ?? current) : 0,
+        })
+      }
       if (body.discountRate !== undefined) {
         if (!isDiscountRate(body.discountRate)) {
           return invalid([
@@ -1073,6 +1121,16 @@ export const adminProductHandlers: RequestHandler[] = [
     },
   ),
 
+  // 회차 조회 — 발급한 순번 수는 예약 목업의 가장 큰 순번으로 맞춘다(예약 현황과 같게).
+  http.get(
+    url('/api/v1/admin/preorders/products/:productId/campaign'),
+    ({ params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product || product.saleMode !== 'PREORDER') return notFound()
+      return ok(campaignOf(product))
+    },
+  ),
+
   // 일정은 preorder 서비스 경로다. 목업은 상품 저장소의 판매 시각을 같이 쓴다.
   http.put(
     url('/api/v1/admin/preorders/products/:productId/campaign'),
@@ -1113,14 +1171,7 @@ export const adminProductHandlers: RequestHandler[] = [
       product.sale.closeAt = body.closesAt
       product.openAt = body.opensAt
       product.updatedAt = new Date().toISOString()
-      return ok({
-        productId: product.productId,
-        opensAt: body.opensAt,
-        closesAt: body.closesAt,
-        saleStatus: product.saleStatus,
-        issuedCount: 0,
-        openNotifiedAt: null,
-      })
+      return ok(campaignOf(product))
     },
   ),
 
@@ -1141,14 +1192,7 @@ export const adminProductHandlers: RequestHandler[] = [
         product.sale.closeAt = new Date().toISOString()
         product.updatedAt = product.sale.closeAt
       }
-      return ok({
-        productId: product.productId,
-        opensAt: product.sale.openAt,
-        closesAt: product.sale.closeAt,
-        saleStatus: product.saleStatus,
-        issuedCount: 0,
-        openNotifiedAt: null,
-      })
+      return ok(campaignOf(product))
     },
   ),
 
