@@ -58,22 +58,22 @@ export function ReviewFormModal({ target, onClose }: ReviewFormModalProps) {
 
   return (
     <div className={styles.content}>
-      <div className={styles.rating} role="group" aria-label="별점">
-        {RATINGS.map((value) => (
-          <button
-            key={value}
-            type="button"
-            className={styles.star[value <= rating ? 'filled' : 'empty']}
-            aria-label={`${value}점`}
-            aria-pressed={value === rating}
-            onClick={() => setRating(value)}
-          >
-            ★
-          </button>
-        ))}
-        <span className={styles.score}>
-          {rating ? `${rating}.0` : '별점을 선택해 주세요'}
-        </span>
+      <div className={styles.rating}>
+        <span className={styles.prompt}>별점을 선택해 주세요</span>
+        <div className={styles.stars} role="group" aria-label="별점">
+          {RATINGS.map((value) => (
+            <button
+              key={value}
+              type="button"
+              className={styles.star[value <= rating ? 'filled' : 'empty']}
+              aria-label={`${value}점`}
+              aria-pressed={value === rating}
+              onClick={() => setRating(value)}
+            >
+              ★
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className={styles.textField}>
