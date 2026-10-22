@@ -19,7 +19,7 @@ import { useMyReviews, type Review } from '@entities/review'
 import { startOrderPayment } from '@features/payment'
 import { openReviewForm } from '@features/review-write'
 import { getErrorMessage } from '@shared/api/client'
-import { formatDotDate } from '@shared/lib/formatDotDate'
+import { formatDotDateMinute } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { shortId } from '@shared/lib/shortId'
 import { showToast } from '@shared/model/toastStore'
@@ -230,7 +230,7 @@ export function MypageHistory() {
             tag={orderStatusTag[order.status]}
             highlight={awaitingPayment ? 'warning' : undefined}
             preorder={order.source === 'PREORDER'}
-            orderDate={formatDotDate(order.createdAt)}
+            orderDate={formatDotDateMinute(order.createdAt)}
             orderNumber={shortId(order.orderId)}
             items={order.items}
             renderItem={renderItem(order)}

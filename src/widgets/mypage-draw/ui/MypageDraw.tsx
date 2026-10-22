@@ -18,7 +18,7 @@ import {
 import { startDrawEntryPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { DRAW_PATH, drawPath, mypagePath } from '@shared/config/routes'
-import { formatDotDate } from '@shared/lib/formatDotDate'
+import { formatDotDateMinute } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { showToast } from '@shared/model/toastStore'
 import { ActionButton, Button, Chip, InlineAlert } from '@shared/ui'
@@ -116,7 +116,7 @@ export function MypageDraw() {
                 ? 'won'
                 : undefined
           }
-          orderDate={formatDotDate(entry.enteredAt)}
+          orderDate={formatDotDateMinute(entry.enteredAt)}
           items={[toItem(entry)]}
           renderItem={renderItem}
           footer={
