@@ -41,9 +41,11 @@ const summary: { label: string; statuses: OrderStatus[]; warning?: true }[] = [
   },
   { label: '배송 중', statuses: ['SHIPPED'] },
   { label: '배송 완료', statuses: ['DELIVERED'] },
+  // 취소 처리 중도 곧 취소 완료가 되므로 같이 센다.
+  { label: '취소 완료', statuses: ['CANCELING', 'CANCELED'] },
 ]
 
-// 칩 — '전체' 아니면 요약 칸 하나와 같은 상태 묶음만 남긴다(취소된 주문은 '전체'에서만 보인다).
+// 칩 — '전체' 아니면 요약 칸 하나와 같은 상태 묶음만 남긴다.
 const statusFilters = ['전체', ...summary.map(({ label }) => label)]
 
 // 0은 기간 제한 없음.
