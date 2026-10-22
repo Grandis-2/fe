@@ -61,7 +61,8 @@ export function OpenPreorderCard({
       !stopped &&
       picked.credit > 0 &&
       picked.waiting / picked.credit >= LONG_WAIT_SECONDS
-    const capFull = picked.cap > 0 && picked.credit >= picked.cap
+    const capFull =
+      picked.cap !== null && picked.cap > 0 && picked.credit >= picked.cap
 
     return (
       <section className={styles.root} aria-labelledby="ops-open-card">
@@ -123,26 +124,32 @@ export function OpenPreorderCard({
             <span className={styles.blockTitle}>입장 상한 사용</span>
             <span className={styles.blockMeta}>
               초당 <b>{formatNumber(picked.credit)}</b> / 상한{' '}
-              {formatNumber(picked.cap)}명
+              {picked.cap === null
+                ? '서버 기본값'
+                : `${formatNumber(picked.cap)}명`}
             </span>
           </div>
-          <UsageCells
-            used={picked.credit}
-            total={picked.cap}
-            label={`입장 상한 ${formatNumber(picked.cap)}명 중 ${formatNumber(picked.credit)}명 사용`}
-          />
-          <span className={picked.cap > 0 ? styles.hint : styles.hintBad}>
-            {picked.cap === 0 ? (
-              '상한이 0이라 아무도 들어오지 못해요'
-            ) : capFull ? (
-              '상한을 다 쓰고 있어요. 대기를 줄이려면 상한을 올리세요.'
-            ) : (
-              <>
-                초당 <b>{formatNumber(picked.cap - picked.credit)}명</b> 더 들일
-                수 있어요
-              </>
-            )}
-          </span>
+          {picked.cap !== null && (
+            <>
+              <UsageCells
+                used={picked.credit}
+                total={picked.cap}
+                label={`입장 상한 ${formatNumber(picked.cap)}명 중 ${formatNumber(picked.credit)}명 사용`}
+              />
+              <span className={picked.cap > 0 ? styles.hint : styles.hintBad}>
+                {picked.cap === 0 ? (
+                  '상한이 0이라 아무도 들어오지 못해요'
+                ) : capFull ? (
+                  '상한을 다 쓰고 있어요. 대기를 줄이려면 상한을 올리세요.'
+                ) : (
+                  <>
+                    초당 <b>{formatNumber(picked.cap - picked.credit)}명</b> 더
+                    들일 수 있어요
+                  </>
+                )}
+              </span>
+            </>
+          )}
         </div>
 
         <div className={styles.actions}>

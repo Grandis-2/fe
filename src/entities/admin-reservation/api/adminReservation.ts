@@ -149,7 +149,10 @@ export class PartialReprocessError extends ApiRequestError {
  * 작업을 받아 예약 id로 골라 1000건씩 나눠 보낸다. 서버는 대상 수만 바로 주고 실제
  * 재처리는 이어서 한다.
  */
-export async function reprocessAdminReservations(preorderIds?: string[]) {
+export async function reprocessAdminReservations(
+  preorderIds?: string[],
+  signal?: AbortSignal,
+) {
   const wanted = preorderIds && new Set(preorderIds)
   const deadJobs = await fetchAllPages((page) =>
     getAdminSyncJobs({
@@ -181,9 +184,13 @@ export async function reprocessAdminReservations(preorderIds?: string[]) {
     deadJobs.map((job) => [job.syncJobId, job.preorderId]),
   )
   // 차례로 보낸다 — 서버가 요청마다 초당 정해진 수만큼 처리해서 예상 시간은 더해진다.
+  // ponytail: 서버에는 전역 속도 제한이 없어 묶음이 겹쳐 돌면 외부 호출 속도가 묶음 수만큼 배로 늘어난다.
+  // 그래서 앞 묶음의 예상 시간만큼 기다렸다 다음 묶음을 보낸다. be에 전역 제한이 생기면 이 대기를 뺀다.
+  let waitMs = 0
   for (let i = 0; i < syncJobIds.length; i += REPROCESS_BATCH_MAX) {
     let batch: BatchReprocess
     try {
+      if (waitMs > 0) await pause(waitMs, signal)
       batch = await apiClient.request<BatchReprocess>(
         `${BASE}/sync-jobs/reprocess-batch`,
         {
@@ -204,9 +211,28 @@ export async function reprocessAdminReservations(preorderIds?: string[]) {
     total.targetCount += batch.targetCount
     total.skippedCount += batch.skippedCount
     total.estimatedSeconds += batch.estimatedSeconds
+    waitMs = batch.estimatedSeconds * 1000
   }
   return total
 }
+
+// 취소 신호가 오면 기다림을 끝내고 실패로 돌린다 — 호출부가 남은 건을 보내지 못한 것으로 센다.
+const pause = (ms: number, signal?: AbortSignal) =>
+  new Promise<void>((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(signal.reason)
+      return
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    function onAbort() {
+      clearTimeout(timer)
+      reject(signal?.reason)
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
 
 // [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자) · 재처리 필요만
 // → reprocessAdminReservations

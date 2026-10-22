@@ -4,7 +4,6 @@ import {
   isBraking,
   settingSourceLabel,
   waitEstimate,
-  WAITINGROOM_DEFAULTS,
   type WaitingroomSetting,
 } from '@entities/admin-waitingroom'
 import { formatNumber } from '@shared/lib/formatNumber'
@@ -329,7 +328,7 @@ export function AdmissionSpeedCard({
               if (productIds === null) return
               admission.confirm(
                 '전체 상한을 기본값으로 되돌릴까요?',
-                `전체 상한과 모든 상품 상한이 ${WAITINGROOM_DEFAULTS.globalCredit}명/초로 돌아가고 1초 안에 반영됩니다.`,
+                '전체 상한과 모든 상품 상한이 서버 기본값으로 돌아가고 1초 안에 반영됩니다.',
                 '되돌리기',
                 () =>
                   admission.apply(
@@ -339,7 +338,7 @@ export function AdmissionSpeedCard({
               )
             }}
           >
-            기본값({WAITINGROOM_DEFAULTS.globalCredit}명/초)으로
+            서버 기본값으로
           </Button>
         ) : (
           <span />

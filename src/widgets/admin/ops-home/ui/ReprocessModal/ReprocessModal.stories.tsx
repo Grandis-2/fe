@@ -12,15 +12,16 @@ const run = {
   estimatedSeconds: 43,
   startedAt: 0,
   scope: null,
-  inFlightAtStart: 0,
+  deadLetterAtStart: 900,
 }
-const progress = (failed: number, sent = 860) => ({
+// 집계 시각이 예상 시간을 넘은 뒤의 값 — 줄어든 건수만 말한다.
+const progress = (deadLetterNow: number, sent = 860) => ({
   sent,
   remainingSeconds: 0,
   finished: true,
-  failed,
-  succeeded: 860 - failed,
-  mostlyFailed: failed * 2 >= 860,
+  deadLetterAtStart: 900,
+  deadLetterNow,
+  reduced: 900 - deadLetterNow,
 })
 
 const meta = {
@@ -59,7 +60,7 @@ export const Confirm: Story = {
   },
 }
 
-/** 요청을 보내는 중엔 다시 누를 수 없다 */
+/** 요청을 보내는 중엔 다시 누를 수 없다 — 묶음을 차례로 보내서 오래 걸린다 */
 export const Pending: Story = { args: { isPending: true } }
 
 /** 요청 실패 — 확인 화면 그대로 오류를 띄우고 다시 시도하게 한다 */
@@ -68,6 +69,21 @@ export const RequestFailed: Story = {
     error: new ApiRequestError(
       { code: 'INTERNAL_ERROR', message: '서버 오류', details: null },
       500,
+    ),
+  },
+}
+
+/** 부분 실패 — 앞 묶음은 접수됐고 나머지는 보내지 못했다(다시 누르면 보내지 못한 건만) */
+export const PartialFailure: Story = {
+  args: {
+    error: new ApiRequestError(
+      {
+        code: 'REPROCESS_PARTIAL',
+        message:
+          '재처리 1000건은 접수했고 500건은 보내지 못했어요. 보내지 못한 건만 다시 보낼 수 있어요.',
+        details: null,
+      },
+      409,
     ),
   },
 }
@@ -90,21 +106,25 @@ export const NothingToReprocess: Story = {
 export const Running: Story = {
   args: {
     run,
-    running: { ...progress(0, 448), remainingSeconds: 20, finished: false },
+    running: {
+      sent: 448,
+      remainingSeconds: 20,
+      finished: false,
+      deadLetterAtStart: 900,
+      deadLetterNow: null,
+      reduced: null,
+    },
   },
 }
 
-/** 3 · 모두 성공 */
-export const AllDone: Story = { args: { run, result: progress(0) } }
+/** 3 · 끝남 — 재처리 필요가 얼마나 줄었는지와 예약 현황으로 가는 길 */
+export const Reduced: Story = { args: { run, result: progress(40) } }
 
-/** 3-b · 몇 건만 또 실패 — 예약 현황에서 하나씩 보게 한다 */
-export const FewFailed: Story = { args: { run, result: progress(12) } }
-
-/** 3-c · 대부분 또 실패 — 외부 시스템 문제로 안내하고 다시 보내라고 권하지 않는다 */
-export const MostlyFailed: Story = {
-  args: { run, result: progress(790) },
+/** 3-b · 끝났는데 안 줄었다 — 외부 등록이 계속 실패하는지 확인하라고 안내 */
+export const NotReduced: Story = {
+  args: { run, result: progress(900) },
   play: async ({ canvas }) => {
-    const notice = await canvas.findByText(/개발팀에 알려 주세요/)
+    const notice = await canvas.findByText(/아직 줄지 않았어요/)
     await waitFor(() => expect(notice).toBeVisible())
   },
 }

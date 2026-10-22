@@ -7,8 +7,6 @@ import type {
 } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
-import { WAITINGROOM_DEFAULTS, type WaitingroomStatus } from '../model/types'
-
 import {
   clearMaxWait,
   getAdmissionRates,
@@ -22,21 +20,16 @@ import {
   setProductCap,
 } from './adminWaitingroom'
 
+import type { WaitingroomStatus } from '../model/types'
+
 const WAITINGROOM_KEY = ['admin', 'waitingroom'] as const
 
 /**
- * 운영값이 없는 상품은 상한이 null로 올 수 있다 — 그때 실제로 걸리는 건 기본 상한이라 그
- * 값으로 채운다. 비워 두면 화면이 0으로 읽어 "아무도 못 들어가요"라고 잘못 말한다.
+ * 운영값이 없는 상품은 상한이 null로 온다. 기본 상한의 숫자는 응답에 없어 여기서 채우지 않는다
+ * (채우면 서버 기본값과 어긋난 숫자를 화면이 말한다). 화면은 null을 "서버 기본값"으로 읽는다.
  */
-const toWaitingroomStatus = (
-  view: WaitingroomStatusView,
-): WaitingroomStatus => ({
-  ...view,
-  products: view.products.map((product) => ({
-    ...product,
-    cap: product.cap ?? WAITINGROOM_DEFAULTS.productCap,
-  })),
-})
+const toWaitingroomStatus = (view: WaitingroomStatusView): WaitingroomStatus =>
+  view
 const RATES_KEY = [...WAITINGROOM_KEY, 'rates'] as const
 // 서버 안내: 1초보다 자주 묻지 않는다.
 const MIN_POLL_MS = 1_000

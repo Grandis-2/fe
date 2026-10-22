@@ -3,7 +3,6 @@ import { useState } from 'react'
 import {
   useAdmissionRates,
   useWaitingroomStatus,
-  WAITINGROOM_DEFAULTS,
 } from '@entities/admin-waitingroom'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
@@ -81,7 +80,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
           onClick: () =>
             admission.confirm(
               '입장을 다시 열까요?',
-              `기본값 ${WAITINGROOM_DEFAULTS.globalCredit}명/초로 입장이 다시 시작되고 1초 안에 반영됩니다.`,
+              '서버 기본값으로 입장이 다시 시작되고 1초 안에 반영됩니다.',
               '다시 열기',
               () =>
                 admission.apply(

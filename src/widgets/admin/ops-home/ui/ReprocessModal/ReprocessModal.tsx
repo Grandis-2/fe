@@ -1,15 +1,10 @@
 import type { ReactNode } from 'react'
 
-import {
-  ChevronRight,
-  CircleAlert,
-  CircleCheck,
-  Clock,
-  TriangleAlert,
-} from 'lucide-react'
+import { ChevronRight, CircleCheck, Clock } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
+import { adminReservationsPath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { Button, InlineAlert, Modal } from '@shared/ui'
 
@@ -66,85 +61,61 @@ export function ReprocessModal({
   reservationsPath,
 }: ReprocessModalProps) {
   const navigate = useNavigate()
-  const showFailed = () => {
-    onClose()
-    navigate(reservationsPath)
-  }
   const modal = { open, onClose, theme: 'light' } as const
 
   if (run && result) {
-    if (result.failed === 0) {
-      return (
-        <Modal
-          {...modal}
-          title={
-            <Headline tone="success">
-              {formatNumber(run.target)}건을 모두 다시 등록했어요
-            </Headline>
-          }
-          description="이제 회원이 결제할 수 있어요."
-        >
-          <div className={styles.actions}>
-            <Button onClick={onClose}>확인</Button>
-          </div>
-        </Modal>
-      )
-    }
-    if (result.mostlyFailed) {
-      return (
-        <Modal
-          {...modal}
-          title={
-            <Headline tone="danger">
-              {formatNumber(run.target)}건 중 {formatNumber(result.failed)}건이
-              또 실패했어요
-            </Headline>
-          }
-          description={
-            '외부 예약 시스템에 문제가 있을 수 있어요.\n지금 다시 보내도 같은 결과일 가능성이 커요.'
-          }
-        >
-          <dl className={styles.box}>
-            <div className={styles.row}>
-              <dt>다시 등록됨</dt>
-              <dd className={styles.value}>
-                {formatNumber(result.succeeded)}건
-              </dd>
-            </div>
-            <div className={styles.row}>
-              <dt>또 실패</dt>
-              <dd className={styles.dangerValue}>
-                {formatNumber(result.failed)}건
-              </dd>
-            </div>
-          </dl>
-          <InlineAlert status="info">
-            개발팀에 알려 주세요. 외부 시스템이 복구되면 그때 다시 재처리하면
-            돼요.
-          </InlineAlert>
-          {/* 주된 버튼은 닫기 — 바로 다시 재처리하도록 이끌지 않는다. */}
-          <div className={styles.actions}>
-            <Button onClick={onClose}>확인</Button>
-            <Button variant="outline" color="cancel" onClick={showFailed}>
-              실패한 {formatNumber(result.failed)}건 보기
-            </Button>
-          </div>
-        </Modal>
-      )
+    // 보낸 작업의 결과는 집계로 셀 수 없다 — 재처리 필요가 얼마나 줄었는지와 확인할 곳만 보여 준다.
+    const { deadLetterAtStart: before, deadLetterNow: now, reduced } = result
+    const reservationsOfScope = adminReservationsPath(
+      'REPROCESS_NEEDED',
+      run.scope ?? undefined,
+    )
+    const showResults = () => {
+      onClose()
+      navigate(reservationsOfScope)
     }
     return (
       <Modal
         {...modal}
-        title={
-          <Headline tone="warning">
-            {formatNumber(result.succeeded)}건을 다시 등록했어요
-          </Headline>
-        }
-        description={`${formatNumber(result.failed)}건은 또 실패했어요.\n예약 현황에서 하나씩 확인해 주세요.`}
-        confirmLabel={`실패한 ${formatNumber(result.failed)}건 보기`}
-        onConfirm={showFailed}
-        cancelLabel="닫기"
-      />
+        title={<Headline tone="success">재처리 요청을 마쳤어요</Headline>}
+        description="외부 등록 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요."
+      >
+        <dl className={styles.box}>
+          <div className={styles.row}>
+            <dt>요청한 건수</dt>
+            <dd className={styles.value}>{formatNumber(run.target)}건</dd>
+          </div>
+          <div className={styles.row}>
+            <dt>재처리 필요 (시작 전)</dt>
+            <dd className={styles.value}>
+              {before === null ? '—' : `${formatNumber(before)}건`}
+            </dd>
+          </div>
+          <div className={styles.row}>
+            <dt>재처리 필요 (지금)</dt>
+            <dd className={styles.value}>
+              {now === null ? '—' : `${formatNumber(now)}건`}
+            </dd>
+          </div>
+          <div className={styles.row}>
+            <dt>줄어든 건수</dt>
+            <dd className={styles.value}>
+              {reduced === null ? '—' : `${formatNumber(reduced)}건`}
+            </dd>
+          </div>
+        </dl>
+        {reduced === 0 && (
+          <InlineAlert status="info">
+            아직 줄지 않았어요. 외부 등록이 계속 실패하는 것일 수 있어요.
+          </InlineAlert>
+        )}
+        <div className={styles.actions}>
+          <Button onClick={onClose}>확인</Button>
+          <Button variant="outline" color="cancel" onClick={showResults}>
+            예약 현황에서 확인
+          </Button>
+        </div>
+      </Modal>
     )
   }
 
@@ -245,7 +216,7 @@ export function ReprocessModal({
       <div className={styles.actions}>
         <Button disabled={isPending || failures === 0} onClick={onConfirm}>
           {isPending
-            ? '요청 중…'
+            ? '보내는 중…'
             : error !== null
               ? '다시 시도'
               : `${formatNumber(failures)}건 재처리`}
@@ -264,8 +235,6 @@ export function ReprocessModal({
 
 const badgeIcon = {
   success: CircleCheck,
-  warning: TriangleAlert,
-  danger: CircleAlert,
 }
 
 // 결과 제목 — 위에 상태 아이콘을 얹는다(Modal은 제목이 맨 위라 제목 안에 둔다).

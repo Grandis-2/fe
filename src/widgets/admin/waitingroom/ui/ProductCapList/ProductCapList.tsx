@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useReservationStatsByProduct } from '@entities/admin-reservation'
 import {
   waitEstimate,
-  WAITINGROOM_DEFAULTS,
   type WaitingroomProductRate,
   type WaitingroomProductStatus,
 } from '@entities/admin-waitingroom'
@@ -107,7 +106,7 @@ export function ProductCapList({
     const name = nameOf(product.productId)
     admission.confirm(
       `${name}의 입장 상한을 기본값으로 되돌릴까요?`,
-      `${WAITINGROOM_DEFAULTS.productCap}명/초로 돌아가고 1초 안에 반영됩니다.`,
+      '서버 기본값으로 돌아가고 1초 안에 반영됩니다.',
       '되돌리기',
       () =>
         admission.apply(
@@ -162,7 +161,7 @@ export function ProductCapList({
             // 현황의 cap이 다르면 서버가 지금 그보다 낮게 적용 중이라 따로 알린다.
             const cap = capOf(product.productId)?.value ?? product.cap
             const applied = product.cap !== cap ? product.cap : null
-            const atCap = cap > 0 && product.credit >= cap
+            const atCap = cap !== null && cap > 0 && product.credit >= cap
             const query = statsOf(product.productId)
             const oldest = oldestSeconds(
               query?.data?.oldestPendingSyncAt,
@@ -257,15 +256,18 @@ export function ProductCapList({
                   <span className={styles.capHead}>
                     <span className={styles.capLabel}>입장 / 상한</span>
                     <span className={styles.capValue}>
-                      {formatNumber(product.credit)} / {formatNumber(cap)}
+                      {formatNumber(product.credit)} /{' '}
+                      {cap === null ? '서버 기본값' : formatNumber(cap)}
                       <span className={styles.capUnit}>(명/초)</span>
                     </span>
                   </span>
-                  <UsageCells
-                    used={product.credit}
-                    total={cap}
-                    label={`${name} 입장 상한 ${formatNumber(cap)}명 중 ${formatNumber(product.credit)}명 사용`}
-                  />
+                  {cap !== null && (
+                    <UsageCells
+                      used={product.credit}
+                      total={cap}
+                      label={`${name} 입장 상한 ${formatNumber(cap)}명 중 ${formatNumber(product.credit)}명 사용`}
+                    />
+                  )}
                   <span />
                   <span className={atCap ? styles.hintWarn : styles.hint}>
                     {cap === 0

@@ -60,6 +60,70 @@ describe('promotionProductProblem', () => {
     ).toBe('연결 상품이 모두 일반 상품으로 바뀌었어요')
   })
 
+  // 관리자 상품 목록에서 고객 노출을 본다 — 목록을 못 받았거나 연결 상품이 목록에 없으면 판정하지 않는다.
+  const listed = (
+    productId: string,
+    overrides: Partial<{
+      saleMode: string
+      status: string
+      displayStatus: string
+      opensAt: string | null
+    }> = {},
+  ) => ({
+    productId,
+    saleMode: 'PREORDER',
+    status: 'ACTIVE',
+    displayStatus: 'PUBLISHED',
+    opensAt: '2026-10-30T10:00:00+09:00',
+    ...overrides,
+  })
+  const linked = (productId: string) => ({
+    productId,
+    title: productId,
+    saleMode: 'PREORDER' as const,
+  })
+
+  it('목록을 못 받았으면 고객 노출은 판정하지 않는다', () => {
+    expect(
+      promotionProductProblem({
+        status: 'ONGOING',
+        products: [linked('a')],
+      }),
+    ).toBeNull()
+  })
+
+  it('고객에게 보일 상품이 하나도 없으면 이유와 함께 알린다', () => {
+    expect(
+      promotionProductProblem(
+        { status: 'ONGOING', products: [linked('a'), linked('b')] },
+        [
+          listed('a', { displayStatus: 'HIDDEN' }),
+          listed('b', { status: 'PAUSED' }),
+        ],
+      ),
+    ).toBe('고객 화면에 보일 상품이 없어요 — 비공개·판매 중지')
+    expect(
+      promotionProductProblem({ status: 'ONGOING', products: [linked('a')] }, [
+        listed('a', { opensAt: null }),
+      ]),
+    ).toBe('고객 화면에 보일 상품이 없어요 — 회차 없음')
+  })
+
+  it('보이는 상품이 하나라도 있거나 목록에 없는 상품이 있으면 판정하지 않는다', () => {
+    expect(
+      promotionProductProblem(
+        { status: 'ONGOING', products: [linked('a'), linked('b')] },
+        [listed('a', { displayStatus: 'HIDDEN' }), listed('b')],
+      ),
+    ).toBeNull()
+    expect(
+      promotionProductProblem(
+        { status: 'ONGOING', products: [linked('a'), linked('z')] },
+        [listed('a', { displayStatus: 'HIDDEN' })],
+      ),
+    ).toBeNull()
+  })
+
   it('사전예약 상품이 하나라도 있거나 끝났으면 문제 없음', () => {
     expect(
       promotionProductProblem({

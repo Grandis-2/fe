@@ -111,6 +111,8 @@ export function AdminPromotionsPage() {
   const promotions = useAdminPromotions()
   // 연결할 상품이 있는지만 본다 — 한 개만 받는다.
   const preorderProducts = useAdminProducts({ saleMode: 'PREORDER', size: 1 })
+  // 고객 노출 판정용 — 첫 100개 안에 없는 상품은 판정하지 않는다(목록 밖일 수 있다).
+  const listedPreorders = useAdminProducts({ saleMode: 'PREORDER', size: 100 })
 
   // 탭 건수도 검색어로 거른 목록에서 센다 — 표와 숫자가 어긋나지 않게.
   const query = keyword.trim().toLowerCase()
@@ -140,7 +142,8 @@ export function AdminPromotionsPage() {
   // 고객이 지금 보고 있는데 상품이 제대로 안 보이는 사전예약 — 검색과 상관없이 알린다.
   const broken = (promotions.data ?? []).filter(
     (promotion) =>
-      promotion.status === 'ONGOING' && promotionProductProblem(promotion),
+      promotion.status === 'ONGOING' &&
+      promotionProductProblem(promotion, listedPreorders.data),
   )
 
   const openDetail = (promotion: AdminPromotion) =>
@@ -213,7 +216,7 @@ export function AdminPromotionsPage() {
       key: 'products',
       header: '연결 상품',
       render: (promotion) => {
-        const problem = promotionProductProblem(promotion)
+        const problem = promotionProductProblem(promotion, listedPreorders.data)
         const hidden = promotion.products.length - VISIBLE_PRODUCTS
         return (
           <span className={styles.stacked}>
@@ -322,8 +325,8 @@ export function AdminPromotionsPage() {
             <span>
               <b>진행 중인 &quot;{broken[0].name}&quot;</b>
               {broken.length > 1 && ` 외 ${broken.length - 1}개`}:{' '}
-              {promotionProductProblem(broken[0])}. 고객 페이지에 예약할 상품이
-              안 보여요.
+              {promotionProductProblem(broken[0], listedPreorders.data)}. 고객
+              페이지에 예약할 상품이 안 보여요.
             </span>
             <Button
               size="small"

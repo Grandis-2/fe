@@ -7,10 +7,8 @@ import type {
   WaitingroomStatusView,
 } from '@shared/api/types'
 
-// 상한(cap)만 서버가 비워 보낼 수 있어 기본값으로 채운 모양을 쓴다(toWaitingroomStatus).
-export type WaitingroomProductStatus = Omit<ProductStatus, 'cap'> & {
-  cap: number
-}
+// 상한(cap)은 운영값이 없으면 null이다 — 기본 숫자를 응답에서 알 수 없어서 채우지 않는다.
+export type WaitingroomProductStatus = ProductStatus
 export type WaitingroomStatus = Omit<WaitingroomStatusView, 'products'> & {
   products: WaitingroomProductStatus[]
 }
@@ -19,12 +17,11 @@ export type WaitingroomProductRate = ProductRate
 export type { WaitingroomSetting }
 
 /**
- * 서버 기본값 — 되돌리기 버튼 옆에 무엇으로 돌아가는지 보여준다. 입장 속도·상품 상한은 서버가
- * 2026-10-21에 150에서 15로 낮췄다(명세 문서는 아직 150).
+ * 서버 기본값 중 명세와 맞는 것만 둔다. 입장 속도·상품 상한의 기본값은 여기 두지 않는다 —
+ * 명세 문서(150)와 서버 실제 값(2026-10-21에 15로 낮춤)이 어긋나서, 화면은 운영값 응답의
+ * source가 DEFAULT일 때 그 value를 기본값으로 보여 주고, 바꾼 상태라 모르면 "서버 기본값"이라고만 쓴다.
  */
 export const WAITINGROOM_DEFAULTS = {
-  globalCredit: 15,
-  productCap: 15,
   leaveGraceSeconds: 250,
 } as const
 

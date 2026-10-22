@@ -185,7 +185,7 @@ export const Operational: Story = {
   args: { globalSetting: { value: 30, source: 'OPERATIONAL' } },
   play: async ({ canvas, args, userEvent }) => {
     await expect(
-      canvas.getByRole('button', { name: /기본값\(15명\/초\)으로/ }),
+      canvas.getByRole('button', { name: '서버 기본값으로' }),
     ).toBeVisible()
     await userEvent.click(canvas.getByRole('button', { name: '입장 멈춤' }))
     await expect(args.admission.confirm).toHaveBeenCalled()

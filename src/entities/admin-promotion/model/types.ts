@@ -177,19 +177,56 @@ export function promotionDue(
   }
 }
 
+/** 관리자 상품 목록의 한 줄 중 고객 노출 판정에 쓰는 값만 — 구조가 맞으면 목록을 그대로 넘긴다 */
+export type ListedProductForCustomer = {
+  productId: string
+  saleMode: string
+  status: string
+  displayStatus: string
+  opensAt: string | null
+}
+
+/** 고객 페이지에 안 보이는 이유(짧게). 보이면 null */
+const customerHiddenReason = (product: ListedProductForCustomer) => {
+  if (product.displayStatus === 'DRAFT') return '준비 중'
+  if (product.displayStatus === 'HIDDEN') return '비공개'
+  if (product.status === 'PAUSED') return '판매 중지'
+  if (product.saleMode === 'PREORDER' && product.opensAt === null)
+    return '회차 없음'
+  return null
+}
+
 /**
  * 고객 페이지에 상품이 제대로 안 보이는 사전예약. 끝난 사전예약은 보지 않는다.
  * 지운 상품은 응답에서 빠지므로 남은 상품이 0개일 수 있다.
+ *
+ * listed는 관리자 상품 목록(이 홍보 상품이 고객에게 보이는지 판정할 근거). 못 받았으면
+ * undefined — 실패를 '정상'으로 보지 않도록 고객 노출은 판정하지 않는다. 목록에 연결 상품이
+ * 없으면(첫 페이지 밖일 수 있어) 역시 판정하지 않는다.
+ * ponytail: "준비가 끝남"의 정확한 서버 기준(배송 차수 필요 여부 등)이 명세에 없어, 준비 여부는
+ * 전시 상태(DRAFT·HIDDEN)와 회차 시각(opensAt)으로 어림한다. be가 고객 노출 여부를 내려 주면 그 값으로 바꾼다.
  */
 export function promotionProductProblem(
   promotion: Pick<AdminPromotion, 'status' | 'products'>,
+  listed?: readonly ListedProductForCustomer[],
 ): string | null {
   if (promotion.status === 'ENDED') return null
   if (promotion.products.length === 0)
     return '남은 연결 상품이 없어요 — 상품이 지워져 빠졌어요'
   if (promotion.products.every((product) => product.saleMode === 'IN_STOCK'))
     return '연결 상품이 모두 일반 상품으로 바뀌었어요'
-  return null
+  if (listed === undefined) return null
+
+  const found = promotion.products.map((linked) =>
+    listed.find((product) => product.productId === linked.productId),
+  )
+  // 하나라도 못 찾았거나 보이는 상품이 있으면 판정할 수 없거나 정상이다.
+  if (found.some((product) => product === undefined)) return null
+  const reasons = found.map((product) =>
+    product ? customerHiddenReason(product) : null,
+  )
+  if (reasons.some((reason) => reason === null)) return null
+  return `고객 화면에 보일 상품이 없어요 — ${[...new Set(reasons)].join('·')}`
 }
 
 const toUploaded = (url: string, index: number): UploadedImage => ({

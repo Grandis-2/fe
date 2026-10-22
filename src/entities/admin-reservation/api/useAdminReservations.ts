@@ -158,7 +158,8 @@ export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
 export const useReprocessReservations = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: reprocessAdminReservations,
+    mutationFn: (preorderIds?: string[]) =>
+      reprocessAdminReservations(preorderIds),
     // 앞 묶음이 받아들여졌으면 뒤 묶음이 실패해도 목록은 바뀌었다 — 성공·실패 모두 다시 받는다.
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
