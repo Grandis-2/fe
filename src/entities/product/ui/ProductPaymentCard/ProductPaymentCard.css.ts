@@ -172,13 +172,15 @@ export const details = style({
   minWidth: 0,
 })
 
-// 상품명·옵션·수량 칸 — 75px. 수량은 아래 끝에 붙어 상품명·옵션(4px)보다 넓게 떨어진다.
 export const summary = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[4],
-  height: SUMMARY_HEIGHT,
 })
+
+// 수량이 있으면 칸을 75px로 고정해 수량을 아래 끝에 붙인다 — 상품명·옵션(4px)보다 넓게 떨어진다.
+// 수량이 없으면(내 리뷰) 고정하지 않는다 — 고정하면 아래 본문과 사이가 빈 칸만큼 벌어진다.
+export const summaryWithQuantity = style({ height: SUMMARY_HEIGHT })
 
 export const summaryQuantity = style({ marginTop: 'auto' })
 

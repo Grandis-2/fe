@@ -151,7 +151,14 @@ export function ProductPaymentCard({
         ) : (
           <>
             <div className={styles.details}>
-              <div className={styles.summary}>
+              <div
+                className={[
+                  styles.summary,
+                  quantityLabel && styles.summaryWithQuantity,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
                 {nameNode}
                 <div
                   className={[styles.optionSummary, styles.singleLine].join(

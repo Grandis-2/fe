@@ -46,7 +46,6 @@ export const review = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[8],
-  marginTop: spacing[8],
   padding: `${spacing[12]} ${spacing[16]}`,
   borderRadius: '14px',
   border: `1px solid ${color.border.subtle}`,
