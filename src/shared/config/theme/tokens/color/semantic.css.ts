@@ -61,13 +61,15 @@ export const color = createGlobalTheme(':root, [data-theme="light"]', {
   },
   // preorder: 사전예약 색 — 사전예약 배지·태그, 마이페이지 사전예약 구매 확정 카드 테두리.
   // preorderDeep·preorderText: 사전예약 구매 확정 버튼의 금색 그라디언트 시작색과 그 위 글자색.
-  // sky: 마이페이지 럭키드로우 당첨 카드 테두리.
+  // sky: 마이페이지 럭키드로우 당첨 카드 테두리, 요청 모니터의 결제 요청.
+  // pink: 요청 모니터의 사전예약 요청 — 주황(백오프)·초록/빨강(결과)·남보라(알림)·하늘(결제)과 갈리게 보라 쪽으로 치우친 분홍.
   // 사용자 페이지는 늘 어두워 다크 바탕 기준으로 고른 값이라 두 테마 값이 같다.
   accent: {
     preorder: '#E8C987',
     preorderDeep: '#B8914F',
     preorderText: '#5A3D10',
     sky: '#7DD3FC',
+    pink: '#F472B6',
   },
   // 어두운 시트·오버레이 위 닫기 버튼 — 테마와 상관없이 늘 어두운 바탕용이라 두 테마 값이 같다.
   close: {
@@ -151,6 +153,7 @@ createGlobalTheme(':root[data-theme="dark"], [data-theme="dark"]', color, {
     preorderDeep: '#B8914F',
     preorderText: '#5A3D10',
     sky: '#7DD3FC',
+    pink: '#F472B6',
   },
   close: {
     base: 'rgba(255, 255, 255, 0.1)',

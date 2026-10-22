@@ -331,7 +331,13 @@ export function RequestMonitorPanel({
               ) : (
                 <span
                   key={entry.id}
-                  className={styles.dot[entry.outcome]}
+                  className={[
+                    styles.dot[entry.outcome],
+                    (entry.outcome === 'ok' || entry.outcome === 'pending') &&
+                      styles.topicDot[entry.topic]?.[entry.outcome],
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   style={{ left: at(entry.startedAt) }}
                 />
               ),
@@ -373,7 +379,7 @@ export function RequestMonitorPanel({
             <li key={entry.id} className={styles.row}>
               <span className={styles.time}>{clock(entry.startedAt)}</span>
               <span className={styles.line}>
-                <span className={styles.topic}>{entry.topic}</span>
+                <span className={styles.topic[entry.topic]}>{entry.topic}</span>
                 <span className={styles.status.wait}>
                   {seconds(entry.waitMs)} 기다림
                 </span>
@@ -407,7 +413,7 @@ function RequestRow({
     <li className={styles.row}>
       <span className={styles.time}>{clock(entry.startedAt)}</span>
       <span className={styles.line}>
-        <span className={styles.topic}>{entry.topic}</span>
+        <span className={styles.topic[entry.topic]}>{entry.topic}</span>
         <span className={styles.method}>
           {entry.sse ? 'SSE' : entry.method}
         </span>
