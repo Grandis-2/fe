@@ -54,20 +54,24 @@ export function AdminReservationDetailPage() {
 
   return (
     <div className={styles.root}>
-      <Breadcrumb
-        items={[
-          { label: backTo.label, to: backTo.to },
-          { label: reservation.data.productTitle },
-        ]}
-      />
-
-      <RefreshStatus
-        updatedAt={reservation.dataUpdatedAt}
-        onRefresh={() => void reservation.refetch()}
-        note={
-          polling ? '10초마다 자동 갱신' : '취소된 예약이라 자동 갱신하지 않음'
-        }
-      />
+      {/* 제목 줄엔 조치 버튼이 있어 마지막 갱신은 한 줄 위 오른쪽에 둔다. */}
+      <div className={styles.topBar}>
+        <Breadcrumb
+          items={[
+            { label: backTo.label, to: backTo.to },
+            { label: reservation.data.productTitle },
+          ]}
+        />
+        <RefreshStatus
+          updatedAt={reservation.dataUpdatedAt}
+          onRefresh={() => void reservation.refetch()}
+          note={
+            polling
+              ? '10초마다 자동 갱신'
+              : '취소된 예약이라 자동 갱신하지 않음'
+          }
+        />
+      </div>
 
       {/* 갱신이 실패해도 이전 값은 남아 화면에 보인다 — 멈춘 값을 최신으로 읽지 않게 알린다. */}
       {staleError !== null && (

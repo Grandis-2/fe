@@ -3,7 +3,6 @@ import { useState } from 'react'
 import {
   useAdmissionRates,
   useWaitingroomStatus,
-  WAITINGROOM_DEFAULTS,
 } from '@entities/admin-waitingroom'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
@@ -54,6 +53,17 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
     (a, b) => b.waiting - a.waiting,
   )
   const maxCredit = rates.data?.maxGlobalCredit ?? 1500
+  // 전체 상한은 대기열 상품과 상한을 정한 상품 모두에 건다. 둘 중 하나라도 못 받았으면 빠진
+  // 상품이 있을 수 있어 null로 두고 폼을 막는다.
+  const allProductIds =
+    view && rates.data
+      ? [
+          ...new Set([
+            ...products.map((product) => product.productId),
+            ...rates.data.products.map((product) => product.productId),
+          ]),
+        ]
+      : null
 
   const refresh = () => {
     void status.refetch()
@@ -63,14 +73,14 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
 
   // 급할 때만 판정 줄에 할 일을 붙인다.
   const action =
-    flow.verdict.title === '입장 멈춤'
+    flow.verdict.kind === 'stopped'
       ? {
           label: '다시 열기',
           disabled: admission.isPending,
           onClick: () =>
             admission.confirm(
               '입장을 다시 열까요?',
-              `기본값 ${WAITINGROOM_DEFAULTS.globalCredit}명/초로 입장이 다시 시작되고 1초 안에 반영됩니다.`,
+              '서버 기본값으로 입장이 다시 시작되고 1초 안에 반영됩니다.',
               '다시 열기',
               () =>
                 admission.apply(
@@ -79,7 +89,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
                 ),
             ),
         }
-      : flow.verdict.title === '처리보다 빨라요'
+      : flow.verdict.kind === 'congested'
         ? {
             label: '속도 낮추기',
             onClick: () => document.getElementById(SPEED_INPUT_ID)?.focus(),
@@ -136,6 +146,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
             loading={status.isPending}
             globalSetting={rates.data?.globalCredit}
             maxCredit={maxCredit}
+            productIds={allProductIds}
             admission={admission}
             inputId={SPEED_INPUT_ID}
           />
@@ -158,14 +169,16 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
           <LeaveGraceSetting
             setting={rates.data?.leaveGraceSeconds}
             loading={rates.isPending}
+            // 현황을 못 받았거나 오래됐으면 줄이 있는지 모른다 — 모르면 줄이기를 막는다.
+            waiting={view && !view.snapshotStale ? flow.waiting : null}
             admission={admission}
           />
+          <ServerStatusCard view={view} loading={status.isPending} />
           <MaxWaitSetting
             setting={rates.data?.maxWaitSeconds}
             loading={rates.isPending}
             admission={admission}
           />
-          <ServerStatusCard view={view} loading={status.isPending} />
         </aside>
       </div>
     </div>

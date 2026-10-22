@@ -6,14 +6,12 @@ import {
   adminReservationsPath,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Skeleton, Tag, UsageCells, usageCellUnit } from '@shared/ui'
+import { Skeleton, Tag, UsageCells } from '@shared/ui'
 
 import * as styles from './OpenPreorderCard.css'
 
 /** 맨 뒤 예상 대기가 이만큼 길면 고른 사전예약의 대기 상자를 경고 색으로 칠한다 */
 const LONG_WAIT_SECONDS = 10 * 60
-/** 입장 상한 사용 칸 수의 최대값 — 상한이 크면 한 칸에 여러 명을 묶는다 */
-const MAX_CELLS = 10
 
 export type OpenPreorderCardProps = {
   items: readonly OpenPreorder[]
@@ -63,9 +61,8 @@ export function OpenPreorderCard({
       !stopped &&
       picked.credit > 0 &&
       picked.waiting / picked.credit >= LONG_WAIT_SECONDS
-    // 1칸 = 초당 perCell명. 상한이 커도 칸은 MAX_CELLS개를 넘지 않게 묶는다.
-    const perCell = usageCellUnit(picked.cap, MAX_CELLS)
-    const capFull = picked.cap > 0 && picked.credit >= picked.cap
+    const capFull =
+      picked.cap !== null && picked.cap > 0 && picked.credit >= picked.cap
 
     return (
       <section className={styles.root} aria-labelledby="ops-open-card">
@@ -127,33 +124,32 @@ export function OpenPreorderCard({
             <span className={styles.blockTitle}>입장 상한 사용</span>
             <span className={styles.blockMeta}>
               초당 <b>{formatNumber(picked.credit)}</b> / 상한{' '}
-              {formatNumber(picked.cap)}명
+              {picked.cap === null
+                ? '서버 기본값'
+                : `${formatNumber(picked.cap)}명`}
             </span>
           </div>
-          <UsageCells
-            used={picked.credit}
-            total={picked.cap}
-            maxCells={MAX_CELLS}
-            label={`입장 상한 ${formatNumber(picked.cap)}명 중 ${formatNumber(picked.credit)}명 사용`}
-          />
-          <span className={picked.cap > 0 ? styles.hint : styles.hintBad}>
-            {picked.cap === 0 ? (
-              '상한이 0이라 아무도 들어오지 못해요'
-            ) : capFull ? (
-              '상한을 다 쓰고 있어요. 대기를 줄이려면 상한을 올리세요.'
-            ) : (
-              <>
-                초당 <b>{formatNumber(picked.cap - picked.credit)}명</b> 더 들일
-                수 있어요
-              </>
-            )}
-            {perCell > 1 && (
-              <span className={styles.hintSub}>
-                {' '}
-                · 1칸 = 초당 {formatNumber(perCell)}명
+          {picked.cap !== null && (
+            <>
+              <UsageCells
+                used={picked.credit}
+                total={picked.cap}
+                label={`입장 상한 ${formatNumber(picked.cap)}명 중 ${formatNumber(picked.credit)}명 사용`}
+              />
+              <span className={picked.cap > 0 ? styles.hint : styles.hintBad}>
+                {picked.cap === 0 ? (
+                  '상한이 0이라 아무도 들어오지 못해요'
+                ) : capFull ? (
+                  '상한을 다 쓰고 있어요. 대기를 줄이려면 상한을 올리세요.'
+                ) : (
+                  <>
+                    초당 <b>{formatNumber(picked.cap - picked.credit)}명</b> 더
+                    들일 수 있어요
+                  </>
+                )}
               </span>
-            )}
-          </span>
+            </>
+          )}
         </div>
 
         <div className={styles.actions}>

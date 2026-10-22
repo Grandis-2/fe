@@ -1,6 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 import {
@@ -18,6 +18,61 @@ export const caption = style([
   { color: color.text.secondary },
 ])
 
+// 접수 [≤ / >] 외부 등록 처리 | 처리 한계 — 좁으면 줄을 바꾼다.
+export const metrics = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'stretch',
+  gap: spacing[12],
+})
+
+export const metric = style({
+  flex: '1 1 140px',
+  minWidth: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[4],
+  padding: `${spacing[12]} ${spacing[14]}`,
+  borderRadius: '10px',
+  background: color.background.surface,
+})
+
+export const metricLabel = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary },
+])
+
+export const metricValue = style([
+  typography.title.xlSemibold,
+  {
+    fontWeight: fontWeight.bold,
+    color: color.text.primary,
+    fontVariantNumeric: 'tabular-nums',
+  },
+])
+
+export const metricPending = style([
+  typography.title.mdMedium,
+  { color: color.text.secondary },
+])
+
+export const metricNote = style([
+  typography.body.sub,
+  { color: color.text.secondary },
+])
+
+// 접수와 처리 사이 비교 기호 — 따라가면 초록, 밀리면 주황, 판단 전이면 회색.
+const vsBase = style([
+  typography.title.xlSemibold,
+  { display: 'grid', placeItems: 'center', fontWeight: fontWeight.bold },
+])
+
+export const vs = styleVariants({
+  following: [vsBase, { color: color.status.success }],
+  congested: [vsBase, { color: color.status.warning }],
+  pending: [vsBase, { color: color.text.tertiary }],
+})
+
 // 지금 값 · 바꿀 값 · 적용을 한 줄에 — 좁으면 줄을 바꾼다.
 export const control = style({
   display: 'flex',
@@ -34,6 +89,13 @@ export const current = style({
   flexDirection: 'column',
   alignItems: 'flex-start',
   gap: spacing[2],
+})
+
+// 숫자 옆에 기본값·운영값 태그를 붙인다.
+export const currentRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[8],
 })
 
 export const currentValue = style([
@@ -58,24 +120,6 @@ export const stepper = style({
   gap: spacing[4],
 })
 
-export const stepButton = style([
-  typography.button.mdBold,
-  { fontWeight: fontWeight.medium },
-  {
-    minWidth: '48px',
-    height: '46px',
-    padding: `0 ${spacing[10]}`,
-    border: `1px solid ${color.border.default}`,
-    borderRadius: '8px',
-    background: color.background.surface,
-    color: color.text.secondary,
-    cursor: 'pointer',
-    fontVariantNumeric: 'tabular-nums',
-    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: { '&:hover': { background: color.background.subSurface } },
-  },
-])
-
 export const stepInput = style({ width: '120px' })
 
 const previewBase = style([
@@ -83,10 +127,8 @@ const previewBase = style([
   { fontWeight: fontWeight.regular },
   {
     display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing[8],
+    flexDirection: 'column',
+    gap: spacing[4],
     padding: `${spacing[10]} ${spacing[14]}`,
     borderRadius: '10px',
     color: color.text.primary,
@@ -94,7 +136,7 @@ const previewBase = style([
   },
 ])
 
-// 바꾼 값이 어느 구간에 들어가는지 막대와 같은 색으로 칠한다.
+// 바꾼 값이 처리 한계 안쪽이면 초록, 넘으면 빨강, 한계를 모르면 무채색.
 export const preview = styleVariants({
   success: [previewBase, { background: color.background.subtleSuccess }],
   warning: [previewBase, { background: color.background.subtleWarning }],
@@ -104,26 +146,10 @@ export const preview = styleVariants({
 
 export const previewValue = style({ fontWeight: fontWeight.semibold })
 
-const noteBase = style([
-  typography.body.defaultMedium,
-  { fontWeight: fontWeight.semibold },
-  { padding: `${spacing[2]} ${spacing[10]}`, borderRadius: '999px' },
+export const previewSub = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary },
 ])
-
-export const previewNote = styleVariants({
-  success: [
-    noteBase,
-    { color: color.status.success, background: color.background.base },
-  ],
-  warning: [
-    noteBase,
-    { color: color.text.primary, background: color.background.base },
-  ],
-  danger: [
-    noteBase,
-    { color: color.status.danger, background: color.background.base },
-  ],
-})
 
 export const foot = style({
   display: 'flex',
@@ -132,37 +158,11 @@ export const foot = style({
   gap: spacing[12],
 })
 
-// 자주 쓰지 않는 동작이라 버튼보다 작은 글자 링크로 둔다.
-export const linkButton = style([
-  typography.body.defaultMedium,
-  { fontWeight: fontWeight.semibold },
-  {
-    minHeight: '36px',
-    padding: 0,
-    border: 'none',
-    background: 'none',
-    color: color.primary.base,
-    cursor: 'pointer',
-    selectors: { '&:disabled': { cursor: 'not-allowed', opacity: 0.5 } },
-  },
-])
-
 // 입장을 멈추는 동작 — 적용과 떨어뜨리고, 빨간 테두리로 위험하다는 걸 먼저 보인다.
-export const stopButton = style([
-  typography.button.mdBold,
-  { fontWeight: fontWeight.medium },
-  {
-    minHeight: '36px',
-    padding: `0 ${spacing[16]}`,
-    border: `1px solid ${color.status.danger}`,
-    borderRadius: '999px',
-    background: color.background.base,
-    color: color.status.danger,
-    cursor: 'pointer',
-    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { background: color.background.subtleDanger },
-      '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
-    },
+export const stopButton = style({
+  borderColor: color.status.danger,
+  color: color.status.danger,
+  selectors: {
+    '&:hover:not(:disabled)': { background: color.background.subtleDanger },
   },
-])
+})

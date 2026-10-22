@@ -7,7 +7,11 @@ import { url } from '../url'
 
 import type {
   AdminStockItem,
+  StockCorrectionRequest,
+  StockCorrectionResponse,
   StockOverviewResponse,
+  StockReconcileDriftOption,
+  StockReconcileRunResponse,
   StockRequest,
 } from '../../types'
 import type { RequestHandler } from 'msw'
@@ -27,7 +31,101 @@ const hasVariant = (productId: string, optionCode: string) =>
     .find((product) => product.productId === productId)
     ?.variants.some((variant) => variant.optionCode === optionCode) ?? false
 
+/**
+ * 오늘 새벽 대조에서 어긋난 옵션. 목은 첫 일반 상품의 셋째 옵션 하나를 장부가 주문보다
+ * 2개 많게 잡은 것으로 둔다 — 보정하면 장부를 주문 기준으로 내리고 correctedAt을 단다.
+ */
+let driftOptions: StockReconcileDriftOption[] | null = null
+const seedDrifts = (): StockReconcileDriftOption[] => {
+  const product = adminProductStore.find((item) => item.saleMode !== 'PREORDER')
+  const variant = product?.variants[2]
+  const stock =
+    product && variant && findStockItem(product.productId, variant.optionCode)
+  if (!product || !variant || !stock) return []
+  return [
+    {
+      optionId: variant.optionCode,
+      productId: product.productId,
+      registered: true,
+      stockTotal: stock.initialQuantity,
+      expectedReserved: Math.max(0, stock.reservedQuantity - 2),
+      stockReserved: stock.reservedQuantity,
+      expectedSold: 0,
+      stockSold: 0,
+      correctedAt: null,
+    },
+  ]
+}
+const drifts = () => (driftOptions ??= seedDrifts())
+
+const reconcileRunAt = () => {
+  const today = new Date()
+  today.setHours(4, 0, 0, 0)
+  return today
+}
+
 export const adminStockHandlers: RequestHandler[] = [
+  http.get(url('/api/v1/admin/stock/reconcile-runs/latest'), () => {
+    const startedAt = reconcileRunAt()
+    const options = drifts()
+    return ok<StockReconcileRunResponse>({
+      startedAt: startedAt.toISOString(),
+      finishedAt: new Date(startedAt.getTime() + 4 * 60_000).toISOString(),
+      driftOptions: options.length,
+      truncated: false,
+      options,
+    })
+  }),
+
+  http.post(
+    url('/api/v1/admin/products/:productId/stock/options/:optionId/reconcile'),
+    async ({ request, params }) => {
+      const productId = String(params.productId)
+      const optionId = String(params.optionId)
+      if (!productExists(productId)) return notFound()
+      const body = (await request
+        .json()
+        .catch(() => null)) as Partial<StockCorrectionRequest> | null
+      const reason = body?.reason?.trim() ?? ''
+      if (!reason || reason.length > 500) {
+        return fail(400, {
+          code: 'VALIDATION_FAILED',
+          message: '입력값을 확인해 주세요.',
+          violations: [{ field: 'reason', message: '1~500자여야 합니다.' }],
+        })
+      }
+
+      const stock = findStockItem(productId, optionId)
+      const drift = drifts().find((item) => item.optionId === optionId)
+      const before = {
+        stockReserved: stock?.reservedQuantity ?? 0,
+        stockSold: 0,
+      }
+      if (!stock || !drift || drift.correctedAt) {
+        return ok<StockCorrectionResponse>({
+          optionId,
+          registered: !!stock,
+          stockTotal: stock?.initialQuantity ?? 0,
+          before,
+          after: before,
+          changed: false,
+        })
+      }
+
+      stock.reservedQuantity = drift.expectedReserved
+      stock.availableQuantity = stock.initialQuantity - stock.reservedQuantity
+      drift.correctedAt = new Date().toISOString()
+      return ok<StockCorrectionResponse>({
+        optionId,
+        registered: true,
+        stockTotal: stock.initialQuantity,
+        before,
+        after: { stockReserved: stock.reservedQuantity, stockSold: 0 },
+        changed: true,
+      })
+    },
+  ),
+
   http.get(url('/api/v1/admin/products/:productId/stock'), ({ params }) => {
     const productId = String(params.productId)
     const product = adminProductStore.find(

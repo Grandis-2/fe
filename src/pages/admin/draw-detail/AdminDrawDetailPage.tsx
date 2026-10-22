@@ -36,14 +36,9 @@ export function AdminDrawDetailPage() {
     )
   }
 
+  // 브레드크럼은 위젯이 마지막 갱신과 한 줄에 그린다.
   return (
     <div className={styles.root}>
-      <Breadcrumb
-        items={[
-          { label: '럭키드로우 관리', to: ADMIN_DRAWS_PATH },
-          { label: draw.data.title },
-        ]}
-      />
       {/* 회차는 만든 뒤 바뀌지 않아 다시 받지 않는다 — 진행만 위젯이 자동으로 다시 받는다. */}
       <AdminDrawDetail draw={draw.data} fetchedAt={draw.dataUpdatedAt} />
     </div>

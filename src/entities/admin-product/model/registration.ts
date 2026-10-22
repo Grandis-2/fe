@@ -205,6 +205,11 @@ export function toRegistrationRequest(
     // 0이면 생략해도 같다 — 서버 기본값이 0이다.
     ...(value.discountRate > 0 && { discountRate: value.discountRate }),
     ...(tags && { tags }),
+    ...(value.description.trim() && { description: value.description.trim() }),
+    // 팔지 않으면 생략한다 — 서버 기본이 '보증 없음'이다.
+    ...(value.warranty.offered && {
+      warranty: { offered: true, surcharge: value.warranty.surcharge },
+    }),
     ...(axes.length > 0 && { optionAxes: axes }),
     ...(images && { images }),
   }
@@ -293,11 +298,13 @@ export function toPreviewProduct(
     soldOut: false,
     modelNumber: value.modelName,
     categoryId: value.categoryId,
-    description: null,
+    description: value.description.trim() || null,
     visible: true,
     basePrice: value.basePrice,
     discountRate: value.discountRate,
-    warranty: { offered: false, surcharge: 0 },
+    warranty: value.warranty.offered
+      ? value.warranty
+      : { offered: false, surcharge: 0 },
     campaign: value.isPreorder
       ? {
           opensAt: toIso(value.openAt) ?? '',

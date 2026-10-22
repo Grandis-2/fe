@@ -143,7 +143,7 @@ const queueColumns = (
     header: '입장 속도 / 상한',
     align: 'right',
     render: (product) =>
-      `${formatNumber(product.credit)} / ${formatNumber(product.cap)}명/초`,
+      `${formatNumber(product.credit)} / ${product.cap === null ? '서버 기본값' : `${formatNumber(product.cap)}명/초`}`,
   },
 ]
 
@@ -517,7 +517,11 @@ export function AdminLoadTest({
                 queueProduct ? (
                   <ValueWithNote
                     value={`${formatNumber(queueProduct.credit)}명/초`}
-                    note={`상한 ${formatNumber(queueProduct.cap)}명/초`}
+                    note={
+                      queueProduct.cap === null
+                        ? '상한 서버 기본값'
+                        : `상한 ${formatNumber(queueProduct.cap)}명/초`
+                    }
                   />
                 ) : (
                   '대기열에 없음'

@@ -1,6 +1,6 @@
 import { waitEstimate } from '@entities/admin-waitingroom'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { Skeleton } from '@shared/ui'
+import { Button, Skeleton } from '@shared/ui'
 
 import * as styles from './AdmissionStatus.css'
 
@@ -9,7 +9,7 @@ import type { AdmissionFlow } from '../../lib/useAdmissionFlow'
 export type AdmissionStatusProps = {
   flow: AdmissionFlow
   loading: boolean
-  /** 급할 때만 붙는 할 일 — 입장 멈춤엔 다시 열기, 처리보다 빠르면 속도 낮추기 */
+  /** 급할 때만 붙는 할 일 — 입장 멈춤엔 다시 열기, 외부 등록이 밀리면 속도 낮추기 */
   action?: { label: string; onClick: () => void; disabled?: boolean }
 }
 
@@ -24,7 +24,14 @@ export function AdmissionStatus({
 }: AdmissionStatusProps) {
   if (loading) return <Skeleton height={132} radius={14} />
 
-  const { verdict, waiting, admitting, processing } = flow
+  const { verdict, waiting, admitting, signals } = flow
+  const { backlog, backlogPerMinute } = signals
+  const trend =
+    backlogPerMinute === null
+      ? '추세 재는 중'
+      : Math.round(backlogPerMinute) === 0
+        ? '그대로'
+        : `분당 ${backlogPerMinute > 0 ? '+' : '−'}${formatNumber(Math.abs(Math.round(backlogPerMinute)))}건`
   return (
     <section className={styles.root[verdict.tone]} aria-label="지금 상태">
       <div className={styles.verdict}>
@@ -32,14 +39,15 @@ export function AdmissionStatus({
         <span className={styles.title[verdict.tone]}>{verdict.title}</span>
         <span className={styles.hint}>{verdict.hint}</span>
         {action && (
-          <button
-            type="button"
+          <Button
+            size="small"
+            rounded
             className={styles.action}
             disabled={action.disabled}
             onClick={action.onClick}
           >
             {action.label}
-          </button>
+          </Button>
         )}
       </div>
       <dl className={styles.kpis}>
@@ -64,17 +72,18 @@ export function AdmissionStatus({
           </dd>
         </div>
         <div className={styles.kpi}>
-          <dt className={styles.kpiLabel}>외부 등록 처리</dt>
+          <dt className={styles.kpiLabel}>외부 등록 대기</dt>
           <dd className={styles.kpiValue}>
-            {processing === null ? (
+            {backlog === null ? (
               '재는 중'
             ) : (
               <>
-                {formatNumber(processing)}
-                <span className={styles.unit}>건/초</span>
+                {formatNumber(backlog)}
+                <span className={styles.unit}>건</span>
               </>
             )}
           </dd>
+          {backlog !== null && <dd className={styles.kpiNote}>{trend}</dd>}
         </div>
       </dl>
     </section>

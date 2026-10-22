@@ -91,19 +91,28 @@ export const reservationStateLabel: Record<ReservationState, string> = {
   CANCELED: '취소',
 }
 
+// 처리 중은 테두리만, 확정은 채운 브랜드 색 — 같은 색 안에서 진행 중과 끝남을 나눈다.
 export const reservationStateColor: Record<
   ReservationState,
-  'blue' | 'green' | 'red' | 'gray'
+  'primary' | 'red' | 'gray'
 > = {
-  PROCESSING: 'blue',
-  CONFIRMED: 'green',
+  PROCESSING: 'primary',
+  CONFIRMED: 'primary',
   REPROCESS_NEEDED: 'red',
   CANCELING: 'gray',
   CANCELED: 'gray',
 }
 
-// 표의 상태 열 너비를 가장 긴 문구에 맞출 때 쓴다(Tag의 widthOptions).
-export const reservationStateLabels = Object.values(reservationStateLabel)
+export const reservationStateVariant: Record<
+  ReservationState,
+  'subtle' | 'outline'
+> = {
+  PROCESSING: 'outline',
+  CONFIRMED: 'subtle',
+  REPROCESS_NEEDED: 'subtle',
+  CANCELING: 'subtle',
+  CANCELED: 'subtle',
+}
 
 const STATE_OF_STATUS: Record<PreorderStatus, ReservationState> = {
   PENDING_SYNC: 'PROCESSING',
@@ -156,8 +165,6 @@ export const paymentStateVariant: Record<PaymentState, 'subtle' | 'outline'> = {
   EXPIRED: 'outline',
 }
 
-export const paymentStateLabels = Object.values(paymentStateLabel)
-
 /**
  * 결제 단계. 외부 등록 전(처리 중)과 취소된 예약은 결제할 게 없어 null이다 — 취소 전에
  * 결제했는지(환불 대상인지)는 목록이 알려주지 않는다.
@@ -194,6 +201,19 @@ export function paymentDueLabel(
   const minutes = Math.floor(remaining / 60_000)
   if (minutes < 60) return `${minutes}분 남음`
   return `${Math.floor(minutes / 60)}시간 남음`
+}
+
+/** 결제 기한이 이만큼 안 남았으면 강조한다 */
+const PAYMENT_DUE_SOON_MS = 3 * 60 * 60 * 1000
+
+/** 결제 기한이 곧인지 — 기한이 없거나 이미 지났으면 false */
+export function isPaymentDueSoon(
+  paymentDueAt: string | null,
+  now = Date.now(),
+): boolean {
+  if (!paymentDueAt) return false
+  const remaining = Date.parse(paymentDueAt) - now
+  return remaining > 0 && remaining < PAYMENT_DUE_SOON_MS
 }
 
 /* ------------------------------------------------------------------ *

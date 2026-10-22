@@ -44,6 +44,7 @@ export const action = style([
     border: '1px solid transparent',
     textDecoration: 'none',
     whiteSpace: 'nowrap',
+    cursor: 'pointer',
     transition: `background ${motion.duration.fast} ${motion.easing.default}`,
   },
 ])

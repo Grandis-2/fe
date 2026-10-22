@@ -4,6 +4,7 @@ export {
   useChangeAdmissionRate,
   useWaitingroomStatus,
 } from './api/useAdminWaitingroom'
+export { useWaitingroomStatusHistory } from './api/useWaitingroomStatusHistory'
 export type { AdmissionRateChange } from './api/useAdminWaitingroom'
 export { waitEstimate } from './lib/waitEstimate'
 export {

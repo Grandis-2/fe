@@ -1,8 +1,11 @@
 import { useState } from 'react'
 
+import { ChevronRight } from 'lucide-react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 
+import { useAdminProducts } from '@entities/admin-product'
 import {
+  PartialReprocessError,
   preorderStatusLabel,
   reservationNo,
   useAllAdminReservations,
@@ -21,13 +24,13 @@ import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
   Checkbox,
+  Dropdown,
   InlineAlert,
   SegmentedTabs,
-  StatCard,
   Table,
   Tag,
 } from '@shared/ui'
-import type { TableColumn } from '@shared/ui'
+import type { DropdownOption, TableColumn } from '@shared/ui'
 
 import {
   canReprocess,
@@ -36,56 +39,69 @@ import {
   reconcileKindDescription,
   reconcileKindLabel,
   reconcileKinds,
+  reconcileWrongSide,
   type ReconcileIssue,
   type ReconcileKind,
 } from '../../lib/reconcile'
 
 import * as styles from './AdminReservationReconcile.css'
 
-export type AdminReservationReconcileProps = {
-  /** 고른 사전예약 상품. 없으면 전체 */
-  productId?: string
-  /** 상품 id → 이름. 외부에만 있는 예약은 우리 예약이 없어 이름을 여기서 찾는다 */
-  productNames: ReadonlyMap<string, string>
-}
-
 type KindFilter = 'all' | ReconcileKind
 
 type Feedback = { status: 'success' | 'error'; message: string }
 
-// 상세에 갔다 돌아와도 같은 탭이 보이게 주소(?kind=)에 둔다.
+// 상세에 갔다 돌아와도 같은 탭·상품이 보이게 주소(?kind=·?product=)에 둔다.
 const KIND_PARAM = 'kind'
+const PRODUCT_PARAM = 'product'
 const toKindFilter = (value: string | null): KindFilter =>
   reconcileKinds.find((kind) => kind === value) ?? 'all'
 
-// 행마다 다른 유형 태그를 가장 긴 이름 폭으로 맞춘다.
-const kindLabels = reconcileKinds.map((kind) => reconcileKindLabel[kind])
-
 // 재처리 대상이 아닌 건에 관리자가 할 일. 처리 API가 없는 건은 개발팀이 맡는다.
 const hintOf = (issue: ReconcileIssue) =>
-  issue.kind === 'STALE' ? '처리 중입니다' : '개발팀 문의'
+  issue.kind === 'STALE' ? '자동 재시도 중' : '개발팀 문의'
 
 /**
- * 우리 예약과 외부 예약 시스템을 맞춰 본다. 양쪽 전체를 받아야 해서 들어올 때 한 번,
- * 그 뒤엔 '대조 실행'을 눌렀을 때만 한다. 상품·탭을 바꾸면 받은 결과를 다시 거르기만 한다.
+ * 외부 예약 대조 화면 — 우리 예약과 외부 예약 시스템을 맞춰 본다. 양쪽 전체를 받아야 해서
+ * 들어올 때 한 번, 그 뒤엔 '대조 실행'을 눌렀을 때만 한다. 상품·탭을 바꾸면 받은 결과를
+ * 다시 거르기만 한다. 대조 실행이 제목 줄에 붙어 제목까지 이 위젯이 그린다.
  */
-export function AdminReservationReconcile({
-  productId,
-  productNames,
-}: AdminReservationReconcileProps) {
+export function AdminReservationReconcile() {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
-  const kindFilter = toKindFilter(searchParams.get(KIND_PARAM))
-  const setKindFilter = (next: KindFilter) =>
+  const setParam = (key: string, value: string | undefined) =>
     setSearchParams(
       (prev) => {
-        if (next === 'all') prev.delete(KIND_PARAM)
-        else prev.set(KIND_PARAM, next)
+        if (value === undefined) prev.delete(key)
+        else prev.set(key, value)
         return prev
       },
       { replace: true },
     )
+  const kindFilter = toKindFilter(searchParams.get(KIND_PARAM))
+  const setKindFilter = (next: KindFilter) =>
+    setParam(KIND_PARAM, next === 'all' ? undefined : next)
+  // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
+  const productId = searchParams.get(PRODUCT_PARAM) ?? undefined
+  const setProductId = (next: string | undefined) =>
+    setParam(PRODUCT_PARAM, next)
+
+  const { data: products = [] } = useAdminProducts({
+    saleMode: 'PREORDER',
+    size: 100,
+  })
+  // 값이 undefined인 첫 항목이 '전체 상품' — 외부에만 있는 등록까지 다 본다.
+  const productOptions: DropdownOption<string | undefined>[] = [
+    { label: '전체 상품', value: undefined },
+    ...products.map((product) => ({
+      label: product.name,
+      value: product.productId,
+    })),
+  ]
+  // 외부에만 있는 예약은 우리 예약이 없어 상품 이름을 여기서 찾는다.
+  const productNames = new Map(
+    products.map((product) => [product.productId, product.name]),
+  )
 
   // 고른 건 / 이번 대조에서 이미 재처리를 보낸 건(예약 id). 다시 대조하면 비운다.
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
@@ -191,25 +207,44 @@ export function AdminReservationReconcile({
                 .filter(Boolean)
                 .join(' '),
             ),
-          onError: showFailure,
+          onError: (caught) => {
+            // 앞 묶음은 접수됐다 — 접수된 건은 다시 못 고르게 하고, 보내지 못한 건만 고르게 둔다.
+            if (caught instanceof PartialReprocessError) {
+              const unsent = new Set(caught.unsentPreorderIds)
+              setRequested(
+                (prev) =>
+                  new Set([...prev, ...keys.filter((key) => !unsent.has(key))]),
+              )
+              setSelected(unsent)
+              setFeedback({ status: 'error', message: caught.message })
+              return
+            }
+            showFailure(caught)
+          },
         })
       },
     })
   }
 
+  // 건수는 탭에 붙인다 — 따로 카드를 두면 같은 숫자를 두 번 읽는다. 대조 전엔 숫자를 뺀다.
+  const tabLabel = (label: string, count: number) => (
+    <span className={styles.tabLabel}>
+      {label}
+      {ran && (
+        <span className={count > 0 ? styles.tabCount : styles.tabCountZero}>
+          {count.toLocaleString('ko-KR')}
+        </span>
+      )}
+    </span>
+  )
   const tabs = [
-    { value: 'all' as const, label: '전체' },
+    { value: 'all' as const, label: tabLabel('전체', issues.length) },
     ...reconcileKinds.map((kind) => ({
       value: kind,
-      label: reconcileKindLabel[kind],
-    })),
-  ]
-
-  const cards = [
-    { label: '전체', count: issues.length },
-    ...reconcileKinds.map((kind) => ({
-      label: reconcileKindLabel[kind],
-      count: issues.filter((issue) => issue.kind === kind).length,
+      label: tabLabel(
+        reconcileKindLabel[kind],
+        issues.filter((issue) => issue.kind === kind).length,
+      ),
     })),
   ]
 
@@ -217,6 +252,17 @@ export function AdminReservationReconcile({
     issue.reservation?.productTitle ??
     (issue.productId && productNames.get(issue.productId)) ??
     '—'
+
+  // 우리 예약이 있는 건만 상세로 간다 — 외부에만 있는 예약은 열 화면이 없다.
+  // 상세의 '돌아가기'가 예약 현황이 아니라 고른 상품·탭 그대로의 이 화면을 가리키게 한다.
+  const openDetail = (issue: ReconcileIssue) => {
+    if (!issue.reservation) return
+    const backTo: BackTo = {
+      label: '외부 예약 대조',
+      to: location.pathname + location.search,
+    }
+    navigate(adminReservationPath(issue.key), { state: { backTo } })
+  }
 
   const columns: TableColumn<ReconcileIssue>[] = [
     {
@@ -251,74 +297,94 @@ export function AdminReservationReconcile({
     {
       key: 'kind',
       header: '유형',
-      align: 'center',
       render: (issue) => (
         <Tag
           variant="subtle"
           size="medium"
           rounded={false}
           color={reconcileKindColor[issue.kind]}
-          widthOptions={kindLabels}
         >
           {reconcileKindLabel[issue.kind]}
         </Tag>
       ),
     },
+    // 번호 아래 상품 — 외부에만 있는 건은 우리 번호가 없어 외부 번호를 붙인다.
     {
-      key: 'no',
-      header: '예약 번호',
-      align: 'center',
-      render: (issue) => (issue.reservation ? reservationNo(issue.key) : '—'),
-    },
-    {
-      key: 'product',
-      header: '모델',
-      align: 'center',
-      render: productName,
-    },
-    {
-      key: 'ours',
-      header: '우리 예약',
-      align: 'center',
-      render: (issue) =>
-        issue.reservation
-          ? preorderStatusLabel[issue.reservation.status]
-          : '없음',
-    },
-    {
-      key: 'external',
-      header: '외부 예약',
-      align: 'center',
-      render: (issue) =>
-        issue.external ? (
-          <span className={styles.stacked}>
-            {externalStatusLabel[issue.external.status]}
-            {issue.external.externalNumber && (
-              <span className={styles.subText}>
-                {issue.external.externalNumber}
-              </span>
-            )}
+      key: 'reservation',
+      header: '예약',
+      render: (issue) => (
+        <span className={styles.stacked}>
+          <span className={styles.mainText}>
+            {issue.reservation ? reservationNo(issue.key) : '—'}
           </span>
-        ) : (
-          '없음'
-        ),
+          <span className={styles.subText}>
+            {[
+              productName(issue),
+              issue.reservation?.optionTitle ?? issue.external?.externalNumber,
+            ]
+              .filter(Boolean)
+              .join(' · ')}
+          </span>
+        </span>
+      ),
+    },
+    // 우리와 외부를 한 칸에 맞대고, 어긋난 쪽만 빨갛게 한다.
+    {
+      key: 'compare',
+      header: '양쪽 상태',
+      render: (issue) => {
+        const wrong = reconcileWrongSide[issue.kind]
+        const ours = issue.reservation
+          ? preorderStatusLabel[issue.reservation.status]
+          : '없음'
+        const external = issue.external
+          ? [
+              externalStatusLabel[issue.external.status],
+              issue.reservation && issue.external.externalNumber,
+            ]
+              .filter(Boolean)
+              .join(' · ')
+          : '없음'
+        return (
+          <span className={styles.compare}>
+            <span className={styles.side}>우리</span>
+            <span
+              className={
+                wrong === 'ours' ? styles.sideValueWrong : styles.sideValue
+              }
+            >
+              {ours}
+            </span>
+            <span className={styles.side}>외부</span>
+            <span
+              className={
+                wrong === 'external' ? styles.sideValueWrong : styles.sideValue
+              }
+            >
+              {external}
+            </span>
+          </span>
+        )
+      },
     },
     {
       key: 'reason',
       header: '내용',
-      render: (issue) => issue.reason,
+      render: (issue) => (
+        <span className={styles.cellText}>{issue.reason}</span>
+      ),
     },
     {
       key: 'action',
       header: '조치',
-      align: 'center',
       width: '120px',
       render: (issue) =>
         requested.has(issue.key) ? (
-          <span className={styles.subText}>재처리 요청함</span>
+          <span className={styles.hint}>재처리 요청함</span>
         ) : canReprocess(issue) ? (
           <Button
             size="small"
+            variant="outline"
             disabled={reprocessing}
             onClick={(event) => {
               event.stopPropagation()
@@ -328,115 +394,112 @@ export function AdminReservationReconcile({
             재처리
           </Button>
         ) : (
-          <span className={styles.subText}>{hintOf(issue)}</span>
+          <span className={styles.hint}>{hintOf(issue)}</span>
+        ),
+    },
+    // 공통 Table의 rowAction은 모든 행에 붙어서, 열 상세가 있는 건에만 직접 둔다.
+    {
+      key: 'detail',
+      header: '',
+      align: 'center',
+      width: '56px',
+      render: (issue) =>
+        issue.reservation && (
+          <button
+            type="button"
+            className={styles.detailButton}
+            aria-label={`${reservationNo(issue.key)} 상세 보기`}
+            onClick={(event) => {
+              event.stopPropagation()
+              openDetail(issue)
+            }}
+          >
+            <ChevronRight className={styles.detailIcon} aria-hidden="true" />
+          </button>
         ),
     },
   ]
 
-  // 우리 예약이 있는 건만 상세로 간다 — 외부에만 있는 예약은 열 화면이 없다.
-  // 상세의 '돌아가기'가 예약 현황이 아니라 고른 상품·탭 그대로의 이 화면을 가리키게 한다.
-  const openDetail = (issue: ReconcileIssue) => {
-    if (!issue.reservation) return
-    const backTo: BackTo = {
-      label: '외부 예약 대조',
-      to: location.pathname + location.search,
-    }
-    navigate(adminReservationPath(issue.key), { state: { backTo } })
-  }
-
   return (
     <div className={styles.root}>
-      <div className={styles.runBar}>
-        <span className={styles.subText}>
-          {running
-            ? '우리 예약과 외부 예약 시스템을 비교하는 중입니다…'
-            : ran
-              ? `마지막 대조 ${formatDotDateTime(new Date(ranAt).toISOString())}`
-              : '아직 대조하지 않았습니다.'}
-        </span>
-        <Button
-          size="small"
-          className={styles.runButton}
-          disabled={running}
-          onClick={run}
-        >
-          {running ? '대조 중…' : '대조 실행'}
-        </Button>
-      </div>
-
-      <div className={styles.cards}>
-        {cards.map(({ label, count }) => (
-          <StatCard
-            key={label}
-            label={label}
-            muted={!ran}
-            value={
-              ran
-                ? `${count.toLocaleString('ko-KR')}건`
-                : running
-                  ? '대조 중'
-                  : '대조 전'
-            }
-          />
-        ))}
-      </div>
-
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>대조 결과</h2>
-        <div className={styles.note}>
-          우리 예약과 외부 예약 시스템을 비교합니다. 예약이 많으면 시간이 걸릴
-          수 있습니다. 방금 들어온 예약(1분 이내)은 빼고 비교합니다.
+      <header className={styles.header}>
+        <h1 className={styles.title}>외부 예약 대조</h1>
+        <div className={styles.runStatus}>
+          <span>
+            {running
+              ? '비교하는 중…'
+              : ran
+                ? `마지막 대조 ${formatDotDateTime(new Date(ranAt).toISOString())}`
+                : '아직 대조하지 않았습니다.'}
+          </span>
+          <Button size="small" disabled={running} onClick={run}>
+            {running ? '대조 중…' : '대조 실행'}
+          </Button>
         </div>
+      </header>
 
-        {runError != null && (
-          <InlineAlert status="error">
-            {getErrorMessage(runError, '대조에 필요한 목록을 받지 못했습니다.')}
-          </InlineAlert>
-        )}
+      <div className={styles.note}>
+        우리 예약과 외부 예약 시스템을 비교해 어긋난 건만 보여줍니다. 방금
+        들어온 예약(1분 이내)은 빼고 비교합니다.
+      </div>
 
-        {feedback && (
-          <InlineAlert status={feedback.status}>{feedback.message}</InlineAlert>
-        )}
+      {runError != null && (
+        <InlineAlert status="error">
+          {getErrorMessage(runError, '대조에 필요한 목록을 받지 못했습니다.')}
+        </InlineAlert>
+      )}
 
-        <div className={styles.toolbar}>
-          <SegmentedTabs
-            items={tabs}
-            value={kindFilter}
-            onChange={setKindFilter}
-          />
+      {feedback && (
+        <InlineAlert status={feedback.status}>{feedback.message}</InlineAlert>
+      )}
+
+      <SegmentedTabs items={tabs} value={kindFilter} onChange={setKindFilter} />
+      {kindFilter !== 'all' && (
+        <div className={styles.note}>
+          {reconcileKindDescription[kindFilter]}
+        </div>
+      )}
+
+      <div className={styles.filters}>
+        <Dropdown
+          className={styles.field}
+          label="전체 상품"
+          fieldLabel="상품"
+          options={productOptions}
+          value={productId}
+          onSelect={setProductId}
+        />
+      </div>
+
+      {visibleSelectable.length > 0 && (
+        <div className={styles.selectionBar}>
+          <span className={styles.selectionCount}>
+            {selectedKeys.length.toLocaleString('ko-KR')}건 선택됨
+          </span>
           <Button
             size="small"
-            variant="outline"
-            className={styles.runButton}
             disabled={selectedKeys.length === 0 || reprocessing}
             onClick={confirmReprocessSelected}
           >
-            {reprocessMany.isPending
-              ? '재처리 요청 중…'
-              : `선택 재처리 ${selectedKeys.length}건`}
+            {reprocessMany.isPending ? '재처리 요청 중…' : '선택한 예약 재처리'}
           </Button>
         </div>
-        {kindFilter !== 'all' && (
-          <div className={styles.note}>
-            {reconcileKindDescription[kindFilter]}
-          </div>
-        )}
+      )}
 
-        <Table
-          columns={columns}
-          rows={visibleIssues}
-          rowKey={(issue) => `${issue.kind}-${issue.key}`}
-          pageSize={10}
-          onRowClick={openDetail}
-          emptyMessage={
-            running
-              ? '대조하는 중입니다.'
-              : ran
-                ? '어긋난 예약이 없습니다.'
-                : '대조 실행을 누르면 우리 예약과 외부 예약 시스템을 비교합니다.'
-          }
-        />
-      </section>
+      <Table
+        columns={columns}
+        rows={visibleIssues}
+        rowKey={(issue) => `${issue.kind}-${issue.key}`}
+        pageSize={10}
+        onRowClick={openDetail}
+        emptyMessage={
+          running
+            ? '대조하는 중입니다.'
+            : ran
+              ? '어긋난 예약이 없습니다.'
+              : '대조 실행을 누르면 우리 예약과 외부 예약 시스템을 비교합니다.'
+        }
+      />
     </div>
   )
 }

@@ -216,8 +216,8 @@ const browserRouter = createBrowserRouter([
           },
         ],
       },
-      // 관리자 로그인은 헤더(로고)는 두고 사이드바는 없다 — AdminLayout·RequireAdmin
-      // 밖에 둔다. 헤더의 알림·로그아웃은 로그인 전이라 Header가 이 경로에서 숨긴다.
+      // 관리자 로그인은 사이드바가 없다 — AdminLayout·RequireAdmin 밖에 둔다. 헤더도
+      // RootLayout이 이 경로에서 그리지 않는다(로고는 왼쪽 장면에 있다).
       {
         path: ADMIN_LOGIN_PATH,
         lazy: () =>

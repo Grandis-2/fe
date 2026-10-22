@@ -14,6 +14,31 @@ export const titleRow = style({
   gap: spacing[12],
 })
 
+export const heading = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[6],
+  minWidth: 0,
+})
+
+export const titleLine = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: spacing[8],
+})
+
+// 브랜드 · 모델명 · 판매 방식 — 제목 아래 보조 줄
+export const meta = style([
+  typography.body.sub,
+  {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing[8],
+    color: color.text.tertiary,
+  },
+])
+
 export const title = style([
   typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },

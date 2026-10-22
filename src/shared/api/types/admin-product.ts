@@ -119,6 +119,8 @@ export type AdminProductListItem = {
   productId: string
   saleMode: SaleMode
   title: string
+  brand: ProductBrandCode
+  modelName: string
   /** 대표 사진. 없으면 null */
   imageUrl: string | null
   /** 상품 판매 상태 */
@@ -129,8 +131,12 @@ export type AdminProductListItem = {
   registrationCompleted: boolean
   /** 판매 중지를 포함한 전체 옵션 수 */
   optionCount: number
-  /** 판매 중인 옵션의 최저가(원). 없으면 null */
+  /** 판매 중인 옵션의 최저가(원, 할인가). 없으면 null */
   minPrice: number | null
+  /** minPrice 옵션의 정가(원, 할인 전). 없으면 null */
+  minListPrice: number | null
+  /** 할인율(정수 %, 0~99). 0이면 할인 없음 */
+  discountRate: number
   sellable: boolean
   /** 일반 상품 품절 여부. 사전예약은 늘 false */
   soldOut: boolean
@@ -273,6 +279,8 @@ export type ProductRegistrationRequest = {
   basePrice: number
   /** 정수 %, 0~99. 생략하면 0이고 모든 옵션에 같이 걸린다(보증 금액엔 안 걸림) */
   discountRate?: number
+  /** 보증. 생략하면 팔지 않는다. 할인은 걸리지 않는다 */
+  warranty?: { offered: boolean; surcharge?: number }
   /** 생략하면 서버가 모든 조합을 만든다 */
   optionAxes?: RegistrationOptionAxis[]
   /** 조합별 조정(제외·SKU·재고). 생략한 조합도 만들어진다 */
@@ -358,6 +366,18 @@ export type PreorderCampaignRequest = {
   closesAt: string
 }
 
+/** 모집 일정 조회·변경·마감 응답(preorder 서비스) */
+export type PreorderCampaignResponse = {
+  productId: string
+  opensAt: string
+  /** 마감 시각(제외). 조기 마감하면 그 시각으로 당겨진다 */
+  closesAt: string
+  saleStatus: PreorderSaleStatus
+  /** 지금까지 발급한 순번 수(취소 포함). 다음 순번은 issuedCount + 1 */
+  issuedCount: number
+  openNotifiedAt: string | null
+}
+
 /**
  * 예전 상세 모양(프론트 제안). 목업 저장소가 아직 이 모양이라 남겨 둔다 — 조회·
  * 등록·수정은 명세 모양으로 옮겼다.
@@ -403,10 +423,11 @@ export type GiftCandidateParams = Pick<
 >
 
 export type AdminProductListParams = {
-  /** 상품명과 태그에서 대소문자 없이 부분 일치. 비우면 무시한다 */
+  /** 상품명·태그·모델명·브랜드 코드에서 대소문자 없이 부분 일치. 비우면 무시한다 */
   q?: string
   saleMode?: SaleMode
   status?: ProductSaleStatus
+  brand?: ProductBrandCode
   /** 0부터 시작한다 */
   page?: number
   /** 1~100(기본 20) */

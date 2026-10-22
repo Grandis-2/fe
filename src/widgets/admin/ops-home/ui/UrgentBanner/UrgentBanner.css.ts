@@ -24,8 +24,10 @@ export const action = style([
     borderRadius: '9999px',
     background: color.status.danger,
     color: color.text.inverse,
+    border: 0,
     textDecoration: 'none',
     whiteSpace: 'nowrap',
+    cursor: 'pointer',
     transition: `filter ${motion.duration.fast} ${motion.easing.default}`,
     selectors: { '&:hover': { filter: 'brightness(0.92)' } },
   },
@@ -153,8 +155,10 @@ export const compactAction = style([
     borderRadius: '9999px',
     background: color.background.base,
     color: color.status.danger,
+    border: 0,
     textDecoration: 'none',
     whiteSpace: 'nowrap',
+    cursor: 'pointer',
   },
 ])
 

@@ -6,6 +6,7 @@ export {
   useAdminReservations,
   useAllAdminReservations,
   useCancelReservation,
+  useReprocessFailedRegistrations,
   useReprocessReservation,
   useReprocessReservations,
   useReservationStats,
@@ -13,10 +14,8 @@ export {
   useSaveReservationNote,
   useSyncJobErrorGroups,
 } from './api/useAdminReservations'
-export {
-  useReservationStatsHistories,
-  useReservationStatsHistory,
-} from './api/useReservationStatsHistory'
+export { useReservationStatsHistory } from './api/useReservationStatsHistory'
+export { PartialReprocessError } from './api/adminReservation'
 export {
   actorLabel,
   countByStage,
@@ -28,17 +27,17 @@ export {
   syncJobStatusLabel,
   syncJobTypeLabel,
   isReprocessable,
+  isPaymentDueSoon,
   paymentDueLabel,
   paymentStateColor,
   paymentStateLabel,
-  paymentStateLabels,
   paymentStateOf,
   paymentStateVariant,
   reservationNo,
   reservationStageLabel,
   reservationStateColor,
+  reservationStateVariant,
   reservationStateLabel,
-  reservationStateLabels,
   reservationStateOf,
 } from './model/types'
 export type {

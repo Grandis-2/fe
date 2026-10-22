@@ -10,17 +10,15 @@ import {
 import {
   countByStage,
   isReprocessable,
+  isPaymentDueSoon,
   paymentDueLabel,
-  paymentStateColor,
   paymentStateLabel,
-  paymentStateLabels,
   paymentStateOf,
-  paymentStateVariant,
   reservationNo,
   reservationStageLabel,
   reservationStateColor,
+  reservationStateVariant,
   reservationStateLabel,
-  reservationStateLabels,
   reservationStateOf,
   useAdminMembers,
   useAdminReservations,
@@ -41,6 +39,7 @@ import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
   Checkbox,
+  CountBadge,
   Dropdown,
   InlineAlert,
   Input,
@@ -303,20 +302,25 @@ export function AdminReservationsPage() {
 
   // 탭에 전체 건수를 붙인다(집계 API) — 표는 최근 100건이라 탭 숫자와 표 줄 수가 다를 수 있다.
   // 집계를 못 받았으면 숫자를 빼서 0건으로 읽히지 않게 한다.
+  // 실패 건수는 빨간 배지로 — 따로 경고 띠를 두지 않아도 어느 탭에서든 먼저 보인다.
   const tabs = statusFilters.map(({ value, stage }) => ({
     value,
     label: (
       <span className={styles.tabLabel}>
         {reservationStageLabel[stage]}
-        {stageCounts && (
-          <span className={styles.tabCount}>
-            {stageCounts[stage].toLocaleString('ko-KR')}
-          </span>
-        )}
+        {stageCounts &&
+          (stage === 'REPROCESS_NEEDED' && stageCounts[stage] > 0 ? (
+            <CountBadge>
+              {stageCounts[stage].toLocaleString('ko-KR')}
+            </CountBadge>
+          ) : (
+            <span className={styles.tabCount}>
+              {stageCounts[stage].toLocaleString('ko-KR')}
+            </span>
+          ))}
       </span>
     ),
   }))
-  const failures = stageCounts?.REPROCESS_NEEDED ?? 0
 
   const columns: TableColumn<AdminReservation>[] = [
     {
@@ -350,59 +354,64 @@ export function AdminReservationsPage() {
           />
         ),
     },
+    // 번호 아래 접수 시각, 모델 아래 옵션·차수 — 함께 읽는 값을 한 칸에 묶어 열을 줄인다.
     {
       key: 'no',
-      header: '예약 번호',
-      align: 'center',
+      header: '예약',
       render: (reservation) => (
-        <span className={styles.reservationNo}>
-          {reservationNo(reservation.preorderId)}
+        <span className={styles.stacked}>
+          <span className={styles.mainText}>
+            {reservationNo(reservation.preorderId)}
+          </span>
+          <span className={styles.subText}>
+            {formatReceivedAt(reservation.createdAt)}
+          </span>
         </span>
       ),
     },
     {
       key: 'product',
-      header: '모델',
-      align: 'center',
-      render: (reservation) => reservation.productTitle,
-    },
-    {
-      key: 'option',
-      header: '옵션',
-      align: 'center',
-      render: (reservation) => reservation.optionTitle,
+      header: '상품',
+      render: (reservation) => (
+        <span className={styles.stacked}>
+          <span className={styles.mainText}>{reservation.productTitle}</span>
+          <span className={styles.subText}>
+            {reservation.optionTitle} · {reservation.shipmentBatch.batchNumber}
+            차
+          </span>
+        </span>
+      ),
     },
     {
       key: 'member',
       header: '예약자',
-      align: 'center',
-      render: (reservation) => memberName(reservation.customerId),
+      render: (reservation) => (
+        <span className={styles.cellText}>
+          {memberName(reservation.customerId)}
+        </span>
+      ),
     },
     {
       key: 'seq',
       header: '순번',
-      align: 'center',
-      render: (reservation) =>
-        reservation.queuePosition.toLocaleString('ko-KR'),
+      align: 'right',
+      render: (reservation) => (
+        <span className={styles.number}>
+          {reservation.queuePosition.toLocaleString('ko-KR')}
+        </span>
+      ),
     },
-    {
-      key: 'batch',
-      header: '배송 차수',
-      align: 'center',
-      render: (reservation) => `${reservation.shipmentBatch.batchNumber}차`,
-    },
+    // 상태는 의미별 색 태그로 구분한다. 외부 등록 실패는 행 배경까지 깔려 따로 눈에 띈다.
     {
       key: 'status',
       header: '상태',
-      align: 'center',
       render: (reservation) => {
         const state = reservationStateOf(reservation)
         return (
           <Tag
-            variant="subtle"
+            variant={reservationStateVariant[state]}
             size="medium"
             rounded={false}
-            widthOptions={reservationStateLabels}
             color={reservationStateColor[state]}
           >
             {reservationStateLabel[state]}
@@ -413,7 +422,6 @@ export function AdminReservationsPage() {
     {
       key: 'payment',
       header: '결제',
-      align: 'center',
       render: (reservation) => {
         const payment = paymentStateOf(reservation)
         if (!payment) return <span className={styles.subText}>—</span>
@@ -423,56 +431,44 @@ export function AdminReservationsPage() {
           payment === 'PENDING'
             ? paymentDueLabel(reservation.paymentDueAt)
             : null
+        const soon = due !== null && isPaymentDueSoon(reservation.paymentDueAt)
 
         return (
-          <span className={styles.stackedCell}>
-            {/* 상태 열이 의미별 색을 쓰므로 결제는 브랜드 색 + 변형으로 구분한다. */}
-            <Tag
-              variant={paymentStateVariant[payment]}
-              size="medium"
-              rounded={false}
-              widthOptions={paymentStateLabels}
-              color={paymentStateColor[payment]}
-            >
+          <span className={styles.stacked}>
+            <span className={styles.cellText}>
               {paymentStateLabel[payment]}
-            </Tag>
-            {due && <span className={styles.dueText}>{due}</span>}
+            </span>
+            {due && (
+              <span className={soon ? styles.dueSoon : styles.subText}>
+                {due}
+              </span>
+            )}
           </span>
         )
       },
-    },
-    {
-      key: 'receivedAt',
-      header: '접수 시각',
-      align: 'center',
-      render: (reservation) => (
-        <span className={styles.receivedAt}>
-          {formatReceivedAt(reservation.createdAt)}
-        </span>
-      ),
     },
   ]
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <div className={styles.title}>예약 현황</div>
-      </div>
-
-      <RefreshStatus updatedAt={dataUpdatedAt} onRefresh={refresh}>
-        <Dropdown
-          label="자동 갱신 간격"
-          size="small"
-          width="140px"
-          options={refreshIntervalOptions}
-          value={refreshInterval}
-          // 고르는 즉시 한 번 받는다 — 새 간격을 기다리지 않고 지금 값을 보여준다.
-          onSelect={(next) => {
-            setRefreshInterval(next)
-            refresh()
-          }}
-        />
-      </RefreshStatus>
+      {/* 운영 대시보드와 같이 제목 줄 오른쪽에 마지막 갱신을 둔다. */}
+      <header className={styles.header}>
+        <h1 className={styles.title}>예약 현황</h1>
+        <RefreshStatus updatedAt={dataUpdatedAt} onRefresh={refresh}>
+          <Dropdown
+            label="자동 갱신 간격"
+            size="small"
+            width="140px"
+            options={refreshIntervalOptions}
+            value={refreshInterval}
+            // 고르는 즉시 한 번 받는다 — 새 간격을 기다리지 않고 지금 값을 보여준다.
+            onSelect={(next) => {
+              setRefreshInterval(next)
+              refresh()
+            }}
+          />
+        </RefreshStatus>
+      </header>
 
       {/* 폴링이 실패해도 이미 받은 데이터는 남아 카드와 표에 그대로 보인다 —
           멈춘 숫자를 최신으로 읽으면 '실패를 0건으로 보여주기'와 똑같이 위험하다.
@@ -487,18 +483,6 @@ export function AdminReservationsPage() {
       {stats.isError && !stats.data && (
         <InlineAlert status="error">
           {getErrorMessage(stats.error, '상태별 건수를 불러오지 못했습니다.')}
-        </InlineAlert>
-      )}
-
-      {/* 실패는 어느 탭에서든 먼저 보이게 알린다. */}
-      {failures > 0 && (
-        <InlineAlert status="error">
-          <span className={styles.alertRow}>
-            <span>
-              {failures.toLocaleString('ko-KR')}건이 외부 등록에 실패해 결제
-              단계로 못 넘어가고 있습니다. 재처리를 시도해 주세요.
-            </span>
-          </span>
         </InlineAlert>
       )}
 
@@ -575,13 +559,6 @@ export function AdminReservationsPage() {
         />
       </div>
 
-      {page && page.total > page.items.length && (
-        <div className={styles.subText}>
-          전체 {page.total.toLocaleString('ko-KR')}건 중 최근{' '}
-          {page.items.length.toLocaleString('ko-KR')}건만 표시합니다.
-        </div>
-      )}
-
       {selectable.length > 0 && (
         <div className={styles.selectionBar}>
           <span className={styles.selectionCount}>
@@ -597,10 +574,20 @@ export function AdminReservationsPage() {
         </div>
       )}
 
+      {page && page.total > page.items.length && (
+        <div className={styles.subText}>
+          전체 {page.total.toLocaleString('ko-KR')}건 중 최근{' '}
+          {page.items.length.toLocaleString('ko-KR')}건만 표시합니다.
+        </div>
+      )}
+
       <Table
         columns={columns}
         rows={visibleReservations}
         rowKey={(reservation) => reservation.preorderId}
+        rowClassName={(reservation) =>
+          isReprocessable(reservation) ? styles.failedRow : undefined
+        }
         onRowClick={openDetail}
         rowAction={{
           label: (reservation) =>

@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 
+import { Lock } from 'lucide-react'
+
 import { getErrorMessage } from '@shared/api/client'
 import { Button, InlineAlert, Input } from '@shared/ui'
 
@@ -32,8 +34,20 @@ export function AdminLoginForm({ onLoggedIn, notice }: AdminLoginFormProps) {
   }
 
   return (
-    <form className={styles.root} onSubmit={handleSubmit}>
-      <div className={styles.title}>관리자 로그인</div>
+    <form
+      className={styles.root}
+      aria-labelledby="admin-login-title"
+      onSubmit={handleSubmit}
+    >
+      <div className={styles.heading}>
+        <span className={styles.eyebrow}>관리자 전용</span>
+        <h2 id="admin-login-title" className={styles.title}>
+          관리자 로그인
+        </h2>
+        <div className={styles.lead}>
+          발급받은 관리자 계정으로 들어와 주세요.
+        </div>
+      </div>
 
       {notice && <InlineAlert status="info">{notice}</InlineAlert>}
 
@@ -67,6 +81,7 @@ export function AdminLoginForm({ onLoggedIn, notice }: AdminLoginFormProps) {
       </Button>
 
       <div className={styles.hint}>
+        <Lock className={styles.hintIcon} aria-hidden="true" />
         관리자로 로그인하면 회원 로그인은 해제됩니다.
       </div>
     </form>

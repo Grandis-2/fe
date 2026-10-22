@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>
 /** 빈 채로 내면 보내지 않고 칸마다 무엇이 빠졌는지 붙인다 */
 export const Default: Story = {
   play: async ({ canvas, args, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: '만들기' }))
+    await userEvent.click(canvas.getByRole('button', { name: '회차 만들기' }))
     await expect(canvas.getByText('회차 제목을 입력해 주세요.')).toBeVisible()
     await expect(
       canvas.getByText('증정품 상품과 옵션을 골라 주세요.'),
@@ -35,7 +35,11 @@ export const Default: Story = {
     await expect(args.onSubmit).not.toHaveBeenCalled()
 
     // 고친 칸의 오류는 바로 지운다.
-    await userEvent.type(canvas.getByLabelText(/회차 제목/), '에어팟 응모')
+    // 섹션 제목도 '회차 제목'이라 입력칸을 역할로 찾는다.
+    await userEvent.type(
+      canvas.getByRole('textbox', { name: /회차 제목/ }),
+      '에어팟 응모',
+    )
     await expect(canvas.queryByText('회차 제목을 입력해 주세요.')).toBeNull()
   },
 }

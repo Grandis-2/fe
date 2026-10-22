@@ -6,185 +6,249 @@ import { useNavigate } from 'react-router'
 import {
   AdminProductDisplayTag,
   AdminProductSaleTag,
+  brandFilterOptions,
+  brandNameOf,
   isPreorder,
   productTypeLabel,
   productTypeLabels,
   saleStateLabel,
+  useAdminProductCount,
   useAdminProducts,
   type AdminProduct,
   type AdminSaleState,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_PRODUCT_NEW_PATH, adminProductPath } from '@shared/config/routes'
-import { Button, Dropdown, Input, SegmentedTabs, Table, Tag } from '@shared/ui'
-import type { DropdownOption, TableColumn, TagProps } from '@shared/ui'
+import { formatWon } from '@shared/lib/formatNumber'
+import {
+  Button,
+  Dropdown,
+  ImageWithFallback,
+  Input,
+  PriceText,
+  SegmentedTabs,
+  Table,
+  Tag,
+} from '@shared/ui'
+import type { DropdownOption, TableColumn } from '@shared/ui'
 
 import * as styles from './AdminProductsPage.css'
 
-const typeTagProps: Record<
-  'preorder' | 'normal',
-  Pick<TagProps, 'variant' | 'color'>
-> = {
-  preorder: { variant: 'subtle', color: 'primary' },
-  normal: { variant: 'outline', color: 'primary' },
-}
-
 const typeFilters = [
-  { value: 'all', label: '전체' },
-  { value: 'preorder', label: '사전 예약' },
-  { value: 'normal', label: '일반 판매' },
+  { value: 'all', label: '전체', saleMode: undefined },
+  { value: 'preorder', label: '사전예약', saleMode: 'PREORDER' },
+  { value: 'normal', label: '일반 판매', saleMode: 'IN_STOCK' },
 ] as const
 
 type TypeFilter = (typeof typeFilters)[number]['value']
 
+type Brand = (typeof brandFilterOptions)[number]['value']
+
+const brandOptions: DropdownOption<Brand | undefined>[] = [
+  { label: '전체 브랜드', value: undefined },
+  ...brandFilterOptions,
+]
+
 // 값이 undefined면 '전체' — 서버에 판매 상태를 안 보낸다.
 const statusOptions: DropdownOption<AdminSaleState | undefined>[] = [
-  { label: '전체', value: undefined },
+  { label: '전체 판매 상태', value: undefined },
   ...Object.entries(saleStateLabel).map(([value, label]) => ({
     label,
     value: value as AdminSaleState,
   })),
 ]
 
-type ProductSort = 'openAt' | 'name'
+type ProductSort = 'latest' | 'openAt' | 'name'
 
 const sortOptions: DropdownOption<ProductSort>[] = [
-  { label: '오픈 시각순', value: 'openAt' },
+  { label: '최근 등록순', value: 'latest' },
+  { label: '오픈 임박순', value: 'openAt' },
   { label: '상품명순', value: 'name' },
 ]
 
+// 서버가 한 번에 주는 최대 수 — 표가 이 안에서 페이지를 나눈다.
+const LIST_SIZE = 100
+
 const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
-  dateStyle: 'long',
-  timeStyle: 'short',
+  month: 'long',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
 })
 
+/** 사전예약 접수 단계 옆에 붙일 시각 — 오픈 전이면 오픈, 그 뒤면 마감 */
+const scheduleLabel = (product: AdminProduct) => {
+  if (product.preorderStatus === 'BEFORE_OPEN' && product.opensAt) {
+    return `${dateFormatter.format(new Date(product.opensAt))} 오픈`
+  }
+  if (product.preorderStatus && product.closesAt) {
+    return `${dateFormatter.format(new Date(product.closesAt))} 마감`
+  }
+  return null
+}
+
 /**
- * 상품 목록. 검색어·판매 상태는 서버가 걸러주고, 유형과 정렬은 응답에 해당
- * 파라미터가 없어 화면에서 처리한다.
+ * 상품 목록. 검색어·브랜드·판매 상태·판매 방식은 서버가 걸러 준다. 정렬은 서버가 최근
+ * 등록순만 지원해서 나머지는 받은 목록(최대 100개) 안에서 화면이 한다.
  */
 export function AdminProductsPage() {
   const navigate = useNavigate()
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all')
   const [keyword, setKeyword] = useState('')
+  const [brand, setBrand] = useState<Brand>()
   const [saleStatus, setSaleStatus] = useState<AdminSaleState>()
-  const [sort, setSort] = useState<ProductSort>('openAt')
+  const [sort, setSort] = useState<ProductSort>('latest')
 
-  // 검색어와 유형은 서버가 걸러준다.
-  const trimmedKeyword = keyword.trim()
+  // 탭 건수도 같은 검색·브랜드·판매 상태로 센다 — 표와 숫자가 어긋나지 않게.
+  const filters = {
+    q: keyword.trim() || undefined,
+    brand,
+    status: saleStatus,
+  }
+  const counts = {
+    all: useAdminProductCount(filters).data,
+    preorder: useAdminProductCount({ ...filters, saleMode: 'PREORDER' }).data,
+    normal: useAdminProductCount({ ...filters, saleMode: 'IN_STOCK' }).data,
+  }
+  const saleMode = typeFilters.find(
+    (filter) => filter.value === typeFilter,
+  )?.saleMode
 
   const {
     data: products = [],
     isPending,
     isError,
     error,
-  } = useAdminProducts({
-    q: trimmedKeyword || undefined,
-    status: saleStatus,
-    saleMode:
-      typeFilter === 'all'
-        ? undefined
-        : typeFilter === 'preorder'
-          ? 'PREORDER'
-          : 'IN_STOCK',
-    // 표가 자체적으로 페이지를 나누므로 넉넉히 한 번에 받는다.
-    size: 100,
-  })
+  } = useAdminProducts({ ...filters, saleMode, size: LIST_SIZE })
 
-  // 행 클릭·'관리'는 상세 보기라 기본 탭으로, '수정' 버튼은 이름 그대로 수정 탭으로 보낸다.
+  // 오픈 시각이 없는 상품(일반 판매)은 뒤로 모은다 — 빈 값끼리는 순서를 바꾸지 않아
+  // 서버가 준 최근 등록순이 남는다.
+  const visibleProducts =
+    sort === 'latest'
+      ? products
+      : products.toSorted((a, b) => {
+          if (sort === 'name') return a.name.localeCompare(b.name)
+          if (!a.opensAt || !b.opensAt) {
+            return Number(!a.opensAt) - Number(!b.opensAt)
+          }
+          return a.opensAt.localeCompare(b.opensAt)
+        })
+  const total = counts[typeFilter]
+
   const openDetail = (product: AdminProduct) =>
     navigate(adminProductPath(product.productId))
 
-  const openEdit = (product: AdminProduct) =>
-    navigate(adminProductPath(product.productId, 'edit'))
-
-  /**
-   * 검색어·유형·판매 상태는 서버가 걸러주고 정렬만 화면에서 한다 — 목록은 등록
-   * 최신순 하나만 지원한다.
-   *
-   * 오픈 시각이 없는 상품(일반 판매)은 뒤로 모은다 — 빈 값끼리는 순서를 바꾸지 않아
-   * 서버가 준 등록 최신순이 남는다.
-   */
-  const visibleProducts = products.toSorted((a, b) => {
-    if (sort === 'name') return a.name.localeCompare(b.name)
-    if (!a.opensAt || !b.opensAt) return Number(!a.opensAt) - Number(!b.opensAt)
-    return a.opensAt.localeCompare(b.opensAt)
-  })
+  const tabs = typeFilters.map(({ value, label }) => ({
+    value,
+    label: (
+      <span className={styles.tabLabel}>
+        {label}
+        {/* 못 받았으면 숫자를 빼서 0개로 읽히지 않게 한다. */}
+        {counts[value] !== undefined && (
+          <span className={styles.tabCount}>
+            {counts[value].toLocaleString('ko-KR')}
+          </span>
+        )}
+      </span>
+    ),
+  }))
 
   const columns: TableColumn<AdminProduct>[] = [
+    // 이름 아래 브랜드·모델명 — 함께 읽는 값을 한 칸에 묶어 열을 줄인다.
     {
-      key: 'name',
-      header: '상품명',
+      key: 'product',
+      header: '상품',
       render: (product) => (
-        <span className={styles.productName}>{product.name}</span>
+        <span className={styles.product}>
+          <ImageWithFallback
+            className={styles.thumbnail}
+            src={product.thumbnailUrl}
+            alt=""
+          />
+          <span className={styles.stacked}>
+            <span className={styles.mainText}>{product.name}</span>
+            <span className={styles.subText}>
+              {brandNameOf(product.brand) || product.brand} ·{' '}
+              {product.modelName}
+            </span>
+          </span>
+        </span>
       ),
     },
     {
       key: 'type',
-      header: '유형',
-      align: 'center',
+      header: '판매 방식',
       render: (product) => (
         <Tag
           size="medium"
+          variant="subtle"
           rounded={false}
+          color={isPreorder(product) ? 'primary' : 'gray'}
           widthOptions={productTypeLabels}
-          {...typeTagProps[isPreorder(product) ? 'preorder' : 'normal']}
         >
           {productTypeLabel(product)}
         </Tag>
       ),
     },
     {
+      key: 'price',
+      header: '판매가',
+      align: 'right',
+      render: (product) =>
+        product.minPrice === null ? (
+          <span className={styles.subText}>—</span>
+        ) : (
+          <span className={styles.stacked}>
+            <span className={styles.mainText}>
+              <PriceText value={formatWon(product.minPrice)} from />
+            </span>
+            {product.soldOut ? (
+              <span className={styles.soldOut}>품절</span>
+            ) : (
+              product.discountRate > 0 &&
+              product.minListPrice !== null && (
+                <span className={styles.subText}>
+                  정가 {formatWon(product.minListPrice)} ·{' '}
+                  {product.discountRate}% 할인
+                </span>
+              )
+            )}
+          </span>
+        ),
+    },
+    {
       key: 'option',
       header: '옵션',
-      align: 'center',
-      render: (product) => `${product.optionCount}종`,
-    },
-    {
-      key: 'openAt',
-      header: '오픈 시각',
-      align: 'center',
-      render: (product) =>
-        product.opensAt
-          ? dateFormatter.format(new Date(product.opensAt))
-          : '해당없음',
-    },
-    {
-      key: 'detail',
-      header: '상세 정보',
-      align: 'center',
+      align: 'right',
       render: (product) => (
-        <Button
-          size="small"
-          variant="outline"
-          color="cancel"
-          // 행 클릭(onRowClick)이 같이 돌면 기본 탭으로 덮어쓴다 — 여기서 끊는다.
-          onClick={(event) => {
-            event.stopPropagation()
-            openEdit(product)
-          }}
-        >
-          수정
-        </Button>
+        <span className={styles.number}>{product.optionCount}종</span>
       ),
     },
+    // 사전예약은 접수 단계 태그 아래에 오픈·마감 시각 — 오픈 시각 열을 따로 두지 않는다.
     {
-      key: 'status',
-      header: '상태',
-      align: 'center',
-      // 사전예약은 접수 단계도 같이 — 판매 상태와 다른 축이라 하나로 못 합친다.
-      render: (product) => (
-        <AdminProductSaleTag
-          status={product.status}
-          stage={product.preorderStatus}
-        />
-      ),
+      key: 'sale',
+      header: '판매',
+      render: (product) => {
+        const schedule = scheduleLabel(product)
+        return (
+          <span className={styles.stacked}>
+            <span>
+              <AdminProductSaleTag
+                status={product.status}
+                stage={product.preorderStatus}
+              />
+            </span>
+            {schedule && <span className={styles.subText}>{schedule}</span>}
+          </span>
+        )
+      },
     },
     {
       key: 'display',
       header: '전시',
-      align: 'center',
-      // 상태만 보여준다 — 바꾸는 건 상세 화면에서 한다. 되돌리기 어려운 조치라
-      // 목록의 다른 동작 버튼('수정') 옆에 나란히 두면 잘못 누르기 쉽다.
+      // 상태만 보여준다 — 바꾸는 건 상세 화면에서 한다(되돌리기 어려운 조치라 목록에서
+      // 잘못 누르지 않게).
       render: (product) => (
         <AdminProductDisplayTag status={product.displayStatus} />
       ),
@@ -193,8 +257,8 @@ export function AdminProductsPage() {
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <div className={styles.title}>상품 관리</div>
+      <header className={styles.header}>
+        <h1 className={styles.title}>상품 관리</h1>
         <Button
           icon={Plus}
           size="medium"
@@ -202,42 +266,51 @@ export function AdminProductsPage() {
         >
           새 상품 등록
         </Button>
-      </div>
+      </header>
 
-      <div className={styles.toolbar}>
-        <SegmentedTabs
-          items={typeFilters}
-          value={typeFilter}
-          onChange={setTypeFilter}
-        />
+      <SegmentedTabs items={tabs} value={typeFilter} onChange={setTypeFilter} />
 
-        <div className={styles.controls}>
-          <div className={styles.searchBox}>
-            <Input
-              label="상품명 검색"
-              size="small"
-              value={keyword}
-              onChange={(event) => setKeyword(event.target.value)}
-            />
-          </div>
-          <Dropdown
-            label="상태"
-            size="medium"
-            width="120px"
-            options={statusOptions}
-            value={saleStatus}
-            onSelect={setSaleStatus}
-          />
-          <Dropdown
-            label="오픈 시각순"
-            size="medium"
-            width="140px"
-            options={sortOptions}
-            value={sort}
-            onSelect={setSort}
+      <div className={styles.filters}>
+        <div className={styles.searchField}>
+          <Input
+            label="상품명 · 모델명 · 태그 검색"
+            size="small"
+            value={keyword}
+            onChange={(event) => setKeyword(event.target.value)}
           />
         </div>
+        <Dropdown
+          className={styles.field}
+          label="전체 브랜드"
+          fieldLabel="브랜드"
+          options={brandOptions}
+          value={brand}
+          onSelect={setBrand}
+        />
+        <Dropdown
+          className={styles.field}
+          label="전체 판매 상태"
+          fieldLabel="판매 상태"
+          options={statusOptions}
+          value={saleStatus}
+          onSelect={setSaleStatus}
+        />
+        <Dropdown
+          className={styles.field}
+          label="정렬"
+          fieldLabel="정렬"
+          options={sortOptions}
+          value={sort}
+          onSelect={setSort}
+        />
       </div>
+
+      {total !== undefined && total > products.length && (
+        <div className={styles.subText}>
+          전체 {total.toLocaleString('ko-KR')}개 중 최근{' '}
+          {products.length.toLocaleString('ko-KR')}개만 표시합니다.
+        </div>
+      )}
 
       <Table
         columns={columns}
@@ -246,9 +319,7 @@ export function AdminProductsPage() {
         pageSize={10}
         onRowClick={openDetail}
         rowAction={{
-          header: '관리',
-          label: (product) =>
-            `${product.name} ${productTypeLabel(product)} 상세 보기`,
+          label: (product) => `${product.name} 상세 보기`,
           onClick: openDetail,
         }}
         loading={isPending}

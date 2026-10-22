@@ -1,6 +1,6 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 
 import {
   card as panel,
@@ -24,37 +24,23 @@ export const choices = style({
   gap: spacing[6],
 })
 
-const choiceBase = style([
-  typography.body.defaultMedium,
-  {
-    minHeight: '38px',
-    padding: `0 ${spacing[8]}`,
-    borderRadius: '8px',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    transition: `background ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: { '&:disabled': { cursor: 'not-allowed', opacity: 0.5 } },
+// 칸을 꽉 채우고, 고른 값은 남색으로 채운다(상품별 입장 상한의 단계 칩과 같다).
+export const choice = style({
+  justifyContent: 'center',
+  selectors: {
+    // 줄이 있어 막힌 칸 — 누를 수 없다는 게 바로 보이게 회색으로 채운다.
+    '&:disabled:not([aria-pressed="true"])': {
+      cursor: 'not-allowed',
+      background: color.background.surface,
+      borderColor: color.background.surface,
+      color: color.text.disabled,
+    },
+    '&[aria-pressed="true"], &[aria-pressed="true"]:hover:not(:disabled)': {
+      background: color.primary.base,
+      borderColor: color.primary.base,
+      color: color.text.inverse,
+    },
   },
-])
-
-export const choice = styleVariants({
-  off: [
-    choiceBase,
-    {
-      border: `1px solid ${color.border.default}`,
-      background: color.background.base,
-      color: color.text.secondary,
-      selectors: { '&:hover': { background: color.background.surface } },
-    },
-  ],
-  on: [
-    choiceBase,
-    {
-      border: `1px solid ${color.primary.base}`,
-      background: color.primary.subtler,
-      color: color.primary.base,
-    },
-  ],
 })
 
 export const note = style([

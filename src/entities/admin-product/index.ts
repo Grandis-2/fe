@@ -2,6 +2,7 @@
 // 내보내면 signal 취소·재시도 정책을 건너뛰는 길이 열린다. 폼 값을 DTO로 바꾸는
 // 매퍼(toUpsertRequest 등)도 훅 안에서만 쓴다 — 화면이 DTO를 직접 만들면 안 된다.
 export {
+  useAdminPreorderCampaign,
   useAdminProduct,
   useAdminProductDetails,
   useAdminProductStock,
@@ -31,7 +32,13 @@ export type {
   EditFailure,
   EditSaveResult,
 } from './api/useSaveAdminProductEdits'
-export { editLockReason, editSectionLabel } from './model/edit'
+export {
+  editLockReason,
+  editLocksAt,
+  editSectionLabel,
+  pendingEditLabels,
+} from './model/edit'
+export { useCorrectStockOption, useStockDrifts } from './api/useStockReconcile'
 export { toPreviewProduct, validateRegistration } from './model/registration'
 export { serverIssuesOf, validateProductBasics } from './model/validation'
 export type { FormField, FormIssue } from './model/validation'
@@ -49,6 +56,8 @@ export {
 export {
   batchDraftProblem,
   createBatchDraft,
+  currentBatchOf,
+  issuedInBatch,
   formatPositionRange,
   formatShipPeriod,
   toBatchDrafts,
@@ -57,8 +66,12 @@ export {
 } from './model/shipment'
 export type { AdminShipmentBatch, ShipmentBatchDraft } from './model/shipment'
 export {
+  brandFilterOptions,
+  brandNameOf,
+  displayStatusLabel,
   isPreorder,
   isPublicSetting,
+  DESCRIPTION_MAX,
   MODEL_NAME_MAX,
   PRODUCT_BRANDS,
   productTypeLabel,
@@ -67,6 +80,7 @@ export {
   saleStateLabel,
 } from './model/types'
 export type {
+  AdminDisplayStatus,
   AdminProduct,
   AdminGiftCandidate,
   AdminProductDetailModel,
@@ -95,5 +109,16 @@ export type { AdminProductSaleTagProps } from './ui/AdminProductSaleTag'
 export { OPTION_PRESETS, withPresetOptionGroups } from './model/optionPreset'
 export { recommendedTags, TAG_PRESETS } from './model/tagPreset'
 export type { ProductOptionPreset } from './model/optionPreset'
-export { getAdminProductStocks, getStockOptionGroups } from './model/stock'
-export type { AdminProductStock } from './model/stock'
+export {
+  getAdminProductStocks,
+  getStockOptionGroups,
+  sortStocksByUrgency,
+  stockLevelLabel,
+  stockLevelOf,
+  sumStocks,
+} from './model/stock'
+export type {
+  AdminProductStock,
+  AdminStockDrift,
+  StockLevel,
+} from './model/stock'

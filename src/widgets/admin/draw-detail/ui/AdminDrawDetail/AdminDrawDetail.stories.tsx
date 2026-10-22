@@ -41,7 +41,7 @@ export const Open: Story = {
     await expect(canvas.getByRole('heading', { level: 1 })).toHaveTextContent(
       draw.title,
     )
-    await expect(canvas.getByText('결제 완료(추첨 대상)')).toBeVisible()
+    await expect(canvas.getByText('추첨 대상(결제 완료)')).toBeVisible()
     await expect(canvas.getByText(/10초마다 자동 갱신/)).toBeVisible()
   },
 }

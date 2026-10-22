@@ -8,6 +8,7 @@ import type {
   OptionValueEditRequest,
   PageResponse,
   PreorderCampaignRequest,
+  PreorderCampaignResponse,
   ProductRegistrationRequest,
   ProductRegistrationResponse,
   SaleStatusChangeRequest,
@@ -127,6 +128,14 @@ export const editVariant = (
     method: 'PATCH',
     body,
   })
+
+// [preorder] GET /api/v1/admin/preorders/products/{productId}/campaign — 모집 일정 조회
+/** 회차 일정과 발급한 순번 수(issuedCount). 회차가 없으면 404 */
+export const getPreorderCampaign = (productId: string, signal?: AbortSignal) =>
+  apiClient.request<PreorderCampaignResponse>(
+    `/api/v1/admin/preorders/products/${productId}/campaign`,
+    { signal },
+  )
 
 // [preorder] PUT /api/v1/admin/preorders/products/{productId}/campaign — 모집 일정 생성, 변경
 /** 사전예약 모집 일정을 바꾼다 — preorder 서비스라 경로가 다르다 */

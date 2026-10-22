@@ -9,8 +9,18 @@ export {
 export { uploadPromotionImage } from './api/adminPromotion'
 export {
   createEmptyPromotionFormValue,
+  formatMonthDay,
   formatPromotionPeriod,
+  linkedProductStage,
+  linkedProductStageColor,
+  linkedProductStageLabel,
+  linkedProductStageLabels,
+  PROMOTION_DETAIL_IMAGES_MAX,
+  PROMOTION_NAME_MAX,
+  PROMOTION_PRODUCTS_MAX,
+  promotionDue,
   promotionFormProblem,
+  promotionProductProblem,
   promotionStatusColor,
   promotionStatusLabel,
   promotionStatusLabels,
@@ -19,6 +29,7 @@ export {
 export type {
   AdminPromotion,
   AdminPromotionFormValue,
+  LinkedProductStage,
   PromotionLinkableProduct,
   PromotionStatus,
 } from './model/types'

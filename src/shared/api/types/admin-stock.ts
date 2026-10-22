@@ -35,6 +35,51 @@ export type StockRequest = {
   items: { optionId: string; stockTotal: number }[]
 }
 
+/** 마지막 장부 대조에서 주문 기준과 어긋난 옵션 하나(대조한 때의 값) */
+export type StockReconcileDriftOption = {
+  optionId: string
+  /** 보정 경로에 쓴다. 상품 쪽에 옵션 정보가 없으면 null이고 보정할 수 없다 */
+  productId: string | null
+  registered: boolean
+  stockTotal: number
+  expectedReserved: number
+  stockReserved: number
+  expectedSold: number
+  stockSold: number
+  /** 대조가 끝난 뒤 마지막으로 보정한 시각. 보정하지 않았으면 null */
+  correctedAt: string | null
+}
+
+/**
+ * 마지막으로 끝난 재고 장부 대조(GET /admin/stock/reconcile-runs/latest). 매일 새벽
+ * 4시(KST)에 돈다. 한 번도 끝나지 않았으면 404 STOCK_RECONCILE_RUN_NOT_FOUND다.
+ */
+export type StockReconcileRunResponse = {
+  startedAt: string
+  finishedAt: string
+  /** 어긋난 옵션 전체 수 */
+  driftOptions: number
+  /** options가 앞 1000개로 잘렸는지 */
+  truncated: boolean
+  options: StockReconcileDriftOption[]
+}
+
+/** 주문 기준으로 보정(POST .../stock/options/{optionId}/reconcile) — 사유는 기록에 남는다 */
+export type StockCorrectionRequest = {
+  /** 필수, 공백 불가, 500자 이하 */
+  reason: string
+}
+
+export type StockCorrectionResponse = {
+  optionId: string
+  registered: boolean
+  stockTotal: number
+  before: { stockReserved: number; stockSold: number }
+  after: { stockReserved: number; stockSold: number }
+  /** 이미 주문 기준과 같았으면 false */
+  changed: boolean
+}
+
 // ── 아래는 예전 모양(프론트 제안). 목업 저장소가 아직 쓴다 — 등록을 명세에 맞출 때
 // 같이 걷어낸다.
 
