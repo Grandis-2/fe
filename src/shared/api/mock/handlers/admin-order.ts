@@ -149,6 +149,7 @@ const buildSeedOrders = (): AdminOrderRecord[] =>
           warrantyQuantity: 0,
           warrantyUnitPrice: 0,
           lineAmount: unitPrice * quantity,
+          imageUrl: source === 'DRAW' ? draw.gift.imageUrl : null,
         },
       ],
       shipTo: {

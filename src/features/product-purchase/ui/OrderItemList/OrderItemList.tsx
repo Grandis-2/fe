@@ -34,6 +34,7 @@ export function OrderItemList({ items }: OrderItemListProps) {
             key={item.variantId}
             className={styles.item}
             product={{
+              imageSrc: item.imageUrl ?? undefined,
               name: item.productName,
               // ponytail: 백엔드 상세에 모델명 칸이 없어 비워 둔다(장바구니와 같음).
               modelNumber: '',

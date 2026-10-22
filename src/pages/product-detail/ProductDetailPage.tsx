@@ -19,6 +19,7 @@ import {
 import { PAYMENT_PATH, paymentPath, resultPath } from '@shared/config/routes'
 import { InlineAlert, SkeletonGroup } from '@shared/ui'
 import {
+  galleryImages,
   ProductDetailImages,
   ProductDetailSkeleton,
   ProductOverview,
@@ -61,6 +62,8 @@ export function ProductDetailPage() {
     variant,
     unavailableReason,
     quantity,
+    colorAxis,
+    selections,
     colorLabel,
     optionLabel,
     unitPrice,
@@ -84,6 +87,12 @@ export function ProductDetailPage() {
       optionSummary: [colorLabel, optionLabel].filter(Boolean).join(' · '),
       quantity,
       unitPrice,
+      // 장바구니 줄 사진처럼 고른 색상의 첫 사진, 없으면 대표 사진.
+      imageUrl:
+        galleryImages(
+          product,
+          colorAxis ? selections[colorAxis.key] : undefined,
+        )[0] ?? product.imageUrl,
     }
     // 결제·사전예약은 회원 전용 — 비회원이면 이동 대신 로그인 모달을 연다.
     requireLogin(() => {

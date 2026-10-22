@@ -1,4 +1,4 @@
-export { shipmentStartLabel } from './lib/productDetail'
+export { galleryImages, shipmentStartLabel } from './lib/productDetail'
 export { ProductDetailImages } from './ui/ProductDetailImages'
 export type { ProductDetailImagesProps } from './ui/ProductDetailImages'
 export { ProductDetailPreview } from './ui/ProductDetailPreview'

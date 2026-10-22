@@ -29,6 +29,8 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
       warrantyQuantity: 0,
       warrantyUnitPrice: 0,
       lineAmount: 2399000,
+      // 사전예약 주문은 사진이 없다.
+      imageUrl: null,
     },
   ],
   shipTo: {

@@ -34,6 +34,7 @@ function winnerOrderOf(draw: DrawRecord, entry: DrawEntryRecord): OrderRecord {
         warrantyQuantity: 0,
         warrantyUnitPrice: 0,
         lineAmount: 0,
+        imageUrl: draw.gift.imageUrl,
       },
     ],
     shipTo: entry.shipTo,

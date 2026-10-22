@@ -190,6 +190,7 @@ const seedOrders: OrderRecord[] = reserved
             warrantyQuantity: 0,
             warrantyUnitPrice: 0,
             lineAmount: reserved.unitPrice,
+            imageUrl: null,
           },
         ],
         shipTo: {

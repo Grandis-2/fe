@@ -9,4 +9,6 @@ export type PurchaseDraft = {
   optionSummary: string
   quantity: number
   unitPrice: number
+  // 줄 사진. 사전예약은 예약 응답에 사진이 없어 비운다 — 화면은 대체 이미지를 띄운다.
+  imageUrl?: string | null
 }

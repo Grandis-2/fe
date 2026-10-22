@@ -77,6 +77,7 @@ const formatTime = (iso: string) =>
 type OrderItem = Order['items'][number]
 
 const toCardItem = (item: OrderItem): ProductPaymentCardItem => ({
+  imageSrc: item.imageUrl ?? undefined,
   productId: item.productId,
   name: item.productTitle,
   modelNumber: '',

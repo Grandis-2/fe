@@ -26,6 +26,7 @@ const order = {
       warrantyQuantity: 0,
       warrantyUnitPrice: 0,
       lineAmount: 0,
+      imageUrl: null,
     },
   ],
   shipTo: {

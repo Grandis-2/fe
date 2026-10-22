@@ -33,6 +33,7 @@ export const orderToDrafts = ({ items }: Pick<Order, 'items'>) =>
       .join(' · '),
     quantity: item.quantity,
     unitPrice: item.unitPrice,
+    imageUrl: item.imageUrl,
   }))
 
 // 장바구니 줄 — 단가에 보증가를 더해 보여 준다(줄 금액 = (단가 + 보증가) × 수량).
@@ -44,6 +45,7 @@ export const cartLineToDraft = (line: CartLine): PurchaseDraft => ({
     .join(' · '),
   quantity: line.quantity,
   unitPrice: (line.unitPrice ?? 0) + (line.warrantyPrice ?? 0),
+  imageUrl: line.imageUrl,
 })
 
 // 럭키 드로우 — 증정품 한 줄. 결제하는 건 증정품 값이 아니라 응모비라서 단가에 응모비를 둔다.
@@ -55,4 +57,5 @@ export const drawToDraft = (
   optionSummary: draw.gift.optionTitle,
   quantity: 1,
   unitPrice: draw.entryFee,
+  imageUrl: draw.gift.imageUrl,
 })

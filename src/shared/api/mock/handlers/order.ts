@@ -297,6 +297,8 @@ function toOrderItems(items: CartOrderItem[]): OrderItem[] {
       warrantyQuantity: 0,
       warrantyUnitPrice: 0,
       lineAmount: 0,
+      // 장바구니에 보이던 사진(cart 목업의 imageUrl과 같다).
+      imageUrl: product.imageUrl,
     }
     row.quantity += item.quantity
     if (item.warranty) {
@@ -485,6 +487,7 @@ function placePreorderOrder(
         warrantyQuantity: 0,
         warrantyUnitPrice: 0,
         lineAmount: preorder.unitPrice,
+        imageUrl: null,
       },
     ],
     shipTo,

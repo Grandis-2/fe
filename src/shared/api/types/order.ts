@@ -38,6 +38,9 @@ export type OrderItem = {
   warrantyUnitPrice: number
   // unitPrice × quantity + warrantyUnitPrice × warrantyQuantity.
   lineAmount: number
+  // 주문 당시 이 옵션의 사진 — 장바구니·바로 구매는 장바구니에 보이던 사진, 드로우 당첨은 증정품 사진.
+  // 사전예약 주문, 사진을 남기기 전에 만든 주문, 사진이 없는 옵션은 null.
+  imageUrl: string | null
 }
 
 // 주문에 저장된 배송지. 상세 주소가 없으면 line2는 null.
