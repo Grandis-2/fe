@@ -188,8 +188,6 @@ export const hint = style([
 
 export const hintBad = style([hint, { color: color.status.danger }])
 
-export const hintSub = style({ color: color.text.tertiary })
-
 export const actions = style({
   display: 'flex',
   flexWrap: 'wrap',

@@ -1,6 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
 
 const rootBase = style({
@@ -54,24 +54,8 @@ export const hint = style([
   { color: color.text.secondary },
 ])
 
-export const action = style([
-  typography.button.smMedium,
-  {
-    marginLeft: 'auto',
-    minHeight: '36px',
-    padding: `0 ${spacing[16]}`,
-    border: 'none',
-    borderRadius: '999px',
-    background: color.status.danger,
-    color: color.text.inverse,
-    cursor: 'pointer',
-    transition: `filter ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { filter: 'brightness(0.92)' },
-      '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
-    },
-  },
-])
+// 판정 줄 오른쪽 끝에 붙인다.
+export const action = style({ marginLeft: 'auto' })
 
 export const kpis = style({
   display: 'grid',
@@ -105,6 +89,12 @@ export const kpiValue = style([
     display: 'flex',
     alignItems: 'baseline',
   },
+])
+
+// 외부 등록 대기 아래 분당 변화 — 늘고 있는지는 맨 위 판정이 말하니 회색으로만 둔다.
+export const kpiNote = style([
+  typography.body.sub,
+  { margin: 0, color: color.text.secondary },
 ])
 
 export const unit = style([

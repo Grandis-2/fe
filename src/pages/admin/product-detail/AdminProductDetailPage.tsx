@@ -5,7 +5,9 @@ import { useNavigate, useParams, useSearchParams } from 'react-router'
 import {
   AdminProductDisplayTag,
   AdminProductSaleTag,
+  brandNameOf,
   isPreorder,
+  productTypeLabel,
   toPreviewProduct,
   useAdminProduct,
   useAdminShipmentBatches,
@@ -19,6 +21,7 @@ import {
   InlineAlert,
   PageSkeleton,
   SegmentedTabs,
+  Tag,
 } from '@shared/ui'
 import {
   AdminProductActions,
@@ -27,26 +30,29 @@ import {
 } from '@widgets/admin/product-actions'
 import { AdminProductEditForm } from '@widgets/admin/product-form'
 import { AdminProductStockTable } from '@widgets/admin/product-stock'
+import { AdminProductSummary } from '@widgets/admin/product-summary'
 import { AdminShipmentBatches } from '@widgets/admin/shipment-batches'
 import { ProductDetailPreviewModal } from '@widgets/product-detail'
 
 import * as styles from './AdminProductDetailPage.css'
 
-const tabs: { value: AdminProductTab; label: string }[] = [
-  { value: 'edit', label: '수정' },
-  { value: 'stock', label: '재고 조회' },
-  { value: 'shipping', label: '배송 구간 설정' },
-]
+type Tab = { value: AdminProductTab; label: string }
 
 /**
  * 판매 방식에 따라 탭이 갈린다. 배송 차수는 사전예약에만 있고(일반 판매는 순번도
  * 차수도 없다), 재고는 일반 상품만 센다(사전예약은 재고 API가 tracked false와 빈
- * 목록을 주고, 명세가 그때 재고 탭을 숨기라고 한다).
+ * 목록을 주고, 명세가 그때 재고 탭을 숨기라고 한다). 처음 여는 탭을 앞에 둔다.
  */
-const tabsOf = (product: AdminProductDetailModel) =>
-  tabs.filter((item) =>
-    isPreorder(product) ? item.value !== 'stock' : item.value !== 'shipping',
-  )
+const tabsOf = (product: AdminProductDetailModel): Tab[] =>
+  isPreorder(product)
+    ? [
+        { value: 'edit', label: '수정' },
+        { value: 'shipping', label: '배송 구간' },
+      ]
+    : [
+        { value: 'stock', label: '재고' },
+        { value: 'edit', label: '수정' },
+      ]
 
 // 일반 상품은 재고 조회가, 사전예약은 재고 탭이 없어 수정이 처음 화면이다.
 const defaultTabOf = (product: AdminProductDetailModel): AdminProductTab =>
@@ -106,7 +112,8 @@ export function AdminProductDetailPage() {
     setSearchParams(params, { replace: true })
   }
 
-  const { name, status, campaign, displayStatus } = product.data
+  const { name, status, campaign, displayStatus, brand, modelName } =
+    product.data
 
   return (
     <div className={styles.root}>
@@ -118,10 +125,24 @@ export function AdminProductDetailPage() {
       />
 
       <div className={styles.titleRow}>
-        <h1 className={styles.title}>{name}</h1>
-        <AdminProductSaleTag status={status} stage={campaign?.status} />
-        {/* 상태 뱃지끼리 붙여 둔다 — 판매와 전시는 둘 다 '지금 어떤 상태인가'다. */}
-        <AdminProductDisplayTag status={displayStatus} />
+        <div className={styles.heading}>
+          <div className={styles.titleLine}>
+            <h1 className={styles.title}>{name}</h1>
+            <AdminProductSaleTag status={status} stage={campaign?.status} />
+            {/* 상태 뱃지끼리 붙여 둔다 — 판매와 전시는 둘 다 '지금 어떤 상태인가'다. */}
+            <AdminProductDisplayTag status={displayStatus} />
+          </div>
+          <div className={styles.meta}>
+            {[brandNameOf(brand), modelName].filter(Boolean).join(' · ')}
+            <Tag
+              size="small"
+              color={isPreorder(product.data) ? 'preorder' : 'gray'}
+              variant="subtle"
+            >
+              {productTypeLabel(product.data)}
+            </Tag>
+          </div>
+        </div>
         {/* 전환은 폼 저장과 별개 요청이라 탭 밖(제목 줄)에 둔다 — 어느 탭에 있든
             같은 자리에서 누를 수 있고, 저장 버튼과 섞이지 않는다. 사전예약 오픈 3분
             전부터 수정 폼이 잠겨도 이 메뉴는 열린다(회차 취소는 오픈 뒤에만 된다). */}
@@ -137,6 +158,8 @@ export function AdminProductDetailPage() {
           onCloseEarly={saleStatus.confirmCloseEarly}
         />
       </div>
+
+      <AdminProductSummary product={product.data} />
 
       {visibility.isError && (
         <InlineAlert status="error">

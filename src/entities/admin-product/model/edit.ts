@@ -12,6 +12,7 @@ import type {
 import { comparableValue } from '@shared/lib/comparableValue'
 
 import { buildVariantKey, toIso, type AdminProductFormValue } from './form'
+import { hasImageChanges, planImages } from './images'
 import {
   brandCodeOf,
   COLOR_GROUP_CODE,
@@ -61,12 +62,31 @@ export function editLockReason(
   const { campaign } = product
   if (product.saleMode !== 'PREORDER' || !campaign) return null
 
-  const locked =
-    campaign.status !== 'BEFORE_OPEN' ||
-    now >= Date.parse(campaign.opensAt) - PREORDER_LOCK_LEAD_MS
-  return locked
-    ? '사전예약은 오픈 3분 전부터 상품 내용을 바꿀 수 없습니다. 공개 전환과 판매 중지는 오른쪽 위 ⋮ 메뉴에서 합니다.'
-    : null
+  // 사진은 잠금과 상관없이 고칠 수 있다(서버 규칙) — 문구가 그걸 알려야 사진까지 못
+  // 고치는 줄 알고 돌아서지 않는다.
+  if (campaign.status !== 'BEFORE_OPEN') {
+    return '오픈한 사전예약이라 가격·옵션·판매·접수 기간은 바꿀 수 없어요. 공개 여부는 오른쪽 위 ⋮ 메뉴에서, 접수를 일찍 끝내려면 같은 메뉴의 접수 조기 마감을 쓰세요.'
+  }
+  if (now >= Date.parse(campaign.opensAt) - PREORDER_LOCK_LEAD_MS) {
+    return '오픈 3분 전부터 잠겼어요. 가격·옵션·판매·접수 기간은 바꿀 수 없고, 공개 여부는 오른쪽 위 ⋮ 메뉴에서 바꿔요.'
+  }
+  return null
+}
+
+/**
+ * 아직 잠기지 않은 사전예약이 잠기는 시각(오픈 3분 전). 잠겼거나 잠길 일이 없으면 null —
+ * 그 전에 가격·옵션·일정을 확정하라고 미리 알리는 데 쓴다.
+ */
+export function editLocksAt(
+  product: Pick<AdminProductDetailModel, 'saleMode' | 'campaign'>,
+  now = Date.now(),
+): Date | null {
+  const { campaign } = product
+  if (product.saleMode !== 'PREORDER' || campaign?.status !== 'BEFORE_OPEN') {
+    return null
+  }
+  const at = Date.parse(campaign.opensAt) - PREORDER_LOCK_LEAD_MS
+  return now < at ? new Date(at) : null
 }
 
 /* ------------------------------------------------------------------ *
@@ -94,6 +114,18 @@ export function planBasic(
   if (modelName !== server.modelName) body.modelName = modelName
   const brand = brandCodeOf(value.brand)
   if (brand && brand !== server.brand) body.brand = brand
+  // 빈 문자열은 비우라는 뜻이다 — 서버의 null과 같게 본다.
+  if (value.description !== (server.description ?? '')) {
+    body.description = value.description
+  }
+  const { offered, surcharge } = value.warranty
+  if (
+    offered !== server.warranty.offered ||
+    (offered && surcharge !== server.warranty.surcharge)
+  ) {
+    // 끄면 금액은 보내지 않는다 — 서버가 0으로 저장하고, 0보다 크게 보내면 400이다.
+    body.warranty = offered ? { offered, surcharge } : { offered }
+  }
   return Object.keys(body).length > 0 ? body : null
 }
 
@@ -492,4 +524,41 @@ export function planStock(
   })
 
   return items.length > 0 ? { items } : null
+}
+
+/* ------------------------------------------------------------------ *
+ * 저장하지 않은 변경 — 저장 줄에 무엇이 바뀌었는지 보여준다
+ * ------------------------------------------------------------------ */
+
+// 기본 정보 요청(PATCH) 하나에 여러 칸이 실려 간다 — 저장 줄은 화면 섹션 이름으로 쪼갠다.
+const basicFieldLabel: Record<keyof ProductEditRequest, string> = {
+  title: '기본 정보',
+  brand: '기본 정보',
+  modelName: '기본 정보',
+  description: '기본 정보',
+  basePrice: '가격',
+  discountRate: '가격',
+  warranty: '가격',
+  tags: '검색 태그',
+}
+
+/**
+ * 폼이 서버 상세와 다른 곳 — 화면 섹션 이름으로, 겹치지 않게. 저장할 때 보낼 요청을
+ * 그대로 계산해 본다(planBasic 등) — 따로 비교하면 저장과 표시가 어긋난다.
+ */
+export function pendingEditLabels(
+  value: AdminProductFormValue,
+  server: AdminProductDetailModel,
+  stockItems: StockOverviewItem[],
+): string[] {
+  const labels = new Set<string>()
+  const basic = planBasic(value, server)
+  for (const key of Object.keys(basic ?? {}) as (keyof ProductEditRequest)[]) {
+    labels.add(basicFieldLabel[key])
+  }
+  if (planSchedule(value, server)) labels.add('판매 일정')
+  if (hasOptionChanges(planOptions(value, server))) labels.add('옵션')
+  if (planStock(value, server, stockItems)) labels.add('재고')
+  if (hasImageChanges(planImages(value, server))) labels.add('사진')
+  return [...labels]
 }

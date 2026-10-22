@@ -99,3 +99,27 @@ export const RatesMissing: Story = {
       await expect(button).toBeDisabled()
   },
 }
+
+/** 처음엔 진행 중만 보이고, 칩으로 예정·마감 사전예약을 고른다 */
+export const PhaseFilter: Story = {
+  args: {
+    products: [
+      product('p-iphone', 5920, 150),
+      { ...product('p-galaxy', 0, 0), phase: 'BEFORE_OPEN' as const },
+    ],
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(
+      canvas.getByRole('button', { name: /진행 중/ }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    await expect(canvas.getByText('아이폰 18 Pro')).toBeVisible()
+    await expect(canvas.queryByText('갤럭시 S27')).toBeNull()
+
+    await userEvent.click(canvas.getByRole('button', { name: /예정/ }))
+    await expect(canvas.getByText('갤럭시 S27')).toBeVisible()
+    await expect(canvas.queryByText('아이폰 18 Pro')).toBeNull()
+
+    await userEvent.click(canvas.getByRole('button', { name: /마감/ }))
+    await expect(canvas.getByText('마감인 사전예약이 없어요.')).toBeVisible()
+  },
+}

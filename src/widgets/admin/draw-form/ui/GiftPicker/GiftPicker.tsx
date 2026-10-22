@@ -18,6 +18,8 @@ export type GiftPickerProps = {
   error?: string
   /** 후보·옵션을 못 불러왔을 때의 안내 */
   loadError?: string
+  /** 입력한 당첨 인원 — 고른 옵션에서 얼마를 확보하고 얼마가 남는지 보여준다 */
+  winnerCount?: number
 }
 
 /**
@@ -33,8 +35,15 @@ export function GiftPicker({
   onAddProduct,
   error,
   loadError,
+  winnerCount,
 }: GiftPickerProps) {
   const selected = options?.find((option) => option.optionId === optionId)
+  const reserving =
+    winnerCount !== undefined &&
+    Number.isInteger(winnerCount) &&
+    winnerCount > 0
+      ? winnerCount
+      : null
 
   return (
     <div className={styles.root}>
@@ -76,10 +85,22 @@ export function GiftPicker({
         />
       </div>
 
+      {/* 만들면 바로 확보하는 재고 — 확인 모달까지 가지 않아도 남는 양이 보인다. */}
       {selected && (
-        <div className={styles.hint}>
-          가용 재고 {formatNumber(selected.available)}개 — 당첨 인원만큼 회차를
-          만들 때 바로 확보합니다.
+        <div className={styles.stock}>
+          <span className={styles.stockName}>
+            {products?.find((product) => product.productId === productId)
+              ?.name ?? ''}{' '}
+            · {selected.label}
+          </span>
+          <span className={styles.stockText}>
+            가용 재고 {formatNumber(selected.available)}개
+            {reserving === null
+              ? ' — 당첨 인원만큼 회차를 만들 때 바로 확보해요'
+              : reserving > selected.available
+                ? ` — 당첨 ${formatNumber(reserving)}명을 채우기에 ${formatNumber(reserving - selected.available)}개 모자라요`
+                : ` → 만들면 ${formatNumber(reserving)}개를 바로 확보해요(남는 재고 ${formatNumber(selected.available - reserving)}개)`}
+          </span>
         </div>
       )}
       <FieldError message={error ?? loadError} />

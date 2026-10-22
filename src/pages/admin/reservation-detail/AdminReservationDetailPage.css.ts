@@ -8,6 +8,14 @@ export const root = style({
   gap: spacing[20],
 })
 
+export const topBar = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: `${spacing[8]} ${spacing[16]}`,
+})
+
 export const notFound = style([
   typography.body.sub,
   {

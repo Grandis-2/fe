@@ -25,6 +25,7 @@ import {
   getSyncJobErrorGroups,
   reprocessAdminReservation,
   reprocessAdminReservations,
+  reprocessFailedRegistrations,
   toAdminReservationDetail,
   updateAdminReservationNote,
 } from './adminReservation'
@@ -157,8 +158,34 @@ export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
 export const useReprocessReservations = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: reprocessAdminReservations,
-    onSuccess: () =>
+    mutationFn: (preorderIds?: string[]) =>
+      reprocessAdminReservations(preorderIds),
+    // 앞 묶음이 받아들여졌으면 뒤 묶음이 실패해도 목록은 바뀌었다 — 성공·실패 모두 다시 받는다.
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/**
+ * 외부 등록 실패 전부(productId를 주면 그 사전예약만) 재처리. 운영 대시보드가 목록을
+ * 거치지 않고 바로 부른다. 응답은 시작한 건수와 예상 시간뿐이라 결과는 집계로 본다.
+ */
+export const useReprocessFailedRegistrations = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    // preorderIds를 주면 그 예약만(부분 실패 뒤 다시 보낼 때), 아니면 productId 범위를 다시 찾는다.
+    mutationFn: ({
+      productId,
+      preorderIds,
+    }: {
+      productId?: string
+      preorderIds?: readonly string[]
+    }) =>
+      preorderIds
+        ? reprocessAdminReservations([...preorderIds])
+        : reprocessFailedRegistrations(productId),
+    // 앞 묶음이 받아들여졌으면 뒤 묶음이 실패해도 집계는 바뀌었다 — 성공·실패 모두 다시 받는다.
+    onSettled: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })
 }

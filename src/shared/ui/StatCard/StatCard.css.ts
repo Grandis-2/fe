@@ -24,3 +24,8 @@ export const value = style([
 
 /** 수치가 아닌 값(조회 실패 등)은 흐리게 — 0건과 헷갈리면 안 된다 */
 export const valueMuted = style([value, { color: color.text.tertiary }])
+
+export const caption = style([
+  typography.body.sub,
+  { color: color.text.tertiary },
+])

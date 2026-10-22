@@ -197,9 +197,15 @@ export const Busy: Story = {
     const urgent = canvas.getByRole('region', { name: '긴급 할 일' })
     await expect(urgent).toHaveTextContent('외부 등록 실패 860건')
     await expect(urgent).toHaveTextContent('아이폰 18 Pro 845')
-    await expect(
-      within(urgent).getByRole('link', { name: /재처리/ }),
-    ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
+    // 재처리는 예약 현황으로 가지 않고 이 화면에서 모달로 한다.
+    await userEvent.click(
+      within(urgent).getByRole('button', { name: '재처리하기' }),
+    )
+    const confirm = await canvas.findByRole('dialog')
+    await expect(confirm).toHaveTextContent(
+      '외부 등록 실패 860건을 재처리할까요?',
+    )
+    await userEvent.click(within(confirm).getByRole('button', { name: '취소' }))
 
     // 할 일 목록에도 한 번 더 — 실패 · 반영 실패 · 기한 지남
     const cards = canvas.getAllByRole('article')
@@ -207,19 +213,23 @@ export const Busy: Story = {
     await expect(within(cards[0]).getAllByText('긴급')[0]).toBeVisible()
     await expect(cards[0]).toHaveTextContent('결제 막힘 · 외부 등록 실패 860건')
     await expect(
-      within(cards[0]).getByRole('link', { name: '재처리' }),
-    ).toHaveAttribute('href', '/admin/reservations?status=REPROCESS_NEEDED')
+      within(cards[0]).getByRole('button', { name: '재처리' }),
+    ).toBeVisible()
 
     // 사전예약을 고르면 숫자·할 일이 그 사전예약으로 바뀐다.
     await userEvent.click(picker.getByRole('button', { name: '아이폰 18 Pro' }))
     const scoped = canvas.getAllByRole('article')
     await expect(scoped[0]).toHaveTextContent('외부 등록 실패 845건')
-    // 고른 사전예약 그대로 예약 현황을 연다.
-    await expect(
-      within(scoped[0]).getByRole('link', { name: '재처리' }),
-    ).toHaveAttribute(
-      'href',
-      '/admin/reservations?status=REPROCESS_NEEDED&product=p-iphone',
+    // 고른 사전예약만 재처리한다.
+    await userEvent.click(
+      within(scoped[0]).getByRole('button', { name: '재처리' }),
+    )
+    const scopedConfirm = await canvas.findByRole('dialog')
+    await expect(scopedConfirm).toHaveTextContent(
+      '아이폰 18 Pro 외부 등록 실패 845건을 재처리할까요?',
+    )
+    await userEvent.click(
+      within(scopedConfirm).getByRole('button', { name: '취소' }),
     )
   },
 }

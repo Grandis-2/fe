@@ -151,3 +151,14 @@ export const addIcon = style({
   width: '16px',
   height: '16px',
 })
+
+/** 이름·색 칸만 막는 fieldset — 모양은 없고 잠금(disabled)만 빌려 쓴다 */
+export const lockable = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+  minWidth: 0,
+  margin: 0,
+  padding: 0,
+  border: 0,
+})

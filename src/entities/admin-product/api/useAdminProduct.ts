@@ -20,6 +20,7 @@ import { toRegistrationRequest } from '../model/registration'
 import {
   closePreorderCampaign,
   getAdminProduct,
+  getPreorderCampaign,
   getRegistrationStatus,
   registerAdminProduct,
   setAdminProductSaleStatus,
@@ -28,6 +29,7 @@ import {
 import { getAdminProductStock } from './adminStock'
 import {
   ADMIN_PRODUCTS_KEY,
+  adminPreorderCampaignKey,
   adminProductKey,
   adminProductStockKey,
 } from './keys'
@@ -70,6 +72,21 @@ export const useAdminProductStock = (productId: string) =>
     ...queryPolicy.live,
   })
 
+/**
+ * 사전예약 회차 — 상품 상세의 campaign에 없는 발급 순번 수(issuedCount)를 여기서 받는다.
+ * 회차가 없으면(일반 상품·등록 직후) 404라, 사전예약일 때만 부르도록 enabled로 막는다.
+ */
+export const useAdminPreorderCampaign = (
+  productId: string,
+  { enabled = true }: { enabled?: boolean } = {},
+) =>
+  useQuery({
+    queryKey: adminPreorderCampaignKey(productId),
+    queryFn: ({ signal }) => getPreorderCampaign(productId, signal),
+    ...queryPolicy.live,
+    enabled,
+  })
+
 // 같은 키 요청이 처리 중(409 REGISTRATION_IN_PROGRESS)이면 잠시 뒤 같은 키로 다시
 // 보낸다 — 명세가 그렇게 하라고 한다. 다른 실패는 그대로 던진다.
 const IN_PROGRESS_RETRIES = 4
@@ -96,7 +113,7 @@ const READY_WAIT_MS = 30_000
 /**
  * 준비가 끝났는지 기다린다. 여기서 나는 실패는 삼킨다 — 상품은 이미 등록됐는데 확인
  * 요청이 실패했다고 등록 실패로 보이면, 관리자가 다시 눌러 같은 상품을 또 만든다.
- * 끝내 확인이 안 되면 준비 중으로 둔다(상세에서 '초안'으로 보인다).
+ * 끝내 확인이 안 되면 준비 중으로 둔다(상세에서 '준비 중'으로 보인다).
  * 끊지 않는다 — mutation이라 화면을 떠나면 mutate에 넘긴 콜백이 불리지 않아 이동이 없고,
  * 길어야 30초다.
  */

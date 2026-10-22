@@ -11,8 +11,9 @@ export {
 export {
   drawPhaseColor,
   drawPhaseLabel,
-  drawPhaseLabels,
   drawPhases,
+  drawPhaseVariant,
+  drawTimingOf,
 } from './model/types'
 export type {
   AdminDraw,
@@ -21,10 +22,8 @@ export type {
 } from './model/types'
 export {
   DRAW_STUCK_AFTER_MS,
-  drawStageDescription,
   drawStageLabel,
   drawStageOf,
-  drawStageSteps,
   isDrawSettled,
 } from './model/stage'
 export type { DrawStage } from './model/stage'

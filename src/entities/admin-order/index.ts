@@ -5,7 +5,10 @@ export {
   useAdminOrderCounts,
   useAdminOrders,
   useAdvanceShipping,
+  useAdvanceShippingBatch,
 } from './api/useAdminOrders'
+export type { ShippingBatchResult } from './api/useAdminOrders'
+export type { ShippingOutcome } from './lib/shippingOutcome'
 export {
   adminOrderSourceLabel,
   adminOrderSources,

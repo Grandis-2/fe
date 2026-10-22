@@ -48,6 +48,8 @@ export type TableProps<T> = {
   loading?: boolean
   /** 로딩 줄 수. 안 주면 pageSize, 그것도 없으면 5줄 */
   loadingRows?: number
+  /** 행마다 붙일 클래스(예: 실패한 행 강조) */
+  rowClassName?: (row: T) => string | undefined
   className?: string
 }
 
@@ -64,6 +66,7 @@ export function Table<T>({
   rowAction,
   loading = false,
   loadingRows,
+  rowClassName,
   className,
 }: TableProps<T>) {
   const [page, setPage] = useState(1)
@@ -156,7 +159,11 @@ export function Table<T>({
               visibleRows.map((row) => (
                 <tr
                   key={rowKey(row)}
-                  className={[styles.row, onRowClick && styles.rowClickable]
+                  className={[
+                    styles.row,
+                    onRowClick && styles.rowClickable,
+                    rowClassName?.(row),
+                  ]
                     .filter(Boolean)
                     .join(' ')}
                   onClick={onRowClick && (() => onRowClick(row))}

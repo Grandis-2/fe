@@ -21,8 +21,9 @@ import type { RequestHandler } from 'msw'
 
 const BASE = '/api/v1/admin/waitingroom'
 const MAX_GLOBAL_CREDIT = 1500
-const DEFAULT_GLOBAL = 150
-const DEFAULT_CAP = 150
+// 서버가 2026-10-21에 기본값을 150에서 15로 낮췄다.
+const DEFAULT_GLOBAL = 15
+const DEFAULT_CAP = 15
 const DEFAULT_GRACE = 250
 
 const state: {

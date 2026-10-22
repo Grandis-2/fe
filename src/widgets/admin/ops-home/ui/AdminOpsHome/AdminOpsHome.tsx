@@ -5,11 +5,12 @@ import { CircleCheck, TriangleAlert } from 'lucide-react'
 import { useAdminDraws, useStuckDraws } from '@entities/admin-draw'
 import { useAdminOrderCounts } from '@entities/admin-order'
 import { useAdminProductCount } from '@entities/admin-product'
+import { useReservationStats } from '@entities/admin-reservation'
 import {
-  useReservationStats,
-  useReservationStatsHistories,
-} from '@entities/admin-reservation'
-import { isBraking, waitEstimate } from '@entities/admin-waitingroom'
+  isBraking,
+  useWaitingroomStatusHistory,
+  waitEstimate,
+} from '@entities/admin-waitingroom'
 import {
   OpenPreorderPicker,
   SLOW_AFTER_MS,
@@ -24,17 +25,20 @@ import {
   adminReservationsPath,
 } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { slopePerSecond, sumSeries } from '@shared/lib/samples'
+import { slopePerSecond } from '@shared/lib/samples'
 import { InlineAlert, RefreshStatus, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
+import { useReprocessRun } from '../../lib/useReprocessRun'
 import { useScrolledPast } from '../../lib/useScrolledPast'
-import { BacklogCard } from '../BacklogCard'
 import { DrawSummaryCard } from '../DrawSummaryCard'
 import { OpenPreorderCard } from '../OpenPreorderCard'
 import { OpsKpiCard } from '../OpsKpiCard'
 import { OpsTaskCard, type OpsTaskCardProps } from '../OpsTaskCard'
 import { OrderSummaryCard } from '../OrderSummaryCard'
+import { QueueCard } from '../QueueCard'
+import { ReprocessBanner } from '../ReprocessBanner'
+import { ReprocessModal } from '../ReprocessModal'
 import { StuckDrawTask } from '../StuckDrawTask'
 import { UrgentBanner, type UrgentItem } from '../UrgentBanner'
 
@@ -133,18 +137,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     ? scopeStats.reduce((total, value) => total + sum(value.preorders), 0)
     : null
 
-  // 외부 등록 대기(적체)는 관리자 화면을 연 뒤 받은 집계로 그린다 — 다른 화면에 다녀와도
-  // 이어진다(새로 고치면 처음부터). 사전예약마다 받은 기록을 더한다.
-  const backlogSamples = sumSeries(
-    useReservationStatsHistories(scopeIds).map((samples) =>
-      samples.map(({ at, value }) => ({
-        at,
-        value: value.preorders.PENDING_SYNC,
-      })),
-    ),
-  )
-  const backlogSlope = slopePerSecond(backlogSamples).at(-1)?.value
-
   const s = stats.data
   // 판정 기준 시각 — 받은 응답의 시각을 써서 렌더마다 흔들리지 않게 한다. 회차 단계는 회차
   // 목록만 와도 정해야 해서 둘 중 늦은 쪽을 쓴다. 둘 다 못 받았으면 0이라 판정하지 않는다.
@@ -177,6 +169,19 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   const waiting = q
     ? queueScope.reduce((total, product) => total + product.waiting, 0)
     : null
+  // 대기 인원 추이 — 관리자 화면을 연 뒤 받은 현황으로 그린다(새로 고치면 처음부터). 그때그때
+  // 접수 중이던 사전예약만 더한다(고르면 그것만).
+  const queueSamples = useWaitingroomStatusHistory().map(({ at, value }) => ({
+    at,
+    value: value.products
+      .filter(
+        (product) =>
+          product.phase === 'OPEN' &&
+          (selected === null || product.productId === selected),
+      )
+      .reduce((total, product) => total + product.waiting, 0),
+  }))
+  const queueSlope = slopePerSecond(queueSamples).at(-1)?.value
 
   const shipping =
     orders.counts.PREPARING_ITEMS !== null &&
@@ -217,6 +222,26 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     'REPROCESS_NEEDED',
     selected ?? undefined,
   )
+  // 재처리는 이 화면에서 모달로 한다 — 고른 사전예약이 있으면 그것만, 없으면 전부.
+  // 범위와 집계는 실행할 때 고른 상품으로 훅이 고정해 센다.
+  const reprocess = useReprocessRun(selected)
+  const reprocessAction = { label: '재처리', onClick: reprocess.show }
+  // 모달의 사전예약별 건수 — 마감돼 목록에서 빠진 회차에 남은 실패는 한 줄로 묶는다.
+  const breakdownTotal = failedPreorders.reduce(
+    (total, item) => total + (item.failures ?? 0),
+    0,
+  )
+  const reprocessBreakdown = scoped
+    ? []
+    : [
+        ...failedPreorders.map((item) => ({
+          name: item.name,
+          count: item.failures ?? 0,
+        })),
+        ...(failures !== null && failures > breakdownTotal
+          ? [{ name: '마감된 회차', count: failures - breakdownTotal }]
+          : []),
+      ]
 
   // 급한 순서대로 쌓는다. 0건인 일은 빼서 이상이 없으면 목록이 비게 한다. 배송 대기는 위
   // 숫자와 주문 카드가 보여 줘 여기엔 두지 않는다.
@@ -226,8 +251,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           key: 'register',
           level: 'urgent',
           title: `결제 막힘 · 외부 등록 실패 ${formatNumber(t.syncJobs.REGISTER.DEAD_LETTER)}건`,
-          // 재처리는 예약 현황에서 한다 — 실패 탭을 고른 사전예약 그대로 연다.
-          action: { label: '재처리', to: reprocessPath },
+          action: reprocessAction,
         },
         t.deadLetters.waiting > 0 && {
           key: 'dead-letters',
@@ -270,7 +294,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
             label: '외부 등록 실패',
             count: t.syncJobs.REGISTER.DEAD_LETTER,
             breakdown: failureBreakdown,
-            action: { label: '재처리하기', to: reprocessPath },
+            action: { ...reprocessAction, label: '재처리하기' },
           },
         ]
       : []
@@ -337,19 +361,29 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
 
       {/* 결제를 막는 일은 어디를 보든 먼저 보이게 맨 위에 한 번 더 두고, 띠가 스크롤로
           사라지면 헤더 바로 아래에 얇은 한 줄로 따라온다. */}
-      {urgentItems.length > 0 && (
-        <>
-          <div ref={urgentRef}>
-            <UrgentBanner items={urgentItems} />
-          </div>
-          <div className={styles.urgentPin}>
-            {urgentScrolledPast && (
-              <div className={styles.urgentPinned}>
-                <UrgentBanner items={urgentItems} compact />
-              </div>
-            )}
-          </div>
-        </>
+      {/* 재처리하는 동안엔 긴급 띠 대신 진행 띠 — 끝나고 실패가 남으면 긴급 띠로 돌아온다. */}
+      {reprocess.run && reprocess.running ? (
+        <ReprocessBanner
+          sent={reprocess.running.sent}
+          target={reprocess.run.target}
+          remainingSeconds={reprocess.running.remainingSeconds}
+          onOpen={reprocess.show}
+        />
+      ) : (
+        urgentItems.length > 0 && (
+          <>
+            <div ref={urgentRef}>
+              <UrgentBanner items={urgentItems} />
+            </div>
+            <div className={styles.urgentPin}>
+              {urgentScrolledPast && (
+                <div className={styles.urgentPinned}>
+                  <UrgentBanner items={urgentItems} compact />
+                </div>
+              )}
+            </div>
+          </>
+        )
       )}
 
       <section className={styles.section} aria-labelledby="ops-open">
@@ -420,19 +454,19 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
       </div>
 
       <div className={styles.mainRow}>
-        <BacklogCard
+        <QueueCard
           // 고른 사전예약이 바뀌면 그래프를 새로 그린다(선이 다시 그려진다).
           key={selected ?? 'all'}
-          backlog={countOf('PENDING_SYNC')}
-          perMinute={backlogSlope === undefined ? null : backlogSlope * 60}
+          waiting={waiting}
+          perMinute={queueSlope === undefined ? null : queueSlope * 60}
           history={{
-            times: backlogSamples.map(({ at }) => at),
-            values: backlogSamples.map(({ value }) => value),
+            times: queueSamples.map(({ at }) => at),
+            values: queueSamples.map(({ value }) => value),
           }}
           // 브레이크는 대기열 전체에 하나라 고른 사전예약과 상관없이 전체 기준이다.
           braking={isBraking(q?.brakeFactor ?? null)}
           flow={{
-            waiting,
+            backlog: countOf('PENDING_SYNC'),
             payable: countOf('REGISTERED'),
             reserved: countOf('RESERVED'),
           }}
@@ -511,6 +545,21 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           }}
         />
       </div>
+
+      <ReprocessModal
+        open={reprocess.open}
+        onClose={reprocess.close}
+        scopeName={selected ? nameOf(selected) : null}
+        failures={failures ?? 0}
+        breakdown={reprocessBreakdown}
+        run={reprocess.run}
+        running={reprocess.running}
+        result={reprocess.result}
+        isPending={reprocess.isPending}
+        error={reprocess.error}
+        onConfirm={() => reprocess.start(selected)}
+        reservationsPath={reprocessPath}
+      />
     </div>
   )
 }

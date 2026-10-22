@@ -27,3 +27,16 @@ export const adminProductStockKey = (productId: string) =>
 /** 배송 차수. 상세 아래에 두어 상품을 무효화하면 차수도 같이 받는다 */
 export const adminShipmentBatchesKey = (productId: string) =>
   [...adminProductKey(productId), 'shipment-batches'] as const
+
+/** 사전예약 회차(발급한 순번 수). 상세 아래에 두어 상품을 무효화하면 같이 받는다 */
+export const adminPreorderCampaignKey = (productId: string) =>
+  [...adminProductKey(productId), 'campaign'] as const
+
+/**
+ * 마지막 재고 장부 대조 — 상품 하나가 아니라 전체 결과다. 보정하면 그 옵션에
+ * correctedAt이 붙으므로 상품 재고와 함께 다시 받는다.
+ */
+export const stockReconcileRunKey = [
+  ...ADMIN_PRODUCTS_KEY,
+  'stock-reconcile-run',
+] as const

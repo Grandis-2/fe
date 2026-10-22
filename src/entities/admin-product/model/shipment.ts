@@ -123,3 +123,26 @@ export function batchDraftProblem(drafts: ShipmentBatchDraft[]) {
 export const toShipmentBatchesRequest = (
   drafts: ShipmentBatchDraft[],
 ): ShipmentBatchesRequest => ({ batches: toBatches(drafts) })
+
+/**
+ * 차수마다 지금까지 발급한 순번 수. 회차의 issuedCount(취소 포함)를 순번 구간에 나눈다 —
+ * 차수 조회에는 차수별 예약 수가 없다. 순번은 다시 쓰지 않아 취소된 예약도 센다.
+ */
+export const issuedInBatch = (
+  batch: Pick<ShipmentBatch, 'positionFrom' | 'positionTo'>,
+  issuedCount: number,
+) =>
+  Math.max(
+    0,
+    Math.min(issuedCount, batch.positionTo ?? Infinity) -
+      batch.positionFrom +
+      1,
+  )
+
+/** 지금 순번을 받고 있는 차수 — 발급한 다음 번호가 속한 차수 */
+export const currentBatchOf = (batches: ShipmentBatch[], issuedCount: number) =>
+  batches.find(
+    (batch) =>
+      issuedCount + 1 >= batch.positionFrom &&
+      (batch.positionTo === null || issuedCount + 1 <= batch.positionTo),
+  )

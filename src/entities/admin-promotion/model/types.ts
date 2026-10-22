@@ -33,34 +33,76 @@ export type AdminPromotion = AdminPromotionView
 /** 프로모션에 연결할 수 있는 사전예약 상품 */
 export type PromotionLinkableProduct = Pick<
   PromotionLinkableProductView,
-  'productId' | 'colors' | 'storages'
+  'productId' | 'saleMode' | 'opensAt' | 'colors' | 'storages'
 > & {
   name: string
-  /** '9/20 12:00 오픈' 처럼 이미 다듬어진 문구 */
+  /** '10.20 12:00 오픈' 처럼 이미 다듬어진 문구 */
   openAtLabel: string
 }
 
 const pad = (value: number) => String(value).padStart(2, '0')
 
-const openAtLabel = (opensAt: string | null) => {
+const openAtLabel = ({
+  saleMode,
+  opensAt,
+}: Pick<PromotionLinkableProductView, 'saleMode' | 'opensAt'>) => {
+  if (saleMode === 'IN_STOCK')
+    return '일반 상품으로 바뀜 — 고객에겐 바로 구매 카드로 보여요'
   if (!opensAt) return '회차 미정'
   const date = new Date(opensAt)
-  return `${date.getMonth() + 1}/${date.getDate()} ${pad(date.getHours())}:${pad(date.getMinutes())} 오픈`
+  return `${pad(date.getMonth() + 1)}.${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())} 오픈`
 }
 
 export const toPromotionLinkableProduct = ({
   productId,
   title,
+  saleMode,
   opensAt,
   colors,
   storages,
 }: PromotionLinkableProductView): PromotionLinkableProduct => ({
   productId,
   name: title,
-  openAtLabel: openAtLabel(opensAt),
+  saleMode,
+  opensAt,
+  openAtLabel: openAtLabel({ saleMode, opensAt }),
   colors,
   storages,
 })
+
+/**
+ * 연결 상품의 지금 단계. 관리자 API는 오픈 시각만 줘서 접수 중·마감은 알 수 없다 —
+ * 오픈 전·후까지만 나눈다.
+ */
+export type LinkedProductStage = 'inStock' | 'noRound' | 'beforeOpen' | 'opened'
+
+export const linkedProductStage = (
+  product: Pick<PromotionLinkableProduct, 'saleMode' | 'opensAt'>,
+  now: number,
+): LinkedProductStage => {
+  if (product.saleMode === 'IN_STOCK') return 'inStock'
+  if (!product.opensAt) return 'noRound'
+  return new Date(product.opensAt).getTime() > now ? 'beforeOpen' : 'opened'
+}
+
+export const linkedProductStageLabel: Record<LinkedProductStage, string> = {
+  beforeOpen: '오픈 전',
+  opened: '오픈 후',
+  noRound: '회차 미정',
+  inStock: '일반 상품',
+}
+
+export const linkedProductStageColor: Record<
+  LinkedProductStage,
+  'blue' | 'gray' | 'yellow'
+> = {
+  beforeOpen: 'blue',
+  opened: 'gray',
+  noRound: 'gray',
+  inStock: 'yellow',
+}
+
+export const linkedProductStageLabels = Object.values(linkedProductStageLabel)
 
 /** 생성·수정 폼이 다루는 값 */
 export type AdminPromotionFormValue = {
@@ -81,18 +123,111 @@ export const createEmptyPromotionFormValue = (): AdminPromotionFormValue => ({
   linkedProductIds: [],
 })
 
-// 서버가 묶는 상품 수 상한
+// 서버 상한 — 묶는 상품, 상세 사진, 이름 글자 수
 export const PROMOTION_PRODUCTS_MAX = 20
+export const PROMOTION_DETAIL_IMAGES_MAX = 20
+export const PROMOTION_NAME_MAX = 100
 
 // Intl의 ko-KR은 '9. 15.'로 찍혀서 화면 문구와 달라 직접 만든다.
-const monthDay = (value: string) => {
+export const formatMonthDay = (value: string) => {
   const date = parseDateOnly(value)
-  return date ? `${date.getMonth() + 1}/${date.getDate()}` : '미정'
+  return date ? `${pad(date.getMonth() + 1)}.${pad(date.getDate())}` : '미정'
 }
 
-/** 목록의 '9/15 ~ 9/21' */
-export const formatPromotionPeriod = ({ startDate, endDate }: AdminPromotion) =>
-  `${monthDay(startDate)} ~ ${monthDay(endDate)}`
+/** '10.20 – 10.31' */
+export const formatPromotionPeriod = ({
+  startDate,
+  endDate,
+}: Pick<AdminPromotion, 'startDate' | 'endDate'>) =>
+  `${formatMonthDay(startDate)} – ${formatMonthDay(endDate)}`
+
+const DAY = 86_400_000
+
+/** 오늘 자정부터 그 날까지 며칠인지(지났으면 음수) */
+const daysUntil = (value: string, now: number) => {
+  const date = parseDateOnly(value)
+  if (!date) return null
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  return Math.round((date.getTime() - today.getTime()) / DAY)
+}
+
+/**
+ * 노출 기간 아래 붙는 남은 날 — '9일 남음', '3일 뒤 시작', '종료'. 끝 날도 보이므로
+ * 끝 날 당일은 '오늘까지'다. urgent면 곧 내려간다(3일 이하).
+ */
+export function promotionDue(
+  promotion: Pick<AdminPromotion, 'status' | 'startDate' | 'endDate'>,
+  now: number,
+): { label: string; urgent: boolean } {
+  if (promotion.status === 'ENDED') return { label: '종료', urgent: false }
+  if (promotion.status === 'SCHEDULED') {
+    const days = daysUntil(promotion.startDate, now)
+    if (days === null) return { label: '', urgent: false }
+    return {
+      label: days <= 1 ? '내일 시작' : `${days}일 뒤 시작`,
+      urgent: false,
+    }
+  }
+  const days = daysUntil(promotion.endDate, now)
+  if (days === null) return { label: '', urgent: false }
+  return {
+    label: days <= 0 ? '오늘까지' : `${days}일 남음`,
+    urgent: days <= 3,
+  }
+}
+
+/** 관리자 상품 목록의 한 줄 중 고객 노출 판정에 쓰는 값만 — 구조가 맞으면 목록을 그대로 넘긴다 */
+export type ListedProductForCustomer = {
+  productId: string
+  saleMode: string
+  status: string
+  displayStatus: string
+  opensAt: string | null
+}
+
+/** 고객 페이지에 안 보이는 이유(짧게). 보이면 null */
+const customerHiddenReason = (product: ListedProductForCustomer) => {
+  if (product.displayStatus === 'DRAFT') return '준비 중'
+  if (product.displayStatus === 'HIDDEN') return '비공개'
+  if (product.status === 'PAUSED') return '판매 중지'
+  if (product.saleMode === 'PREORDER' && product.opensAt === null)
+    return '회차 없음'
+  return null
+}
+
+/**
+ * 고객 페이지에 상품이 제대로 안 보이는 사전예약. 끝난 사전예약은 보지 않는다.
+ * 지운 상품은 응답에서 빠지므로 남은 상품이 0개일 수 있다.
+ *
+ * listed는 관리자 상품 목록(이 홍보 상품이 고객에게 보이는지 판정할 근거). 못 받았으면
+ * undefined — 실패를 '정상'으로 보지 않도록 고객 노출은 판정하지 않는다. 목록에 연결 상품이
+ * 없으면(첫 페이지 밖일 수 있어) 역시 판정하지 않는다.
+ * ponytail: "준비가 끝남"의 정확한 서버 기준(배송 차수 필요 여부 등)이 명세에 없어, 준비 여부는
+ * 전시 상태(DRAFT·HIDDEN)와 회차 시각(opensAt)으로 어림한다. be가 고객 노출 여부를 내려 주면 그 값으로 바꾼다.
+ */
+export function promotionProductProblem(
+  promotion: Pick<AdminPromotion, 'status' | 'products'>,
+  listed?: readonly ListedProductForCustomer[],
+): string | null {
+  if (promotion.status === 'ENDED') return null
+  if (promotion.products.length === 0)
+    return '남은 연결 상품이 없어요 — 상품이 지워져 빠졌어요'
+  if (promotion.products.every((product) => product.saleMode === 'IN_STOCK'))
+    return '연결 상품이 모두 일반 상품으로 바뀌었어요'
+  if (listed === undefined) return null
+
+  const found = promotion.products.map((linked) =>
+    listed.find((product) => product.productId === linked.productId),
+  )
+  // 하나라도 못 찾았거나 보이는 상품이 있으면 판정할 수 없거나 정상이다.
+  if (found.some((product) => product === undefined)) return null
+  const reasons = found.map((product) =>
+    product ? customerHiddenReason(product) : null,
+  )
+  if (reasons.some((reason) => reason === null)) return null
+  return `고객 화면에 보일 상품이 없어요 — ${[...new Set(reasons)].join('·')}`
+}
 
 const toUploaded = (url: string, index: number): UploadedImage => ({
   id: `${index}-${url}`,

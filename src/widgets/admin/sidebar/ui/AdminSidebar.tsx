@@ -18,6 +18,7 @@ import {
 } from '@shared/config/routes'
 import { srOnly } from '@shared/config/theme'
 import { formatNumber } from '@shared/lib/formatNumber'
+import { CountBadge } from '@shared/ui'
 
 import * as styles from './AdminSidebar.css'
 
@@ -103,10 +104,10 @@ export function AdminSidebar() {
               >
                 {label}
                 {badge !== null && (
-                  <span className={styles.badge}>
+                  <CountBadge className={styles.badge}>
                     {formatNumber(badge)}
                     <span className={srOnly}>건 실패</span>
-                  </span>
+                  </CountBadge>
                 )}
               </Link>
             )

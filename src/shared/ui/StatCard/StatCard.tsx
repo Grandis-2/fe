@@ -9,6 +9,8 @@ import * as styles from './StatCard.css'
 export type StatCardProps = {
   label: ReactNode
   value: ReactNode
+  /** 값 아래 한 줄 설명(정가·할인율, 남은 시간 등) */
+  caption?: ReactNode
   /**
    * 값이 실제 수치가 아닐 때 켠다(집계 조회 실패 등).
    * 흐린 글씨로 보여 0건과 구분된다.
@@ -22,6 +24,7 @@ export type StatCardProps = {
 export function StatCard({
   label,
   value,
+  caption,
   muted,
   loading = false,
   className,
@@ -41,6 +44,7 @@ export function StatCard({
       ) : (
         <div className={muted ? styles.valueMuted : styles.value}>{value}</div>
       )}
+      {caption && <div className={styles.caption}>{caption}</div>}
     </div>
   )
 }
