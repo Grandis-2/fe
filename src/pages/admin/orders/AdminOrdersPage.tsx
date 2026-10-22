@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 
 import { useNavigate, useSearchParams } from 'react-router'
 
@@ -27,7 +27,6 @@ import {
   Checkbox,
   Dropdown,
   InlineAlert,
-  Input,
   Navigator,
   RefreshStatus,
   SegmentedTabs,
@@ -40,9 +39,6 @@ import { BulkShippingModal } from '@widgets/admin/order-bulk-shipping'
 import * as styles from './AdminOrdersPage.css'
 
 const PAGE_SIZE = 20
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const SHORT_NO_PATTERN = /^[0-9a-f]{8}$/i
 const ALL = 'all'
 
 /** 위 카드 — 관리자가 손대야 하는 단계와 오래 머물면 문제인 취소 처리 중 */
@@ -139,23 +135,6 @@ export function AdminOrdersPage() {
   })
   const todo = useAdminOrderCounts(todoStatuses)
   const totalPages = orders.data ? Math.ceil(orders.data.total / PAGE_SIZE) : 0
-
-  // 목록 API에 검색 조건이 없어(상태·출처·쪽뿐) 전체 주문 id로만 바로 연다.
-  const [lookup, setLookup] = useState('')
-  const [lookupError, setLookupError] = useState<string>()
-  const openByOrderId = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const orderId = lookup.trim()
-    if (UUID_PATTERN.test(orderId)) {
-      navigate(adminOrderPath(orderId.toLowerCase()))
-      return
-    }
-    setLookupError(
-      SHORT_NO_PATTERN.test(orderId)
-        ? '주문번호(8자리)로는 아직 찾을 수 없습니다. 전체 주문 id를 넣어 주세요.'
-        : '주문 id 형식이 아닙니다.',
-    )
-  }
 
   // 같은 상태끼리만 옮길 수 있어 상태 하나를 고른 쪽에서만 체크 칸을 둔다. 쪽·필터를 바꾸면 푼다.
   const step = status ? nextShippingStepOf(status) : null
@@ -395,22 +374,6 @@ export function AdminOrdersPage() {
           />
         </div>
       </div>
-
-      <form className={styles.lookup} onSubmit={openByOrderId} noValidate>
-        <Input
-          label="주문 id로 바로 열기"
-          size="small"
-          value={lookup}
-          error={lookupError}
-          onChange={(event) => {
-            setLookup(event.target.value)
-            setLookupError(undefined)
-          }}
-        />
-        <Button type="submit" size="small" variant="outline" color="cancel">
-          열기
-        </Button>
-      </form>
 
       {step && selectable.length > 0 && (
         <div className={styles.selectionBar}>

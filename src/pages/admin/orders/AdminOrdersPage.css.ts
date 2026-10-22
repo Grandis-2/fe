@@ -96,14 +96,6 @@ export const dropdowns = style({
 
 export const field = style({ width: '160px' })
 
-// 칸 아래 오류 문구가 생겨도 버튼은 칸 높이에 맞춘다.
-export const lookup = style({
-  display: 'flex',
-  alignItems: 'flex-start',
-  gap: spacing[8],
-  maxWidth: '480px',
-})
-
 // 고른 건수와 다음 단계 단추 — 표 바로 위에 붙어 무엇을 옮길지 보인다.
 export const selectionBar = style({
   display: 'flex',
