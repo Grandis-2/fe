@@ -28,6 +28,9 @@ export const root = style({
   border: 'none',
   background: 'none',
   overflow: 'visible',
+  // 바텀시트(Radix Dialog)가 열리면 body에 pointer-events: none을 건다 — body에 붙은 이 창도 물려받아
+  // 맨 위에 보여도 눌리지 않으므로 되살린다.
+  pointerEvents: 'auto',
   color: onDark(92),
   '@media': {
     [breakpoint.desktop]: { bottom: spacing[16] },

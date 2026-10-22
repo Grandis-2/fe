@@ -74,6 +74,14 @@ const waitReason = ({
 const findModal = () =>
   document.querySelector<HTMLDialogElement>('dialog:modal')
 
+// popover를 닫았다 다시 띄워 top layer 맨 위로 올린다. Popover API가 없는 브라우저(Safari 16 이하 등)에선
+// :popover-open·showPopover가 던져 앱이 깨진다 — 올리지 않고 그냥 둔다.
+const raise = (root: HTMLElement | null) => {
+  if (!root || typeof root.showPopover !== 'function') return
+  if (root.matches(':popover-open')) root.hidePopover()
+  root.showPopover()
+}
+
 const readOpen = () => {
   try {
     const saved = localStorage.getItem(OPEN_KEY)
@@ -112,27 +120,40 @@ export function RequestMonitor() {
   const now = useNow(open)
   const rootRef = useRef<HTMLElement>(null)
 
-  // showModal()로 연 모달 바깥은 브라우저가 막는다(inert) — 이 창을 누르면 모달 backdrop 클릭이 돼
-  // 모달이 닫힌다. 모달이 열려 있는 동안엔 그 모달 안으로 옮겨 그려, 모달을 둔 채로 이 창을 쓴다.
+  // 이 창은 늘 맨 위에 있고 눌려야 한다. showModal()로 연 모달 바깥은 브라우저가 막아서(inert) 누르면
+  // 모달 backdrop 클릭이 돼 모달이 닫힌다 — 모달이 열려 있으면 맨 위 모달(가장 나중에 열린 것) 안으로
+  // 옮겨 그린다. 그 모달이 닫히거나 열린 채 DOM에서 빠지면(검색창·대기열) 남은 모달이나 body로 돌아온다.
+  // 무엇이 열리든(모달·다른 popover) 그 위로 다시 올린다.
   useEffect(() => {
-    const observer = new MutationObserver(() => setModal(findModal()))
+    const observer = new MutationObserver((records) => {
+      const opened = records.flatMap(({ type, target }) =>
+        type === 'attributes' &&
+        target instanceof HTMLDialogElement &&
+        target.matches(':modal')
+          ? [target]
+          : [],
+      )
+      setModal(
+        (current) =>
+          opened.at(-1) ?? (current?.matches(':modal') ? current : findModal()),
+      )
+      if (records.some(({ type }) => type === 'attributes'))
+        raise(rootRef.current)
+    })
     observer.observe(document.body, {
       subtree: true,
+      childList: true,
       attributeFilter: ['open'],
     })
     return () => observer.disconnect()
   }, [])
 
-  // popover로 top layer에 올려 모달보다 위에 보이게 한다. 붙는 자리(modal)가 바뀌면 새로 마운트되므로
-  // 다시 띄운다 — 모달이 열린 뒤에 띄우니 모달 위에 온다.
+  // 붙는 자리(modal)가 바뀌면 새로 마운트되므로 다시 띄운다 — 모달이 열린 뒤에 띄우니 모달 위에 온다.
   useEffect(() => {
     const root = rootRef.current
-    // Popover API가 없는 브라우저(Safari 16 이하 등)에선 :popover-open·showPopover가 던져 앱이 깨진다 —
-    // 맨 위로 올리지 않고 그냥 둔다.
-    if (!root || typeof root.showPopover !== 'function') return
-    root.showPopover()
+    raise(root)
     return () => {
-      if (root.matches(':popover-open')) root.hidePopover()
+      if (root?.matches(':popover-open')) root.hidePopover()
     }
   }, [modal])
 
@@ -162,6 +183,8 @@ export function RequestMonitor() {
       data-theme="light"
       className={styles.root}
       aria-label="요청 모니터"
+      // 바텀시트(Radix Dialog)는 바깥 pointerdown을 받으면 닫힌다 — 이 창을 눌러도 시트가 닫히지 않게 막는다.
+      onPointerDown={(event) => event.stopPropagation()}
     >
       {open ? (
         <RequestMonitorPanel
