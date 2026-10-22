@@ -1,9 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 
 import { Search } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router'
 
-import { brandMenus, usePopularKeywords, useProducts } from '@entities/product'
+import {
+  brandMenus,
+  usePopularKeywords,
+  useProducts,
+  type ProductListItem,
+} from '@entities/product'
+import { useRequireLogin } from '@features/login'
+import { enterPreorderOnClick } from '@features/preorder-queue'
 import {
   ONGOING_PREORDERS,
   PreorderLinks,
@@ -78,6 +85,15 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
     pick(label)
     add(label)
   }
+
+  // 예약 중인 사전예약 상품은 상세로 바로 가지 않고 대기열을 거친다(다른 목록과 같다).
+  // 이동을 막아 주소가 그대로라 오버레이가 스스로 닫히지 않으므로 여기서 닫는다.
+  const enterPreorder = enterPreorderOnClick(useRequireLogin())
+  const handleProductClick =
+    (product: ProductListItem) => (event: MouseEvent<HTMLAnchorElement>) => {
+      enterPreorder(product)(event)
+      if (event.defaultPrevented) onClose()
+    }
 
   // 엔터와 같다 — 검색 결과 화면으로 간다(주소가 바뀌면 오버레이는 스스로 닫힌다).
   const submit = (label: string) => {
@@ -211,6 +227,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
               keyword={keyword}
               results={results}
               isError={search.isError}
+              onProductClick={handleProductClick}
             />
           </>
         )}
