@@ -203,7 +203,7 @@ export function ProductDetailPage() {
                   ) : reviews.isPending ? (
                     <SkeletonGroup className={styles.reviewList}>
                       {[0, 1].map((i) => (
-                        <ReviewCardSkeleton key={i} />
+                        <ReviewCardSkeleton key={i} showProduct={false} />
                       ))}
                     </SkeletonGroup>
                   ) : reviews.data.items.length === 0 ? (
@@ -217,7 +217,11 @@ export function ProductDetailPage() {
                     </InlineAlert>
                   ) : (
                     reviews.data.items.map((review) => (
-                      <ReviewCard key={review.reviewId} review={review} />
+                      <ReviewCard
+                        key={review.reviewId}
+                        review={review}
+                        showProduct={false}
+                      />
                     ))
                   )}
                 </div>
