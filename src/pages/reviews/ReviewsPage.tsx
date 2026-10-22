@@ -1,35 +1,13 @@
-import { MessageSquare } from 'lucide-react'
-
-import { ReviewCard, ReviewCardSkeleton, useReviews } from '@entities/review'
-import { Container, InlineAlert, SkeletonGroup } from '@shared/ui'
+import { Container } from '@shared/ui'
+import { ReviewList } from '@widgets/review-list'
 
 import * as styles from './ReviewsPage.css'
 
 export function ReviewsPage() {
-  const { data, isPending, isError } = useReviews()
-
   return (
     <Container>
       <div className={styles.title}>구매후기</div>
-      {isError ? (
-        <InlineAlert status="error">후기를 불러오지 못했어요.</InlineAlert>
-      ) : isPending ? (
-        <SkeletonGroup className={styles.list}>
-          {[0, 1, 2].map((i) => (
-            <ReviewCardSkeleton key={i} />
-          ))}
-        </SkeletonGroup>
-      ) : data.items.length === 0 ? (
-        <InlineAlert status="info" variant="big" icon={MessageSquare}>
-          아직 등록된 후기가 없어요
-        </InlineAlert>
-      ) : (
-        <div className={styles.list}>
-          {data.items.map((review) => (
-            <ReviewCard key={review.reviewId} review={review} />
-          ))}
-        </div>
-      )}
+      <ReviewList />
     </Container>
   )
 }

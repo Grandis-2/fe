@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
 import type { ReviewListParams } from '@shared/api/types'
@@ -12,8 +17,12 @@ import {
   updateReview,
 } from './review'
 
-// ponytail: 목록은 첫 쪽(최대 100건)만 받는다 — 화면에 페이지 넘김이 생기면 page를 인자로 올린다.
+// ponytail: 상품 리뷰·내 리뷰는 첫 쪽(최대 100건)만 받는다 — 화면에 페이지 넘김이 생기면 page를 인자로 올린다.
 const FIRST_PAGE = { page: 0, size: 100 }
+
+// 모아보기는 20건씩 이어 받는다. 서버는 page × size가 10,000 이상이면 400이라 그 앞에서 멈춘다.
+const FEED_SIZE = 20
+const FEED_LIMIT = 10_000
 
 const reviewKeys = {
   all: ['reviews'] as const,
@@ -22,12 +31,17 @@ const reviewKeys = {
   mine: ['reviews', 'mine'] as const,
 }
 
+// 구매후기 모아보기 — 끝에 닿을 때마다 fetchNextPage로 다음 쪽을 붙인다(무한 스크롤).
 export const useReviews = (
   params: Omit<ReviewListParams, 'page' | 'size'> = {},
 ) =>
-  useQuery({
+  useInfiniteQuery({
     queryKey: reviewKeys.list(params),
-    queryFn: ({ signal }) => getReviews({ ...params, ...FIRST_PAGE }, signal),
+    queryFn: ({ pageParam, signal }) =>
+      getReviews({ ...params, page: pageParam, size: FEED_SIZE }, signal),
+    initialPageParam: 0,
+    getNextPageParam: ({ hasNext, page }) =>
+      hasNext && (page + 1) * FEED_SIZE < FEED_LIMIT ? page + 1 : undefined,
     ...queryPolicy.catalog,
   })
 
