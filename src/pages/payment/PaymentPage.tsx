@@ -25,13 +25,7 @@ import {
   DaumPostcodeSearch,
   type DaumPostcodeAddress,
 } from '@features/address-search'
-import {
-  buyNowKeyFor,
-  forgetBuyNowKey,
-  linkBuyNowOrder,
-  startDrawEntryPayment,
-  startOrderPayment,
-} from '@features/payment'
+import { startDrawEntryPayment, startOrderPayment } from '@features/payment'
 import {
   cartLineToDraft,
   drawToDraft,
@@ -50,6 +44,7 @@ import {
 import { formatWon } from '@shared/lib/formatNumber'
 import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
+import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
 import { showToast } from '@shared/model/toastStore'
 import {
   ActionButton,
@@ -167,6 +162,8 @@ export function PaymentPage() {
   const draw = useDraw(drawId)
   const enterDraw = useEnterDraw()
   const placeOrder = usePlaceOrder()
+  // 바로 구매의 Idempotency-Key — 누를 때마다 새 키, 응답을 못 받은 재전송만 같은 키(명세).
+  const buyNowKey = useIdempotencyKey()
   const [isStarting, setIsStarting] = useState(false)
   const { data: profile } = useProfile()
   const { data: savedAddress } = useDefaultAddress()
@@ -287,7 +284,6 @@ export function PaymentPage() {
     setPaymentError(null)
     if (!form.requiredFilled || !payable) return
 
-    let buyNowKey: string | undefined
     try {
       const shipTo = {
         name: form.values.name,
@@ -321,7 +317,9 @@ export function PaymentPage() {
         items: buyNowItems.map(toBuyNowOrderItem),
         shipTo,
       }
-      buyNowKey = buyNow ? buyNowKeyFor(buyNow) : undefined
+      // 결과를 모르는 채 배송지 등 내용을 고쳤으면 같은 키는 422(KEY_PAYLOAD_MISMATCH)라 새 키로 보낸다.
+      if (buyNow && buyNowKey.keyFor(buyNow) === null) buyNowKey.forget()
+      const idempotencyKey = buyNow ? buyNowKey.keyFor(buyNow) : null
       const order = await placeOrder.mutateAsync(
         cartLines
           ? {
@@ -329,11 +327,12 @@ export function PaymentPage() {
               items: cartLines.map(toCartOrderItem),
               shipTo,
             }
-          : buyNow && buyNowKey
-            ? { ...buyNow, idempotencyKey: buyNowKey }
+          : buyNow && idempotencyKey
+            ? { ...buyNow, idempotencyKey }
             : { source: 'PREORDER', preorderId, shipTo },
       )
-      if (buyNowKey) linkBuyNowOrder(buyNowKey, order.orderId)
+      // 주문을 받았으니 다음에 누르면 새 주문이다(결제창을 닫고 다시 눌러도 — 앞 주문은 10분 뒤 만료된다).
+      buyNowKey.forget()
       // 기존 주문이 이미 결제됐으면 결제 단계로 가지 않고 결과를 보여 준다.
       if (order.status === 'AUTHORIZING') {
         setPaymentError(
@@ -342,7 +341,6 @@ export function PaymentPage() {
         return
       }
       if (PAID_ORDER_STATUSES.includes(order.status)) {
-        if (buyNowKey) forgetBuyNowKey({ key: buyNowKey })
         navigate(resultPath(preorderId ? 'preorder-paid' : 'paid'), {
           replace: true,
           state: { orderId: order.orderId },
@@ -351,14 +349,6 @@ export function PaymentPage() {
       }
       // 결제 대기만 결제 단계로 간다 — 그사이 취소가 시작됐거나 모르는 상태면 결제 완료로 보이지 않게 막는다.
       if (order.status !== 'AWAITING_PAYMENT') {
-        // 같은 키의 바로 구매 주문이 취소됐거나 기한이 지났다 — 다음 시도는 새 키로 새 주문을 만든다.
-        if (buyNowKey && order.status === 'CANCELED') {
-          forgetBuyNowKey({ key: buyNowKey })
-          setPaymentError(
-            '이전 주문이 취소됐어요. 다시 결제하면 새로 주문해요.',
-          )
-          return
-        }
         setPaymentError('결제할 수 없는 주문이에요. 주문 내역을 확인해 주세요.')
         return
       }
@@ -375,13 +365,14 @@ export function PaymentPage() {
         CART_REFRESH_CODES.includes(caught.error.code)
       )
         void queryClient.invalidateQueries({ queryKey: cartKeys.all })
-      // 같은 키의 처음 주문과 내용이 다르다 — 다음 시도는 새 키로 보낸다.
+      // 4xx는 서버가 보고 거절한 것(주문 안 생김, KEY_PAYLOAD_MISMATCH 포함)이라 다음엔 새 키로 보낸다.
+      // 네트워크 오류·5xx는 주문이 생겼을 수 있어 키를 남긴다 — 다시 누르면 같은 키로 처음 주문을 돌려받는다.
       if (
         caught instanceof ApiRequestError &&
-        caught.error.code === 'KEY_PAYLOAD_MISMATCH' &&
-        buyNowKey
+        caught.status >= 400 &&
+        caught.status < 500
       )
-        forgetBuyNowKey({ key: buyNowKey })
+        buyNowKey.forget()
       setPaymentError(getErrorMessage(caught, GENERIC_PAYMENT_ERROR))
     } finally {
       setIsStarting(false)
