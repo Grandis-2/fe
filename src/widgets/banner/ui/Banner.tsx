@@ -1,75 +1,55 @@
 import { useState } from 'react'
 
-import { MessageSquareText, Smartphone, BookOpen } from 'lucide-react'
 import { Link } from 'react-router'
 
-import { preorderPath, REVIEWS_PATH } from '@shared/config/routes'
+import {
+  BANNER_ICONS,
+  useBanners,
+  type Banner as BannerItem,
+} from '@entities/banner'
+import { preorderPath, productPath } from '@shared/config/routes'
 import { Tag } from '@shared/ui'
 
 import * as styles from './Banner.css'
 
-import type { LucideIcon } from 'lucide-react'
+// 홍보는 사전예약 홍보 상세(/preorder/:promotionId), 상품은 상품 상세로 간다.
+const targetPath = ({ target }: Pick<BannerItem, 'target'>) =>
+  target.type === 'PROMOTION' ? preorderPath(target.id) : productPath(target.id)
 
-type Slide = {
-  badge: string
-  title: string
-  description: string
-  tabLabel: string
-  icon: LucideIcon
-  to: string
-  image: string
-  imageAlt: string
-}
-
-// ponytail: 배너 API가 없어서 상수로 둔다 — API가 생기면 응답으로 교체.
-const slides: Slide[] = [
-  {
-    badge: '사전예약',
-    title: '아이폰 18 Pro, Pro Max\n사전예약',
-    description:
-      '실패 없는 사전예약부터 순차 배송까지!\n노바에서 한 번에 끝내세요.',
-    tabLabel: '아이폰 18 Pro,\nPro Max 사전예약',
-    icon: Smartphone,
-    to: preorderPath('1'),
-    image: '/images/banner1.png',
-    imageAlt: '아이폰 18 Pro, Pro Max',
-  },
-  {
-    badge: '사전예약',
-    title: '아이폰 Duo\n새로운 형태의 디자인을\n만나보세요',
-    description: 'Apple의 첫 폴더블 스마트폰',
-    tabLabel: '아이폰 Duo\n사전예약',
-    icon: BookOpen,
-    to: preorderPath('2'),
-    image: '/images/banner2.png',
-    imageAlt: '아이폰 Duo',
-  },
-  {
-    badge: '구매후기',
-    title: '먼저 써본 사람들의\n솔직한 후기',
-    description: '실제 구매자 후기로\n나에게 맞는 제품을 찾아보세요.',
-    tabLabel: '구매후기\n모아보기',
-    icon: MessageSquareText,
-    to: REVIEWS_PATH,
-    image: '/images/macbook_neo_citrus1.png',
-    imageAlt: '시트러스 컬러 맥북 네오',
-  },
-]
-
+// 관리자가 켠 배너를 정한 순서대로 돌린다. 보일 배너가 없거나 못 읽으면 명세대로 배너를 숨기고,
+// 헤더가 아래 구간을 덮지 않을 만큼만 비운다.
 export function Banner() {
+  const { data: slides, isPending } = useBanners()
   const [active, setActive] = useState(0)
-  const slide = slides[active]
+
+  // 받는 동안 사진 칸 크기만큼 자리를 잡아 둬 아래 구간이 밀려 내려오지 않게 한다.
+  if (isPending) {
+    return (
+      <section className={styles.root} aria-busy>
+        <div className={styles.inner}>
+          <div className={styles.text} />
+          <div className={styles.visual} />
+        </div>
+      </section>
+    )
+  }
+  if (!slides?.length) return <div className={styles.collapsed} />
+
+  // 다시 받은 목록이 줄었으면 처음 장부터 다시 센다.
+  const current = active < slides.length ? active : 0
+  const slide = slides[current]
+  const to = targetPath(slide)
 
   // 다음 슬라이드로 넘기는 타이머는 따로 두지 않는다 — 진행 바 애니메이션이 끝나는
   // 순간(onAnimationEnd)이 곧 넘길 때다. 탭을 누르면 key가 바뀌어 애니메이션도 처음부터.
-  const next = () => setActive((i) => (i + 1) % slides.length)
+  const next = () => setActive((current + 1) % slides.length)
 
   return (
     <section className={styles.root} aria-roledescription="carousel">
       <div className={styles.inner}>
         <div className={styles.text}>
           {/* key로 다시 마운트해 슬라이드마다 페이드인을 새로 건다. */}
-          <div key={active} className={styles.fadeIn}>
+          <div key={slide.bannerId} className={styles.fadeIn}>
             <span className={styles.badgeMobile}>
               <Tag color="primary" variant="solid" rounded={false} size="small">
                 {slide.badge}
@@ -85,7 +65,7 @@ export function Banner() {
                 {slide.badge}
               </Tag>
             </span>
-            <Link to={slide.to} className={styles.title}>
+            <Link to={to} className={styles.title}>
               {slide.title}
             </Link>
             <div className={styles.description}>{slide.description}</div>
@@ -93,20 +73,20 @@ export function Banner() {
 
           <div className={styles.tabs}>
             {slides.map((it, i) => {
-              const Icon = it.icon
+              const Icon = BANNER_ICONS[it.icon]
               return (
                 <button
-                  key={it.tabLabel}
+                  key={it.bannerId}
                   type="button"
                   className={styles.tab}
-                  aria-pressed={i === active}
+                  aria-pressed={i === current}
                   onClick={() => setActive(i)}
                 >
                   <span className={styles.progressTrack}>
-                    {i < active && <span className={styles.progressFull} />}
-                    {i === active && (
+                    {i < current && <span className={styles.progressFull} />}
+                    {i === current && (
                       <span
-                        key={active}
+                        key={slide.bannerId}
                         className={styles.progressRunning}
                         onAnimationEnd={next}
                       />
@@ -121,12 +101,12 @@ export function Banner() {
         </div>
 
         <Link
-          key={active}
-          to={slide.to}
+          key={slide.bannerId}
+          to={to}
           className={[styles.visual, styles.fadeIn].join(' ')}
         >
           <img
-            src={slide.image}
+            src={slide.imageUrl}
             alt={slide.imageAlt}
             className={styles.image}
           />

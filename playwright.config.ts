@@ -7,6 +7,9 @@ const PORT = 5174
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
+  // 브라우저 4개가 개발 서버 하나에 붙으면 CPU가 차서(8코어에서 load 20) 결제 승인·대기열이
+  // 시간 안에 안 끝난다. 2개여도 전체 시간은 같았다.
+  workers: 2,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: process.env.CI ? 'github' : 'list',

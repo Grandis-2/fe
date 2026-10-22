@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react'
 
 import {
-  BANNER_ICONS,
   BANNER_TEXT_MAX,
   bannerFormProblem,
   createEmptyBannerFormValue,
@@ -9,6 +8,7 @@ import {
   type AdminBannerFormValue,
   type BannerTargetType,
 } from '@entities/admin-banner'
+import { BANNER_ICONS } from '@entities/banner'
 import {
   Button,
   FieldError,
@@ -28,6 +28,9 @@ export type AdminBannerFormProps = {
   targets: ReturnType<typeof useBannerTargets>
   /** 저장 중 — 제출을 막는다(연타하면 같은 배너가 여러 장 생긴다) */
   submitting?: boolean
+  /** 고치기 화면의 초기값. 없으면 빈 폼이다 */
+  defaultValue?: AdminBannerFormValue
+  submitLabel?: string
   onSubmit: (value: AdminBannerFormValue) => void
   onCancel: () => void
 }
@@ -42,10 +45,14 @@ const ICON_NAMES = Object.keys(BANNER_ICONS) as (keyof typeof BANNER_ICONS)[]
 export function AdminBannerForm({
   targets,
   submitting = false,
+  defaultValue,
+  submitLabel = '만들기',
   onSubmit,
   onCancel,
 }: AdminBannerFormProps) {
-  const [value, setValue] = useState(createEmptyBannerFormValue)
+  const [value, setValue] = useState(
+    () => defaultValue ?? createEmptyBannerFormValue(),
+  )
   const [problem, setProblem] = useState<string | null>(null)
   const [query, setQuery] = useState('')
 
@@ -224,7 +231,7 @@ export function AdminBannerForm({
           취소
         </Button>
         <Button type="submit" disabled={submitting}>
-          만들기
+          {submitLabel}
         </Button>
       </div>
     </form>

@@ -56,6 +56,38 @@ export type DrawEntry = {
   draw: Draw
 }
 
+// 내 응모 목록 줄의 상태 배지(응답 시점 기준) — 결제 전 · 결제 확인 중(마감 뒤에도 올 수 있다) · 결과 발표 전 ·
+// 당첨 · 낙첨 · 결제 없이 마감(추첨 대상 아님).
+export type MyDrawEntryState =
+  | 'AWAITING_PAYMENT'
+  | 'PAYMENT_CONFIRMING'
+  | 'AWAITING_RESULT'
+  | 'WON'
+  | 'LOST'
+  | 'CLOSED_UNPAID'
+
+export type MyDrawEntryItem = {
+  entryId: string
+  state: MyDrawEntryState
+  enteredAt: string
+  // 당첨으로 생긴 0원 주문(내 주문 목록의 source DRAW). 당첨이 아니면 null.
+  wonOrderId: string | null
+  draw: Draw
+}
+
+// 탭 — ALL은 결제하지 않은 응모까지 전부, WON은 당첨만.
+export type MyDrawEntryFilter = 'ALL' | 'WON'
+
+export type MyDrawEntriesParams = DrawListParams & {
+  filter?: MyDrawEntryFilter
+}
+
+// GET /api/v1/draws/entries/me — 응모 최신순. total은 고른 탭의 건수, counts는 탭과 상관없이 두 탭의 건수.
+export type MyDrawEntriesResponse = Omit<DrawPage, 'items'> & {
+  items: MyDrawEntryItem[]
+  counts: { all: number; won: number }
+}
+
 // POST /api/v1/draws/{drawId}/entries 본문 — 배송지만 보낸다. 이미 응모했으면 새 배송지는 무시된다.
 export type EnterDrawRequest = {
   shipTo: ShipToInput

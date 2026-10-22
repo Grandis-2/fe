@@ -20,3 +20,8 @@ export const title = style([
   typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },
 ])
+
+export const bannerTitle = style([
+  typography.body.subMedium,
+  { color: color.text.primary },
+])
