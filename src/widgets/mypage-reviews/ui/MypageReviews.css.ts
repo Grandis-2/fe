@@ -23,6 +23,12 @@ export const title = style([
   },
 ])
 
+export const chips = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[8],
+})
+
 export const empty = style([
   typography.body.defaultRegular,
   {
@@ -35,28 +41,16 @@ export const empty = style([
   },
 ])
 
-// HistoryCard 안쪽 여백과 맞춘다.
-export const reviewArea = style({
-  paddingInline: spacing[24],
-  paddingBottom: spacing[20],
-  '@media': { [breakpoint.mobile]: { paddingInline: spacing[20] } },
-})
-
-// 카드보다 한 단계 어둡게 파인 칸 — 상품 정보와 내가 쓴 글이 갈려 보인다.
+// 상품명·옵션 아래, 한 단계 어둡게 파인 칸 — 상품 정보와 내가 쓴 글이 갈려 보인다.
 export const review = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[10],
-  padding: `${spacing[16]} 18px`,
+  gap: spacing[8],
+  marginTop: spacing[8],
+  padding: `${spacing[12]} ${spacing[16]}`,
   borderRadius: '14px',
   border: `1px solid ${color.border.subtle}`,
   background: color.background.page,
-})
-
-export const reviewMeta = style({
-  display: 'flex',
-  alignItems: 'center',
-  gap: spacing[10],
 })
 
 export const stars = style({
@@ -66,11 +60,6 @@ export const stars = style({
 })
 
 export const starsEmpty = style({ color: color.border.default })
-
-export const reviewDate = style([
-  typography.body.sub,
-  { color: color.text.tertiary },
-])
 
 export const reviewText = style([
   typography.body.defaultRegular,
