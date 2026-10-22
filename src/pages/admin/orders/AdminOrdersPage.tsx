@@ -57,7 +57,7 @@ const todoCards = [
   {
     status: 'CANCELING',
     label: '취소 처리 중',
-    hint: '오래 머물면 환불 실패 — 상세에서 확인',
+    hint: '오래 지속되면 환불 실패',
   },
 ] as const satisfies readonly {
   status: AdminOrderStatus
