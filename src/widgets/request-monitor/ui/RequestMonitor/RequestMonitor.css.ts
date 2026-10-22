@@ -88,16 +88,6 @@ export const textButton = style([
 
 export const policy = style([typography.body.caption, { color: onDark(60) }])
 
-export const blocked = style([
-  typography.body.caption,
-  {
-    padding: `${spacing[6]} ${spacing[10]}`,
-    borderRadius: spacing[8],
-    background: onDark(8),
-    color: onDark(78),
-  },
-])
-
 export const faultRow = style({
   display: 'flex',
   flexWrap: 'wrap',

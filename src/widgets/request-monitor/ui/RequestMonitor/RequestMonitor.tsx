@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
+import { createPortal } from 'react-dom'
+
 import { isMockEnabled } from '@shared/api/mock'
 import {
   MOCK_FAULTS,
@@ -68,6 +70,10 @@ const waitReason = ({
   return `연속 실패 ${failureCount + 1}번째 · ${from} · 무작위로 최대 1.5배 → ${seconds(minMs)}~${seconds(maxMs)}`
 }
 
+// 지금 열린 모달(showModal로 연 <dialog>). 없으면 null.
+const findModal = () =>
+  document.querySelector<HTMLDialogElement>('dialog:modal')
+
 const readOpen = () => {
   try {
     const saved = localStorage.getItem(OPEN_KEY)
@@ -102,32 +108,33 @@ export function RequestMonitor() {
   )
   const [open, setOpen] = useState(readOpen)
   const [fault, setFault] = useState(readMockFault)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modal, setModal] = useState(findModal)
   const now = useNow(open)
   const rootRef = useRef<HTMLElement>(null)
 
-  // 모달(<dialog>)이 열리면 그 모달이 top layer 맨 위로 올라와 이 창을 덮는다 — 다시 맨 위로 올린다.
+  // showModal()로 연 모달 바깥은 브라우저가 막는다(inert) — 이 창을 누르면 모달 backdrop 클릭이 돼
+  // 모달이 닫힌다. 모달이 열려 있는 동안엔 그 모달 안으로 옮겨 그려, 모달을 둔 채로 이 창을 쓴다.
+  useEffect(() => {
+    const observer = new MutationObserver(() => setModal(findModal()))
+    observer.observe(document.body, {
+      subtree: true,
+      attributeFilter: ['open'],
+    })
+    return () => observer.disconnect()
+  }, [])
+
+  // popover로 top layer에 올려 모달보다 위에 보이게 한다. 붙는 자리(modal)가 바뀌면 새로 마운트되므로
+  // 다시 띄운다 — 모달이 열린 뒤에 띄우니 모달 위에 온다.
   useEffect(() => {
     const root = rootRef.current
     // Popover API가 없는 브라우저(Safari 16 이하 등)에선 :popover-open·showPopover가 던져 앱이 깨진다 —
     // 맨 위로 올리지 않고 그냥 둔다.
     if (!root || typeof root.showPopover !== 'function') return
-    const raise = () => {
-      if (root.matches(':popover-open')) root.hidePopover()
-      root.showPopover()
-      setModalOpen(document.querySelector('dialog:modal') !== null)
-    }
-    raise()
-    const observer = new MutationObserver(raise)
-    observer.observe(document.body, {
-      subtree: true,
-      attributeFilter: ['open'],
-    })
+    root.showPopover()
     return () => {
-      observer.disconnect()
       if (root.matches(':popover-open')) root.hidePopover()
     }
-  }, [])
+  }, [modal])
 
   const toggle = (next: boolean) => {
     setOpen(next)
@@ -147,10 +154,12 @@ export function RequestMonitor() {
     (entry) => entry.kind === 'request' && entry.outcome === 'fail',
   ).length
 
-  return (
+  return createPortal(
+    // 모달의 data-theme(dark/light)을 물려받지 않게 고정한다 — 어디 붙든 같은 색이다.
     <section
       ref={rootRef}
       popover="manual"
+      data-theme="light"
       className={styles.root}
       aria-label="요청 모니터"
     >
@@ -159,7 +168,6 @@ export function RequestMonitor() {
           entries={entries}
           now={now}
           fault={isMockEnabled ? fault : undefined}
-          blocked={modalOpen}
           onFault={chooseFault}
           onClear={requestLog.clear}
           onClose={() => toggle(false)}
@@ -178,7 +186,8 @@ export function RequestMonitor() {
           {fault && <span className={styles.failCount}>장애 중</span>}
         </button>
       )}
-    </section>
+    </section>,
+    modal ?? document.body,
   )
 }
 
@@ -188,8 +197,6 @@ export type RequestMonitorPanelProps = {
   now: number
   // 목 서버가 아니면 undefined — [장애 내기]를 그리지 않는다.
   fault: MockFault | null | undefined
-  // 모달이 열려 있다 — 브라우저가 모달 바깥을 막아 이 창의 버튼이 눌리지 않는다.
-  blocked?: boolean
   onFault: (fault: MockFault | null) => void
   onClear: () => void
   onClose: () => void
@@ -199,7 +206,6 @@ export function RequestMonitorPanel({
   entries,
   now,
   fault,
-  blocked = false,
   onFault,
   onClear,
   onClose,
@@ -260,13 +266,6 @@ export function RequestMonitorPanel({
         알림 SSE가 끊기면 0초~상한(두 배씩, 최대 1분) 사이 무작위로 기다렸다
         다시 연결해요.
       </div>
-
-      {blocked && (
-        <div className={styles.blocked}>
-          모달이 열려 있는 동안엔 브라우저가 이 창의 버튼을 막아요. 창을 누르면
-          모달이 닫히고, 대기열은 닫아도 계속 순번을 물어요.
-        </div>
-      )}
 
       {fault !== undefined && (
         <div className={styles.faultRow} role="group" aria-label="장애 내기">
