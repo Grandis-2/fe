@@ -250,7 +250,7 @@ export function MypageHistory() {
                     {awaitingPayment ? '결제 예정' : '결제 금액'}
                   </span>
                   <span className={styles.totalValue}>
-                    {formatWon(order.totalAmount)}
+                    총 {formatWon(order.totalAmount)}
                   </span>
                 </div>
                 {awaitingPayment && order.paymentDueAt && (
@@ -292,9 +292,13 @@ export function MypageHistory() {
               <div className={styles.fact}>
                 <dt className={styles.factLabel}>배송지</dt>
                 <dd className={styles.factValue}>
-                  {[order.shipTo.line1, order.shipTo.line2]
-                    .filter(Boolean)
-                    .join(' ')}
+                  {order.shipTo.line1} ({order.shipTo.postalCode})
+                  {order.shipTo.line2 && (
+                    <>
+                      <br />
+                      {order.shipTo.line2}
+                    </>
+                  )}
                 </dd>
               </div>
             </dl>
