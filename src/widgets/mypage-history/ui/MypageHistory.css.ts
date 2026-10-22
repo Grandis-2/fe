@@ -35,7 +35,9 @@ export const summary = style([
   card,
   {
     display: 'grid',
-    gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+    // 요약 칸 수만큼 같은 폭으로 나눈다.
+    gridAutoFlow: 'column',
+    gridAutoColumns: 'minmax(0, 1fr)',
     margin: 0,
     padding: `${spacing[24]} ${spacing[8]}`,
     // 모바일은 칩에 건수를 붙이므로 요약 칸을 숨긴다.

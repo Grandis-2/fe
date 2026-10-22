@@ -22,6 +22,8 @@ export type OrderSource = 'PREORDER' | 'BUY_NOW' | 'CART' | 'DRAW'
 
 // 주문상품 한 줄(옵션마다 한 줄). 이름·단가·보증가는 주문 당시 값(사전예약은 예약 접수 당시)이다.
 export type OrderItem = {
+  // 주문상품 id — 리뷰 쓰기(POST /reviews)에 쓴다. 명세(order.json)엔 아직 없지만 서버는 내려준다.
+  orderItemId: string
   productId: string
   // 장바구니의 variantId와 같은 값.
   optionId: string
@@ -36,6 +38,9 @@ export type OrderItem = {
   warrantyUnitPrice: number
   // unitPrice × quantity + warrantyUnitPrice × warrantyQuantity.
   lineAmount: number
+  // 주문 당시 이 옵션의 사진 — 장바구니·바로 구매는 장바구니에 보이던 사진, 드로우 당첨은 증정품 사진.
+  // 사전예약 주문, 사진을 남기기 전에 만든 주문, 사진이 없는 옵션은 null.
+  imageUrl: string | null
 }
 
 // 주문에 저장된 배송지. 상세 주소가 없으면 line2는 null.

@@ -17,9 +17,11 @@ import {
   type PurchaseDraft,
 } from '@features/product-purchase'
 import { PAYMENT_PATH, paymentPath, resultPath } from '@shared/config/routes'
-import { InlineAlert, PageSkeleton, SkeletonGroup } from '@shared/ui'
+import { InlineAlert, SkeletonGroup } from '@shared/ui'
 import {
+  galleryImages,
   ProductDetailImages,
+  ProductDetailSkeleton,
   ProductOverview,
   shipmentStartLabel,
 } from '@widgets/product-detail'
@@ -60,6 +62,8 @@ export function ProductDetailPage() {
     variant,
     unavailableReason,
     quantity,
+    colorAxis,
+    selections,
     colorLabel,
     optionLabel,
     unitPrice,
@@ -83,6 +87,12 @@ export function ProductDetailPage() {
       optionSummary: [colorLabel, optionLabel].filter(Boolean).join(' · '),
       quantity,
       unitPrice,
+      // 장바구니 줄 사진처럼 고른 색상의 첫 사진, 없으면 대표 사진.
+      imageUrl:
+        galleryImages(
+          product,
+          colorAxis ? selections[colorAxis.key] : undefined,
+        )[0] ?? product.imageUrl,
     }
     // 결제·사전예약은 회원 전용 — 비회원이면 이동 대신 로그인 모달을 연다.
     requireLogin(() => {
@@ -119,15 +129,15 @@ export function ProductDetailPage() {
   if (!product) {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
-        <div className={styles.content}>
-          {isError || !isPending ? (
+        {isError || !isPending ? (
+          <div className={styles.content}>
             <InlineAlert status={isError ? 'error' : 'info'}>
               상품을 불러오지 못했어요.
             </InlineAlert>
-          ) : (
-            <PageSkeleton />
-          )}
-        </div>
+          </div>
+        ) : (
+          <ProductDetailSkeleton />
+        )}
       </div>
     )
   }
@@ -193,7 +203,7 @@ export function ProductDetailPage() {
                   ) : reviews.isPending ? (
                     <SkeletonGroup className={styles.reviewList}>
                       {[0, 1].map((i) => (
-                        <ReviewCardSkeleton key={i} />
+                        <ReviewCardSkeleton key={i} showProduct={false} />
                       ))}
                     </SkeletonGroup>
                   ) : reviews.data.items.length === 0 ? (
@@ -207,7 +217,11 @@ export function ProductDetailPage() {
                     </InlineAlert>
                   ) : (
                     reviews.data.items.map((review) => (
-                      <ReviewCard key={review.reviewId} review={review} />
+                      <ReviewCard
+                        key={review.reviewId}
+                        review={review}
+                        showProduct={false}
+                      />
                     ))
                   )}
                 </div>

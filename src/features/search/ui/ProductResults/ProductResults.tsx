@@ -1,3 +1,5 @@
+import type { MouseEventHandler } from 'react'
+
 import { SearchX } from 'lucide-react'
 
 import {
@@ -19,6 +21,10 @@ export type ProductResultsProps = {
   // 아직 첫 결과를 못 받았으면 undefined — 스켈레톤을 보여 준다.
   results: ProductListItem[] | undefined
   isError: boolean
+  // 상품을 누를 때 — 사전예약 대기열은 다른 feature라 쓰는 쪽(widget)이 넘긴다.
+  onProductClick?: (
+    product: ProductListItem,
+  ) => MouseEventHandler<HTMLAnchorElement>
 }
 
 // 검색창(SearchOverlay)과 검색 결과 화면(SearchResults)이 같이 쓰는 상품 영역 —
@@ -27,6 +33,7 @@ export function ProductResults({
   keyword,
   results,
   isError,
+  onProductClick,
 }: ProductResultsProps) {
   // 결과가 0건일 때 대신 보여 줄 상품(최신 등록순).
   const fallback = useProducts({ size: FALLBACK_LIMIT })
@@ -74,6 +81,7 @@ export function ProductResults({
                   name={product.title}
                   imageUrl={product.imageUrl}
                   price={product.minPrice}
+                  onLinkClick={onProductClick?.(product)}
                 />
               ))}
             </div>
@@ -100,6 +108,7 @@ export function ProductResults({
             }
             imageUrl={product.imageUrl}
             price={product.minPrice}
+            onLinkClick={onProductClick?.(product)}
           />
         ))}
       </div>

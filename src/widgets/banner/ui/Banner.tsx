@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { Link } from 'react-router'
 
@@ -21,6 +21,21 @@ const targetPath = ({ target }: Pick<BannerItem, 'target'>) =>
 export function Banner() {
   const { data: slides, isPending } = useBanners()
   const [active, setActive] = useState(0)
+  const tabsRef = useRef<HTMLDivElement>(null)
+  // 다시 받은 목록이 줄었으면 처음 장부터 다시 센다.
+  const current = active < (slides?.length ?? 0) ? active : 0
+
+  // 탭이 많아 탭 줄이 옆으로 넘칠 때, 지금 탭이 가려져 있으면 탭 줄 안에서만 끌어온다.
+  // scrollIntoView는 페이지까지 움직여 아래를 보던 사용자를 배너로 끌어올리므로 쓰지 않는다.
+  useEffect(() => {
+    const row = tabsRef.current
+    const tab = row?.children[current] as HTMLElement | undefined
+    if (!row || !tab) return
+    const hidden =
+      tab.offsetLeft < row.scrollLeft ||
+      tab.offsetLeft + tab.offsetWidth > row.scrollLeft + row.clientWidth
+    if (hidden) row.scrollTo({ left: tab.offsetLeft, behavior: 'smooth' })
+  }, [current])
 
   // 받는 동안 사진 칸 크기만큼 자리를 잡아 둬 아래 구간이 밀려 내려오지 않게 한다.
   if (isPending) {
@@ -35,8 +50,6 @@ export function Banner() {
   }
   if (!slides?.length) return <div className={styles.collapsed} />
 
-  // 다시 받은 목록이 줄었으면 처음 장부터 다시 센다.
-  const current = active < slides.length ? active : 0
   const slide = slides[current]
   const to = targetPath(slide)
 
@@ -71,33 +84,36 @@ export function Banner() {
             <div className={styles.description}>{slide.description}</div>
           </div>
 
-          <div className={styles.tabs}>
-            {slides.map((it, i) => {
-              const Icon = BANNER_ICONS[it.icon]
-              return (
-                <button
-                  key={it.bannerId}
-                  type="button"
-                  className={styles.tab}
-                  aria-pressed={i === current}
-                  onClick={() => setActive(i)}
-                >
-                  <span className={styles.progressTrack}>
-                    {i < current && <span className={styles.progressFull} />}
-                    {i === current && (
-                      <span
-                        key={slide.bannerId}
-                        className={styles.progressRunning}
-                        onAnimationEnd={next}
-                      />
-                    )}
-                  </span>
-                  <Icon size={20} aria-hidden />
-                  <span className={styles.tabLabel}>{it.tabLabel}</span>
-                </button>
-              )
-            })}
-          </div>
+          {/* 한 장뿐이면 넘길 곳이 없어 탭·진행 바를 그리지 않는다. */}
+          {slides.length > 1 && (
+            <div ref={tabsRef} className={styles.tabs}>
+              {slides.map((it, i) => {
+                const Icon = BANNER_ICONS[it.icon]
+                return (
+                  <button
+                    key={it.bannerId}
+                    type="button"
+                    className={styles.tab}
+                    aria-pressed={i === current}
+                    onClick={() => setActive(i)}
+                  >
+                    <span className={styles.progressTrack}>
+                      {i < current && <span className={styles.progressFull} />}
+                      {i === current && (
+                        <span
+                          key={slide.bannerId}
+                          className={styles.progressRunning}
+                          onAnimationEnd={next}
+                        />
+                      )}
+                    </span>
+                    <Icon size={20} aria-hidden />
+                    <span className={styles.tabLabel}>{it.tabLabel}</span>
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <Link

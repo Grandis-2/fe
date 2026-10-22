@@ -1,5 +1,6 @@
 import './fonts'
 import './scrollbar.css'
+import './autofill.css'
 
 export { color } from './tokens/color/semantic.css'
 export { spacing } from './tokens/spacing'

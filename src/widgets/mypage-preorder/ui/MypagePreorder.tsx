@@ -21,7 +21,7 @@ import {
 } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
 import { paymentPath } from '@shared/config/routes'
-import { formatDotDate } from '@shared/lib/formatDotDate'
+import { formatDotDateMinute } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { toggleInSet } from '@shared/lib/toggleInSet'
 import { closeModal, openModal } from '@shared/model/modalStore'
@@ -245,7 +245,7 @@ export function MypagePreorder() {
       tag={reservationStatusTag[reservation.displayStatus]}
       highlight={highlight ? 'payment' : undefined}
       preorder
-      orderDate={formatDotDate(reservation.createdAt)}
+      orderDate={formatDotDateMinute(reservation.createdAt)}
       orderNumber={`${reservation.queuePosition.toLocaleString()}번`}
       numberLabel="예약 순번"
       purchaseDueAt={
@@ -258,6 +258,7 @@ export function MypagePreorder() {
           <div className={styles.actions}>
             {cancelButton(reservation)}
             <ActionButton
+              variant="preorder"
               size="md"
               disabled={isCanceling(reservation)}
               onClick={() => navigate(paymentPath(reservation.preorderId))}

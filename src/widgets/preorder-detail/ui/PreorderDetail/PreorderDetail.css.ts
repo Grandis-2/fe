@@ -154,8 +154,9 @@ export const modelPeriodTime = style({
 
 export const hero = style({
   position: 'relative',
+  width: '100%',
+  aspectRatio: '5 / 3',
   marginTop: spacing[32],
-  height: '520px',
   borderRadius: '20px',
   overflow: 'hidden',
   background: color.backgroundDark.surface,
@@ -163,8 +164,6 @@ export const hero = style({
   '@media': {
     [mobile]: {
       marginTop: spacing[20],
-      height: 'auto',
-      aspectRatio: '4 / 5',
       borderRadius: '16px',
     },
   },
@@ -173,7 +172,8 @@ export const hero = style({
 const heroImageBase = style({
   width: '100%',
   height: '100%',
-  objectFit: 'cover',
+  // 비율이 달라도 자르지 않는다 — 남는 여백은 hero 바탕색이 채운다.
+  objectFit: 'contain',
 })
 
 // 마감이면 사진을 흐리게 깔고 가운데에 마감 안내를 얹는다.

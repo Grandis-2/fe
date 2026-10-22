@@ -69,6 +69,26 @@ export const Default: Story = {
   decorators: [withBanners(banners)],
 }
 
+// 탭은 배너 수만큼 폭을 나눈다 — 한 장이면 탭 없이, 많으면 탭 줄을 옆으로 넘긴다.
+export const Single: Story = {
+  decorators: [withBanners(banners.slice(0, 1))],
+}
+
+export const Two: Story = {
+  decorators: [withBanners(banners.slice(0, 2))],
+}
+
+export const Many: Story = {
+  decorators: [
+    withBanners(
+      [...banners, ...banners].map((banner, i) => ({
+        ...banner,
+        bannerId: String(i + 1),
+      })),
+    ),
+  ],
+}
+
 export const Loading: Story = {
   decorators: [withBanners()],
 }

@@ -19,10 +19,16 @@ export type ReviewCardProps = {
     | 'authorName'
     | 'createdAt'
   >
+  // 상품 상세처럼 한 상품의 후기만 모인 곳에선 꺼서 사진·상품명 없이 옵션만 보인다.
+  showProduct?: boolean
   className?: string
 }
 
-export function ReviewCard({ review, className }: ReviewCardProps) {
+export function ReviewCard({
+  review,
+  showProduct = true,
+  className,
+}: ReviewCardProps) {
   const {
     imageUrl,
     rating,
@@ -39,9 +45,11 @@ export function ReviewCard({ review, className }: ReviewCardProps) {
     : 0
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      <ImageWithFallback src={imageUrl} className={styles.thumbnail} />
+      {showProduct && (
+        <ImageWithFallback src={imageUrl} className={styles.thumbnail} />
+      )}
       <div className={styles.main}>
-        <div className={styles.top}>
+        <div className={styles.header}>
           <div
             className={styles.rating}
             role="img"
@@ -57,39 +65,40 @@ export function ReviewCard({ review, className }: ReviewCardProps) {
               </span>
             ))}
           </div>
-          <div
-            className={[typography.body.defaultRegular, styles.reviewText].join(
-              ' ',
-            )}
-          >
-            {body}
+          <div className={[typography.body.sub, styles.meta].join(' ')}>
+            {authorName} · {formatDotDate(createdAt)}
           </div>
         </div>
-        <div className={[typography.body.sub, styles.productName].join(' ')}>
-          {productTitle} · {optionTitle}
+        <div
+          className={[typography.body.defaultRegular, styles.reviewText].join(
+            ' ',
+          )}
+        >
+          {body}
         </div>
-      </div>
-      <div className={[typography.body.sub, styles.meta].join(' ')}>
-        <span>{authorName}</span>
-        <span>{formatDotDate(createdAt)}</span>
+        <div className={[typography.body.sub, styles.productName].join(' ')}>
+          {showProduct ? `${productTitle} · ${optionTitle}` : optionTitle}
+        </div>
       </div>
     </div>
   )
 }
 
-// 썸네일·별점·본문·상품명 자리를 같은 크기로 깔아 응답이 와도 높이가 튀지 않게 한다.
+// 썸네일·별점·본문·옵션 자리를 같은 크기로 깔아 응답이 와도 높이가 튀지 않게 한다.
 // 스크린리더 안내는 감싸는 SkeletonGroup이 한 번만 한다.
 export function ReviewCardSkeleton({
+  showProduct = true,
   className,
-}: Pick<ReviewCardProps, 'className'>) {
+}: Pick<ReviewCardProps, 'showProduct' | 'className'>) {
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      <Skeleton width={120} height={120} radius={8} />
+      {showProduct && <Skeleton width={120} height={120} radius={8} />}
       <div className={styles.main}>
-        <div className={styles.top}>
+        <div className={styles.header}>
           <Skeleton width={96} height={18} />
-          <Skeleton width="80%" height={20} />
+          <Skeleton width={110} height={14} />
         </div>
+        <Skeleton width="80%" height={20} />
         <Skeleton width="40%" height={16} />
       </div>
     </div>

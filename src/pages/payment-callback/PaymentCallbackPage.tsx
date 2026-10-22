@@ -5,7 +5,7 @@ import { LoaderCircle } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { cartKeys } from '@entities/cart'
-import { confirmTossPayment, forgetBuyNowKey } from '@features/payment'
+import { confirmTossPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { mypagePath, paymentPath, resultPath } from '@shared/config/routes'
 import { track } from '@shared/lib/analytics'
@@ -65,8 +65,6 @@ export function PaymentCallbackPage() {
     )
       .then((outcome) => {
         if (outcome.kind === 'approved') {
-          // 이 주문이 바로 구매였다면 그 키를 버린다 — 같은 상품을 다시 사면 새 주문이어야 한다.
-          forgetBuyNowKey({ orderId: orderToken })
           // 화면을 떠났어도 결제는 끝났으니 남긴다. 새로고침하면 이미 승인된 주문도 approved로
           // 다시 오므로 주문 하나는 한 번만 센다.
           if (preorderId)

@@ -19,6 +19,7 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
   paymentDueAt: null,
   items: [
     {
+      orderItemId: '60000000-0000-4000-8000-000000001501',
       productId: '20000000-0000-4000-8000-000000000015',
       optionId: '30000000-0000-4000-8000-000000001501',
       productTitle: '갤럭시 Z 폴드8',
@@ -28,6 +29,8 @@ const order = (orderId: string, overrides: Partial<Order>): Order => ({
       warrantyQuantity: 0,
       warrantyUnitPrice: 0,
       lineAmount: 2399000,
+      // 사전예약 주문은 사진이 없다.
+      imageUrl: null,
     },
   ],
   shipTo: {
@@ -63,6 +66,8 @@ const queryClient = new QueryClient({
   defaultOptions: { queries: { enabled: false } },
 })
 queryClient.setQueryData(['orders', 'mine'], orders)
+// 쓴 리뷰가 없다 — 배송 완료 주문상품에 '리뷰 쓰기'가 붙는다.
+queryClient.setQueryData(['reviews', 'mine'], { items: [] })
 
 const meta = {
   component: MypageHistory,

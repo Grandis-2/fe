@@ -5,8 +5,9 @@ import { Handbag } from 'lucide-react'
 import * as styles from './ActionButton.css'
 
 export type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
-  // primary: 결제하기, cart: 장바구니(가방 아이콘이 앞에 붙는다), neutral: cart와 같은 바탕에 아이콘 없음(주소 찾기 등).
-  variant?: 'primary' | 'cart' | 'neutral'
+  // primary: 결제하기, cart: 장바구니(가방 아이콘이 앞에 붙는다), neutral: cart와 같은 바탕에 아이콘 없음(주소 찾기 등),
+  // preorder: 사전예약 구매 확정(금색).
+  variant?: 'primary' | 'cart' | 'neutral' | 'preorder'
   size?: 'lg' | 'md'
   fullWidth?: boolean
   // 아이콘만 있는 정사각형 버튼 — aria-label을 같이 넘긴다.

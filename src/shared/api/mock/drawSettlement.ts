@@ -24,6 +24,7 @@ function winnerOrderOf(draw: DrawRecord, entry: DrawEntryRecord): OrderRecord {
     paymentDueAt: null,
     items: [
       {
+        orderItemId: crypto.randomUUID(),
         productId: draw.gift.productId,
         optionId: draw.gift.variantId,
         productTitle: draw.gift.productTitle,
@@ -33,6 +34,7 @@ function winnerOrderOf(draw: DrawRecord, entry: DrawEntryRecord): OrderRecord {
         warrantyQuantity: 0,
         warrantyUnitPrice: 0,
         lineAmount: 0,
+        imageUrl: draw.gift.imageUrl,
       },
     ],
     shipTo: entry.shipTo,

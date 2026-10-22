@@ -24,7 +24,8 @@ export const root = style({
   gap: '14px',
   maxWidth: `calc(100vw - ${spacing[32]})`,
   height: '48px',
-  padding: `0 ${spacing[8]} 0 18px`,
+  // 글자로 끝나면 좌우를 같게 둔다 — 타이머 칩으로 끝날 때만 오른쪽을 줄인다(border.mine).
+  padding: '0 18px',
   boxSizing: 'border-box',
   border: '1px solid',
   borderRadius: '999px',
@@ -44,7 +45,7 @@ export const root = style({
     '&:hover': { borderColor: color.primary.subtle },
   },
   '@media': {
-    [breakpoint.mobile]: { gap: spacing[10], paddingLeft: spacing[14] },
+    [breakpoint.mobile]: { gap: spacing[10], padding: `0 ${spacing[14]}` },
   },
   // 모달이 닫히면서 위에서 살짝 내려와 나타난다.
   '@starting-style': {
@@ -60,7 +61,13 @@ const dotColor = {
 
 export const border = styleVariants({
   waiting: { borderColor: tint(color.primary.subtle, 35) },
-  mine: { borderColor: tint(statusOnDark.success, 50) },
+  // 타이머 칩도 둥근 pill이라 오른쪽을 좁혀 칩이 테두리 곡선에 붙게 한다.
+  // root의 모바일 padding이 뒤에 나와 덮으므로 모바일에서도 다시 적는다.
+  mine: {
+    borderColor: tint(statusOnDark.success, 50),
+    paddingRight: spacing[8],
+    '@media': { [breakpoint.mobile]: { paddingRight: spacing[8] } },
+  },
 })
 
 export const dot = styleVariants(dotColor, (dot) => ({

@@ -2,6 +2,7 @@ import { style } from '@vanilla-extract/css'
 
 import {
   color,
+  lineClamp,
   motion,
   spacing,
   typography,
@@ -99,9 +100,24 @@ export const thumbnail = style({
   objectFit: 'cover',
 })
 
+// cart 밖 카드의 사진 80px, 옆 상품명·옵션·수량 칸(summary) 75px — 칸은 사진 높이 가운데에 온다.
+// 장바구니는 수량 조절기가 있어 사진 크기를 그대로 둔다.
+const THUMBNAIL_SIZE = '80px'
+const SUMMARY_HEIGHT = '75px'
+
+export const thumbnailCompact = style({
+  width: THUMBNAIL_SIZE,
+  height: THUMBNAIL_SIZE,
+  // thumbnail의 데스크톱 크기(120px)를 덮는다.
+  '@media': {
+    [breakpoint.desktop]: { width: THUMBNAIL_SIZE, height: THUMBNAIL_SIZE },
+  },
+})
+
+// cart 본문 — 썸네일 높이만큼 늘어난 뒤 상품 정보와 수량 조절기/가격을 위아래 끝으로 밀어낸다.
+// gap은 남는 공간이 없을 때(모바일에서 본문이 썸네일보다 길 때) 최소 간격으로만 쓰인다.
+// 아래에 수량 조절기가 들어가 높이가 이미 충분해서 아래 여백은 두지 않는다.
 export const body_ = style({
-  // 썸네일 높이만큼 늘어난 뒤 상품 정보와 수량/가격을 위아래 끝으로 밀어낸다.
-  // gap은 남는 공간이 없을 때(모바일에서 본문이 썸네일보다 길 때) 최소 간격으로만 쓰인다.
   alignSelf: 'stretch',
   display: 'flex',
   flexDirection: 'column',
@@ -109,11 +125,8 @@ export const body_ = style({
   gap: spacing[12],
   flex: '1 0 0',
   minWidth: 0,
-  padding: `${spacing[4]} 0`,
+  paddingTop: spacing[4],
 })
-
-// cart는 아래에 수량 조절기가 들어가 높이가 이미 충분해서 아래 여백을 뺀다.
-export const bodyCart = style({ paddingBottom: 0 })
 
 export const infoGroup = style({
   display: 'flex',
@@ -130,6 +143,9 @@ export const name = style([
     // 바로 아래 모델명과 붙여 보이도록 행간을 한 단계 좁힌다.
     lineHeight: lineHeight[130],
     color: color.text.primary,
+    // 오른쪽 칸에 밀려 좁아지면 말줄임 없이 줄을 바꾼다(띄어쓰기 없는 긴 이름도).
+    minWidth: 0,
+    overflowWrap: 'anywhere',
   },
 ])
 // 상품명이 링크일 때. 밑줄 대신 색으로만 반응한다 — 밑줄은 글자 아래 여백을 먹어
@@ -144,6 +160,44 @@ export const nameLink = style([
     },
   },
 ])
+
+// cart 밖 — 왼쪽에 상품명·옵션·수량을 쌓고 썸네일 높이 가운데에 둔다.
+// 아래에 본문(내 리뷰의 별점·글)이 붙으면 상품명·옵션·수량 칸 밑으로 이어진다.
+export const details = style({
+  alignSelf: 'center',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+  flex: '1 0 0',
+  minWidth: 0,
+})
+
+export const summary = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[4],
+})
+
+// 수량이 있으면 칸을 75px로 고정해 수량을 아래 끝에 붙인다 — 상품명·옵션(4px)보다 넓게 떨어진다.
+// 수량이 없으면(내 리뷰) 고정하지 않는다 — 고정하면 아래 본문과 사이가 빈 칸만큼 벌어진다.
+export const summaryWithQuantity = style({ height: SUMMARY_HEIGHT })
+
+export const summaryQuantity = style({ marginTop: 'auto' })
+
+export const singleLine = style(lineClamp(1))
+
+// 오른쪽 칸 — 가격만 있으면 가운데, 가격 밑 버튼이 붙으면 가격은 위·버튼은 아래 끝으로 갈라진다.
+export const side = style({
+  alignSelf: 'stretch',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
+  justifyContent: 'center',
+  gap: spacing[12],
+  flexShrink: 0,
+})
+
+export const sideSplit = style({ justifyContent: 'space-between' })
 
 export const modelNumber = style([
   typography.body.caption,
@@ -171,13 +225,11 @@ export const quantityLabel = style([
   },
 ])
 
-// 좁은 폭에선 수량 라벨 아래로 통째로 내려가 우측 정렬을 유지한다.
+// 좁은 폭에선 수량 조절기 아래로 통째로 내려가 우측 정렬을 유지한다.
 export const priceActionGroup = style({
   display: 'flex',
   flex: '1 0 auto',
-  alignItems: 'center',
   justifyContent: 'flex-end',
-  gap: spacing[16],
 })
 
 export const price = style([

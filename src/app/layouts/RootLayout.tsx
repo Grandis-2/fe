@@ -5,7 +5,6 @@ import { Outlet, useLocation, useNavigate } from 'react-router'
 import { logout, useSession } from '@entities/auth'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PreorderQueue, usePreorderQueueStore } from '@features/preorder-queue'
-import { isMockEnabled } from '@shared/api/mock'
 import { ADMIN_LOGIN_PATH, SIGNUP_PATH } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
 import { showToast, useToastStore } from '@shared/model/toastStore'
@@ -15,27 +14,13 @@ import { MobileTabBar } from '@widgets/mobile-tab-bar'
 
 import { isCallbackPath } from './callbackPaths'
 
-// 개발 도구라 켜지는 환경에서만 따로 받는다 — 바로 import하면 조건과 상관없이 운영 첫 번들에 실린다.
+// 첫 화면에 필요 없는 창이라 따로 받는다 — 첫 번들을 키우지 않는다.
 // 요청 기록은 requestLog가 모으므로 늦게 마운트돼도 빠지는 요청이 없다.
 const RequestMonitor = lazy(() =>
   import('@widgets/request-monitor').then((m) => ({
     default: m.RequestMonitor,
   })),
 )
-
-// 운영에서도 주소에 ?monitor=1을 붙이면 켜진다(?monitor=0이면 끈다). 한 번 켜면 이 브라우저에서는 계속 보인다.
-const MONITOR_KEY = 'request-monitor-enabled'
-const isMonitorEnabled = (() => {
-  if (import.meta.env.DEV || isMockEnabled) return true
-  try {
-    const param = new URLSearchParams(window.location.search).get('monitor')
-    if (param === '1') localStorage.setItem(MONITOR_KEY, 'true')
-    if (param === '0') localStorage.removeItem(MONITOR_KEY)
-    return localStorage.getItem(MONITOR_KEY) === 'true'
-  } catch {
-    return false
-  }
-})()
 
 export function RootLayout() {
   const { isSignupPending } = useSession()
@@ -91,12 +76,10 @@ export function RootLayout() {
       )}
       <ToastViewport toasts={toasts} onDismiss={dismissToast} />
       {/* 백오프·재전송이 실제로 일어나는 걸 보여 주는 창 — 결제 콜백에서도 보여야 해서 경로와 상관없이 그린다.
-          개발 도구라 로컬·목 배포에선 늘 띄우고, 실서버에 붙은 운영 화면에선 ?monitor=1로 켰을 때만 띄운다. */}
-      {isMonitorEnabled && (
-        <Suspense fallback={null}>
-          <RequestMonitor />
-        </Suspense>
-      )}
+          로컬·목·운영 배포 어디서나 띄운다. */}
+      <Suspense fallback={null}>
+        <RequestMonitor />
+      </Suspense>
       {queueTicket && (
         <PreorderQueue
           key={queueTicket.joinedAt}

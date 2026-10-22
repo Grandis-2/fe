@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
+import { createPortal } from 'react-dom'
+
 import { isMockEnabled } from '@shared/api/mock'
 import {
   MOCK_FAULTS,
@@ -68,6 +70,18 @@ const waitReason = ({
   return `연속 실패 ${failureCount + 1}번째 · ${from} · 무작위로 최대 1.5배 → ${seconds(minMs)}~${seconds(maxMs)}`
 }
 
+// 지금 열린 모달(showModal로 연 <dialog>). 없으면 null.
+const findModal = () =>
+  document.querySelector<HTMLDialogElement>('dialog:modal')
+
+// popover를 닫았다 다시 띄워 top layer 맨 위로 올린다. Popover API가 없는 브라우저(Safari 16 이하 등)에선
+// :popover-open·showPopover가 던져 앱이 깨진다 — 올리지 않고 그냥 둔다.
+const raise = (root: HTMLElement | null) => {
+  if (!root || typeof root.showPopover !== 'function') return
+  if (root.matches(':popover-open')) root.hidePopover()
+  root.showPopover()
+}
+
 const readOpen = () => {
   try {
     const saved = localStorage.getItem(OPEN_KEY)
@@ -102,32 +116,46 @@ export function RequestMonitor() {
   )
   const [open, setOpen] = useState(readOpen)
   const [fault, setFault] = useState(readMockFault)
-  const [modalOpen, setModalOpen] = useState(false)
+  const [modal, setModal] = useState(findModal)
   const now = useNow(open)
   const rootRef = useRef<HTMLElement>(null)
 
-  // 모달(<dialog>)이 열리면 그 모달이 top layer 맨 위로 올라와 이 창을 덮는다 — 다시 맨 위로 올린다.
+  // 이 창은 늘 맨 위에 있고 눌려야 한다. showModal()로 연 모달 바깥은 브라우저가 막아서(inert) 누르면
+  // 모달 backdrop 클릭이 돼 모달이 닫힌다 — 모달이 열려 있으면 맨 위 모달(가장 나중에 열린 것) 안으로
+  // 옮겨 그린다. 그 모달이 닫히거나 열린 채 DOM에서 빠지면(검색창·대기열) 남은 모달이나 body로 돌아온다.
+  // 무엇이 열리든(모달·다른 popover) 그 위로 다시 올린다.
   useEffect(() => {
-    const root = rootRef.current
-    // Popover API가 없는 브라우저(Safari 16 이하 등)에선 :popover-open·showPopover가 던져 앱이 깨진다 —
-    // 맨 위로 올리지 않고 그냥 둔다.
-    if (!root || typeof root.showPopover !== 'function') return
-    const raise = () => {
-      if (root.matches(':popover-open')) root.hidePopover()
-      root.showPopover()
-      setModalOpen(document.querySelector('dialog:modal') !== null)
-    }
-    raise()
-    const observer = new MutationObserver(raise)
+    const observer = new MutationObserver((records) => {
+      const opened = records.flatMap(({ type, target }) =>
+        type === 'attributes' &&
+        target instanceof HTMLDialogElement &&
+        target.matches(':modal')
+          ? [target]
+          : [],
+      )
+      setModal(
+        (current) =>
+          opened.at(-1) ?? (current?.matches(':modal') ? current : findModal()),
+      )
+      if (records.some(({ type }) => type === 'attributes'))
+        raise(rootRef.current)
+    })
     observer.observe(document.body, {
       subtree: true,
+      childList: true,
       attributeFilter: ['open'],
     })
-    return () => {
-      observer.disconnect()
-      if (root.matches(':popover-open')) root.hidePopover()
-    }
+    return () => observer.disconnect()
   }, [])
+
+  // 붙는 자리(modal)가 바뀌면 새로 마운트되므로 다시 띄운다 — 모달이 열린 뒤에 띄우니 모달 위에 온다.
+  useEffect(() => {
+    const root = rootRef.current
+    raise(root)
+    return () => {
+      if (root?.matches(':popover-open')) root.hidePopover()
+    }
+  }, [modal])
 
   const toggle = (next: boolean) => {
     setOpen(next)
@@ -147,19 +175,22 @@ export function RequestMonitor() {
     (entry) => entry.kind === 'request' && entry.outcome === 'fail',
   ).length
 
-  return (
+  return createPortal(
+    // 모달의 data-theme(dark/light)을 물려받지 않게 고정한다 — 어디 붙든 같은 색이다.
     <section
       ref={rootRef}
       popover="manual"
+      data-theme="light"
       className={styles.root}
       aria-label="요청 모니터"
+      // 바텀시트(Radix Dialog)는 바깥 pointerdown을 받으면 닫힌다 — 이 창을 눌러도 시트가 닫히지 않게 막는다.
+      onPointerDown={(event) => event.stopPropagation()}
     >
       {open ? (
         <RequestMonitorPanel
           entries={entries}
           now={now}
           fault={isMockEnabled ? fault : undefined}
-          blocked={modalOpen}
           onFault={chooseFault}
           onClear={requestLog.clear}
           onClose={() => toggle(false)}
@@ -178,7 +209,8 @@ export function RequestMonitor() {
           {fault && <span className={styles.failCount}>장애 중</span>}
         </button>
       )}
-    </section>
+    </section>,
+    modal ?? document.body,
   )
 }
 
@@ -188,8 +220,6 @@ export type RequestMonitorPanelProps = {
   now: number
   // 목 서버가 아니면 undefined — [장애 내기]를 그리지 않는다.
   fault: MockFault | null | undefined
-  // 모달이 열려 있다 — 브라우저가 모달 바깥을 막아 이 창의 버튼이 눌리지 않는다.
-  blocked?: boolean
   onFault: (fault: MockFault | null) => void
   onClear: () => void
   onClose: () => void
@@ -199,7 +229,6 @@ export function RequestMonitorPanel({
   entries,
   now,
   fault,
-  blocked = false,
   onFault,
   onClear,
   onClose,
@@ -261,13 +290,6 @@ export function RequestMonitorPanel({
         다시 연결해요.
       </div>
 
-      {blocked && (
-        <div className={styles.blocked}>
-          모달이 열려 있는 동안엔 브라우저가 이 창의 버튼을 막아요. 창을 누르면
-          모달이 닫히고, 대기열은 닫아도 계속 순번을 물어요.
-        </div>
-      )}
-
       {fault !== undefined && (
         <div className={styles.faultRow} role="group" aria-label="장애 내기">
           <span className={styles.faultLabel}>장애 내기</span>
@@ -309,7 +331,13 @@ export function RequestMonitorPanel({
               ) : (
                 <span
                   key={entry.id}
-                  className={styles.dot[entry.outcome]}
+                  className={[
+                    styles.dot[entry.outcome],
+                    (entry.outcome === 'ok' || entry.outcome === 'pending') &&
+                      styles.topicDot[entry.topic]?.[entry.outcome],
+                  ]
+                    .filter(Boolean)
+                    .join(' ')}
                   style={{ left: at(entry.startedAt) }}
                 />
               ),
@@ -351,7 +379,7 @@ export function RequestMonitorPanel({
             <li key={entry.id} className={styles.row}>
               <span className={styles.time}>{clock(entry.startedAt)}</span>
               <span className={styles.line}>
-                <span className={styles.topic}>{entry.topic}</span>
+                <span className={styles.topic[entry.topic]}>{entry.topic}</span>
                 <span className={styles.status.wait}>
                   {seconds(entry.waitMs)} 기다림
                 </span>
@@ -385,7 +413,7 @@ function RequestRow({
     <li className={styles.row}>
       <span className={styles.time}>{clock(entry.startedAt)}</span>
       <span className={styles.line}>
-        <span className={styles.topic}>{entry.topic}</span>
+        <span className={styles.topic[entry.topic]}>{entry.topic}</span>
         <span className={styles.method}>
           {entry.sse ? 'SSE' : entry.method}
         </span>

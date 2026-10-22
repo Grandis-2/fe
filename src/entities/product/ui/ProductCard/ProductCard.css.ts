@@ -74,6 +74,8 @@ export const badge = style({
 export const sliderFill = style({
   position: 'absolute',
   inset: 0,
+  // Swiper가 자기 안에 z-index:1을 걸어 태그(badge, 앞 형제)를 덮는다 — 여기서 쌓임 맥락을 끊어 태그 아래에 둔다.
+  zIndex: 0,
 })
 
 // 위는 카드 여백 + 사전예약 태그 높이만큼, 아래는 페이지네이션 점(Slider)만큼 비워 둘에 이미지가 겹치지 않게 한다.

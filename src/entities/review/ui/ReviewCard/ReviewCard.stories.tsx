@@ -42,3 +42,8 @@ export const LongText: Story = {
     },
   },
 }
+
+// 상품 상세 — 한 상품의 후기만 모여 사진·상품명 없이 옵션만 보인다.
+export const InProductDetail: Story = {
+  args: { review: { ...LongText.args.review }, showProduct: false },
+}
