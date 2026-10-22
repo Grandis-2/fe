@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>
 
 const queue = {
   status: 'waiting',
-  ahead: 130,
+  myOrder: 131,
   waitTime: '약 5분',
   moveIn: 5,
   reopen: fn(),
@@ -26,13 +26,13 @@ export const Waiting: Story = {
 
 // 내 앞 10명 이하 — 곧 화면이 넘어갈 수 있다고 미리 알린다.
 export const Soon: Story = {
-  args: { productName: '아이폰 18 Pro', queue: { ...queue, ahead: 6 } },
+  args: { productName: '아이폰 18 Pro', queue: { ...queue, myOrder: 7 } },
 }
 
 // 모달을 닫아 둔 채 내 차례 — 이동까지 남은 초를 센다.
 export const Mine: Story = {
   args: {
     productName: '아이폰 18 Pro',
-    queue: { ...queue, status: 'mine', ahead: 0, moveIn: 3 },
+    queue: { ...queue, status: 'mine', myOrder: 1, moveIn: 3 },
   },
 }
