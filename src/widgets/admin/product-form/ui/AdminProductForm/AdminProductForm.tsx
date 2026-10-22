@@ -301,6 +301,16 @@ export function AdminProductForm({
                 value={value.name}
                 onChange={(event) => patch({ name: event.target.value })}
               />
+              <Input
+                {...fieldAttr('modelName')}
+                label="모델명"
+                required
+                error={issueOf('modelName')}
+                // 서버가 1~40자만 받는다.
+                maxLength={MODEL_NAME_MAX}
+                value={value.modelName}
+                onChange={(event) => patch({ modelName: event.target.value })}
+              />
               {/* Dropdown은 disabled를 받지 않아 fieldset이 막는다. */}
               <div {...fieldAttr('brand')}>
                 <Dropdown
@@ -313,16 +323,6 @@ export function AdminProductForm({
                 />
                 <FieldError message={issueOf('brand')} />
               </div>
-              <Input
-                {...fieldAttr('modelName')}
-                label="모델명"
-                required
-                error={issueOf('modelName')}
-                // 서버가 1~40자만 받는다.
-                maxLength={MODEL_NAME_MAX}
-                value={value.modelName}
-                onChange={(event) => patch({ modelName: event.target.value })}
-              />
             </fieldset>
             <fieldset className={styles.stack} disabled={locked}>
               <Textarea

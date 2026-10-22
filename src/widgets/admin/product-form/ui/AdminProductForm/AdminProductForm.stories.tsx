@@ -567,10 +567,8 @@ export const EditRequiresBasics: Story = {
     await expect(args.onSubmit).not.toHaveBeenCalled()
     await expect(canvas.getByText('모델명을 적어 주세요.')).toBeVisible()
     await expect(canvas.getByText('브랜드를 골라 주세요.')).toBeVisible()
-    // 화면 순서(상품명 · 브랜드 · 모델명)상 첫 오류 칸인 브랜드로 데려간다.
-    await expect(
-      canvas.getByRole('button', { name: /브랜드 선택/ }),
-    ).toHaveFocus()
+    // 화면 순서(상품명 · 모델명 · 브랜드)상 첫 오류 칸인 모델명으로 데려간다.
+    await expect(canvas.getByLabelText(/모델명/)).toHaveFocus()
   },
 }
 
