@@ -6,7 +6,14 @@ import { ReprocessModal } from './ReprocessModal'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-const run = { target: 860, skipped: 0, estimatedSeconds: 43, startedAt: 0 }
+const run = {
+  target: 860,
+  skipped: 0,
+  estimatedSeconds: 43,
+  startedAt: 0,
+  scope: null,
+  inFlightAtStart: 0,
+}
 const progress = (failed: number, sent = 860) => ({
   sent,
   remainingSeconds: 0,

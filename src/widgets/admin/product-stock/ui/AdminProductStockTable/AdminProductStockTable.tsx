@@ -15,7 +15,9 @@ import {
   type StockLevel,
 } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
+import { formatShortDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
+import { useNow } from '@shared/lib/useNow'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import {
@@ -51,6 +53,15 @@ const levelTag: Record<
 
 const REASON_MAX = 500
 
+// 대조는 매일 새벽에 도니, 마지막 대조가 하루를 넘겼으면 멈춘 것이다(명세).
+const RECONCILE_STALE_MS = 24 * 60 * 60 * 1000
+
+/** 대조 시각을 날짜로 말한다 — 오늘이면 "오늘 HH:mm", 아니면 "MM.DD HH:mm" */
+const reconcileWhen = (finishedAt: string, now: number) =>
+  new Date(finishedAt).toDateString() === new Date(now).toDateString()
+    ? `오늘 ${formatShortDateTime(finishedAt).slice(6)}`
+    : formatShortDateTime(finishedAt)
+
 const optionName = (row: AdminProductStock) =>
   [row.color, ...row.optionNames].filter((name) => name !== '-').join(' · ')
 
@@ -65,6 +76,10 @@ export function AdminProductStockTable({
   const product = useAdminProduct(productId)
   const stock = useAdminProductStock(productId)
   const drifts = useStockDrifts(productId)
+  const now = useNow(60_000).getTime()
+  const runAt = drifts.data?.finishedAt ?? null
+  const runStale =
+    runAt !== null && now - Date.parse(runAt) > RECONCILE_STALE_MS
   const correct = useCorrectStockOption(productId)
   const [filter, setFilter] = useState<Filter>('all')
 
@@ -242,10 +257,16 @@ export function AdminProductStockTable({
         />
       </div>
 
+      {runStale && (
+        <InlineAlert status="warning">
+          마지막 장부 대조가 하루 넘게 지났어요. 대조가 멈췄을 수 있어요. 아래는
+          그때 결과예요.
+        </InlineAlert>
+      )}
       {firstDrift && (
         <NoticeBanner
           tone="warning"
-          title={`오늘 새벽 장부 대조에서 주문과 다른 옵션 ${drifts.data?.options.length}개`}
+          title={`${runAt ? reconcileWhen(runAt, now) : '마지막'} 장부 대조에서 주문과 다른 옵션 ${drifts.data?.options.length}개`}
           description={`${firstDriftRow ? optionName(firstDriftRow) : '옵션'} — 결제 대기 장부 ${formatNumber(firstDrift.stockReserved)} / 주문 기준 ${formatNumber(firstDrift.expectedReserved)}. 보정하면 결제 대기·판매 완료만 주문 기준으로 바뀌고 전체 수량은 그대로예요.`}
           action={
             <Button

@@ -5,6 +5,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { useAdminProducts } from '@entities/admin-product'
 import {
+  PartialReprocessError,
   preorderStatusLabel,
   reservationNo,
   useAllAdminReservations,
@@ -206,7 +207,20 @@ export function AdminReservationReconcile() {
                 .filter(Boolean)
                 .join(' '),
             ),
-          onError: showFailure,
+          onError: (caught) => {
+            // 앞 묶음은 접수됐다 — 접수된 건은 다시 못 고르게 하고, 보내지 못한 건만 고르게 둔다.
+            if (caught instanceof PartialReprocessError) {
+              const unsent = new Set(caught.unsentPreorderIds)
+              setRequested(
+                (prev) =>
+                  new Set([...prev, ...keys.filter((key) => !unsent.has(key))]),
+              )
+              setSelected(unsent)
+              setFeedback({ status: 'error', message: caught.message })
+              return
+            }
+            showFailure(caught)
+          },
         })
       },
     })

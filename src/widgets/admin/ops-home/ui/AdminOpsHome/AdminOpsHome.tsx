@@ -223,17 +223,8 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     selected ?? undefined,
   )
   // 재처리는 이 화면에서 모달로 한다 — 고른 사전예약이 있으면 그것만, 없으면 전부.
-  // 실패 건수와 대기 건수는 같은 집계(t)에서 오므로 시각도 그 집계를 낸 쿼리의 것을 쓴다.
-  const registerCounts = t
-    ? {
-        deadLetter: t.syncJobs.REGISTER.DEAD_LETTER,
-        inFlight: waitingRegister,
-      }
-    : null
-  const registerCountsAt = selected
-    ? (statsQueryOf(selected)?.dataUpdatedAt ?? 0)
-    : stats.dataUpdatedAt
-  const reprocess = useReprocessRun(registerCounts, registerCountsAt)
+  // 범위와 집계는 실행할 때 고른 상품으로 훅이 고정해 센다.
+  const reprocess = useReprocessRun(selected)
   const reprocessAction = { label: '재처리', onClick: reprocess.show }
   // 모달의 사전예약별 건수 — 마감돼 목록에서 빠진 회차에 남은 실패는 한 줄로 묶는다.
   const breakdownTotal = failedPreorders.reduce(

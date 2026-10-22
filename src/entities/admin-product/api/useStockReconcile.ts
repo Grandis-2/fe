@@ -29,6 +29,8 @@ export const useStockDrifts = (productId: string) =>
       ),
       // 어긋난 옵션이 1000개를 넘으면 앞 1000개만 와서, 이 상품의 어긋남이 빠졌을 수 있다.
       truncated: run?.truncated ?? false,
+      // 실패한 대조는 남지 않아 이 시각은 마지막으로 끝난 대조의 것이다(옛 결과일 수 있다).
+      finishedAt: run?.finishedAt ?? null,
     }),
     ...queryPolicy.live,
   })

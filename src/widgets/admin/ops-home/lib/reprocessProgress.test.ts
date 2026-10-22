@@ -7,6 +7,8 @@ const run: ReprocessRun = {
   skipped: 0,
   estimatedSeconds: 43,
   startedAt: 1_000_000,
+  scope: null,
+  inFlightAtStart: 0,
 }
 
 describe('reprocessProgress', () => {
@@ -38,7 +40,7 @@ describe('reprocessProgress', () => {
     ).toBe(true)
   })
 
-  it('아직 등록 중이거나 재시도 대기인 작업이 있으면 시간이 지나도 끝나지 않는다', () => {
+  it('이번 재처리의 대기가 남으면 시간이 지나도 끝나지 않는다', () => {
     expect(
       reprocessProgress(
         run,
@@ -48,10 +50,33 @@ describe('reprocessProgress', () => {
     ).toBe(false)
   })
 
+  it('시작 때 이미 기다리던 건은 이번 재처리의 대기로 세지 않는다', () => {
+    // 시작 때 접수 대기 5건이 있었고, 지금도 5건이면 우리 작업은 다 끝난 것이다.
+    const before = { ...run, inFlightAtStart: 5 }
+    expect(
+      reprocessProgress(
+        before,
+        { deadLetter: 0, inFlight: 5 },
+        run.startedAt + 60_000,
+      ).finished,
+    ).toBe(true)
+  })
+
   it('집계를 못 받았으면 끝났다고 보지 않는다', () => {
     expect(reprocessProgress(run, null, run.startedAt + 99_000).finished).toBe(
       false,
     )
+  })
+
+  it('건너뛴 작업은 다시 실패로 세지 않는다', () => {
+    // 재처리 필요로 남은 12건 중 2건은 서버가 건너뛰어 보내지 않은 것이다.
+    const skipping = { ...run, target: 850, skipped: 2 }
+    const progress = reprocessProgress(
+      skipping,
+      { deadLetter: 12, inFlight: 0 },
+      run.startedAt + 60_000,
+    )
+    expect(progress.failed).toBe(10)
   })
 
   it('끝난 뒤 남은 실패로 결과를 나눈다', () => {

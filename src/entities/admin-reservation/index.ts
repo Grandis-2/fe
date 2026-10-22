@@ -15,6 +15,7 @@ export {
   useSyncJobErrorGroups,
 } from './api/useAdminReservations'
 export { useReservationStatsHistory } from './api/useReservationStatsHistory'
+export { PartialReprocessError } from './api/adminReservation'
 export {
   actorLabel,
   countByStage,

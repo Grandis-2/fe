@@ -118,6 +118,29 @@ const getAdminSyncJobs = (
 // 일괄 재처리 한 번에 보낼 수 있는 작업 수(명세 syncJobIds maxItems).
 const REPROCESS_BATCH_MAX = 1000
 
+/**
+ * 일괄 재처리 중 앞 묶음은 받아들여졌고 뒤 묶음이 실패했다. 받아들여진 합계와, 보내지 못해
+ * 다시 보내야 할 예약 id를 싣는다 — 다시 보낼 때는 이 id만 보낸다.
+ */
+export class PartialReprocessError extends ApiRequestError {
+  readonly accepted: BatchReprocess
+  readonly unsentPreorderIds: string[]
+
+  constructor(accepted: BatchReprocess, unsentPreorderIds: string[]) {
+    super(
+      {
+        code: 'REPROCESS_PARTIAL',
+        message: `재처리 ${accepted.targetCount}건은 접수했고 ${unsentPreorderIds.length}건은 보내지 못했어요. 보내지 못한 건만 다시 보낼 수 있어요.`,
+        details: null,
+      },
+      409,
+    )
+    this.name = 'PartialReprocessError'
+    this.accepted = accepted
+    this.unsentPreorderIds = unsentPreorderIds
+  }
+}
+
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록
 // → POST /api/v1/admin/preorders/sync-jobs/reprocess-batch — 조건으로 일괄 재처리
 /**
@@ -154,17 +177,30 @@ export async function reprocessAdminReservations(preorderIds?: string[]) {
     skippedCount: 0,
     estimatedSeconds: 0,
   }
+  const preorderOf = new Map(
+    deadJobs.map((job) => [job.syncJobId, job.preorderId]),
+  )
   // 차례로 보낸다 — 서버가 요청마다 초당 정해진 수만큼 처리해서 예상 시간은 더해진다.
   for (let i = 0; i < syncJobIds.length; i += REPROCESS_BATCH_MAX) {
-    const batch = await apiClient.request<BatchReprocess>(
-      `${BASE}/sync-jobs/reprocess-batch`,
-      {
-        method: 'POST',
-        body: {
-          syncJobIds: syncJobIds.slice(i, i + REPROCESS_BATCH_MAX),
-        } satisfies ReprocessBatchRequest,
-      },
-    )
+    let batch: BatchReprocess
+    try {
+      batch = await apiClient.request<BatchReprocess>(
+        `${BASE}/sync-jobs/reprocess-batch`,
+        {
+          method: 'POST',
+          body: {
+            syncJobIds: syncJobIds.slice(i, i + REPROCESS_BATCH_MAX),
+          } satisfies ReprocessBatchRequest,
+        },
+      )
+    } catch (caught: unknown) {
+      // 앞 묶음이 하나도 안 받아들여졌으면 그대로 던진다. 받아들여진 게 있으면 그 수와 남은 건을 알린다.
+      if (i === 0) throw caught
+      const unsent = new Set(
+        syncJobIds.slice(i).flatMap((id) => preorderOf.get(id) ?? []),
+      )
+      throw new PartialReprocessError(total, [...unsent])
+    }
     total.targetCount += batch.targetCount
     total.skippedCount += batch.skippedCount
     total.estimatedSeconds += batch.estimatedSeconds

@@ -172,7 +172,17 @@ export const useReprocessReservations = () => {
 export const useReprocessFailedRegistrations = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: reprocessFailedRegistrations,
+    // preorderIds를 주면 그 예약만(부분 실패 뒤 다시 보낼 때), 아니면 productId 범위를 다시 찾는다.
+    mutationFn: ({
+      productId,
+      preorderIds,
+    }: {
+      productId?: string
+      preorderIds?: readonly string[]
+    }) =>
+      preorderIds
+        ? reprocessAdminReservations([...preorderIds])
+        : reprocessFailedRegistrations(productId),
     // 앞 묶음이 받아들여졌으면 뒤 묶음이 실패해도 집계는 바뀌었다 — 성공·실패 모두 다시 받는다.
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
