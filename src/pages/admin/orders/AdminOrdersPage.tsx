@@ -354,7 +354,7 @@ export function AdminOrdersPage() {
             className={styles.field}
             label="선택 안 함"
             fieldLabel="다른 상태"
-            size="small"
+            size="medium"
             options={otherStatusOptions}
             value={
               status && !(tabStatuses as readonly string[]).includes(status)
@@ -367,7 +367,7 @@ export function AdminOrdersPage() {
             className={styles.field}
             label="모든 출처"
             fieldLabel="출처"
-            size="small"
+            size="medium"
             options={sourceOptions}
             value={source}
             onSelect={(next) => setParam('source', next)}
