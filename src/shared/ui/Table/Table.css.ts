@@ -33,8 +33,9 @@ export const table = style({
   tableLayout: 'auto',
 })
 
+// 머리글은 본문과 같은 크기(14)에 굵게 — 열 이름이 먼저 잡혀야 표를 훑는다.
 const headerCellBase = style([
-  typography.body.subMedium,
+  typography.body.subSemibold,
   {
     padding: `${spacing[14]} ${spacing[16]}`,
     color: color.text.secondary,

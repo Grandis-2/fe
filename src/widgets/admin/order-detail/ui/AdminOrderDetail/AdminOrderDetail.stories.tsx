@@ -76,7 +76,8 @@ export const AwaitingConfirmation: Story = {
 export const Delivered: Story = {
   args: { order: { ...order, status: 'DELIVERED' } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('배송 완료')).toBeVisible()
+    // 상태 태그와 진행 칸에 같이 나온다.
+    await expect(canvas.getAllByText('배송 완료')[0]).toBeVisible()
     await expect(
       canvas.queryByRole('button', { name: /배송|포장|출고/ }),
     ).toBeNull()
@@ -90,7 +91,7 @@ export const AwaitingPayment: Story = {
   },
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByText('결제가 끝나야 배송을 시작할 수 있습니다.'),
+      canvas.getByText('결제가 끝나야 배송을 시작할 수 있어요'),
     ).toBeVisible()
   },
 }
@@ -99,6 +100,6 @@ export const AwaitingPayment: Story = {
 export const RefundFailed: Story = {
   args: { order: { ...order, status: 'CANCELING', refundFailed: true } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/환불이 실패했습니다/)).toBeVisible()
+    await expect(canvas.getByText(/환불이 실패했어요/)).toBeVisible()
   },
 }

@@ -1,7 +1,8 @@
+import { useState } from 'react'
+
 import { useReservationStatsByProduct } from '@entities/admin-reservation'
 import {
   waitEstimate,
-  WAITINGROOM_DEFAULTS,
   type WaitingroomProductRate,
   type WaitingroomProductStatus,
 } from '@entities/admin-waitingroom'
@@ -9,7 +10,7 @@ import { SLOW_AFTER_MS } from '@features/open-preorder-picker'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
-import { Skeleton, Tag, UsageCells, usageCellUnit } from '@shared/ui'
+import { Button, Chip, Skeleton, Tag, UsageCells } from '@shared/ui'
 
 import { formatSeconds, oldestSeconds } from '../../lib/duration'
 import { NumberSettingForm } from '../NumberSettingForm'
@@ -17,9 +18,6 @@ import { NumberSettingForm } from '../NumberSettingForm'
 import * as styles from './ProductCapList.css'
 
 import type { AdmissionChange } from '../../lib/useAdmissionChange'
-
-/** 입장 상한 사용 칸 수의 최대값 — 상한이 크면 한 칸에 여러 명을 묶는다(운영 대시보드와 같다) */
-const MAX_CELLS = 10
 
 export type ProductCapListProps = {
   /** 대기가 많은 순으로 정렬된 상품별 대기열 */
@@ -36,11 +34,20 @@ export type ProductCapListProps = {
   admission: AdmissionChange
 }
 
-const phaseLabel: Record<WaitingroomProductStatus['phase'], string> = {
+type Phase = WaitingroomProductStatus['phase']
+
+const phaseLabel: Record<Phase, string> = {
   BEFORE_OPEN: '오픈 전',
   OPEN: '접수 중',
   CLOSED: '마감',
 }
+
+// 칩 순서 — 지금 손볼 진행 중이 먼저다.
+const phaseFilters: { phase: Phase; label: string }[] = [
+  { phase: 'OPEN', label: '진행 중' },
+  { phase: 'BEFORE_OPEN', label: '예정' },
+  { phase: 'CLOSED', label: '마감' },
+]
 
 /**
  * 상품별 입장 상한 — 상품마다 윗줄에 대기·맨 뒤 대기·외부 등록 상태, 아랫줄에 상한을 얼마나
@@ -57,12 +64,14 @@ export function ProductCapList({
   emptyMessage,
   admission,
 }: ProductCapListProps) {
+  const [phase, setPhase] = useState<Phase>('OPEN')
+  const shown = products.filter((product) => product.phase === phase)
   const productStats = useReservationStatsByProduct(
-    products.map((product) => product.productId),
+    shown.map((product) => product.productId),
     refreshInterval,
   )
   const statsOf = (productId: string) =>
-    productStats[products.findIndex((item) => item.productId === productId)]
+    productStats[shown.findIndex((item) => item.productId === productId)]
   const capOf = (productId: string) =>
     rates?.find((item) => item.productId === productId)?.cap
 
@@ -97,7 +106,7 @@ export function ProductCapList({
     const name = nameOf(product.productId)
     admission.confirm(
       `${name}의 입장 상한을 기본값으로 되돌릴까요?`,
-      `${WAITINGROOM_DEFAULTS.productCap}명/초로 돌아가고 1초 안에 반영됩니다.`,
+      '서버 기본값으로 돌아가고 1초 안에 반영됩니다.',
       '되돌리기',
       () =>
         admission.apply(
@@ -116,16 +125,43 @@ export function ProductCapList({
         <span className={styles.caption}>대기 많은 순</span>
       </div>
 
+      <div className={styles.filters} role="group" aria-label="사전예약 단계">
+        {phaseFilters.map((filter) => (
+          <Chip
+            key={filter.phase}
+            className={styles.chip}
+            selected={phase === filter.phase}
+            count={
+              loading
+                ? undefined
+                : products.filter((product) => product.phase === filter.phase)
+                    .length
+            }
+            onClick={() => setPhase(filter.phase)}
+          >
+            {filter.label}
+          </Chip>
+        ))}
+      </div>
+
       {loading ? (
         <Skeleton height={160} />
       ) : products.length === 0 ? (
         <span className={styles.caption}>{emptyMessage}</span>
+      ) : shown.length === 0 ? (
+        <span className={styles.caption}>
+          {phaseFilters.find((filter) => filter.phase === phase)?.label}인
+          사전예약이 없어요.
+        </span>
       ) : (
         <ul className={styles.list}>
-          {products.map((product) => {
+          {shown.map((product) => {
             const name = nameOf(product.productId)
-            const atCap = product.cap > 0 && product.credit >= product.cap
-            const unit = usageCellUnit(product.cap, MAX_CELLS)
+            // 상한은 설정값(입장 속도 API)으로 보인다 — 운영값이 없으면 서버 기본값이 온다.
+            // 현황의 cap이 다르면 서버가 지금 그보다 낮게 적용 중이라 따로 알린다.
+            const cap = capOf(product.productId)?.value ?? product.cap
+            const applied = product.cap !== cap ? product.cap : null
+            const atCap = cap !== null && cap > 0 && product.credit >= cap
             const query = statsOf(product.productId)
             const oldest = oldestSeconds(
               query?.data?.oldestPendingSyncAt,
@@ -191,27 +227,29 @@ export function ProductCapList({
                 </div>
                 <div className={styles.actions}>
                   {capOf(product.productId)?.source === 'OPERATIONAL' && (
-                    <button
-                      type="button"
-                      className={styles.resetButton}
+                    <Button
+                      variant="subtle"
+                      color="cancel"
+                      size="small"
+                      rounded
                       aria-label={`${name} 상한 기본값으로`}
                       disabled={admission.isPending}
                       onClick={() => resetCap(product)}
                     >
                       기본값
-                    </button>
+                    </Button>
                   )}
-                  <button
-                    type="button"
-                    className={
-                      atCap ? styles.capButton.strong : styles.capButton.plain
-                    }
+                  <Button
+                    // 상한에 닿은 상품만 진하게 — 이 상품이 막히는 곳이라는 걸 버튼으로도 보인다.
+                    variant={atCap ? 'solid' : 'outline'}
+                    size="small"
+                    rounded
                     aria-label={`${name} 상한 바꾸기`}
                     disabled={admission.isPending || !rates}
                     onClick={() => askCap(product)}
                   >
                     상한 바꾸기
-                  </button>
+                  </Button>
                 </div>
 
                 <div className={styles.capBox}>
@@ -219,27 +257,29 @@ export function ProductCapList({
                     <span className={styles.capLabel}>입장 / 상한</span>
                     <span className={styles.capValue}>
                       {formatNumber(product.credit)} /{' '}
-                      {formatNumber(product.cap)}
+                      {cap === null ? '서버 기본값' : formatNumber(cap)}
                       <span className={styles.capUnit}>(명/초)</span>
                     </span>
                   </span>
-                  <UsageCells
-                    used={product.credit}
-                    total={product.cap}
-                    maxCells={MAX_CELLS}
-                    label={`${name} 입장 상한 ${formatNumber(product.cap)}명 중 ${formatNumber(product.credit)}명 사용`}
-                  />
+                  {cap !== null && (
+                    <UsageCells
+                      used={product.credit}
+                      total={cap}
+                      label={`${name} 입장 상한 ${formatNumber(cap)}명 중 ${formatNumber(product.credit)}명 사용`}
+                    />
+                  )}
                   <span />
                   <span className={atCap ? styles.hintWarn : styles.hint}>
-                    {product.cap === 0
+                    {cap === 0
                       ? '상한이 0이라 이 상품은 아무도 못 들어가요'
                       : atCap
                         ? '상한에 닿음 · 전역 속도를 올려도 이 상품은 안 빨라져요'
-                        : `초당 ${formatNumber(product.cap - product.credit)}명 여유`}
-                    {unit > 1 && (
+                        : null}
+                    {applied !== null && (
                       <span className={styles.hintSub}>
                         {' '}
-                        · 1칸 = {formatNumber(unit)}명
+                        · 서버가 지금 적용 중인 상한은 {formatNumber(applied)}
+                        명/초
                       </span>
                     )}
                   </span>

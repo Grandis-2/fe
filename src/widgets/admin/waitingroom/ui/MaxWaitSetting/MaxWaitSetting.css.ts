@@ -1,7 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, motion, spacing, typography } from '@shared/config/theme'
-import { fontWeight } from '@shared/config/theme/tokens/typography/base'
+import { color, typography } from '@shared/config/theme'
 
 import {
   card as panel,
@@ -23,22 +22,4 @@ export const noteBad = style([
   { color: color.status.danger },
 ])
 
-export const release = style([
-  typography.button.mdBold,
-  { fontWeight: fontWeight.medium },
-  {
-    alignSelf: 'flex-start',
-    minHeight: '36px',
-    padding: `0 ${spacing[16]}`,
-    border: 'none',
-    borderRadius: '999px',
-    background: color.status.danger,
-    color: color.text.inverse,
-    cursor: 'pointer',
-    transition: `filter ${motion.duration.fast} ${motion.easing.default}`,
-    selectors: {
-      '&:hover': { filter: 'brightness(0.92)' },
-      '&:disabled': { cursor: 'not-allowed', opacity: 0.5 },
-    },
-  },
-])
+export const release = style({ alignSelf: 'flex-start' })

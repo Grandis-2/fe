@@ -45,6 +45,10 @@ export type AdminProductFormValue = {
   /** PRODUCT_BRANDS 중 하나. 아직 고르지 않았으면 빈 문자열 */
   brand: string
   isPreorder: boolean
+  /** 상품 설명(5,000자 이하). 비우면 설명 없이 보인다 */
+  description: string
+  /** 보증. 팔지 않으면 금액은 0으로 저장된다. 할인은 보증에 걸리지 않는다 */
+  warranty: { offered: boolean; surcharge: number }
   /**
    * 일반 상품을 등록하자마자 공개할지. 끄면 숨김으로 등록돼 상세에서 확인한 뒤 공개한다.
    * 사전예약은 보지 않는다 — 늘 공개로 보내고 서버가 접수 기간에만 보여준다.
@@ -123,6 +127,8 @@ export function createEmptyProductFormValue(): AdminProductFormValue {
     brand: '',
     tags: [],
     isPreorder: false,
+    description: '',
+    warranty: { offered: false, surcharge: 0 },
     // 기본은 숨김 — 옵션·가격을 확인하기 전에 구매자에게 보이지 않게.
     publishOnCreate: false,
     openAt: '',
@@ -281,6 +287,8 @@ export function toFormValue(
     categoryId: detail.categoryId,
     tags: detail.tags,
     isPreorder: detail.saleMode === 'PREORDER',
+    description: detail.description ?? '',
+    warranty: { ...detail.warranty },
     openAt: toLocalInput(detail.campaign?.opensAt ?? null),
     closeAt: toLocalInput(detail.campaign?.closesAt ?? null),
     colors: colorAxis

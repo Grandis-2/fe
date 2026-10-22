@@ -163,15 +163,26 @@ export const reconcileKindDescription: Record<ReconcileKind, string> = {
     '접수 뒤 외부 등록이 오래 끝나지 않고 있습니다. 재처리 버튼이 있는 건만 직접 다시 시도할 수 있습니다.',
 }
 
-export const reconcileKindColor: Record<
-  ReconcileKind,
-  'red' | 'yellow' | 'primary' | 'blue' | 'gray'
-> = {
+// 두 단계로만 나눈다 — 사람이 확인할 것(빨강)과 기다리면 풀리는 것(회색). 유형은 태그
+// 글자로 읽는다. 남색 테두리는 같은 줄의 재처리 버튼과 모양이 겹쳐 쓰지 않는다.
+export const reconcileKindColor: Record<ReconcileKind, 'red' | 'gray'> = {
   MISSING: 'red',
-  ORPHAN: 'yellow',
-  CANCEL_MISSED: 'primary',
-  MISMATCH: 'blue',
+  ORPHAN: 'red',
+  CANCEL_MISSED: 'red',
+  MISMATCH: 'red',
   STALE: 'gray',
+}
+
+/** 양쪽 상태 칸에서 어느 쪽이 어긋났는지 — 그쪽 글씨를 강조한다 */
+export const reconcileWrongSide: Record<
+  ReconcileKind,
+  'ours' | 'external' | null
+> = {
+  MISSING: 'external',
+  ORPHAN: 'ours',
+  CANCEL_MISSED: 'external',
+  MISMATCH: 'external',
+  STALE: null,
 }
 
 // 객체 키 순서가 탭 순서다 — 예약이 사라질 수 있는 것부터.

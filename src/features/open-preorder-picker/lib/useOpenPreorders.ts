@@ -9,8 +9,8 @@ export type OpenPreorder = {
   waiting: number
   /** 초당 입장 인원 */
   credit: number
-  /** 초당 입장 상한 */
-  cap: number
+  /** 초당 입장 상한. 운영값이 없으면 null(서버 기본값) — 숫자를 지어내지 않는다 */
+  cap: number | null
   /** 맨 뒤 예상 대기(waitEstimate). 줄이 없으면 null */
   wait: string | null
   /** 외부 등록 실패(재처리 필요). 못 받았으면 null */

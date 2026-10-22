@@ -2,16 +2,31 @@ import { expect, fn } from 'storybook/test'
 
 import { AdmissionStatus } from './AdmissionStatus'
 
+import type { AdmissionSignals } from '../../lib/admissionSignals'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
+const signals: AdmissionSignals = {
+  at: 60_000,
+  coveredSeconds: 30,
+  received: 40,
+  processed: 30,
+  backlog: 820,
+  backlogPerMinute: 600,
+  judged: true,
+  judgedInSeconds: 0,
+  congested: true,
+  limit: { perSecond: 30, at: 60_000 },
+}
+
 const flow = {
-  waiting: 18240,
-  admitting: 120,
-  processing: 160 as number | null,
+  waiting: 9600,
+  admitting: 40,
+  signals,
   verdict: {
+    kind: 'congested' as const,
     tone: 'warning' as const,
-    title: '한계에 가까워요',
-    hint: '더 올리면 밀려요',
+    title: '외부 등록이 밀리고 있어요',
+    hint: '접수가 처리보다 초당 10건 빨라요 · 낮추세요',
   },
 }
 
@@ -24,22 +39,43 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 판정 한 문장과 숫자 넷 */
-export const Tight: Story = {
+/** 밀리는 중 — 판정 한 문장, 숫자 넷, 외부 등록 대기의 분당 변화 */
+export const Congested: Story = {
+  args: { action: { label: '속도 낮추기', onClick: fn() } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('한계에 가까워요')).toBeVisible()
-    await expect(canvas.getByText('약 3분')).toBeVisible()
-    await expect(canvas.getByText('외부 등록 처리')).toBeVisible()
+    await expect(canvas.getByText('외부 등록이 밀리고 있어요')).toBeVisible()
+    await expect(canvas.getByText('외부 등록 대기')).toBeVisible()
+    await expect(canvas.getByText('분당 +600건')).toBeVisible()
+    await expect(
+      canvas.getByRole('button', { name: '속도 낮추기' }),
+    ).toBeVisible()
   },
 }
 
-export const Room: Story = {
+export const Following: Story = {
   args: {
     flow: {
       ...flow,
-      admitting: 80,
-      verdict: { tone: 'success', title: '여유 있어요', hint: '올려도 돼요' },
+      admitting: 15,
+      signals: {
+        ...signals,
+        received: 14,
+        processed: 14,
+        backlog: 7,
+        backlogPerMinute: 0,
+        congested: false,
+        limit: null,
+      },
+      verdict: {
+        kind: 'following',
+        tone: 'success',
+        title: '외부 등록이 따라가고 있어요',
+        hint: '들어온 만큼 바로 등록되고 있어요',
+      },
     },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('그대로')).toBeVisible()
   },
 }
 
@@ -50,9 +86,10 @@ export const Stopped: Story = {
       ...flow,
       admitting: 0,
       verdict: {
+        kind: 'stopped',
         tone: 'danger',
         title: '입장 멈춤',
-        hint: '18,240명이 기다리는데 아무도 못 들어가요',
+        hint: '9,600명이 기다리는데 아무도 못 들어가요',
       },
     },
     action: { label: '다시 열기', onClick: fn() },
@@ -63,18 +100,31 @@ export const Stopped: Story = {
   },
 }
 
-/** 처리 속도를 아직 못 쟀다 */
+/** 화면을 막 열어 판단 전 */
 export const Measuring: Story = {
   args: {
     flow: {
       ...flow,
-      processing: null,
+      signals: {
+        ...signals,
+        received: null,
+        processed: null,
+        backlogPerMinute: null,
+        judged: false,
+        judgedInSeconds: 25,
+        congested: false,
+        limit: null,
+      },
       verdict: {
+        kind: 'measuring',
         tone: 'muted',
         title: '재는 중',
-        hint: '30초쯤 지나면 판단해요',
+        hint: '약 25초 뒤 외부 등록이 따라가는지 알려 드려요',
       },
     },
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('추세 재는 중')).toBeVisible()
   },
 }
 

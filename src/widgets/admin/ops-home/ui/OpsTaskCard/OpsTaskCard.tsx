@@ -22,6 +22,11 @@ const levelColor: Record<OpsTaskLevel, 'red' | 'yellow' | 'primary'> = {
   todo: 'primary',
 }
 
+/** 처리 버튼 — 처리할 화면으로 가거나(to), 이 화면에서 바로 처리한다(onClick, 모달) */
+export type TaskAction = { label: string } & (
+  { to: string } | { onClick: () => void }
+)
+
 export type OpsTaskCardProps = {
   level: OpsTaskLevel
   /** 무엇이 몇 건인지 한 줄로 — 설명 줄 없이 이것만 보고 알 수 있게 쓴다 */
@@ -30,7 +35,7 @@ export type OpsTaskCardProps = {
    * 이 일을 처리하는 화면. 없으면 운영자가 화면에서 풀 수 없는 일이라 '개발팀 문의'를
    * 보인다 — 운영 홈에서 개발자 기능 화면으로 보내지 않는다.
    */
-  action?: { label: string; to: string }
+  action?: TaskAction
   /**
    * 화면이 사전예약 하나를 보고 있는데 이 카드는 그렇게 거를 수 없을 때(예: '전체 기준')
    * 제목 옆에 붙인다 — 숫자가 고른 사전예약 것으로 읽히지 않게.
@@ -59,10 +64,14 @@ export function OpsTaskCard({ level, title, action, scope }: OpsTaskCardProps) {
         {title}
         {scope && <span className={styles.scope}>{scope}</span>}
       </div>
-      {action ? (
+      {action && 'to' in action ? (
         <Link to={action.to} className={actionClass}>
           {action.label}
         </Link>
+      ) : action ? (
+        <button type="button" className={actionClass} onClick={action.onClick}>
+          {action.label}
+        </button>
       ) : (
         <span className={styles.handoff}>개발팀 문의</span>
       )}

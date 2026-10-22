@@ -2,8 +2,10 @@ import { useState } from 'react'
 
 import {
   editLockReason,
+  editLocksAt,
   editSectionLabel,
   imageUploadIssues,
+  pendingEditLabels,
   toFormValue,
   useAdminProduct,
   useAdminProductStock,
@@ -107,6 +109,11 @@ export function AdminProductEditForm({
         defaultValue={toFormValue(product.data, stock.data)}
         existingIds={existingIds}
         lockReason={editLockReason(product.data)}
+        locksAt={editLocksAt(product.data)}
+        // 저장할 때 보낼 요청을 그대로 계산해 본다 — 저장 줄과 실제 저장이 어긋나지 않는다.
+        pendingChanges={(value) =>
+          pendingEditLabels(value, product.data, stock.data)
+        }
         submitting={save.isPending}
         waitingForNetwork={save.isPaused}
         // 상품명·모델명·브랜드는 비우면 서버가 400을 준다 — 보내기 전에 칸에서 알린다.

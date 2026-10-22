@@ -5,7 +5,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router'
 import { logout, useSession } from '@entities/auth'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PreorderQueue, usePreorderQueueStore } from '@features/preorder-queue'
-import { SIGNUP_PATH } from '@shared/config/routes'
+import { ADMIN_LOGIN_PATH, SIGNUP_PATH } from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
 import { showToast, useToastStore } from '@shared/model/toastStore'
 import { Modal, ToastViewport } from '@shared/ui'
@@ -36,6 +36,8 @@ export function RootLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const isCallbackPage = isCallbackPath(location.pathname)
+  // 관리자 로그인은 화면을 둘로 나눠 왼쪽 장면에 로고를 둔다 — 헤더를 그리지 않는다.
+  const isAdminLogin = location.pathname === ADMIN_LOGIN_PATH
 
   // react-router는 페이지 이동 시 스크롤 위치를 유지한다 — 목록 스크롤 후 상세로
   // 들어가면 새 페이지가 그 위치에서 시작해 버리므로 경로가 바뀔 때마다 맨 위로 올린다.
@@ -61,7 +63,7 @@ export function RootLayout() {
 
   return (
     <>
-      {!isCallbackPage && <Header />}
+      {!isCallbackPage && !isAdminLogin && <Header />}
       <Outlet />
       {!isCallbackPage && <MobileTabBar />}
       {modalContent && (

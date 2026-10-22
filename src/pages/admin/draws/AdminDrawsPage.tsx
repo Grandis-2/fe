@@ -6,93 +6,142 @@ import { useNavigate } from 'react-router'
 import {
   drawPhaseColor,
   drawPhaseLabel,
-  drawPhaseLabels,
   drawPhases,
+  drawPhaseVariant,
+  drawTimingOf,
   type AdminDraw,
   type AdminDrawPhase,
   useAdminDraws,
 } from '@entities/admin-draw'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_DRAW_NEW_PATH, adminDrawPath } from '@shared/config/routes'
-import { formatDotDateTime } from '@shared/lib/formatDotDate'
+import { formatShortDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
-import { Button, SegmentedTabs, Table, Tag } from '@shared/ui'
+import { useNow } from '@shared/lib/useNow'
+import {
+  Button,
+  ImageWithFallback,
+  SegmentedTabs,
+  Table,
+  Tag,
+} from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
 import * as styles from './AdminDrawsPage.css'
 
 type PhaseFilter = AdminDrawPhase | 'all'
 
-const phaseFilters: { value: PhaseFilter; label: string }[] = [
-  { value: 'all', label: '전체' },
-  ...drawPhases.map((phase) => ({
-    value: phase,
-    label: drawPhaseLabel[phase],
-  })),
-]
-
-const columns: TableColumn<AdminDraw>[] = [
-  {
-    key: 'title',
-    header: '회차 제목',
-    render: (draw) => <span className={styles.drawTitle}>{draw.title}</span>,
-  },
-  {
-    key: 'gift',
-    header: '증정품',
-    render: (draw) => `${draw.gift.productTitle} · ${draw.gift.optionTitle}`,
-  },
-  {
-    key: 'fee',
-    header: '응모비',
-    align: 'right',
-    render: (draw) => formatWon(draw.entryFee),
-  },
-  {
-    key: 'winners',
-    header: '당첨 인원',
-    align: 'right',
-    render: (draw) => `${formatNumber(draw.winnerCount)}명`,
-  },
-  {
-    key: 'period',
-    header: '응모 기간',
-    align: 'center',
-    render: (draw) =>
-      `${formatDotDateTime(draw.opensAt)} ~ ${formatDotDateTime(draw.closesAt)}`,
-  },
-  {
-    key: 'phase',
-    header: '단계',
-    align: 'center',
-    render: (draw) => (
-      <Tag
-        variant="subtle"
-        size="medium"
-        rounded={false}
-        widthOptions={drawPhaseLabels}
-        color={drawPhaseColor[draw.phase]}
-      >
-        {drawPhaseLabel[draw.phase]}
-      </Tag>
-    ),
-  },
-]
+// 남은 시간("7시간 뒤 마감")을 열어 둔 채로도 맞게 — 분 단위라 1분마다 다시 그린다.
+const NOW_TICK_MS = 60_000
 
 export function AdminDrawsPage() {
   const navigate = useNavigate()
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>('all')
   const draws = useAdminDraws()
+  const now = useNow(NOW_TICK_MS).getTime()
 
-  const visibleDraws = (draws.data ?? []).filter(
+  const all = draws.data ?? []
+  const visibleDraws = all.filter(
     (draw) => phaseFilter === 'all' || draw.phase === phaseFilter,
   )
   const openDetail = (draw: AdminDraw) => navigate(adminDrawPath(draw.drawId))
 
+  // 회차를 전부 받아 와서 탭 건수는 받은 목록으로 센다. 못 받았으면 숫자를 뺀다.
+  const tabLabel = (label: string, count: number) => (
+    <span className={styles.tabLabel}>
+      {label}
+      {draws.data && (
+        <span className={styles.tabCount}>{formatNumber(count)}</span>
+      )}
+    </span>
+  )
+  const tabs = [
+    { value: 'all' as const, label: tabLabel('전체', all.length) },
+    ...drawPhases.map((phase) => ({
+      value: phase,
+      label: tabLabel(
+        drawPhaseLabel[phase],
+        all.filter((draw) => draw.phase === phase).length,
+      ),
+    })),
+  ]
+
+  const columns: TableColumn<AdminDraw>[] = [
+    {
+      key: 'draw',
+      header: '회차',
+      render: (draw) => (
+        <span className={styles.drawCell}>
+          <ImageWithFallback
+            className={styles.thumb}
+            src={draw.gift.imageUrl}
+          />
+          <span className={styles.stacked}>
+            <span className={styles.mainText}>{draw.title}</span>
+            <span className={styles.subText}>
+              {draw.gift.productTitle} · {draw.gift.optionTitle}
+            </span>
+          </span>
+        </span>
+      ),
+    },
+    // 기간 아래에 지금 기준 남은 시간 — 곧 마감이면 빨갛게.
+    {
+      key: 'period',
+      header: '응모 기간',
+      render: (draw) => {
+        const timing = drawTimingOf(draw, now)
+        return (
+          <span className={styles.stacked}>
+            <span className={styles.cellText}>
+              {formatShortDateTime(draw.opensAt)} ~{' '}
+              {formatShortDateTime(draw.closesAt)}
+            </span>
+            <span className={timing.soon ? styles.subTextSoon : styles.subText}>
+              {timing.text}
+            </span>
+          </span>
+        )
+      },
+    },
+    {
+      key: 'fee',
+      header: '응모비',
+      align: 'right',
+      render: (draw) => (
+        <span className={styles.cellText}>{formatWon(draw.entryFee)}</span>
+      ),
+    },
+    {
+      key: 'winners',
+      header: '당첨',
+      align: 'right',
+      render: (draw) => (
+        <span className={styles.cellText}>
+          {formatNumber(draw.winnerCount)}명
+        </span>
+      ),
+    },
+    {
+      key: 'phase',
+      header: '단계',
+      render: (draw) => (
+        <Tag
+          variant={drawPhaseVariant[draw.phase]}
+          size="medium"
+          rounded={false}
+          color={drawPhaseColor[draw.phase]}
+        >
+          {drawPhaseLabel[draw.phase]}
+        </Tag>
+      ),
+    },
+  ]
+
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <div className={styles.title}>럭키드로우 관리</div>
+      <header className={styles.header}>
+        <h1 className={styles.title}>럭키드로우 관리</h1>
         <Button
           icon={Plus}
           size="medium"
@@ -100,10 +149,10 @@ export function AdminDrawsPage() {
         >
           회차 만들기
         </Button>
-      </div>
+      </header>
 
       <SegmentedTabs
-        items={phaseFilters}
+        items={tabs}
         value={phaseFilter}
         onChange={setPhaseFilter}
       />

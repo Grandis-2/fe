@@ -84,7 +84,7 @@ export const CapFull: Story = {
   },
 }
 
-/** 상한이 크면 칸을 묶는다 — 상한 100이면 1칸 = 초당 10명 */
+/** 상한이 커도 칸은 10개 — 100명 중 45명이면 비율대로 채운다 */
 export const LargeCap: Story = {
   args: {
     selected: 'p-watch',
@@ -93,7 +93,10 @@ export const LargeCap: Story = {
     ),
   },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/1칸 = 초당 10명/)).toBeVisible()
+    await expect(
+      canvas.getByRole('img', { name: '입장 상한 100명 중 45명 사용' }),
+    ).toBeVisible()
+    await expect(canvas.queryByText(/1칸/)).toBeNull()
   },
 }
 

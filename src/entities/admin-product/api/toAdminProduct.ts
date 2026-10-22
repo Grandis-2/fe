@@ -16,7 +16,7 @@ import type {
  *
  * 준비가 안 끝났으면(registrationCompleted false) 공개로 골라 뒀어도 회원에게
  * 보이지 않으므로 그 상태가 먼저다. 사전예약은 공개로 둬도 접수 기간에만 보여서,
- * 기간 밖이면 공개 예정·공개 종료로 나눈다 — '게시중'이라고 하면 지금 보이는 줄 안다.
+ * 기간 밖이면 공개 예정·공개 종료로 나눈다 — '공개 중'이라고 하면 지금 보이는 줄 안다.
  */
 const toDisplayStatus = ({
   visible,
@@ -53,6 +53,11 @@ export const toAdminProduct = (item: AdminProductListItem): AdminProduct => ({
   preorderStatus: item.preorderStatus,
   displayStatus: toDisplayStatus({ ...item, stage: item.preorderStatus }),
   minPrice: item.minPrice,
+  minListPrice: item.minListPrice,
+  discountRate: item.discountRate,
+  soldOut: item.soldOut,
+  brand: item.brand,
+  modelName: item.modelName,
   thumbnailUrl: item.imageUrl,
 })
 

@@ -1,13 +1,13 @@
+import { usageCells } from './cellFill'
 import * as styles from './UsageCells.css'
-import { usageCells } from './usageCellUnit'
 
 export type UsageCellsProps = {
   /** 쓰고 있는 양 */
   used: number
   /** 전체(상한). 0이면 칸 대신 빈 테두리 */
   total: number
-  /** 칸 수의 최대값 — 넘으면 한 칸에 여러 개를 묶는다 */
-  maxCells?: number
+  /** 칸 수 — 전체가 얼마든 이만큼 그리고 비율로 채운다 */
+  cells?: number
   /** 스크린리더가 읽을 설명(예: '입장 상한 20명 중 12명 사용') */
   label: string
 }
@@ -19,17 +19,17 @@ export type UsageCellsProps = {
 export function UsageCells({
   used,
   total,
-  maxCells = 20,
+  cells = 10,
   label,
 }: UsageCellsProps) {
   if (total <= 0) {
     return <div className={styles.empty} role="img" aria-label={label} />
   }
-  const { count, on, full } = usageCells(used, total, maxCells)
+  const { on, full } = usageCells(used, total, cells)
 
   return (
     <div className={styles.root} role="img" aria-label={label}>
-      {Array.from({ length: count }, (_, index) => (
+      {Array.from({ length: cells }, (_, index) => (
         <span
           key={index}
           className={

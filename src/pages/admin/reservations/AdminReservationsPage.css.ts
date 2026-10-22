@@ -8,8 +8,10 @@ export const root = style({
   gap: spacing[20],
 })
 
+// 운영 대시보드의 제목 줄(topBar)과 같은 배치 — 왼쪽 제목, 오른쪽 마지막 갱신.
 export const header = style({
   display: 'flex',
+  flexWrap: 'wrap',
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: spacing[16],
@@ -17,29 +19,19 @@ export const header = style({
 
 export const title = style([
   typography.title.xlSemibold,
-  { color: color.text.primary },
+  { margin: 0, color: color.text.primary },
 ])
 
 // 탭 이름 옆에 그 상태의 전체 건수를 붙인다.
 export const tabLabel = style({
   display: 'inline-flex',
-  alignItems: 'baseline',
+  alignItems: 'center',
   gap: spacing[6],
 })
 
 export const tabCount = style({
   fontVariantNumeric: 'tabular-nums',
   opacity: 0.8,
-})
-
-// 실패 경고 — 문구와 실패 탭으로 가는 단추를 한 줄에.
-export const alertRow = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: spacing[12],
-  width: '100%',
 })
 
 // 고른 건수와 재처리 단추 — 표 바로 위에 붙어 무엇을 보낼지 보인다.
@@ -71,30 +63,40 @@ export const referenceField = style({ flex: '2 1 240px', minWidth: 0 })
 
 export const field = style({ flex: '1 1 150px', minWidth: 0 })
 
-export const receivedAt = style([
+// 위 줄은 주된 값, 아래 줄은 함께 읽는 보조 값(접수 시각, 옵션·차수, 남은 시간).
+export const stacked = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[2],
+})
+
+// 표 글씨는 공통 Table 기본(14)보다 한 단계 크게 — 오래 띄워 두고 훑는 화면이다.
+export const mainText = style([
+  typography.body.defaultMedium,
+  { color: color.text.primary },
+])
+
+export const cellText = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary },
+])
+
+export const number = style([
+  typography.body.defaultRegular,
+  { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
+])
+
+export const subText = style([
   typography.body.sub,
   { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
 ])
 
-export const reservationNo = style([
-  typography.body.subMedium,
-  { color: color.text.primary },
+export const dueSoon = style([
+  typography.body.subSemibold,
+  { color: color.status.danger },
 ])
 
-/** Tag 아래에 사유·남은 시간 같은 보조 문구를 한 줄 더 붙이는 칸 */
-export const stackedCell = style({
-  display: 'inline-flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: spacing[4],
+// 외부 등록 실패 행 — 태그만으로도 보이지만 표를 훑을 때 행 단위로 걸리게 옅게 깐다.
+export const failedRow = style({
+  background: `color-mix(in srgb, ${color.status.danger} 4%, ${color.background.base})`,
 })
-
-export const subText = style([
-  typography.body.caption,
-  { color: color.text.secondary },
-])
-
-export const dueText = style([
-  typography.body.caption,
-  { color: color.primary.base },
-])

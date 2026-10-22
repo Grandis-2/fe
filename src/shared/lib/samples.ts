@@ -45,34 +45,3 @@ export const ratePerSecond = (
     at,
     value: Math.max(0, value),
   }))
-
-/**
- * 여러 기록을 하나로 더한다. 기록마다 받은 시각이 달라, 각 시각에 기록마다 그때까지 받은 마지막
- * 값을 더한다. 모든 기록이 첫 값을 받은 뒤부터만 낸다 — 그 전은 일부만 더해져 낮게 보인다.
- */
-export function sumSeries(
-  series: readonly (readonly Sample<number>[])[],
-): Sample<number>[] {
-  if (series.length === 0 || series.some((samples) => samples.length === 0))
-    return []
-  const start = Math.max(...series.map((samples) => samples[0].at))
-  const times = [
-    ...new Set(series.flatMap((samples) => samples.map(({ at }) => at))),
-  ]
-    .filter((at) => at >= start)
-    .toSorted((a, b) => a - b)
-    // 기록마다 시각이 달라 합치면 늘어난다 — 하나일 때와 같은 수만 남긴다.
-    .slice(-MAX_SAMPLES)
-  const cursors = series.map(() => 0)
-  return times.map((at) => ({
-    at,
-    value: series.reduce((total, samples, k) => {
-      while (
-        cursors[k] + 1 < samples.length &&
-        samples[cursors[k] + 1].at <= at
-      )
-        cursors[k] += 1
-      return total + samples[cursors[k]].value
-    }, 0),
-  }))
-}

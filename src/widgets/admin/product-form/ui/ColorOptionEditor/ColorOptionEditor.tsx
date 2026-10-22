@@ -34,6 +34,11 @@ export type ColorOptionEditorProps = {
   accept?: string
   /** 색상(묶음)마다 담을 수 있는 사진 수 */
   maxImages?: number
+  /**
+   * 색상 이름·스와치·추가·삭제를 막고 사진만 열어 둔다. 사전예약은 오픈 3분 전부터
+   * 옵션을 고칠 수 없지만 사진은 잠금과 상관없이 고칠 수 있다(서버 규칙).
+   */
+  locked?: boolean
 }
 
 /**
@@ -49,6 +54,7 @@ export function ColorOptionEditor({
   upload,
   accept,
   maxImages,
+  locked = false,
 }: ColorOptionEditorProps) {
   const editing = existingIds !== undefined
   // '색상 없음'인 상품은 색상을 더 만들 수 없다.
@@ -79,71 +85,76 @@ export function ColorOptionEditor({
     <div className={styles.root}>
       {colors.map((colorOption, index) => (
         <div key={colorOption.id} className={styles.colorBlock}>
-          {/* 제목과 삭제 버튼을 한 줄에 둔다. */}
-          <div className={styles.blockHeader}>
-            <span className={styles.sectionLabel}>색상</span>
-            {!existingIds?.has(colorOption.id) && (
-              <button
-                type="button"
-                className={styles.removeButton}
-                aria-label={`색상 ${index + 1} 삭제`}
-                onClick={() =>
-                  onChange(colors.filter((item) => item.id !== colorOption.id))
+          {/* 잠기면 이름·색만 막는다 — 아래 사진 칸은 이 fieldset 밖이라 그대로 열린다. */}
+          <fieldset className={styles.lockable} disabled={locked}>
+            {/* 제목과 삭제 버튼을 한 줄에 둔다. */}
+            <div className={styles.blockHeader}>
+              <span className={styles.sectionLabel}>색상</span>
+              {!existingIds?.has(colorOption.id) && (
+                <button
+                  type="button"
+                  className={styles.removeButton}
+                  aria-label={`색상 ${index + 1} 삭제`}
+                  onClick={() =>
+                    onChange(
+                      colors.filter((item) => item.id !== colorOption.id),
+                    )
+                  }
+                >
+                  <X className={styles.removeIcon} aria-hidden="true" />
+                </button>
+              )}
+            </div>
+
+            <div className={styles.colorRow}>
+              <label
+                className={[
+                  colorOption.hex ? styles.swatch : styles.swatchEmpty,
+                  hasNoColor && styles.mutedArea,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+                style={
+                  colorOption.hex ? { background: colorOption.hex } : undefined
                 }
               >
-                <X className={styles.removeIcon} aria-hidden="true" />
-              </button>
-            )}
-          </div>
-
-          <div className={styles.colorRow}>
-            <label
-              className={[
-                colorOption.hex ? styles.swatch : styles.swatchEmpty,
-                hasNoColor && styles.mutedArea,
-              ]
-                .filter(Boolean)
-                .join(' ')}
-              style={
-                colorOption.hex ? { background: colorOption.hex } : undefined
-              }
-            >
-              <span className={styles.srOnly}>색상 선택</span>
-              <input
-                type="color"
-                className={styles.swatchInput}
-                // input[type=color]는 빈 값을 못 받아서 미선택일 때 검정을 넘긴다.
-                value={colorOption.hex || '#000000'}
+                <span className={styles.srOnly}>색상 선택</span>
+                <input
+                  type="color"
+                  className={styles.swatchInput}
+                  // input[type=color]는 빈 값을 못 받아서 미선택일 때 검정을 넘긴다.
+                  value={colorOption.hex || '#000000'}
+                  disabled={hasNoColor}
+                  onChange={(event) =>
+                    patchColor(colorOption.id, {
+                      hex: event.target.value.toUpperCase(),
+                    })
+                  }
+                />
+              </label>
+              <Input
+                className={[fields.fixedField, hasNoColor && styles.mutedArea]
+                  .filter(Boolean)
+                  .join(' ')}
+                size="small"
+                label="색상 입력"
+                value={colorOption.name}
                 disabled={hasNoColor}
                 onChange={(event) =>
-                  patchColor(colorOption.id, {
-                    hex: event.target.value.toUpperCase(),
-                  })
+                  patchColor(colorOption.id, { name: event.target.value })
                 }
               />
-            </label>
-            <Input
-              className={[fields.fixedField, hasNoColor && styles.mutedArea]
-                .filter(Boolean)
-                .join(' ')}
-              size="small"
-              label="색상 입력"
-              value={colorOption.name}
-              disabled={hasNoColor}
-              onChange={(event) =>
-                patchColor(colorOption.id, { name: event.target.value })
-              }
-            />
-            <label className={styles.noColorLabel}>
-              <Checkbox
-                checked={hasNoColor}
-                // 색상 축을 만들거나 없애는 일이라 등록 뒤에는 바꿀 수 없다.
-                disabled={editing}
-                onChange={(event) => toggleNoColor(event.target.checked)}
-              />
-              색상 없음
-            </label>
-          </div>
+              <label className={styles.noColorLabel}>
+                <Checkbox
+                  checked={hasNoColor}
+                  // 색상 축을 만들거나 없애는 일이라 등록 뒤에는 바꿀 수 없다.
+                  disabled={editing}
+                  onChange={(event) => toggleNoColor(event.target.checked)}
+                />
+                색상 없음
+              </label>
+            </div>
+          </fieldset>
 
           <div className={hasNoColor ? styles.mutedArea : undefined}>
             <ImageUploader
@@ -176,7 +187,7 @@ export function ColorOptionEditor({
       <button
         type="button"
         className={styles.addButton}
-        disabled={hasNoColor}
+        disabled={hasNoColor || locked}
         onClick={() => onChange([...colors, createColorOption()])}
       >
         <Plus className={styles.addIcon} aria-hidden="true" />

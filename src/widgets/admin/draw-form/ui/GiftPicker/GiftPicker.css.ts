@@ -20,6 +20,26 @@ export const hint = style([
   { color: color.text.tertiary },
 ])
 
+// 고른 옵션과 확보할 재고 — 칸 아래 회색 상자.
+export const stock = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[2],
+  padding: `${spacing[12]} ${spacing[14]}`,
+  borderRadius: '10px',
+  background: color.background.surface,
+})
+
+export const stockName = style([
+  typography.body.defaultMedium,
+  { color: color.text.primary },
+])
+
+export const stockText = style([
+  typography.body.sub,
+  { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
+])
+
 export const footer = style({
   display: 'flex',
   flexWrap: 'wrap',
