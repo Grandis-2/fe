@@ -69,8 +69,19 @@ export const usePendingPurchaseCount = (enabled = true) => {
   return NEEDS_PURCHASE.reduce((sum, stage) => sum + data[stage], 0)
 }
 
+// 결제 기한이 지난(PAYMENT_EXPIRED) 예약도 기다린다 — 서버가 주기 작업으로 만료 취소를 시작해 취소 완료까지 간다.
 const settlePollMs = (data: ReservationDetail | undefined) =>
-  data && SETTLING.includes(data.status) ? SETTLE_POLL_MS : null
+  data &&
+  (SETTLING.includes(data.status) || data.displayStatus === 'PAYMENT_EXPIRED')
+    ? SETTLE_POLL_MS
+    : null
+
+// 결제를 기다리는 예약은 기한이 되는 순간 한 번 다시 묻는다 — 그때부터 만료 취소가 시작돼 위 폴링이 이어받는다.
+// 서버 시계보다 조금 늦게 묻고, 아직 결제 대기로 오면 1초 뒤 다시 묻는다.
+const untilDueMs = (data: ReservationDetail | undefined) =>
+  data && NEEDS_PURCHASE.includes(data.displayStatus) && data.paymentDueAt
+    ? Math.max(Date.parse(data.paymentDueAt) - Date.now(), 0) + 1_000
+    : null
 
 // 처리를 기다리는 동안 실패하면 백오프하며 다시 묻는다.
 // ponytail: 제한 시간은 두지 않는다 — 명세에 외부 등록·취소 처리 시간이 없다. 정해지면 useOrder처럼 useDeadline을 붙인다.
@@ -81,7 +92,8 @@ export const useReservation = (preorderId: string) => {
     queryKey,
     queryFn: ({ signal }) => getReservation(preorderId, signal),
     enabled: preorderId !== '',
-    refetchInterval: ({ state: { data } }) => settlePollMs(data) ?? false,
+    refetchInterval: ({ state: { data } }) =>
+      settlePollMs(data) ?? untilDueMs(data) ?? false,
     // PAYMENT_IN_PROGRESS·PAYMENT_EXPIRED로 바뀔 땐 version이 그대로라 같은 값은 받는다.
     structuralSharing: keepNewer<ReservationDetail>(({ version }) => version),
     ...queryPolicy.live,

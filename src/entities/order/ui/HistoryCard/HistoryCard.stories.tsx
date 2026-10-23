@@ -49,7 +49,7 @@ const base = {
 }
 
 export const Delivered: Story = {
-  args: { ...base, tag: { label: '배송 완료', color: 'gray' } },
+  args: { ...base, tag: { label: '배송 완료', color: 'green' } },
 }
 
 export const Shipping: Story = {

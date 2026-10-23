@@ -132,12 +132,21 @@ export const reviewHandlers: RequestHandler[] = [
   }),
 
   // 내 리뷰 — 상품 공개 여부와 상관없이 전부, orderItemId가 채워져 온다.
+  // orderItemId는 반복(?orderItemId=a&orderItemId=b)이나 쉼표(?orderItemId=a,b)로 1~100개(같은 id는 한 번). size가 없으면 id 수만큼 준다.
   http.get(url('/api/v1/reviews/mine'), ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     const params = new URL(request.url).searchParams
+    const raw = params.getAll('orderItemId').flatMap((it) => it.split(','))
+    const orderItemIds = new Set(raw)
+    if (orderItemIds.size > 0 && !params.has('size'))
+      params.set('size', String(Math.min(orderItemIds.size, 100)))
     const { page, size, violations } = readPaging(params)
-    const orderItemId = params.get('orderItemId')
-    if (orderItemId && !isUuid(orderItemId))
+    if (raw.includes('') || orderItemIds.size > 100)
+      violations.push({
+        field: 'orderItemId',
+        message: '빈 값 없이 1~100개여야 합니다.',
+      })
+    else if ([...orderItemIds].some((id) => !isUuid(id)))
       violations.push(uuidViolation('orderItemId'))
     if (violations.length > 0) return invalid(violations)
 
@@ -145,7 +154,8 @@ export const reviewHandlers: RequestHandler[] = [
       .filter(
         (review) =>
           isMine(review) &&
-          (!orderItemId || review.orderItemId === orderItemId),
+          (orderItemIds.size === 0 ||
+            orderItemIds.has(review.orderItemId ?? '')),
       )
       .sort(newestFirst)
     return ok<PageResponse<ReviewView>>(toPage(matched, page, size))

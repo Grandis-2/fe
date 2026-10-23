@@ -41,6 +41,8 @@ export type PreorderSummary = {
   optionId: string
   optionTitle: string
   unitPrice: number
+  // 고른 색상의 첫 사진, 없으면 상품 썸네일(주문 items[].imageUrl과 같은 기준). 사진이 없거나 잠깐 못 받으면 null.
+  imageUrl: string | null
   status: PreorderStatus
   displayStatus: PreorderDisplayStatus
   // 모델 안의 접수 순번(1부터). 이 값으로 배송 차수가 정해진다.

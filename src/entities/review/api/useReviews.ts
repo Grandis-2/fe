@@ -2,6 +2,7 @@ import {
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
@@ -19,8 +20,10 @@ import {
   updateReview,
 } from './review'
 
-// ponytail: 주문 내역의 리뷰 버튼은 내 리뷰 첫 쪽(최대 100건)에서 찾는다 — 그보다 오래된 리뷰는 '리뷰 쓰기'로 보이고 서버가 409로 막는다.
-const FIRST_PAGE = { page: 0, size: 100 }
+import type { Review } from '../model/review'
+
+// 내 리뷰를 주문상품 id로 물을 때 한 번에 보낼 수 있는 수.
+const ORDER_ITEM_LIMIT = 100
 
 // 상품 상세의 구매 후기는 10건씩 쪽 번호로 넘긴다.
 const PRODUCT_PAGE_SIZE = 10
@@ -36,7 +39,8 @@ const reviewKeys = {
   list: (params: ReviewListParams) => ['reviews', 'list', params] as const,
   product: (productId: string, page: number) =>
     ['reviews', 'product', productId, page] as const,
-  mine: ['reviews', 'mine'] as const,
+  mineOf: (orderItemIds: string[]) =>
+    ['reviews', 'mine', 'items', orderItemIds] as const,
   minePages: ['reviews', 'mine', 'pages'] as const,
   writable: ['reviews', 'writable'] as const,
 }
@@ -89,13 +93,37 @@ export const useProductReviews = (productId: string, page: number) =>
     ...queryPolicy.catalog,
   })
 
-// 주문상품마다 리뷰를 따로 묻지 않고 내 리뷰 전체를 받아 orderItemId로 찾는다.
-export const useMyReviews = () =>
-  useQuery({
-    queryKey: reviewKeys.mine,
-    queryFn: ({ signal }) => getMyReviews(FIRST_PAGE, signal),
-    ...queryPolicy.account,
+// 주문 내역의 리뷰 버튼 — 주문상품 id를 묶음(주문 목록 한 쪽)마다 한 번에 물어 orderItemId로 짝을 맞춘다.
+// 쪽마다 따로 물어야 다음 쪽이 붙어도 앞 쪽은 캐시를 그대로 쓴다. 한 번에 100개까지라 넘치면 나눠 묻는다.
+// 받기 전인 주문상품은 pending에 남는다. 리뷰를 쓰거나 지우면 아래 mutation이 다시 받는다.
+export const useMyReviewsByOrderItem = (groups: string[][]) => {
+  const chunks = groups.flatMap((ids) => {
+    const unique = [...new Set(ids)]
+    return Array.from(
+      { length: Math.ceil(unique.length / ORDER_ITEM_LIMIT) },
+      (_, i) => unique.slice(i * ORDER_ITEM_LIMIT, (i + 1) * ORDER_ITEM_LIMIT),
+    )
   })
+  return useQueries({
+    queries: chunks.map((ids) => ({
+      queryKey: reviewKeys.mineOf(ids),
+      queryFn: ({ signal }) => getMyReviews({ orderItemId: ids }, signal),
+      ...queryPolicy.account,
+    })),
+    combine: (results) => {
+      const reviews = new Map<string, Review>()
+      const pending = new Set<string>()
+      results.forEach(({ data, isPending }, i) => {
+        if (isPending) chunks[i].forEach((id) => pending.add(id))
+        data?.items.forEach(
+          (review) =>
+            review.orderItemId && reviews.set(review.orderItemId, review),
+        )
+      })
+      return { reviews, pending }
+    },
+  })
+}
 
 // 쓰기·고치기·지우기 모두 서버 확인 뒤 반영한다 — 내 리뷰와 공개 목록(평점·후기 수)이 함께 바뀌므로 리뷰 캐시를 통째로 다시 받는다.
 const useReviewMutation = <TVariables, TData>(

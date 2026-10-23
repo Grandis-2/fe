@@ -7,7 +7,7 @@ import type {
 } from './preorder'
 
 // 관리자 예약 API(preorder 서비스 — api-docs의 preorder.json, /api/v1/admin/preorders).
-// 회원 예약 모양(preorder.ts)에 관리자용 필드가 더 붙는다.
+// 회원 예약 모양(preorder.ts)에 관리자용 필드가 더 붙는다. 사진(imageUrl)은 회원 응답에만 온다.
 
 /** 외부 예약 시스템 연동 작업 상태. PROCESSING은 서버가 쓰지 않는 값이다 */
 export type SyncJobStatus =
@@ -22,7 +22,7 @@ export type SyncJobStatus =
 export type SyncJobType = 'REGISTER' | 'CANCEL'
 
 /** 관리자 목록 한 줄 */
-export type AdminPreorderSummary = PreorderSummary & {
+export type AdminPreorderSummary = Omit<PreorderSummary, 'imageUrl'> & {
   customerId: string
   /** 외부 등록 작업 상태. DEAD_LETTER면 재처리가 필요하다. 작업이 없으면 null */
   registerJobStatus: SyncJobStatus | null
@@ -116,7 +116,7 @@ export type BatchReprocess = {
 export type SyncJob = SyncJobSummary & { attempts: SyncAttempt[] }
 
 /** 관리자 예약 상세. 회원용 상세에 회원 id, 내부 메모, 동기화 작업, 상태 이력이 붙는다 */
-export type AdminPreorderDetail = PreorderDetail & {
+export type AdminPreorderDetail = Omit<PreorderDetail, 'imageUrl'> & {
   customerId: string
   /** 회원에게 보이지 않는 관리자 메모(최대 1000자). 없으면 null */
   internalNote: string | null
