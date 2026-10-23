@@ -1,5 +1,7 @@
 import { useRef, useState, type FormEvent } from 'react'
 
+import { Search } from 'lucide-react'
+
 import {
   BANNER_BADGES,
   BANNER_TEXT_MAX,
@@ -241,6 +243,13 @@ export function AdminBannerForm({
         />
         <Input
           label="이름으로 찾기"
+          // 아이콘이 있으면 라벨을 띄우지 않고 placeholder로 보인다.
+          icon={<Search />}
+          placeholder={
+            value.targetType === 'PROMOTION'
+              ? '홍보 이름으로 찾기'
+              : '상품 이름으로 찾기'
+          }
           size="small"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
@@ -289,13 +298,16 @@ export function AdminBannerForm({
         <FieldError message={errorOf('targetId')} />
       </FormSection>
 
-      <FormSection title="노출">
+      <FormSection
+        title="메인 노출"
+        description="끄면 저장만 되고 고객 메인에 보이지 않습니다. 켜도 연결 대상이 비공개·판매 중지 상품이거나 기간 밖 홍보면 그동안 보이지 않습니다. 보이는 순서는 배너 관리 목록의 순서를 따릅니다."
+      >
         <label className={styles.toggleRow}>
           <Toggle
             checked={value.visible}
             onChange={(event) => patch({ visible: event.target.checked })}
           />
-          고객에게 보이기
+          고객 메인 화면에 노출
         </label>
       </FormSection>
 

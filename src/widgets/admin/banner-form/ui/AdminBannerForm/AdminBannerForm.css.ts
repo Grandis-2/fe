@@ -81,7 +81,8 @@ export const targetList = style({
   overflowY: 'auto',
   marginTop: spacing[8],
   padding: spacing[8],
-  border: `1px solid ${color.border.default}`,
+  // 바로 위 검색칸(Input)과 같은 테두리 색.
+  border: `1px solid ${color.primary.surface}`,
   borderRadius: '12px',
   background: color.background.base,
 })
