@@ -22,6 +22,7 @@ const reservation = (
   optionId: '30000000-0000-4000-8000-000000001501',
   optionTitle: '실버 섀도우 / 512GB',
   unitPrice: 2399000,
+  imageUrl: null,
   status: 'REGISTERED',
   displayStatus: 'PAYABLE',
   queuePosition: 412,

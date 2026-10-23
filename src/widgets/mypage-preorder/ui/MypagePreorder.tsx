@@ -72,6 +72,7 @@ const monthDay = (date: string) => {
 }
 
 const toItem = (reservation: Reservation): ProductPaymentCardItem => ({
+  imageSrc: reservation.imageUrl ?? undefined,
   productId: reservation.productId,
   name: reservation.productTitle,
   modelNumber: '',

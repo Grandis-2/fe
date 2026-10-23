@@ -10,7 +10,7 @@ import type { PurchaseDraft } from '../model/purchaseDraft'
 export const reservationToDraft = (
   reservation: Pick<
     Reservation,
-    'optionId' | 'productTitle' | 'optionTitle' | 'unitPrice'
+    'optionId' | 'productTitle' | 'optionTitle' | 'unitPrice' | 'imageUrl'
   >,
 ): PurchaseDraft => ({
   variantId: reservation.optionId,
@@ -18,6 +18,7 @@ export const reservationToDraft = (
   optionSummary: reservation.optionTitle,
   quantity: 1,
   unitPrice: reservation.unitPrice,
+  imageUrl: reservation.imageUrl,
 })
 
 export const orderToDrafts = ({ items }: Pick<Order, 'items'>) =>

@@ -154,6 +154,9 @@ export function toSummary(record: PreorderRecord): PreorderSummary {
     optionId: record.optionId,
     optionTitle: record.optionTitle,
     unitPrice: record.unitPrice,
+    imageUrl:
+      products.find(({ productId }) => productId === record.productId)
+        ?.imageUrl ?? null,
     status: record.status,
     displayStatus: displayStatusOf(record),
     queuePosition: record.queuePosition,
