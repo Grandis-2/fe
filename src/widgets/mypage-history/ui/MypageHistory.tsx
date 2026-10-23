@@ -16,7 +16,7 @@ import {
   ProductPaymentCard,
   type ProductPaymentCardItem,
 } from '@entities/product'
-import { useMyReviews, type Review } from '@entities/review'
+import { useMyReviewsByOrderItem } from '@entities/review'
 import { startOrderPayment } from '@features/payment'
 import { openReviewForm } from '@features/review-write'
 import { getErrorMessage } from '@shared/api/client'
@@ -29,12 +29,17 @@ import { ActionButton, Button, Chip, Dropdown, InlineAlert } from '@shared/ui'
 
 import * as styles from './MypageHistory.css'
 
-// 요약 칸과 상태 칩이 같이 쓰는 묶음 — 결제 대기는 사용자가 할 일이 남은 상태라 경고색으로 센다.
-const summary: { label: string; statuses: OrderStatus[]; warning?: true }[] = [
+// 요약 칸과 상태 칩이 같이 쓰는 묶음 — 결제 대기는 사용자가 할 일이 남은 상태라 경고색으로,
+// 취소 완료는 끝난 일이라 흐리게 센다.
+const summary: {
+  label: string
+  statuses: OrderStatus[]
+  tone?: 'warning' | 'muted'
+}[] = [
   {
     label: '결제 대기',
     statuses: ['AWAITING_PAYMENT', 'AUTHORIZING'],
-    warning: true,
+    tone: 'warning',
   },
   {
     label: '배송 준비',
@@ -43,7 +48,7 @@ const summary: { label: string; statuses: OrderStatus[]; warning?: true }[] = [
   { label: '배송 중', statuses: ['SHIPPED'] },
   { label: '배송 완료', statuses: ['DELIVERED'] },
   // 취소 처리 중도 곧 취소 완료가 되므로 같이 센다.
-  { label: '취소 완료', statuses: ['CANCELING', 'CANCELED'] },
+  { label: '취소 완료', statuses: ['CANCELING', 'CANCELED'], tone: 'muted' },
 ]
 
 // 칩 — '전체' 아니면 요약 칸 하나와 같은 상태 묶음만 서버에 묻는다.
@@ -139,24 +144,29 @@ export function MypageHistory() {
     () => void fetchNextPage(),
     '400px',
   )
-  // 주문상품마다 쓴 리뷰가 있으면 '리뷰 수정'으로 연다. 내 리뷰를 받기 전엔 버튼을 막는다.
-  const myReviews = useMyReviews()
-  const reviewByItem = new Map<string, Review>(
-    (myReviews.data?.items ?? []).map((review) => [
-      review.orderItemId ?? '',
-      review,
-    ]),
+  // 주문상품마다 쓴 리뷰가 있으면 '리뷰 수정'으로 연다. 리뷰를 쓸 수 있는 주문(배송 완료된 장바구니·바로 구매)의
+  // 주문상품만 쪽마다 모아 묻고, 받기 전엔 버튼을 막는다.
+  const myReviews = useMyReviewsByOrderItem(
+    isPlaceholderData
+      ? []
+      : (data?.pages.map(({ items }) =>
+          items
+            .filter(isReviewableOrder)
+            .flatMap((order) =>
+              order.items.map(({ orderItemId }) => orderItemId),
+            ),
+        ) ?? []),
   )
 
   // 리뷰 버튼 — 쓴 리뷰가 있으면 내 리뷰 카드의 '리뷰 수정'과 같은 모양이다.
   const renderReviewButton = (item: OrderItem) => {
-    const review = reviewByItem.get(item.orderItemId)
+    const review = myReviews.reviews.get(item.orderItemId)
     return (
       <Button
         size="small"
         variant={review ? 'subtle' : 'solid'}
         color={review ? 'cancel' : 'primary'}
-        disabled={myReviews.isPending}
+        disabled={myReviews.pending.has(item.orderItemId)}
         onClick={() =>
           openReviewForm({
             orderItemId: item.orderItemId,
@@ -192,16 +202,14 @@ export function MypageHistory() {
       <h1 className={styles.title}>주문 내역</h1>
 
       <dl className={styles.summary}>
-        {summary.map(({ label, warning }) => {
+        {summary.map(({ label, tone }) => {
           const count = countOf(counts, label)
           return (
             <div key={label} className={styles.summaryItem}>
               <dt className={styles.summaryLabel}>{label}</dt>
               <dd
                 className={
-                  styles.summaryValue[
-                    !count ? 'empty' : warning ? 'warning' : 'default'
-                  ]
+                  styles.summaryValue[count ? (tone ?? 'default') : 'empty']
                 }
               >
                 {count}
@@ -259,6 +267,9 @@ export function MypageHistory() {
             key={order.orderId}
             tag={orderStatusTag[order.status]}
             highlight={awaitingPayment ? 'warning' : undefined}
+            className={
+              order.status === 'CANCELED' ? styles.canceledCard : undefined
+            }
             preorder={order.source === 'PREORDER'}
             orderDate={formatDotDateMinute(order.createdAt)}
             orderNumber={shortId(order.orderId)}

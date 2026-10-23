@@ -4,7 +4,7 @@ export {
   useCreateReview,
   useDeleteReview,
   useMyReviewPages,
-  useMyReviews,
+  useMyReviewsByOrderItem,
   useProductReviews,
   useReviews,
   useUpdateReview,

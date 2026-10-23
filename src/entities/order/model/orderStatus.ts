@@ -13,7 +13,7 @@ export const orderStatusTag: Record<OrderStatus, StatusTag> = {
   PREPARING_ITEMS: { label: '배송 준비 중', color: 'primary' },
   READY_TO_SHIP: { label: '배송 준비 중', color: 'primary' },
   SHIPPED: { label: '배송 중', color: 'blue' },
-  DELIVERED: { label: '배송 완료', color: 'gray' },
+  DELIVERED: { label: '배송 완료', color: 'green' },
   CANCELING: { label: '취소 처리 중', color: 'gray' },
   CANCELED: { label: '취소 완료', color: 'gray' },
 }

@@ -74,9 +74,12 @@ export const RESULT_STATUSES = [
 export type ResultStatus = (typeof RESULT_STATUSES)[number]
 
 export const RESULT_PATH = '/result'
-/** 결제·예약 결과 화면. 어떤 결과를 보여줄지는 쿼리로 넘긴다 */
-export const resultPath = (status: ResultStatus) =>
-  `${RESULT_PATH}?status=${status}`
+/**
+ * 결제·예약 결과 화면. 어떤 결과를 보여줄지는 쿼리로 넘긴다. 예약 접수는 예약 id도 주소에 실어
+ * 새로고침·공유해도 같은 예약을 다시 불러온다
+ */
+export const resultPath = (status: ResultStatus, preorderId?: string) =>
+  `${RESULT_PATH}?status=${status}${preorderId ? `&preorderId=${encodeURIComponent(preorderId)}` : ''}`
 
 // 관리자 경로 — 라우터, 헤더 로고, 사이드바, breadcrumb·이동·제출 후 복귀가
 // 같은 문자열을 참조한다.

@@ -67,10 +67,11 @@ const summaryValueBase = {
   lineHeight: 1.2,
 }
 
-// 0건은 흐리게, 구매 확정 대기는 해야 할 일이라 경고색으로 띄운다.
+// 0건은 가장 흐리게, 결제 대기는 해야 할 일이라 경고색으로 띄우고, 취소 완료는 한 단계 흐리게 둔다.
 export const summaryValue = styleVariants({
   default: { ...summaryValueBase, color: color.text.primary },
   warning: { ...summaryValueBase, color: color.status.warning },
+  muted: { ...summaryValueBase, color: color.text.tertiary },
   empty: { ...summaryValueBase, color: color.text.disabled },
 })
 
@@ -183,3 +184,6 @@ export const retry = style({
   alignItems: 'center',
   gap: spacing[12],
 })
+
+// 취소 완료 주문은 끝난 일이라 PreorderCard·DrawCard의 마감 카드처럼 흐리게 둔다.
+export const canceledCard = style({ opacity: 0.55 })
