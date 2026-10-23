@@ -1,6 +1,5 @@
 import { useEffect, type CSSProperties } from 'react'
 
-import { MessageSquare } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
 import {
@@ -8,11 +7,6 @@ import {
   useProduct,
   useShipmentBatches,
 } from '@entities/product'
-import {
-  ReviewCard,
-  ReviewCardSkeleton,
-  useProductReviews,
-} from '@entities/review'
 import { useRequireLogin } from '@features/login'
 import { usePreorderSubmit } from '@features/preorder-queue'
 import {
@@ -21,12 +15,13 @@ import {
   type PurchaseDraft,
 } from '@features/product-purchase'
 import { PAYMENT_PATH, paymentPath, resultPath } from '@shared/config/routes'
-import { InlineAlert, SkeletonGroup } from '@shared/ui'
+import { InlineAlert } from '@shared/ui'
 import {
   galleryImages,
   ProductDetailImages,
   ProductDetailSkeleton,
   ProductOverview,
+  ProductReviews,
   shipmentStartLabel,
 } from '@widgets/product-detail'
 import { ProductPageTab } from '@widgets/product-page-tab'
@@ -57,10 +52,6 @@ export function ProductDetailPage() {
     enabled: isPreorder,
   })
   const shipmentLabel = shipmentStartLabel(shipmentBatches)
-  // 사전예약은 리뷰 탭이 없다(사전예약 상품엔 리뷰를 쓸 수 없다).
-  const reviews = useProductReviews(productId, {
-    enabled: product !== undefined && !isPreorder,
-  })
   const purchase = useProductPurchase(product)
   const preorderSubmit = usePreorderSubmit()
   const { addToCart, isAdding } = useAddToCart()
@@ -201,36 +192,11 @@ export function ProductDetailPage() {
             >
               <h2 className={styles.sectionTitle}>{SECTION_LABELS[tab]}</h2>
               {tab === 'review' ? (
-                <div className={styles.reviewList}>
-                  {reviews.isError ? (
-                    <InlineAlert status="error">
-                      후기를 불러오지 못했어요.
-                    </InlineAlert>
-                  ) : reviews.isPending ? (
-                    <SkeletonGroup className={styles.reviewList}>
-                      {[0, 1].map((i) => (
-                        <ReviewCardSkeleton key={i} showProduct={false} />
-                      ))}
-                    </SkeletonGroup>
-                  ) : reviews.data.items.length === 0 ? (
-                    <InlineAlert
-                      status="info"
-                      variant="big"
-                      icon={MessageSquare}
-                      description="첫 후기를 기다리고 있어요."
-                    >
-                      아직 등록된 후기가 없어요
-                    </InlineAlert>
-                  ) : (
-                    reviews.data.items.map((review) => (
-                      <ReviewCard
-                        key={review.reviewId}
-                        review={review}
-                        showProduct={false}
-                      />
-                    ))
-                  )}
-                </div>
+                <ProductReviews
+                  key={productId}
+                  productId={productId}
+                  onPageChange={() => handleTabChange('review')}
+                />
               ) : (
                 <ProductDetailImages
                   product={product}

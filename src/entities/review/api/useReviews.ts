@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -17,8 +18,11 @@ import {
   updateReview,
 } from './review'
 
-// ponytail: 상품 리뷰·내 리뷰는 첫 쪽(최대 100건)만 받는다 — 화면에 페이지 넘김이 생기면 page를 인자로 올린다.
+// ponytail: 내 리뷰는 첫 쪽(최대 100건)만 받는다 — 화면에 페이지 넘김이 생기면 page를 인자로 올린다.
 const FIRST_PAGE = { page: 0, size: 100 }
+
+// 상품 상세의 구매 후기는 10건씩 쪽 번호로 넘긴다.
+const PRODUCT_PAGE_SIZE = 10
 
 // 모아보기는 20건씩 이어 받는다. 서버는 page × size가 10,000 이상이면 400이라 그 앞에서 멈춘다.
 const FEED_SIZE = 20
@@ -27,7 +31,8 @@ const FEED_LIMIT = 10_000
 const reviewKeys = {
   all: ['reviews'] as const,
   list: (params: ReviewListParams) => ['reviews', 'list', params] as const,
-  product: (productId: string) => ['reviews', 'product', productId] as const,
+  product: (productId: string, page: number) =>
+    ['reviews', 'product', productId, page] as const,
   mine: ['reviews', 'mine'] as const,
 }
 
@@ -45,14 +50,15 @@ export const useReviews = (
     ...queryPolicy.catalog,
   })
 
-export const useProductReviews = (
-  productId: string,
-  { enabled = true }: { enabled?: boolean } = {},
-) =>
+// 상품 상세의 구매 후기 — 쪽(page, 0부터)마다 받는다. 쪽을 바꾸는 동안엔 앞 쪽을 그대로 둔다(isPlaceholderData).
+// 상품이 바뀌면 앞 상품의 후기가 남지 않게 쓰는 쪽이 key={productId}로 다시 마운트한다.
+export const useProductReviews = (productId: string, page: number) =>
   useQuery({
-    queryKey: reviewKeys.product(productId),
-    queryFn: ({ signal }) => getProductReviews(productId, FIRST_PAGE, signal),
-    enabled: enabled && productId !== '',
+    queryKey: reviewKeys.product(productId, page),
+    queryFn: ({ signal }) =>
+      getProductReviews(productId, { page, size: PRODUCT_PAGE_SIZE }, signal),
+    enabled: productId !== '',
+    placeholderData: keepPreviousData,
     ...queryPolicy.catalog,
   })
 
