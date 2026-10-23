@@ -51,8 +51,10 @@ export type TableProps<T> = {
   loadingRows?: number
   /** 행마다 붙일 클래스(예: 실패한 행 강조) */
   rowClassName?: (row: T) => string | undefined
-  /** 행(tr)에 얹을 속성(예: 끌어서 순서 바꾸기). 클래스는 rowClassName으로 준다 */
-  rowProps?: (row: T) => Omit<HTMLAttributes<HTMLTableRowElement>, 'className'>
+  /** 행(tr)에 얹을 속성(예: 끌어서 순서 바꾸기). 클래스는 rowClassName으로, 클릭은 onRowClick으로 준다 */
+  rowProps?: (
+    row: T,
+  ) => Omit<HTMLAttributes<HTMLTableRowElement>, 'className' | 'onClick'>
   /** 행 순서가 바뀌면 옛 자리에서 새 자리로 미끄러지게 한다(끌어서 순서 바꾸기) */
   animateRowMoves?: boolean
   className?: string
