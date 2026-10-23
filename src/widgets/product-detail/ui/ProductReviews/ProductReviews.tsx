@@ -7,9 +7,12 @@ import {
   ReviewCardSkeleton,
   useProductReviews,
 } from '@entities/review'
-import { InlineAlert, Navigator, SkeletonGroup } from '@shared/ui'
+import { Button, InlineAlert, Navigator, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './ProductReviews.css'
+
+// 서버는 page × size가 10,000 이상인 쪽을 400으로 거절한다 — 그 앞 쪽까지만 넘길 수 있다.
+const PAGE_WINDOW = 10_000
 
 export type ProductReviewsProps = {
   productId: string
@@ -25,14 +28,30 @@ export function ProductReviews({
 }: ProductReviewsProps) {
   // 화면은 1부터, API는 0부터 센다(검색 결과와 같다).
   const [page, setPage] = useState(1)
-  const { data, isPending, isError, isPlaceholderData } = useProductReviews(
-    productId,
-    page - 1,
-  )
-  const totalPages = data ? Math.ceil(data.total / data.size) : 0
+  const { data, isPending, isError, isPlaceholderData, isFetching, refetch } =
+    useProductReviews(productId, page - 1)
+  const totalPages = data
+    ? Math.min(
+        Math.ceil(data.total / data.size),
+        Math.ceil(PAGE_WINDOW / data.size),
+      )
+    : 0
 
+  // 몇 쪽에서 실패했든 그 쪽을 다시 받을 수 있게 한다 — 쪽 번호까지 사라져 갇히지 않게.
   if (isError)
-    return <InlineAlert status="error">후기를 불러오지 못했어요.</InlineAlert>
+    return (
+      <div className={styles.root}>
+        <InlineAlert status="error">후기를 불러오지 못했어요.</InlineAlert>
+        <Button
+          variant="outline"
+          className={styles.retry}
+          disabled={isFetching}
+          onClick={() => void refetch()}
+        >
+          다시 불러오기
+        </Button>
+      </div>
+    )
   if (isPending)
     return (
       <SkeletonGroup className={styles.list}>

@@ -18,3 +18,5 @@ export const list = style({
 export const listLoading = style({ opacity: 0.5 })
 
 export const pagination = style({ alignSelf: 'center' })
+
+export const retry = style({ alignSelf: 'center' })
