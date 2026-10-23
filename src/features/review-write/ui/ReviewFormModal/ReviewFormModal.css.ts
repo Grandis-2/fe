@@ -53,19 +53,8 @@ export const prompt = style([
   { color: color.text.tertiary },
 ])
 
-export const textField = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[6],
-})
-
 // 카드보다 한 단계 어둡게 파인 칸(결제 페이지 입력 칸과 같은 바탕). 높이는 고정한다.
 export const textarea = style({
   background: color.background.page,
   resize: 'none',
 })
-
-export const counter = style([
-  typography.body.caption,
-  { alignSelf: 'flex-end', color: color.text.tertiary },
-])

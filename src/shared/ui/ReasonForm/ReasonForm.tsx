@@ -48,12 +48,9 @@ export function ReasonForm({
         value={reason}
         onChange={(event) => setReason(event.target.value)}
       />
-      <div className={styles.count}>
-        {minLength > 1 && trimmed.length < minLength
-          ? `${minLength}자 이상 · `
-          : ''}
-        {trimmed.length}/{maxLength}
-      </div>
+      {minLength > 1 && trimmed.length < minLength && (
+        <div className={styles.count}>{minLength}자 이상 적어 주세요</div>
+      )}
       <ModalActions
         confirmLabel={confirmLabel}
         confirmDisabled={trimmed.length < minLength}
