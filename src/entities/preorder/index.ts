@@ -28,6 +28,7 @@ export {
   useMyReservations,
   usePendingPurchaseCount,
   useReservation,
+  useReservationCounts,
   useReservationHistory,
 } from './api/useReservations'
 export { getReservation } from './api/reservation'

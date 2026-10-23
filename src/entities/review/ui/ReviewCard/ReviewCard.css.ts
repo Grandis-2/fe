@@ -4,11 +4,14 @@ import { color, lineClamp, spacing } from '@shared/config/theme'
 import { fontSize } from '@shared/config/theme/tokens/typography/base'
 
 export const root = style({
+  boxSizing: 'border-box',
   display: 'flex',
   gap: spacing[20],
-  alignItems: 'center',
+  alignItems: 'flex-start',
   width: '100%',
-  padding: `0 ${spacing[20]}`,
+  padding: spacing[20],
+  borderRadius: '16px',
+  border: `1px solid ${color.border.subtle}`,
   background: color.background.base,
 })
 
@@ -21,21 +24,21 @@ export const thumbnail = style({
   objectFit: 'cover',
 })
 
-// 썸네일 높이만큼 늘려, 별점·본문은 위에 붙이고 상품명은 바닥에 붙인다.
 export const main = style({
   display: 'flex',
   flex: '1 0 0',
   flexDirection: 'column',
-  justifyContent: 'space-between',
-  alignSelf: 'stretch',
+  gap: spacing[10],
   minWidth: 0,
-  padding: `${spacing[8]} 0 ${spacing[12]}`,
 })
 
-export const top = style({
+// 별점(왼쪽)과 작성자·날짜(오른쪽) 한 줄 — 좁으면 작성자·날짜가 아래로 내려간다.
+export const header = style({
   display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[12],
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: `${spacing[4]} ${spacing[12]}`,
 })
 
 export const rating = style({
@@ -44,19 +47,17 @@ export const rating = style({
   lineHeight: 1,
 })
 
+// 리뷰 쓰기 모달(ReviewFormModal)의 별과 같은 색.
 export const star = styleVariants({
-  filled: { color: color.primary.base },
+  filled: { color: color.status.warning },
   empty: { color: color.border.default },
 })
 
-export const reviewText = style([lineClamp(1), { color: color.text.primary }])
+export const meta = style({ color: color.text.tertiary })
+
+export const reviewText = style([
+  lineClamp(3),
+  { color: color.text.primary, whiteSpace: 'pre-line' },
+])
 
 export const productName = style({ color: color.text.tertiary })
-
-export const meta = style({
-  display: 'flex',
-  gap: spacing[30],
-  alignItems: 'center',
-  color: color.text.tertiary,
-  flexShrink: 0,
-})

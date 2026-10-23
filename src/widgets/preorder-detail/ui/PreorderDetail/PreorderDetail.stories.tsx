@@ -178,7 +178,7 @@ export const ModelPeriods: Story = {
   },
 }
 
-// 오픈 1시간 전부터 오픈까지 — 알림 신청은 닫히고, 예약 버튼은 보이지만 오픈 순간까지 막혀 있다.
+// 오픈 1시간 전부터 오픈까지 — 알림 신청은 닫히고, 시트의 예약하기는 보이지만 오픈 순간까지 막혀 있다.
 const inMinutes = (minutes: number) => {
   const date = new Date(Date.now() + minutes * 60 * 1000)
   const pad = (n: number) => String(n).padStart(2, '0')
@@ -195,10 +195,22 @@ export const BeforeOpen: Story = {
       ...inMinutes(30),
     },
   },
-  play: async ({ canvas }) => {
+  beforeEach: () => {
+    useSessionStore.setState({
+      sessionToken: 'story-session',
+      role: 'USER',
+      profileComplete: true,
+    })
+    return () => useSessionStore.getState().clearSession()
+  },
+  play: async ({ canvas, userEvent }) => {
     await expect(canvas.getByText('오픈까지')).toBeVisible()
-    await expect(
+    // 시트는 열리고, 그 안의 예약하기만 오픈 순간까지 막힌다.
+    await userEvent.click(
       canvas.getByRole('button', { name: '사전예약 하러가기' }),
+    )
+    await expect(
+      await body.findByRole('button', { name: '예약하기' }),
     ).toBeDisabled()
   },
 }

@@ -1,5 +1,6 @@
 import { style, styleVariants } from '@vanilla-extract/css'
 
+import type { Topic } from '@shared/api/requestLog'
 import {
   breakpoint,
   color,
@@ -28,6 +29,9 @@ export const root = style({
   border: 'none',
   background: 'none',
   overflow: 'visible',
+  // 바텀시트(Radix Dialog)가 열리면 body에 pointer-events: none을 건다 — body에 붙은 이 창도 물려받아
+  // 맨 위에 보여도 눌리지 않으므로 되살린다.
+  pointerEvents: 'auto',
   color: onDark(92),
   '@media': {
     [breakpoint.desktop]: { bottom: spacing[16] },
@@ -87,16 +91,6 @@ export const textButton = style([
 ])
 
 export const policy = style([typography.body.caption, { color: onDark(60) }])
-
-export const blocked = style([
-  typography.body.caption,
-  {
-    padding: `${spacing[6]} ${spacing[10]}`,
-    borderRadius: spacing[8],
-    background: onDark(8),
-    color: onDark(78),
-  },
-])
 
 export const faultRow = style({
   display: 'flex',
@@ -183,6 +177,19 @@ export const dot = styleVariants({
   canceled: [dotBase, { border: `2px solid ${onDark(35)}` }],
 })
 
+// 알림·결제·사전예약 요청 점은 꼬리표(topic)와 같은 색으로 칠한다 — 성공·진행 중만 바꾸고 실패·취소는 그대로 둔다.
+const dotIn = (tone: string) =>
+  styleVariants({
+    ok: { background: tone },
+    pending: { borderColor: tone },
+  })
+
+export const topicDot: Partial<Record<Topic, ReturnType<typeof dotIn>>> = {
+  알림: dotIn(color.primary.subtle),
+  결제: dotIn(color.accent.sky),
+  사전예약: dotIn(color.accent.pink),
+}
+
 export const axis = style([
   typography.body.caption,
   {
@@ -260,7 +267,7 @@ export const path = style({ overflowWrap: 'anywhere' })
 export const method = style({ color: onDark(50) })
 
 // 어느 흐름의 요청인지(대기열·사전예약·결제·알림).
-export const topic = style([
+const topicBase = style([
   typography.body.caption,
   {
     padding: `0 ${spacing[6]}`,
@@ -269,6 +276,36 @@ export const topic = style([
     color: onDark(75),
   },
 ])
+
+// 요청 종류 꼬리표. 알림은 primary — 어두운 유리 바탕에서 읽히게 base 대신 밝은 subtle로 칠한다.
+// 결제는 하늘색, 사전예약은 분홍 — 주황(백오프 대기)·초록/빨강(응답 결과)·남보라(알림)와 서로 갈린다.
+export const topic = styleVariants({
+  대기열: [topicBase],
+  사전예약: [
+    topicBase,
+    {
+      borderColor: tint(color.accent.pink, 55),
+      background: tint(color.accent.pink, 14),
+      color: color.accent.pink,
+    },
+  ],
+  결제: [
+    topicBase,
+    {
+      borderColor: tint(color.accent.sky, 55),
+      background: tint(color.accent.sky, 14),
+      color: color.accent.sky,
+    },
+  ],
+  알림: [
+    topicBase,
+    {
+      borderColor: tint(color.primary.subtle, 60),
+      background: tint(color.primary.base, 35),
+      color: color.primary.subtle,
+    },
+  ],
+} satisfies Record<Topic, unknown>)
 
 export const status = styleVariants({
   ok: { color: statusOnDark.success },

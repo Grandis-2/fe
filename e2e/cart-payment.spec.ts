@@ -184,3 +184,23 @@ test.describe('결제 승인', () => {
     ).toBeVisible()
   })
 })
+
+test('결제창을 닫으면 실패 화면 대신 결제 대기 주문이 있는 주문 내역으로 간다', async ({
+  page,
+}) => {
+  await stubDaumPostcode(page)
+  await stubTossPayments(page, {
+    failFirst: { code: 'PAY_PROCESS_CANCELED', message: '결제를 취소했어요.' },
+  })
+  await openCartPayment(page)
+  await fillPaymentForm(page)
+  await cartPayButton(page).click()
+
+  await expect(page).toHaveURL(/\/mypage\?state=history/)
+  await expect(
+    page.getByRole('heading', { name: '결제에 실패했어요' }),
+  ).toHaveCount(0)
+  await expect(
+    page.getByRole('button', { name: '결제하기', exact: true }).first(),
+  ).toBeVisible()
+})

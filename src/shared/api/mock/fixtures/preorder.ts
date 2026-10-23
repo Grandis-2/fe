@@ -180,6 +180,7 @@ const seedOrders: OrderRecord[] = reserved
         paymentDueAt: null,
         items: [
           {
+            orderItemId: mockUuid(5, 1900),
             productId: reserved.productId,
             optionId: reserved.optionId,
             productTitle: reserved.productTitle,
@@ -189,6 +190,9 @@ const seedOrders: OrderRecord[] = reserved
             warrantyQuantity: 0,
             warrantyUnitPrice: 0,
             lineAmount: reserved.unitPrice,
+            imageUrl:
+              products.find(({ productId }) => productId === reserved.productId)
+                ?.imageUrl ?? null,
           },
         ],
         shipTo: {
@@ -258,7 +262,7 @@ type OrderDb = {
   cart: CartLineRecord[]
 }
 
-const DB_KEY = 'nova-order-mock-db-v2'
+const DB_KEY = 'nova-order-mock-db-v3'
 
 function loadOrderDb(): OrderDb | null {
   try {

@@ -1,5 +1,6 @@
 import { HttpResponse, http } from 'msw'
 
+import { orders } from '../fixtures/preorder'
 import { products } from '../fixtures/product'
 import { myOrderItems, reviews as seedReviews } from '../fixtures/review'
 import { fail, invalid, ok } from '../response'
@@ -13,20 +14,39 @@ import type {
   PageResponse,
   ReviewUpdateRequest,
   ReviewView,
+  WritableItemView,
 } from '../../types'
 import type { RequestHandler } from 'msw'
 
 // ponytail: 메모리 상태라 새로고침하면 시드로 돌아간다(장바구니 목업과 같다).
-// ponytail: 토큰이 있는지만 본다 — 누가 로그인했든 "나"는 myOrderItems의 주인이다. 관리자 토큰 403도 흉내 내지 않는다.
+// ponytail: 토큰이 있는지만 본다 — 누가 로그인했든 "나"는 myOrderItems와 주문 목업의 주인이다. 관리자 토큰 403도 흉내 내지 않는다.
 let reviews: ReviewView[] = structuredClone(seedReviews)
 
 // 작성자 이름은 서버가 실명(없으면 닉네임) 첫 글자만 남기고 가린다.
 const MY_AUTHOR_NAME = '김**'
 const BODY_MAX = 2000
 
-const myOrderItemIds = new Set(myOrderItems.map((item) => item.orderItemId))
+// 내 주문상품 — 시드 리뷰용 myOrderItems와 주문 목업(주문 내역에 보이는 주문)을 함께 본다.
+const findMyOrderItem = (orderItemId: string) => {
+  const seed = myOrderItems.find((item) => item.orderItemId === orderItemId)
+  if (seed) return { ...seed, source: null }
+  const order = orders.find(({ items }) =>
+    items.some((item) => item.orderItemId === orderItemId),
+  )
+  const item = order?.items.find((it) => it.orderItemId === orderItemId)
+  return order && item
+    ? {
+        productId: item.productId,
+        optionTitle: item.optionTitle,
+        delivered: order.status === 'DELIVERED',
+        source: order.source,
+      }
+    : undefined
+}
+
 const isMine = (review: ReviewView) =>
-  review.orderItemId !== null && myOrderItemIds.has(review.orderItemId)
+  review.orderItemId !== null &&
+  findMyOrderItem(review.orderItemId) !== undefined
 
 // 공개 목록엔 orderItemId가 늘 null이다.
 const toPublic = (review: ReviewView): ReviewView => ({
@@ -131,6 +151,41 @@ export const reviewHandlers: RequestHandler[] = [
     return ok<PageResponse<ReviewView>>(toPage(matched, page, size))
   }),
 
+  // 리뷰를 쓸 수 있는 내 주문상품 — 배송 완료된 장바구니·바로 구매 주문상품 중 리뷰가 없는 것, 주문 최신순.
+  // 사전예약·드로우 증정품은 빠진다. 리뷰를 쓰면 바로 빠지고 지우면 다시 나온다.
+  http.get(url('/api/v1/reviews/writable'), ({ request }) => {
+    if (!hasToken(request)) return unauthenticated()
+    const { page, size, violations } = readPaging(
+      new URL(request.url).searchParams,
+    )
+    if (violations.length > 0) return invalid(violations)
+
+    const reviewed = new Set(reviews.map(({ orderItemId }) => orderItemId))
+    const writable = orders
+      .filter(
+        ({ status, source }) =>
+          status === 'DELIVERED' && (source === 'CART' || source === 'BUY_NOW'),
+      )
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .flatMap((order) =>
+        order.items
+          .filter(({ orderItemId }) => !reviewed.has(orderItemId))
+          .map((item): WritableItemView => ({
+            orderItemId: item.orderItemId,
+            orderId: order.orderId,
+            productId: item.productId,
+            optionId: item.optionId,
+            productTitle: item.productTitle,
+            optionTitle: item.optionTitle,
+            imageUrl: item.imageUrl,
+            quantity: item.quantity,
+            lineAmount: item.lineAmount,
+            orderedAt: order.createdAt,
+          })),
+      )
+    return ok<PageResponse<WritableItemView>>(toPage(writable, page, size))
+  }),
+
   http.post(url('/api/v1/reviews'), async ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     const body = await readBody(request)
@@ -150,22 +205,21 @@ export const reviewHandlers: RequestHandler[] = [
     if (violations.length > 0 || rating === null || text === null)
       return invalid(violations)
 
-    const orderItem = myOrderItems.find(
-      (item) => item.orderItemId === orderItemId,
-    )
+    const orderItem = findMyOrderItem(orderItemId)
     const product = products.find(
       ({ productId }) => productId === orderItem?.productId,
     )
     if (!orderItem || !product) return notFound()
-    if (!orderItem.delivered || product.saleMode === 'PREORDER') {
-      return fail(409, {
-        code: 'REVIEW_NOT_ALLOWED',
-        message:
-          product.saleMode === 'PREORDER'
-            ? '사전예약 상품은 리뷰를 쓸 수 없습니다.'
-            : '배송이 완료된 뒤에 리뷰를 쓸 수 있습니다.',
-      })
-    }
+    const notAllowed =
+      product.saleMode === 'PREORDER' || orderItem.source === 'PREORDER'
+        ? '사전예약 상품은 리뷰를 쓸 수 없습니다.'
+        : orderItem.source === 'DRAW'
+          ? '드로우 당첨 증정품에는 리뷰를 쓸 수 없습니다.'
+          : !orderItem.delivered
+            ? '배송이 완료된 뒤에 리뷰를 쓸 수 있습니다.'
+            : null
+    if (notAllowed)
+      return fail(409, { code: 'REVIEW_NOT_ALLOWED', message: notAllowed })
     if (reviews.some((review) => review.orderItemId === orderItemId)) {
       return fail(409, {
         code: 'REVIEW_ALREADY_WRITTEN',

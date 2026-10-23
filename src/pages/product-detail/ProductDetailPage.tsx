@@ -1,14 +1,13 @@
-import type { CSSProperties } from 'react'
+import { useEffect, type CSSProperties } from 'react'
 
-import { MessageSquare } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
-import { useProduct, useShipmentBatches } from '@entities/product'
+import { useSession } from '@entities/auth'
 import {
-  ReviewCard,
-  ReviewCardSkeleton,
-  useProductReviews,
-} from '@entities/review'
+  sendProductView,
+  useProduct,
+  useShipmentBatches,
+} from '@entities/product'
 import { useRequireLogin } from '@features/login'
 import { usePreorderSubmit } from '@features/preorder-queue'
 import {
@@ -17,10 +16,13 @@ import {
   type PurchaseDraft,
 } from '@features/product-purchase'
 import { PAYMENT_PATH, paymentPath, resultPath } from '@shared/config/routes'
-import { InlineAlert, PageSkeleton, SkeletonGroup } from '@shared/ui'
+import { InlineAlert } from '@shared/ui'
 import {
+  galleryImages,
   ProductDetailImages,
+  ProductDetailSkeleton,
   ProductOverview,
+  ProductReviews,
   shipmentStartLabel,
 } from '@widgets/product-detail'
 import { ProductPageTab } from '@widgets/product-page-tab'
@@ -44,15 +46,19 @@ export function ProductDetailPage() {
   const requireLogin = useRequireLogin()
   const { productId = '' } = useParams()
   const { data: product, isPending, isError } = useProduct(productId)
+  // 조회수 랭킹 신호. 같은 사람·같은 상품은 서버가 하루 한 번만 세서 StrictMode 이중 실행도 괜찮다.
+  // 상품이 실제로 보일 때만, 새로고침이면 세션을 되살린 뒤에 보낸다 — 먼저 보내면 같은 회원이
+  // 비회원으로 한 번 더 세어진다.
+  const { isAuthReady } = useSession()
+  const viewedId = product?.productId
+  useEffect(() => {
+    if (isAuthReady && viewedId) sendProductView(viewedId)
+  }, [isAuthReady, viewedId])
   const isPreorder = product?.saleMode === 'PREORDER'
   const { data: shipmentBatches } = useShipmentBatches(productId, {
     enabled: isPreorder,
   })
   const shipmentLabel = shipmentStartLabel(shipmentBatches)
-  // 사전예약은 리뷰 탭이 없다(사전예약 상품엔 리뷰를 쓸 수 없다).
-  const reviews = useProductReviews(productId, {
-    enabled: product !== undefined && !isPreorder,
-  })
   const purchase = useProductPurchase(product)
   const preorderSubmit = usePreorderSubmit()
   const { addToCart, isAdding } = useAddToCart()
@@ -60,6 +66,8 @@ export function ProductDetailPage() {
     variant,
     unavailableReason,
     quantity,
+    colorAxis,
+    selections,
     colorLabel,
     optionLabel,
     unitPrice,
@@ -83,6 +91,12 @@ export function ProductDetailPage() {
       optionSummary: [colorLabel, optionLabel].filter(Boolean).join(' · '),
       quantity,
       unitPrice,
+      // 장바구니 줄 사진처럼 고른 색상의 첫 사진, 없으면 대표 사진.
+      imageUrl:
+        galleryImages(
+          product,
+          colorAxis ? selections[colorAxis.key] : undefined,
+        )[0] ?? product.imageUrl,
     }
     // 결제·사전예약은 회원 전용 — 비회원이면 이동 대신 로그인 모달을 연다.
     requireLogin(() => {
@@ -119,15 +133,15 @@ export function ProductDetailPage() {
   if (!product) {
     return (
       <div className={styles.root} data-theme="dark" data-header-theme="dark">
-        <div className={styles.content}>
-          {isError || !isPending ? (
+        {isError || !isPending ? (
+          <div className={styles.content}>
             <InlineAlert status={isError ? 'error' : 'info'}>
               상품을 불러오지 못했어요.
             </InlineAlert>
-          ) : (
-            <PageSkeleton />
-          )}
-        </div>
+          </div>
+        ) : (
+          <ProductDetailSkeleton />
+        )}
       </div>
     )
   }
@@ -185,32 +199,11 @@ export function ProductDetailPage() {
             >
               <h2 className={styles.sectionTitle}>{SECTION_LABELS[tab]}</h2>
               {tab === 'review' ? (
-                <div className={styles.reviewList}>
-                  {reviews.isError ? (
-                    <InlineAlert status="error">
-                      후기를 불러오지 못했어요.
-                    </InlineAlert>
-                  ) : reviews.isPending ? (
-                    <SkeletonGroup className={styles.reviewList}>
-                      {[0, 1].map((i) => (
-                        <ReviewCardSkeleton key={i} />
-                      ))}
-                    </SkeletonGroup>
-                  ) : reviews.data.items.length === 0 ? (
-                    <InlineAlert
-                      status="info"
-                      variant="big"
-                      icon={MessageSquare}
-                      description="첫 후기를 기다리고 있어요."
-                    >
-                      아직 등록된 후기가 없어요
-                    </InlineAlert>
-                  ) : (
-                    reviews.data.items.map((review) => (
-                      <ReviewCard key={review.reviewId} review={review} />
-                    ))
-                  )}
-                </div>
+                <ProductReviews
+                  key={productId}
+                  productId={productId}
+                  onPageChange={() => handleTabChange('review')}
+                />
               ) : (
                 <ProductDetailImages
                   product={product}

@@ -7,7 +7,7 @@ import {
   TAG_PRESETS,
   type ProductOptionPreset,
 } from '@entities/admin-product'
-import { Button, Input, Tag } from '@shared/ui'
+import { Button, Chip, Input } from '@shared/ui'
 
 import * as fields from '../fields.css'
 
@@ -30,7 +30,6 @@ export type TagFieldProps = {
   showSelected?: boolean
 }
 
-/** Tag는 span이라 누를 수 없어 버튼으로 감싼다 — 생김새는 전부 안의 Tag가 가진다. */
 function TagToggle({
   tag,
   picked,
@@ -41,23 +40,9 @@ function TagToggle({
   onToggle: () => void
 }) {
   return (
-    <button
-      type="button"
-      aria-pressed={picked}
-      className={styles.tagButton}
-      onClick={onToggle}
-    >
-      {/* 고른 건 채우고 안 고른 건 테두리만 — 색까지 바꾸면 안 고른 태그가
-          의미색을 달고 있는 것처럼 읽힌다. */}
-      <Tag
-        className={styles.tag}
-        size="medium"
-        color={picked ? 'primary' : 'gray'}
-        variant={picked ? 'solid' : 'outline'}
-      >
-        {tag}
-      </Tag>
-    </button>
+    <Chip variant="solid" selected={picked} onClick={onToggle}>
+      {tag}
+    </Chip>
   )
 }
 

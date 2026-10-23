@@ -65,6 +65,12 @@ export const variant = styleVariants({
   primary: { background: primaryGradient, boxShadow: primaryGlow },
   cart: neutral,
   neutral,
+  // 사전예약 카드 테두리(accent.preorder)와 같은 금색. 바탕이 밝아 글자는 짙은 갈색이다.
+  preorder: {
+    background: `linear-gradient(135deg, ${color.accent.preorderDeep}, ${color.accent.preorder})`,
+    boxShadow: `0 8px 28px color-mix(in srgb, ${color.accent.preorderDeep} 45%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.35)`,
+    color: color.accent.preorderText,
+  },
 })
 
 // 장바구니에 담은 뒤 — 초록 유리.

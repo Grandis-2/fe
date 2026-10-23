@@ -66,3 +66,14 @@ export const status = style([
     color: color.text.tertiary,
   },
 ])
+
+export const loadMoreError = style([
+  status,
+  {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: spacing[12],
+    paddingBlock: spacing[20],
+  },
+])

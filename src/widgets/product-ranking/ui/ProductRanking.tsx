@@ -7,7 +7,7 @@ import { productPath } from '@shared/config/routes'
 import { typography } from '@shared/config/theme'
 import { formatWon } from '@shared/lib/formatNumber'
 import { useScrollArrows } from '@shared/lib/useScrollArrows'
-import { ImageWithFallback, PriceText, ScrollArrows } from '@shared/ui'
+import { ImageWithFallback, PriceText, ScrollArrows, Tag } from '@shared/ui'
 
 import * as styles from './ProductRanking.css'
 
@@ -83,6 +83,15 @@ export function ProductRanking() {
                     {rank}
                   </span>
                   <div className={styles.tile}>
+                    {product.saleMode === 'PREORDER' && (
+                      <Tag
+                        color="preorder"
+                        size="small"
+                        className={styles.badge}
+                      >
+                        사전예약
+                      </Tag>
+                    )}
                     <ImageWithFallback
                       src={product.imageUrl}
                       className={styles.image}

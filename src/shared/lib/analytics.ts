@@ -4,15 +4,18 @@
 // main.tsx에서 일찍 import해 첫 페이지 조회부터 남긴다.
 const apiKey = import.meta.env.VITE_AMPLITUDE_API_KEY
 
-const sdk = apiKey
-  ? import('@amplitude/analytics-browser')
-      .then((amplitude) => {
-        amplitude.init(apiKey, { autocapture: true })
-        return amplitude
-      })
-      // 받기에 실패하면(광고 차단·네트워크) 분석만 꺼진다 — track()마다 미처리 거부가 쌓이지 않게.
-      .catch(() => null)
-  : null
+// window 확인: vanilla-extract가 .css.ts를 Node에서 실행할 때 배럴(@widgets/header 등)을 타고
+// 이 파일까지 불러온다 — 그때 SDK를 켜면 document가 없어 dev 서버가 죽는다.
+const sdk =
+  apiKey && typeof window !== 'undefined'
+    ? import('@amplitude/analytics-browser')
+        .then((amplitude) => {
+          amplitude.init(apiKey, { autocapture: true })
+          return amplitude
+        })
+        // 받기에 실패하면(광고 차단·네트워크) 분석만 꺼진다 — track()마다 미처리 거부가 쌓이지 않게.
+        .catch(() => null)
+    : null
 
 /** 이벤트 이름과 속성. 이름은 Amplitude 관례대로 "대상 + 과거형 동사" */
 type AnalyticsEvents = {

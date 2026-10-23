@@ -9,12 +9,18 @@ import {
   useUpdateCartItemQuantity,
   type CartLine,
 } from '@entities/cart'
-import { HistoryListSkeleton, OrderSummary } from '@entities/order'
+import { OrderSummary } from '@entities/order'
 import { ProductPaymentCard } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
 import { cartPaymentPath, SEARCH_PATH } from '@shared/config/routes'
 import { formatWon } from '@shared/lib/formatNumber'
-import { Button, Checkbox, InlineAlert } from '@shared/ui'
+import {
+  Button,
+  Checkbox,
+  InlineAlert,
+  Skeleton,
+  SkeletonGroup,
+} from '@shared/ui'
 
 import * as styles from './MypageCart.css'
 
@@ -87,7 +93,7 @@ export function MypageCart() {
     <div className={styles.root}>
       <h1 className={styles.title}>장바구니</h1>
 
-      {isPending && <HistoryListSkeleton count={2} />}
+      {isPending && <CartSkeleton />}
       {isError && (
         <InlineAlert variant="big" status="error">
           장바구니를 불러오지 못했어요.
@@ -224,5 +230,70 @@ function CartLineRow({
         </InlineAlert>
       )}
     </div>
+  )
+}
+
+// 줄마다 상품명·옵션 막대 길이를 달리해 실제 목록처럼 보이게 한다.
+const SKELETON_ROWS = [
+  ['46%', '78%'],
+  ['34%', '52%'],
+  ['40%', '66%'],
+]
+
+// 장바구니를 불러오는 동안 — 전체 선택 줄, 상품 목록, 결제 정보 자리를 실제 배치대로 깐다.
+function CartSkeleton() {
+  return (
+    <SkeletonGroup className={styles.skeleton}>
+      <div className={styles.toolbar}>
+        <div className={styles.skeletonSelectAll}>
+          <Skeleton width={22} height={22} />
+          <Skeleton width={96} />
+        </div>
+        <Skeleton width={84} height={34} radius={10} />
+      </div>
+
+      <div className={styles.layout}>
+        <div className={styles.list}>
+          {SKELETON_ROWS.map(([titleWidth, optionWidth]) => (
+            <div key={titleWidth} className={styles.skeletonRow}>
+              <Skeleton
+                width={22}
+                height={22}
+                className={styles.skeletonCheck}
+              />
+              <div className={styles.skeletonThumb}>
+                <Skeleton aspectRatio="1 / 1" radius={12} />
+                <Skeleton height={30} radius={8} />
+              </div>
+              <div className={styles.skeletonInfo}>
+                <Skeleton width={titleWidth} height={18} />
+                <Skeleton width={64} height={13} />
+                <Skeleton width={optionWidth} height={13} />
+                <Skeleton
+                  width={110}
+                  height={18}
+                  className={styles.skeletonPrice}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className={styles.skeletonSummary}>
+          <Skeleton width={80} height={18} />
+          {[36, 96].map((width) => (
+            <div key={width} className={styles.skeletonSummaryRow}>
+              <Skeleton width={60} height={14} />
+              <Skeleton width={width} height={14} />
+            </div>
+          ))}
+          <div className={styles.skeletonTotal}>
+            <Skeleton width={72} />
+            <Skeleton width={120} height={24} />
+          </div>
+          <div className={styles.skeletonAction} />
+        </div>
+      </div>
+    </SkeletonGroup>
   )
 }

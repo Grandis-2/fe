@@ -14,13 +14,13 @@ export type BannerTextField = keyof Pick<
   'badge' | 'title' | 'description' | 'tabLabel' | 'imageAlt'
 >
 
-/** 명세의 글자 수 상한 */
+/** 글자 수 상한 — 명세 그대로, 대체 문구만 명세(100)보다 줄였다(사진을 한두 마디로 설명하면 된다) */
 export const BANNER_TEXT_MAX: Record<BannerTextField, number> = {
   badge: 20,
   title: 100,
   description: 200,
   tabLabel: 60,
-  imageAlt: 100,
+  imageAlt: 50,
 }
 
 /** 만들기 폼이 다루는 값 — 고르기 전인 칸(아이콘·사진·대상)은 비어 있을 수 있다 */
@@ -46,7 +46,7 @@ export const createEmptyBannerFormValue = (): AdminBannerFormValue => ({
   visible: true,
 })
 
-/** 고치기 화면의 초기값. 사진은 지금 주소를 그대로 둔다(그대로 보내면 사진이 안 바뀐다) */
+/** 수정 화면의 초기값. 사진은 지금 주소를 그대로 둔다(그대로 보내면 사진이 안 바뀐다) */
 export const toBannerFormValue = (
   banner: AdminBanner,
 ): AdminBannerFormValue => ({
@@ -68,24 +68,59 @@ export const toBannerFormValue = (
   visible: banner.visible,
 })
 
+/** 배지는 고정된 문구에서 고른다 — 관리자마다 '신제품'·'NEW'처럼 제각각 쓰지 않게 */
+export const BANNER_BADGES = [
+  '신상품',
+  '사전예약',
+  '할인',
+  '이벤트',
+  '한정판',
+  '추천',
+] as const
+
+/** 보내기 전에 막을 문제 — 어느 칸인지도 알려 그 칸으로 데려간다 */
+export type BannerFormProblem = {
+  field: keyof AdminBannerFormValue
+  message: string
+}
+
 /**
- * 보내기 전에 막을 문제. 없으면 null. 서버도 같은 칸으로 400을 주지만, 사진이 올라가는
- * 중에 보내면 미리보기 주소(blob:)가 실려 거절되니 여기서 먼저 막는다.
+ * 화면 순서대로 첫 문제를 돌려준다. 없으면 null. 서버도 같은 칸으로 400을 주지만, 사진이
+ * 올라가는 중에 보내면 미리보기 주소(blob:)가 실려 거절되니 여기서 먼저 막는다.
  */
-export function bannerFormProblem(value: AdminBannerFormValue): string | null {
-  const blank = (Object.keys(BANNER_TEXT_MAX) as BannerTextField[]).some(
-    (field) => !value[field].trim(),
-  )
-  if (blank) return '모든 문구 칸을 채워 주세요.'
-  if (!value.icon) return '탭 아이콘을 골라 주세요.'
-  const [image] = value.image
-  if (!image) return '배너 사진을 올려 주세요.'
-  if (image.status === 'uploading') {
-    return '사진을 올리는 중입니다. 다 올라간 뒤에 다시 눌러 주세요.'
+export function bannerFormProblem(
+  value: AdminBannerFormValue,
+): BannerFormProblem | null {
+  const blank = (field: BannerTextField) => !value[field].trim()
+  if (blank('badge')) return { field: 'badge', message: '배지를 골라 주세요.' }
+  if (blank('title')) return { field: 'title', message: '제목을 채워 주세요.' }
+  if (blank('description')) {
+    return { field: 'description', message: '설명을 채워 주세요.' }
   }
-  if (image.status === 'error')
-    return '사진을 올리지 못했습니다. 다시 올려 주세요.'
-  if (!value.targetId) return '연결할 대상을 골라 주세요.'
+  if (!value.icon) return { field: 'icon', message: '탭 아이콘을 골라 주세요.' }
+  if (blank('tabLabel')) {
+    return { field: 'tabLabel', message: '탭 문구를 채워 주세요.' }
+  }
+  const [image] = value.image
+  if (!image) return { field: 'image', message: '배너 사진을 올려 주세요.' }
+  if (image.status === 'uploading') {
+    return {
+      field: 'image',
+      message: '사진을 올리는 중입니다. 다 올라간 뒤에 다시 눌러 주세요.',
+    }
+  }
+  if (image.status === 'error') {
+    return {
+      field: 'image',
+      message: '사진을 올리지 못했습니다. 다시 올려 주세요.',
+    }
+  }
+  if (blank('imageAlt')) {
+    return { field: 'imageAlt', message: '사진 대체 문구를 채워 주세요.' }
+  }
+  if (!value.targetId) {
+    return { field: 'targetId', message: '연결할 대상을 골라 주세요.' }
+  }
   return null
 }
 

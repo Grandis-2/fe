@@ -5,7 +5,7 @@ import { LoaderCircle } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { cartKeys } from '@entities/cart'
-import { confirmTossPayment, forgetBuyNowKey } from '@features/payment'
+import { confirmTossPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { mypagePath, paymentPath, resultPath } from '@shared/config/routes'
 import { track } from '@shared/lib/analytics'
@@ -46,8 +46,17 @@ export function PaymentCallbackPage() {
     if (!orderToken || !paymentKey || !tossOrderId || !amount) {
       // 사용자가 결제창을 닫으면 토스가 failUrl로 code=PAY_PROCESS_CANCELED를 붙여 보낸다 — 실패가 아니라
       // 결제를 안 한 것이니 실패 화면 대신 같은 예약의 결제 화면으로 돌려보낸다(requestTossPayment의 USER_CANCEL과 같은 취급).
-      if (searchParams.get('code') === 'PAY_PROCESS_CANCELED' && preorderId) {
-        navigate(paymentPath(preorderId), { replace: true })
+      // 장바구니·바로 구매는 고른 줄(?cart=, history state)이 남아 있지 않아 결제 화면으로 못 돌아가므로,
+      // 주문이 결제 대기로 남아 있는 주문 내역으로 보낸다(거기서 기한 안에 같은 주문을 다시 결제한다).
+      if (searchParams.get('code') === 'PAY_PROCESS_CANCELED') {
+        if (preorderId) {
+          navigate(paymentPath(preorderId), { replace: true })
+          return
+        }
+        showToast(
+          '결제를 취소했어요. 주문 내역에서 결제 기한 안에 다시 결제할 수 있어요.',
+        )
+        navigate(mypagePath('history'), { replace: true })
         return
       }
       fail(searchParams.get('message'))
@@ -65,8 +74,6 @@ export function PaymentCallbackPage() {
     )
       .then((outcome) => {
         if (outcome.kind === 'approved') {
-          // 이 주문이 바로 구매였다면 그 키를 버린다 — 같은 상품을 다시 사면 새 주문이어야 한다.
-          forgetBuyNowKey({ orderId: orderToken })
           // 화면을 떠났어도 결제는 끝났으니 남긴다. 새로고침하면 이미 승인된 주문도 approved로
           // 다시 오므로 주문 하나는 한 번만 센다.
           if (preorderId)

@@ -1,4 +1,4 @@
-import { style, styleVariants } from '@vanilla-extract/css'
+import { globalStyle, style, styleVariants } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@shared/config/theme'
 import { fontSize } from '@shared/config/theme/tokens/typography/base'
@@ -14,6 +14,7 @@ const boxBase = style({
   position: 'relative',
   display: 'flex',
   alignItems: 'center',
+  gap: spacing[8],
   width: '100%',
   background: color.background.base,
   border: `1px solid ${color.primary.surface}`,
@@ -82,6 +83,13 @@ const fieldBase = {
 export const field = styleVariants({
   medium: [typography.body.defaultRegular, fieldBase],
   small: [typography.body.sub, fieldBase],
+})
+
+// floating 라벨이 올라갈 자리(paddingTop)를 비워둘 필요가 없다. placeholder는 라벨과 같은 색으로.
+// stackedField보다 앞에 둬서 stacked의 placeholder 색이 이긴다.
+export const fieldWithoutLabel = style({
+  paddingTop: 0,
+  selectors: { '&::placeholder': { color: color.text.tertiary } },
 })
 
 export const stackedField = style({
@@ -155,6 +163,20 @@ export const label = styleVariants({
     },
   ],
 })
+
+const iconBase = style({
+  display: 'flex',
+  flexShrink: 0,
+  color: color.text.tertiary,
+})
+
+export const icon = styleVariants({
+  medium: [iconBase],
+  small: [iconBase],
+})
+
+globalStyle(`${icon.medium} svg`, { width: '20px', height: '20px' })
+globalStyle(`${icon.small} svg`, { width: '16px', height: '16px' })
 
 // 에러 칸은 포커스 중에도 테두리처럼 에러 색을 유지한다(labelFocus보다 뒤에 선언돼 이긴다).
 export const labelError = style({

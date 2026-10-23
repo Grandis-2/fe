@@ -18,10 +18,10 @@ import {
 import { startDrawEntryPayment } from '@features/payment'
 import { getErrorMessage } from '@shared/api/client'
 import { DRAW_PATH, drawPath, mypagePath } from '@shared/config/routes'
-import { formatDotDate } from '@shared/lib/formatDotDate'
+import { formatDotDateMinute } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { showToast } from '@shared/model/toastStore'
-import { ActionButton, Button, Chip, InlineAlert } from '@shared/ui'
+import { ActionButton, Button, Chip, InlineAlert, Navigator } from '@shared/ui'
 
 import * as styles from './MypageDraw.css'
 
@@ -45,11 +45,17 @@ const renderItem = (product: ProductPaymentCardItem) => (
   <ProductPaymentCard product={product} />
 )
 
-// 내 응모 내역 — 탭(전체·당첨)은 서버가 나눠 주고, 탭 옆 숫자는 탭과 상관없이 오는 counts로 그린다.
+// 내 응모 내역 — 탭(전체·당첨)과 쪽은 서버가 나눠 주고, 탭 옆 숫자는 탭과 상관없이 오는 counts로 그린다.
 export function MypageDraw() {
   const navigate = useNavigate()
   const [filter, setFilter] = useState<MyDrawEntryFilter>('ALL')
-  const { data, isPending, isPlaceholderData, error } = useMyDrawEntries(filter)
+  // 화면은 1부터, API는 0부터 센다(검색 결과와 같다).
+  const [page, setPage] = useState(1)
+  const { data, isPending, isPlaceholderData, error } = useMyDrawEntries(
+    filter,
+    page - 1,
+  )
+  const totalPages = data ? Math.ceil(data.total / data.size) : 0
   const [payingId, setPayingId] = useState<string | null>(null)
 
   // 탭을 바꾸는 동안엔 앞 탭 목록이 남아 있으니 숫자만 쓰고 목록 자리는 받는 중으로 그린다.
@@ -82,7 +88,10 @@ export function MypageDraw() {
             key={value}
             selected={value === filter}
             count={value === 'WON' ? data?.counts.won : data?.counts.all}
-            onClick={() => setFilter(value)}
+            onClick={() => {
+              setFilter(value)
+              setPage(1)
+            }}
           >
             {label}
           </Chip>
@@ -116,7 +125,7 @@ export function MypageDraw() {
                 ? 'won'
                 : undefined
           }
-          orderDate={formatDotDate(entry.enteredAt)}
+          orderDate={formatDotDateMinute(entry.enteredAt)}
           items={[toItem(entry)]}
           renderItem={renderItem}
           footer={
@@ -154,6 +163,19 @@ export function MypageDraw() {
           }
         />
       ))}
+
+      {!error && totalPages > 1 && (
+        <Navigator
+          className={styles.pagination}
+          totalPages={totalPages}
+          currentPage={page}
+          onPageChange={(next) => {
+            if (next === page) return
+            setPage(next)
+            window.scrollTo({ top: 0 })
+          }}
+        />
+      )}
     </div>
   )
 }

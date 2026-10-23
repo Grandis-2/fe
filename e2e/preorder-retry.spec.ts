@@ -9,6 +9,7 @@ import {
   setKstClock,
   setMockFault,
   test,
+  TODAY_PROMOTION,
 } from './fixtures'
 
 // 페르소나 최하늘(불안정한 네트워크에서 다시 누름) — e2e/persona-scenarios.md H2·H3·H4
@@ -98,4 +99,41 @@ test('H4 응답을 못 받고 같은 내용을 다시 보내면 처음 예약번
   expect(replay.body.data.preorderId).toBe(preorderId)
   expect(replay.body.data.replayed).toBe(true)
   await expectSingleNewReservation(page)
+})
+
+test('대기열 진입 응답이 늦어도 눌렀을 때 대기 모달이 먼저 뜬다', async ({
+  page,
+}) => {
+  // 진입(POST /preorders/queue)만 5초 늦게 보낸다 — axios는 XHR이라 send를 미룬다.
+  await page.addInitScript(() => {
+    const { open, send } = XMLHttpRequest.prototype
+    const slow = new WeakSet<XMLHttpRequest>()
+    XMLHttpRequest.prototype.open = function (
+      this: XMLHttpRequest,
+      method: string,
+      url: string | URL,
+      ...rest: [boolean?, string?, string?]
+    ) {
+      if (method === 'POST' && String(url).includes('/preorders/queue'))
+        slow.add(this)
+      return open.call(this, method, url, ...(rest as [boolean]))
+    } as typeof open
+    XMLHttpRequest.prototype.send = function (this: XMLHttpRequest, body) {
+      if (slow.has(this)) setTimeout(() => send.call(this, body), 5_000)
+      else send.call(this, body)
+    }
+  })
+
+  await page.goto(`/preorder/${TODAY_PROMOTION}`)
+  await page.getByRole('button', { name: '사전예약 하러가기' }).click()
+  await page
+    .getByRole('dialog', { name: '사전예약' })
+    .getByRole('button', { name: '예약하기' })
+    .first()
+    .click()
+
+  // 진입 응답(5초)보다 먼저 떠야 한다.
+  await expect(page.getByText(/조금만 기다려주세요/)).toBeVisible({
+    timeout: 2_000,
+  })
 })

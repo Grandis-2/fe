@@ -5,7 +5,8 @@ import {
   notificationPath,
   type NotificationItem,
 } from '@entities/notification'
-import { Skeleton, SkeletonGroup } from '@shared/ui'
+import { useEndReached } from '@shared/lib/useEndReached'
+import { Button, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './NotificationList.css'
 
@@ -16,7 +17,22 @@ export type NotificationListProps = {
   isError: boolean
   /** 갈 곳이 있는 알림을 눌러 이동할 때 — 읽음 처리하고 패널을 닫는다 */
   onSelect?: (notification: NotificationItem) => void
+  /** 다음 쪽이 있다 — 목록 끝까지 내리면 onLoadMore를 부른다 */
+  hasMore?: boolean
+  /** 다음 쪽을 받는 중 */
+  isLoadingMore?: boolean
+  /** 다음 쪽을 못 받았다 — 스크롤로 계속 두드리지 않고 끝에 다시 받기 버튼을 둔다 */
+  isLoadMoreError?: boolean
+  onLoadMore?: () => void
 }
+
+const skeletonRows = (count: number) =>
+  Array.from({ length: count }, (_, i) => (
+    <div key={i} className={styles.item}>
+      <span />
+      <Skeleton height={40} />
+    </div>
+  ))
 
 // 알림 패널 안의 목록. 조회는 패널(HeaderNotification)이 하고, 여기선 상태별로 그리기만 한다 —
 // 그래서 MSW 없는 Storybook에서도 불러오는 중·실패·빈 목록·목록을 각각 보여 줄 수 있다.
@@ -25,18 +41,17 @@ export function NotificationList({
   isPending,
   isError,
   onSelect,
+  hasMore = false,
+  isLoadingMore = false,
+  isLoadMoreError = false,
+  onLoadMore,
 }: NotificationListProps) {
-  if (isPending)
-    return (
-      <SkeletonGroup>
-        {[0, 1, 2].map((i) => (
-          <div key={i} className={styles.item}>
-            <span />
-            <Skeleton height={40} />
-          </div>
-        ))}
-      </SkeletonGroup>
-    )
+  const endRef = useEndReached<HTMLLIElement>(
+    hasMore && !isLoadingMore && !isLoadMoreError,
+    () => onLoadMore?.(),
+  )
+
+  if (isPending) return <SkeletonGroup>{skeletonRows(3)}</SkeletonGroup>
   if (isError || !notifications)
     return <div className={styles.status}>알림을 불러오지 못했어요.</div>
   if (notifications.length === 0)
@@ -92,6 +107,26 @@ export function NotificationList({
           </li>
         )
       })}
+      {isLoadingMore && (
+        <li>
+          <SkeletonGroup>{skeletonRows(1)}</SkeletonGroup>
+        </li>
+      )}
+      {isLoadMoreError && (
+        <li className={styles.loadMoreError}>
+          알림을 더 불러오지 못했어요.
+          <Button
+            variant="subtle"
+            color="secondary"
+            size="small"
+            onClick={onLoadMore}
+          >
+            다시 불러오기
+          </Button>
+        </li>
+      )}
+      {/* 패널 안에서 끝까지 내리면 다음 쪽을 받는다. */}
+      {hasMore && <li ref={endRef} aria-hidden="true" />}
     </ul>
   )
 }

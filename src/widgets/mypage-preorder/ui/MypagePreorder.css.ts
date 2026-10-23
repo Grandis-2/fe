@@ -161,3 +161,11 @@ export const alertDate = style([
 
 // SelectButton small에 테두리를 둘러 꺼진 상태도 버튼으로 읽히게 한다.
 // 테두리·배경 없이 벨 아이콘만 — 켜져 있으면 브랜드색, 꺼져 있으면 흐리게.
+
+// 다음 쪽을 못 받았을 때 목록 아래 — 안내와 다시 불러오기 버튼.
+export const retry = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: spacing[12],
+})

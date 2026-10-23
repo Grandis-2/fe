@@ -1,8 +1,9 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type HTMLAttributes, type ReactNode } from 'react'
 
 import { ChevronRight } from 'lucide-react'
 
 import { srOnly } from '@shared/config/theme'
+import { useMoveAnimation } from '@shared/lib/useMoveAnimation'
 
 import { Navigator } from '../Navigator'
 
@@ -50,6 +51,12 @@ export type TableProps<T> = {
   loadingRows?: number
   /** 행마다 붙일 클래스(예: 실패한 행 강조) */
   rowClassName?: (row: T) => string | undefined
+  /** 행(tr)에 얹을 속성(예: 끌어서 순서 바꾸기). 클래스는 rowClassName으로, 클릭은 onRowClick으로 준다 */
+  rowProps?: (
+    row: T,
+  ) => Omit<HTMLAttributes<HTMLTableRowElement>, 'className' | 'onClick'>
+  /** 행 순서가 바뀌면 옛 자리에서 새 자리로 미끄러지게 한다(끌어서 순서 바꾸기) */
+  animateRowMoves?: boolean
   className?: string
 }
 
@@ -67,8 +74,11 @@ export function Table<T>({
   loading = false,
   loadingRows,
   rowClassName,
+  rowProps,
+  animateRowMoves = false,
   className,
 }: TableProps<T>) {
+  const tbodyRef = useRef<HTMLTableSectionElement>(null)
   const [page, setPage] = useState(1)
   const [lastRowCount, setLastRowCount] = useState(rows.length)
   if (rows.length !== lastRowCount) {
@@ -80,6 +90,11 @@ export function Table<T>({
   const visibleRows = pageSize
     ? rows.slice((page - 1) * pageSize, page * pageSize)
     : rows
+  // 로딩 줄엔 키가 없어 비워 둔다 — 다 오면 새로 재기 시작한다.
+  useMoveAnimation(
+    tbodyRef,
+    animateRowMoves && !loading ? visibleRows.map(rowKey) : [],
+  )
 
   // 액션 열은 평범한 열 하나로 만들어 둔다 — 헤더·빈 상태 colSpan·정렬이
   // 나머지 열과 같은 경로를 타서 따로 챙길 게 없어진다.
@@ -132,7 +147,7 @@ export function Table<T>({
               ))}
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={tbodyRef}>
             {loading ? (
               Array.from(
                 { length: loadingRows ?? pageSize ?? DEFAULT_LOADING_ROWS },
@@ -159,6 +174,7 @@ export function Table<T>({
               visibleRows.map((row) => (
                 <tr
                   key={rowKey(row)}
+                  {...rowProps?.(row)}
                   className={[
                     styles.row,
                     onRowClick && styles.rowClickable,

@@ -7,6 +7,7 @@ import {
   findCategoryId,
   ProductCard,
   ProductCardSkeleton,
+  sendSearch,
   useCategories,
   useProducts,
 } from '@entities/product'
@@ -102,6 +103,7 @@ export function SearchResults() {
         onChange={setQuery}
         onSubmit={(submitted) => {
           add(submitted)
+          sendSearch(submitted)
           // 카테고리 화면에서 검색하면 필터를 버리고 키워드 검색 화면으로 넘어간다.
           if (isCategoryMode) navigate(searchResultsPath(submitted))
           else setParam('q', submitted)

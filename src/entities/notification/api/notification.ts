@@ -1,4 +1,5 @@
 import { apiClient } from '@shared/api/client'
+import { toQueryString } from '@shared/api/queryString'
 import type { CountResponse, NotificationList } from '@shared/api/types'
 
 // [member] GET /api/v1/notifications/unread-count — 안 읽은 알림 수
@@ -11,9 +12,12 @@ export const getUnreadNotificationCount = async (signal?: AbortSignal) => {
 }
 
 // [member] GET /api/v1/notifications — 내 알림 목록
-// ponytail: 첫 페이지(20건)만 받는다 — 패널에 "더 보기"가 필요해지면 nextCursor로 이어 받는다.
-export const getNotifications = (signal?: AbortSignal) =>
-  apiClient.request<NotificationList>('/api/v1/notifications', { signal })
+// 최신순 커서 페이지 — 첫 쪽은 cursor 없이, 다음 쪽은 앞 응답의 nextCursor를 그대로 보낸다(size 1~50, 기본 20).
+export const getNotifications = (cursor?: string, signal?: AbortSignal) =>
+  apiClient.request<NotificationList>(
+    `/api/v1/notifications${toQueryString({ cursor })}`,
+    { signal },
+  )
 
 // [member] PATCH /api/v1/notifications/{notificationId}/read — 알림 읽음 처리
 // 204. 이미 읽었어도 204라 다시 보내도 된다. 남의 알림·없는 id는 404.

@@ -7,10 +7,10 @@ import { ProductRanking } from './ProductRanking'
 
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
-// 순위가 10위(두 자리 칸)까지 보이도록 10개를 만든다.
+// 순위가 10위(두 자리 칸)까지 보이도록 10개를 만든다. 2위는 사전예약 태그를 보려고 사전예약 상품으로 둔다.
 const tenProducts: ProductListItem[] = Array.from({ length: 10 }, (_, i) => ({
   productId: String(i + 1),
-  saleMode: 'IN_STOCK',
+  saleMode: i === 1 ? 'PREORDER' : 'IN_STOCK',
   brand: 'APPLE',
   title: `NOVA MacBook Neo ${i + 1}`,
   imageUrl: '/images/macbook_neo_sliver1.png',

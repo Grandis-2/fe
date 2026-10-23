@@ -1,6 +1,6 @@
 import type { TagProps } from '@shared/ui'
 
-import type { OrderStatus } from './order'
+import type { Order, OrderStatus } from './order'
 
 // 카드 머리의 상태 태그 하나(문구·색).
 export type StatusTag = { label: string; color: TagProps['color'] }
@@ -27,3 +27,11 @@ export const PAID_ORDER_STATUSES: readonly OrderStatus[] = [
   'SHIPPED',
   'DELIVERED',
 ]
+
+// 리뷰를 쓸 수 있는 주문 — 배송 완료된 일반 구매(장바구니·바로 구매). 사전예약·드로우 증정품은 서버가 409로 막는다.
+// 주문 내역의 리뷰 버튼이 쓴다. 내 리뷰의 '작성 가능'은 같은 기준으로 서버가 고른다(GET /reviews/writable).
+export const isReviewableOrder = ({
+  status,
+  source,
+}: Pick<Order, 'status' | 'source'>) =>
+  status === 'DELIVERED' && (source === 'CART' || source === 'BUY_NOW')
