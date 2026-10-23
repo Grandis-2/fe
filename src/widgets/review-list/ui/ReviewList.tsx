@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 
 import { MessageSquare } from 'lucide-react'
 
 import { useCategories } from '@entities/product'
 import { ReviewCard, ReviewCardSkeleton, useReviews } from '@entities/review'
+import { useEndReached } from '@shared/lib/useEndReached'
 import { Button, Chip, InlineAlert, SkeletonGroup } from '@shared/ui'
 
 import * as styles from './ReviewList.css'
@@ -25,23 +26,13 @@ export function ReviewList() {
   } = useReviews({ categoryId })
   const reviews = data?.pages.flatMap(({ items }) => items) ?? []
 
-  // 목록 끝 표시가 화면 가까이(400px) 오면 다음 쪽을 받는다. 다 받고도 끝이 보이면 effect가
-  // 다시 돌며 또 받는다. 다음 쪽이 실패하면 멈추고 버튼으로 다시 받는다(계속 두드리지 않게).
-  const endRef = useRef<HTMLDivElement>(null)
-  const canLoadMore =
-    hasNextPage && !isFetchingNextPage && !isFetchNextPageError
-  useEffect(() => {
-    const end = endRef.current
-    if (!end || !canLoadMore) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) void fetchNextPage()
-      },
-      { rootMargin: '400px' },
-    )
-    observer.observe(end)
-    return () => observer.disconnect()
-  }, [canLoadMore, fetchNextPage])
+  // 목록 끝 표시가 화면 가까이(400px) 오면 다음 쪽을 받는다. 다음 쪽이 실패하면 멈추고
+  // 버튼으로 다시 받는다(계속 두드리지 않게).
+  const endRef = useEndReached<HTMLDivElement>(
+    hasNextPage && !isFetchingNextPage && !isFetchNextPageError,
+    () => void fetchNextPage(),
+    '400px',
+  )
 
   return (
     <div className={styles.root}>
