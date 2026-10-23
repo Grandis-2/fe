@@ -18,7 +18,7 @@ export function AdminBannerEditPage() {
   const navigate = useNavigate()
   const { bannerId = '' } = useParams()
   const banners = useAdminBanners()
-  const targets = useBannerTargets()
+  const targets = useBannerTargets(bannerId)
   const update = useUpdateAdminBanner(bannerId)
   const banner = banners.data?.find((item) => item.bannerId === bannerId)
 
@@ -52,11 +52,11 @@ export function AdminBannerEditPage() {
           { label: banner.tabLabel },
         ]}
       />
-      <h1 className={styles.title}>배너 고치기</h1>
+      <h1 className={styles.title}>배너 수정</h1>
 
       {update.isError && (
         <InlineAlert status="error">
-          {getErrorMessage(update.error, '배너를 고치지 못했습니다.')}
+          {getErrorMessage(update.error, '배너를 수정하지 못했습니다.')}
         </InlineAlert>
       )}
 
@@ -70,7 +70,7 @@ export function AdminBannerEditPage() {
         onSubmit={(value) =>
           update.mutate(value, {
             onSuccess: () => {
-              showToast('배너를 고쳤습니다.')
+              showToast('배너를 수정했습니다.')
               navigate(ADMIN_BANNERS_PATH)
             },
           })
