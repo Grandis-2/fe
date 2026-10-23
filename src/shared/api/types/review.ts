@@ -28,9 +28,10 @@ export type ReviewListParams = {
   size?: number
 }
 
-// GET /api/v1/reviews/mine 쿼리. orderItemId를 주면 그 주문상품의 내 리뷰만(0~1건) 온다.
+// GET /api/v1/reviews/mine 쿼리. orderItemId를 주면 그 주문상품들의 내 리뷰만(주문상품마다 0~1건) 온다.
+// 1~100개(같은 id는 한 번, 빈 값·초과는 400). size를 빼면 서버가 보낸 id 수만큼 한 번에 준다.
 export type MyReviewListParams = {
-  orderItemId?: string
+  orderItemId?: string | string[]
   page?: number
   size?: number
 }
