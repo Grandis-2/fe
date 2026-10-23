@@ -20,10 +20,10 @@ import type {
   CancelOrderResponse,
   CartOrderItem,
   ConfirmPaymentResponse,
-  CursorPage,
   Order,
   OrderDetail,
   OrderItem,
+  OrderPage,
   OrderStatus,
   PaymentAttempt,
   PlaceOrderResponse,
@@ -46,6 +46,18 @@ const SHIP_TO_LIMITS = {
   line1: 200,
   line2: 200,
 } as const
+// 명세의 상태 순서 — counts도 이 순서로 담는다.
+const ORDER_STATUSES: OrderStatus[] = [
+  'AWAITING_PAYMENT',
+  'AUTHORIZING',
+  'AWAITING_CONFIRMATION',
+  'PREPARING_ITEMS',
+  'READY_TO_SHIP',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELING',
+  'CANCELED',
+]
 const PAID: OrderStatus[] = [
   'AWAITING_CONFIRMATION',
   'PREPARING_ITEMS',
@@ -487,7 +499,8 @@ function placePreorderOrder(
         warrantyQuantity: 0,
         warrantyUnitPrice: 0,
         lineAmount: preorder.unitPrice,
-        imageUrl: null,
+        // 사전예약 주문도 옵션 사진을 남긴다(10-23 배포부터).
+        imageUrl: findVariant(preorder.optionId)?.product.imageUrl ?? null,
       },
     ],
     shipTo,
@@ -523,6 +536,7 @@ function removePurchasedFromCart(order: OrderRecord) {
 
 export const orderHandlers: RequestHandler[] = [
   // 내 주문 — 최신순, 커서 페이지. 장바구니·사전예약·드로우 주문이 모두 나오고 취소된 주문도 나온다.
+  // status(여러 개면 그중 하나)·from(그 시각 이후)으로 거르고, counts는 거르기와 상관없이 전부의 상태별 수다.
   http.get(url('/api/v1/orders'), ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     expireCartOrders()
@@ -530,8 +544,22 @@ export const orderHandlers: RequestHandler[] = [
     settleDueDraws()
     const params = new URL(request.url).searchParams
     const size = Number(params.get('size') ?? 20)
-    if (!Number.isInteger(size) || size < 1 || size > 100)
-      return invalid([{ field: 'size', message: '1~100 이어야 합니다.' }])
+    // status= 하나뿐이면 보내지 않은 것과 같고, status=SHIPPED&status= 처럼 빈 값이 섞이면 400이다.
+    const statuses = params.getAll('status')
+    const status = statuses.length === 1 && statuses[0] === '' ? [] : statuses
+    const from = params.get('from')
+    const violations: ApiViolation[] = [
+      ...(Number.isInteger(size) && size >= 1 && size <= 100
+        ? []
+        : [{ field: 'size', message: '1~100 이어야 합니다.' }]),
+      ...(status.every((it) => ORDER_STATUSES.includes(it as OrderStatus))
+        ? []
+        : [{ field: 'status', message: '형식이 올바르지 않습니다.' }]),
+      ...(from !== null && Number.isNaN(Date.parse(from))
+        ? [{ field: 'from', message: '형식이 올바르지 않습니다.' }]
+        : []),
+    ]
+    if (violations.length > 0) return invalid(violations)
     // ponytail: 목업 커서는 다음 시작 위치를 숫자로 담는다 — 실서버 커서는 해석하지 않는다.
     const cursor = params.get('cursor')
     if (cursor !== null && !/^\d+$/.test(cursor)) {
@@ -541,12 +569,24 @@ export const orderHandlers: RequestHandler[] = [
       })
     }
     const start = Number(cursor ?? 0)
-    const sorted = [...orders].sort((a, b) =>
-      b.createdAt.localeCompare(a.createdAt),
-    )
-    return ok<CursorPage<Order>>({
+    const since = from === null ? null : Date.parse(from)
+    const sorted = orders
+      .filter(
+        (order) =>
+          (status.length === 0 || status.includes(order.status)) &&
+          (since === null || Date.parse(order.createdAt) >= since),
+      )
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    const counts = Object.fromEntries(
+      ORDER_STATUSES.map((it) => [
+        it,
+        orders.filter((order) => order.status === it).length,
+      ]),
+    ) as Record<OrderStatus, number>
+    return ok<OrderPage>({
       items: sorted.slice(start, start + size).map(toOrder),
       nextCursor: start + size < sorted.length ? String(start + size) : null,
+      counts,
     })
   }),
 
