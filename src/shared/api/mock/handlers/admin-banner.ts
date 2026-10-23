@@ -110,6 +110,8 @@ export const adminBannerHandlers: RequestHandler[] = [
       {}) as { bannerIds?: string[] }
     const all = new Set(banners.map((banner) => banner.bannerId))
     if (
+      // 단언은 값을 바꾸지 않는다 — {"bannerIds": null}이면 기본값([])도 안 들어간다.
+      !Array.isArray(bannerIds) ||
       bannerIds.length !== all.size ||
       new Set(bannerIds).size !== all.size ||
       bannerIds.some((id) => !all.has(id))

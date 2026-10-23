@@ -1,5 +1,7 @@
 import { useRef, useState, type DragEvent, type KeyboardEvent } from 'react'
 
+import { MOVE_ANIMATION_ID } from './useMoveAnimation'
+
 export type ReorderVia = 'drag' | 'keyboard'
 
 export type UseDragReorderOptions = {
@@ -68,8 +70,13 @@ export function useDragReorder({
       event.dataTransfer.dropEffect = 'move'
       if (draggingId === id || isLocked()) return
       // 막 비켜나는 항목은 아직 커서 밑을 지나는 중이다 — 여기서 또 옮기면 두 항목이
-      // 자리를 주고받으며 떨린다. 다 비켜난 뒤에 다시 본다.
-      if (event.currentTarget.getAnimations().length > 0) return
+      // 자리를 주고받으며 떨린다. 다 비켜난 뒤에 다시 본다(hover 색 전환 같은 건 상관없다).
+      if (
+        event.currentTarget
+          .getAnimations()
+          .some(({ id }) => id === MOVE_ANIMATION_ID)
+      )
+        return
       onReorder(moveTo(ids, draggingId, ids.indexOf(id)), 'drag')
     },
     onDrop: (event: DragEvent<HTMLElement>) => {

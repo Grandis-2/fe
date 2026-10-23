@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { GripVertical, Plus, SquarePen, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router'
@@ -60,14 +60,27 @@ export function AdminBannersPage() {
   }
 
   const ids = rows.map((banner) => banner.bannerId)
+  // 끄는 동안 마지막으로 옮긴 순서 — 마지막 옮김이 화면에 그려지기 전에 놓아도 그 순서로 저장한다.
+  const draggedRef = useRef<string[] | null>(null)
   // 끄는 동안엔 화면용 순서만 바꾸고 놓을 때 한 번 저장한다. 키보드는 한 칸마다 저장한다.
   const { draggingId, itemProps } = useDragReorder({
     ids,
-    onReorder: (next, via) =>
-      via === 'keyboard' ? commit(next) : setOrder(next),
+    onReorder: (next, via) => {
+      if (via === 'keyboard') {
+        commit(next)
+        return
+      }
+      draggedRef.current = next
+      setOrder(next)
+    },
     // 표 밖에 놓았거나 Esc로 취소했다 — 브라우저도 그림을 제자리로 돌려보내니
     // 순서도 저장하지 않고 원래대로 둔다.
-    onDragEnd: (cancelled) => (cancelled ? setOrder(null) : commit(ids)),
+    onDragEnd: (cancelled) => {
+      const dragged = draggedRef.current
+      draggedRef.current = null
+      if (cancelled) setOrder(null)
+      else commit(dragged ?? ids)
+    },
     isLocked: () => pending,
   })
 

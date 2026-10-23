@@ -1,6 +1,8 @@
 import { useLayoutEffect, useRef, type RefObject } from 'react'
 
 const DURATION_MS = 150
+// 자리 옮김 애니메이션의 이름 — hover 색 바뀜 같은 CSS 전환과 가려낼 때 쓴다(useDragReorder).
+export const MOVE_ANIMATION_ID = 'move'
 
 /**
  * 목록 순서가 바뀌면 자리를 옮긴 항목을 옛 자리에서 새 자리로 미끄러뜨린다(FLIP).
@@ -30,7 +32,7 @@ export function useMoveAnimation(
       if (reduced || before === undefined || before === top) return
       item.animate(
         [{ transform: `translateY(${before - top}px)` }, { transform: 'none' }],
-        { duration: DURATION_MS, easing: 'ease-out' },
+        { id: MOVE_ANIMATION_ID, duration: DURATION_MS, easing: 'ease-out' },
       )
     })
     topsRef.current = tops
