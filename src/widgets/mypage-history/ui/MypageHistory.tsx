@@ -130,8 +130,12 @@ export function MypageHistory() {
     fetchNextPage,
   } = useOrders({ statuses: statusesOf(statusFilter), months: period })
   // 목록 끝이 화면 가까이(400px) 오면 다음 쪽을 받는다. 다음 쪽이 실패하면 멈추고 버튼으로 다시 받는다.
+  // 조건을 바꾼 직후엔 앞 조건의 쪽 정보가 남아 있어(isPlaceholderData) 새 첫 쪽이 올 때까지 기다린다.
   const endRef = useEndReached<HTMLDivElement>(
-    hasNextPage && !isFetchingNextPage && !isFetchNextPageError,
+    hasNextPage &&
+      !isPlaceholderData &&
+      !isFetchingNextPage &&
+      !isFetchNextPageError,
     () => void fetchNextPage(),
     '400px',
   )

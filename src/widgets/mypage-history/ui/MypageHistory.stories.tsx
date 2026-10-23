@@ -77,13 +77,18 @@ const firstPage = (items: Order[]) => ({
 })
 
 // Storybook엔 MSW가 없어 조회가 실패한다 — 요청을 끄고 캐시만 채운다.
-// 키는 useOrders의 조건(상태 묶음·기간) — 처음엔 전체·6개월, 배송 완료 칩은 DELIVERED만.
+// 키는 useOrders가 보내는 조건(상태 묶음·기간 시작) — 처음엔 전체·6개월, 배송 완료 칩은 DELIVERED만.
+// 기간 시작은 useOrders처럼 오늘 0시에서 6개월 전이다.
+const sixMonthsAgo = new Date()
+sixMonthsAgo.setHours(0, 0, 0, 0)
+sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+const from = sixMonthsAgo.toISOString()
 const queryClient = new QueryClient({
   defaultOptions: { queries: { enabled: false } },
 })
-queryClient.setQueryData(['orders', 'mine', { months: 6 }], firstPage(orders))
+queryClient.setQueryData(['orders', 'mine', { from }], firstPage(orders))
 queryClient.setQueryData(
-  ['orders', 'mine', { statuses: ['DELIVERED'], months: 6 }],
+  ['orders', 'mine', { status: ['DELIVERED'], from }],
   firstPage([delivered]),
 )
 // 쓴 리뷰가 없다 — 배송 완료 주문상품에 '리뷰 쓰기'가 붙는다.

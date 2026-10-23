@@ -8,7 +8,7 @@ import {
 
 import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import { paymentCheckSignal } from '@shared/api/requestLog'
-import type { OrderStatus } from '@shared/api/types'
+import type { OrderListParams, OrderStatus } from '@shared/api/types'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
@@ -28,11 +28,12 @@ export type OrderFilter = { statuses?: OrderStatus[]; months?: number }
 
 const orderKeys = {
   all: ['orders'] as const,
-  mine: (filter: OrderFilter) => ['orders', 'mine', filter] as const,
+  mine: (params: Pick<OrderListParams, 'status' | 'from'>) =>
+    ['orders', 'mine', params] as const,
   detail: (orderId: string) => ['orders', 'detail', orderId] as const,
 }
 
-// 오늘 0시(이 기기 시간대)에서 months개월 전 — 하루 동안 같은 값이라 다음 쪽도 처음과 같은 조건으로 묻는다.
+// 오늘 0시(이 기기 시간대)에서 months개월 전 — 하루 동안 같은 값이다.
 const monthsAgo = (months: number) => {
   const since = new Date()
   since.setHours(0, 0, 0, 0)
@@ -42,23 +43,23 @@ const monthsAgo = (months: number) => {
 
 // 내 주문 — 서버가 거르고 nextCursor로 20건씩 잇는다(무한 스크롤). 응답마다 오는 counts는 조건과 상관없는 전체 기준이다.
 // 조건을 바꾸는 동안엔 앞 응답을 그대로 둔다 — counts는 그대로 쓰고, 목록 자리는 isPlaceholderData로 받는 중으로 그린다.
-export const useOrders = ({ statuses, months }: OrderFilter) =>
-  useInfiniteQuery({
-    queryKey: orderKeys.mine({ statuses, months }),
+// 기간의 시작 시각(from)을 키에 넣는다 — 자정을 넘겨 다음 쪽을 받아도 첫 쪽과 같은 from으로 묻고,
+// 날이 바뀐 뒤 다시 그리면 새 from으로 처음부터 받는다.
+export const useOrders = ({ statuses, months }: OrderFilter) => {
+  const params = {
+    status: statuses,
+    from: months ? monthsAgo(months) : undefined,
+  }
+  return useInfiniteQuery({
+    queryKey: orderKeys.mine(params),
     queryFn: ({ pageParam, signal }) =>
-      getOrders(
-        {
-          status: statuses,
-          from: months ? monthsAgo(months) : undefined,
-          cursor: pageParam,
-        },
-        signal,
-      ),
+      getOrders({ ...params, cursor: pageParam }, signal),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: ({ nextCursor }) => nextCursor ?? undefined,
     placeholderData: keepPreviousData,
     ...queryPolicy.live,
   })
+}
 
 const authorizingPollMs = (
   data: Awaited<ReturnType<typeof getOrder>> | undefined,

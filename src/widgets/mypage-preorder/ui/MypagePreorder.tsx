@@ -119,14 +119,15 @@ export function MypagePreorder() {
       // 탭을 오갈 때마다 기록이 쌓이면 뒤로 가기로 페이지를 못 벗어난다.
       { replace: true },
     )
-  // 구매 확정 묶음은 탭과 따로 늘 받는다. 탭 목록은 고른 탭의 단계만 받는다(알림 신청 탭에선 진행 중을 둔다).
-  // ponytail: 구매 확정 묶음은 첫 쪽(20건)만 보인다 — 결제 기한이 24시간이라 그보다 많이 쌓이기 어렵다.
+  // 구매 확정 묶음은 탭과 따로 늘 받는다(20건이 넘으면 '더 보기'). 탭 목록은 고른 탭의 단계만 받는다(알림 신청 탭에선 진행 중을 둔다).
   const payable = useMyReservations(NEEDS_PURCHASE)
   const list = useMyReservations(view === 'ended' ? ENDED : IN_PROGRESS)
   const { data: counts } = useReservationCounts()
   // 탭 목록 끝이 화면 가까이(400px) 오면 다음 쪽을 받는다. 다음 쪽이 실패하면 멈추고 버튼으로 다시 받는다.
+  // 탭을 바꾼 직후엔 앞 탭의 쪽 정보가 남아 있어(isPlaceholderData) 새 첫 쪽이 올 때까지 기다린다.
   const endRef = useEndReached<HTMLDivElement>(
     view !== 'alerts' &&
+      !list.isPlaceholderData &&
       list.hasNextPage &&
       !list.isFetchingNextPage &&
       !list.isFetchNextPageError,
@@ -341,6 +342,20 @@ export function MypagePreorder() {
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>구매 확정이 필요해요</h2>
             {needsPayment.map((reservation) => card(reservation, true))}
+            {payable.isFetchNextPageError && (
+              <InlineAlert status="error">
+                구매 확정할 예약을 더 불러오지 못했어요.
+              </InlineAlert>
+            )}
+            {payable.hasNextPage && (
+              <Button
+                variant="outline"
+                disabled={payable.isFetchingNextPage}
+                onClick={() => void payable.fetchNextPage()}
+              >
+                {payable.isFetchNextPageError ? '다시 불러오기' : '더 보기'}
+              </Button>
+            )}
           </section>
         )
       )}
