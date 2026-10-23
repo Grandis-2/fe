@@ -1,9 +1,13 @@
-import type { CSSProperties } from 'react'
+import { useEffect, type CSSProperties } from 'react'
 
 import { MessageSquare } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
-import { useProduct, useShipmentBatches } from '@entities/product'
+import {
+  sendProductView,
+  useProduct,
+  useShipmentBatches,
+} from '@entities/product'
 import {
   ReviewCard,
   ReviewCardSkeleton,
@@ -46,6 +50,8 @@ export function ProductDetailPage() {
   const requireLogin = useRequireLogin()
   const { productId = '' } = useParams()
   const { data: product, isPending, isError } = useProduct(productId)
+  // 조회수 랭킹 신호. 같은 사람·같은 상품은 서버가 하루 한 번만 세서 StrictMode 이중 실행도 괜찮다.
+  useEffect(() => sendProductView(productId), [productId])
   const isPreorder = product?.saleMode === 'PREORDER'
   const { data: shipmentBatches } = useShipmentBatches(productId, {
     enabled: isPreorder,

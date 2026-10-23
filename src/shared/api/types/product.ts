@@ -76,6 +76,17 @@ export type ProductListItem = {
   colors?: { label: string; hex: string; imageUrls: string[] }[]
 }
 
+// POST /api/v1/products/{productId}/views — 조회 신호. 204
+export type ViewRequest = {
+  anonymousId: string
+}
+
+// POST /api/v1/products/searches — 검색 신호. q는 상품 목록 검색과 같은 정리 규칙으로 1~50자. 204
+export type SearchRequest = {
+  q: string
+  anonymousId: string
+}
+
 // GET /api/v1/products/searches/popular — 최근 24시간 검색 수 순 최대 10개. 배열 순서가 순위다.
 export type PopularKeywords = {
   keywords: string[]

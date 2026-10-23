@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router'
 
 import {
   brandMenus,
+  sendSearch,
   usePopularKeywords,
   useProducts,
   type ProductListItem,
@@ -84,6 +85,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
   const commit = (label: string) => {
     pick(label)
     add(label)
+    sendSearch(label)
   }
 
   // 예약 중인 사전예약 상품은 상세로 바로 가지 않고 대기열을 거친다(다른 목록과 같다).
@@ -98,6 +100,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
   // 엔터와 같다 — 검색 결과 화면으로 간다(주소가 바뀌면 오버레이는 스스로 닫힌다).
   const submit = (label: string) => {
     add(label)
+    sendSearch(label)
     navigate(searchResultsPath(label))
   }
 
