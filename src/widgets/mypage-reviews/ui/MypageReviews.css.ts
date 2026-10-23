@@ -71,3 +71,11 @@ export const actions = style({
   gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
   gap: spacing[8],
 })
+
+// 다음 쪽을 못 받았을 때 목록 아래 — 안내와 다시 불러오기 버튼.
+export const retry = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: spacing[12],
+})

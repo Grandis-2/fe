@@ -29,7 +29,7 @@ export const PAID_ORDER_STATUSES: readonly OrderStatus[] = [
 ]
 
 // 리뷰를 쓸 수 있는 주문 — 배송 완료된 일반 구매(장바구니·바로 구매). 사전예약·드로우 증정품은 서버가 409로 막는다.
-// 주문 내역의 리뷰 버튼과 내 리뷰의 '작성 가능'이 같은 기준을 쓴다.
+// 주문 내역의 리뷰 버튼이 쓴다. 내 리뷰의 '작성 가능'은 같은 기준으로 서버가 고른다(GET /reviews/writable).
 export const isReviewableOrder = ({
   status,
   source,

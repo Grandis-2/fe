@@ -8,7 +8,7 @@ import type {
   ReviewUpdateRequest,
 } from '@shared/api/types'
 
-import type { Review } from '../model/review'
+import type { Review, WritableItem } from '../model/review'
 
 type ReviewPage = PageResponse<Review>
 
@@ -39,6 +39,17 @@ export const getMyReviews = (
 ) =>
   apiClient.request<ReviewPage>(
     `/api/v1/reviews/mine${toQueryString(params)}`,
+    { signal },
+  )
+
+// [catalog] GET /api/v1/reviews/writable — 리뷰 쓸 수 있는 주문상품 목록
+// 배송 완료된 장바구니·바로 구매 주문상품 중 리뷰가 없는 것(회원). 서버는 최근 배송 완료 주문 500건까지 본다.
+export const getWritableItems = (
+  params: Pick<ReviewListParams, 'page' | 'size'>,
+  signal?: AbortSignal,
+) =>
+  apiClient.request<PageResponse<WritableItem>>(
+    `/api/v1/reviews/writable${toQueryString(params)}`,
     { signal },
   )
 
