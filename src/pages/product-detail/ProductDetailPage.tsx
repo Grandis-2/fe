@@ -114,8 +114,10 @@ export function ProductDetailPage() {
         },
         ({ preorderId }, registered) =>
           navigate(
-            registered ? paymentPath(preorderId) : resultPath('preorder'),
-            { state: { preorderId }, replace: true },
+            registered
+              ? paymentPath(preorderId)
+              : resultPath('preorder', preorderId),
+            { replace: true },
           ),
       )
     })
