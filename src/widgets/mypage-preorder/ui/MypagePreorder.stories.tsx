@@ -40,29 +40,51 @@ const reservation = (
   ...overrides,
 })
 
-const reservations = {
-  items: [
-    reservation('a', {}),
-    reservation('b', {
-      productTitle: '아이폰 18 Pro',
-      paymentDueAt: hoursFromNow(5),
-    }),
-    reservation('c', {
-      productTitle: '맥북 프로 14',
-      status: 'RESERVED',
-      displayStatus: 'RESERVED',
-      paymentDueAt: null,
-      reservedAt: hoursFromNow(-1),
-    }),
-  ],
-  nextCursor: null,
-}
+// 구매 확정 대기 두 건과 예약 확정 한 건.
+const payable = [
+  reservation('a', {}),
+  reservation('b', {
+    productTitle: '아이폰 18 Pro',
+    paymentDueAt: hoursFromNow(5),
+  }),
+]
+const inProgress = [
+  reservation('c', {
+    productTitle: '맥북 프로 14',
+    status: 'RESERVED',
+    displayStatus: 'RESERVED',
+    paymentDueAt: null,
+    reservedAt: hoursFromNow(-1),
+  }),
+]
+const firstPage = (items: Reservation[]) => ({
+  pages: [{ items, nextCursor: null }],
+  pageParams: [undefined],
+})
 
 // Storybook엔 MSW가 없어 조회가 실패한다 — 요청을 끄고 캐시만 채운다.
+// 목록 키는 위젯이 묻는 화면 단계 묶음 — 구매 확정(NEEDS_PURCHASE)과 진행 중 탭.
 const queryClient = new QueryClient({
   defaultOptions: { queries: { enabled: false } },
 })
-queryClient.setQueryData(['reservations', 'mine'], reservations)
+queryClient.setQueryData(
+  ['reservations', 'mine', ['PAYABLE', 'PAYMENT_IN_PROGRESS']],
+  firstPage(payable),
+)
+queryClient.setQueryData(
+  ['reservations', 'mine', ['RECEIVED', 'PROCESSING', 'RESERVED', 'CANCELING']],
+  firstPage(inProgress),
+)
+queryClient.setQueryData(['reservations', 'counts'], {
+  RECEIVED: 0,
+  PROCESSING: 0,
+  PAYABLE: 2,
+  PAYMENT_IN_PROGRESS: 0,
+  PAYMENT_EXPIRED: 0,
+  RESERVED: 1,
+  CANCELING: 0,
+  CANCELED: 0,
+})
 queryClient.setQueryData(
   ['openAlerts', 'mine'],
   [

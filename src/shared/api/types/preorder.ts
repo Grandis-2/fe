@@ -64,16 +64,28 @@ export type PreorderDetail = PreorderSummary & {
   cancelable: boolean
 }
 
-// GET /api/v1/preorders 쿼리. 다음 페이지에도 status·productId는 처음과 같게 보낸다.
+// GET /api/v1/preorders 쿼리. 다음 페이지에도 status·displayStatus·productId는 처음과 같게 보낸다. 셋은 AND다.
 export type PreorderListParams = {
   status?: PreorderStatus
+  // 여러 개면 그중 하나 — 조회 시각 기준이라 결제 기한이 지난 예약은 PAYMENT_EXPIRED로 걸린다. 빈 값이 섞이면 400.
+  displayStatus?: PreorderDisplayStatus[]
   productId?: string
   cursor?: string
   // 1~100(기본 20).
   size?: number
 }
 
-export type PreorderPage = CursorPage<PreorderSummary>
+// 화면 단계별 예약 수 — 목록 조건과 상관없이 내 예약 전부. 8개 단계가 다 오고 없는 단계는 0이다.
+export type PreorderCounts = Record<PreorderDisplayStatus, number>
+
+export type PreorderPage = CursorPage<PreorderSummary> & {
+  counts: PreorderCounts
+}
+
+// GET /api/v1/preorders/counts — 목록 없이 숫자만(헤더·마이페이지 배지용). 목록 응답의 counts와 같다.
+export type PreorderCountsResponse = {
+  counts: PreorderCounts
+}
 
 // POST /api/v1/preorders 본문(대기열 게이트웨이를 거쳐서만 부른다). 수량은 항상 1.
 export type PreorderRequest = {

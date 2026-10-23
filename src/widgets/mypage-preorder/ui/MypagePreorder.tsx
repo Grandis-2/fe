@@ -11,6 +11,7 @@ import {
   useCancelReservation,
   useMyOpenAlerts,
   useMyReservations,
+  useReservationCounts,
   useToggleOpenAlert,
   type Reservation,
   type ReservationDisplayStatus,
@@ -24,6 +25,7 @@ import { paymentPath } from '@shared/config/routes'
 import { formatDotDateMinute } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { toggleInSet } from '@shared/lib/toggleInSet'
+import { useEndReached } from '@shared/lib/useEndReached'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import {
@@ -38,13 +40,14 @@ import {
 
 import * as styles from './MypagePreorder.css'
 
-// 화면 단계별 묶음 — 결제(구매 확정)가 필요한 것, 진행 중인 것, 끝난 것.
+// 화면 단계별 묶음 — 결제(구매 확정)가 필요한 것(NEEDS_PURCHASE), 진행 중인 것, 끝난 것. 서버가 이 단계로 거른다.
 const IN_PROGRESS: ReservationDisplayStatus[] = [
   'RECEIVED',
   'PROCESSING',
   'RESERVED',
   'CANCELING',
 ]
+const ENDED: ReservationDisplayStatus[] = ['PAYMENT_EXPIRED', 'CANCELED']
 // 취소는 접수·결제 대기·예약 확정일 때 할 수 있다(배송 시작 여부는 취소할 때 서버가 확인한다).
 const CANCELABLE: Reservation['status'][] = [
   'PENDING_SYNC',
@@ -116,7 +119,20 @@ export function MypagePreorder() {
       // 탭을 오갈 때마다 기록이 쌓이면 뒤로 가기로 페이지를 못 벗어난다.
       { replace: true },
     )
-  const { data, isError, error } = useMyReservations()
+  // 구매 확정 묶음은 탭과 따로 늘 받는다. 탭 목록은 고른 탭의 단계만 받는다(알림 신청 탭에선 진행 중을 둔다).
+  // ponytail: 구매 확정 묶음은 첫 쪽(20건)만 보인다 — 결제 기한이 24시간이라 그보다 많이 쌓이기 어렵다.
+  const payable = useMyReservations(NEEDS_PURCHASE)
+  const list = useMyReservations(view === 'ended' ? ENDED : IN_PROGRESS)
+  const { data: counts } = useReservationCounts()
+  // 탭 목록 끝이 화면 가까이(400px) 오면 다음 쪽을 받는다. 다음 쪽이 실패하면 멈추고 버튼으로 다시 받는다.
+  const endRef = useEndReached<HTMLDivElement>(
+    view !== 'alerts' &&
+      list.hasNextPage &&
+      !list.isFetchingNextPage &&
+      !list.isFetchNextPageError,
+    () => void list.fetchNextPage(),
+    '400px',
+  )
   const cancel = useCancelReservation()
   const openAlerts = useMyOpenAlerts()
   const toggleOpenAlert = useToggleOpenAlert()
@@ -155,34 +171,33 @@ export function MypagePreorder() {
       return next
     })
 
-  const reservations = useMemo(() => data?.items ?? [], [data])
+  const needsPayment = useMemo(
+    () => payable.data?.pages.flatMap(({ items }) => items) ?? [],
+    [payable.data],
+  )
   // 결제 기한 카운트다운 — 렌더마다 새 Date를 넘기면 useCountdown 타이머가 계속 새로 걸려 응답이 바뀔 때만 만든다.
   const dueDates = useMemo(
     () =>
       new Map(
-        reservations.map(({ preorderId, paymentDueAt }) => [
+        needsPayment.map(({ preorderId, paymentDueAt }) => [
           preorderId,
           paymentDueAt ? new Date(paymentDueAt) : undefined,
         ]),
       ),
-    [reservations],
+    [needsPayment],
   )
-  const needsPayment = reservations.filter(({ displayStatus }) =>
-    NEEDS_PURCHASE.includes(displayStatus),
-  )
-  const inProgress = reservations.filter(({ displayStatus }) =>
-    IN_PROGRESS.includes(displayStatus),
-  )
-  const ended = reservations.filter(
-    ({ displayStatus }) =>
-      !NEEDS_PURCHASE.includes(displayStatus) &&
-      !IN_PROGRESS.includes(displayStatus),
-  )
+  // 탭을 바꿔 받는 동안엔 앞 탭의 목록을 보이지 않는다.
+  const rows = list.isPlaceholderData
+    ? undefined
+    : list.data?.pages.flatMap(({ items }) => items)
 
-  // 탭 옆 건수 — 받기 전엔 비운다. 끈 알림도 다시 켤 수 있게 목록엔 남기고, 건수는 켜진 것만 센다.
+  // 탭 옆 건수 — 서버 counts(전체 기준)에서 묶음의 단계 수를 더한다. 받기 전엔 비운다.
+  // 끈 알림도 다시 켤 수 있게 목록엔 남기고, 건수는 켜진 것만 센다.
+  const sumOf = (stages: ReservationDisplayStatus[]) =>
+    counts && stages.reduce((sum, stage) => sum + counts[stage], 0)
   const countOf: Record<View, number | undefined> = {
-    progress: data && inProgress.length,
-    ended: data && ended.length,
+    progress: sumOf(IN_PROGRESS),
+    ended: sumOf(ENDED),
     alerts:
       openAlerts.data &&
       alertRows.filter((alert) => !alertOffIds.has(alert.productId)).length,
@@ -313,12 +328,21 @@ export function MypagePreorder() {
     <div className={styles.root}>
       <h1 className={styles.title}>사전예약 내역</h1>
 
-      {/* 결제 기한이 있어 놓치면 예약이 취소된다 — 어느 탭을 보고 있어도 위에 둔다. */}
-      {needsPayment.length > 0 && (
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>구매 확정이 필요해요</h2>
-          {needsPayment.map((reservation) => card(reservation, true))}
-        </section>
+      {/* 결제 기한이 있어 놓치면 예약이 취소된다 — 어느 탭을 보고 있어도 위에 둔다. 못 받았으면 없는 것과 구분해 알린다. */}
+      {!payable.data && payable.isError ? (
+        <InlineAlert status="error">
+          {getErrorMessage(
+            payable.error,
+            '구매 확정할 예약을 불러오지 못했어요.',
+          )}
+        </InlineAlert>
+      ) : (
+        needsPayment.length > 0 && (
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>구매 확정이 필요해요</h2>
+            {needsPayment.map((reservation) => card(reservation, true))}
+          </section>
+        )
       )}
 
       <div className={styles.section}>
@@ -396,30 +420,48 @@ export function MypagePreorder() {
               </ul>
             )}
           </>
-        ) : !data ? (
+        ) : !rows ? (
           // 받은 목록이 있으면 다시 받다 실패해도 그대로 보인다 — 실패 문구는 처음 받기부터 실패했을 때만.
-          isError ? (
+          list.isError ? (
             <InlineAlert status="error">
-              {getErrorMessage(error, '사전예약 내역을 불러오지 못했어요.')}
+              {getErrorMessage(
+                list.error,
+                '사전예약 내역을 불러오지 못했어요.',
+              )}
             </InlineAlert>
           ) : (
             <HistoryListSkeleton />
           )
-        ) : view === 'progress' ? (
-          inProgress.length === 0 ? (
+        ) : rows.length === 0 ? (
+          view === 'progress' ? (
             <InlineAlert status="info" variant="big" icon={CalendarClock}>
               진행 중인 예약이 없어요
             </InlineAlert>
           ) : (
-            inProgress.map((reservation) => card(reservation))
+            <InlineAlert status="info" variant="big" icon={History}>
+              지난 예약이 없어요
+            </InlineAlert>
           )
-        ) : ended.length === 0 ? (
-          <InlineAlert status="info" variant="big" icon={History}>
-            지난 예약이 없어요
-          </InlineAlert>
         ) : (
-          ended.map((reservation) => card(reservation))
+          <>
+            {rows.map((reservation) => card(reservation))}
+            {list.isFetchingNextPage && <HistoryListSkeleton count={1} />}
+            {list.isFetchNextPageError && (
+              <div className={styles.retry}>
+                <InlineAlert status="error">
+                  사전예약 내역을 더 불러오지 못했어요.
+                </InlineAlert>
+                <Button
+                  variant="outline"
+                  onClick={() => void list.fetchNextPage()}
+                >
+                  다시 불러오기
+                </Button>
+              </div>
+            )}
+          </>
         )}
+        <div ref={endRef} aria-hidden="true" />
       </div>
     </div>
   )
