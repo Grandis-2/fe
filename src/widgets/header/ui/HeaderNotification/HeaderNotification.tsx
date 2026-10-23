@@ -19,10 +19,19 @@ export type HeaderNotificationProps = {
   badge: ReactNode
 }
 
-/** 회원 알림 — 벨을 열 때만 목록을 받고, 고르면 읽음 처리하고 닫는다 */
+/** 회원 알림 — 벨을 열 때만 목록을 받고, 끝까지 내리면 다음 쪽을 붙이고, 고르면 읽음 처리하고 닫는다 */
 export function HeaderNotification({ label, badge }: HeaderNotificationProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { data: notifications, isPending, isError } = useNotifications(isOpen)
+  const {
+    data,
+    isPending,
+    isError,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+    fetchNextPage,
+  } = useNotifications(isOpen)
+  const notifications = data?.pages.flatMap(({ items }) => items)
   const readNotification = useReadNotification()
   const readAll = useReadAllNotifications()
   const hasUnread = notifications?.some((item) => !item.read) ?? false
@@ -59,7 +68,12 @@ export function HeaderNotification({ label, badge }: HeaderNotificationProps) {
       <NotificationList
         notifications={notifications}
         isPending={isPending}
-        isError={isError}
+        // 다음 쪽 실패도 isError가 켜지므로, 받은 게 없을 때만 목록 실패로 본다.
+        isError={isError && !notifications}
+        hasMore={hasNextPage}
+        isLoadingMore={isFetchingNextPage}
+        isLoadMoreError={isFetchNextPageError}
+        onLoadMore={() => void fetchNextPage()}
         onSelect={(notification) => {
           if (!notification.read)
             readNotification.mutate(notification.notificationId)
