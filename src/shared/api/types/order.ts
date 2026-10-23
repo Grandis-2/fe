@@ -39,7 +39,8 @@ export type OrderItem = {
   // unitPrice × quantity + warrantyUnitPrice × warrantyQuantity.
   lineAmount: number
   // 주문 당시 이 옵션의 사진 — 장바구니·바로 구매는 장바구니에 보이던 사진, 드로우 당첨은 증정품 사진.
-  // 사전예약 주문, 사진을 남기기 전에 만든 주문, 사진이 없는 옵션은 null.
+  // 사전예약 주문은 10-23 배포 뒤 만든 주문부터 사진이 온다. 사진이 없는 옵션, 사진을 남기기 전(10-20 이전)에 만든 주문,
+  // 10-23 이전 사전예약 주문은 null.
   imageUrl: string | null
 }
 
@@ -83,13 +84,21 @@ export type OrderDetail = Order & {
   refundFailed: boolean
 }
 
+// GET /api/v1/orders 쿼리. 다음 쪽에도 status·from은 처음과 같게 보낸다.
 export type OrderListParams = {
+  // 여러 개면 그중 하나에 해당하는 주문. 모르는 값·빈 값이 섞이면 400.
+  status?: OrderStatus[]
+  // 이 시각(ISO-8601) 이후에 만든 주문만.
+  from?: string
   cursor?: string
   // 1~100(기본 20).
   size?: number
 }
 
-export type OrderPage = CursorPage<Order>
+// counts는 status·from과 상관없이 내 주문 전부의 상태별 수 — 9개 상태가 다 오고 없는 상태는 0이다.
+export type OrderPage = CursorPage<Order> & {
+  counts: Record<OrderStatus, number>
+}
 
 // 주문 요청의 배송지. 상세 주소는 비우면 null로 저장된다. 길이: name 50, phone 20, postalCode 10, line1·line2 200자.
 export type ShipToInput = Omit<ShipTo, 'line2'> & { line2?: string | null }

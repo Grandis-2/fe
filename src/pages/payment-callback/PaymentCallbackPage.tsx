@@ -46,8 +46,17 @@ export function PaymentCallbackPage() {
     if (!orderToken || !paymentKey || !tossOrderId || !amount) {
       // 사용자가 결제창을 닫으면 토스가 failUrl로 code=PAY_PROCESS_CANCELED를 붙여 보낸다 — 실패가 아니라
       // 결제를 안 한 것이니 실패 화면 대신 같은 예약의 결제 화면으로 돌려보낸다(requestTossPayment의 USER_CANCEL과 같은 취급).
-      if (searchParams.get('code') === 'PAY_PROCESS_CANCELED' && preorderId) {
-        navigate(paymentPath(preorderId), { replace: true })
+      // 장바구니·바로 구매는 고른 줄(?cart=, history state)이 남아 있지 않아 결제 화면으로 못 돌아가므로,
+      // 주문이 결제 대기로 남아 있는 주문 내역으로 보낸다(거기서 기한 안에 같은 주문을 다시 결제한다).
+      if (searchParams.get('code') === 'PAY_PROCESS_CANCELED') {
+        if (preorderId) {
+          navigate(paymentPath(preorderId), { replace: true })
+          return
+        }
+        showToast(
+          '결제를 취소했어요. 주문 내역에서 결제 기한 안에 다시 결제할 수 있어요.',
+        )
+        navigate(mypagePath('history'), { replace: true })
         return
       }
       fail(searchParams.get('message'))

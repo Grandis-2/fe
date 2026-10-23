@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router'
 
 import {
   brandMenus,
+  sendSearch,
   usePopularKeywords,
   useProducts,
   type ProductListItem,
@@ -76,16 +77,6 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
   // 실패(503 등)·빈 목록이면 명세대로 영역째 숨긴다.
   const { data: popularKeywords } = usePopularKeywords()
 
-  const pick = (label: string) => {
-    setQuery(label)
-    inputRef.current?.focus()
-  }
-
-  const commit = (label: string) => {
-    pick(label)
-    add(label)
-  }
-
   // 예약 중인 사전예약 상품은 상세로 바로 가지 않고 대기열을 거친다(다른 목록과 같다).
   // 이동을 막아 주소가 그대로라 오버레이가 스스로 닫히지 않으므로 여기서 닫는다.
   const enterPreorder = enterPreorderOnClick(useRequireLogin())
@@ -95,9 +86,10 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
       if (event.defaultPrevented) onClose()
     }
 
-  // 엔터와 같다 — 검색 결과 화면으로 간다(주소가 바뀌면 오버레이는 스스로 닫힌다).
+  // 엔터·검색어 칩 — 검색 결과 화면으로 간다(주소가 바뀌면 오버레이는 스스로 닫힌다).
   const submit = (label: string) => {
     add(label)
+    sendSearch(label)
     navigate(searchResultsPath(label))
   }
 
@@ -145,7 +137,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
                   {recent.map((label) => (
                     <li key={label}>
                       <Chip
-                        onClick={() => pick(label)}
+                        onClick={() => submit(label)}
                         onRemove={() => remove(label)}
                         removeLabel={`${label} 삭제`}
                       >
@@ -166,7 +158,7 @@ export function SearchOverlay({ onClose }: SearchOverlayProps) {
                       <button
                         type="button"
                         className={styles.popularItem}
-                        onClick={() => commit(label)}
+                        onClick={() => submit(label)}
                       >
                         <span
                           className={

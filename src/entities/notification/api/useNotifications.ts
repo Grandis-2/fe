@@ -1,7 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  type InfiniteData,
+} from '@tanstack/react-query'
 
 import { queryPolicy } from '@shared/api/queryPolicy'
-import type { NotificationItem } from '@shared/api/types'
+import type { NotificationItem, NotificationList } from '@shared/api/types'
 
 import {
   getNotifications,
@@ -14,20 +19,34 @@ export const notificationKeys = {
   unreadCount: ['notifications', 'unread-count'] as const,
 }
 
+type NotificationPages = InfiniteData<NotificationList, string | undefined>
+
 // 헤더 알림 패널용. 패널을 열 때만 묻는다 — 닫혀 있는 동안은 배지 개수로 충분하다.
+// 패널 끝에 닿으면 fetchNextPage로 nextCursor의 다음 쪽을 붙인다(무한 스크롤).
 export const useNotifications = (enabled: boolean) =>
-  useQuery({
+  useInfiniteQuery({
     queryKey: notificationKeys.list,
-    queryFn: async ({ signal }) => (await getNotifications(signal)).items,
+    queryFn: ({ pageParam, signal }) => getNotifications(pageParam, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: ({ nextCursor }) => nextCursor ?? undefined,
     enabled,
     ...queryPolicy.live,
   })
 
-// 읽음은 실시간 연결로 오지 않는다(명세) — 204를 받으면 화면의 항목과 배지를 직접 맞춘다.
+// 읽음은 실시간 연결로 오지 않는다(명세) — 204를 받으면 받아 둔 모든 쪽의 항목과 배지를 직접 맞춘다.
 const markRead = (
-  list: NotificationItem[] | undefined,
+  data: NotificationPages | undefined,
   isTarget: (item: NotificationItem) => boolean,
-) => list?.map((item) => (isTarget(item) ? { ...item, read: true } : item))
+) =>
+  data && {
+    ...data,
+    pages: data.pages.map((page) => ({
+      ...page,
+      items: page.items.map((item) =>
+        isTarget(item) ? { ...item, read: true } : item,
+      ),
+    })),
+  }
 
 // 안 읽은 알림을 눌렀을 때만 부른다 — 이미 읽은 알림은 배지를 줄이지 않는다.
 export const useReadNotification = () => {
@@ -38,14 +57,16 @@ export const useReadNotification = () => {
       // 같은 알림을 연달아 눌러 204가 두 번 와도 배지는 한 번만 줄인다.
       const wasUnread =
         queryClient
-          .getQueryData<NotificationItem[]>(notificationKeys.list)
-          ?.some(
-            (item) => item.notificationId === notificationId && !item.read,
+          .getQueryData<NotificationPages>(notificationKeys.list)
+          ?.pages.some((page) =>
+            page.items.some(
+              (item) => item.notificationId === notificationId && !item.read,
+            ),
           ) ?? true
-      queryClient.setQueryData<NotificationItem[]>(
+      queryClient.setQueryData<NotificationPages>(
         notificationKeys.list,
-        (list) =>
-          markRead(list, (item) => item.notificationId === notificationId),
+        (data) =>
+          markRead(data, (item) => item.notificationId === notificationId),
       )
       if (wasUnread)
         queryClient.setQueryData<number>(
@@ -64,9 +85,9 @@ export const useReadAllNotifications = () => {
   return useMutation({
     mutationFn: readAllNotifications,
     onSuccess: () => {
-      queryClient.setQueryData<NotificationItem[]>(
+      queryClient.setQueryData<NotificationPages>(
         notificationKeys.list,
-        (list) => markRead(list, () => true),
+        (data) => markRead(data, () => true),
       )
       queryClient.setQueryData<number>(notificationKeys.unreadCount, 0)
     },

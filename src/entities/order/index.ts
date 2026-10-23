@@ -22,6 +22,7 @@ export {
   useOrders,
   usePlaceOrder,
 } from './api/useOrders'
+export type { OrderFilter } from './api/useOrders'
 export type {
   OrderDetail,
   OrderPaymentAttempt,

@@ -26,6 +26,7 @@ type RequestTossPaymentParams = {
 // 이동하므로(Redirect 방식) 이 함수는 보통 끝까지 실행되지 않는다 — 파라미터 오류
 // 등은 reject된다. 사용자가 결제창을 그냥 닫은 경우(USER_CANCEL)도 SDK가 reject하지만
 // 오류가 아니므로 삼키고 정상 반환한다(호출부가 에러 문구를 띄우지 않게).
+// PC 결제창은 이 페이지 위에 겹쳐 뜨는 창이라 뒤로 가기로 화면이 바뀌어도 남는다 — 그때 닫는다(destroy).
 export async function requestTossPayment({
   tossOrderId,
   amount,
@@ -41,6 +42,15 @@ export async function requestTossPayment({
   const payment = tossPayments.payment({ customerKey: ANONYMOUS })
   // 토스는 이 쿼리 뒤에 paymentKey·orderId(tossOrderId)·amount(실패면 code·message)를 붙여 돌려보낸다.
   const callbackUrl = `${window.location.origin}${callbackPath}?${new URLSearchParams(callbackQuery)}`
+
+  // 결제창이 떠 있으면 앱 화면은 가려져 있어서, 화면이 바뀌는 건 브라우저 뒤로·앞으로 가기뿐이다.
+  let left = false
+  const closeOnLeave = () => {
+    left = true
+    // 그사이 결제창이 이미 닫혔으면(NoActivePaymentRequestError) 할 일이 없다.
+    payment.destroy().catch(() => {})
+  }
+  window.addEventListener('popstate', closeOnLeave)
 
   try {
     await payment.requestPayment({
@@ -60,8 +70,11 @@ export async function requestTossPayment({
       },
     })
   } catch (caught) {
-    if ((caught as { code?: unknown } | null)?.code !== 'USER_CANCEL') {
-      throw caught
-    }
+    // 화면을 떠나 닫은 경우(PaymentRequestAbortedError)도 사용자가 닫은 것과 같다.
+    if (left || (caught as { code?: unknown } | null)?.code === 'USER_CANCEL')
+      return
+    throw caught
+  } finally {
+    window.removeEventListener('popstate', closeOnLeave)
   }
 }

@@ -35,6 +35,23 @@ export type MyReviewListParams = {
   size?: number
 }
 
+// GET /api/v1/reviews/writable 한 줄 — 리뷰를 쓸 수 있는 내 주문상품(배송 완료된 장바구니·바로 구매 주문상품 중 리뷰가 없는 것).
+// 사전예약·드로우 증정품은 빠진다. 리뷰를 쓰면 바로 빠지고 지우면 다시 나온다. 이름·사진·금액은 주문 당시 값이다.
+export type WritableItemView = {
+  orderItemId: string
+  orderId: string
+  productId: string
+  optionId: string
+  productTitle: string
+  optionTitle: string
+  // 사진이 없는 옵션, 사진을 남기기 전에 만든 주문은 null.
+  imageUrl: string | null
+  quantity: number
+  // 단가 × 수량 + 보증가 × 보증 수량.
+  lineAmount: number
+  orderedAt: string
+}
+
 // POST /api/v1/reviews — 배송 완료된 일반 판매 주문상품 하나에 리뷰 하나. 모르는 필드는 400.
 export type ReviewCreateRequest = Pick<ReviewView, 'rating' | 'body'> & {
   orderItemId: string

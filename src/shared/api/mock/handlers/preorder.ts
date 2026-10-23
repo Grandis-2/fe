@@ -7,12 +7,14 @@ import { url } from '../url'
 import { isUuid, uuidViolation } from '../validate'
 
 import type {
-  CursorPage,
   PreorderCancelResult,
+  PreorderCounts,
+  PreorderCountsResponse,
   PreorderDetail,
   PreorderDisplayStatus,
   PreorderEvent,
   PreorderEventListResponse,
+  PreorderPage,
   PreorderStatus,
   PreorderSummary,
   OpenAlert,
@@ -35,6 +37,17 @@ const STATUSES: PreorderStatus[] = [
   'CANCELED',
 ]
 const CANCELABLE: PreorderStatus[] = ['PENDING_SYNC', 'REGISTERED', 'RESERVED']
+// 명세의 화면 단계 순서 — counts도 이 순서로 담는다.
+const DISPLAY_STATUSES: PreorderDisplayStatus[] = [
+  'RECEIVED',
+  'PROCESSING',
+  'PAYABLE',
+  'PAYMENT_IN_PROGRESS',
+  'PAYMENT_EXPIRED',
+  'RESERVED',
+  'CANCELING',
+  'CANCELED',
+]
 
 const msSince = (iso: string) => Date.now() - new Date(iso).getTime()
 
@@ -116,6 +129,17 @@ function displayStatusOf(record: PreorderRecord): PreorderDisplayStatus {
     default:
       return record.status
   }
+}
+
+// 내 예약 전부의 화면 단계별 수 — 8개 단계가 다 들어 있고 없는 단계는 0.
+const countByDisplayStatus = () => {
+  const summaries = preorders.map(toSummary)
+  return Object.fromEntries(
+    DISPLAY_STATUSES.map((it) => [
+      it,
+      summaries.filter(({ displayStatus }) => displayStatus === it).length,
+    ]),
+  ) as PreorderCounts
 }
 
 export function toSummary(record: PreorderRecord): PreorderSummary {
@@ -249,12 +273,25 @@ export const preorderHandlers: RequestHandler[] = [
     },
   ),
 
-  // 내 예약 — 최신순, 취소된 예약 포함. 커서 페이지.
+  // 배지용 화면 단계별 수 — 목록 응답의 counts와 같다. :preorderId보다 먼저 둔다.
+  http.get(url('/api/v1/preorders/counts'), ({ request }) => {
+    if (!hasToken(request)) return unauthenticated()
+    return ok<PreorderCountsResponse>({ counts: countByDisplayStatus() })
+  }),
+
+  // 내 예약 — 최신순, 취소된 예약 포함. 커서 페이지. displayStatus는 여러 개면 그중 하나(조회 시각 기준)이고
+  // counts는 거르기와 상관없이 전부의 단계별 수다.
   http.get(url('/api/v1/preorders'), ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     const params = new URL(request.url).searchParams
     const size = Number(params.get('size') ?? 20)
     const status = params.get('status')
+    // displayStatus= 하나뿐이면 보내지 않은 것과 같고, 빈 값이 섞이면 400이다.
+    const displayStatuses = params.getAll('displayStatus')
+    const displayStatus =
+      displayStatuses.length === 1 && displayStatuses[0] === ''
+        ? []
+        : displayStatuses
     const productId = params.get('productId')
     const cursor = params.get('cursor')
     const violations = [
@@ -264,6 +301,11 @@ export const preorderHandlers: RequestHandler[] = [
       ...(status && !STATUSES.includes(status as PreorderStatus)
         ? [{ field: 'status', message: '형식이 올바르지 않습니다.' }]
         : []),
+      ...(displayStatus.every((it) =>
+        DISPLAY_STATUSES.includes(it as PreorderDisplayStatus),
+      )
+        ? []
+        : [{ field: 'displayStatus', message: '형식이 올바르지 않습니다.' }]),
       ...(productId && !isUuid(productId)
         ? [{ field: 'productId', message: '형식이 올바르지 않습니다.' }]
         : []),
@@ -283,12 +325,15 @@ export const preorderHandlers: RequestHandler[] = [
       .filter(
         (it) =>
           (!status || it.status === status) &&
+          (displayStatus.length === 0 ||
+            displayStatus.includes(it.displayStatus)) &&
           (!productId || it.productId === productId),
       )
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-    return ok<CursorPage<PreorderSummary>>({
+    return ok<PreorderPage>({
       items: matched.slice(start, start + size),
       nextCursor: start + size < matched.length ? String(start + size) : null,
+      counts: countByDisplayStatus(),
     })
   }),
 

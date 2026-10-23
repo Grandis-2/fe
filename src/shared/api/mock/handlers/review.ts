@@ -14,6 +14,7 @@ import type {
   PageResponse,
   ReviewUpdateRequest,
   ReviewView,
+  WritableItemView,
 } from '../../types'
 import type { RequestHandler } from 'msw'
 
@@ -148,6 +149,41 @@ export const reviewHandlers: RequestHandler[] = [
       )
       .sort(newestFirst)
     return ok<PageResponse<ReviewView>>(toPage(matched, page, size))
+  }),
+
+  // 리뷰를 쓸 수 있는 내 주문상품 — 배송 완료된 장바구니·바로 구매 주문상품 중 리뷰가 없는 것, 주문 최신순.
+  // 사전예약·드로우 증정품은 빠진다. 리뷰를 쓰면 바로 빠지고 지우면 다시 나온다.
+  http.get(url('/api/v1/reviews/writable'), ({ request }) => {
+    if (!hasToken(request)) return unauthenticated()
+    const { page, size, violations } = readPaging(
+      new URL(request.url).searchParams,
+    )
+    if (violations.length > 0) return invalid(violations)
+
+    const reviewed = new Set(reviews.map(({ orderItemId }) => orderItemId))
+    const writable = orders
+      .filter(
+        ({ status, source }) =>
+          status === 'DELIVERED' && (source === 'CART' || source === 'BUY_NOW'),
+      )
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .flatMap((order) =>
+        order.items
+          .filter(({ orderItemId }) => !reviewed.has(orderItemId))
+          .map((item): WritableItemView => ({
+            orderItemId: item.orderItemId,
+            orderId: order.orderId,
+            productId: item.productId,
+            optionId: item.optionId,
+            productTitle: item.productTitle,
+            optionTitle: item.optionTitle,
+            imageUrl: item.imageUrl,
+            quantity: item.quantity,
+            lineAmount: item.lineAmount,
+            orderedAt: order.createdAt,
+          })),
+      )
+    return ok<PageResponse<WritableItemView>>(toPage(writable, page, size))
   }),
 
   http.post(url('/api/v1/reviews'), async ({ request }) => {

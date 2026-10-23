@@ -175,3 +175,11 @@ export const factValue = style([
     '@media': { [breakpoint.mobile]: { fontSize: fontSize[14] } },
   },
 ])
+
+// 다음 쪽을 못 받았을 때 목록 아래 — 안내와 다시 불러오기 버튼.
+export const retry = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: spacing[12],
+})

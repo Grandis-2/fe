@@ -1,40 +1,62 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { keepNewer, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { PreorderStatus } from '@shared/api/types'
 
-import { NEEDS_PURCHASE, type ReservationDetail } from '../model/reservation'
+import {
+  NEEDS_PURCHASE,
+  type ReservationDetail,
+  type ReservationDisplayStatus,
+} from '../model/reservation'
 
 import {
   cancelReservation,
   getMyReservations,
   getReservation,
+  getReservationCounts,
   getReservationHistory,
 } from './reservation'
 
 // 외부 등록·취소는 서버가 비동기로 끝낸다 — 이 상태면 상세를 다시 물어 바뀐 상태를 받는다.
 const SETTLING: PreorderStatus[] = ['PENDING_SYNC', 'CANCELING']
 const SETTLE_POLL_MS = 3_000
-// ponytail: 목록은 첫 쪽(최대 100건)만 받는다 — 화면에 더 보기가 생기면 useInfiniteQuery로 nextCursor를 잇는다.
-const FIRST_PAGE = { size: 100 }
 
 export const reservationKeys = {
   all: ['reservations'] as const,
-  mine: ['reservations', 'mine'] as const,
+  mine: (displayStatus: ReservationDisplayStatus[]) =>
+    ['reservations', 'mine', displayStatus] as const,
+  counts: ['reservations', 'counts'] as const,
   detail: (preorderId: string) =>
     ['reservations', 'detail', preorderId] as const,
   history: (preorderId: string) =>
     ['reservations', 'history', preorderId] as const,
 }
 
-// 결제 기한·상태가 서버에서 바뀌는 값이라 볼 때마다 새로 묻는다.
-// 헤더 배지처럼 로그인했을 때만 묻는 곳은 enabled로 끈다(비로그인은 401).
-export const useMyReservations = ({
-  enabled = true,
-}: { enabled?: boolean } = {}) =>
+// 내 예약 — 화면 단계(displayStatus) 중 하나에 해당하는 것을 서버가 거르고 nextCursor로 20건씩 잇는다(무한 스크롤).
+// 결제 기한·상태가 서버에서 바뀌는 값이라 볼 때마다 새로 묻는다. 탭을 바꾸는 동안엔 앞 목록을 그대로 두고
+// 화면은 isPlaceholderData로 받는 중으로 그린다.
+export const useMyReservations = (displayStatus: ReservationDisplayStatus[]) =>
+  useInfiniteQuery({
+    queryKey: reservationKeys.mine(displayStatus),
+    queryFn: ({ pageParam, signal }) =>
+      getMyReservations({ displayStatus, cursor: pageParam }, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: ({ nextCursor }) => nextCursor ?? undefined,
+    placeholderData: keepPreviousData,
+    ...queryPolicy.live,
+  })
+
+// 화면 단계별 예약 수(조건과 상관없는 전체). 헤더 배지처럼 로그인했을 때만 묻는 곳은 enabled로 끈다(비로그인은 401).
+export const useReservationCounts = (enabled = true) =>
   useQuery({
-    queryKey: reservationKeys.mine,
-    queryFn: ({ signal }) => getMyReservations(FIRST_PAGE, signal),
+    queryKey: reservationKeys.counts,
+    queryFn: ({ signal }) => getReservationCounts(signal),
     enabled,
     ...queryPolicy.live,
   })
@@ -42,13 +64,9 @@ export const useMyReservations = ({
 // 구매 확정(결제)이 필요한 사전예약 수 — 헤더 마이페이지 아이콘과 마이페이지 메뉴의 숫자가 같이 써서
 // 둘이 어긋나지 않는다.
 export const usePendingPurchaseCount = (enabled = true) => {
-  const { data } = useMyReservations({ enabled })
-  if (!enabled) return 0
-  return (
-    data?.items.filter(({ displayStatus }) =>
-      NEEDS_PURCHASE.includes(displayStatus),
-    ).length ?? 0
-  )
+  const { data } = useReservationCounts(enabled)
+  if (!enabled || !data) return 0
+  return NEEDS_PURCHASE.reduce((sum, stage) => sum + data[stage], 0)
 }
 
 const settlePollMs = (data: ReservationDetail | undefined) =>

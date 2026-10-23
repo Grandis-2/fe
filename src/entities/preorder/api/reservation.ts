@@ -3,6 +3,7 @@ import { toQueryString } from '@shared/api/queryString'
 import type {
   PreorderCancelRequest,
   PreorderCancelResult,
+  PreorderCountsResponse,
   PreorderEventListResponse,
   PreorderListParams,
   PreorderPage,
@@ -14,7 +15,7 @@ const path = (preorderId: string) =>
   `/api/v1/preorders/${encodeURIComponent(preorderId)}`
 
 // [preorder] GET /api/v1/preorders — 내 예약 목록
-// 내 예약 — 최신순, 취소된 예약 포함. 커서 페이지(nextCursor가 null이면 마지막).
+// 내 예약 — 최신순, 취소된 예약 포함. 커서 페이지(nextCursor가 null이면 마지막). counts는 조건과 상관없는 전체 기준.
 export const getMyReservations = (
   params: PreorderListParams,
   signal?: AbortSignal,
@@ -22,6 +23,16 @@ export const getMyReservations = (
   apiClient.request<PreorderPage>(`/api/v1/preorders${toQueryString(params)}`, {
     signal,
   })
+
+// [preorder] GET /api/v1/preorders/counts — 내 예약 화면 단계별 수
+// 목록 없이 숫자만 — 헤더·마이페이지 배지가 부른다. 8개 단계가 다 오고 없는 단계는 0.
+export const getReservationCounts = async (signal?: AbortSignal) =>
+  (
+    await apiClient.request<PreorderCountsResponse>(
+      '/api/v1/preorders/counts',
+      { signal },
+    )
+  ).counts
 
 // [preorder] GET /api/v1/preorders/{preorderId} — 예약 상세
 // 예약 상세 — 접수 뒤 폴링하는 대상. 남의 예약은 404.

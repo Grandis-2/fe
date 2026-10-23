@@ -90,9 +90,3 @@ export const sectionTitle = style([
     '@media': { [productDetailBreakpoint.mobile]: { fontSize: fontSize[20] } },
   },
 ])
-
-export const reviewList = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[20],
-})

@@ -1,4 +1,4 @@
-import { http } from 'msw'
+import { http, HttpResponse } from 'msw'
 
 import {
   categories,
@@ -166,6 +166,16 @@ export const productHandlers: RequestHandler[] = [
 
     return ok<PageResponse<ProductListItem>>(toPage(matched, page, size))
   }),
+
+  // 조회·검색 신호 — 목은 세지 않고 받기만 한다(실서버도 세지 않은 경우까지 204).
+  http.post(
+    url('/api/v1/products/searches'),
+    () => new HttpResponse(null, { status: 204 }),
+  ),
+  http.post(
+    url('/api/v1/products/:productId/views'),
+    () => new HttpResponse(null, { status: 204 }),
+  ),
 
   // 목엔 검색·조회 집계가 없어 고정 순위를 준다 — 누르면 목 검색에 결과가 나오는 검색어만 둔다.
   http.get(url('/api/v1/products/searches/popular'), () =>

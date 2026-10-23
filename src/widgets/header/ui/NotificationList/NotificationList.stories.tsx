@@ -108,3 +108,25 @@ export const LoadError: Story = {
     await expect(canvas.getByText('알림을 불러오지 못했어요.')).toBeVisible()
   },
 }
+
+// 끝까지 내려 다음 쪽을 받는 중 — 목록 아래에 한 줄 자리를 깐다.
+export const LoadingMore: Story = {
+  args: { hasMore: true, isLoadingMore: true, onLoadMore: fn() },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('사전예약 오픈')).toBeVisible()
+    await expect(canvas.getByRole('status')).toHaveAttribute(
+      'aria-busy',
+      'true',
+    )
+  },
+}
+
+// 다음 쪽만 실패 — 받아 둔 알림은 그대로 두고, 스크롤로 계속 두드리지 않게 버튼으로 다시 받는다.
+export const LoadMoreError: Story = {
+  args: { hasMore: true, isLoadMoreError: true, onLoadMore: fn() },
+  play: async ({ args, canvas, userEvent }) => {
+    await expect(canvas.getByText('사전예약 오픈')).toBeVisible()
+    await userEvent.click(canvas.getByRole('button', { name: '다시 불러오기' }))
+    await expect(args.onLoadMore).toHaveBeenCalled()
+  },
+}

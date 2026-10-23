@@ -139,6 +139,14 @@ export const tile = style([
   },
 ])
 
+// 상품 카드(ProductCard)의 사전예약 태그와 같은 자리. 키운 사진(scale)보다 위에 둔다.
+export const badge = style({
+  position: 'absolute',
+  top: spacing[16],
+  left: spacing[16],
+  zIndex: 1,
+})
+
 export const image = style({
   display: 'block',
   width: '100%',
