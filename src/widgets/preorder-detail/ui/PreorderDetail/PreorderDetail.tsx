@@ -92,7 +92,8 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
     [preorder.opensAt, preorder.openTime],
   )
   const countdown = useCountdown(openAt)
-  // 알림 마감(오픈 1시간 전)부터 오픈까지 — 예약 버튼은 보이되 막아 둔다. 카운트다운이 매초 다시 그려 오픈 순간 풀린다.
+  // 알림 마감(오픈 1시간 전)부터 오픈까지 — 카운트다운을 보인다. 시트는 열리고 그 안의 예약하기만
+  // 모델 오픈 시각까지 막힌다(isModelReservable). 카운트다운이 매초 다시 그려 오픈 순간 풀린다.
   const isBeforeOpen = status === 'live' && !countdown.isOver
 
   // 예약·오픈 알림은 회원 전용, 마감 후 일반 구매는 상품 페이지로 바로 간다.
@@ -252,12 +253,7 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
             사전예약은 종료되었어요. 지금은 일반 구매로 만나보세요.
           </div>
         )}
-        <Button
-          size="large"
-          className={styles.cta}
-          disabled={isBeforeOpen}
-          onClick={openSheet}
-        >
+        <Button size="large" className={styles.cta} onClick={openSheet}>
           {ctaLabel}
         </Button>
       </div>
