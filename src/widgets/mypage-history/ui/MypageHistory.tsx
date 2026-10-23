@@ -29,12 +29,17 @@ import { ActionButton, Button, Chip, Dropdown, InlineAlert } from '@shared/ui'
 
 import * as styles from './MypageHistory.css'
 
-// 요약 칸과 상태 칩이 같이 쓰는 묶음 — 결제 대기는 사용자가 할 일이 남은 상태라 경고색으로 센다.
-const summary: { label: string; statuses: OrderStatus[]; warning?: true }[] = [
+// 요약 칸과 상태 칩이 같이 쓰는 묶음 — 결제 대기는 사용자가 할 일이 남은 상태라 경고색으로,
+// 취소 완료는 끝난 일이라 흐리게 센다.
+const summary: {
+  label: string
+  statuses: OrderStatus[]
+  tone?: 'warning' | 'muted'
+}[] = [
   {
     label: '결제 대기',
     statuses: ['AWAITING_PAYMENT', 'AUTHORIZING'],
-    warning: true,
+    tone: 'warning',
   },
   {
     label: '배송 준비',
@@ -43,7 +48,7 @@ const summary: { label: string; statuses: OrderStatus[]; warning?: true }[] = [
   { label: '배송 중', statuses: ['SHIPPED'] },
   { label: '배송 완료', statuses: ['DELIVERED'] },
   // 취소 처리 중도 곧 취소 완료가 되므로 같이 센다.
-  { label: '취소 완료', statuses: ['CANCELING', 'CANCELED'] },
+  { label: '취소 완료', statuses: ['CANCELING', 'CANCELED'], tone: 'muted' },
 ]
 
 // 칩 — '전체' 아니면 요약 칸 하나와 같은 상태 묶음만 서버에 묻는다.
@@ -197,16 +202,14 @@ export function MypageHistory() {
       <h1 className={styles.title}>주문 내역</h1>
 
       <dl className={styles.summary}>
-        {summary.map(({ label, warning }) => {
+        {summary.map(({ label, tone }) => {
           const count = countOf(counts, label)
           return (
             <div key={label} className={styles.summaryItem}>
               <dt className={styles.summaryLabel}>{label}</dt>
               <dd
                 className={
-                  styles.summaryValue[
-                    !count ? 'empty' : warning ? 'warning' : 'default'
-                  ]
+                  styles.summaryValue[count ? (tone ?? 'default') : 'empty']
                 }
               >
                 {count}
@@ -264,6 +267,9 @@ export function MypageHistory() {
             key={order.orderId}
             tag={orderStatusTag[order.status]}
             highlight={awaitingPayment ? 'warning' : undefined}
+            className={
+              order.status === 'CANCELED' ? styles.canceledCard : undefined
+            }
             preorder={order.source === 'PREORDER'}
             orderDate={formatDotDateMinute(order.createdAt)}
             orderNumber={shortId(order.orderId)}
