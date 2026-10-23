@@ -1,4 +1,6 @@
-import { Plus, SquarePen } from 'lucide-react'
+import { useRef, useState } from 'react'
+
+import { GripVertical, Plus, SquarePen, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -10,9 +12,10 @@ import {
 } from '@entities/admin-banner'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_BANNER_NEW_PATH, adminBannerPath } from '@shared/config/routes'
+import { useDragReorder } from '@shared/lib/useDragReorder'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
-import { ActionMenu, Button, InlineAlert, Table, Tag } from '@shared/ui'
+import { Button, InlineAlert, Table, Tag } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
 import * as styles from './AdminBannersPage.css'
@@ -32,28 +35,60 @@ const visibility = ({ visible, targetLive }: AdminBanner) =>
 
 const visibilityLabels = ['숨김', '노출 중', '대상 종료']
 
-/** 배너 관리. 메인에 보이는 순서대로 나열한다 — 순서는 ⋮ 메뉴에서 한 칸씩 옮긴다. */
+/** 배너 관리. 메인에 보이는 순서대로 나열한다 — 줄을 끌어 놓거나 ↑/↓로 순서를 바꾼다. */
 export function AdminBannersPage() {
   const navigate = useNavigate()
   const banners = useAdminBanners()
   const remove = useDeleteAdminBanner()
   const reorder = useReorderAdminBanners()
-  const rows = banners.data ?? []
+  // 끄는 동안·저장하는 동안 화면에 보일 순서. 응답이 오면 캐시가 같은 순서라 비운다.
+  const [order, setOrder] = useState<string[] | null>(null)
+  const byId = new Map(banners.data?.map((banner) => [banner.bannerId, banner]))
+  const rows = order?.flatMap((id) => byId.get(id) ?? []) ?? banners.data ?? []
   const pending = remove.isPending || reorder.isPending
 
-  // 순서 API는 모든 배너 id를 받는다 — 지금 목록에서 한 칸만 바꿔 통째로 보낸다.
-  const move = (index: number, offset: -1 | 1) => {
-    const ids = rows.map((banner) => banner.bannerId)
-    ;[ids[index], ids[index + offset]] = [ids[index + offset], ids[index]]
+  // 순서 API는 모든 배너 id를 받는다 — 바뀐 순서를 통째로 보낸다.
+  const commit = (ids: string[]) => {
+    const saved = banners.data?.map((banner) => banner.bannerId) ?? []
+    if (ids.join() === saved.join()) {
+      setOrder(null)
+      return
+    }
+    setOrder(ids)
     remove.reset()
-    reorder.mutate(ids)
+    reorder.mutate(ids, { onSettled: () => setOrder(null) })
   }
+
+  const ids = rows.map((banner) => banner.bannerId)
+  // 끄는 동안 마지막으로 옮긴 순서 — 마지막 옮김이 화면에 그려지기 전에 놓아도 그 순서로 저장한다.
+  const draggedRef = useRef<string[] | null>(null)
+  // 끄는 동안엔 화면용 순서만 바꾸고 놓을 때 한 번 저장한다. 키보드는 한 칸마다 저장한다.
+  const { draggingId, itemProps } = useDragReorder({
+    ids,
+    onReorder: (next, via) => {
+      if (via === 'keyboard') {
+        commit(next)
+        return
+      }
+      draggedRef.current = next
+      setOrder(next)
+    },
+    // 표 밖에 놓았거나 Esc로 취소했다 — 브라우저도 그림을 제자리로 돌려보내니
+    // 순서도 저장하지 않고 원래대로 둔다.
+    onDragEnd: (cancelled) => {
+      const dragged = draggedRef.current
+      draggedRef.current = null
+      if (cancelled) setOrder(null)
+      else commit(dragged ?? ids)
+    },
+    isLocked: () => pending,
+  })
 
   const confirmDelete = (banner: AdminBanner) =>
     openModal({
       theme: 'light',
       title: '배너 지우기',
-      description: `'${banner.tabLabel}' 배너를 지울까요?\n되돌릴 수 없습니다. 잠시 내리려면 고치기에서 노출을 꺼 주세요.`,
+      description: `'${banner.tabLabel}' 배너를 지울까요?\n되돌릴 수 없습니다. 잠시 내리려면 수정에서 노출을 꺼 주세요.`,
       confirmLabel: '지우기',
       onConfirm: () => {
         closeModal()
@@ -65,6 +100,23 @@ export function AdminBannersPage() {
     })
 
   const columns: TableColumn<AdminBanner>[] = [
+    {
+      // 줄을 잡아 끄는 손잡이 — 제목 없이 좁게 둔다.
+      key: 'grip',
+      header: '',
+      align: 'center',
+      width: '40px',
+      render: () => <GripVertical className={styles.grip} aria-hidden="true" />,
+    },
+    {
+      key: 'order',
+      header: '순서',
+      align: 'center',
+      width: '64px',
+      render: (banner) => (
+        <span className={styles.order}>{rows.indexOf(banner) + 1}</span>
+      ),
+    },
     {
       key: 'tabLabel',
       header: '탭 이름',
@@ -107,37 +159,21 @@ export function AdminBannersPage() {
       },
     },
     {
-      key: 'menu',
-      header: '관리',
+      key: 'delete',
+      header: '삭제',
       align: 'center',
       width: '80px',
-      render: (banner) => {
-        const index = rows.indexOf(banner)
-        return (
-          <ActionMenu
-            label={`${banner.tabLabel} 관리 메뉴`}
-            disabled={pending}
-            items={[
-              {
-                label: '위로 옮기기',
-                onSelect: () => move(index, -1),
-                disabledReason: index === 0 ? '맨 앞입니다.' : undefined,
-              },
-              {
-                label: '아래로 옮기기',
-                onSelect: () => move(index, 1),
-                disabledReason:
-                  index === rows.length - 1 ? '맨 뒤입니다.' : undefined,
-              },
-              {
-                label: '지우기',
-                onSelect: () => confirmDelete(banner),
-                danger: true,
-              },
-            ]}
-          />
-        )
-      },
+      render: (banner) => (
+        <button
+          type="button"
+          className={styles.deleteButton}
+          aria-label={`${banner.tabLabel} 삭제`}
+          disabled={pending}
+          onClick={() => confirmDelete(banner)}
+        >
+          <Trash2 className={styles.deleteIcon} aria-hidden="true" />
+        </button>
+      ),
     },
   ]
 
@@ -172,7 +208,18 @@ export function AdminBannersPage() {
         columns={columns}
         rows={rows}
         rowKey={(banner) => banner.bannerId}
-        pageSize={10}
+        // 쪽을 나누면 다른 쪽으로 끌어 옮길 수 없어 한 번에 다 보인다.
+        animateRowMoves
+        rowClassName={(banner) =>
+          [styles.row, draggingId === banner.bannerId && styles.rowDragging]
+            .filter(Boolean)
+            .join(' ')
+        }
+        rowProps={(banner) => ({
+          ...itemProps(banner.bannerId),
+          tabIndex: 0,
+          'aria-label': `${ids.indexOf(banner.bannerId) + 1}번째 ${banner.tabLabel}, 위아래 화살표로 순서 바꾸기`,
+        })}
         rowAction={{
           header: '수정',
           label: (banner) => `${banner.tabLabel} 수정`,

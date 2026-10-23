@@ -11,11 +11,37 @@ export const root = style({
   maxWidth: '1000px',
 })
 
+export const badges = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[8],
+})
+
+export const field = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[4],
+})
+
+export const counter = style([
+  typography.body.caption,
+  {
+    alignSelf: 'flex-end',
+    color: color.text.tertiary,
+    fontVariantNumeric: 'tabular-nums',
+  },
+])
+
+// 쓴 만큼 늘어나 스크롤 없이 다 보인다. 비어 있을 땐 100px로 시작한다.
+export const autoGrow = style({
+  fieldSizing: 'content',
+  minHeight: '100px',
+})
+
 export const iconGrid = style({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))',
   gap: spacing[8],
-  marginTop: spacing[12],
 })
 
 export const iconButton = style({
@@ -40,10 +66,12 @@ export const selected = style({
   color: color.primary.base,
 })
 
+// 대체 문구 칸을 사진 칸 폭(ImageUploader의 banner 타일 maxWidth)에 맞춘다.
 export const imageRow = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[12],
+  maxWidth: '480px',
 })
 
 export const targetList = style({
@@ -53,7 +81,8 @@ export const targetList = style({
   overflowY: 'auto',
   marginTop: spacing[8],
   padding: spacing[8],
-  border: `1px solid ${color.border.default}`,
+  // 바로 위 검색칸(Input)과 같은 테두리 색.
+  border: `1px solid ${color.primary.surface}`,
   borderRadius: '12px',
   background: color.background.base,
 })
@@ -74,6 +103,19 @@ export const targetItem = style([
   },
 ])
 
+export const targetItemTaken = style({
+  color: color.text.disabled,
+  cursor: 'not-allowed',
+  selectors: {
+    '&:hover': { background: 'transparent' },
+  },
+})
+
+export const takenNote = style([
+  typography.body.caption,
+  { marginLeft: 'auto', color: color.text.tertiary },
+])
+
 export const hint = style([
   typography.body.sub,
   { padding: spacing[12], color: color.text.tertiary },
@@ -83,18 +125,11 @@ export const toggleRow = style([
   typography.body.defaultRegular,
   {
     display: 'inline-flex',
+    // 섹션 본문이 세로 flex라 그냥 두면 줄 끝까지 늘어나 빈 곳을 눌러도 켜지고 꺼진다.
+    alignSelf: 'flex-start',
     alignItems: 'center',
     gap: spacing[12],
     color: color.text.primary,
     cursor: 'pointer',
   },
 ])
-
-export const actions = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'flex-end',
-  gap: spacing[8],
-  marginTop: spacing[16],
-})

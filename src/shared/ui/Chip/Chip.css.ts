@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css'
+import { style, styleVariants } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@shared/config/theme'
 import { fontWeight } from '@shared/config/theme/tokens/typography/base'
@@ -38,14 +38,42 @@ export const root = style([
   },
 ])
 
-// root 다음에 선언해 같은 특이도의 hover 규칙을 이긴다 — 선택된 칩은 hover해도 그대로다.
-export const selected = style({
+// 관리자 화면은 바탕이 background.surface라 root의 hover가 바탕에 묻힌다 — 한 단계 어둡게 한다.
+// 안 고른 칩은 흰 바탕이라 회색 화면 위에서 칩 하나하나가 떠 보인다.
+export const solid = style({
+  background: color.background.base,
   selectors: {
-    '&, &:hover:not(:disabled)': {
-      background: `color-mix(in srgb, ${color.primary.subtle} 12%, transparent)`,
-      borderColor: color.primary.subtle,
-      color: color.text.primary,
-      fontWeight: fontWeight.semibold,
+    '&:hover:not(:disabled)': {
+      background: color.background.subSurface,
+      borderColor: color.border.hover,
+    },
+  },
+})
+
+// root·solid 다음에 선언해 같은 특이도의 hover 규칙을 이긴다.
+export const selected = styleVariants({
+  // 선택된 칩은 hover해도 그대로다.
+  tint: {
+    selectors: {
+      '&, &:hover:not(:disabled)': {
+        background: `color-mix(in srgb, ${color.primary.subtle} 12%, transparent)`,
+        borderColor: color.primary.subtle,
+        color: color.text.primary,
+        fontWeight: fontWeight.semibold,
+      },
+    },
+  },
+  // 꽉 찬 칩은 Button solid처럼 hover하면 한 단계 어두워진다.
+  solid: {
+    background: color.primary.base,
+    borderColor: color.primary.base,
+    color: color.text.inverse,
+    selectors: {
+      '&:hover:not(:disabled)': {
+        background: color.primary.focus,
+        borderColor: color.primary.focus,
+        color: color.text.inverse,
+      },
     },
   },
 })

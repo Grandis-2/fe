@@ -12,7 +12,7 @@ import {
   updateAdminBanner,
 } from './adminBanner'
 
-// 목록이 이 키라 만들기·고치기·지우기 뒤 함께 무효화된다.
+// 목록이 이 키라 만들기·수정·지우기 뒤 함께 무효화된다.
 const ADMIN_BANNERS_KEY = ['admin', 'banners'] as const
 
 export const useAdminBanners = () =>

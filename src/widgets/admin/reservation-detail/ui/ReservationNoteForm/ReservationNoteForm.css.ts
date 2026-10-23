@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@shared/config/theme'
+import { spacing } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
@@ -10,12 +10,5 @@ export const root = style({
 
 export const footer = style({
   display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: spacing[12],
+  justifyContent: 'flex-end',
 })
-
-export const count = style([
-  typography.body.sub,
-  { color: color.text.tertiary },
-])

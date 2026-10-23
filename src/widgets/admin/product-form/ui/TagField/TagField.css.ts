@@ -55,24 +55,3 @@ export const chevron = style({
 })
 
 export const chevronUp = style([chevron, { transform: 'rotate(180deg)' }])
-
-/**
- * Tag는 span이라 누를 수 없어 버튼으로 감싼다 — 껍데기라 생김새는 전부 안의 Tag가
- * 가진다. 포커스 링이 알약 모양을 따라가게 radius만 맞춰 둔다.
- */
-export const tagButton = style({
-  display: 'inline-flex',
-  padding: 0,
-  border: 'none',
-  borderRadius: '9999px',
-  background: 'transparent',
-  cursor: 'pointer',
-})
-
-/** 껍데기가 hover를 받으니 표시는 안쪽 Tag가 한다 */
-export const tag = style({
-  transition: `opacity ${motion.duration.fast} ${motion.easing.default}`,
-  selectors: {
-    [`${tagButton}:hover &`]: { opacity: 0.75 },
-  },
-})

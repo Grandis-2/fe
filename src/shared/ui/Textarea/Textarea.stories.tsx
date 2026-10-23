@@ -1,4 +1,4 @@
-import { expect } from 'storybook/test'
+import { expect, fn } from 'storybook/test'
 
 import { Textarea } from './Textarea'
 
@@ -37,6 +37,19 @@ export const Typing: Story = {
     const field = canvas.getByRole('textbox')
     await userEvent.type(field, '고객센터 요청으로 대리 접수')
     await expect(field).toHaveValue('고객센터 요청으로 대리 접수')
+  },
+}
+
+// 최대 글자 수를 주면 칸 안에 글자 수가 뜬다.
+export const WithCount: Story = {
+  args: {
+    label: '내부 메모',
+    maxLength: 1000,
+    value: '고객센터 요청',
+    onChange: fn(),
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('7 / 1,000')).toBeVisible()
   },
 }
 

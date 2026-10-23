@@ -37,9 +37,6 @@ export function ReservationNoteForm({
         onChange={(event) => setDraft(event.target.value)}
       />
       <div className={styles.footer}>
-        <span className={styles.count}>
-          {draft.length}/{maxLength}
-        </span>
         <Button
           size="small"
           disabled={saving || next === value}

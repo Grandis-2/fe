@@ -9,6 +9,7 @@ import {
 
 import { AlertCircle, Loader2, Plus, RotateCw, X } from 'lucide-react'
 
+import { useDragReorder } from '@shared/lib/useDragReorder'
 import { useObjectUrls } from '@shared/lib/useObjectUrls'
 
 import * as styles from './ImageUploader.css'
@@ -41,8 +42,8 @@ export type ImageUploaderProps = {
   accept?: string
   /** 담을 수 있는 최대 장수 */
   max?: number
-  /** 타일 비율 — 옵션 이미지는 square, 상세/사양 이미지는 portrait */
-  ratio?: 'square' | 'portrait'
+  /** 타일 비율 — 옵션 이미지는 square, 상세/사양 이미지는 portrait, 배너 사진은 banner(크게) */
+  ratio?: 'square' | 'portrait' | 'banner'
   label?: string
   /** 라벨 줄 오른쪽에 `4 / 10` 카운터를 보여줄지 */
   showCount?: boolean
@@ -95,8 +96,6 @@ export function ImageUploader({
   const inputRef = useRef<HTMLInputElement>(null)
   const tilesRef = useRef<HTMLDivElement>(null)
   const inputId = useId()
-  // 순서를 바꾸려고 끌고 있는 사진
-  const [draggingId, setDraggingId] = useState<string | null>(null)
   // 바깥 파일을 업로더 위로 끌고 왔는지(놓을 수 있는 자리를 강조한다)
   const [isFileOver, setIsFileOver] = useState(false)
   // 형식이 맞지 않아 담지 않은 파일 — 말없이 빠지지 않게 이름을 알린다.
@@ -199,29 +198,16 @@ export function ImageUploader({
   }
 
   // 첫 장이 대표 이미지라 순서가 곧 의미다. 놓을 때가 아니라 지나갈 때마다 옮겨서 놓일
-  // 자리를 미리 보여준다.
-  const moveImage = (id: string, toIndex: number) => {
-    if (isLocked()) return
-    const list = latestRef.current
-    const fromIndex = list.findIndex((image) => image.id === id)
-    if (fromIndex === -1 || fromIndex === toIndex) return
-    const next = [...list]
-    const [moved] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, moved)
-    commit(next)
-  }
-
-  // 키보드로 옮긴 뒤에도 같은 사진에 포커스를 둔다 — 자리를 옮기며 DOM이 다시 끼워지면
-  // 포커스가 풀릴 수 있다.
-  const moveByKey = (id: string, toIndex: number) => {
-    if (toIndex < 0 || toIndex >= latestRef.current.length) return
-    moveImage(id, toIndex)
-    requestAnimationFrame(() =>
-      tilesRef.current
-        ?.querySelector<HTMLElement>(`[data-image-id="${CSS.escape(id)}"]`)
-        ?.focus(),
-    )
-  }
+  // 자리를 미리 보여준다. 끄는 중에 올리기가 끝나 사진이 바뀔 수 있어 최신 목록에서 다시 줄 세운다.
+  const { draggingId, itemProps } = useDragReorder({
+    ids: value.map((image) => image.id),
+    axis: 'horizontal',
+    isLocked,
+    onReorder: (ids) => {
+      const byId = new Map(latestRef.current.map((image) => [image.id, image]))
+      commit(ids.flatMap((id) => byId.get(id) ?? []))
+    },
+  })
 
   const canDropFiles = !disabled && !isFull
 
@@ -269,7 +255,6 @@ export function ImageUploader({
         {value.map((image, index) => (
           <div
             key={image.id}
-            data-image-id={image.id}
             className={[
               styles.tile[ratio],
               !disabled && styles.tileMovable,
@@ -277,40 +262,12 @@ export function ImageUploader({
             ]
               .filter(Boolean)
               .join(' ')}
+            {...itemProps(image.id)}
             draggable={!disabled}
             // 끌기를 못 쓰는 사용자를 위해 포커스한 사진은 ←/→로 옮긴다.
             tabIndex={disabled ? undefined : 0}
             role="group"
             aria-label={`${index + 1}번째 사진, 좌우 화살표로 순서 바꾸기`}
-            onKeyDown={(event) => {
-              if (event.target !== event.currentTarget) return
-              if (event.key === 'ArrowLeft') {
-                event.preventDefault()
-                moveByKey(image.id, index - 1)
-              } else if (event.key === 'ArrowRight') {
-                event.preventDefault()
-                moveByKey(image.id, index + 1)
-              }
-            }}
-            onDragStart={(event) => {
-              if (isLocked()) {
-                event.preventDefault()
-                return
-              }
-              setDraggingId(image.id)
-              event.dataTransfer.effectAllowed = 'move'
-              // Firefox는 데이터를 넣지 않으면 끌기를 시작하지 않는다.
-              event.dataTransfer.setData('text/plain', image.id)
-            }}
-            onDragOver={(event) => {
-              if (!draggingId || draggingId === image.id) return
-              event.preventDefault()
-              moveImage(draggingId, index)
-            }}
-            onDrop={(event) => {
-              if (draggingId) event.preventDefault()
-            }}
-            onDragEnd={() => setDraggingId(null)}
           >
             <img
               className={styles.thumbnail}

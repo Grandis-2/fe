@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 
-import { AlertCircle, Eye, Lock } from 'lucide-react'
+import { AlertCircle, Lock } from 'lucide-react'
 
 import {
   createEmptyProductFormValue,
@@ -19,11 +19,13 @@ import {
   type ProductOptionPreset,
 } from '@entities/admin-product'
 import { findCategoryId, useCategories } from '@entities/product'
+import { focusFirstField } from '@shared/lib/focusFirstField'
 import type { DropdownOption } from '@shared/ui'
 import {
   Button,
   Checkbox,
   Dropdown,
+  FormFooter,
   FormSection,
   ImageUploader,
   Input,
@@ -95,25 +97,6 @@ export type AdminProductFormProps = {
 
 /** 칸을 감싼 요소에 붙이는 표식. 첫 오류 칸을 찾아 스크롤할 때 쓴다 */
 const fieldAttr = (field: FormField) => ({ 'data-field': field })
-
-/**
- * 화면 순서상 첫 오류 칸으로 스크롤하고 그 안의 입력에 포커스를 둔다. 순서는 DOM으로
- * 정한다 — 검사 순서와 화면 순서가 달라도 위에서부터 고치게 된다.
- */
-function focusFirst(form: HTMLFormElement | null, fields: Set<FormField>) {
-  const target = [
-    ...(form?.querySelectorAll<HTMLElement>('[data-field]') ?? []),
-  ].find((element) => fields.has(element.dataset.field as FormField))
-  if (!target) return
-  target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  const focusable = target.matches('input, button, textarea')
-    ? target
-    : target.querySelector<HTMLElement>(
-        'input:not(:disabled), button:not(:disabled), textarea:not(:disabled)',
-      )
-  // 스크롤은 위에서 부드럽게 한다 — 포커스가 다시 튀어 스크롤하지 않게 막는다.
-  focusable?.focus({ preventScroll: true })
-}
 
 // 라벨을 페이지가 넘기면 화면마다 문구가 어긋나기 쉬워 여기 한 곳에 둔다.
 const submitLabel: Record<AdminProductFormMode, string> = {
@@ -229,7 +212,10 @@ export function AdminProductForm({
   // 서버 오류가 새로 오면 그 칸으로 데려간다.
   useEffect(() => {
     if (serverIssues?.length) {
-      focusFirst(formRef.current, new Set(serverIssues.map((i) => i.field)))
+      focusFirstField(
+        formRef.current,
+        new Set(serverIssues.map((i) => i.field)),
+      )
     }
   }, [serverIssues])
 
@@ -239,7 +225,10 @@ export function AdminProductForm({
     setAttempted(true)
     const found = validate?.(submitValue) ?? []
     if (found.length > 0) {
-      focusFirst(formRef.current, new Set(found.map((issue) => issue.field)))
+      focusFirstField(
+        formRef.current,
+        new Set(found.map((issue) => issue.field)),
+      )
       return
     }
     onSubmit(submitValue)
@@ -333,11 +322,7 @@ export function AdminProductForm({
                 value={value.description}
                 onChange={(event) => patch({ description: event.target.value })}
               />
-              <span className={styles.hint}>
-                비우면 설명 없이 보여요 ·{' '}
-                {value.description.length.toLocaleString('ko-KR')} /{' '}
-                {DESCRIPTION_MAX.toLocaleString('ko-KR')}
-              </span>
+              <span className={styles.hint}>비우면 설명 없이 보여요</span>
             </fieldset>
           </FormSection>
 
@@ -645,27 +630,17 @@ export function AdminProductForm({
         )}
       </div>
 
-      <div className={styles.footer}>
-        <Button
-          type="button"
-          variant="outline"
-          color="primary"
-          icon={Eye}
-          onClick={() => onPreview(value)}
-        >
-          미리보기
-        </Button>
-        {/* 버튼은 화면 아래에 붙어 있어 맨 위 알림은 안 보인다 — 누른 자리에서 결과를
-            알린다. 새로 생기면 스크린리더가 읽도록 alert로 둔다. */}
-        <div className={styles.footerMessage} role="alert">
-          {issues.length > 0 ? (
+      <FormFooter
+        onPreview={() => onPreview(value)}
+        message={
+          issues.length > 0 ? (
             <>
               <AlertCircle className={styles.footerIcon} aria-hidden="true" />
               확인이 필요한 항목 {issueFields.size}개
               <button
                 type="button"
                 className={styles.footerLink}
-                onClick={() => focusFirst(formRef.current, issueFields)}
+                onClick={() => focusFirstField(formRef.current, issueFields)}
               >
                 첫 항목으로 이동
               </button>
@@ -696,28 +671,27 @@ export function AdminProductForm({
                 ))}
               </span>
             )
-          )}
-        </div>
-        <div className={styles.footerRight}>
-          <Button
-            type="button"
-            variant="outline"
-            color="cancel"
-            onClick={onCancel}
-          >
-            취소
-          </Button>
-          <Button type="submit" disabled={submitting}>
-            {waitingForNetwork
-              ? '연결 대기 중…'
-              : submitting
-                ? '저장 중…'
-                : locked
-                  ? '사진 저장'
-                  : submitLabel[mode]}
-          </Button>
-        </div>
-      </div>
+          )
+        }
+      >
+        <Button
+          type="button"
+          variant="outline"
+          color="cancel"
+          onClick={onCancel}
+        >
+          취소
+        </Button>
+        <Button type="submit" disabled={submitting}>
+          {waitingForNetwork
+            ? '연결 대기 중…'
+            : submitting
+              ? '저장 중…'
+              : locked
+                ? '사진 저장'
+                : submitLabel[mode]}
+        </Button>
+      </FormFooter>
     </form>
   )
 }

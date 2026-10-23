@@ -1,4 +1,6 @@
-import type { TextareaHTMLAttributes } from 'react'
+import { useState, type TextareaHTMLAttributes } from 'react'
+
+import { formatNumber } from '@shared/lib/formatNumber'
 
 import * as styles from './Textarea.css'
 
@@ -16,19 +18,46 @@ export type TextareaProps = Omit<
   rows?: number
 }
 
+/**
+ * 여러 줄 입력칸. maxLength를 주면 칸 안 오른쪽 아래에 'N / 최대'를 띄운다 — 화면마다
+ * 글자 수를 칸 밖에 따로 그리던 걸 한 모양으로 맞춘다.
+ */
 export function Textarea({
   label,
   size = 'medium',
   rows = 3,
+  maxLength,
   className,
   ...rest
 }: TextareaProps) {
-  return (
+  const counted = maxLength !== undefined
+  // 제어 칸은 value를, defaultValue만 준 비제어 칸은 입력할 때마다 받아 둔 값을 센다.
+  const [typed, setTyped] = useState(String(rest.defaultValue ?? ''))
+  const textarea = (
     <textarea
       aria-label={label}
       rows={rows}
-      className={[styles.size[size], className].filter(Boolean).join(' ')}
+      maxLength={maxLength}
+      className={[styles.size[size], counted && styles.counted, className]
+        .filter(Boolean)
+        .join(' ')}
       {...rest}
+      onChange={(event) => {
+        setTyped(event.target.value)
+        rest.onChange?.(event)
+      }}
     />
+  )
+
+  if (!counted) return textarea
+
+  return (
+    <div className={styles.root}>
+      {textarea}
+      <span className={styles.count}>
+        {formatNumber(String(rest.value ?? typed).length)} /{' '}
+        {formatNumber(maxLength)}
+      </span>
+    </div>
   )
 }

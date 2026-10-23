@@ -76,20 +76,15 @@ export function ReviewFormModal({ target, onClose }: ReviewFormModalProps) {
         </div>
       </div>
 
-      <div className={styles.textField}>
-        <Textarea
-          label="리뷰 내용"
-          rows={5}
-          className={styles.textarea}
-          value={text}
-          maxLength={MAX_LENGTH}
-          placeholder={`사용해 보니 어땠나요? ${MIN_LENGTH}자 이상 입력해 주세요.`}
-          onChange={(event) => setText(event.target.value)}
-        />
-        <span className={styles.counter}>
-          {text.length} / {MAX_LENGTH}
-        </span>
-      </div>
+      <Textarea
+        label="리뷰 내용"
+        rows={5}
+        className={styles.textarea}
+        value={text}
+        maxLength={MAX_LENGTH}
+        placeholder={`사용해 보니 어땠나요? ${MIN_LENGTH}자 이상 입력해 주세요.`}
+        onChange={(event) => setText(event.target.value)}
+      />
 
       <ModalActions
         confirmLabel={saved ? '수정 완료' : '리뷰 등록하기'}

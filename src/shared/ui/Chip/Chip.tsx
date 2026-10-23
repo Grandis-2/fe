@@ -7,6 +7,11 @@ import * as styles from './Chip.css'
 
 export type ChipProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   selected?: boolean
+  /**
+   * 고른 칩의 모양. tint는 옅은 남색 바탕(사용자 페이지 필터), solid는 남색으로 꽉 채운다
+   * (관리자 폼에서 여러 개 중 고른 걸 또렷하게 보일 때 — 상품 검색 태그, 배너 배지).
+   */
+  variant?: 'tint' | 'solid'
   /** 라벨 옆에 붙는 개수(필터별 건수) */
   count?: number
   /** 주면 오른쪽에 X 버튼이 붙는다(최근 검색어). 버튼 안에 버튼을 둘 수 없어 겉을 span으로 감싼다. */
@@ -18,6 +23,7 @@ export type ChipProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Chip({
   selected = false,
+  variant = 'tint',
   count,
   onRemove,
   removeLabel = '삭제',
@@ -70,7 +76,12 @@ export function Chip({
     <button
       type="button"
       aria-pressed={selected}
-      className={[styles.root, selected && styles.selected, className]
+      className={[
+        styles.root,
+        variant === 'solid' && styles.solid,
+        selected && styles.selected[variant],
+        className,
+      ]
         .filter(Boolean)
         .join(' ')}
       {...rest}
