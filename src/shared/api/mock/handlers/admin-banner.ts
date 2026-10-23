@@ -1,7 +1,7 @@
-import { http } from 'msw'
+import { http, HttpResponse } from 'msw'
 
 import { mockUuid } from '../fixtures/product'
-import { invalid, ok } from '../response'
+import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
 import type {
@@ -96,7 +96,54 @@ const MAX_LENGTH = {
   imageAlt: 100,
 } as const
 
+const sorted = () => [...banners].sort((a, b) => a.position - b.position)
+
+const notFound = () =>
+  fail(404, { code: 'BANNER_NOT_FOUND', message: '배너를 찾을 수 없습니다.' })
+
 export const adminBannerHandlers: RequestHandler[] = [
+  http.get(url('/api/v1/admin/banners'), () => ok({ items: sorted() })),
+
+  // 모든 배너 id를 한 번씩 받아야 한다 — 빠지거나 겹치면 400. ':bannerId'보다 먼저 둔다.
+  http.put(url('/api/v1/admin/banners/order'), async ({ request }) => {
+    const { bannerIds = [] } = ((await request.json().catch(() => null)) ??
+      {}) as { bannerIds?: string[] }
+    const all = new Set(banners.map((banner) => banner.bannerId))
+    if (
+      bannerIds.length !== all.size ||
+      new Set(bannerIds).size !== all.size ||
+      bannerIds.some((id) => !all.has(id))
+    ) {
+      return invalid([
+        { field: 'bannerIds', message: '모든 배너를 한 번씩 담아야 합니다.' },
+      ])
+    }
+    for (const banner of banners) {
+      banner.position = bannerIds.indexOf(banner.bannerId)
+    }
+    return ok({ items: sorted() })
+  }),
+
+  // ponytail: 목이라 PUT은 칸 검사 없이 덮어쓴다 — 400 화면은 POST로 본다.
+  http.put(
+    url('/api/v1/admin/banners/:bannerId'),
+    async ({ request, params }) => {
+      const banner = banners.find((item) => item.bannerId === params.bannerId)
+      if (!banner) return notFound()
+      const body = (await request.json()) as AdminBannerRequest
+      Object.assign(banner, body, { updatedAt: new Date().toISOString() })
+      return ok(banner)
+    },
+  ),
+
+  http.delete(url('/api/v1/admin/banners/:bannerId'), ({ params }) => {
+    const index = banners.findIndex((item) => item.bannerId === params.bannerId)
+    if (index < 0) return notFound()
+    banners.splice(index, 1)
+    sorted().forEach((banner, position) => (banner.position = position))
+    return new HttpResponse(null, { status: 204 })
+  }),
+
   http.post(url('/api/v1/admin/banners'), async ({ request }) => {
     const body = (await request
       .json()

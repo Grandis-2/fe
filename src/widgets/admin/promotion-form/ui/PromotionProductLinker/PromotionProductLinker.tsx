@@ -10,6 +10,7 @@ import {
   PROMOTION_PRODUCTS_MAX,
   type PromotionLinkableProduct,
 } from '@entities/admin-promotion'
+import { useDragReorder } from '@shared/lib/useDragReorder'
 import { Button, Checkbox, Skeleton, SkeletonGroup, Tag } from '@shared/ui'
 
 import * as styles from './PromotionProductLinker.css'
@@ -50,21 +51,16 @@ export function PromotionProductLinker({
   now,
 }: PromotionProductLinkerProps) {
   const [picking, setPicking] = useState(false)
-  // 순서를 바꾸려고 끌고 있는 상품
-  const [draggingId, setDraggingId] = useState<string | null>(null)
+  const { draggingId, itemProps } = useDragReorder({
+    ids: value,
+    onReorder: (next) => onChange(next),
+  })
 
   const byId = new Map(products.map((product) => [product.productId, product]))
   const candidates = products.filter(
     (product) => !value.includes(product.productId),
   )
   const isFull = value.length >= PROMOTION_PRODUCTS_MAX
-
-  const move = (productId: string, to: number) => {
-    if (to < 0 || to >= value.length) return
-    const next = value.filter((id) => id !== productId)
-    next.splice(to, 0, productId)
-    onChange(next)
-  }
 
   const toggle = (productId: string) =>
     onChange(
@@ -107,35 +103,10 @@ export function PromotionProductLinker({
                 ]
                   .filter(Boolean)
                   .join(' ')}
-                draggable
+                {...itemProps(productId)}
                 // 끌기를 못 쓰는 사용자를 위해 포커스한 줄은 ↑/↓로 옮긴다.
                 tabIndex={0}
                 aria-label={`${index + 1}번째 ${name}, 위아래 화살표로 순서 바꾸기`}
-                onKeyDown={(event) => {
-                  if (event.target !== event.currentTarget) return
-                  if (event.key === 'ArrowUp') {
-                    event.preventDefault()
-                    move(productId, index - 1)
-                  } else if (event.key === 'ArrowDown') {
-                    event.preventDefault()
-                    move(productId, index + 1)
-                  }
-                }}
-                onDragStart={(event) => {
-                  setDraggingId(productId)
-                  event.dataTransfer.effectAllowed = 'move'
-                  // Firefox는 데이터를 넣지 않으면 끌기를 시작하지 않는다.
-                  event.dataTransfer.setData('text/plain', productId)
-                }}
-                onDragOver={(event) => {
-                  if (!draggingId || draggingId === productId) return
-                  event.preventDefault()
-                  move(draggingId, index)
-                }}
-                onDrop={(event) => {
-                  if (draggingId) event.preventDefault()
-                }}
-                onDragEnd={() => setDraggingId(null)}
               >
                 <GripVertical className={styles.grip} aria-hidden="true" />
                 <span className={styles.body}>

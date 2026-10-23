@@ -46,12 +46,19 @@ const tileBase = style({
   boxSizing: 'border-box',
   flexShrink: 0,
   borderRadius: '8px',
+  // 추가 칸과 같은 테두리 — 흰 바탕이나 밝은 사진도 칸 경계가 보인다.
+  border: `1px solid ${color.border.default}`,
   overflow: 'hidden',
 })
 
 export const tile = styleVariants({
   square: [tileBase, { width: '80px', height: '80px' }],
   portrait: [tileBase, { width: '80px', height: '160px' }],
+  // 고객 메인 배너 사진 칸(718×460)과 같은 비율 — 잘리는 모양까지 크게 보며 고른다.
+  banner: [
+    tileBase,
+    { width: '100%', maxWidth: '480px', aspectRatio: '718 / 460' },
+  ],
 })
 
 export const tileMovable = style({
@@ -133,6 +140,10 @@ const addTileBase = style({
 export const addTile = styleVariants({
   square: [addTileBase, { width: '80px', height: '80px' }],
   portrait: [addTileBase, { width: '80px', height: '160px' }],
+  banner: [
+    addTileBase,
+    { width: '100%', maxWidth: '480px', aspectRatio: '718 / 460' },
+  ],
 })
 
 export const addIcon = style({
