@@ -1,3 +1,4 @@
+import { Search } from 'lucide-react'
 import { expect, waitFor } from 'storybook/test'
 
 import { color } from '@shared/config/theme'
@@ -99,6 +100,35 @@ export const Stacked: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.getByText('상세 주소 *')).toBeVisible()
     await expect(canvas.getByPlaceholderText('동, 호수')).toBeVisible()
+  },
+}
+
+/** 위 라벨 없이 칸만 — 화면엔 안 보여도 label이 칸 이름으로 읽힌다 */
+export const StackedWithoutLabel: Story = {
+  args: {
+    label: '상품 검색',
+    variant: 'stacked',
+    hideLabel: true,
+    placeholder: '상품명으로 검색',
+    icon: <Search />,
+  },
+  decorators: Stacked.decorators,
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText('상품 검색')).not.toBeInTheDocument()
+    await expect(
+      canvas.getByRole('textbox', { name: '상품 검색' }),
+    ).toBeVisible()
+  },
+}
+
+/** 아이콘이 있으면 라벨을 띄우지 않고 placeholder로 보여준다 */
+export const WithIcon: Story = {
+  args: { label: '검색어', icon: <Search /> },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByText('검색어')).not.toBeInTheDocument()
+    await expect(
+      canvas.getByRole('textbox', { name: '검색어' }),
+    ).toHaveAttribute('placeholder', '검색어')
   },
 }
 

@@ -1,15 +1,23 @@
-import { useId, type InputHTMLAttributes } from 'react'
+import { useId, type InputHTMLAttributes, type ReactNode } from 'react'
 
 import { AlertCircle } from 'lucide-react'
 
 import * as styles from './Input.css'
 
 export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
+  /** hideLabel이어도 받는다 — 화면엔 안 그려도 스크린리더가 읽을 칸 이름(aria-label)이 된다. */
   label: string
   size?: 'medium' | 'small'
   // floating: 라벨이 칸 안에 있다가 입력하면 위로 뜬다. stacked: 라벨이 칸 위에 따로 있고
   // placeholder가 보인다(Checkout.dc.html — 어두운 카드 안의 움푹 들어간 칸).
   variant?: 'floating' | 'stacked'
+  /** 라벨을 그리지 않고 칸만 둔다 — placeholder를 안 주면 label이 placeholder로 들어간다. */
+  hideLabel?: boolean
+  /**
+   * 칸 안 왼쪽에 둘 아이콘(lucide 등). 크기·색은 Input이 맞춘다. floating에선 라벨을 띄우지
+   * 않고 hideLabel처럼 placeholder로 보인다.
+   */
+  icon?: ReactNode
   required?: boolean
   invalid?: boolean
   /**
@@ -23,6 +31,8 @@ export function Input({
   label,
   size = 'medium',
   variant = 'floating',
+  hideLabel,
+  icon,
   required,
   invalid,
   error,
@@ -40,6 +50,7 @@ export function Input({
     error ?? (required && invalid ? `${label}을(를) 필수로 작성해주세요` : null)
   const showError = Boolean(errorMessage)
   const stacked = variant === 'stacked'
+  const labelHidden = hideLabel || (!stacked && Boolean(icon))
   const labelText = (
     <>
       {label}
@@ -49,7 +60,7 @@ export function Input({
 
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      {stacked && (
+      {stacked && !labelHidden && (
         <label htmlFor={inputId} className={styles.stackedLabel}>
           {labelText}
         </label>
@@ -63,24 +74,37 @@ export function Input({
           .filter(Boolean)
           .join(' ')}
       >
+        {icon && (
+          <span className={styles.icon[size]} aria-hidden="true">
+            {icon}
+          </span>
+        )}
         <input
           id={inputId}
           className={[
             styles.field[size],
             stacked && styles.stackedField,
+            labelHidden && styles.fieldWithoutLabel,
             showError && styles.fieldError,
           ]
             .filter(Boolean)
             .join(' ')}
           // floating 라벨은 :placeholder-shown으로 비었는지 보므로 빈 칸이라도 한 칸을 깐다.
-          placeholder={stacked ? placeholder : (placeholder ?? ' ')}
+          placeholder={
+            labelHidden
+              ? (placeholder ?? label)
+              : stacked
+                ? placeholder
+                : (placeholder ?? ' ')
+          }
           required={required}
           // 스크린리더가 칸에 들어왔을 때 오류도 같이 읽는다.
           aria-invalid={showError || undefined}
           aria-describedby={showError ? errorId : undefined}
+          aria-label={labelHidden ? label : undefined}
           {...rest}
         />
-        {!stacked && (
+        {!stacked && !labelHidden && (
           <label
             htmlFor={inputId}
             className={[styles.label[size], showError && styles.labelError]
