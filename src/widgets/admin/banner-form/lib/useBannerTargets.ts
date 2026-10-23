@@ -47,9 +47,16 @@ export function useBannerTargets(bannerId?: string) {
       .map(({ promotionId, name }) => option('PROMOTION', promotionId, name)),
   }
 
+  // 배너 목록이 와야 어느 대상이 이미 걸렸는지 안다 — 그 전엔 목록을 보이지 않는다.
   return {
     options,
-    isPending: { PRODUCT: products.isPending, PROMOTION: promotions.isPending },
-    isError: { PRODUCT: products.isError, PROMOTION: promotions.isError },
+    isPending: {
+      PRODUCT: products.isPending || banners.isPending,
+      PROMOTION: promotions.isPending || banners.isPending,
+    },
+    isError: {
+      PRODUCT: products.isError || banners.isError,
+      PROMOTION: promotions.isError || banners.isError,
+    },
   }
 }

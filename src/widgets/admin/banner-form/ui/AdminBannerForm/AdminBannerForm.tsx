@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useId, useRef, useState, type FormEvent } from 'react'
 
 import { Search } from 'lucide-react'
 
@@ -85,6 +85,12 @@ export function AdminBannerForm({
 
   const errorOf = (field: keyof AdminBannerFormValue) =>
     problem?.field === field ? problem.message : undefined
+  // 오류 문구를 칸·그룹의 설명으로 잇는다 — 칸에 다시 들어가도 스크린리더가 문구를 읽는다.
+  const formId = useId()
+  const errorId = (field: keyof AdminBannerFormValue) =>
+    `${formId}-${field}-error`
+  const describedBy = (field: keyof AdminBannerFormValue) =>
+    errorOf(field) ? errorId(field) : undefined
 
   // 예전에 직접 쓴 배지(목록에 없는 문구)는 수정 화면에서 그대로 고를 수 있게 남긴다.
   const badges: readonly string[] =
@@ -109,10 +115,11 @@ export function AdminBannerForm({
         className={styles.autoGrow}
         maxLength={BANNER_TEXT_MAX[field]}
         aria-invalid={Boolean(errorOf(field)) || undefined}
+        aria-describedby={describedBy(field)}
         value={value[field]}
         onChange={(event) => patch({ [field]: event.target.value })}
       />
-      <FieldError message={errorOf(field)} />
+      <FieldError id={errorId(field)} message={errorOf(field)} />
     </div>
   )
 
@@ -131,6 +138,7 @@ export function AdminBannerForm({
           className={styles.badges}
           role="group"
           aria-label="배지"
+          aria-describedby={describedBy('badge')}
           data-field="badge"
         >
           {badges.map((badge) => (
@@ -144,7 +152,7 @@ export function AdminBannerForm({
             </Chip>
           ))}
         </div>
-        <FieldError message={errorOf('badge')} />
+        <FieldError id={errorId('badge')} message={errorOf('badge')} />
       </FormSection>
 
       <FormSection
@@ -169,6 +177,7 @@ export function AdminBannerForm({
           className={styles.iconGrid}
           role="group"
           aria-label="탭 아이콘"
+          aria-describedby={describedBy('icon')}
           data-field="icon"
         >
           {ICON_NAMES.map((name) => {
@@ -191,7 +200,7 @@ export function AdminBannerForm({
             )
           })}
         </div>
-        <FieldError message={errorOf('icon')} />
+        <FieldError id={errorId('icon')} message={errorOf('icon')} />
         {/* 고객 화면에서 탭 문구는 아이콘 밑에 놓인다 — 같은 순서로 고른다. */}
         {multiline('tabLabel', '탭 문구')}
       </FormSection>
@@ -257,6 +266,8 @@ export function AdminBannerForm({
         <div
           className={styles.targetList}
           role="radiogroup"
+          aria-label="연결 대상"
+          aria-describedby={describedBy('targetId')}
           data-field="targetId"
         >
           {targets.isError[value.targetType] ? (
@@ -295,7 +306,7 @@ export function AdminBannerForm({
             </div>
           )}
         </div>
-        <FieldError message={errorOf('targetId')} />
+        <FieldError id={errorId('targetId')} message={errorOf('targetId')} />
       </FormSection>
 
       <FormSection

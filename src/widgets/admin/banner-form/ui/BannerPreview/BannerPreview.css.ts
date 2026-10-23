@@ -1,6 +1,12 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, lineClamp, spacing, typography } from '@shared/config/theme'
+import {
+  breakpoint,
+  color,
+  lineClamp,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 
 // 고객 메인 배너(widgets/banner)의 데스크톱 모양을 폼 폭에 맞춰 줄인 것 — 위젯끼리
 // import하지 않는 규칙이라 모양만 따라 그린다.
@@ -17,6 +23,10 @@ export const root = style({
     color.backgroundDark.base,
   ].join(', '),
   color: color.text.inverse,
+  // 좁은 모달에선 글과 사진이 폭을 나누면 읽기 어렵다 — 위아래로 쌓는다.
+  '@media': {
+    [breakpoint.mobile]: { gridTemplateColumns: 'minmax(0, 1fr)' },
+  },
 })
 
 export const text = style({
