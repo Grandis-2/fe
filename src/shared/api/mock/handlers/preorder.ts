@@ -85,6 +85,9 @@ export function advance(record: PreorderRecord) {
     record.externalReference = `EXT-${record.queuePosition}`
     transition(record, 'REGISTERED', 'SYSTEM', null, at)
   }
+  // 결제 기한이 지나면 서버가 주기 작업(1분 간격)으로 만료 취소를 시작한다 — 목은 읽는 순간 바로 시작한다.
+  if (record.status === 'REGISTERED' && isPaymentExpired(record))
+    transition(record, 'CANCELING', 'SYSTEM')
   const lastEvent = record.events[record.events.length - 1]
   if (
     record.status === 'CANCELING' &&
