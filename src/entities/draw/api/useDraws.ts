@@ -46,7 +46,8 @@ export const drawKeys = {
   list: ['draws', 'list'] as const,
   detail: (drawId: string) => ['draws', 'detail', drawId] as const,
   entry: (drawId: string) => ['draws', 'entry', drawId] as const,
-  mine: (filter: MyDrawEntryFilter) => ['draws', 'mine', filter] as const,
+  mine: (filter: MyDrawEntryFilter, page: number) =>
+    ['draws', 'mine', filter, page] as const,
 }
 
 // 회차는 한 번 만들면 값이 바뀌지 않아 catalog 정책이다. 새 회차가 열리는 건 몇 분 늦어도 된다.
@@ -111,14 +112,15 @@ export const useMyDrawEntry = (
   }
 }
 
-// 내 응모 목록 — 탭(filter)마다 따로 받는다. 탭을 바꾸는 동안엔 앞 탭 응답(counts)을 그대로 두고,
-// 화면은 isPlaceholderData로 목록 자리만 받는 중으로 그린다.
-// ponytail: 첫 쪽(최대 100건)만 받는다 — 화면에 더 보기가 생기면 useInfiniteQuery로 page를 잇는다.
-export const useMyDrawEntries = (filter: MyDrawEntryFilter) =>
+// 내 응모 목록 — 탭(filter)·쪽(page, 0부터)마다 따로 받는다. 탭이나 쪽을 바꾸는 동안엔 앞 응답(counts·total)을
+// 그대로 두고, 화면은 isPlaceholderData로 목록 자리만 받는 중으로 그린다.
+const MY_ENTRIES_PAGE_SIZE = 10
+
+export const useMyDrawEntries = (filter: MyDrawEntryFilter, page: number) =>
   useQuery({
-    queryKey: drawKeys.mine(filter),
+    queryKey: drawKeys.mine(filter, page),
     queryFn: ({ signal }) =>
-      getMyDrawEntries({ filter, size: PAGE_SIZE_MAX }, signal),
+      getMyDrawEntries({ filter, page, size: MY_ENTRIES_PAGE_SIZE }, signal),
     placeholderData: keepPreviousData,
     ...queryPolicy.live,
   })

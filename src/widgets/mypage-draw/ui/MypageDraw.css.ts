@@ -71,3 +71,6 @@ export const rowValue = style([
   typography.body.sub,
   { color: color.text.secondary, whiteSpace: 'nowrap' },
 ])
+
+// 목록 아래 가운데에 쪽 번호.
+export const pagination = style({ alignSelf: 'center' })
