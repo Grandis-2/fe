@@ -2,6 +2,7 @@ import { useEffect, type CSSProperties } from 'react'
 
 import { useNavigate, useParams } from 'react-router'
 
+import { useSession } from '@entities/auth'
 import {
   sendProductView,
   useProduct,
@@ -46,7 +47,13 @@ export function ProductDetailPage() {
   const { productId = '' } = useParams()
   const { data: product, isPending, isError } = useProduct(productId)
   // 조회수 랭킹 신호. 같은 사람·같은 상품은 서버가 하루 한 번만 세서 StrictMode 이중 실행도 괜찮다.
-  useEffect(() => sendProductView(productId), [productId])
+  // 상품이 실제로 보일 때만, 새로고침이면 세션을 되살린 뒤에 보낸다 — 먼저 보내면 같은 회원이
+  // 비회원으로 한 번 더 세어진다.
+  const { isAuthReady } = useSession()
+  const viewedId = product?.productId
+  useEffect(() => {
+    if (isAuthReady && viewedId) sendProductView(viewedId)
+  }, [isAuthReady, viewedId])
   const isPreorder = product?.saleMode === 'PREORDER'
   const { data: shipmentBatches } = useShipmentBatches(productId, {
     enabled: isPreorder,
