@@ -40,7 +40,7 @@ export {
 } from './api/useOpenAlerts'
 export {
   NEEDS_PURCHASE,
-  REGISTER_DELAYED_NOTICE,
+  SETTLE_DELAYED_NOTICE,
   reservationStatusTag,
 } from './model/reservation'
 export type {

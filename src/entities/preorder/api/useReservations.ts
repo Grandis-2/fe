@@ -84,21 +84,24 @@ const untilDueMs = (data: ReservationDetail | undefined) =>
     ? Math.max(Date.parse(data.paymentDueAt) - Date.now(), 0) + 1_000
     : null
 
-// 외부 등록은 접수 후 이 시간까지만 저절로 묻는다. 관리자 대조가 '등록 지연'으로 잡는 시간(RECONCILE_GRACE_MS)과
-// 같아 사용자와 운영자가 같은 시점에 지연을 본다. 끝내 실패한 등록(재처리 대기)은 관리자가 다시 처리해야 끝나므로
-// 3초마다 계속 묻지 않고 멈춘 뒤 [다시 확인](recheck)으로만 묻는다.
+// 서버 처리를 저절로 기다리는 시간. 끝내 안 끝나는 경우(등록 재처리 대기, 환불 실패로 취소 중에 머묾, 만료 작업이
+// 꺼짐)가 있어 3초마다 계속 묻지 않고 멈춘 뒤 [다시 확인](recheck)으로만 묻는다.
+// - 외부 등록: 접수 후 60초. 관리자 대조가 '등록 지연'으로 잡는 시간(RECONCILE_GRACE_MS)과 같아 사용자와 운영자가
+//   같은 시점에 지연을 본다.
+// - 만료 취소·취소: 기다리기 시작한 뒤 2분. 만료 취소는 서버가 1분 간격으로 찾아 시작하므로 그보다 넉넉히 둔다.
 const REGISTER_WAIT_MS = 60_000
+const SETTLE_WAIT_MS = 2 * 60_000
 
-// 처리를 기다리는 동안 실패하면 백오프하며 다시 묻는다. 외부 등록 대기가 접수 후 60초를 넘기면 자동 조회를 끄고
-// timedOut으로 알린다(useOrder와 같은 모양). 취소·만료 취소는 서버가 곧 끝내므로 제한을 두지 않는다.
+// 처리를 기다리는 동안 실패하면 백오프하며 다시 묻고, 위 시간을 넘기면 자동 조회를 끄고 timedOut으로 알린다
+// (useOrder와 같은 모양).
 export const useReservation = (preorderId: string) => {
   const queryClient = useQueryClient()
   const queryKey = reservationKeys.detail(preorderId)
   const cached = queryClient.getQueryData<ReservationDetail>(queryKey)
   const registering = cached?.status === 'PENDING_SYNC'
   const deadline = useDeadline(
-    registering,
-    REGISTER_WAIT_MS,
+    settlePollMs(cached) !== null,
+    registering ? REGISTER_WAIT_MS : SETTLE_WAIT_MS,
     registering ? Date.parse(cached.createdAt) : undefined,
   )
   const query = useQuery({

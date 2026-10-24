@@ -4,7 +4,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { useOrder } from '@entities/order'
 import {
-  REGISTER_DELAYED_NOTICE,
+  SETTLE_DELAYED_NOTICE,
   useReservation,
   type ReservationDetail,
 } from '@entities/preorder'
@@ -212,6 +212,10 @@ export function ResultPage() {
   const orderQuery = useOrder(isPaid ? orderId : '')
   const reservation = reservationQuery.data
   const order = orderQuery.data
+  const settleDelayed =
+    reservationQuery.timedOut && reservation
+      ? SETTLE_DELAYED_NOTICE[reservation.displayStatus]
+      : undefined
   // 예약 접수 화면의 단계. 예약을 받는 중에도 처리 중으로 둔다 — 5초 안에 등록됐으면 결제로 바로 갔으니,
   // 여기 온 예약은 대개 처리 중이다. 받지 못했으면(isError) 단계를 정하지 않고 불러오지 못했다고 알린다.
   const isPreorderView = status === 'preorder' && preorderId !== ''
@@ -309,15 +313,13 @@ export function ResultPage() {
           <div className={styles.description}>{description}</div>
         </div>
 
-        {/* 처리·승인을 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 외부 등록은 접수 후 60초, 승인은 70초가 지나면 멈춘다. */}
+        {/* 처리·승인을 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 예약 처리는 정한 시간(외부 등록은 접수 후 60초),
+            승인은 70초가 지나면 멈춘다. */}
         <PollingNotice
           query={reservationQuery}
           timeout={
-            reservationQuery.timedOut
-              ? {
-                  ...REGISTER_DELAYED_NOTICE,
-                  onRecheck: reservationQuery.recheck,
-                }
+            settleDelayed
+              ? { ...settleDelayed, onRecheck: reservationQuery.recheck }
               : null
           }
         />

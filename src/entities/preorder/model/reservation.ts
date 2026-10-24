@@ -35,9 +35,25 @@ export const NEEDS_PURCHASE: ReservationDisplayStatus[] = [
   'PAYMENT_IN_PROGRESS',
 ]
 
-// 외부 등록이 접수 후 60초를 넘겨 자동 조회를 멈췄을 때의 안내(useReservation의 timedOut). 예약 접수·결제 화면이 같이 쓴다.
-export const REGISTER_DELAYED_NOTICE = {
+// 서버 처리를 기다리다 자동 조회를 멈췄을 때의 안내(useReservation의 timedOut). 지금 단계에 맞는 문구를 고른다.
+// 예약 접수·결제 화면이 같이 쓴다.
+const registerDelayed = {
   title: '등록이 평소보다 오래 걸리고 있어요.',
   description:
     '예약 순서는 그대로예요. 잠시 뒤 다시 확인해 주세요. 등록이 끝나면 사전예약 내역에도 표시돼요.',
+}
+export const SETTLE_DELAYED_NOTICE: Partial<
+  Record<ReservationDisplayStatus, { title: string; description: string }>
+> = {
+  RECEIVED: registerDelayed,
+  PROCESSING: registerDelayed,
+  PAYMENT_EXPIRED: {
+    title: '기한이 지난 예약을 아직 취소하고 있어요.',
+    description: '잠시 뒤 다시 확인해 주세요.',
+  },
+  CANCELING: {
+    title: '취소가 평소보다 오래 걸리고 있어요.',
+    description:
+      '결제한 예약이면 환불이 끝나야 취소가 완료돼요. 환불 결과는 주문 내역에서 확인해 주세요.',
+  },
 }

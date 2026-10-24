@@ -20,7 +20,7 @@ import {
   type CartOrderItem,
 } from '@entities/order'
 import {
-  REGISTER_DELAYED_NOTICE,
+  SETTLE_DELAYED_NOTICE,
   useReservation,
   type ReservationDetail,
 } from '@entities/preorder'
@@ -202,6 +202,10 @@ export function PaymentPage() {
     .join(' ')
 
   const detail = reservation.data
+  const settleDelayed =
+    reservation.timedOut && detail
+      ? SETTLE_DELAYED_NOTICE[detail.displayStatus]
+      : undefined
   const drawData = draw.data
   const cartLines = isCart
     ? cart.data?.filter(({ cartItemId }) => cartItemIds.includes(cartItemId))
@@ -423,15 +427,13 @@ export function PaymentPage() {
           {paymentError && (
             <InlineAlert status="error">{paymentError}</InlineAlert>
           )}
-          {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 외부 등록은 접수 후 60초가 지나면 멈춘다. */}
+          {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 정한 시간(외부 등록은 접수 후 60초)이
+              지나면 멈춘다. */}
           <PollingNotice
             query={reservation}
             timeout={
-              reservation.timedOut
-                ? {
-                    ...REGISTER_DELAYED_NOTICE,
-                    onRecheck: reservation.recheck,
-                  }
+              settleDelayed
+                ? { ...settleDelayed, onRecheck: reservation.recheck }
                 : null
             }
           />
