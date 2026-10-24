@@ -90,7 +90,7 @@ export const totalRow = style([
 ])
 
 // 왼쪽에 붙이고, 좁아서 줄이 넘치면 전체 대기인원이 아래 줄 오른쪽으로 내려간다.
-export const pace = style({ marginRight: 'auto', color: onDark(78) })
+export const pace = style({ marginRight: 'auto' })
 
 export const notice = style([
   typography.body.caption,

@@ -47,12 +47,10 @@ const formatEta = (etaSeconds: number) =>
         ? '약 5분'
         : '오래 걸림'
 
-// 입장 속도 — 예상 시간은 구간이라 줄이 움직이는지 보이지 않아, 직전 조회보다 줄어든 순번으로 센다.
-// 1명 미만이어도 움직였으면 멈췄다고 하지 않는다.
+// 입장 속도(분당 입장 수) — 예상 시간은 구간이라 줄이 움직이는지 보이지 않아, 직전 조회보다 줄어든 순번으로 센다.
+// 1명 미만이어도 움직였으면 0으로 보이지 않게 1로 올린다.
 const formatPace = (perMinute: number) =>
-  perMinute === 0
-    ? '입장이 잠시 멈췄어요 · 자리는 그대로예요'
-    : `지금 분당 약 ${formatNumber(Math.max(1, Math.round(perMinute)))}명 입장 중`
+  formatNumber(perMinute === 0 ? 0 : Math.max(1, Math.round(perMinute)))
 
 type Options = {
   productId: string
@@ -257,7 +255,7 @@ export function usePreorderQueue({
           ? formatEta(waiting.etaSeconds)
           : '확인 중',
     // 첫 조회 전엔 비교할 게 없어 비운다(null).
-    admitPace:
+    admitPerMinute:
       status === 'waiting' && pace?.perMinute != null
         ? formatPace(pace.perMinute)
         : null,

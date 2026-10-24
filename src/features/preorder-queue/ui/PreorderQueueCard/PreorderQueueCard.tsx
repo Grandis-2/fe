@@ -10,7 +10,7 @@ export type PreorderQueueCardProps = {
     | 'myOrder'
     | 'waitTime'
     | 'totalWaiting'
-    | 'admitPace'
+    | 'admitPerMinute'
     | 'progressPercent'
     | 'leave'
     | 'poll'
@@ -40,7 +40,7 @@ export function PreorderQueueCard({ queue }: PreorderQueueCardProps) {
         totalWaitingCount={
           queue.totalWaiting === null ? '-' : formatNumber(queue.totalWaiting)
         }
-        pace={queue.admitPace}
+        admitPerMinute={queue.admitPerMinute}
         onLeave={queue.leave}
       />
     </>
