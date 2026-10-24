@@ -8,6 +8,7 @@ import {
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { isRetryableError } from '@shared/api/queryPolicy'
 import { track } from '@shared/lib/analytics'
+import { formatNumber } from '@shared/lib/formatNumber'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
@@ -46,6 +47,13 @@ const formatEta = (etaSeconds: number) =>
         ? '약 5분'
         : '오래 걸림'
 
+// 입장 속도 — 예상 시간은 구간이라 줄이 움직이는지 보이지 않아, 직전 조회보다 줄어든 순번으로 센다.
+// 1명 미만이어도 움직였으면 멈췄다고 하지 않는다.
+const formatPace = (perMinute: number) =>
+  perMinute === 0
+    ? '입장이 잠시 멈췄어요 · 자리는 그대로예요'
+    : `지금 분당 약 ${formatNumber(Math.max(1, Math.round(perMinute)))}명 입장 중`
+
 type Options = {
   productId: string
   // 차례가 오면(모달이 닫혀 있어도) 받은 입장권과 함께 호출된다.
@@ -80,6 +88,13 @@ export function usePreorderQueue({
   // 진행률의 출발점(처음 본 순번)과 마지막으로 본 대기 상태 — 입장한 뒤에도 숫자가 '-'로 비지 않게 남겨 둔다.
   const [startPosition, setStartPosition] = useState<number | null>(null)
   const [lastWaiting, setLastWaiting] = useState<QueueWaiting | null>(null)
+  // 직전 조회의 순번·받은 시각과 그 사이 분당 입장 수. 같은 응답이 와도(구조 공유로 같은 객체) 받은 시각으로
+  // 새 조회인지 가린다.
+  const [pace, setPace] = useState<{
+    position: number
+    at: number
+    perMinute: number | null
+  } | null>(null)
   // 진입이 막혔을 때 다시 진입할 예약 — 객체를 새로 만들어 같은 지연이 반복돼도 이펙트가 다시 돈다.
   const [retry, setRetry] = useState<{ delayMs: number } | null>(null)
   // 호출부가 매 렌더 새 함수를 넘겨도 타이머가 리셋되지 않도록 Effect Event로 감싼다.
@@ -153,6 +168,22 @@ export function usePreorderQueue({
     if (startPosition === null || waiting.position > startPosition)
       setStartPosition(waiting.position)
   }
+  if (waiting && poll.dataUpdatedAt !== pace?.at) {
+    // 다시 진입해 더 뒤로 섰으면 비교하지 않고 새로 잰다.
+    const comparable =
+      pace !== null &&
+      waiting.position <= pace.position &&
+      poll.dataUpdatedAt > pace.at
+    setPace({
+      position: waiting.position,
+      at: poll.dataUpdatedAt,
+      perMinute: comparable
+        ? ((pace.position - waiting.position) /
+            (poll.dataUpdatedAt - pace.at)) *
+          60_000
+        : null,
+    })
+  }
 
   // 진입 응답이 늦어 한 번 띄웠으면, 그 뒤 바로 입장이 와도 닫지 않고 100%를 보여 주고 넘어간다.
   const enterIsSlow = useDeadline(
@@ -225,6 +256,11 @@ export function usePreorderQueue({
         : waiting
           ? formatEta(waiting.etaSeconds)
           : '확인 중',
+    // 첫 조회 전엔 비교할 게 없어 비운다(null).
+    admitPace:
+      status === 'waiting' && pace?.perMinute != null
+        ? formatPace(pace.perMinute)
+        : null,
     // 대기 인원은 조회 응답에만 있다 — 첫 조회 전엔 내 순번까지만 센다.
     totalWaiting: lastWaiting?.totalWaiting ?? lastWaiting?.position ?? null,
     progressPercent:

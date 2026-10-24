@@ -18,6 +18,7 @@ export const Default: Story = {
     waitTime: '약 4분',
     progressPercent: 65,
     totalWaitingCount: '373',
+    pace: '지금 분당 약 180명 입장 중',
     onLeave: fn(),
   },
 }

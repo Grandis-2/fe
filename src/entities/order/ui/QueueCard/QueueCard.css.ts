@@ -79,12 +79,18 @@ export const progressFill = style({
 export const totalRow = style([
   typography.body.caption,
   {
+    display: 'flex',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    gap: `${spacing[4]} ${spacing[12]}`,
     marginTop: spacing[10],
-    textAlign: 'right',
     color: onDark(55),
     fontVariantNumeric: 'tabular-nums',
   },
 ])
+
+// 왼쪽에 붙이고, 좁아서 줄이 넘치면 전체 대기인원이 아래 줄 오른쪽으로 내려간다.
+export const pace = style({ marginRight: 'auto', color: onDark(78) })
 
 export const notice = style([
   typography.body.caption,
