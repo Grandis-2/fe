@@ -224,7 +224,8 @@ export function MypagePreorder() {
   const confirmCancel = (reservation: Reservation) =>
     openModal({
       title: '예약을 취소할까요?',
-      description: `${reservation.productTitle} · ${reservation.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.`,
+      // 결제한 예약은 환불을 마쳐야 취소가 끝난다.
+      description: `${reservation.productTitle} · ${reservation.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.${reservation.status === 'RESERVED' ? '\n결제한 금액은 환불되고, 환불이 끝나면 취소가 완료돼요.' : ''}`,
       confirmLabel: '예약 취소',
       cancelLabel: '닫기',
       onConfirm: () => {

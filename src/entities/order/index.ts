@@ -21,6 +21,7 @@ export {
   useOrder,
   useOrders,
   usePlaceOrder,
+  useRefundFailedOrderIds,
 } from './api/useOrders'
 export type { OrderFilter } from './api/useOrders'
 export type {

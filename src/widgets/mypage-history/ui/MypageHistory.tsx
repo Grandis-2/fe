@@ -9,6 +9,7 @@ import {
   orderStatusTag,
   useCancelOrder,
   useOrders,
+  useRefundFailedOrderIds,
   type Order,
   type OrderStatus,
 } from '@entities/order'
@@ -196,6 +197,11 @@ export function MypageHistory() {
   const orders = isPlaceholderData
     ? []
     : (data?.pages.flatMap(({ items }) => items) ?? [])
+  const refundFailedIds = useRefundFailedOrderIds(
+    orders
+      .filter(({ status }) => status === 'CANCELING')
+      .map(({ orderId }) => orderId),
+  )
 
   return (
     <div className={styles.root}>
@@ -285,6 +291,11 @@ export function MypageHistory() {
                     총 {formatWon(order.totalAmount)}
                   </span>
                 </div>
+                {refundFailedIds.has(order.orderId) && (
+                  <InlineAlert status="error">
+                    환불이 완료되지 않았어요. 고객센터로 문의해 주세요.
+                  </InlineAlert>
+                )}
                 {awaitingPayment && order.paymentDueAt && (
                   <div className={styles.totalRow}>
                     <span className={styles.totalLabel}>결제 기한</span>

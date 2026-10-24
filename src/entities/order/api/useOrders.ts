@@ -2,6 +2,7 @@ import {
   keepPreviousData,
   useInfiniteQuery,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
@@ -89,6 +90,24 @@ export const useOrder = (orderId: string) => {
 }
 
 // 주문 생성·결제 준비는 돈이 움직이지 않는 단계지만, 명령이라 자동 재시도하지 않는다(사용자가 다시 누른다).
+// 환불이 실패한 주문 id. 환불 실패(refundFailed)는 목록 응답엔 없어 상세를 따로 묻는다 — 환불이 실패한 주문은
+// 취소 중에 머무르므로 취소 중인 주문(보통 0~1건)만 넘긴다.
+export const useRefundFailedOrderIds = (cancelingOrderIds: string[]) =>
+  useQueries({
+    queries: cancelingOrderIds.map((orderId) => ({
+      queryKey: orderKeys.detail(orderId),
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        getOrder(orderId, signal),
+      ...queryPolicy.live,
+    })),
+    combine: (results) =>
+      new Set(
+        results.flatMap(({ data }) =>
+          data?.refundFailed ? [data.orderId] : [],
+        ),
+      ),
+  })
+
 export const usePlaceOrder = () => {
   const queryClient = useQueryClient()
   return useMutation({
