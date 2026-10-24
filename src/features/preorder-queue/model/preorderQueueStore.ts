@@ -21,6 +21,12 @@ export type PreorderAdmission = {
   expiresAt: number
 }
 
+// 입장권이 끝나기 직전에 누르면 요청이 가는 사이 만료돼 ADMISSION_TICKET_STALE로 거절된다 — 이만큼 앞당겨
+// 끝난 것으로 본다. 상세의 남은 시간(AdmissionTimer)과 접수 전 확인(usePreorderSubmit)이 같이 쓴다.
+const SUBMIT_MARGIN_MS = 5_000
+export const admissionUsableUntil = ({ expiresAt }: PreorderAdmission) =>
+  expiresAt - SUBMIT_MARGIN_MS
+
 type PreorderQueueStore = {
   ticket: PreorderQueueTicket | null
   // 서 있는 줄의 상품을 다시 누른 시각 — 닫아 둔 대기열 창을 다시 연다(PreorderQueue가 지켜본다).
@@ -36,23 +42,23 @@ type PreorderQueueStore = {
 // 입장권은 탭별 sessionStorage에도 둔다 — 새로고침해도 줄을 다시 서지 않고, 응답을 못 받은 접수를
 // 같은 입장권·같은 키로 다시 보내 중복 예약을 막는다. 만료 여부는 쓰는 쪽(usePreorderSubmit)이 본다.
 const ADMISSION_KEY = 'preorder_admission'
+// 서 있는 줄도 둔다 — 새로고침하면 RootLayout이 대기열을 다시 띄우고, 다시 진입하면 서버가 지켜 둔
+// 자리(약 250초)를 rejoined로 돌려준다.
+const TICKET_KEY = 'preorder_queue_ticket'
 
-const loadAdmission = (): PreorderAdmission | null => {
+const load = <T>(key: string): T | null => {
   try {
-    return JSON.parse(
-      sessionStorage.getItem(ADMISSION_KEY) ?? 'null',
-    ) as PreorderAdmission | null
+    return JSON.parse(sessionStorage.getItem(key) ?? 'null') as T | null
   } catch {
     return null
   }
 }
 
 // 저장소를 못 쓰면 메모리 값만 남는다(새로고침 전까지는 그대로 쓴다).
-const saveAdmission = (admission: PreorderAdmission | null) => {
+const save = (key: string, value: unknown) => {
   try {
-    if (admission)
-      sessionStorage.setItem(ADMISSION_KEY, JSON.stringify(admission))
-    else sessionStorage.removeItem(ADMISSION_KEY)
+    if (value) sessionStorage.setItem(key, JSON.stringify(value))
+    else sessionStorage.removeItem(key)
   } catch {
     // 메모리 값은 남는다.
   }
@@ -61,18 +67,25 @@ const saveAdmission = (admission: PreorderAdmission | null) => {
 // 토스트와 같은 구조다 — PreorderQueue는 RootLayout에 하나만 두고, 줄 서는 쪽은
 // joinPreorderQueue만 부른다. 페이지를 옮겨도 QueuePill이 남아 있다.
 export const usePreorderQueueStore = create<PreorderQueueStore>()((set) => ({
-  ticket: null,
+  ticket: load<PreorderQueueTicket>(TICKET_KEY),
   reopenedAt: null,
-  admission: loadAdmission(),
-  join: (ticket) => set({ ticket: { ...ticket, joinedAt: Date.now() } }),
+  admission: load<PreorderAdmission>(ADMISSION_KEY),
+  join: (ticket) => {
+    const next = { ...ticket, joinedAt: Date.now() }
+    save(TICKET_KEY, next)
+    set({ ticket: next })
+  },
   reopen: () => set({ reopenedAt: Date.now() }),
-  clear: () => set({ ticket: null }),
+  clear: () => {
+    save(TICKET_KEY, null)
+    set({ ticket: null })
+  },
   admit: (admission) => {
-    saveAdmission(admission)
+    save(ADMISSION_KEY, admission)
     set({ admission })
   },
   clearAdmission: () => {
-    saveAdmission(null)
+    save(ADMISSION_KEY, null)
     set({ admission: null })
   },
 }))

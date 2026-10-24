@@ -21,10 +21,16 @@ const queue = {
   leave: fn(),
   poll: { fetchStatus: 'idle', failureCount: 0 },
   mayHaveLeftQueue: false,
+  rejoined: false,
 } as const
 
 export const Default: Story = {
   args: { queue },
+}
+
+// 새로고침 뒤 다시 진입했는데 서버가 지켜 둔 자리로 돌려줬다.
+export const Rejoined: Story = {
+  args: { queue: { ...queue, rejoined: true } },
 }
 
 // 직전 조회와 순번이 같다 — 줄이 멈췄다.

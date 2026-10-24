@@ -15,6 +15,7 @@ export type PreorderQueueCardProps = {
     | 'leave'
     | 'poll'
     | 'mayHaveLeftQueue'
+    | 'rejoined'
   >
 }
 
@@ -30,6 +31,11 @@ export function PreorderQueueCard({ queue }: PreorderQueueCardProps) {
         </InlineAlert>
       ) : (
         <PollingNotice query={queue.poll} />
+      )}
+      {queue.rejoined && (
+        <InlineAlert status="info">
+          전에 서 있던 자리 그대로예요. 순번을 잃지 않았어요.
+        </InlineAlert>
       )}
       <QueueCard
         myOrderNumber={

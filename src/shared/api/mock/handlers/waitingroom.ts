@@ -43,8 +43,29 @@ type Ticket = {
   used: boolean
 }
 
-let entries: Entry[] = []
-let tickets: Ticket[] = []
+// 서버는 새로고침해도 자리·입장권을 지킨다 — 목도 sessionStorage에 실어 같은 자리를 rejoined로 돌려준다.
+const QUEUE_KEY = 'mock_waitingroom'
+const loadQueue = (): { entries: Entry[]; tickets: Ticket[] } => {
+  try {
+    return (
+      (JSON.parse(sessionStorage.getItem(QUEUE_KEY) ?? 'null') as {
+        entries: Entry[]
+        tickets: Ticket[]
+      } | null) ?? { entries: [], tickets: [] }
+    )
+  } catch {
+    return { entries: [], tickets: [] }
+  }
+}
+const saveQueue = () => {
+  try {
+    sessionStorage.setItem(QUEUE_KEY, JSON.stringify({ entries, tickets }))
+  } catch {
+    // 메모리로만 동작한다.
+  }
+}
+
+let { entries, tickets } = loadQueue()
 
 const secondsSince = (time: number) => (Date.now() - time) / 1000
 
@@ -73,6 +94,7 @@ function admit(entry: Entry): Ticket {
     ...tickets.filter((it) => it.productId !== entry.productId),
     ticket,
   ]
+  saveQueue()
   return ticket
 }
 
@@ -186,7 +208,10 @@ export const waitingroomHandlers: RequestHandler[] = [
       startPosition: 15 + Math.floor(Math.random() * 26),
       startBehind: 40 + Math.floor(Math.random() * 200),
     }
-    if (!existing) entries = [...entries, entry]
+    if (!existing) {
+      entries = [...entries, entry]
+      saveQueue()
+    }
     const view = waiting(entry)
     return withRetryAfter(
       ok<QueueWaiting>(
@@ -349,6 +374,7 @@ export const waitingroomHandlers: RequestHandler[] = [
     }
 
     ticket.used = true
+    saveQueue()
     // 순번은 모델마다 1부터 빈틈없이 매긴다 — 목업은 앞사람이 있는 것처럼 1286 뒤에서 시작한다.
     const queuePosition =
       Math.max(

@@ -254,6 +254,11 @@ export function usePreorderQueue({
         : waiting
           ? formatEta(waiting.etaSeconds)
           : '확인 중',
+    // 다시 진입했는데 서버가 지켜 둔 자리로 돌려줬다(새로고침·같은 상품 다시 누름 — 약 250초 안).
+    rejoined:
+      status === 'waiting' &&
+      entry?.status === 'WAITING' &&
+      entry.rejoined === true,
     // 첫 조회 전엔 비교할 게 없어 비운다(null).
     admitPerMinute:
       status === 'waiting' && pace?.perMinute != null
