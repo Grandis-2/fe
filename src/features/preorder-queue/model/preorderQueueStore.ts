@@ -9,6 +9,8 @@ export type PreorderQueueTicket = {
   // 내 차례가 오면 이동할 경로.
   to: string
   joinedAt: number
+  // 새로고침 뒤 저장해 둔 줄로 다시 띄웠다 — 이때만 '자리 그대로' 안내를 보인다.
+  restored?: boolean
 }
 
 // 차례가 와서 받은 입장권. 접수(사전예약하기)에 한 번 쓴다.
@@ -64,10 +66,15 @@ const save = (key: string, value: unknown) => {
   }
 }
 
+const restoreTicket = (): PreorderQueueTicket | null => {
+  const ticket = load<PreorderQueueTicket>(TICKET_KEY)
+  return ticket && { ...ticket, restored: true }
+}
+
 // 토스트와 같은 구조다 — PreorderQueue는 RootLayout에 하나만 두고, 줄 서는 쪽은
 // joinPreorderQueue만 부른다. 페이지를 옮겨도 QueuePill이 남아 있다.
 export const usePreorderQueueStore = create<PreorderQueueStore>()((set) => ({
-  ticket: load<PreorderQueueTicket>(TICKET_KEY),
+  ticket: restoreTicket(),
   reopenedAt: null,
   admission: load<PreorderAdmission>(ADMISSION_KEY),
   join: (ticket) => {

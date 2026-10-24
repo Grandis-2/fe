@@ -47,10 +47,12 @@ const formatEta = (etaSeconds: number) =>
         ? '약 5분'
         : '오래 걸림'
 
-// 입장 속도(분당 입장 수) — 예상 시간은 구간이라 줄이 움직이는지 보이지 않아, 직전 조회보다 줄어든 순번으로 센다.
-// 1명 미만이어도 움직였으면 0으로 보이지 않게 1로 올린다.
-const formatPace = (perMinute: number) =>
-  formatNumber(perMinute === 0 ? 0 : Math.max(1, Math.round(perMinute)))
+// 입장 속도(초당 입장 수) — 예상 시간은 구간이라 줄이 움직이는지 보이지 않아, 직전 조회보다 줄어든 순번으로 센다.
+// 서버가 초 단위로 입장시키고 조회 간격도 초 단위라 초당으로 보인다. 움직였는데 1명이 안 되면 0이 아니라 '1명 미만'.
+const formatPace = (perSecond: number) =>
+  perSecond > 0 && perSecond < 0.5
+    ? '1명 미만'
+    : `${formatNumber(Math.round(perSecond))}명`
 
 type Options = {
   productId: string
@@ -74,6 +76,7 @@ export function usePreorderQueue({
   const [isOpen, setIsOpen] = useState(true)
   // 서 있는 상품을 다시 누르면(joinPreorderQueue) 닫아 둔 창을 다시 연다 — 렌더 중에 바로 맞춘다.
   const reopenedAt = usePreorderQueueStore((state) => state.reopenedAt)
+  const restored = usePreorderQueueStore((state) => state.ticket?.restored)
   const [seenReopenedAt, setSeenReopenedAt] = useState(reopenedAt)
   if (reopenedAt !== seenReopenedAt) {
     setSeenReopenedAt(reopenedAt)
@@ -86,12 +89,12 @@ export function usePreorderQueue({
   // 진행률의 출발점(처음 본 순번)과 마지막으로 본 대기 상태 — 입장한 뒤에도 숫자가 '-'로 비지 않게 남겨 둔다.
   const [startPosition, setStartPosition] = useState<number | null>(null)
   const [lastWaiting, setLastWaiting] = useState<QueueWaiting | null>(null)
-  // 직전 조회의 순번·받은 시각과 그 사이 분당 입장 수. 같은 응답이 와도(구조 공유로 같은 객체) 받은 시각으로
+  // 직전 조회의 순번·받은 시각과 그 사이 초당 입장 수. 같은 응답이 와도(구조 공유로 같은 객체) 받은 시각으로
   // 새 조회인지 가린다.
   const [pace, setPace] = useState<{
     position: number
     at: number
-    perMinute: number | null
+    perSecond: number | null
   } | null>(null)
   // 진입이 막혔을 때 다시 진입할 예약 — 객체를 새로 만들어 같은 지연이 반복돼도 이펙트가 다시 돈다.
   const [retry, setRetry] = useState<{ delayMs: number } | null>(null)
@@ -175,10 +178,10 @@ export function usePreorderQueue({
     setPace({
       position: waiting.position,
       at: poll.dataUpdatedAt,
-      perMinute: comparable
+      perSecond: comparable
         ? ((pace.position - waiting.position) /
             (poll.dataUpdatedAt - pace.at)) *
-          60_000
+          1000
         : null,
     })
   }
@@ -254,15 +257,17 @@ export function usePreorderQueue({
         : waiting
           ? formatEta(waiting.etaSeconds)
           : '확인 중',
-    // 다시 진입했는데 서버가 지켜 둔 자리로 돌려줬다(새로고침·같은 상품 다시 누름 — 약 250초 안).
+    // 새로고침 뒤 다시 진입했는데 서버가 지켜 둔 자리(약 250초)로 돌려줬다. 새로 줄 설 때도 진입이 두 번
+    // 나가면(StrictMode·연타) 두 번째가 rejoined로 오므로, 저장해 둔 줄을 되살렸을 때만 본다.
     rejoined:
+      restored &&
       status === 'waiting' &&
       entry?.status === 'WAITING' &&
       entry.rejoined === true,
     // 첫 조회 전엔 비교할 게 없어 비운다(null).
-    admitPerMinute:
-      status === 'waiting' && pace?.perMinute != null
-        ? formatPace(pace.perMinute)
+    admitPerSecond:
+      status === 'waiting' && pace?.perSecond != null
+        ? formatPace(pace.perSecond)
         : null,
     // 대기 인원은 조회 응답에만 있다 — 첫 조회 전엔 내 순번까지만 센다.
     totalWaiting: lastWaiting?.totalWaiting ?? lastWaiting?.position ?? null,
