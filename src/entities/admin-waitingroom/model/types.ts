@@ -1,5 +1,6 @@
 import type {
   AdmissionRateView,
+  CapacityGuide,
   ProductRate,
   ProductStatus,
   WaitingroomRuntime,
@@ -13,6 +14,7 @@ export type WaitingroomStatus = Omit<WaitingroomStatusView, 'products'> & {
   products: WaitingroomProductStatus[]
 }
 export type AdmissionRates = AdmissionRateView
+export type AdmissionCapacity = CapacityGuide
 export type WaitingroomProductRate = ProductRate
 export type { WaitingroomSetting }
 

@@ -7,6 +7,11 @@ export {
 export { useWaitingroomStatusHistory } from './api/useWaitingroomStatusHistory'
 export type { AdmissionRateChange } from './api/useAdminWaitingroom'
 export { waitEstimate } from './lib/waitEstimate'
+export { admissionRateRefusal, admissionZone } from './lib/admissionCapacity'
+export type {
+  AdmissionRateRefusal,
+  AdmissionZone,
+} from './lib/admissionCapacity'
 export {
   isBraking,
   settingSourceLabel,
@@ -14,6 +19,7 @@ export {
   waitingroomRuntimeLabel,
 } from './model/types'
 export type {
+  AdmissionCapacity,
   AdmissionRates,
   WaitingroomProductRate,
   WaitingroomProductStatus,

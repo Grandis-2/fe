@@ -38,11 +38,6 @@ export type AdmissionSignals = {
   judgedInSeconds: number
   /** 기간 내내 외부 등록 대기가 줄지 않고 늘었다 = 처리가 접수를 못 따라간다 */
   congested: boolean
-  /**
-   * 처리 한계 — 밀리는 동안 잰 처리 속도. 그때만 워커가 쉬지 않아 최대치다. 기록 안에서
-   * 가장 최근에 밀린 때의 값이고, 밀린 적이 없으면 null.
-   */
-  limit: { perSecond: number; at: number } | null
 }
 
 const EMPTY: AdmissionSignals = {
@@ -55,7 +50,6 @@ const EMPTY: AdmissionSignals = {
   judged: false,
   judgedInSeconds: CONGESTION_WINDOW_MS / 1000,
   congested: false,
-  limit: null,
 }
 
 /**
@@ -69,7 +63,6 @@ export function admissionSignals(
   const last = samples.at(-1)
   if (!last) return EMPTY
   let from = 0
-  let limit: AdmissionSignals['limit'] = null
   let current = {
     received: 0,
     processed: 0,
@@ -97,7 +90,6 @@ export function admissionSignals(
       congested,
       seconds,
     }
-    if (congested) limit = { perSecond: current.processed, at: sample.at }
   })
 
   const measured = samples.length >= 2 && current.seconds > 0
@@ -115,6 +107,5 @@ export function admissionSignals(
     judged: coveredMs >= windowMs * COVERAGE,
     judgedInSeconds: Math.max(0, Math.ceil((windowMs - coveredMs) / 1000)),
     congested: current.congested,
-    limit,
   }
 }

@@ -16,6 +16,29 @@ export type ProductRate = {
   queueLimit: number | null
 }
 
+/**
+ * 전역 속도를 정할 때 볼 기준(사전예약 서버 용량). 모르는 항목은 null이다. 숫자는 실측 전
+ * 추정치라 화면은 "권장"·"위험"처럼 단정하지 않는 말로 보여 준다.
+ */
+export type CapacityGuide = {
+  /** 바로 반영되는 전역 속도의 최댓값(초당 인원). 막 뜬 서버는 절반으로 센다 */
+  recommendedMax: number | null
+  /** 사전예약 서버를 최대로 늘리면 닿는 전역 속도. 넘겨 늘리면 400. recommendedMax 이상 */
+  dangerLine: number | null
+  /** 지금 실제로 쓰는 전역 초당 입장 = min(운영값, recommendedMax) × brakeFactor */
+  appliedCredit: number | null
+  /** 다 뜬 사전예약 서버 수 */
+  readyTasks: number | null
+  /** 막 떠서 준비 중인 사전예약 서버 수 */
+  warmingTasks: number | null
+  /** 감속 배율(0.1~1). 1이면 감속 없음 */
+  brakeFactor: number | null
+  /** 최근 접수 전달 중 실패·5xx·지연 비율(0~1). 최근 전달이 없으면 null */
+  relayBadRatio: number | null
+  /** 운영값이 recommendedMax보다 커서 서버가 늘어나기를 기다리는 중 */
+  scalingPending: boolean | null
+}
+
 /** GET /admin/waitingroom/admission-rate — 바꾸는 API들도 바뀐 뒤의 이 값을 돌려준다 */
 export type AdmissionRateView = {
   /** 전역 초당 입장 인원(브레이크 적용 전). 기본 15(서버가 150에서 낮춤, 명세는 아직 150) */
@@ -27,6 +50,7 @@ export type AdmissionRateView = {
   /** 조회가 끊긴 대기자를 줄에 남겨 두는 시간(초). 기본 250, 250~1800 */
   leaveGraceSeconds: WaitingroomSetting
   products: ProductRate[]
+  capacity: CapacityGuide | null
 }
 
 export type WaitingroomPhase = 'BEFORE_OPEN' | 'OPEN' | 'CLOSED'
@@ -72,8 +96,12 @@ export type WaitingroomStatusView = {
   products: ProductStatus[]
 }
 
-/** PUT /admin/waitingroom/admission-rate — 0..maxGlobalCredit, 0이면 입장을 멈춘다 */
-export type GlobalCreditRequest = { globalCredit: number }
+/**
+ * PUT /admin/waitingroom/admission-rate — 0..maxGlobalCredit, 0이면 입장을 멈춘다.
+ * recommendedMax를 넘겨 늘리려면 confirm: true(없으면 409 ADMISSION_RATE_NEEDS_CONFIRM),
+ * dangerLine을 넘기면 confirm과 상관없이 400 ADMISSION_RATE_UNREACHABLE.
+ */
+export type GlobalCreditRequest = { globalCredit: number; confirm?: boolean }
 
 /** PUT /admin/waitingroom/products/{id}/admission-rate — 1..maxGlobalCredit */
 export type ProductCapRequest = { cap: number }

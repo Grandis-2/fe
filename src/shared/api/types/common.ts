@@ -12,6 +12,9 @@ export type ApiErrorDetails = {
   retryAfterSeconds?: number
   // 409 ORDER_STEP_NOT_ALLOWED에서만 온다 — 주문의 지금 상태(화면을 그 상태로 다시 그린다).
   status?: string
+  // 대기열 전역 속도의 409 ADMISSION_RATE_NEEDS_CONFIRM · 400 ADMISSION_RATE_UNREACHABLE에서 온다.
+  recommendedMax?: number
+  dangerLine?: number
 }
 
 export type ApiError = {
