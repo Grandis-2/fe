@@ -1,17 +1,21 @@
+import { useEffect, useRef } from 'react'
+
 import {
   keepPreviousData,
   useInfiniteQuery,
+  type InfiniteData,
   useMutation,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
 
 import { keepNewer, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
-import type { PreorderStatus } from '@shared/api/types'
+import type { PreorderStatus, PreorderPage } from '@shared/api/types'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
   NEEDS_PURCHASE,
+  type Reservation,
   type ReservationDetail,
   type ReservationDisplayStatus,
 } from '../model/reservation'
@@ -28,6 +32,13 @@ import {
 const SETTLING: PreorderStatus[] = ['PENDING_SYNC', 'CANCELING']
 const SETTLE_POLL_MS = 3_000
 
+// 결제 기한이 지난(PAYMENT_EXPIRED) 예약도 기다린다 — 서버가 주기 작업으로 만료 취소를 시작해 취소 완료까지 간다.
+const isSettling = ({
+  status,
+  displayStatus,
+}: Pick<Reservation, 'status' | 'displayStatus'>) =>
+  SETTLING.includes(status) || displayStatus === 'PAYMENT_EXPIRED'
+
 export const reservationKeys = {
   all: ['reservations'] as const,
   mine: (displayStatus: ReservationDisplayStatus[]) =>
@@ -39,19 +50,66 @@ export const reservationKeys = {
     ['reservations', 'history', preorderId] as const,
 }
 
+// 목록에서 서버 처리를 기다리는 예약 id들.
+const settlingIds = (data: InfiniteData<PreorderPage> | undefined) =>
+  (data?.pages ?? [])
+    .flatMap(({ items }) => items)
+    .filter(isSettling)
+    .map(({ preorderId }) => preorderId)
+const missingFrom = (ids: string[], others: string[]) =>
+  ids.some((id) => !others.includes(id))
+
+const LIST_POLL_MS = 5_000
+
 // 내 예약 — 화면 단계(displayStatus) 중 하나에 해당하는 것을 서버가 거르고 nextCursor로 20건씩 잇는다(무한 스크롤).
 // 결제 기한·상태가 서버에서 바뀌는 값이라 볼 때마다 새로 묻는다. 탭을 바꾸는 동안엔 앞 목록을 그대로 두고
 // 화면은 isPlaceholderData로 받는 중으로 그린다.
-export const useMyReservations = (displayStatus: ReservationDisplayStatus[]) =>
-  useInfiniteQuery({
-    queryKey: reservationKeys.mine(displayStatus),
+// 처리 중·취소 중인 예약이 있으면 5초마다 다시 묻는다(불러온 페이지 수만큼). 끝내 안 끝나는 경우가 있어
+// 상세(useReservation)처럼 2분 뒤 멈추고, 그 뒤엔 탭에 다시 들어오거나 새로고침할 때 받는다.
+// 기다리던 예약이 끝나면(구매 확정 대기·취소 완료로 바뀜) 다른 묶음 목록과 헤더·메뉴의 숫자도 다시 받는다.
+export const useMyReservations = (
+  displayStatus: ReservationDisplayStatus[],
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = reservationKeys.mine(displayStatus)
+  const cached = queryClient.getQueryData<InfiniteData<PreorderPage>>(queryKey)
+  const deadline = useDeadline(settlingIds(cached).length > 0, SETTLE_WAIT_MS)
+  const query = useInfiniteQuery({
+    queryKey,
     queryFn: ({ pageParam, signal }) =>
       getMyReservations({ displayStatus, cursor: pageParam }, signal),
     initialPageParam: undefined as string | undefined,
     getNextPageParam: ({ nextCursor }) => nextCursor ?? undefined,
     placeholderData: keepPreviousData,
+    refetchInterval: ({ state: { data } }) =>
+      settlingIds(data).length > 0 && !deadline.passed ? LIST_POLL_MS : false,
     ...queryPolicy.live,
   })
+
+  // 같은 목록(키)에서 기다리는 예약이 바뀔 때만 움직인다 — 처음 받은 때·탭을 바꾼 때는 아니다.
+  // 새로 기다리기 시작한 예약(방금 취소 등)이 있으면 2분을 다시 센다.
+  const settling =
+    query.isPlaceholderData || query.data === undefined
+      ? null
+      : settlingIds(query.data).join()
+  const keyHash = JSON.stringify(queryKey)
+  const seen = useRef<{ key: string; settling: string } | null>(null)
+  const { restart } = deadline
+  useEffect(() => {
+    if (settling === null) return
+    const before = seen.current
+    seen.current = { key: keyHash, settling }
+    if (before?.key !== keyHash || before.settling === settling) return
+    const [was, now] = [before.settling, settling].map((ids) =>
+      ids.split(',').filter(Boolean),
+    )
+    if (missingFrom(now, was)) restart()
+    if (missingFrom(was, now))
+      void queryClient.invalidateQueries({ queryKey: reservationKeys.all })
+  }, [queryClient, keyHash, settling, restart])
+
+  return query
+}
 
 // 화면 단계별 예약 수(조건과 상관없는 전체). 헤더 배지처럼 로그인했을 때만 묻는 곳은 enabled로 끈다(비로그인은 401).
 export const useReservationCounts = (enabled = true) =>
@@ -70,12 +128,8 @@ export const usePendingPurchaseCount = (enabled = true) => {
   return NEEDS_PURCHASE.reduce((sum, stage) => sum + data[stage], 0)
 }
 
-// 결제 기한이 지난(PAYMENT_EXPIRED) 예약도 기다린다 — 서버가 주기 작업으로 만료 취소를 시작해 취소 완료까지 간다.
 const settlePollMs = (data: ReservationDetail | undefined) =>
-  data &&
-  (SETTLING.includes(data.status) || data.displayStatus === 'PAYMENT_EXPIRED')
-    ? SETTLE_POLL_MS
-    : null
+  data && isSettling(data) ? SETTLE_POLL_MS : null
 
 // 결제를 기다리는 예약은 기한이 되는 순간 한 번 다시 묻는다 — 그때부터 만료 취소가 시작돼 위 폴링이 이어받는다.
 // 서버 시계보다 조금 늦게 묻고, 아직 결제 대기로 오면 1초 뒤 다시 묻는다.
