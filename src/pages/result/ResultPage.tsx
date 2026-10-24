@@ -24,6 +24,7 @@ import {
   OrderStatusMark,
   PurchaseDeadline,
   PurchaseSteps,
+  usePayableAlert,
   type OrderReceiptRow,
   type OrderStatusTone,
 } from '@widgets/order-result'
@@ -212,6 +213,7 @@ export function ResultPage() {
   const orderQuery = useOrder(isPaid ? orderId : '')
   const reservation = reservationQuery.data
   const order = orderQuery.data
+  usePayableAlert(reservation?.displayStatus)
   const settleDelayed =
     reservationQuery.timedOut && reservation
       ? SETTLE_DELAYED_NOTICE[reservation.displayStatus]
