@@ -23,11 +23,13 @@ import {
   FormSection,
   InlineAlert,
   Input,
+  PageHeader,
   RadioCards,
   RefreshStatus,
   StatCard,
   Tag,
 } from '@shared/ui'
+import type { PageHeaderProps } from '@shared/ui'
 
 import { formatSeconds } from '../../lib/configDraft'
 import { MockConfigForm } from '../MockConfigForm'
@@ -58,7 +60,12 @@ const failureText = (config: MockConfig) =>
  * 바꾸고, 키 하나에 결함을 걸고, 원장을 비운다(위험 구역). 팀이 같이 쓰는 서버라 모든 변경은
  * 다른 사람의 시험에도 바로 영향이 간다.
  */
-export function AdminMockSettings() {
+export type AdminMockSettingsProps = {
+  /** 페이지 제목 — 적용 버전·마지막 갱신과 같은 줄에 그린다 */
+  header: Omit<PageHeaderProps, 'aside'>
+}
+
+export function AdminMockSettings({ header }: AdminMockSettingsProps) {
   const config = useMockConfig()
   const update = useUpdateMockConfig()
   const fault = useInjectMockFault()
@@ -161,23 +168,26 @@ export function AdminMockSettings() {
 
   return (
     <div className={styles.root}>
-      <section className={styles.status} aria-labelledby="mock-now">
-        <div className={styles.statusHead}>
-          <h2 id="mock-now" className={styles.statusTitle}>
-            지금 적용 중
+      {/* 제목 줄 오른쪽에 지금 적용 중인 버전과 마지막 갱신을 둔다(다른 관리자 화면과 같은 자리). */}
+      <PageHeader
+        {...header}
+        aside={
+          <>
             {data && (
               <span className={styles.version}>
                 버전 {data.configVersion} · {formatDotDateTime(data.appliedAt)}{' '}
                 적용
               </span>
             )}
-          </h2>
-          <RefreshStatus
-            updatedAt={config.dataUpdatedAt}
-            onRefresh={() => void config.refetch()}
-          />
-        </div>
+            <RefreshStatus
+              updatedAt={config.dataUpdatedAt}
+              onRefresh={() => void config.refetch()}
+            />
+          </>
+        }
+      />
 
+      <section className={styles.status} aria-label="지금 적용 중">
         {config.isError && (
           <InlineAlert status="error">
             {getErrorMessage(config.error, 'Mock 설정을 불러오지 못했습니다.')}

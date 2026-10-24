@@ -44,13 +44,14 @@ import {
   Checkbox,
   Dropdown,
   InlineAlert,
+  PageHeader,
   Panel,
   RefreshStatus,
   SegmentedTabs,
   Table,
   Tag,
 } from '@shared/ui'
-import type { DropdownOption, TableColumn } from '@shared/ui'
+import type { DropdownOption, PageHeaderProps, TableColumn } from '@shared/ui'
 
 import { DeadLetterGroups } from '../DeadLetterGroups'
 
@@ -98,7 +99,12 @@ type Feedback = { status: 'success' | 'error'; message: string }
  * 보여주고, 묶음째 또는 고른 것만 원래 큐로 되돌린다. 버리기는 원문을 보고 판단해야 해서
  * 상세에서만 한다.
  */
-export function AdminDeadLetterList() {
+export type AdminDeadLetterListProps = {
+  /** 페이지 제목 — 마지막 갱신과 같은 줄에 그린다 */
+  header: Omit<PageHeaderProps, 'aside'>
+}
+
+export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
   const navigate = useNavigate()
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -344,54 +350,60 @@ export function AdminDeadLetterList() {
 
   return (
     <div className={styles.root}>
-      <div className={styles.topRow}>
-        <SegmentedTabs
-          items={deadLetterTabs.map((item) => {
-            const count = countOf(item.statuses)
-            return {
-              value: item.value,
-              label: (
-                <span className={styles.tabLabel}>
-                  {item.label}
-                  {count !== undefined && (
-                    <span
-                      className={
-                        item.value === 'open' && count > 0
-                          ? styles.tabCountHot
-                          : styles.tabCount
-                      }
-                    >
-                      {formatNumber(count)}
-                    </span>
-                  )}
-                </span>
-              ),
-            }
-          })}
-          value={tab.value}
-          onChange={(next) => {
-            setSelected(new Set())
-            setParam(PARAM.tab, next, DEFAULT_TAB)
-          }}
-        />
-        <RefreshStatus
-          updatedAt={deadLetters.dataUpdatedAt}
-          onRefresh={() => void deadLetters.refetch()}
-        >
-          <Dropdown
-            label="자동 갱신 간격"
-            size="small"
-            width="140px"
-            options={refreshIntervalOptions}
-            value={refreshInterval}
-            // 고르는 즉시 한 번 받는다 — 새 간격을 기다리지 않고 지금 값을 보여준다.
-            onSelect={(next) => {
-              setRefreshInterval(next)
-              void deadLetters.refetch()
-            }}
-          />
-        </RefreshStatus>
-      </div>
+      {/* 다른 관리자 화면처럼 제목 줄 오른쪽에 마지막 갱신을 둔다. 갱신은 이 위젯의 조회라
+          제목을 받아 같은 줄에 그린다. */}
+      <PageHeader
+        {...header}
+        aside={
+          <RefreshStatus
+            updatedAt={deadLetters.dataUpdatedAt}
+            onRefresh={() => void deadLetters.refetch()}
+          >
+            <Dropdown
+              label="자동 갱신 간격"
+              size="small"
+              width="140px"
+              options={refreshIntervalOptions}
+              value={refreshInterval}
+              // 고르는 즉시 한 번 받는다 — 새 간격을 기다리지 않고 지금 값을 보여준다.
+              onSelect={(next) => {
+                setRefreshInterval(next)
+                void deadLetters.refetch()
+              }}
+            />
+          </RefreshStatus>
+        }
+      />
+
+      <SegmentedTabs
+        items={deadLetterTabs.map((item) => {
+          const count = countOf(item.statuses)
+          return {
+            value: item.value,
+            label: (
+              <span className={styles.tabLabel}>
+                {item.label}
+                {count !== undefined && (
+                  <span
+                    className={
+                      item.value === 'open' && count > 0
+                        ? styles.tabCountHot
+                        : styles.tabCount
+                    }
+                  >
+                    {formatNumber(count)}
+                  </span>
+                )}
+              </span>
+            ),
+          }
+        })}
+        value={tab.value}
+        onChange={(next) => {
+          setSelected(new Set())
+          setParam(PARAM.tab, next, DEFAULT_TAB)
+        }}
+      />
 
       {/* 다시 받기가 실패해도 이전 목록은 남는다 — 멈춘 목록을 최신으로 읽지 않게 알린다. */}
       {pollingError(deadLetters) !== null && (

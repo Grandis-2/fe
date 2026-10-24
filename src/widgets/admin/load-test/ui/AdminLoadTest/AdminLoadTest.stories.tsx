@@ -69,6 +69,7 @@ const withData = (Story: () => React.ReactNode) => {
 const meta = {
   component: AdminLoadTest,
   tags: ['ai-generated'],
+  args: { header: { title: '부하 검증' } },
   // 기록한 구간이 브라우저에 남아 이야기끼리 섞이지 않게 비운다.
   beforeEach: () => localStorage.removeItem('nova.admin.load-test.recording'),
 } satisfies Meta<typeof AdminLoadTest>

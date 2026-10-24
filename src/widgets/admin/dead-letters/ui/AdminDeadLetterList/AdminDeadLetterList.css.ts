@@ -9,14 +9,6 @@ export const root = style({
   gap: spacing[16],
 })
 
-export const topRow = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: spacing[12],
-})
-
 export const tabLabel = style({
   display: 'inline-flex',
   alignItems: 'center',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { Check, CircleDot, Square, TriangleAlert } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
@@ -45,6 +45,7 @@ import {
   DescriptionList,
   InlineAlert,
   NoticeBanner,
+  PageHeader,
   Panel,
   RefreshStatus,
   SegmentedTabs,
@@ -54,7 +55,7 @@ import {
   ThroughputChart,
   TrendChart,
 } from '@shared/ui'
-import type { TableColumn } from '@shared/ui'
+import type { PageHeaderProps, TableColumn } from '@shared/ui'
 
 import { diagnose, type LoadTestVerdict } from '../../lib/diagnose'
 import {
@@ -192,6 +193,10 @@ const errorColumns = (total: number): TableColumn<ErrorGroup>[] => [
 export type AdminLoadTestProps = {
   /** 볼 사전예약 상품. 없으면 모든 상품을 합친 값 */
   productId?: string
+  /** 페이지 제목 — 마지막 갱신·도구와 같은 줄에 그린다 */
+  header: Omit<PageHeaderProps, 'aside'>
+  /** 제목 줄 바로 아래 — 볼 상품 고르기 */
+  scope?: ReactNode
 }
 
 /**
@@ -200,7 +205,11 @@ export type AdminLoadTestProps = {
  * 연 뒤부터 쌓인다(새로 고치면 처음부터). [구간 기록]은 선택이다 — 누른 동안의 요약을 남겨
  * 조건별로 비교한다.
  */
-export function AdminLoadTest({ productId }: AdminLoadTestProps) {
+export function AdminLoadTest({
+  productId,
+  header,
+  scope,
+}: AdminLoadTestProps) {
   const navigate = useNavigate()
   const [range, setRange] = useState<Range>('10')
   const rangeMs = Number(range) * 60_000
@@ -446,55 +455,62 @@ export function AdminLoadTest({ productId }: AdminLoadTestProps) {
 
   return (
     <div className={styles.root}>
-      <div className={styles.toolbar}>
-        {active ? (
-          <span className={styles.recordingBadge}>
-            <span className={styles.recordingDot} aria-hidden="true" />
-            기록 중 · {durationLabel(Math.max(0, now - active.startedAt))}
-          </span>
-        ) : (
-          <span className={styles.liveBadge}>
-            <span className={styles.liveDot} aria-hidden="true" />
-            실시간
-          </span>
-        )}
-        <RefreshStatus
-          updatedAt={Math.max(queue.dataUpdatedAt, stats.dataUpdatedAt)}
-          onRefresh={refresh}
-          note="5초마다"
-        >
-          <SegmentedTabs items={RANGES} value={range} onChange={setRange} />
-          <a
-            className={styles.externalLink}
-            href={grafanaUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Grafana ↗
-          </a>
-          {active ? (
-            <Button
-              size="small"
-              variant="outline"
-              color="cancel"
-              icon={Square}
-              onClick={finishRecording}
+      {/* 제목 줄 오른쪽에 실시간 표시·마지막 갱신·도구를 둔다(다른 관리자 화면과 같은 자리). */}
+      <PageHeader
+        {...header}
+        aside={
+          <>
+            {active ? (
+              <span className={styles.recordingBadge}>
+                <span className={styles.recordingDot} aria-hidden="true" />
+                기록 중 · {durationLabel(Math.max(0, now - active.startedAt))}
+              </span>
+            ) : (
+              <span className={styles.liveBadge}>
+                <span className={styles.liveDot} aria-hidden="true" />
+                실시간
+              </span>
+            )}
+            <RefreshStatus
+              updatedAt={Math.max(queue.dataUpdatedAt, stats.dataUpdatedAt)}
+              onRefresh={refresh}
+              note="5초마다"
             >
-              기록 끝
-            </Button>
-          ) : (
-            <Button
-              size="small"
-              variant="outline"
-              icon={CircleDot}
-              disabled={!s}
-              onClick={startRecording}
-            >
-              구간 기록 시작
-            </Button>
-          )}
-        </RefreshStatus>
-      </div>
+              <SegmentedTabs items={RANGES} value={range} onChange={setRange} />
+              <a
+                className={styles.externalLink}
+                href={grafanaUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Grafana ↗
+              </a>
+              {active ? (
+                <Button
+                  size="small"
+                  variant="outline"
+                  color="cancel"
+                  icon={Square}
+                  onClick={finishRecording}
+                >
+                  기록 끝
+                </Button>
+              ) : (
+                <Button
+                  size="small"
+                  variant="outline"
+                  icon={CircleDot}
+                  disabled={!s}
+                  onClick={startRecording}
+                >
+                  구간 기록 시작
+                </Button>
+              )}
+            </RefreshStatus>
+          </>
+        }
+      />
+      {scope}
 
       <NoticeBanner
         tone={bannerTone[verdict.status]}

@@ -32,31 +32,31 @@ export function AdminLoadTestPage() {
 
   return (
     <div className={styles.root}>
-      <div className={styles.heading}>
-        <h1 className={styles.title}>부하 검증</h1>
-        <div className={styles.description}>
-          부하를 거는 동안 대기열, 예약 처리, 외부 등록이 어떻게 버티는지
-          봅니다. 서버 지표(TPS·응답 시간·에러율)는 Grafana에서 봅니다.
-        </div>
-      </div>
-      <div className={styles.scope} role="group" aria-label="볼 상품">
-        <span className={styles.scopeLabel}>범위</span>
-        {[{ productId: undefined, name: '전체' }, ...products].map(
-          (product) => (
-            <Chip
-              key={product.productId ?? 'all'}
-              variant="solid"
-              selected={product.productId === productId}
-              aria-pressed={product.productId === productId}
-              onClick={() => setProductId(product.productId)}
-            >
-              {product.name}
-            </Chip>
-          ),
-        )}
-      </div>
       {/* 상품을 바꾸면 범위 안의 값이 다른 상품 것이라 처음부터 다시 그린다. */}
-      <AdminLoadTest key={productId ?? 'all'} productId={productId} />
+      <AdminLoadTest
+        key={productId ?? 'all'}
+        productId={productId}
+        // 제목 줄 오른쪽 도구(범위·Grafana·구간 기록)가 넓어 설명 없이 제목만 둔다(시안과 같다).
+        header={{ title: '부하 검증' }}
+        scope={
+          <div className={styles.scope} role="group" aria-label="볼 상품">
+            <span className={styles.scopeLabel}>범위</span>
+            {[{ productId: undefined, name: '전체' }, ...products].map(
+              (product) => (
+                <Chip
+                  key={product.productId ?? 'all'}
+                  variant="solid"
+                  selected={product.productId === productId}
+                  aria-pressed={product.productId === productId}
+                  onClick={() => setProductId(product.productId)}
+                >
+                  {product.name}
+                </Chip>
+              ),
+            )}
+          </div>
+        }
+      />
     </div>
   )
 }

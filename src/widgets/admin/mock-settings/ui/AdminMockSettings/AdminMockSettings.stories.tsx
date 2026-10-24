@@ -7,6 +7,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: AdminMockSettings,
   tags: ['ai-generated'],
+  args: { header: { title: 'Mock 설정' } },
 } satisfies Meta<typeof AdminMockSettings>
 
 export default meta
@@ -16,8 +17,13 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByRole('heading', { name: /지금 적용 중/ }),
+      canvas.getByRole('region', { name: '지금 적용 중' }),
     ).toBeVisible()
+    // 제목 줄 오른쪽에 마지막 갱신이 붙는다.
+    await expect(
+      canvas.getByRole('heading', { level: 1, name: 'Mock 설정' }),
+    ).toBeVisible()
+    await expect(canvas.getByText(/마지막 갱신/)).toBeVisible()
     await expect(
       canvas.getByRole('button', { name: '결함 걸기' }),
     ).toBeDisabled()

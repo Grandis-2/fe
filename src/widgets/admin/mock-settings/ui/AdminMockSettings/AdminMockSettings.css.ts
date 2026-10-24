@@ -15,26 +15,6 @@ export const status = style({
   gap: spacing[12],
 })
 
-export const statusHead = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: spacing[12],
-})
-
-export const statusTitle = style([
-  typography.title.mdSemibold,
-  {
-    display: 'flex',
-    flexWrap: 'wrap',
-    alignItems: 'baseline',
-    gap: `${spacing[4]} ${spacing[10]}`,
-    margin: 0,
-    color: color.text.primary,
-  },
-])
-
 export const version = style([
   typography.body.sub,
   { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },

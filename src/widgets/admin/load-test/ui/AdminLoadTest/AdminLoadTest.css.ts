@@ -8,14 +8,6 @@ export const root = style({
   gap: spacing[16],
 })
 
-export const toolbar = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: `${spacing[12]} ${spacing[16]}`,
-})
-
 const badge = style([
   typography.body.subMedium,
   { display: 'inline-flex', alignItems: 'center', gap: spacing[6] },

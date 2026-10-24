@@ -7,6 +7,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: AdminDeadLetterList,
   tags: ['ai-generated'],
+  args: { header: { title: '이벤트 DLQ', description: '멈춘 메시지예요.' } },
 } satisfies Meta<typeof AdminDeadLetterList>
 
 export default meta
@@ -21,5 +22,9 @@ export const Default: Story = {
     await expect(
       canvas.queryByRole('button', { name: /선택 되돌리기/ }),
     ).toBeNull()
+    await expect(
+      canvas.getByRole('heading', { level: 1, name: '이벤트 DLQ' }),
+    ).toBeVisible()
+    await expect(canvas.getByText(/마지막 갱신/)).toBeVisible()
   },
 }
