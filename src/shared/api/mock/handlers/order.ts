@@ -161,6 +161,7 @@ const toOrder = ({
   cartItems: _cartItems,
   idempotencyKey: _idempotencyKey,
   events: _events,
+  refundFailed: _refundFailed,
   ...order
 }: OrderRecord): Order => order
 
@@ -170,7 +171,7 @@ const toDetail = (order: OrderRecord): OrderDetail => ({
   events: order.events.map((event) =>
     event.actor === 'ADMIN' ? { ...event, reason: null } : event,
   ),
-  refundFailed: false,
+  refundFailed: order.refundFailed ?? false,
 })
 
 // 결제를 시작할 수 있는 예약인지 — 아니면 409 응답을 돌려준다. 장바구니 주문은 결제 기한을 본다.

@@ -7,6 +7,7 @@ import { url } from '../url'
 import { isUuid, uuidViolation } from '../validate'
 
 import type {
+  OrderStatus,
   PreorderCancelResult,
   PreorderCounts,
   PreorderCountsResponse,
@@ -29,6 +30,15 @@ const HOUR = 60 * 60 * SECOND
 const REGISTER_AFTER_MS = 5 * SECOND
 const CANCEL_AFTER_MS = 3 * SECOND
 const PAYMENT_WINDOW_MS = 24 * HOUR
+// 결제한 예약을 취소하면 환불을 마쳐야 취소가 끝난다. .env.local에 VITE_MOCK_REFUND_FAIL=true를 넣으면
+// 환불이 실패해 예약·주문이 취소 중에 머물고 주문 상세의 refundFailed가 true가 된다.
+const REFUND_FAILS = import.meta.env.VITE_MOCK_REFUND_FAIL === 'true'
+// 결제했고 아직 출고 전인 주문 — 예약을 취소하면 환불한다.
+const REFUNDABLE: OrderStatus[] = [
+  'AWAITING_CONFIRMATION',
+  'PREPARING_ITEMS',
+  'READY_TO_SHIP',
+]
 const STATUSES: PreorderStatus[] = [
   'PENDING_SYNC',
   'REGISTERED',
@@ -93,10 +103,18 @@ export function advance(record: PreorderRecord) {
     record.status === 'CANCELING' &&
     msSince(lastEvent.createdAt) >= CANCEL_AFTER_MS
   ) {
-    transition(record, 'CANCELED', 'SYSTEM')
-    // 예약이 취소되면 미결제 주문도 취소된다.
     const order = orders.find((it) => it.preorderId === record.preorderId)
-    if (order && order.status === 'AWAITING_PAYMENT') {
+    // 환불 중(취소 중)인 주문의 환불이 실패하면 예약도 취소 중에 머문다.
+    if (order?.status === 'CANCELING' && REFUND_FAILS) {
+      if (!order.refundFailed) {
+        order.refundFailed = true
+        saveOrderDb()
+      }
+      return record
+    }
+    transition(record, 'CANCELED', 'SYSTEM')
+    // 예약이 취소되면 미결제 주문은 취소되고, 환불 중이던 주문은 환불을 마쳐 취소된다.
+    if (order?.status === 'AWAITING_PAYMENT' || order?.status === 'CANCELING') {
       order.status = 'CANCELED'
       saveOrderDb()
     }
@@ -389,13 +407,19 @@ export const preorderHandlers: RequestHandler[] = [
           message: '배송이 시작되어 취소할 수 없습니다.',
         })
       }
-      if (CANCELABLE.includes(record.status))
+      if (CANCELABLE.includes(record.status)) {
         transition(
           record,
           'CANCELING',
           'USER',
           typeof reason === 'string' ? reason : null,
         )
+        // 결제한(출고 전) 주문은 환불을 시작해 취소 중이 된다.
+        if (order && REFUNDABLE.includes(order.status)) {
+          order.status = 'CANCELING'
+          saveOrderDb()
+        }
+      }
       return ok<PreorderCancelResult>(
         {
           preorderId: record.preorderId,
