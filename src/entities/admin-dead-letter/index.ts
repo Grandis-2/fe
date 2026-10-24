@@ -2,6 +2,7 @@
 // 4xx 재시도 차단을 건너뛰는 길이 열린다.
 export {
   useDeadLetter,
+  useDeadLetterCounts,
   useDeadLetters,
   useDiscardDeadLetter,
   useRedriveDeadLetter,
@@ -11,17 +12,24 @@ export {
   DEAD_LETTER_DISCARD_NOTE_MAX,
   deadLetterEventLabel,
   deadLetterEventTypes,
+  deadLetterFailureReasonHint,
   deadLetterFailureReasonLabel,
+  deadLetterFailureReasonTag,
   deadLetterFailureReasons,
   deadLetterStatusColor,
   deadLetterStatuses,
   deadLetterStatusLabel,
   deadLetterStatusLabels,
+  deadLetterTabs,
+  isRedrivableReason,
   isRedriveInFlight,
 } from './model/types'
+export { groupDeadLetters } from './model/group'
+export type { DeadLetterGroup } from './model/group'
 export type {
   DeadLetter,
   DeadLetterFailureReason,
   DeadLetterRecord,
   DeadLetterStatus,
+  DeadLetterTab,
 } from './model/types'

@@ -5,7 +5,16 @@ import { color, spacing, typography } from '@shared/config/theme'
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[20],
+  gap: spacing[16],
+})
+
+// 어디서 왔는지와 갱신 시각을 한 줄에.
+export const topRow = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: spacing[8],
 })
 
 export const notFound = style([

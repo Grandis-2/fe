@@ -83,3 +83,55 @@ export const deadLetterFailureReasons = Object.keys(
 /** 되돌리기를 보내 놓고 결과를 기다리는 중 — 이 동안은 자주 다시 묻는다 */
 export const isRedriveInFlight = (status: DeadLetterStatus) =>
   status === 'REDRIVING' || status === 'REDRIVEN'
+
+/** 실패 이유 태그 — 처리 중 오류는 눌러야 할 것, 모르는 종류는 배포 대기, 원문 손상은 버릴 것 */
+export const deadLetterFailureReasonTag: Record<
+  DeadLetterFailureReason,
+  { color: 'red' | 'yellow' | 'gray'; variant: 'subtle' | 'outline' }
+> = {
+  PROCESSING_FAILED: { color: 'red', variant: 'subtle' },
+  UNKNOWN_EVENT_TYPE: { color: 'yellow', variant: 'subtle' },
+  UNREADABLE_BODY: { color: 'gray', variant: 'outline' },
+}
+
+/** 실패 이유 옆 한 줄 설명 */
+export const deadLetterFailureReasonHint: Record<
+  DeadLetterFailureReason,
+  string
+> = {
+  PROCESSING_FAILED: '받는 쪽에서 처리하다 오류가 났어요',
+  UNKNOWN_EVENT_TYPE: '받는 서버가 이 종류를 몰라요',
+  UNREADABLE_BODY: '원문이 깨져 읽지 못했어요',
+}
+
+/**
+ * 되돌려도 또 실패할 메시지 — 원문을 읽지 못하면 받는 쪽도 못 읽는다. 서버도 조건 일괄
+ * 되돌리기에서 이 이유를 건너뛴다.
+ */
+export const isRedrivableReason = (reason: DeadLetterFailureReason) =>
+  reason !== 'UNREADABLE_BODY'
+
+/**
+ * 목록 탭. 결과 기다림은 되돌리기를 보내는 중(REDRIVING)과 처리 결과를 기다리는
+ * 중(REDRIVEN)을 합친다 — 둘 다 관리자가 할 일 없이 기다리는 상태라 나눠 볼 까닭이 없다.
+ * 다시 실패(REDRIVE_FAILED)는 기록으로 남는 이전 행이라 손댈 것(처리 대기)과 따로 둔다 —
+ * 다시 실패하면 새 행이 처리 대기로 쌓인다.
+ */
+export const deadLetterTabs = [
+  { value: 'open', label: '처리 대기', statuses: ['OPEN'] },
+  {
+    value: 'waiting',
+    label: '결과 기다림',
+    statuses: ['REDRIVING', 'REDRIVEN'],
+  },
+  { value: 'succeeded', label: '처리됨', statuses: ['SUCCEEDED'] },
+  { value: 'failed', label: '다시 실패', statuses: ['REDRIVE_FAILED'] },
+  { value: 'discarded', label: '버림', statuses: ['DISCARDED'] },
+  { value: 'all', label: '전체', statuses: [] },
+] as const satisfies readonly {
+  value: string
+  label: string
+  statuses: readonly DeadLetterStatus[]
+}[]
+
+export type DeadLetterTab = (typeof deadLetterTabs)[number]['value']
