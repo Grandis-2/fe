@@ -18,7 +18,7 @@ export const Default: Story = {
     waitTime: '약 4분',
     progressPercent: 65,
     totalWaitingCount: '373',
-    admitPerMinute: '180',
+    admitPerSecond: '8명',
     onLeave: fn(),
   },
 }
