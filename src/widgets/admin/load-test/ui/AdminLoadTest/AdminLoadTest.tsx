@@ -1,101 +1,124 @@
 import { useEffect, useState } from 'react'
 
-import { CircleCheck, Info, TriangleAlert } from 'lucide-react'
-import { Link } from 'react-router'
+import { Check, CircleDot, Square, TriangleAlert } from 'lucide-react'
+import { Link, useNavigate } from 'react-router'
 
 import {
   useReservationStats,
+  useReservationStatsHistory,
   useSyncJobErrorGroups,
 } from '@entities/admin-reservation'
 import {
   isBraking,
   useWaitingroomStatus,
-  waitingroomRuntimeLabel,
-  type WaitingroomProductStatus,
+  useWaitingroomStatusHistory,
+  type WaitingroomStatus,
 } from '@entities/admin-waitingroom'
 import {
   mockFailureModeLabel,
+  useExternalLedger,
   useMockConfig,
+  useUpdateMockConfig,
 } from '@entities/external-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { setMockLoad } from '@shared/api/mock'
 import { pollingError } from '@shared/api/queryPolicy'
+import type { RefreshInterval } from '@shared/config/refreshInterval'
 import {
-  refreshIntervalOptions,
-  type RefreshInterval,
-} from '@shared/config/refreshInterval'
-import {
+  ADMIN_DEAD_LETTERS_PATH,
   ADMIN_MOCK_SETTINGS_PATH,
   ADMIN_RECONCILIATION_PATH,
   ADMIN_WAITINGROOM_PATH,
+  adminReservationsPath,
 } from '@shared/config/routes'
-import { formatNumber } from '@shared/lib/formatNumber'
+import { srOnly } from '@shared/config/theme'
 import {
-  appendSample,
-  ratePerSecond,
-  slopePerSecond,
-  type Sample,
-} from '@shared/lib/samples'
+  formatDotDateTime,
+  formatShortDateTime,
+} from '@shared/lib/formatDotDate'
+import { formatNumber } from '@shared/lib/formatNumber'
+import { ratePerSecond, slopePerSecond } from '@shared/lib/samples'
 import {
   Button,
-  Dropdown,
-  FormSection,
+  Chip,
+  CopyButton,
+  DescriptionList,
   InlineAlert,
+  NoticeBanner,
+  Panel,
   RefreshStatus,
-  Skeleton,
-  SkeletonGroup,
+  SegmentedTabs,
   StatCard,
   Table,
+  Tag,
   ThroughputChart,
+  TrendChart,
 } from '@shared/ui'
 import type { TableColumn } from '@shared/ui'
 
 import { diagnose, type LoadTestVerdict } from '../../lib/diagnose'
+import {
+  brakeBands,
+  durationLabel,
+  recordText,
+  summarizeWindow,
+  type QueuePoint,
+  type RecordedWindow,
+  type StatsPoint,
+} from '../../lib/recording'
+import { useRecording } from '../../lib/useRecording'
+import { errorCodeMeaning } from '../../model/errorCodes'
+import { MOCK_PRESETS, presetOf } from '../../model/mockPresets'
 
 import * as styles from './AdminLoadTest.css'
 
 // 서버 지표(TPS·응답 시간·에러율)는 Grafana가 맡는다 — 여기는 업무 흐름이 버티는지 본다.
 const GRAFANA_BASE =
   'https://grafana.grandis-nova.link/?orgId=1&timezone=browser'
-const DEFAULT_INTERVAL: RefreshInterval = 5_000
+// 대시보드처럼 5초마다 받는다. 집계는 서버가 5초까지 캐시해 더 자주 받아도 같다.
+const REFRESH_INTERVAL: RefreshInterval = 5_000
 
-// 성공에 경고 삼각형이 붙으면 문구와 반대로 읽힌다.
-const verdictIcon: Record<LoadTestVerdict['status'], typeof Info> = {
-  success: CircleCheck,
-  info: Info,
-  warning: TriangleAlert,
-  error: TriangleAlert,
-}
+const RANGES = [
+  { value: '5', label: '5분' },
+  { value: '10', label: '10분' },
+  { value: '30', label: '30분' },
+] as const
+type Range = (typeof RANGES)[number]['value']
+
+const bannerTone = {
+  success: 'success',
+  info: 'info',
+  warning: 'warning',
+  error: 'danger',
+} as const satisfies Record<LoadTestVerdict['status'], string>
+
+const resultColor = {
+  통과: 'green',
+  적체: 'yellow',
+  실패: 'red',
+  '판단 못 함': 'gray',
+} as const satisfies Record<RecordedWindow['result'], string>
 
 type ErrorGroup = { errorCode: string | null; count: number }
-
-/** 시험을 시작한 때의 값 — 실패·접수를 "이번 시험에서 늘어난 만큼"으로 본다 */
-type TestRun = {
-  startedAt: number
-  endedAt: number | null
-  baseline: {
-    received: number
-    registerFailures: number
-    eventFailures: number
-  }
-}
 
 const sum = (values: Record<string, number>) =>
   Object.values(values).reduce((total, value) => total + value, 0)
 
-const formatTime = (ms: number) =>
-  new Date(ms).toLocaleTimeString('ko-KR', { hour12: false })
+const valueOf = (value: number | null | undefined, unit = '') =>
+  value === null || value === undefined
+    ? '—'
+    : `${formatNumber(Math.round(value))}${unit}`
 
 /** 가장 오래 기다린 접수가 몇 초·분째인지 */
 const ageOf = (iso: string | null, now: number) => {
-  if (!iso) return '없음'
+  if (!iso) return null
   const seconds = Math.max(0, Math.round((now - Date.parse(iso)) / 1000))
   if (seconds < 60) return `${seconds}초째`
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}분째`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}분 ${seconds % 60}초째`
   return `${Math.floor(seconds / 3600)}시간째`
 }
 
-/** 분당 변화 — 눈금 없는 그래프 대신 얼마나 빨리 바뀌는지를 숫자로 보인다 */
+/** 분당 변화 — 얼마나 빨리 바뀌는지를 숫자로 */
 const perMinuteNote = (perSecond: number | undefined, unit: string) => {
   if (perSecond === undefined) return '변화 측정 중'
   const perMinute = Math.round(perSecond * 60)
@@ -103,169 +126,179 @@ const perMinuteNote = (perSecond: number | undefined, unit: string) => {
   return `분당 ${perMinute > 0 ? '+' : '−'}${formatNumber(Math.abs(perMinute))}${unit}`
 }
 
-const errorColumns: TableColumn<ErrorGroup>[] = [
+/** 대기열 현황을 보는 범위(상품 하나 또는 전체)로 줄인다 */
+function queuePointOf(
+  at: number,
+  status: WaitingroomStatus,
+  productId: string | undefined,
+): QueuePoint & { cap: number | null } {
+  const product = productId
+    ? status.products.find((it) => it.productId === productId)
+    : undefined
+  const brakeFactor = status.brakeFactor
+  return {
+    at,
+    waiting: status.products
+      .filter((it) => !productId || it.productId === productId)
+      .reduce((total, it) => total + it.waiting, 0),
+    credit: productId ? (product?.credit ?? 0) : (status.globalCredit ?? 0),
+    // 전체 입장은 운영값 × 브레이크라, 브레이크를 걷어 낸 값이 상한이다.
+    cap: productId
+      ? (product?.cap ?? null)
+      : status.globalCredit !== null && brakeFactor
+        ? Math.round(status.globalCredit / brakeFactor)
+        : null,
+    brakeFactor,
+    braking: isBraking(brakeFactor),
+  }
+}
+
+const errorColumns = (total: number): TableColumn<ErrorGroup>[] => [
   {
     key: 'code',
     header: '오류 코드',
-    render: (group) => group.errorCode ?? '—',
+    render: (group) => <b>{group.errorCode ?? '—'}</b>,
+  },
+  {
+    key: 'meaning',
+    header: '뜻',
+    render: (group) =>
+      (group.errorCode && errorCodeMeaning[group.errorCode]) ?? '—',
   },
   {
     key: 'count',
-    header: '작업 수',
+    header: '건수',
     align: 'right',
-    render: (group) => `${formatNumber(group.count)}건`,
+    render: (group) => formatNumber(group.count),
+  },
+  {
+    key: 'share',
+    header: '비율',
+    width: '30%',
+    render: (group) => {
+      const share = total ? Math.round((group.count / total) * 100) : 0
+      return (
+        <span className={styles.shareCell}>
+          <span className={styles.shareBar}>
+            <span className={styles.shareFill} style={{ width: `${share}%` }} />
+          </span>
+          {share}%
+        </span>
+      )
+    },
   },
 ]
-
-const queueColumns = (
-  productNames: ReadonlyMap<string, string>,
-): TableColumn<WaitingroomProductStatus>[] => [
-  {
-    key: 'name',
-    header: '상품',
-    render: (product) =>
-      productNames.get(product.productId) ?? product.productId,
-  },
-  {
-    key: 'runtime',
-    header: '대기열 상태',
-    align: 'center',
-    render: (product) => waitingroomRuntimeLabel[product.runtime],
-  },
-  {
-    key: 'waiting',
-    header: '대기 인원',
-    align: 'right',
-    render: (product) => `${formatNumber(product.waiting)}명`,
-  },
-  {
-    key: 'credit',
-    header: '입장 속도 / 상한',
-    align: 'right',
-    render: (product) =>
-      `${formatNumber(product.credit)} / ${product.cap === null ? '서버 기본값' : `${formatNumber(product.cap)}명/초`}`,
-  },
-]
-
-/** 카드 값 아래에 작은 보조 문구(변화량·시험 중 증가분)를 붙인다 */
-function ValueWithNote({ value, note }: { value: string; note?: string }) {
-  return (
-    <span className={styles.valueWithNote}>
-      {value}
-      {note && <span className={styles.note}>{note}</span>}
-    </span>
-  )
-}
 
 export type AdminLoadTestProps = {
   /** 볼 사전예약 상품. 없으면 모든 상품을 합친 값 */
   productId?: string
-  /** 대기열 표에 이름을 붙인다(대기열 현황엔 id만 온다) */
-  productNames: ReadonlyMap<string, string>
-  /** 전체 보기의 상품 행을 누르면 그 상품으로 들어간다 */
-  onSelectProduct: (productId: string) => void
 }
 
 /**
- * 부하 검증(개발자용). 부하는 k6 같은 도구가 만들고, 이 화면은 그동안 대기열 → 예약 처리
- * → 외부 등록 중 어디가 막히는지 본다. [시험 시작]을 누른 때를 기준으로 실패·접수를
- * 세고, 받은 값은 브라우저에 쌓아 그린다(새로고침하면 사라진다). 조작은 대기열 관리·Mock
- * 설정에서 한다.
+ * 부하 검증(개발자용). 열면 바로 실시간이다 — 부하는 k6 같은 도구가 만들고, 이 화면은 그동안
+ * 대기열 → 예약 처리 → 외부 등록 중 어디가 막히는지 본다. 표본은 대시보드와 같이 관리자 화면을
+ * 연 뒤부터 쌓인다(새로 고치면 처음부터). [구간 기록]은 선택이다 — 누른 동안의 요약을 남겨
+ * 조건별로 비교한다.
  */
-export function AdminLoadTest({
-  productId,
-  productNames,
-  onSelectProduct,
-}: AdminLoadTestProps) {
-  const [refreshInterval, setRefreshInterval] =
-    useState<RefreshInterval>(DEFAULT_INTERVAL)
-  const queue = useWaitingroomStatus(refreshInterval)
-  const stats = useReservationStats(productId, refreshInterval)
+export function AdminLoadTest({ productId }: AdminLoadTestProps) {
+  const navigate = useNavigate()
+  const [range, setRange] = useState<Range>('10')
+  const rangeMs = Number(range) * 60_000
+  const rangeLabel = `최근 ${range}분`
+
+  const queue = useWaitingroomStatus(REFRESH_INTERVAL)
+  const stats = useReservationStats(productId, REFRESH_INTERVAL)
   // 부하 중엔 자동 재시도 중인 실패까지 봐야 무엇 때문에 실패하는지 일찍 보인다.
-  const errors = useSyncJobErrorGroups(refreshInterval)
+  const errors = useSyncJobErrorGroups(REFRESH_INTERVAL)
   const mock = useMockConfig()
+  const updateMock = useUpdateMockConfig()
+  const ledger = useExternalLedger()
+  const recording = useRecording()
 
-  const [waitingHistory, setWaitingHistory] = useState<Sample<number>[]>([])
-  const [statsHistory, setStatsHistory] = useState<
-    Sample<{ received: number; processed: number; backlog: number }>[]
-  >([])
-  const [test, setTest] = useState<TestRun | null>(null)
+  const statsPoints: (StatsPoint & { eventFailures: number })[] =
+    useReservationStatsHistory(productId).map(({ at, value }) => {
+      const received = sum(value.preorders)
+      const registerFailures = value.syncJobs.REGISTER.DEAD_LETTER
+      return {
+        at,
+        received,
+        processed: received - value.preorders.PENDING_SYNC,
+        // 재처리 필요(DEAD_LETTER)도 원장으로는 PENDING_SYNC지만 처리 중이 아니라 뺀다.
+        backlog: Math.max(0, value.preorders.PENDING_SYNC - registerFailures),
+        failures: registerFailures + value.deadLetters.waiting,
+        eventFailures: value.deadLetters.waiting,
+      }
+    })
+  const queuePoints = useWaitingroomStatusHistory().map(({ at, value }) =>
+    queuePointOf(at, value, productId),
+  )
 
-  // 새 응답이 오면 그 자리에서 표본을 쌓는다(렌더 중 갱신 — 같은 응답이면 건너뛴다).
-  // 시험 중엔 시작 전에 받아 둔 응답을 넣지 않는다 — 넣으면 첫 구간이 시험 밖까지 걸쳐 속도가 틀어진다.
-  const inTest = (at: number) => !test || at >= test.startedAt
-  if (
-    queue.data &&
-    inTest(queue.dataUpdatedAt) &&
-    queue.dataUpdatedAt !== waitingHistory.at(-1)?.at
-  ) {
-    setWaitingHistory((prev) =>
-      appendSample(prev, {
-        at: queue.dataUpdatedAt,
-        value: queue.data.products
-          .filter((p) => !productId || p.productId === productId)
-          .reduce((total, p) => total + p.waiting, 0),
-      }),
-    )
-  }
-  if (
-    stats.data &&
-    inTest(stats.dataUpdatedAt) &&
-    stats.dataUpdatedAt !== statsHistory.at(-1)?.at
-  ) {
-    const { preorders } = stats.data
-    // 접수는 모든 상태의 합, 처리는 외부 등록을 기다리지 않는 것 — 둘의 차이가 적체다.
-    const received = sum(preorders)
-    setStatsHistory((prev) =>
-      appendSample(prev, {
-        at: stats.dataUpdatedAt,
-        value: {
-          received,
-          processed: received - preorders.PENDING_SYNC,
-          backlog: preorders.PENDING_SYNC,
-        },
-      }),
-    )
-  }
+  // 범위의 끝은 마지막으로 받은 시각이다 — 렌더마다 흔들리지 않는다.
+  const now = Math.max(statsPoints.at(-1)?.at ?? 0, queuePoints.at(-1)?.at ?? 0)
+  const from = now - rangeMs
+  const shownStats = statsPoints.filter(({ at }) => at >= from)
+  const shownQueue = queuePoints.filter(({ at }) => at >= from)
 
   const pick = (key: 'received' | 'processed' | 'backlog') =>
-    statsHistory.map(({ at, value }) => ({ at, value: value[key] }))
+    shownStats.map(({ at, ...value }) => ({ at, value: value[key] }))
   const receivedRates = ratePerSecond(pick('received'))
   const processedRates = ratePerSecond(pick('processed'))
   const backlogSlope = slopePerSecond(pick('backlog')).at(-1)?.value
-  const waitingSlope = slopePerSecond(waitingHistory).at(-1)?.value
+  const waitingSlope = slopePerSecond(
+    shownQueue.map(({ at, waiting }) => ({ at, value: waiting })),
+  ).at(-1)?.value
+  // 차트 점 하나마다 그 사이에 새로 생긴 실패 수(rate는 첫 표본이 빠진다).
+  const newFailureCounts = shownStats
+    .slice(1)
+    .map((point, index) =>
+      Math.max(0, point.failures - shownStats[index].failures),
+    )
+
+  const firstStat = shownStats[0]
+  const lastStat = shownStats.at(-1)
+  const windowed = shownStats.length >= 2 && firstStat && lastStat
+  const newRegisterFailures = windowed
+    ? Math.max(
+        0,
+        lastStat.failures -
+          lastStat.eventFailures -
+          (firstStat.failures - firstStat.eventFailures),
+      )
+    : null
+  const newEventFailures = windowed
+    ? Math.max(0, lastStat.eventFailures - firstStat.eventFailures)
+    : null
 
   const q = queue.data
-  // 고른 상품이 대기열에 없으면(오픈 전·정리됨) undefined다.
-  const queueProduct = productId
-    ? q?.products.find((it) => it.productId === productId)
-    : undefined
   const s = stats.data
-  const braking = isBraking(q?.brakeFactor ?? null)
+  const current = q ? queuePointOf(queue.dataUpdatedAt, q, productId) : null
   const failures = errors.data ?? []
+  const failureTotal = failures.reduce((total, group) => total + group.count, 0)
   const topErrorCode =
     failures.toSorted((a, b) => b.count - a.count)[0]?.errorCode ?? null
-
-  // 재처리로 줄면 늘어난 게 없는 것이다.
-  const sinceStart = (now: number | undefined, base: number | undefined) =>
-    now === undefined || base === undefined ? null : Math.max(0, now - base)
-  const newReceived = sinceStart(s && sum(s.preorders), test?.baseline.received)
-  const newRegisterFailures = sinceStart(
-    s?.syncJobs.REGISTER.DEAD_LETTER,
-    test?.baseline.registerFailures,
-  )
-  const newEventFailures = sinceStart(
-    s?.deadLetters.waiting,
-    test?.baseline.eventFailures,
-  )
+  const receivedNow = receivedRates.at(-1)?.value
+  const processedNow = processedRates.at(-1)?.value
 
   const verdict = diagnose({
-    braking,
+    braking: current?.braking ?? false,
+    brakeFactor: current?.brakeFactor ?? null,
     backlogPerMinute: backlogSlope === undefined ? null : backlogSlope * 60,
     newRegisterFailures,
     newEventFailures,
     topErrorCode,
+    rangeLabel,
   })
+  const verdictAction = {
+    'register-failures': {
+      label: '재처리 필요 보기',
+      to: adminReservationsPath('REPROCESS_NEEDED', productId),
+    },
+    'event-failures': { label: '이벤트 DLQ', to: ADMIN_DEAD_LETTERS_PATH },
+    braking: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
+    backlog: { label: '입장 속도 조절', to: ADMIN_WAITINGROOM_PATH },
+    measuring: null,
+    ok: null,
+  }[verdict.kind]
 
   const refresh = () => {
     void queue.refetch()
@@ -274,342 +307,528 @@ export function AdminLoadTest({
     void mock.refetch()
   }
 
-  const startTest = () => {
-    if (!s) return
-    setWaitingHistory([])
-    setStatsHistory([])
-    setTest({
-      startedAt: Date.now(),
-      endedAt: null,
-      baseline: {
-        received: sum(s.preorders),
-        registerFailures: s.syncJobs.REGISTER.DEAD_LETTER,
-        eventFailures: s.deadLetters.waiting,
-      },
+  const preset = mock.data ? presetOf(mock.data) : undefined
+  const active = recording.active
+  const grafanaUrlOf = (start: number, end: number | 'now') =>
+    `${GRAFANA_BASE}&from=${start}&to=${end}`
+  const grafanaUrl = active
+    ? grafanaUrlOf(active.startedAt, 'now')
+    : `${GRAFANA_BASE}&from=now-${range}m&to=now&refresh=10s`
+
+  const startRecording = () =>
+    recording.start({
+      // 마지막으로 받은 시각부터 센다(집계가 있어야 누를 수 있어 0이 아니다).
+      startedAt: now,
+      condition: preset?.label ?? '직접 설정',
+      baselineFailures: lastStat?.failures ?? null,
     })
-    // 시작 뒤 첫 표본을 다음 자동 갱신까지 기다리지 않고 바로 받는다.
-    refresh()
+  const finishRecording = () => {
+    if (!active) return
+    recording.finish(
+      summarizeWindow(
+        active,
+        Math.max(now, active.startedAt),
+        statsPoints,
+        queuePoints,
+      ),
+    )
   }
-  const endTest = () =>
-    setTest((prev) => prev && { ...prev, endedAt: Date.now() })
 
-  // 시험 구간을 Grafana에서 그대로 이어 본다.
-  const grafanaUrl = test
-    ? `${GRAFANA_BASE}&from=${test.startedAt}&to=${test.endedAt ?? 'now'}`
-    : `${GRAFANA_BASE}&from=now-1h&to=now&refresh=10s`
-  const running = test !== null && test.endedAt === null
-
-  // 목(MSW)으로 띄웠을 때만 시험 중에 가짜 예약이 들어온다 — 목 예약은 원래 고정이라 그래프가
-  // 0에 붙는다. 실서버면 아무것도 하지 않는다. 화면을 나가면 멈춘다.
+  // 목(MSW)으로 띄웠을 때만 이 화면을 보는 동안 가짜 예약이 들어온다 — 목 예약은 원래 고정이라
+  // 그래프가 0에 붙는다. 실서버면 아무것도 하지 않는다. 화면을 나가면 멈춘다.
   useEffect(() => {
-    void setMockLoad(running)
+    void setMockLoad(true)
     return () => void setMockLoad(false)
-  }, [running])
+  }, [])
+
+  const recordColumns: TableColumn<RecordedWindow>[] = [
+    {
+      key: 'window',
+      header: '구간',
+      render: (record) =>
+        `${formatShortDateTime(new Date(record.startedAt).toISOString())} · ${durationLabel(record.endedAt - record.startedAt)}`,
+    },
+    { key: 'condition', header: '조건', render: (record) => record.condition },
+    {
+      key: 'waiting',
+      header: '최대 대기',
+      align: 'right',
+      render: (record) => valueOf(record.maxWaiting),
+    },
+    {
+      key: 'credit',
+      header: '최대 입장/초',
+      align: 'right',
+      render: (record) => valueOf(record.maxCredit),
+    },
+    {
+      key: 'processed',
+      header: '평균 처리/초',
+      align: 'right',
+      render: (record) => valueOf(record.avgProcessed),
+    },
+    {
+      key: 'backlog',
+      header: '최대 적체',
+      align: 'right',
+      render: (record) => valueOf(record.maxBacklog),
+    },
+    {
+      key: 'failures',
+      header: '새 실패',
+      align: 'right',
+      render: (record) => valueOf(record.newFailures),
+    },
+    {
+      key: 'result',
+      header: '판정',
+      align: 'center',
+      render: (record) => (
+        <Tag
+          size="small"
+          variant="subtle"
+          color={resultColor[record.result]}
+          widthOptions={Object.keys(resultColor)}
+        >
+          {record.result}
+        </Tag>
+      ),
+    },
+    {
+      key: 'copy',
+      header: <span className={srOnly}>복사</span>,
+      align: 'right',
+      render: (record) => (
+        <CopyButton
+          label="결과"
+          showLabel
+          value={recordText(
+            record,
+            grafanaUrlOf(record.startedAt, record.endedAt),
+          )}
+        />
+      ),
+    },
+  ]
+
+  const ledgerCount = ledger.data?.length
+  const checks = [
+    {
+      key: 'queue',
+      ok: !!q && (q.gateways ?? 0) > 0 && !q.snapshotStale,
+      label: q
+        ? `대기열 서버 ${valueOf(q.gateways, '대')} · ${q.snapshotStale ? `현황 ${q.snapshotAgeSeconds ?? '?'}초째 멈춤` : '현황 최신'}`
+        : '대기열 현황을 받지 못했어요',
+    },
+    {
+      key: 'backlog',
+      ok: lastStat?.backlog === 0,
+      label: `처리 중 적체 ${valueOf(lastStat?.backlog, '건')}`,
+    },
+    {
+      key: 'failures',
+      ok: s?.syncJobs.REGISTER.DEAD_LETTER === 0,
+      label:
+        s?.syncJobs.REGISTER.DEAD_LETTER === 0
+          ? '외부 등록 실패 없음'
+          : `외부 등록 실패 ${valueOf(s?.syncJobs.REGISTER.DEAD_LETTER, '건')} 남아 있음`,
+    },
+    {
+      key: 'ledger',
+      ok: ledgerCount === 0,
+      label: ledger.isError
+        ? '외부 원장을 확인하지 못했어요'
+        : ledgerCount === 0
+          ? '외부 원장 비어 있음'
+          : `외부 원장에 지난 기록 ${valueOf(ledgerCount, '건')}`,
+    },
+  ]
 
   return (
     <div className={styles.root}>
-      <RefreshStatus
-        updatedAt={Math.max(queue.dataUpdatedAt, stats.dataUpdatedAt)}
-        onRefresh={refresh}
-        note={
-          test
-            ? `시험 ${formatTime(test.startedAt)} ~ ${test.endedAt ? formatTime(test.endedAt) : '진행 중'}`
-            : '시험 전 — [시험 시작]을 누르면 그때부터 셉니다'
-        }
-      >
-        <Dropdown
-          label="자동 갱신 간격"
-          size="small"
-          width="140px"
-          options={refreshIntervalOptions}
-          value={refreshInterval}
-          // 고르는 즉시 한 번 받는다 — 새 간격을 기다리지 않고 지금 값을 보여준다.
-          onSelect={(next) => {
-            setRefreshInterval(next)
-            refresh()
-          }}
-        />
-        {running ? (
-          <Button
-            size="small"
-            variant="outline"
-            color="cancel"
-            onClick={endTest}
-          >
-            시험 종료
-          </Button>
+      <div className={styles.toolbar}>
+        {active ? (
+          <span className={styles.recordingBadge}>
+            <span className={styles.recordingDot} aria-hidden="true" />
+            기록 중 · {durationLabel(Math.max(0, now - active.startedAt))}
+          </span>
         ) : (
-          <Button size="small" disabled={!s} onClick={startTest}>
-            {test ? '새 시험 시작' : '시험 시작'}
-          </Button>
+          <span className={styles.liveBadge}>
+            <span className={styles.liveDot} aria-hidden="true" />
+            실시간
+          </span>
         )}
-        <a
-          className={styles.externalLink}
-          href={grafanaUrl}
-          target="_blank"
-          rel="noreferrer"
+        <RefreshStatus
+          updatedAt={Math.max(queue.dataUpdatedAt, stats.dataUpdatedAt)}
+          onRefresh={refresh}
+          note="5초마다"
         >
-          {test ? '이 시험 구간을 Grafana에서 보기' : 'Grafana 열기'}
-        </a>
-      </RefreshStatus>
-
-      <InlineAlert status={verdict.status} icon={verdictIcon[verdict.status]}>
-        {verdict.message}
-      </InlineAlert>
-
-      <FormSection
-        title="예약 처리"
-        description="접수와 외부 등록 처리를 같은 축에 그립니다. 두 선 사이가 벌어지면 그만큼 처리 중 적체가 쌓입니다. 집계는 서버가 5초까지 캐시해 최근 30초 평균으로 계산합니다."
-      >
-        {pollingError(stats) !== null && (
-          <InlineAlert status={s ? 'warning' : 'error'}>
-            {getErrorMessage(
-              pollingError(stats),
-              '예약 집계를 불러오지 못했습니다.',
-            )}
-          </InlineAlert>
-        )}
-        <div className={styles.card}>
-          <ThroughputChart
-            label="초당 접수와 외부 등록 처리"
-            unit="건/초"
-            times={receivedRates.map(({ at }) => at)}
-            series={[
-              {
-                label: '접수',
-                values: receivedRates.map(({ value }) => value),
-              },
-              {
-                label: '외부 등록 처리',
-                values: processedRates.map(({ value }) => value),
-              },
-            ]}
-          />
-        </div>
-        <div className={styles.cards}>
-          <StatCard
-            label="처리 중 적체"
-            muted={!s}
-            loading={stats.isPending}
-            value={
-              <ValueWithNote
-                value={s ? `${formatNumber(s.preorders.PENDING_SYNC)}건` : '—'}
-                note={perMinuteNote(backlogSlope, '건')}
-              />
-            }
-          />
-          <StatCard
-            label="가장 오래 처리 중"
-            muted={!s}
-            loading={stats.isPending}
-            value={s ? ageOf(s.oldestPendingSyncAt, stats.dataUpdatedAt) : '—'}
-          />
-          <StatCard
-            label="외부 등록 실패"
-            muted={!s}
-            loading={stats.isPending}
-            value={
-              <ValueWithNote
-                value={
-                  s ? `${formatNumber(s.syncJobs.REGISTER.DEAD_LETTER)}건` : '—'
-                }
-                note={
-                  newRegisterFailures === null
-                    ? undefined
-                    : `시험 시작 뒤 +${formatNumber(newRegisterFailures)}건`
-                }
-              />
-            }
-          />
-          <StatCard
-            label="상태 반영 실패"
-            muted={!s}
-            loading={stats.isPending}
-            value={
-              <ValueWithNote
-                value={s ? `${formatNumber(s.deadLetters.waiting)}건` : '—'}
-                note={
-                  newEventFailures === null
-                    ? undefined
-                    : `시험 시작 뒤 +${formatNumber(newEventFailures)}건`
-                }
-              />
-            }
-          />
-          {newReceived !== null && (
-            <StatCard
-              label="시험 시작 뒤 접수"
-              value={`${formatNumber(newReceived)}건`}
-            />
+          <SegmentedTabs items={RANGES} value={range} onChange={setRange} />
+          <a
+            className={styles.externalLink}
+            href={grafanaUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Grafana ↗
+          </a>
+          {active ? (
+            <Button
+              size="small"
+              variant="outline"
+              color="cancel"
+              icon={Square}
+              onClick={finishRecording}
+            >
+              기록 끝
+            </Button>
+          ) : (
+            <Button
+              size="small"
+              variant="outline"
+              icon={CircleDot}
+              disabled={!s}
+              onClick={startRecording}
+            >
+              구간 기록 시작
+            </Button>
           )}
-        </div>
+        </RefreshStatus>
+      </div>
 
-        <div className={styles.subTitle}>
-          외부 등록이 실패 중인 작업(오류 코드별)
-          {/* 동기화 작업 목록 API에는 상품 조건이 없다. */}
-          {productId && ' — 전체 상품 기준'}
-        </div>
-        {pollingError(errors) !== null && (
-          <InlineAlert status="warning">
-            {getErrorMessage(
-              pollingError(errors),
-              '오류 코드별 수를 불러오지 못했습니다.',
-            )}
-          </InlineAlert>
-        )}
-        <Table
-          columns={errorColumns}
-          rows={failures}
-          rowKey={(group) => group.errorCode ?? 'none'}
-          loading={errors.isPending}
-          loadingRows={3}
-          emptyMessage="실패 중인 작업이 없습니다."
-        />
-      </FormSection>
-
-      <FormSection
-        title="대기열"
-        description={
-          <>
-            입장 속도·상한은{' '}
-            <Link className={styles.link} to={ADMIN_WAITINGROOM_PATH}>
-              대기열 관리
-            </Link>
-            에서 바꿉니다.
-          </>
+      <NoticeBanner
+        tone={bannerTone[verdict.status]}
+        title={verdict.title}
+        description={verdict.description}
+        action={
+          verdictAction && (
+            <Button
+              size="small"
+              variant="outline"
+              onClick={() => navigate(verdictAction.to)}
+            >
+              {verdictAction.label}
+            </Button>
+          )
         }
+      />
+
+      {[pollingError(stats), pollingError(queue)].some(Boolean) && (
+        <InlineAlert status="warning">
+          {getErrorMessage(
+            pollingError(stats) ?? pollingError(queue),
+            '현황을 불러오지 못했습니다. 다시 받는 중이에요.',
+          )}
+        </InlineAlert>
+      )}
+      {q?.snapshotStale && (
+        <InlineAlert status="warning">
+          대기열 현황이 {q.snapshotAgeSeconds ?? '?'}초째 갱신되지 않았습니다.
+        </InlineAlert>
+      )}
+
+      <div className={styles.kpis}>
+        <StatCard
+          label="대기 인원"
+          loading={queue.isPending}
+          muted={!current}
+          value={valueOf(current?.waiting, '명')}
+          caption={`${perMinuteNote(waitingSlope, '')} · ${range}분 최대 ${valueOf(
+            shownQueue.length
+              ? Math.max(...shownQueue.map((point) => point.waiting))
+              : null,
+          )}`}
+        />
+        <StatCard
+          label="실제 입장 속도"
+          loading={queue.isPending}
+          muted={!current}
+          tone={current?.braking ? 'warning' : undefined}
+          value={valueOf(current?.credit, '명/초')}
+          caption={
+            current?.cap != null
+              ? `상한 ${formatNumber(current.cap)}${current.braking ? ` × 브레이크 ${current.brakeFactor}` : ''}`
+              : '상한 서버 기본값'
+          }
+        />
+        <StatCard
+          label="초당 접수 / 외부 등록"
+          loading={stats.isPending}
+          muted={receivedNow === undefined}
+          value={`${valueOf(receivedNow)} / ${valueOf(processedNow, '건')}`}
+          caption={
+            receivedNow && processedNow !== undefined
+              ? `처리율 ${Math.round((processedNow / receivedNow) * 100)}%`
+              : '변화 측정 중'
+          }
+        />
+        <StatCard
+          label="처리 중 적체"
+          loading={stats.isPending}
+          muted={!lastStat}
+          tone={
+            backlogSlope !== undefined && backlogSlope > 0
+              ? 'warning'
+              : undefined
+          }
+          value={valueOf(lastStat?.backlog, '건')}
+          caption={
+            s && lastStat?.backlog
+              ? `가장 오래 ${ageOf(s.oldestPendingSyncAt, stats.dataUpdatedAt) ?? '—'}`
+              : perMinuteNote(backlogSlope, '건')
+          }
+        />
+        <StatCard
+          label={`${rangeLabel} 새 실패`}
+          loading={stats.isPending}
+          muted={newRegisterFailures === null}
+          tone={
+            (newRegisterFailures ?? 0) + (newEventFailures ?? 0) > 0
+              ? 'danger'
+              : undefined
+          }
+          value={
+            newRegisterFailures === null
+              ? '—'
+              : `+${formatNumber(newRegisterFailures + (newEventFailures ?? 0))}건`
+          }
+          caption={
+            newRegisterFailures === null
+              ? '변화 측정 중'
+              : `외부 등록 ${formatNumber(newRegisterFailures)} · 상태 반영 ${formatNumber(newEventFailures ?? 0)}`
+          }
+        />
+      </div>
+
+      <Panel
+        title="트래픽 — 대기열에 몰리는 양과 들여보내는 양"
+        aside={<>{rangeLabel} · 5초마다 한 점</>}
       >
-        {pollingError(queue) !== null && (
-          <InlineAlert status={q ? 'warning' : 'error'}>
-            {getErrorMessage(
-              pollingError(queue),
-              '대기열 현황을 불러오지 못했습니다.',
-            )}
-          </InlineAlert>
-        )}
-        {q?.snapshotStale && (
-          <InlineAlert status="warning">
-            대기열 현황이 {q.snapshotAgeSeconds ?? '?'}초째 갱신되지 않았습니다.
-          </InlineAlert>
-        )}
-        <div className={styles.cards}>
-          <StatCard
-            label={productId ? '대기 인원' : '총 대기 인원'}
-            muted={!q}
-            loading={queue.isPending}
-            value={
-              <ValueWithNote
-                value={
-                  q
-                    ? `${formatNumber(waitingHistory.at(-1)?.value ?? 0)}명`
-                    : '—'
-                }
-                note={perMinuteNote(waitingSlope, '명')}
-              />
-            }
-          />
-          <StatCard
-            label="실제 입장 속도"
-            muted={!q || (productId !== undefined && !queueProduct)}
-            loading={queue.isPending}
-            value={
-              productId ? (
-                queueProduct ? (
-                  <ValueWithNote
-                    value={`${formatNumber(queueProduct.credit)}명/초`}
-                    note={
-                      queueProduct.cap === null
-                        ? '상한 서버 기본값'
-                        : `상한 ${formatNumber(queueProduct.cap)}명/초`
+        <div className={styles.chartPair}>
+          <div className={styles.miniChart}>
+            <div className={styles.miniHeader}>
+              대기 인원
+              <span className={styles.miniValue}>
+                {valueOf(current?.waiting, '명')}
+              </span>
+            </div>
+            <TrendChart
+              times={shownQueue.map(({ at }) => at)}
+              values={shownQueue.map(({ waiting }) => waiting)}
+              unit="명"
+              label="대기 인원"
+            />
+          </div>
+          <div className={styles.miniChart}>
+            <div className={styles.miniHeader}>
+              실제 입장 속도
+              <span className={styles.miniValue}>
+                {valueOf(current?.credit, '명/초')}
+              </span>
+            </div>
+            <TrendChart
+              times={shownQueue.map(({ at }) => at)}
+              values={shownQueue.map(({ credit }) => credit)}
+              unit="명"
+              label="실제 입장 속도(초당)"
+              tone="warning"
+              reference={
+                current?.cap != null
+                  ? {
+                      value: current.cap,
+                      label: `상한 ${formatNumber(current.cap)}명`,
                     }
-                  />
-                ) : (
-                  '대기열에 없음'
-                )
-              ) : q?.globalCredit != null ? (
-                `${formatNumber(q.globalCredit)}명/초`
-              ) : (
-                '—'
-              )
-            }
-          />
-          <StatCard
-            label="브레이크 배율(전체)"
-            muted={!q}
-            loading={queue.isPending}
-            value={
-              <ValueWithNote
-                value={q?.brakeFactor != null ? String(q.brakeFactor) : '—'}
-                note={braking ? '입장을 줄이는 중' : '1이면 정상'}
-              />
-            }
-          />
-          <StatCard
-            label="대기열 서버"
-            muted={!q}
-            loading={queue.isPending}
-            value={q?.gateways != null ? `${formatNumber(q.gateways)}대` : '—'}
-          />
+                  : undefined
+              }
+              bands={brakeBands(shownQueue)}
+            />
+          </div>
         </div>
+      </Panel>
 
-        {/* 전체 보기에서는 어느 상품이 막혔는지 비교하게 상품별로 나눠 보인다. */}
-        {!productId && (
+      <Panel
+        title="예약 처리 — 접수와 외부 등록"
+        aside={<>두 선이 벌어진 만큼 처리 중 적체가 쌓여요</>}
+      >
+        <ThroughputChart
+          label="초당 접수와 외부 등록 처리"
+          unit="건"
+          times={receivedRates.map(({ at }) => at)}
+          series={[
+            {
+              label: '초당 접수',
+              values: receivedRates.map(({ value }) => value),
+            },
+            {
+              label: '초당 외부 등록 처리',
+              values: processedRates.map(({ value }) => value),
+            },
+          ]}
+          incidents={{ label: '새 실패', counts: newFailureCounts }}
+        />
+      </Panel>
+
+      <div className={styles.row}>
+        <Panel
+          className={styles.wideCard}
+          title="외부 등록 실패 원인"
+          aside={
+            <>
+              {/* 동기화 작업 목록 API에는 상품 조건이 없다. */}
+              {productId ? '전체 상품 기준 · ' : ''}자동 재시도 중 포함
+            </>
+          }
+        >
+          {pollingError(errors) !== null && (
+            <InlineAlert status="warning">
+              {getErrorMessage(
+                pollingError(errors),
+                '오류 코드별 수를 불러오지 못했습니다.',
+              )}
+            </InlineAlert>
+          )}
           <Table
-            columns={queueColumns(productNames)}
-            // 대기가 많은 상품이 막힌 상품이라 위로 올린다.
-            rows={(q?.products ?? []).toSorted((a, b) => b.waiting - a.waiting)}
-            rowKey={(product) => product.productId}
-            onRowClick={(product) => onSelectProduct(product.productId)}
-            rowAction={{
-              label: (product) =>
-                `${productNames.get(product.productId) ?? product.productId} 부하 보기`,
-              onClick: (product) => onSelectProduct(product.productId),
-            }}
-            loading={queue.isPending}
-            loadingRows={2}
-            emptyMessage="대기열에 오른 상품이 없습니다."
+            columns={errorColumns(failureTotal)}
+            rows={failures.toSorted((a, b) => b.count - a.count)}
+            rowKey={(group) => group.errorCode ?? 'none'}
+            loading={errors.isPending}
+            loadingRows={3}
+            emptyMessage="실패 중인 작업이 없습니다."
           />
-        )}
-      </FormSection>
+          <span className={styles.caption}>
+            재시도로 풀리는 것도 섞여 있어요. 끝내 실패한 건은 예약 현황에서
+            재처리해요.
+          </span>
+        </Panel>
 
-      <FormSection
-        title="시험 조건 · 시험 뒤"
-        description={
-          <>
-            외부 Mock 지연·실패는{' '}
+        <Panel
+          className={styles.sideCard}
+          title="시험 조건 · 외부 Mock"
+          aside={
             <Link className={styles.link} to={ADMIN_MOCK_SETTINGS_PATH}>
               Mock 설정
             </Link>
-            에서 바꾸고, 시험이 끝나면{' '}
-            <Link className={styles.link} to={ADMIN_RECONCILIATION_PATH}>
-              외부 예약 대조
-            </Link>
-            로 누락이 없는지 확인합니다.
-          </>
-        }
-      >
-        <div className={styles.card}>
+          }
+        >
+          <div
+            className={styles.chips}
+            role="group"
+            aria-label="조건 빨리 바꾸기"
+          >
+            {MOCK_PRESETS.map((item) => (
+              <Chip
+                key={item.key}
+                variant="solid"
+                selected={preset?.key === item.key}
+                aria-pressed={preset?.key === item.key}
+                disabled={!mock.data || updateMock.isPending}
+                onClick={() => updateMock.mutate(item.update)}
+              >
+                {item.label}
+              </Chip>
+            ))}
+          </div>
+          {updateMock.isError && (
+            <InlineAlert status="error">
+              {getErrorMessage(updateMock.error, '조건을 바꾸지 못했습니다.')}
+            </InlineAlert>
+          )}
           {mock.isError ? (
             <InlineAlert status="warning">
               {getErrorMessage(mock.error, 'Mock 설정을 불러오지 못했습니다.')}
             </InlineAlert>
-          ) : mock.data ? (
-            <div className={styles.mockSummary}>
-              등록 지연 평균 {mock.data.registerLatencyMs}ms
-              {mock.data.latencyTailRate > 0 &&
-                ` (꼬리 ${Math.round(mock.data.latencyTailRate * 100)}% · ${mock.data.latencyTailMinMs}~${mock.data.latencyTailMaxMs}ms)`}
-              {' · '}일시 실패 {Math.round(mock.data.failureRate * 1000) / 10}%
-              {' · '}
-              {mockFailureModeLabel[mock.data.failureMode]}
-              {' · '}설정 버전 {mock.data.configVersion}
-            </div>
           ) : (
-            <SkeletonGroup>
-              <Skeleton width="60%" height={20} />
-            </SkeletonGroup>
+            mock.data && (
+              <DescriptionList
+                items={[
+                  {
+                    label: '등록 지연',
+                    value: `평균 ${formatNumber(mock.data.registerLatencyMs)}ms (±${Math.round(mock.data.latencyJitter * 100)}%)${
+                      mock.data.latencyTailRate > 0
+                        ? ` · 꼬리 ${Math.round(mock.data.latencyTailRate * 100)}% ${formatNumber(mock.data.latencyTailMinMs)}~${formatNumber(mock.data.latencyTailMaxMs)}ms`
+                        : ''
+                    }`,
+                  },
+                  {
+                    label: '실패',
+                    value: `${Math.round(mock.data.failureRate * 1000) / 10}% · ${mockFailureModeLabel[mock.data.failureMode]}`,
+                  },
+                  {
+                    label: '워커 타임아웃',
+                    value: `${formatNumber(mock.data.workerReadTimeoutMs)}ms`,
+                  },
+                  {
+                    label: '적용',
+                    value: `${formatDotDateTime(mock.data.appliedAt)} · 설정 #${mock.data.configVersion}`,
+                  },
+                ]}
+              />
+            )
           )}
+        </Panel>
+      </div>
+
+      <Panel
+        title="부하 넣기 전 점검"
+        aside={<>깨끗한 상태에서 시작하면 숫자가 섞이지 않아요</>}
+      >
+        <ul className={styles.checks}>
+          {checks.map((check) => (
+            <li key={check.key} className={styles.check}>
+              <span
+                className={check.ok ? styles.checkOk : styles.checkNo}
+                aria-hidden="true"
+              >
+                {check.ok ? <Check size={12} /> : <TriangleAlert size={12} />}
+              </span>
+              {check.label}
+            </li>
+          ))}
+        </ul>
+        <div className={styles.chips}>
+          {/* 초기화는 확인 글자를 받는 Mock 설정에서 한다 — 여기서 한 번에 지우지 않는다. */}
+          <Button
+            size="small"
+            variant="outline"
+            color="cancel"
+            onClick={() => navigate(ADMIN_MOCK_SETTINGS_PATH)}
+          >
+            외부 원장 초기화
+          </Button>
+          <Button
+            size="small"
+            variant="outline"
+            color="cancel"
+            onClick={() => navigate(ADMIN_RECONCILIATION_PATH)}
+          >
+            외부 예약 대조
+          </Button>
+          <Button
+            size="small"
+            variant="outline"
+            color="cancel"
+            onClick={() =>
+              navigate(adminReservationsPath('REPROCESS_NEEDED', productId))
+            }
+          >
+            재처리 필요 보기
+          </Button>
         </div>
-      </FormSection>
+      </Panel>
+
+      <Panel
+        title="기록한 구간"
+        aside={
+          <>[구간 기록 시작]~[기록 끝]을 누른 구간 · 이 브라우저에만 남아요</>
+        }
+      >
+        <Table
+          columns={recordColumns}
+          rows={recording.records}
+          rowKey={(record) => String(record.startedAt)}
+          emptyMessage="아직 기록한 구간이 없어요. 부하를 넣기 전에 [구간 기록 시작]을 누르세요."
+        />
+      </Panel>
     </div>
   )
 }
