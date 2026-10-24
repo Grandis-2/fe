@@ -9,7 +9,7 @@ import {
   useShipmentBatches,
 } from '@entities/product'
 import { useRequireLogin } from '@features/login'
-import { usePreorderSubmit } from '@features/preorder-queue'
+import { AdmissionTimer, usePreorderSubmit } from '@features/preorder-queue'
 import {
   useAddToCart,
   useProductPurchase,
@@ -120,6 +120,7 @@ export function ProductDetailPage() {
       preorderSubmit.submitPreorder(
         {
           productId: product.productId,
+          productName: product.title,
           optionId: variant.variantId,
         },
         ({ preorderId }, registered) =>
@@ -163,6 +164,7 @@ export function ProductDetailPage() {
   return (
     <div className={styles.root} data-theme="dark" data-header-theme="dark">
       <div className={styles.content}>
+        <AdmissionTimer productId={productId} productName={title} />
         <ProductOverview
           ref={layoutRef}
           product={product}
