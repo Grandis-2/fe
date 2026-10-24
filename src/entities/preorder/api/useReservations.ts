@@ -110,6 +110,9 @@ export const useReservation = (preorderId: string) => {
     enabled: preorderId !== '' && !deadline.passed,
     refetchInterval: ({ state: { data } }) =>
       settlePollMs(data) ?? untilDueMs(data) ?? false,
+    // 제한 시간(60초·2분)은 다른 탭에 가 있어도 흐르므로 조회도 같이 돈다 — 안 그러면 그새 등록이 끝나도 돌아왔을 때
+    // 조회가 꺼져 있어 처리 중·지연 안내가 남는다. 상한이 있어 비용도 정해져 있다.
+    refetchIntervalInBackground: true,
     // PAYMENT_IN_PROGRESS·PAYMENT_EXPIRED로 바뀔 땐 version이 그대로라 같은 값은 받는다.
     structuralSharing: keepNewer<ReservationDetail>(({ version }) => version),
     ...queryPolicy.live,
