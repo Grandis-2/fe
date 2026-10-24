@@ -1,6 +1,6 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@shared/config/theme'
+import { spacing } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
@@ -14,8 +14,3 @@ export const scope = style({
   alignItems: 'center',
   gap: spacing[6],
 })
-
-export const scopeLabel = style([
-  typography.body.caption,
-  { marginRight: spacing[4], color: color.text.tertiary },
-])

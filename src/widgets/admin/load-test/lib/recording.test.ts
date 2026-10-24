@@ -65,18 +65,33 @@ describe('summarizeWindow', () => {
 })
 
 describe('brakeBands', () => {
+  it('30초 안에 다시 걸리면 한 띠로 합친다', () => {
+    expect(
+      brakeBands([
+        queue(0, 0.6),
+        queue(5000),
+        queue(20_000, 0.8),
+        queue(25_000),
+        queue(70_000, 0.9),
+      ]),
+    ).toEqual([
+      { from: 0, to: 25_000, label: '브레이크 0.6×' },
+      { from: 70_000, to: 70_000, label: '브레이크 0.9×' },
+    ])
+  })
+
   it('브레이크가 이어진 동안을 한 띠로, 가장 낮은 배율을 붙인다', () => {
     expect(
       brakeBands([
         queue(0),
-        queue(5, 0.7),
-        queue(10, 0.5),
-        queue(15),
-        queue(20, 0.8),
+        queue(5000, 0.7),
+        queue(10_000, 0.5),
+        queue(15_000),
+        queue(60_000, 0.8),
       ]),
     ).toEqual([
-      { from: 5, to: 15, label: '브레이크 0.5×' },
-      { from: 20, to: 20, label: '브레이크 0.8×' },
+      { from: 5000, to: 15_000, label: '브레이크 0.5×' },
+      { from: 60_000, to: 60_000, label: '브레이크 0.8×' },
     ])
   })
 })

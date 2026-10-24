@@ -52,29 +52,11 @@ export const caption = style([
 export const chartPair = style({
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))',
-  gap: spacing[24],
+  gap: spacing[16],
 })
-
-export const miniChart = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[8],
-  minWidth: 0,
-})
-
-export const miniHeader = style([
-  typography.body.defaultMedium,
-  {
-    display: 'flex',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-    gap: spacing[8],
-    color: color.text.secondary,
-  },
-])
 
 export const miniValue = style([
-  typography.title.mdSemibold,
+  typography.title.lgSemibold,
   { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
 ])
 
@@ -146,9 +128,4 @@ export const checkNo = style([
 export const link = style([
   typography.body.subMedium,
   { color: color.primary.base, textDecoration: 'none' },
-])
-
-export const externalLink = style([
-  typography.body.subMedium,
-  { color: color.primary.base, textDecoration: 'underline' },
 ])

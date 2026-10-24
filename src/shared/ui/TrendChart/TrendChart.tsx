@@ -36,6 +36,8 @@ const PAD_TOP = 10
 // 축 최댓값의 하한 — 값이 모두 0이면 축이 1·1·0(0.5 반올림)으로 찍히고, 0과 1을 오가는 값이
 // 그래프 꼭대기까지 치솟아 보인다.
 const MIN_SCALE = 10
+// 이보다 좁은 띠(그림 폭 %)엔 이름을 붙이지 않는다 — '브레이크 0.6×' 한 줄이 들어갈 만큼
+const LABEL_MIN_BAND_PERCENT = 18
 
 const formatTime = (ms: number) =>
   new Date(ms).toLocaleTimeString('ko-KR', {
@@ -94,6 +96,9 @@ export function TrendChart({
 
   const last = times.length - 1
   const shown = hover ?? last
+  const shownBand = bands.find(
+    (band) => times[shown] >= band.from && times[shown] <= band.to,
+  )
   // 점·세로선·툴팁은 글자처럼 찌그러지지 않게 HTML로 겹친다(그림은 가로로 늘어난다).
   const leftOf = (i: number) => `${(points[i].x / WIDTH) * 100}%`
   const topOf = (i: number) => `${(points[i].y / HEIGHT) * 100}%`
@@ -191,7 +196,17 @@ export function TrendChart({
                 style={{ left: `${left}%`, width: `${right - left}%` }}
                 aria-hidden="true"
               >
-                <span className={styles.bandLabel}>{band.label}</span>
+                {/* 좁은 띠는 이름이 옆 띠·끝점과 겹쳐 빗금만 둔다 — 이름은 올리면 툴팁에 나온다.
+                    오른쪽 절반에선 띠 끝에 붙여 그림 밖으로 넘치지 않게 한다. */}
+                {right - left >= LABEL_MIN_BAND_PERCENT && (
+                  <span
+                    className={
+                      left > 50 ? styles.bandLabelEnd : styles.bandLabel
+                    }
+                  >
+                    {band.label}
+                  </span>
+                )}
               </span>
             )
           })}
@@ -228,6 +243,9 @@ export function TrendChart({
                 {formatTime(times[shown])}
               </span>
               <b>{formatValue(values[shown], unit)}</b>
+              {shownBand && (
+                <span className={styles.tooltipBand}>{shownBand.label}</span>
+              )}
             </div>
           )}
         </div>

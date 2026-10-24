@@ -102,15 +102,21 @@ export const bandLabel = style([
   typography.body.caption,
   {
     position: 'absolute',
-    top: spacing[6],
+    top: spacing[8],
     left: spacing[8],
-    padding: `${spacing[2]} ${spacing[6]}`,
+    padding: `${spacing[2]} ${spacing[8]}`,
     borderRadius: '999px',
+    border: `1px solid color-mix(in srgb, ${color.status.warning} 40%, transparent)`,
     background: color.background.subtleWarning,
     color: color.text.primary,
     fontWeight: 600,
     whiteSpace: 'nowrap',
   },
+])
+
+export const bandLabelEnd = style([
+  bandLabel,
+  { left: 'auto', right: spacing[8] },
 ])
 
 // 처음 나타날 때 면과 선을 왼쪽부터 함께 펼친다. 값이 바뀔 때는 다시 하지 않는다.
@@ -191,6 +197,11 @@ export const tooltipRight = style([tooltip, { marginLeft: spacing[10] }])
 export const tooltipLeft = style([
   tooltip,
   { transform: `translateX(calc(-100% - ${spacing[10]}))` },
+])
+
+export const tooltipBand = style([
+  typography.body.caption,
+  { color: color.text.secondary, fontWeight: 600 },
 ])
 
 export const tooltipTime = style([

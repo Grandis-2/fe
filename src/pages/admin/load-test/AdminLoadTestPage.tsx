@@ -40,7 +40,6 @@ export function AdminLoadTestPage() {
         header={{ title: '부하 검증' }}
         scope={
           <div className={styles.scope} role="group" aria-label="볼 상품">
-            <span className={styles.scopeLabel}>범위</span>
             {[{ productId: undefined, name: '전체' }, ...products].map(
               (product) => (
                 <Chip

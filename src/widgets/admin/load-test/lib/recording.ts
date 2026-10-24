@@ -91,9 +91,13 @@ export function summarizeWindow(
   }
 }
 
-/** 브레이크가 걸린 동안을 이어진 구간으로 묶는다(차트 빗금 띠) */
+// 이만큼 안에 다시 걸린 브레이크는 한 띠로 본다 — 배율이 1 근처를 오가면 띠가 잘게 쪼개져
+// 이름이 다닥다닥 붙는다.
+const BRAKE_MERGE_GAP_MS = 30_000
+
+/** 브레이크가 걸린 동안을 이어진 구간으로 묶는다(차트 빗금 띠). 이름엔 가장 낮은 배율을 붙인다 */
 export function brakeBands(queue: readonly QueuePoint[]) {
-  const bands: { from: number; to: number; label: string }[] = []
+  const runs: { from: number; to: number; min: number }[] = []
   let run: { from: number; to: number; min: number } | null = null
   for (const point of queue) {
     if (point.braking) {
@@ -104,17 +108,25 @@ export function brakeBands(queue: readonly QueuePoint[]) {
       } else run = { from: point.at, to: point.at, min: factor }
       continue
     }
-    if (run)
-      bands.push({
-        from: run.from,
-        to: point.at,
-        label: `브레이크 ${run.min}×`,
-      })
+    // 풀린 표본까지 띠를 늘린다 — 그 사이 어딘가에서 풀렸다.
+    if (run) runs.push({ ...run, to: point.at })
     run = null
   }
-  if (run)
-    bands.push({ from: run.from, to: run.to, label: `브레이크 ${run.min}×` })
-  return bands
+  if (run) runs.push(run)
+
+  const merged: typeof runs = []
+  for (const next of runs) {
+    const prev = merged.at(-1)
+    if (prev && next.from - prev.to <= BRAKE_MERGE_GAP_MS) {
+      prev.to = next.to
+      prev.min = Math.min(prev.min, next.min)
+    } else merged.push({ ...next })
+  }
+  return merged.map(({ from, to, min }) => ({
+    from,
+    to,
+    label: `브레이크 ${min}×`,
+  }))
 }
 
 /** 구간 길이 — '6분', 1분이 안 되면 '40초' */

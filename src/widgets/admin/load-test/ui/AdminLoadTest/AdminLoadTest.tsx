@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { Check, CircleDot, Square, TriangleAlert } from 'lucide-react'
-import { Link, useNavigate } from 'react-router'
+import { Link } from 'react-router'
 
 import {
   useReservationStats,
@@ -40,6 +40,7 @@ import { formatNumber } from '@shared/lib/formatNumber'
 import { ratePerSecond, slopePerSecond } from '@shared/lib/samples'
 import {
   Button,
+  ButtonLink,
   Chip,
   CopyButton,
   DescriptionList,
@@ -139,8 +140,12 @@ function queuePointOf(
   const brakeFactor = status.brakeFactor
   return {
     at,
+    // 대시보드처럼 접수 중인 사전예약만 센다 — 오픈 전·마감 줄이 섞이면 부하가 커 보인다.
     waiting: status.products
-      .filter((it) => !productId || it.productId === productId)
+      .filter(
+        (it) =>
+          it.phase === 'OPEN' && (!productId || it.productId === productId),
+      )
       .reduce((total, it) => total + it.waiting, 0),
     credit: productId ? (product?.credit ?? 0) : (status.globalCredit ?? 0),
     // 전체 입장은 운영값 × 브레이크라, 브레이크를 걷어 낸 값이 상한이다.
@@ -194,7 +199,7 @@ export type AdminLoadTestProps = {
   /** 볼 사전예약 상품. 없으면 모든 상품을 합친 값 */
   productId?: string
   /** 페이지 제목 — 마지막 갱신·도구와 같은 줄에 그린다 */
-  header: Omit<PageHeaderProps, 'aside'>
+  header: Omit<PageHeaderProps, 'aside' | 'badge'>
   /** 제목 줄 바로 아래 — 볼 상품 고르기 */
   scope?: ReactNode
 }
@@ -210,7 +215,6 @@ export function AdminLoadTest({
   header,
   scope,
 }: AdminLoadTestProps) {
-  const navigate = useNavigate()
   const [range, setRange] = useState<Range>('10')
   const rangeMs = Number(range) * 60_000
   const rangeLabel = `최근 ${range}분`
@@ -455,59 +459,60 @@ export function AdminLoadTest({
 
   return (
     <div className={styles.root}>
-      {/* 제목 줄 오른쪽에 실시간 표시·마지막 갱신·도구를 둔다(다른 관리자 화면과 같은 자리). */}
+      {/* 제목 줄 오른쪽에 마지막 갱신·도구를 둔다(다른 관리자 화면과 같은 자리). */}
       <PageHeader
         {...header}
+        // 실시간·기록 중은 제목 바로 옆 — 지금 보는 값이 무엇인지 먼저 읽힌다(시안과 같다).
+        badge={
+          active ? (
+            <span className={styles.recordingBadge}>
+              <span className={styles.recordingDot} aria-hidden="true" />
+              기록 중 · {durationLabel(Math.max(0, now - active.startedAt))}
+            </span>
+          ) : (
+            <span className={styles.liveBadge}>
+              <span className={styles.liveDot} aria-hidden="true" />
+              실시간
+            </span>
+          )
+        }
         aside={
-          <>
-            {active ? (
-              <span className={styles.recordingBadge}>
-                <span className={styles.recordingDot} aria-hidden="true" />
-                기록 중 · {durationLabel(Math.max(0, now - active.startedAt))}
-              </span>
-            ) : (
-              <span className={styles.liveBadge}>
-                <span className={styles.liveDot} aria-hidden="true" />
-                실시간
-              </span>
-            )}
-            <RefreshStatus
-              updatedAt={Math.max(queue.dataUpdatedAt, stats.dataUpdatedAt)}
-              onRefresh={refresh}
-              note="5초마다"
+          <RefreshStatus
+            updatedAt={Math.max(queue.dataUpdatedAt, stats.dataUpdatedAt)}
+            onRefresh={refresh}
+            note="5초마다"
+          >
+            <SegmentedTabs items={RANGES} value={range} onChange={setRange} />
+            <ButtonLink
+              size="small"
+              variant="outline"
+              color="cancel"
+              href={grafanaUrl}
             >
-              <SegmentedTabs items={RANGES} value={range} onChange={setRange} />
-              <a
-                className={styles.externalLink}
-                href={grafanaUrl}
-                target="_blank"
-                rel="noreferrer"
+              Grafana ↗
+            </ButtonLink>
+            {active ? (
+              <Button
+                size="small"
+                variant="outline"
+                color="cancel"
+                icon={Square}
+                onClick={finishRecording}
               >
-                Grafana ↗
-              </a>
-              {active ? (
-                <Button
-                  size="small"
-                  variant="outline"
-                  color="cancel"
-                  icon={Square}
-                  onClick={finishRecording}
-                >
-                  기록 끝
-                </Button>
-              ) : (
-                <Button
-                  size="small"
-                  variant="outline"
-                  icon={CircleDot}
-                  disabled={!s}
-                  onClick={startRecording}
-                >
-                  구간 기록 시작
-                </Button>
-              )}
-            </RefreshStatus>
-          </>
+                기록 끝
+              </Button>
+            ) : (
+              <Button
+                size="small"
+                variant="outline"
+                icon={CircleDot}
+                disabled={!s}
+                onClick={startRecording}
+              >
+                구간 기록 시작
+              </Button>
+            )}
+          </RefreshStatus>
         }
       />
       {scope}
@@ -518,13 +523,9 @@ export function AdminLoadTest({
         description={verdict.description}
         action={
           verdictAction && (
-            <Button
-              size="small"
-              variant="outline"
-              onClick={() => navigate(verdictAction.to)}
-            >
+            <ButtonLink size="small" variant="outline" to={verdictAction.to}>
               {verdictAction.label}
-            </Button>
+            </ButtonLink>
           )
         }
       />
@@ -556,7 +557,7 @@ export function AdminLoadTest({
           )}`}
         />
         <StatCard
-          label="실제 입장 속도"
+          label="입장 허용 속도"
           loading={queue.isPending}
           muted={!current}
           tone={current?.braking ? 'warning' : undefined}
@@ -616,51 +617,51 @@ export function AdminLoadTest({
         />
       </div>
 
-      <Panel
-        title="트래픽 — 대기열에 몰리는 양과 들여보내는 양"
-        aside={<>{rangeLabel} · 5초마다 한 점</>}
-      >
-        <div className={styles.chartPair}>
-          <div className={styles.miniChart}>
-            <div className={styles.miniHeader}>
-              대기 인원
-              <span className={styles.miniValue}>
-                {valueOf(current?.waiting, '명')}
-              </span>
-            </div>
-            <TrendChart
-              times={shownQueue.map(({ at }) => at)}
-              values={shownQueue.map(({ waiting }) => waiting)}
-              unit="명"
-              label="대기 인원"
-            />
-          </div>
-          <div className={styles.miniChart}>
-            <div className={styles.miniHeader}>
-              실제 입장 속도
-              <span className={styles.miniValue}>
-                {valueOf(current?.credit, '명/초')}
-              </span>
-            </div>
-            <TrendChart
-              times={shownQueue.map(({ at }) => at)}
-              values={shownQueue.map(({ credit }) => credit)}
-              unit="명"
-              label="실제 입장 속도(초당)"
-              tone="warning"
-              reference={
-                current?.cap != null
-                  ? {
-                      value: current.cap,
-                      label: `상한 ${formatNumber(current.cap)}명`,
-                    }
-                  : undefined
-              }
-              bands={brakeBands(shownQueue)}
-            />
-          </div>
-        </div>
-      </Panel>
+      <div className={styles.chartPair}>
+        <Panel
+          title="대기 인원 — 접수 중인 사전예약에 줄 선 사람"
+          aside={<>{rangeLabel} · 5초마다 한 점</>}
+        >
+          <span className={styles.miniValue}>
+            {valueOf(current?.waiting, '명')}
+          </span>
+          <TrendChart
+            times={shownQueue.map(({ at }) => at)}
+            values={shownQueue.map(({ waiting }) => waiting)}
+            unit="명"
+            label="대기 인원"
+          />
+        </Panel>
+        <Panel
+          title="입장 허용 속도 — 초당 들여보내도 되는 인원"
+          aside={<>{rangeLabel} · 브레이크 반영</>}
+        >
+          <span className={styles.miniValue}>
+            {valueOf(current?.credit, '명/초')}
+          </span>
+          <TrendChart
+            times={shownQueue.map(({ at }) => at)}
+            values={shownQueue.map(({ credit }) => credit)}
+            unit="명"
+            label="입장 허용 속도(초당)"
+            tone="warning"
+            reference={
+              current?.cap != null
+                ? {
+                    value: current.cap,
+                    label: `상한 ${formatNumber(current.cap)}명`,
+                  }
+                : undefined
+            }
+            bands={brakeBands(shownQueue)}
+          />
+          {/* 서버가 정한 허용량이다 — 실제로 들어간 수는 서버가 주지 않는다. */}
+          <span className={styles.caption}>
+            실제로 들어간 수가 아니라 서버가 정한 허용량이에요. 줄이 짧으면 실제
+            입장은 이보다 적어요.
+          </span>
+        </Panel>
+      </div>
 
       <Panel
         title="예약 처리 — 접수와 외부 등록"
@@ -803,32 +804,30 @@ export function AdminLoadTest({
         </ul>
         <div className={styles.chips}>
           {/* 초기화는 확인 글자를 받는 Mock 설정에서 한다 — 여기서 한 번에 지우지 않는다. */}
-          <Button
+          <ButtonLink
             size="small"
             variant="outline"
             color="cancel"
-            onClick={() => navigate(ADMIN_MOCK_SETTINGS_PATH)}
+            to={ADMIN_MOCK_SETTINGS_PATH}
           >
             외부 원장 초기화
-          </Button>
-          <Button
+          </ButtonLink>
+          <ButtonLink
             size="small"
             variant="outline"
             color="cancel"
-            onClick={() => navigate(ADMIN_RECONCILIATION_PATH)}
+            to={ADMIN_RECONCILIATION_PATH}
           >
             외부 예약 대조
-          </Button>
-          <Button
+          </ButtonLink>
+          <ButtonLink
             size="small"
             variant="outline"
             color="cancel"
-            onClick={() =>
-              navigate(adminReservationsPath('REPROCESS_NEEDED', productId))
-            }
+            to={adminReservationsPath('REPROCESS_NEEDED', productId)}
           >
             재처리 필요 보기
-          </Button>
+          </ButtonLink>
         </div>
       </Panel>
 
