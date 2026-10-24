@@ -34,3 +34,10 @@ export const NEEDS_PURCHASE: ReservationDisplayStatus[] = [
   'PAYABLE',
   'PAYMENT_IN_PROGRESS',
 ]
+
+// 외부 등록이 접수 후 60초를 넘겨 자동 조회를 멈췄을 때의 안내(useReservation의 timedOut). 예약 접수·결제 화면이 같이 쓴다.
+export const REGISTER_DELAYED_NOTICE = {
+  title: '등록이 평소보다 오래 걸리고 있어요.',
+  description:
+    '예약 순서는 그대로예요. 잠시 뒤 다시 확인해 주세요. 등록이 끝나면 사전예약 내역에도 표시돼요.',
+}

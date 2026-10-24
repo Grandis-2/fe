@@ -8,6 +8,7 @@ import {
 
 import { keepNewer, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { PreorderStatus } from '@shared/api/types'
+import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
   NEEDS_PURCHASE,
@@ -83,24 +84,43 @@ const untilDueMs = (data: ReservationDetail | undefined) =>
     ? Math.max(Date.parse(data.paymentDueAt) - Date.now(), 0) + 1_000
     : null
 
-// 처리를 기다리는 동안 실패하면 백오프하며 다시 묻는다.
-// ponytail: 제한 시간은 두지 않는다 — 명세에 외부 등록·취소 처리 시간이 없다. 정해지면 useOrder처럼 useDeadline을 붙인다.
+// 외부 등록은 접수 후 이 시간까지만 저절로 묻는다. 관리자 대조가 '등록 지연'으로 잡는 시간(RECONCILE_GRACE_MS)과
+// 같아 사용자와 운영자가 같은 시점에 지연을 본다. 끝내 실패한 등록(재처리 대기)은 관리자가 다시 처리해야 끝나므로
+// 3초마다 계속 묻지 않고 멈춘 뒤 [다시 확인](recheck)으로만 묻는다.
+const REGISTER_WAIT_MS = 60_000
+
+// 처리를 기다리는 동안 실패하면 백오프하며 다시 묻는다. 외부 등록 대기가 접수 후 60초를 넘기면 자동 조회를 끄고
+// timedOut으로 알린다(useOrder와 같은 모양). 취소·만료 취소는 서버가 곧 끝내므로 제한을 두지 않는다.
 export const useReservation = (preorderId: string) => {
   const queryClient = useQueryClient()
   const queryKey = reservationKeys.detail(preorderId)
-  return useQuery({
+  const cached = queryClient.getQueryData<ReservationDetail>(queryKey)
+  const registering = cached?.status === 'PENDING_SYNC'
+  const deadline = useDeadline(
+    registering,
+    REGISTER_WAIT_MS,
+    registering ? Date.parse(cached.createdAt) : undefined,
+  )
+  const query = useQuery({
     queryKey,
     queryFn: ({ signal }) => getReservation(preorderId, signal),
-    enabled: preorderId !== '',
+    enabled: preorderId !== '' && !deadline.passed,
     refetchInterval: ({ state: { data } }) =>
       settlePollMs(data) ?? untilDueMs(data) ?? false,
     // PAYMENT_IN_PROGRESS·PAYMENT_EXPIRED로 바뀔 땐 version이 그대로라 같은 값은 받는다.
     structuralSharing: keepNewer<ReservationDetail>(({ version }) => version),
     ...queryPolicy.live,
-    ...pollingRetry(() =>
-      settlePollMs(queryClient.getQueryData<ReservationDetail>(queryKey)),
+    ...pollingRetry(
+      () => settlePollMs(queryClient.getQueryData<ReservationDetail>(queryKey)),
+      { expired: () => deadline.passed },
     ),
   })
+  return {
+    ...query,
+    // 제한이 지났고 마지막 요청도 끝났다. [다시 확인]은 한 번 더 묻고, 그래도 처리 중이면 다시 멈춘다.
+    timedOut: deadline.passed && query.fetchStatus === 'idle',
+    recheck: deadline.restart,
+  }
 }
 
 export const useReservationHistory = (preorderId: string) =>

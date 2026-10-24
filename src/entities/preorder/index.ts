@@ -38,7 +38,11 @@ export {
   useSubscribedOpenAlerts,
   useToggleOpenAlert,
 } from './api/useOpenAlerts'
-export { NEEDS_PURCHASE, reservationStatusTag } from './model/reservation'
+export {
+  NEEDS_PURCHASE,
+  REGISTER_DELAYED_NOTICE,
+  reservationStatusTag,
+} from './model/reservation'
 export type {
   Reservation,
   ReservationDetail,

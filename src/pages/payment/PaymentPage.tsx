@@ -19,7 +19,11 @@ import {
   usePlaceOrder,
   type CartOrderItem,
 } from '@entities/order'
-import { useReservation, type ReservationDetail } from '@entities/preorder'
+import {
+  REGISTER_DELAYED_NOTICE,
+  useReservation,
+  type ReservationDetail,
+} from '@entities/preorder'
 import { useProfile } from '@entities/profile'
 import {
   DaumPostcodeSearch,
@@ -419,8 +423,18 @@ export function PaymentPage() {
           {paymentError && (
             <InlineAlert status="error">{paymentError}</InlineAlert>
           )}
-          {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. */}
-          <PollingNotice query={reservation} />
+          {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 외부 등록은 접수 후 60초가 지나면 멈춘다. */}
+          <PollingNotice
+            query={reservation}
+            timeout={
+              reservation.timedOut
+                ? {
+                    ...REGISTER_DELAYED_NOTICE,
+                    onRecheck: reservation.recheck,
+                  }
+                : null
+            }
+          />
           {checkout.blockedReason && (
             <InlineAlert status="info">{checkout.blockedReason}</InlineAlert>
           )}

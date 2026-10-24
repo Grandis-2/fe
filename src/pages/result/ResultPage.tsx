@@ -3,7 +3,11 @@ import { useMemo } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { useOrder } from '@entities/order'
-import { useReservation, type ReservationDetail } from '@entities/preorder'
+import {
+  REGISTER_DELAYED_NOTICE,
+  useReservation,
+  type ReservationDetail,
+} from '@entities/preorder'
 import { orderToDrafts, reservationToDraft } from '@features/product-purchase'
 import {
   HOME_PATH,
@@ -14,8 +18,7 @@ import {
   type ResultStatus,
 } from '@shared/config/routes'
 import { shortId } from '@shared/lib/shortId'
-import { useDeadline } from '@shared/lib/useDeadline'
-import { ActionButton, InlineAlert, PollingNotice } from '@shared/ui'
+import { ActionButton, PollingNotice } from '@shared/ui'
 import {
   OrderReceipt,
   OrderStatusMark,
@@ -191,10 +194,6 @@ const loadFailed: PreorderStage = {
   disabledLabel: '예약을 확인할 수 없어요',
 }
 
-// 외부 등록이 끝내 실패하면(재처리 대기) 처리 중으로 남는다. 관리자 대조가 '등록 지연'으로 잡는 시간
-// (RECONCILE_GRACE_MS)과 같게 맞춰, 사용자와 운영자가 같은 시점에 지연을 본다.
-const REGISTER_DELAYED_MS = 60_000
-
 export function ResultPage() {
   const [searchParams] = useSearchParams()
   const location = useLocation()
@@ -226,11 +225,6 @@ export function ResultPage() {
     ...content[status],
     ...stageContent,
   }
-  const isRegisterDelayed = useDeadline(
-    reservation?.status === 'PENDING_SYNC',
-    REGISTER_DELAYED_MS,
-    reservation && Date.parse(reservation.createdAt),
-  ).passed
   // useCountdown이 매 렌더 새 Date로 타이머를 다시 걸지 않게 값이 바뀔 때만 만든다.
   const paymentDueAt = reservation?.paymentDueAt
   const dueAt = useMemo(
@@ -315,14 +309,18 @@ export function ResultPage() {
           <div className={styles.description}>{description}</div>
         </div>
 
-        {/* 처리·승인을 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 승인은 70초가 지나면 멈춘다. */}
-        <PollingNotice query={reservationQuery} />
-        {isRegisterDelayed && (
-          <InlineAlert status="warning">
-            등록이 평소보다 오래 걸리고 있어요. 예약 순서는 그대로이고, 등록이
-            끝나면 사전예약 내역에도 표시돼요.
-          </InlineAlert>
-        )}
+        {/* 처리·승인을 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 외부 등록은 접수 후 60초, 승인은 70초가 지나면 멈춘다. */}
+        <PollingNotice
+          query={reservationQuery}
+          timeout={
+            reservationQuery.timedOut
+              ? {
+                  ...REGISTER_DELAYED_NOTICE,
+                  onRecheck: reservationQuery.recheck,
+                }
+              : null
+          }
+        />
         <PollingNotice
           query={orderQuery}
           timeout={
