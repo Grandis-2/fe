@@ -41,6 +41,12 @@ const SECTION_LABELS = {
 } as const satisfies Record<ProductPageTabKey, string>
 const SECTION_TABS = Object.keys(SECTION_LABELS) as ProductPageTabKey[]
 
+// 사전예약을 누른 뒤 버튼 문구 — 접수 요청을 보내는 중, 접수 뒤 외부 등록을 최대 5초 기다리는 중.
+const PREORDER_BUSY_LABEL = {
+  submitting: '예약 접수 중…',
+  registering: '예약 처리 중… (최대 5초)',
+} as const
+
 export function ProductDetailPage() {
   const navigate = useNavigate()
   const requireLogin = useRequireLogin()
@@ -75,6 +81,10 @@ export function ProductDetailPage() {
   // 조회가 끝나지 않았거나 실패했거나, 고른 조합을 살 수 없거나, 접수 중이면 결제/사전예약을 막는다.
   const isCheckoutReady =
     Boolean(variant) && !unavailableReason && !preorderSubmit.isPending
+  const checkoutBusyLabel =
+    preorderSubmit.phase === null
+      ? undefined
+      : PREORDER_BUSY_LABEL[preorderSubmit.phase]
 
   // 장바구니는 회원 전용 — 비회원이면 로그인 모달을 연다. 고른 조합을 살 수 없으면 담지 않는다.
   const handleAddToCart = () => {
@@ -160,6 +170,7 @@ export function ProductDetailPage() {
           shipmentLabel={shipmentLabel}
           onCheckout={handleCheckout}
           checkoutDisabled={!isCheckoutReady}
+          checkoutBusyLabel={checkoutBusyLabel}
           onAddToCart={handleAddToCart}
           addToCartDisabled={!isCheckoutReady || isAdding}
         />
@@ -174,6 +185,7 @@ export function ProductDetailPage() {
         shipmentLabel={shipmentLabel}
         onCheckout={handleCheckout}
         checkoutDisabled={!isCheckoutReady}
+        checkoutBusyLabel={checkoutBusyLabel}
         onAddToCart={handleAddToCart}
         addToCartDisabled={!isCheckoutReady || isAdding}
       />

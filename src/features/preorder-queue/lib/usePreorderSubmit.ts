@@ -118,5 +118,11 @@ export function usePreorderSubmit() {
     )
   }
 
-  return { submitPreorder, isPending: submit.isPending || isWaiting }
+  // 접수 요청(최대 10초) → 외부 등록 확인(최대 5초) 중 어디인지. 버튼이 꺼진 채 멈춘 것처럼 보이지 않게 문구로 알린다.
+  const phase: 'submitting' | 'registering' | null = submit.isPending
+    ? 'submitting'
+    : isWaiting
+      ? 'registering'
+      : null
+  return { submitPreorder, isPending: phase !== null, phase }
 }

@@ -26,6 +26,8 @@ export type ProductOverviewProps = {
   shipmentLabel?: string
   onCheckout: () => void
   checkoutDisabled?: boolean
+  // 결제·사전예약을 처리하는 동안 버튼에 대신 보일 문구. 있으면 버튼을 처리 중(aria-busy)으로 둔다.
+  checkoutBusyLabel?: string
   // 일반 상품의 장바구니 담기(사전예약은 장바구니가 없다).
   onAddToCart: () => void
   addToCartDisabled?: boolean
@@ -43,6 +45,7 @@ export function ProductOverview({
   shipmentLabel,
   onCheckout,
   checkoutDisabled,
+  checkoutBusyLabel,
   onAddToCart,
   addToCartDisabled,
   ref,
@@ -179,8 +182,9 @@ export function ProductOverview({
               }
               onClick={onCheckout}
               disabled={checkoutDisabled}
+              aria-busy={checkoutBusyLabel !== undefined || undefined}
             >
-              {isPreorder ? '사전예약하기' : '결제하기'}
+              {checkoutBusyLabel ?? (isPreorder ? '사전예약하기' : '결제하기')}
             </ActionButton>
           </div>
         </PurchaseSummary>
