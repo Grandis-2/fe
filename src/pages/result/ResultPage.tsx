@@ -181,6 +181,16 @@ const preorderStage: Partial<Record<DisplayStatus, PreorderStage>> = {
   },
 }
 
+// 예약을 끝내 받지 못했다(주소의 예약 id가 틀렸거나 남의 예약이면 404) — 처리 중이라고 하지 않는다.
+const loadFailed: PreorderStage = {
+  tone: 'failure',
+  badge: '확인 필요',
+  heading: '예약을 불러오지 못했어요',
+  description: '사전예약 내역에서 예약 상태를 확인해 주세요.',
+  note: undefined,
+  disabledLabel: '예약을 확인할 수 없어요',
+}
+
 // 외부 등록이 끝내 실패하면(재처리 대기) 처리 중으로 남는다. 관리자 대조가 '등록 지연'으로 잡는 시간
 // (RECONCILE_GRACE_MS)과 같게 맞춰, 사용자와 운영자가 같은 시점에 지연을 본다.
 const REGISTER_DELAYED_MS = 60_000
@@ -203,13 +213,15 @@ export function ResultPage() {
   const orderQuery = useOrder(isPaid ? orderId : '')
   const reservation = reservationQuery.data
   const order = orderQuery.data
-  // 예약 접수 화면의 단계. 예약을 받기 전에도 처리 중으로 둔다 — 5초 안에 등록됐으면 결제로 바로 갔으니,
-  // 여기 온 예약은 대개 처리 중이다.
+  // 예약 접수 화면의 단계. 예약을 받는 중에도 처리 중으로 둔다 — 5초 안에 등록됐으면 결제로 바로 갔으니,
+  // 여기 온 예약은 대개 처리 중이다. 받지 못했으면(isError) 단계를 정하지 않고 불러오지 못했다고 알린다.
+  const isPreorderView = status === 'preorder' && preorderId !== ''
+  const loadError = isPreorderView && reservationQuery.isError
   const stage =
-    status === 'preorder' && preorderId !== ''
+    isPreorderView && !loadError
       ? (reservation?.displayStatus ?? 'PROCESSING')
       : undefined
-  const stageContent = stage && preorderStage[stage]
+  const stageContent = loadError ? loadFailed : stage && preorderStage[stage]
   const { tone, badge, heading, description, primary, secondary, note } = {
     ...content[status],
     ...stageContent,
@@ -286,7 +298,8 @@ export function ResultPage() {
     status === 'failed' && preorderId
       ? { label: '사전예약 내역 보기', to: mypagePath('preorder-check') }
       : secondary
-  const primaryDisabled = stage !== undefined && !PURCHASABLE.includes(stage)
+  const primaryDisabled =
+    loadError || (stage !== undefined && !PURCHASABLE.includes(stage))
 
   return (
     <div
