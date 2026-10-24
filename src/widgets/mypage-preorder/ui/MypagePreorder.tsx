@@ -21,7 +21,7 @@ import {
   type ProductPaymentCardItem,
 } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
-import { paymentPath } from '@shared/config/routes'
+import { mypagePath, paymentPath } from '@shared/config/routes'
 import { formatDotDateMinute } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { toggleInSet } from '@shared/lib/toggleInSet'
@@ -285,7 +285,25 @@ export function MypagePreorder() {
             </ActionButton>
           </div>
         ) : (
-          cancelButton(reservation) || undefined
+          cancelButton(reservation) ||
+          // 결제한 예약은 환불을 마쳐야 취소가 끝난다 — 환불이 실패하면 취소 중에 머물고, 실패 안내는 주문 내역이 띄운다.
+          (reservation.status === 'CANCELING' &&
+            reservation.reservedAt !== null && (
+              <div className={styles.refund}>
+                <InlineAlert status="info">
+                  결제한 금액을 환불하고 있어요. 환불이 끝나면 취소가 완료되고,
+                  환불 결과는 주문 내역에서도 볼 수 있어요.
+                </InlineAlert>
+                <Button
+                  variant="outline"
+                  size="small"
+                  onClick={() => navigate(mypagePath('history'))}
+                >
+                  주문 내역 보기
+                </Button>
+              </div>
+            )) ||
+          undefined
         )
       }
     >
