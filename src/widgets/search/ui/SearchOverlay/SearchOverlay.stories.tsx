@@ -3,7 +3,7 @@ import {
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
-import { expect, fireEvent, fn } from 'storybook/test'
+import { expect, fireEvent, fn, waitFor } from 'storybook/test'
 
 import type { ProductListItem } from '@entities/product'
 
@@ -117,10 +117,12 @@ export const Empty: Story = {
   },
 }
 
-// Esc는 <dialog> 기본 동작으로 닫힌다.
+// Esc는 <dialog> 기본 동작으로 닫히고, 닫히면 onClose가 불린다. 테스트의 키 입력은 신뢰된 입력이 아니라
+// 브라우저가 기본 동작(닫기)을 하지 않으므로, Esc가 하는 일인 dialog 닫기를 직접 불러 onClose 연결을 본다.
 export const CloseWithEscape: Story = {
-  play: async ({ args, userEvent }) => {
-    await userEvent.keyboard('{Escape}')
-    await expect(args.onClose).toHaveBeenCalledOnce()
+  play: async ({ args, canvasElement }) => {
+    const dialog = canvasElement.ownerDocument.querySelector('dialog')
+    dialog?.close()
+    await waitFor(() => expect(args.onClose).toHaveBeenCalledOnce())
   },
 }
