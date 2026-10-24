@@ -25,6 +25,11 @@ export type ThroughputChartProps = {
   unit: string
   /** 스크린리더용 제목 */
   label: string
+  /**
+   * 그 표본 사이에 생긴 사건 수(새 실패 등) — times와 같은 길이. 0보다 크면 마지막 선 위에
+   * 빨간 점을 찍고, 범례·툴팁에 같이 보인다.
+   */
+  incidents?: { label: string; counts: readonly number[] }
 }
 
 const WIDTH = 600
@@ -73,6 +78,7 @@ export function ThroughputChart({
   series,
   unit,
   label,
+  incidents,
 }: ThroughputChartProps) {
   const [hover, setHover] = useState<number | null>(null)
 
@@ -116,6 +122,14 @@ export function ThroughputChart({
       )
       .join(' ')
 
+  const lastSeries = series[series.length - 1]
+  // 두 줄이면 사이를 옅게 칠한다 — 벌어진 만큼이 쌓이는 적체다.
+  const between =
+    series.length === 2
+      ? `M${pathOf(series[0].values)} L${pathOf(series[1].values).split(' ').reverse().join(' L')} Z`
+      : null
+  const incidentAt = (index: number) => incidents?.counts[index] ?? 0
+
   const handleMove = (event: PointerEvent<HTMLDivElement>) => {
     const box = event.currentTarget.getBoundingClientRect()
     const ratio = (event.clientX - box.left) / box.width
@@ -138,6 +152,12 @@ export function ThroughputChart({
             </span>
           </li>
         ))}
+        {incidents && (
+          <li className={styles.legendItem}>
+            <span className={styles.incidentSwatch} aria-hidden="true" />
+            {incidents.label}
+          </li>
+        )}
       </ul>
 
       <div className={styles.plotRow}>
@@ -156,7 +176,11 @@ export function ThroughputChart({
             .map(
               (item) => `${item.label} ${formatValue(item.values[last], unit)}`,
             )
-            .join(', ')}`}
+            .join(', ')}${
+            incidents
+              ? `, ${incidents.label} ${incidents.counts.reduce((a, b) => a + b, 0)}건`
+              : ''
+          }`}
         >
           <svg
             className={styles.svg}
@@ -175,6 +199,7 @@ export function ThroughputChart({
                 vectorEffect="non-scaling-stroke"
               />
             ))}
+            {between && <path className={styles.between} d={between} />}
             {series.map((item, index) => (
               <polyline
                 key={item.label}
@@ -186,6 +211,19 @@ export function ThroughputChart({
             ))}
           </svg>
 
+          {times.map((time, index) =>
+            incidentAt(index) > 0 ? (
+              <span
+                key={time}
+                className={styles.incident}
+                style={{
+                  left: `${(xOf(index) / WIDTH) * 100}%`,
+                  top: `${(yOf(lastSeries.values[index]) / HEIGHT) * 100}%`,
+                }}
+                aria-hidden="true"
+              />
+            ) : null,
+          )}
           {hover !== null && (
             <>
               <span className={styles.crosshair} style={{ left: hoverLeft }} />
@@ -210,6 +248,18 @@ export function ThroughputChart({
                     </span>
                   </div>
                 ))}
+                {incidents && incidentAt(shown) > 0 && (
+                  <div className={styles.tooltipRow}>
+                    <span
+                      className={styles.incidentSwatch}
+                      aria-hidden="true"
+                    />
+                    {incidents.label}
+                    <span className={styles.legendValue}>
+                      +{formatValue(incidentAt(shown), '건')}
+                    </span>
+                  </div>
+                )}
               </div>
             </>
           )}
