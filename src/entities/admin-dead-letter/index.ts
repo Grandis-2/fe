@@ -16,6 +16,8 @@ export {
   deadLetterFailureReasonLabel,
   deadLetterFailureReasonTag,
   deadLetterFailureReasons,
+  deadLetterServiceLabel,
+  deadLetterServices,
   deadLetterStatusColor,
   deadLetterStatuses,
   deadLetterStatusLabel,
@@ -23,6 +25,8 @@ export {
   deadLetterTabs,
   isRedrivableReason,
   isRedriveInFlight,
+  isRefundRequest,
+  toDeadLetterService,
 } from './model/types'
 export { groupDeadLetters } from './model/group'
 export type { DeadLetterGroup } from './model/group'
@@ -30,6 +34,7 @@ export type {
   DeadLetter,
   DeadLetterFailureReason,
   DeadLetterRecord,
+  DeadLetterService,
   DeadLetterStatus,
   DeadLetterTab,
 } from './model/types'

@@ -70,11 +70,11 @@ export function AdminReservationDetail({
   const saveNote = useSaveReservationNote()
   const { data: members } = useAdminMembers([reservation.customerId])
   // 이 예약에 반영되지 못한 처리(이벤트 DLQ). 한 예약에 몇 건 안 돼 한 번에 받는다.
-  const deadLetters = useDeadLetters({
+  const deadLetters = useDeadLetters('preorder', {
     preorderId: reservation.preorderId,
     size: 100,
   })
-  const redrive = useRedriveDeadLetter()
+  const redrive = useRedriveDeadLetter('preorder')
 
   const state = reservationStateOf(reservation)
   const payment = paymentStateOf(reservation)

@@ -155,8 +155,15 @@ export const ADMIN_RECONCILIATION_PATH = '/admin/reconciliation'
 export const ADMIN_LOAD_TEST_PATH = '/admin/load-test'
 /** 이벤트 DLQ — 서버끼리 주고받는 메시지 중 처리에 실패해 멈춘 것(개발자 기능) */
 export const ADMIN_DEAD_LETTERS_PATH = '/admin/dead-letters'
-export const adminDeadLetterPath = (deadLetterId: string) =>
-  `${ADMIN_DEAD_LETTERS_PATH}/${deadLetterId}`
+// 결제 DLQ는 ?service=payment로 가른다 — 예약 DLQ가 기본이라 기존 주소는 그대로 열린다.
+const deadLetterQuery = (service?: 'preorder' | 'payment') =>
+  service === 'payment' ? '?service=payment' : ''
+export const adminDeadLettersPath = (service?: 'preorder' | 'payment') =>
+  `${ADMIN_DEAD_LETTERS_PATH}${deadLetterQuery(service)}`
+export const adminDeadLetterPath = (
+  deadLetterId: string,
+  service?: 'preorder' | 'payment',
+) => `${ADMIN_DEAD_LETTERS_PATH}/${deadLetterId}${deadLetterQuery(service)}`
 // 관리자 로그인. 사이드바 없는 단독 화면이라 AdminLayout 밖에 둔다.
 export const ADMIN_LOGIN_PATH = '/admin/login'
 export const ADMIN_MOCK_SETTINGS_PATH = '/admin/mock-settings'

@@ -8,18 +8,23 @@ import {
   deadLetterFailureReasonLabel,
   deadLetterFailureReasonTag,
   deadLetterFailureReasons,
+  deadLetterServiceLabel,
+  deadLetterServices,
   deadLetterStatusColor,
   deadLetterStatusLabel,
   deadLetterStatusLabels,
   deadLetterTabs,
   groupDeadLetters,
+  toDeadLetterService,
   useDeadLetterCounts,
   useDeadLetters,
   useRedriveDeadLetters,
   type DeadLetter,
   type DeadLetterFailureReason,
+  type DeadLetterService,
   type DeadLetterTab,
 } from '@entities/admin-dead-letter'
+import { orderNo } from '@entities/admin-order'
 import { reservationNo } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
@@ -30,6 +35,7 @@ import {
 } from '@shared/config/refreshInterval'
 import {
   adminDeadLetterPath,
+  adminOrderPath,
   adminReservationPath,
   type BackTo,
 } from '@shared/config/routes'
@@ -63,6 +69,7 @@ const PAGE_SIZE = 100
 
 // 상세에 갔다 돌아와도 같은 조건이 보이게 주소에 둔다.
 const PARAM = {
+  service: 'service',
   tab: 'tab',
   eventType: 'event',
   failureReason: 'reason',
@@ -76,13 +83,22 @@ const DEFAULT_TAB: DeadLetterTab = 'open'
 // '멈춘 지'는 분 단위라 1분마다 다시 그리면 충분하다.
 const NOW_INTERVAL_MS = 60_000
 
-const eventOptions: DropdownOption<string>[] = [
+// 서비스마다 받는 이벤트가 다르다.
+const eventOptionsOf = (
+  service: DeadLetterService,
+): DropdownOption<string>[] => [
   { label: '반영 안 된 처리: 전체', value: ALL },
-  ...deadLetterEventTypes.map((eventType) => ({
+  ...deadLetterEventTypes[service].map((eventType) => ({
     label: deadLetterEventLabel(eventType),
     value: eventType,
   })),
 ]
+
+const serviceOptions: DropdownOption<DeadLetterService>[] =
+  deadLetterServices.map((service) => ({
+    label: `${deadLetterServiceLabel[service]} 서비스`,
+    value: service,
+  }))
 
 const reasonOptions: DropdownOption<DeadLetterFailureReason | typeof ALL>[] = [
   { label: '실패 이유: 전체', value: ALL },
@@ -109,6 +125,8 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
   const location = useLocation()
   const [searchParams, setSearchParams] = useSearchParams()
   // 주소 값은 누구나 바꿔 넣을 수 있어 아는 값일 때만 쓰고, 아니면 기본값으로 둔다.
+  // 예약 DLQ가 기본이라 ?service=가 없는 옛 주소도 그대로 열린다.
+  const service = toDeadLetterService(searchParams.get(PARAM.service))
   const tab =
     deadLetterTabs.find((item) => item.value === searchParams.get(PARAM.tab)) ??
     deadLetterTabs.find((item) => item.value === DEFAULT_TAB)!
@@ -137,6 +155,7 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
 
   const statuses: readonly string[] = tab.statuses
   const deadLetters = useDeadLetters(
+    service,
     {
       // 서버는 상태를 하나만 거른다. 둘 이상 묶은 탭(결과 기다림)은 전체를 받아 여기서
       // 거른다 — 되돌리기 결과를 기다리는 건 방금 보낸 것이라 최근 100건 안에 든다.
@@ -147,8 +166,23 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
     },
     refreshInterval,
   )
-  const counts = useDeadLetterCounts(refreshInterval)
-  const redrive = useRedriveDeadLetters()
+  const counts = useDeadLetterCounts(service, refreshInterval)
+  const redrive = useRedriveDeadLetters(service)
+
+  // 서비스를 바꾸면 이벤트 종류가 달라져 그 조건과 고른 것을 비운다.
+  const selectService = (next: DeadLetterService) => {
+    setSelected(new Set())
+    setFeedback(undefined)
+    setSearchParams(
+      (prev) => {
+        prev.delete(PARAM.eventType)
+        if (next === 'preorder') prev.delete(PARAM.service)
+        else prev.set(PARAM.service, next)
+        return prev
+      },
+      { replace: true },
+    )
+  }
 
   const fetched = deadLetters.data?.items
   const items = fetched
@@ -218,7 +252,9 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
     to: location.pathname + location.search,
   }
   const openDetail = (item: DeadLetter) =>
-    navigate(adminDeadLetterPath(item.deadLetterId), { state: { backTo } })
+    navigate(adminDeadLetterPath(item.deadLetterId, service), {
+      state: { backTo },
+    })
 
   const columns: TableColumn<DeadLetter>[] = [
     {
@@ -286,7 +322,7 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
           {item.redrivenFromId && (
             <Link
               className={styles.subLink}
-              to={adminDeadLetterPath(item.redrivenFromId)}
+              to={adminDeadLetterPath(item.redrivenFromId, service)}
               state={{ backTo }}
               onClick={(event) => event.stopPropagation()}
             >
@@ -296,11 +332,21 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
         </span>
       ),
     },
+    // 예약 DLQ는 예약, 결제 DLQ는 주문으로 간다.
     {
-      key: 'preorder',
-      header: '관련 예약',
+      key: 'related',
+      header: service === 'payment' ? '관련 주문' : '관련 예약',
       render: (item) =>
-        item.preorderId ? (
+        item.orderId ? (
+          <Link
+            className={styles.link}
+            to={adminOrderPath(item.orderId)}
+            state={{ backTo }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            {orderNo(item.orderId)}
+          </Link>
+        ) : item.preorderId ? (
           <Link
             className={styles.link}
             to={adminReservationPath(item.preorderId)}
@@ -310,7 +356,9 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
             {reservationNo(item.preorderId)}
           </Link>
         ) : (
-          <span className={styles.subText}>예약과 무관</span>
+          <span className={styles.subText}>
+            {service === 'payment' ? '주문과 무관' : '예약과 무관'}
+          </span>
         ),
     },
     {
@@ -375,35 +423,46 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
         }
       />
 
-      <SegmentedTabs
-        items={deadLetterTabs.map((item) => {
-          const count = countOf(item.statuses)
-          return {
-            value: item.value,
-            label: (
-              <span className={styles.tabLabel}>
-                {item.label}
-                {count !== undefined && (
-                  <span
-                    className={
-                      item.value === 'open' && count > 0
-                        ? styles.tabCountHot
-                        : styles.tabCount
-                    }
-                  >
-                    {formatNumber(count)}
-                  </span>
-                )}
-              </span>
-            ),
-          }
-        })}
-        value={tab.value}
-        onChange={(next) => {
-          setSelected(new Set())
-          setParam(PARAM.tab, next, DEFAULT_TAB)
-        }}
-      />
+      {/* 서비스마다 DLQ가 따로라 탭 건수·목록이 모두 이 선택을 따른다. */}
+      <div className={styles.controls}>
+        <SegmentedTabs
+          items={deadLetterTabs.map((item) => {
+            const count = countOf(item.statuses)
+            return {
+              value: item.value,
+              label: (
+                <span className={styles.tabLabel}>
+                  {item.label}
+                  {count !== undefined && (
+                    <span
+                      className={
+                        item.value === 'open' && count > 0
+                          ? styles.tabCountHot
+                          : styles.tabCount
+                      }
+                    >
+                      {formatNumber(count)}
+                    </span>
+                  )}
+                </span>
+              ),
+            }
+          })}
+          value={tab.value}
+          onChange={(next) => {
+            setSelected(new Set())
+            setParam(PARAM.tab, next, DEFAULT_TAB)
+          }}
+        />
+        <Dropdown
+          label="서비스"
+          fieldLabel="서비스"
+          width="160px"
+          options={serviceOptions}
+          value={service}
+          onSelect={selectService}
+        />
+      </div>
 
       {/* 다시 받기가 실패해도 이전 목록은 남는다 — 멈춘 목록을 최신으로 읽지 않게 알린다. */}
       {pollingError(deadLetters) !== null && (
@@ -457,7 +516,7 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
               label="반영 안 된 처리"
               size="small"
               width="220px"
-              options={eventOptions}
+              options={eventOptionsOf(service)}
               value={eventType}
               onSelect={(next) => setParam(PARAM.eventType, next, ALL)}
             />

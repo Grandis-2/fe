@@ -9,7 +9,11 @@ import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { DeadLetterListParams, DeadLetterStatus } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
-import { deadLetterStatuses, isRedriveInFlight } from '../model/types'
+import {
+  deadLetterStatuses,
+  isRedriveInFlight,
+  type DeadLetterService,
+} from '../model/types'
 
 import {
   discardDeadLetter,
@@ -20,8 +24,12 @@ import {
 } from './adminDeadLetter'
 
 const DEAD_LETTERS_KEY = ['admin', 'dead-letters'] as const
-// 예약 집계(stats)의 DLQ 대기 수와 예약 상세가 같이 바뀐다.
-const RESERVATIONS_KEY = ['admin', 'reservations'] as const
+// 메시지가 바뀌면 그 서비스의 화면도 같이 바뀐다 — 예약은 집계(DLQ 대기 수)·예약 상세, 결제는
+// 주문(환불 상태).
+const RELATED_KEY: Record<DeadLetterService, readonly string[]> = {
+  preorder: ['admin', 'reservations'],
+  payment: ['admin', 'orders'],
+}
 // 되돌리기 결과를 기다리는 동안만 쓰는 짧은 간격.
 const IN_FLIGHT_POLL_MS = 3_000
 
@@ -30,11 +38,12 @@ const IN_FLIGHT_POLL_MS = 3_000
  * 때만 다시 받는다.
  */
 export const useDeadLetters = (
+  service: DeadLetterService,
   params: DeadLetterListParams = {},
   intervalMs?: RefreshInterval,
 ) => {
   const queryClient = useQueryClient()
-  const queryKey = [...DEAD_LETTERS_KEY, 'list', params] as const
+  const queryKey = [...DEAD_LETTERS_KEY, service, 'list', params] as const
   // 보여 줄 목록이 아직 없으면 폴링 중이 아니다(첫 조회는 한 번만 다시 묻는다).
   const pollMs = (
     data: Awaited<ReturnType<typeof getDeadLetters>> | undefined,
@@ -48,7 +57,7 @@ export const useDeadLetters = (
   }
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getDeadLetters(params, signal),
+    queryFn: ({ signal }) => getDeadLetters(service, params, signal),
     ...queryPolicy.live,
     refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
     ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
@@ -59,12 +68,15 @@ export const useDeadLetters = (
  * 상태마다 몇 건인지 — 탭 옆 숫자. 목록 API가 상태 하나씩만 걸러서 상태마다 한 건만
  * 달라고 해 total을 쓴다. 못 받은 상태는 undefined라 화면이 0과 구분한다.
  */
-export const useDeadLetterCounts = (intervalMs?: RefreshInterval) =>
+export const useDeadLetterCounts = (
+  service: DeadLetterService,
+  intervalMs?: RefreshInterval,
+) =>
   useQueries({
     queries: deadLetterStatuses.map((status) => ({
-      queryKey: [...DEAD_LETTERS_KEY, 'count', status] as const,
+      queryKey: [...DEAD_LETTERS_KEY, service, 'count', status] as const,
       queryFn: ({ signal }: { signal: AbortSignal }) =>
-        getDeadLetters({ status, size: 1 }, signal),
+        getDeadLetters(service, { status, size: 1 }, signal),
       ...queryPolicy.live,
       refetchInterval: intervalMs ?? false,
     })),
@@ -78,10 +90,13 @@ export const useDeadLetterCounts = (intervalMs?: RefreshInterval) =>
   })
 
 /** 메시지 상세. 되돌리기 결과를 기다리는 동안만 다시 받는다 */
-export const useDeadLetter = (deadLetterId: string) =>
+export const useDeadLetter = (
+  service: DeadLetterService,
+  deadLetterId: string,
+) =>
   useQuery({
-    queryKey: [...DEAD_LETTERS_KEY, 'detail', deadLetterId] as const,
-    queryFn: ({ signal }) => getDeadLetter(deadLetterId, signal),
+    queryKey: [...DEAD_LETTERS_KEY, service, 'detail', deadLetterId] as const,
+    queryFn: ({ signal }) => getDeadLetter(service, deadLetterId, signal),
     ...queryPolicy.live,
     refetchInterval: (query) =>
       query.state.data && isRedriveInFlight(query.state.data.status)
@@ -89,28 +104,36 @@ export const useDeadLetter = (deadLetterId: string) =>
         : false,
   })
 
-// 메시지 상태와 예약(상태·집계)이 같이 바뀌므로 둘 다 다시 받는다.
-const useInvalidateAfterChange = () => {
+// 메시지 상태와 그 서비스의 화면이 같이 바뀌므로 둘 다 다시 받는다.
+const useInvalidateAfterChange = (service: DeadLetterService) => {
   const queryClient = useQueryClient()
   return () =>
     Promise.all([
       queryClient.invalidateQueries({ queryKey: DEAD_LETTERS_KEY }),
-      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+      queryClient.invalidateQueries({ queryKey: RELATED_KEY[service] }),
     ])
 }
 
-export const useRedriveDeadLetter = () => {
-  const invalidate = useInvalidateAfterChange()
-  return useMutation({ mutationFn: redriveDeadLetter, onSuccess: invalidate })
+export const useRedriveDeadLetter = (service: DeadLetterService) => {
+  const invalidate = useInvalidateAfterChange(service)
+  return useMutation({
+    mutationFn: (deadLetterId: string) =>
+      redriveDeadLetter(service, deadLetterId),
+    onSuccess: invalidate,
+  })
 }
 
-export const useRedriveDeadLetters = () => {
-  const invalidate = useInvalidateAfterChange()
-  return useMutation({ mutationFn: redriveDeadLetters, onSuccess: invalidate })
+export const useRedriveDeadLetters = (service: DeadLetterService) => {
+  const invalidate = useInvalidateAfterChange(service)
+  return useMutation({
+    mutationFn: (deadLetterIds: string[]) =>
+      redriveDeadLetters(service, deadLetterIds),
+    onSuccess: invalidate,
+  })
 }
 
-export const useDiscardDeadLetter = () => {
-  const invalidate = useInvalidateAfterChange()
+export const useDiscardDeadLetter = (service: DeadLetterService) => {
+  const invalidate = useInvalidateAfterChange(service)
   return useMutation({
     mutationFn: ({
       deadLetterId,
@@ -118,7 +141,7 @@ export const useDiscardDeadLetter = () => {
     }: {
       deadLetterId: string
       note: string
-    }) => discardDeadLetter(deadLetterId, { note }),
+    }) => discardDeadLetter(service, deadLetterId, { note }),
     onSuccess: invalidate,
   })
 }

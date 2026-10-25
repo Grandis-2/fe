@@ -136,3 +136,30 @@ test('M8 외부 예약 대조에서 서버 검사 결과를 보고 고친 뒤 �
   })
   await expect(page.getByText(/· 직접 요청 ·/)).toBeVisible()
 })
+
+test('M9 이벤트 DLQ에서 결제 서비스를 고르면 결제 쪽 멈춘 메시지와 관련 주문이 보인다', async ({
+  page,
+}) => {
+  await loginAsAdmin(page)
+  // 사이드바 아래쪽 메뉴는 개발용 요청 모니터 창에 가린다 — 주소로 들어간다.
+  await page.goto('/admin/dead-letters')
+
+  // 시드: 결제 DLQ에 처리 대기 환불 요청 1건.
+  await page.getByRole('button', { name: '서비스: 예약 서비스' }).click()
+  await page.getByRole('button', { name: '결제 서비스', exact: true }).click()
+  await expect(page).toHaveURL(/service=payment/)
+  await expect(
+    page.getByRole('columnheader', { name: '관련 주문' }),
+  ).toBeVisible()
+
+  // 행의 이벤트 칸을 눌러 상세로 — 관련 주문 칸은 주문 상세 링크다.
+  await page
+    .getByRole('row', { name: /환불 요청 처리/ })
+    .getByText('환불 요청 처리')
+    .click()
+  await expect(
+    page.getByRole('heading', { name: '환불 요청 처리' }),
+  ).toBeVisible()
+  await expect(page).toHaveURL(/service=payment/)
+  await expect(page.getByText(/관련 주문/).first()).toBeVisible()
+})

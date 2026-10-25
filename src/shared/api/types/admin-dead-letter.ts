@@ -1,8 +1,11 @@
 import type { OffsetPage } from './admin-reservation'
 
-// 이벤트 DLQ(preorder 서비스 — api-docs의 preorder.json, /api/v1/admin/preorders/dead-letters).
-// 서버끼리 주고받는 이벤트 메시지(SQS) 중 처리에 거듭 실패해 따로 모인 것이다.
-// 외부 예약 시스템 등록 실패(sync-jobs의 DEAD_LETTER)와는 다른 경로다.
+// 이벤트 DLQ — 서버끼리 주고받는 이벤트 메시지(SQS) 중 처리에 거듭 실패해 따로 모인 것이다.
+// 외부 예약 시스템 등록 실패(sync-jobs의 DEAD_LETTER)와는 다른 경로다. 서비스마다 따로 있고
+// 요청·응답 모양이 같다.
+// - 예약: preorder.json, /api/v1/admin/preorders/dead-letters — 줄에 preorderId·customerId
+// - 결제: order.json, /api/v1/admin/orders/payment-dead-letters — 줄에 orderId(결제 서비스는
+//   밖에 열지 않아 주문 서비스가 받아 넘긴다)
 
 export type DeadLetterStatus =
   | 'OPEN'
@@ -24,9 +27,11 @@ export type DeadLetterSummary = {
   eventId: string | null
   /** 원문을 읽지 못했으면 null. 서버가 모르는 종류도 문자열 그대로 온다 */
   eventType: string | null
-  /** 예약과 무관한 이벤트면 null */
-  preorderId: string | null
-  customerId: string | null
+  /** 예약 DLQ만. 예약과 무관한 이벤트면 null */
+  preorderId?: string | null
+  customerId?: string | null
+  /** 결제 DLQ만. 주문 이벤트가 아니면 null — 관리자 주문 상세로 간다 */
+  orderId?: string | null
   failureReason: DeadLetterFailureReason
   /** DLQ로 가기 전까지 받은 횟수 */
   receiveCount: number
@@ -57,13 +62,14 @@ export type DeadLetterDetail = DeadLetterSummary & {
   discardNote: string | null
 }
 
-/** GET /admin/preorders/dead-letters — 1~100건씩 */
+/** GET 목록 — 1~100건씩. preorderId·customerId는 예약, orderId는 결제 DLQ에만 있다 */
 export type DeadLetterListParams = {
   status?: DeadLetterStatus
   eventType?: string
   failureReason?: DeadLetterFailureReason
   preorderId?: string
   customerId?: string
+  orderId?: string
   /** 쌓인 시각 하한(포함) */
   from?: string
   /** 쌓인 시각 상한(제외) */
