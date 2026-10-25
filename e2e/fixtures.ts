@@ -204,7 +204,10 @@ export const cartPayButton = (page: Page) =>
 // 목 홍보 1(handlers/promotion.ts) — 맥북 프로 14와 NOVA 폴더블 1이 묶인 '오늘 오픈' 사전예약.
 // 폴더블 1은 이미 예약해 둔 상태로 시드돼 있다(fixtures/preorder.ts).
 export const TODAY_PROMOTION = '60000000-0000-4000-8000-000000000001'
-export const NOVA_FOLDABLE_1 = productId(15)
+export const NOVA_FOLDABLE_1 = productId(15) // 시드: 결제 대기(구매 확정 대기) 예약이 있다
+// 시드 예약이 없는 '오늘 오픈' 사전예약 — 단독 홍보(세 번째)로 묶여 있다.
+export const NOVA_FOLDABLE_3 = productId(17)
+export const FOLDABLE_3_PROMOTION = '60000000-0000-4000-8000-000000000003'
 
 /** 한국 시간 오늘 time(HH:MM:SS)인 Date. */
 export const kstToday = (time: string) => {

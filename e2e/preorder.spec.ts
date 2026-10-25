@@ -42,19 +42,42 @@ test('대기열을 통과해 접수하면 결제 페이지로 가고 사전예�
   await expect(page.getByText('예약 순번 1,287번')).toBeVisible()
 })
 
-test('이미 예약한 모델을 다시 접수하면 알려 주고 사전예약 내역으로 보낸다', async ({
+test('이미 예약한 모델은 시트에서 예약하기 대신 구매 확정하기로 보이고, 누르면 대기열 없이 그 예약의 결제로 간다', async ({
   page,
 }) => {
   await loginAs(page)
-  await passPreorderQueue(page, 'NOVA 폴더블 1', NOVA_FOLDABLE_1)
-  await preorderSubmitButton(page).click()
+  await page.goto(`/preorder/${TODAY_PROMOTION}`)
+  await page.getByRole('button', { name: '사전예약 하러가기' }).click()
+  const foldableRow = page
+    .getByRole('dialog', { name: '사전예약' })
+    .locator('div')
+    .filter({ hasText: 'NOVA 폴더블 1' })
+    .filter({ has: page.getByRole('button') })
+    .last()
 
   await expect(
-    page.getByText(
-      '이미 접수한 예약이 있어요. 사전예약 내역에서 확인해 주세요.',
-    ),
+    foldableRow.getByRole('button', { name: '구매 확정하기' }),
   ).toBeVisible()
-  await expect(page).toHaveURL('/mypage?state=preorder-check')
+  await expect(
+    foldableRow.getByRole('button', { name: '예약하기' }),
+  ).toHaveCount(0)
+  await foldableRow.getByRole('button', { name: '구매 확정하기' }).click()
+  await expect(page).toHaveURL(/\/payment\?preorderId=/)
+})
+
+test('이미 예약한 모델의 상품 페이지는 사전예약하기 대신 구매 확정하기를 보인다', async ({
+  page,
+}) => {
+  await loginAs(page)
+  await page.goto(`/products/${NOVA_FOLDABLE_1}`)
+
+  const checkout = preorderSubmitButton(page)
+  await expect(
+    page.getByRole('button', { name: '구매 확정하기' }).first(),
+  ).toBeVisible()
+  await expect(checkout).toHaveCount(0)
+  await page.getByRole('button', { name: '구매 확정하기' }).first().click()
+  await expect(page).toHaveURL(/\/payment\?preorderId=/)
 })
 
 test('입장권이 남아 있어 진입에서 바로 입장(200)하면 대기열을 띄우지 않고 상품으로 간다', async ({
