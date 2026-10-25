@@ -8,10 +8,21 @@ type Saved = { active: ActiveRecording | null; records: RecordedWindow[] }
 const STORAGE_KEY = 'nova.admin.load-test.recording'
 const MAX_RECORDS = 20
 
+// 범위·표본 칸이 생기기 전에 남긴 기록도 읽는다. 범위를 모르는 진행 중 기록은 어느 범위의
+// 표본으로 끝낼지 몰라 버린다.
+const normalize = ({ active, records }: Saved): Saved => ({
+  active: active && 'productId' in active ? active : null,
+  records: records.map((record) => ({
+    ...record,
+    scopeLabel: record.scopeLabel ?? '—',
+    complete: record.complete ?? true,
+  })),
+})
+
 function load(): Saved {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (raw) return JSON.parse(raw) as Saved
+    if (raw) return normalize(JSON.parse(raw) as Saved)
   } catch {
     // 저장소를 못 쓰면(사생활 보호 창 등) 빈 기록으로 시작한다.
   }

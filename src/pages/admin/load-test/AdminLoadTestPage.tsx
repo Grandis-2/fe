@@ -35,6 +35,10 @@ export function AdminLoadTestPage() {
       <AdminLoadTest
         key={productId ?? 'all'}
         productId={productId}
+        scopeLabel={
+          products.find((product) => product.productId === productId)?.name ??
+          '전체'
+        }
         // 제목 줄 오른쪽 도구(범위·Grafana·구간 기록)가 넓어 설명 없이 제목만 둔다(시안과 같다).
         header={{ title: '부하 검증' }}
         scope={

@@ -47,6 +47,19 @@ const withData = (Story: () => React.ReactNode) => {
       statsOf(productId ?? null),
     )
   }
+  // 상한은 운영 설정 응답에서 읽는다.
+  const operational = (value: number) => ({ value, source: 'OPERATIONAL' })
+  queryClient.setQueryData(['admin', 'waitingroom', 'rates'], {
+    globalCredit: operational(150),
+    maxGlobalCredit: 1500,
+    maxWaitSeconds: { value: null, source: 'DEFAULT' },
+    leaveGraceSeconds: operational(250),
+    products: [
+      { productId: IPHONE, cap: operational(150), queueLimit: null },
+      { productId: GALAXY, cap: operational(150), queueLimit: null },
+    ],
+    capacity: null,
+  })
   queryClient.setQueryData(['admin', 'waitingroom', 'status'], {
     nodeId: 'node-1',
     leaderNodeId: 'node-1',
@@ -69,7 +82,7 @@ const withData = (Story: () => React.ReactNode) => {
 const meta = {
   component: AdminLoadTest,
   tags: ['ai-generated'],
-  args: { header: { title: '부하 검증' } },
+  args: { header: { title: '부하 검증' }, scopeLabel: '전체' },
   // 기록한 구간이 브라우저에 남아 이야기끼리 섞이지 않게 비운다.
   beforeEach: () => localStorage.removeItem('nova.admin.load-test.recording'),
 } satisfies Meta<typeof AdminLoadTest>
@@ -101,7 +114,7 @@ export const AllProducts: Story = {
 /** 상품 하나 — 그 상품의 대기 인원과 입장 속도·상한만 본다 */
 export const OneProduct: Story = {
   decorators: [withData],
-  args: { productId: IPHONE },
+  args: { productId: IPHONE, scopeLabel: '아이폰 18 Pro' },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByText('4,200명')[0]).toBeVisible()
     await expect(canvas.getAllByText('100명/초')[0]).toBeVisible()

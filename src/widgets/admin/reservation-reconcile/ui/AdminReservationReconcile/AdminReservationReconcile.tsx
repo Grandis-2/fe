@@ -36,6 +36,7 @@ import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { adminReservationPath, type BackTo } from '@shared/config/routes'
 import { formatShortDateTime } from '@shared/lib/formatDotDate'
 import { toggleInSet } from '@shared/lib/toggleInSet'
+import { useClampPage } from '@shared/lib/useClampPage'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
@@ -208,6 +209,13 @@ export function AdminReservationReconcile() {
   const rows = emptyGroup ? [] : (findings.data?.items ?? [])
   const total = emptyGroup ? 0 : (findings.data?.total ?? 0)
   const totalPages = Math.ceil(total / PAGE_SIZE)
+  useClampPage(
+    page,
+    emptyGroup || (findings.data && !findings.isPlaceholderData)
+      ? totalPages
+      : null,
+    (next) => setParam(PARAM.page, next > 1 ? String(next) : undefined),
+  )
 
   const start = useStartReconciliationRun()
   const externalCancel = useExternalCancelFinding()

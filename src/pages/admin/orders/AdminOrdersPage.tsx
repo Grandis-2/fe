@@ -22,6 +22,7 @@ import { adminOrderPath } from '@shared/config/routes'
 import { formatShortDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
 import { toggleInSet } from '@shared/lib/toggleInSet'
+import { useClampPage } from '@shared/lib/useClampPage'
 import {
   Button,
   Checkbox,
@@ -175,6 +176,12 @@ export function AdminOrdersPage() {
       { replace: true },
     )
   }
+
+  useClampPage(
+    page,
+    orders.data && !orders.isPlaceholderData ? totalPages : null,
+    (next) => setParam('page', String(next)),
+  )
 
   const refresh = () => {
     void orders.refetch()

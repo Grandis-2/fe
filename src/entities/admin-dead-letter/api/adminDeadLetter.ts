@@ -1,10 +1,12 @@
 import { apiClient } from '@shared/api/client'
+import { PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
 import { toQueryString } from '@shared/api/queryString'
 import type {
   BatchRedrive,
   DeadLetterDetail,
   DeadLetterListParams,
   DeadLetterPage,
+  DeadLetterStatus,
   DeadLetterSummary,
   DiscardRequest,
   RedriveBatchRequest,
@@ -30,6 +32,44 @@ export const getDeadLetters = (
     `${BASE[service]}${toQueryString(params)}`,
     { signal },
   )
+
+// ponytail: 상태마다 이만큼(1,000건)까지만 받는다 — 평소 비어 있는 목록이라 넘치면 장애다.
+// 넘치면 total이 items보다 커서 화면이 "일부만"이라고 알린다. 서버가 오래된 순·커서를 주면 바꾼다.
+const MAX_PAGES_PER_STATUS = 10
+
+/**
+ * 손댈 것만 모은 탭(처리 대기·결과 기다림)용 — 서버는 상태 하나만 거르고 최신순 한 쪽만 주니,
+ * 상태마다 따로 끝까지 받아 합친다. 한 쪽만 받으면 오래 멈춘 메시지가 빠지고 원인별 묶음 수가
+ * 틀린다. 받는 동안 새 메시지가 앞에 끼면 뒤 쪽이 밀려 같은 행이 또 오니 id로 거른다.
+ * 최신순으로 돌려준다(서버 목록과 같은 순서).
+ */
+export async function getDeadLettersOf(
+  service: DeadLetterService,
+  statuses: readonly DeadLetterStatus[],
+  params: Omit<DeadLetterListParams, 'status' | 'page' | 'size'>,
+  signal?: AbortSignal,
+): Promise<DeadLetterPage> {
+  const byId = new Map<string, DeadLetterSummary>()
+  let total = 0
+  await Promise.all(
+    statuses.map(async (status) => {
+      for (let page = 0; page < MAX_PAGES_PER_STATUS; page += 1) {
+        const result = await getDeadLetters(
+          service,
+          { ...params, status, page, size: PAGE_SIZE_MAX },
+          signal,
+        )
+        result.items.forEach((item) => byId.set(item.deadLetterId, item))
+        if (page === 0) total += result.total
+        if (result.items.length < PAGE_SIZE_MAX) return
+      }
+    }),
+  )
+  const items = [...byId.values()].sort((a, b) =>
+    b.createdAt.localeCompare(a.createdAt),
+  )
+  return { items, page: 0, size: items.length, total }
+}
 
 // [preorder] GET /api/v1/admin/preorders/dead-letters/{deadLetterId} — DLQ 메시지 상세
 // [order] GET /api/v1/admin/orders/payment-dead-letters/{deadLetterId}

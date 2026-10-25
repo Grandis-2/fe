@@ -11,6 +11,7 @@ import {
 } from '@entities/admin-reservation'
 import {
   isBraking,
+  useAdmissionRates,
   useWaitingroomStatus,
   useWaitingroomStatusHistory,
   type WaitingroomStatus,
@@ -80,6 +81,16 @@ const GRAFANA_BASE =
 // 대시보드처럼 5초마다 받는다. 집계는 서버가 5초까지 캐시해 더 자주 받아도 같다.
 const REFRESH_INTERVAL: RefreshInterval = 5_000
 
+// 버튼을 누른 순간 — 렌더 밖(이벤트)에서만 부른다.
+const currentTime = () => Date.now()
+
+const formatClock = (ms: number) =>
+  new Date(ms).toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+
 const RANGES = [
   { value: '5', label: '5분' },
   { value: '10', label: '10분' },
@@ -133,7 +144,7 @@ function queuePointOf(
   at: number,
   status: WaitingroomStatus,
   productId: string | undefined,
-): QueuePoint & { cap: number | null } {
+): QueuePoint {
   const product = productId
     ? status.products.find((it) => it.productId === productId)
     : undefined
@@ -148,12 +159,6 @@ function queuePointOf(
       )
       .reduce((total, it) => total + it.waiting, 0),
     credit: productId ? (product?.credit ?? 0) : (status.globalCredit ?? 0),
-    // 전체 입장은 운영값 × 브레이크라, 브레이크를 걷어 낸 값이 상한이다.
-    cap: productId
-      ? (product?.cap ?? null)
-      : status.globalCredit !== null && brakeFactor
-        ? Math.round(status.globalCredit / brakeFactor)
-        : null,
     brakeFactor,
     braking: isBraking(brakeFactor),
   }
@@ -202,6 +207,8 @@ export type AdminLoadTestProps = {
   header: Omit<PageHeaderProps, 'aside' | 'badge'>
   /** 제목 줄 바로 아래 — 볼 상품 고르기 */
   scope?: ReactNode
+  /** 지금 보는 범위 이름 — 기록한 구간 표에 적는다('전체', 상품 이름) */
+  scopeLabel: string
 }
 
 /**
@@ -214,12 +221,15 @@ export function AdminLoadTest({
   productId,
   header,
   scope,
+  scopeLabel,
 }: AdminLoadTestProps) {
   const [range, setRange] = useState<Range>('10')
   const rangeMs = Number(range) * 60_000
   const rangeLabel = `최근 ${range}분`
 
   const queue = useWaitingroomStatus(REFRESH_INTERVAL)
+  // 상한은 운영 설정에서 — 현황의 입장 값은 서버 용량으로 깎인 뒤라 거꾸로 셈하면 낮게 나온다.
+  const rates = useAdmissionRates(REFRESH_INTERVAL)
   const stats = useReservationStats(productId, REFRESH_INTERVAL)
   // 부하 중엔 자동 재시도 중인 실패까지 봐야 무엇 때문에 실패하는지 일찍 보인다.
   const errors = useSyncJobErrorGroups(REFRESH_INTERVAL)
@@ -286,6 +296,10 @@ export function AdminLoadTest({
   const q = queue.data
   const s = stats.data
   const current = q ? queuePointOf(queue.dataUpdatedAt, q, productId) : null
+  const cap =
+    (productId
+      ? rates.data?.products.find((it) => it.productId === productId)?.cap.value
+      : rates.data?.globalCredit.value) ?? null
   const failures = errors.data ?? []
   const failureTotal = failures.reduce((total, group) => total + group.count, 0)
   const topErrorCode =
@@ -322,17 +336,23 @@ export function AdminLoadTest({
   }
 
   const preset = mock.data ? presetOf(mock.data) : undefined
-  const active = recording.active
+  // 다른 범위(상품)에서 시작한 기록은 이 범위의 표본으로 끝내지 않는다 — 기준 실패 수가 다르다.
+  const scopeId = productId ?? null
+  const active =
+    recording.active?.productId === scopeId ? recording.active : null
+  const activeElsewhere = recording.active && !active ? recording.active : null
   const grafanaUrlOf = (start: number, end: number | 'now') =>
     `${GRAFANA_BASE}&from=${start}&to=${end}`
   const grafanaUrl = active
     ? grafanaUrlOf(active.startedAt, 'now')
     : `${GRAFANA_BASE}&from=now-${range}m&to=now&refresh=10s`
 
+  // 구간 경계는 누른 시각이다. 표본 시각을 쓰면 폴링이 멈춘 동안 구간이 짧아진다.
   const startRecording = () =>
     recording.start({
-      // 마지막으로 받은 시각부터 센다(집계가 있어야 누를 수 있어 0이 아니다).
-      startedAt: now,
+      startedAt: currentTime(),
+      productId: scopeId,
+      scopeLabel,
       condition: preset?.label ?? '직접 설정',
       baselineFailures: lastStat?.failures ?? null,
     })
@@ -341,7 +361,7 @@ export function AdminLoadTest({
     recording.finish(
       summarizeWindow(
         active,
-        Math.max(now, active.startedAt),
+        Math.max(currentTime(), active.startedAt),
         statsPoints,
         queuePoints,
       ),
@@ -362,6 +382,7 @@ export function AdminLoadTest({
       render: (record) =>
         `${formatShortDateTime(new Date(record.startedAt).toISOString())} · ${durationLabel(record.endedAt - record.startedAt)}`,
     },
+    { key: 'scope', header: '범위', render: (record) => record.scopeLabel },
     { key: 'condition', header: '조건', render: (record) => record.condition },
     {
       key: 'waiting',
@@ -407,6 +428,13 @@ export function AdminLoadTest({
           {record.result}
         </Tag>
       ),
+    },
+    {
+      key: 'complete',
+      header: '표본',
+      align: 'center',
+      // 새로 고침·폴링 실패로 앞뒤가 비면 최대·평균이 있는 표본만으로 센 값이다.
+      render: (record) => (record.complete ? '전부' : '일부 빠짐'),
     },
     {
       key: 'copy',
@@ -469,7 +497,8 @@ export function AdminLoadTest({
           active ? (
             <span className={styles.recordingBadge}>
               <span className={styles.recordingDot} aria-hidden="true" />
-              기록 중 · {durationLabel(Math.max(0, now - active.startedAt))}
+              {/* 경과 시간은 표본 시각과 누른 시각이 섞여 어긋나 시작 시각으로 적는다. */}
+              기록 중 · {formatClock(active.startedAt)}부터
             </span>
           ) : (
             <span className={styles.liveBadge}>
@@ -508,7 +537,7 @@ export function AdminLoadTest({
                 size="small"
                 variant="outline"
                 icon={CircleDot}
-                disabled={!s}
+                disabled={!s || !!activeElsewhere}
                 onClick={startRecording}
               >
                 구간 기록 시작
@@ -518,6 +547,12 @@ export function AdminLoadTest({
         }
       />
       {scope}
+      {activeElsewhere && (
+        <InlineAlert status="info">
+          {activeElsewhere.scopeLabel} 범위에서 구간을 기록하고 있어요. 그
+          범위로 돌아가 [기록 끝]을 눌러 주세요.
+        </InlineAlert>
+      )}
 
       <NoticeBanner
         tone={bannerTone[verdict.status]}
@@ -565,8 +600,8 @@ export function AdminLoadTest({
           tone={current?.braking ? 'warning' : undefined}
           value={valueOf(current?.credit, '명/초')}
           caption={
-            current?.cap != null
-              ? `상한 ${formatNumber(current.cap)}${current.braking ? ` × 브레이크 ${current.brakeFactor}` : ''}`
+            cap !== null
+              ? `상한 ${formatNumber(cap)}${current?.braking ? ` × 브레이크 ${current.brakeFactor}` : ''}`
               : '상한 서버 기본값'
           }
         />
@@ -648,10 +683,10 @@ export function AdminLoadTest({
             label="입장 허용 속도(초당)"
             tone="warning"
             reference={
-              current?.cap != null
+              cap !== null
                 ? {
-                    value: current.cap,
-                    label: `상한 ${formatNumber(current.cap)}명`,
+                    value: cap,
+                    label: `상한 ${formatNumber(cap)}명`,
                   }
                 : undefined
             }

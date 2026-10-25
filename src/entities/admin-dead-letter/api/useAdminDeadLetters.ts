@@ -19,6 +19,7 @@ import {
   discardDeadLetter,
   getDeadLetter,
   getDeadLetters,
+  getDeadLettersOf,
   redriveDeadLetter,
   redriveDeadLetters,
 } from './adminDeadLetter'
@@ -33,13 +34,18 @@ const RELATED_KEY: Record<DeadLetterService, readonly string[]> = {
 // 되돌리기 결과를 기다리는 동안만 쓰는 짧은 간격.
 const IN_FLIGHT_POLL_MS = 3_000
 
+/** 목록 조건. statuses를 주면 그 상태들을 끝까지 받아 합치고(손댈 것만 모은 탭), 아니면 한 쪽만 */
+export type DeadLetterQuery = DeadLetterListParams & {
+  statuses?: readonly DeadLetterStatus[]
+}
+
 /**
  * 메시지 목록. intervalMs를 주면 그 간격으로, 안 주면 되돌리기 결과를 기다리는 행이 있을
  * 때만 다시 받는다.
  */
 export const useDeadLetters = (
   service: DeadLetterService,
-  params: DeadLetterListParams = {},
+  params: DeadLetterQuery = {},
   intervalMs?: RefreshInterval,
 ) => {
   const queryClient = useQueryClient()
@@ -57,7 +63,12 @@ export const useDeadLetters = (
   }
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getDeadLetters(service, params, signal),
+    queryFn: ({ signal }) => {
+      const { statuses, ...listParams } = params
+      return statuses
+        ? getDeadLettersOf(service, statuses, listParams, signal)
+        : getDeadLetters(service, listParams, signal)
+    },
     ...queryPolicy.live,
     refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
     ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
@@ -66,17 +77,25 @@ export const useDeadLetters = (
 
 /**
  * 상태마다 몇 건인지 — 탭 옆 숫자. 목록 API가 상태 하나씩만 걸러서 상태마다 한 건만
- * 달라고 해 total을 쓴다. 못 받은 상태는 undefined라 화면이 0과 구분한다.
+ * 달라고 해 total을 쓴다. 목록과 같은 조건(이벤트·실패 이유)으로 세야 숫자가 보이는 목록과
+ * 맞는다. 못 받은 상태는 undefined라 화면이 0과 구분한다.
  */
 export const useDeadLetterCounts = (
   service: DeadLetterService,
+  filters: Pick<DeadLetterListParams, 'eventType' | 'failureReason'>,
   intervalMs?: RefreshInterval,
 ) =>
   useQueries({
     queries: deadLetterStatuses.map((status) => ({
-      queryKey: [...DEAD_LETTERS_KEY, service, 'count', status] as const,
+      queryKey: [
+        ...DEAD_LETTERS_KEY,
+        service,
+        'count',
+        status,
+        filters,
+      ] as const,
       queryFn: ({ signal }: { signal: AbortSignal }) =>
-        getDeadLetters(service, { status, size: 1 }, signal),
+        getDeadLetters(service, { ...filters, status, size: 1 }, signal),
       ...queryPolicy.live,
       refetchInterval: intervalMs ?? false,
     })),

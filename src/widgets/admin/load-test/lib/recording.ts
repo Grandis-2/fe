@@ -26,16 +26,27 @@ export type QueuePoint = {
 
 /** [구간 기록 시작]을 누른 때 */
 export type ActiveRecording = {
+  /** 누른 시각(벽시계) — 받은 표본 시각이 아니다. 폴링이 멈춰도 구간 길이가 줄지 않는다 */
   startedAt: number
+  /** 기록한 범위의 상품. 전체면 null — 다른 범위의 표본으로 끝내지 않게 한다 */
+  productId: string | null
+  /** 표에 적을 범위 이름 — '전체', '아이폰 18 Pro' */
+  scopeLabel: string
   condition: string
   /** 시작 때 실패 누적 — 끝날 때 빼서 구간 동안 늘어난 만큼을 센다 */
   baselineFailures: number | null
 }
 
-export type RecordedWindow = {
-  startedAt: number
+export type RecordedWindow = Pick<
+  ActiveRecording,
+  'startedAt' | 'scopeLabel' | 'condition'
+> & {
   endedAt: number
-  condition: string
+  /**
+   * 구간 처음·끝에 표본이 있었는지. 새로 고침(표본은 메모리에만 있다)·30분 넘는 구간·폴링
+   * 실패로 앞뒤가 비면 false — 최대·평균은 있는 표본만으로 센 값이다
+   */
+  complete: boolean
   maxWaiting: number | null
   maxCredit: number | null
   avgProcessed: number | null
@@ -46,9 +57,12 @@ export type RecordedWindow = {
 
 const maxOf = (values: number[]) => (values.length ? Math.max(...values) : null)
 
+// 구간 끝에서 이보다 멀리 떨어진 첫·마지막 표본이면 그 사이가 빈 것으로 본다(폴링 5초의 세 배).
+const EDGE_GAP_MS = 15_000
+
 /**
- * 구간 동안 받은 표본으로 한 줄 요약을 만든다. 표본은 최대 30분만 남아, 그보다 긴 구간은
- * 앞부분이 빠진 채로 센다(실패 수는 시작 때 값과 비교해 그대로 맞다).
+ * 구간 동안 받은 표본으로 한 줄 요약을 만든다. 앞뒤가 비면 있는 표본만으로 세고 complete를
+ * 끈다(실패 수는 시작 때 값과 비교해 그대로 맞다).
  */
 export function summarizeWindow(
   active: ActiveRecording,
@@ -78,7 +92,13 @@ export function summarizeWindow(
   return {
     startedAt: active.startedAt,
     endedAt,
+    scopeLabel: active.scopeLabel,
     condition: active.condition,
+    complete:
+      !!first &&
+      !!last &&
+      first.at - active.startedAt <= EDGE_GAP_MS &&
+      endedAt - last.at <= EDGE_GAP_MS,
     maxWaiting: maxOf(q.map((point) => point.waiting)),
     maxCredit: maxOf(q.map((point) => point.credit)),
     avgProcessed:
@@ -141,8 +161,8 @@ const valueOf = (value: number | null, unit: string) =>
 /** [결과 복사] — PR·메신저에 그대로 붙이는 한 덩어리 글 */
 export const recordText = (record: RecordedWindow, grafanaUrl: string) =>
   [
-    `부하 검증 ${formatShortDateTime(new Date(record.startedAt).toISOString())} · ${durationLabel(record.endedAt - record.startedAt)} · ${record.condition}`,
-    `판정 ${record.result}`,
+    `부하 검증 ${formatShortDateTime(new Date(record.startedAt).toISOString())} · ${durationLabel(record.endedAt - record.startedAt)} · ${record.scopeLabel} · ${record.condition}`,
+    `판정 ${record.result}${record.complete ? '' : ' (표본 일부 빠짐)'}`,
     `최대 대기 ${valueOf(record.maxWaiting, '명')} · 최대 입장 ${valueOf(record.maxCredit, '명/초')}`,
     `평균 처리 ${valueOf(record.avgProcessed, '건/초')} · 최대 적체 ${valueOf(record.maxBacklog, '건')} · 새 실패 ${valueOf(record.newFailures, '건')}`,
     `Grafana ${grafanaUrl}`,

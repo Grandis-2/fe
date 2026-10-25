@@ -23,7 +23,13 @@ const queue = (at: number, brakeFactor = 1, waiting = 0, credit = 0) => ({
 })
 
 describe('summarizeWindow', () => {
-  const active = { startedAt: 1000, condition: '정상', baselineFailures: 2 }
+  const active = {
+    startedAt: 1000,
+    productId: null,
+    scopeLabel: '전체',
+    condition: '정상',
+    baselineFailures: 2,
+  }
 
   it('구간 안의 표본만 세고, 실패는 시작 때 값과 비교한다', () => {
     const record = summarizeWindow(
@@ -39,7 +45,18 @@ describe('summarizeWindow', () => {
       maxBacklog: 5,
       newFailures: 0,
       result: '통과',
+      complete: true,
     })
+  })
+
+  it('새로 고침 등으로 구간 앞 표본이 없으면 일부로 표시한다', () => {
+    const record = summarizeWindow(
+      active,
+      120_000,
+      [stat(60_000, 0, 0, 2), stat(120_000, 60, 0, 2)],
+      [],
+    )
+    expect(record).toMatchObject({ complete: false, avgProcessed: 1 })
   })
 
   it('실패가 늘면 실패, 적체가 끝에 더 많으면 적체', () => {

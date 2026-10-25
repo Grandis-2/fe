@@ -27,22 +27,25 @@ const toPercent = (rate: number) => String(Math.round(rate * 10_000) / 100)
 /** ms를 초로 — 0.8초, 15초 */
 export const formatSeconds = (ms: number) => `${Math.round(ms / 10) / 100}초`
 
-export const draftOf = (config: MockConfig): ConfigDraft => ({
-  latency: String(config.registerLatencyMs),
-  failure: toPercent(config.failureRate),
-  mode: config.failureMode,
-  // MIXED가 아니면 서버가 빈 목록을 준다 — 켜는 순간 다섯 종류 전부에서 시작한다.
-  mixed: new Set(
-    config.mixedResponses.length > 0
-      ? config.mixedResponses
-      : mockMixedResponses,
-  ),
-  tailOn: config.latencyTailRate > 0,
-  tailRate:
-    config.latencyTailRate > 0 ? toPercent(config.latencyTailRate) : '2',
-  tailMin: String(config.latencyTailMinMs || 2000),
-  tailMax: String(config.latencyTailMaxMs || 4000),
-})
+export const draftOf = (config: MockConfig): ConfigDraft => {
+  // 꼬리가 켜져 있으면 서버 값 그대로(0ms도 맞는 값이다). 꺼져 있으면 켤 때 쓸 기본값을 채운다.
+  const tailOn = config.latencyTailRate > 0
+  return {
+    latency: String(config.registerLatencyMs),
+    failure: toPercent(config.failureRate),
+    mode: config.failureMode,
+    // MIXED가 아니면 서버가 빈 목록을 준다 — 켜는 순간 다섯 종류 전부에서 시작한다.
+    mixed: new Set(
+      config.mixedResponses.length > 0
+        ? config.mixedResponses
+        : mockMixedResponses,
+    ),
+    tailOn,
+    tailRate: tailOn ? toPercent(config.latencyTailRate) : '2',
+    tailMin: String(tailOn ? config.latencyTailMinMs : 2000),
+    tailMax: String(tailOn ? config.latencyTailMaxMs : 4000),
+  }
+}
 
 const isInt = (text: string, min: number, max: number) => {
   const value = Number(text)

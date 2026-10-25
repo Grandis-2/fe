@@ -22,6 +22,7 @@ import {
   type DeadLetter,
   type DeadLetterFailureReason,
   type DeadLetterService,
+  type DeadLetterStatus,
   type DeadLetterTab,
 } from '@entities/admin-dead-letter'
 import { orderNo } from '@entities/admin-order'
@@ -63,9 +64,12 @@ import { DeadLetterGroups } from '../DeadLetterGroups'
 
 import * as styles from './AdminDeadLetterList.css'
 
-// shortcut: 최근 100건만 받는다(서버 한 쪽 상한). 평소 비어 있어야 하는 목록이라 충분하다 —
-// 넘치면 서버 페이지 이동을 붙인다.
+// 기록 탭(처리됨·버림·전체)은 최근 100건만 받는다(서버 한 쪽 상한) — 지난 기록이라 최근 것만
+// 보면 된다. 넘치면 화면에 "최근 100건"이라고 알린다.
 const PAGE_SIZE = 100
+// 손댈 것만 모은 탭은 상태마다 끝까지 받는다 — 한 쪽만 보면 오래 멈춘 메시지가 빠지고 원인별
+// 묶음 수·묶음째 되돌리기가 일부만 된다.
+const COMPLETE_TABS: readonly DeadLetterTab[] = ['open', 'waiting']
 
 // 상세에 갔다 돌아와도 같은 조건이 보이게 주소에 둔다.
 const PARAM = {
@@ -153,20 +157,21 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
   const [feedback, setFeedback] = useState<Feedback>()
 
-  const statuses: readonly string[] = tab.statuses
+  const filters = {
+    eventType: eventType === ALL ? undefined : eventType,
+    failureReason: failureReason === ALL ? undefined : failureReason,
+  }
+  const complete = COMPLETE_TABS.includes(tab.value)
+  const statuses: readonly DeadLetterStatus[] = tab.statuses
   const deadLetters = useDeadLetters(
     service,
-    {
-      // 서버는 상태를 하나만 거른다. 둘 이상 묶은 탭(결과 기다림)은 전체를 받아 여기서
-      // 거른다 — 되돌리기 결과를 기다리는 건 방금 보낸 것이라 최근 100건 안에 든다.
-      status: tab.statuses.length === 1 ? tab.statuses[0] : undefined,
-      eventType: eventType === ALL ? undefined : eventType,
-      failureReason: failureReason === ALL ? undefined : failureReason,
-      size: PAGE_SIZE,
-    },
+    complete
+      ? { ...filters, statuses }
+      : { ...filters, status: statuses[0], size: PAGE_SIZE },
     refreshInterval,
   )
-  const counts = useDeadLetterCounts(service, refreshInterval)
+  // 탭 숫자도 같은 이벤트·실패 이유로 센다 — 거른 목록 옆에 거르기 전 숫자가 붙지 않게.
+  const counts = useDeadLetterCounts(service, filters, refreshInterval)
   const redrive = useRedriveDeadLetters(service)
 
   // 서비스를 바꾸면 이벤트 종류가 달라져 그 조건과 고른 것을 비운다.
@@ -184,13 +189,17 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
     )
   }
 
-  const fetched = deadLetters.data?.items
-  const items = fetched
-    ?.filter((item) => statuses.length === 0 || statuses.includes(item.status))
-    // 처리 대기는 오래 멈춘 것부터, 나머지는 서버 순서(최신순) 그대로.
-    .sort((a, b) =>
-      tab.value === 'open' ? a.createdAt.localeCompare(b.createdAt) : 0,
-    )
+  // 처리 대기는 오래 멈춘 것부터, 나머지는 서버 순서(최신순) 그대로.
+  const items =
+    tab.value === 'open'
+      ? deadLetters.data?.items.toSorted((a, b) =>
+          a.createdAt.localeCompare(b.createdAt),
+        )
+      : deadLetters.data?.items
+  // 받은 것보다 많으면 일부만 보이는 것 — 기록 탭은 최근 100건, 손댈 탭은 상한(상태마다 1,000건).
+  const partial =
+    deadLetters.data !== undefined &&
+    deadLetters.data.total > deadLetters.data.items.length
   const groups = tab.value === 'open' ? groupDeadLetters(items ?? []) : []
   const redrivable = (items ?? []).filter((item) => item.redrivable)
   const selectedIds = redrivable
@@ -476,6 +485,14 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
       )}
       {feedback && (
         <InlineAlert status={feedback.status}>{feedback.message}</InlineAlert>
+      )}
+      {partial && deadLetters.data && (
+        <InlineAlert status="warning">
+          {formatNumber(deadLetters.data.total)}건 중{' '}
+          {complete
+            ? `${formatNumber(deadLetters.data.items.length)}건만 받았어요. 원인별 묶음·되돌리기도 받은 것만 셉니다.`
+            : `최근 ${formatNumber(deadLetters.data.items.length)}건만 보여요.`}
+        </InlineAlert>
       )}
 
       {groups.length > 0 && (
