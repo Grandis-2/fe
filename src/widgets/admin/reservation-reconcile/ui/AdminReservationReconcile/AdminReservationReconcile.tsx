@@ -85,9 +85,16 @@ const wrongSideOf = (finding: ReconcileFinding): 'ours' | 'external' | null => {
 
 const text = (value: unknown) => (typeof value === 'string' ? value : null)
 
+// 우리 쪽 스냅숏이 예약 모양인가 — STUCK(이벤트·시도)·OUTBOX_MISSING·QUEUE_GAP·
+// PAID_BUT_REGISTERED는 예약이 아닌 다른 모양이 와서 status가 없다(be 문서 4장).
+const isReservationSnapshot = (finding: ReconcileFinding) =>
+  text(finding.beSnapshot?.status) !== null
+
 // 스냅숏은 검사 종류마다 모양이 달라 아는 칸만 읽는다.
-const oursOf = ({ beSnapshot }: ReconcileFinding) => {
+const oursOf = (finding: ReconcileFinding) => {
+  const { beSnapshot } = finding
   if (!beSnapshot) return '없음'
+  if (!isReservationSnapshot(finding)) return '—'
   const status = text(beSnapshot.status)
   return (
     [
@@ -116,9 +123,9 @@ const externalOf = ({ mockSnapshot }: ReconcileFinding) => {
   )
 }
 
-// 우리 예약이 있는 건만 예약 번호와 상세가 있다(QUEUE_GAP의 대상은 상품).
-const hasReservation = (finding: ReconcileFinding) =>
-  finding.beSnapshot !== null && finding.checkCode !== 'QUEUE_GAP'
+// 우리 예약이 있는 건만 예약 번호와 상세가 있다 — targetKey가 예약 id(관리자 API의
+// preorderId)다. QUEUE_GAP과 회차 이벤트의 STUCK은 targetKey가 상품 id라 빠진다.
+const hasReservation = isReservationSnapshot
 
 const numberOf = (finding: ReconcileFinding) =>
   hasReservation(finding)
@@ -288,7 +295,17 @@ export function AdminReservationReconcile() {
         setFeedback(undefined)
         externalCancelMany.mutate(ids, {
           onSuccess: ({ items }) => {
-            setSelected(new Set())
+            // 20초가 지나 시작하지 못한 건은 그것만 다시 보내게 골라 둔다.
+            setSelected(
+              new Set(
+                items
+                  .filter(
+                    (item) =>
+                      item.errorCode === 'RECONCILIATION_BATCH_DEADLINE',
+                  )
+                  .map((item) => item.findingId),
+              ),
+            )
             const failures = items.filter(
               (item) => !item.finding || item.finding.actionStatus === 'FAILED',
             )
@@ -702,17 +719,21 @@ function RunSummary({
       `검사를 끝내지 못해 어긋남을 판단할 수 없어요.${failed.errorMessage ? ` 서버 메시지: ${failed.errorMessage}` : ''}${shown ? ` 아래는 ${formatShortDateTime(shown.finishedAt ?? shown.createdAt)} 검사 결과예요.` : ''}`,
     )
   if (!shown) return null
+  // 기준 시각 뒤에 외부에서 바뀐 건은 판정하지 않는다 — 다음 검사에서 본다.
+  const held = shown.heldCount
+    ? ` 기준 시각 뒤에 바뀐 ${shown.heldCount.toLocaleString('ko-KR')}건은 다음 검사에서 봐요.`
+    : ''
   if (shown.verdict === 'MATCHED')
     return card(
       'ok',
       '일치',
-      '우리 예약과 외부 예약 시스템이 모두 맞아요.',
+      `우리 예약과 외부 예약 시스템이 모두 맞아요.${held}`,
       schedule,
     )
   return card(
     'fail',
     `불일치 ${shown.findingCount.toLocaleString('ko-KR')}건`,
-    `서버가 우리 예약과 외부 예약 시스템을 비교했어요.${shown.cutoffAt ? ` ${formatShortDateTime(shown.cutoffAt)}까지 들어온 예약이 대상이에요.` : ''}`,
+    `서버가 우리 예약과 외부 예약 시스템을 비교했어요.${shown.cutoffAt ? ` ${formatShortDateTime(shown.cutoffAt)}까지 들어온 예약이 대상이에요.` : ''}${held}`,
     schedule,
   )
 }
