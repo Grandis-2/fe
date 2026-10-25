@@ -80,7 +80,8 @@ export function PreorderModelSheet({
       )
     }
     // 서버는 회원·모델마다 예약 하나라 다시 예약할 수 없다 — 줄을 서지 않고 그 예약으로 간다.
-    const reservation = status === 'live' && reservations.get(model.productId)
+    // 마감 뒤에도 구매 확정이 남은 예약이 있어 일반 구매보다 먼저 보인다.
+    const reservation = reservations.get(model.productId)
     if (reservation) {
       return (
         <Button

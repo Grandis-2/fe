@@ -65,10 +65,9 @@ export function ProductDetailPage() {
   })
   const shipmentLabel = shipmentStartLabel(shipmentBatches)
   // 이미 이 모델을 예약했으면(회원·모델마다 하나) 사전예약하기 대신 그 예약 버튼을 보이고 누르면 그 예약으로 간다.
-  const { data: activeReservation } = useActiveReservation(
-    productId,
-    isPreorder && isLoggedIn,
-  )
+  // 확인 응답 전엔 새로 예약하지 못하게 막는다(눌러도 409로 돌아온다). 확인이 실패하면 막지 않는다 — 서버가 409로 지킨다.
+  const { data: activeReservation, isLoading: isCheckingReservation } =
+    useActiveReservation(productId, isPreorder && isLoggedIn)
   const existingAction = activeReservation
     ? existingReservationAction(activeReservation)
     : null
@@ -93,7 +92,9 @@ export function ProductDetailPage() {
     : undefined
   // 이미 예약한 모델이면 그 예약으로 가는 버튼이라 옵션과 상관없이 켠다 — 접수 중에만 끈다.
   const checkoutDisabled =
-    preorderSubmit.isPending || (!isCheckoutReady && !existingAction)
+    preorderSubmit.isPending ||
+    isCheckingReservation ||
+    (!isCheckoutReady && !existingAction)
 
   // 장바구니는 회원 전용 — 비회원이면 로그인 모달을 연다. 고른 조합을 살 수 없으면 담지 않는다.
   const handleAddToCart = () => {
