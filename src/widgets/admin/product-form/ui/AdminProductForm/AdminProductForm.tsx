@@ -27,6 +27,7 @@ import {
   Dropdown,
   FormFooter,
   FormSection,
+  FormToc,
   ImageUploader,
   Input,
   FieldError,
@@ -53,7 +54,8 @@ export type AdminProductFormProps = {
   mode: AdminProductFormMode
   defaultValue?: AdminProductFormValue
   onSubmit: (value: AdminProductFormValue) => void
-  onCancel: () => void
+  /** 등록 화면의 '취소'. 수정 화면은 그 자리에 '되돌리기'가 있다 */
+  onCancel?: () => void
   onPreview: (value: AdminProductFormValue) => void
   /** 저장 요청이 진행 중이면 제출 버튼을 막는다 — 연타하면 같은 저장이 여러 번 나간다 */
   submitting?: boolean
@@ -235,21 +237,36 @@ export function AdminProductForm({
   }
 
   const pending = pendingChanges?.(value) ?? []
+  // 수정 화면에서 저장된 값과 같으면 저장·되돌리기를 막는다.
+  const unchanged = pendingChanges !== undefined && pending.length === 0
+  const revert = () => {
+    setValue(defaultValue ?? createEmptyProductFormValue())
+    setAttempted(false)
+    setDismissedServer(serverIssues)
+  }
   // 잠긴 섹션 제목에 붙는 표시 — 목차에도 같은 자물쇠가 붙는다.
   const lockBadge = locked ? (
     <Tag size="small" color="yellow" variant="subtle">
       잠김
     </Tag>
   ) : undefined
-  // 수정 화면의 목차 — 상세 이미지는 잠기지 않는다.
+  const lockIcon = locked ? (
+    <Lock className={styles.tocIcon} aria-label="잠김" />
+  ) : undefined
+  // 상세 이미지는 잠기지 않는다. 공개 설정은 등록 때만 있다.
   const toc = [
-    { id: 'basic', label: '기본 정보', lockable: true },
-    { id: 'sale', label: '판매 방식 · 일정', lockable: true },
-    { id: 'option', label: '옵션 · 상품 사진', lockable: true },
-    { id: 'price', label: '가격', lockable: true },
-    { id: 'variants', label: '옵션별 판매', lockable: true },
-    { id: 'tags', label: '검색 태그', lockable: true },
-    { id: 'images', label: '상세 이미지', lockable: false },
+    { id: 'basic', label: '기본 정보', badge: lockIcon },
+    { id: 'sale', label: '판매 방식 · 일정', badge: lockIcon },
+    ...(editing ? [] : [{ id: 'publish', label: '공개 설정' }]),
+    { id: 'option', label: '옵션 · 상품 사진', badge: lockIcon },
+    { id: 'price', label: '가격', badge: lockIcon },
+    {
+      id: 'variants',
+      label: editing ? '옵션별 판매' : '옵션별 가격 / 재고',
+      badge: lockIcon,
+    },
+    { id: 'tags', label: '검색 태그', badge: lockIcon },
+    { id: 'images', label: '상세 이미지' },
   ]
 
   return (
@@ -276,7 +293,7 @@ export function AdminProductForm({
         )
       )}
 
-      <div className={editing ? styles.withToc : styles.plain}>
+      <FormToc title={editing ? '이 상품의 정보' : '입력 항목'} items={toc}>
         {/* 잠기면 섹션마다 fieldset으로 안의 입력·버튼을 한꺼번에 막는다 — 칸마다 disabled를
             넘기지 않는다. 사진 칸은 잠금과 상관없이 고칠 수 있어 막지 않는다. */}
         <div className={styles.sections}>
@@ -382,7 +399,7 @@ export function AdminProductForm({
 
           {/* 등록 때만 고른다 — 등록 뒤에는 상세의 공개 전환 버튼으로 바꾼다. */}
           {!editing && (
-            <FormSection title="공개 설정">
+            <FormSection id="publish" title="공개 설정">
               <div className={styles.card}>
                 {value.isPreorder ? (
                   <span className={styles.hint}>
@@ -614,21 +631,7 @@ export function AdminProductForm({
             </div>
           </FormSection>
         </div>
-
-        {editing && (
-          <nav className={styles.toc} aria-label="섹션 바로가기">
-            <span className={styles.tocTitle}>이 상품의 정보</span>
-            {toc.map((item) => (
-              <a key={item.id} href={`#${item.id}`} className={styles.tocLink}>
-                {item.label}
-                {locked && item.lockable && (
-                  <Lock className={styles.tocIcon} aria-label="잠김" />
-                )}
-              </a>
-            ))}
-          </nav>
-        )}
-      </div>
+      </FormToc>
 
       <FormFooter
         onPreview={() => onPreview(value)}
@@ -674,15 +677,27 @@ export function AdminProductForm({
           )
         }
       >
-        <Button
-          type="button"
-          variant="outline"
-          color="cancel"
-          onClick={onCancel}
-        >
-          취소
-        </Button>
-        <Button type="submit" disabled={submitting}>
+        {editing ? (
+          <Button
+            type="button"
+            variant="outline"
+            color="cancel"
+            disabled={unchanged || submitting}
+            onClick={revert}
+          >
+            되돌리기
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            color="cancel"
+            onClick={onCancel}
+          >
+            취소
+          </Button>
+        )}
+        <Button type="submit" disabled={submitting || unchanged}>
           {waitingForNetwork
             ? '연결 대기 중…'
             : submitting

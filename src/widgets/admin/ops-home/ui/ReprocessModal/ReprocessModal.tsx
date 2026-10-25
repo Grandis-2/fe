@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { ChevronRight, CircleCheck, Clock } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 
+import { errorCodeMeaning } from '@entities/admin-reservation'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { adminReservationsPath } from '@shared/config/routes'
 import { formatNumber } from '@shared/lib/formatNumber'
@@ -17,6 +18,10 @@ import type {
 
 // 일괄 재처리의 서버 기본 속도(명세 ratePerSecond 기본 20) — 보내기 전 예상 시간에만 쓴다.
 const REPROCESS_RATE = 20
+// 실패 원인은 많은 순으로 이만큼만 보이고 나머지는 '그 외'로 묶는다.
+const CAUSES_SHOWN = 4
+
+type ReprocessCause = { errorCode: string; count: number }
 
 export type ReprocessModalProps = {
   open: boolean
@@ -27,6 +32,10 @@ export type ReprocessModalProps = {
   failures: number
   /** 사전예약별 실패 — 전체를 볼 때 두 곳 이상이면 나눠 보인다 */
   breakdown: readonly { name: string; count: number }[]
+  /** 재처리할 실패(DEAD_LETTER)의 마지막 오류 코드별 수. 받는 중이면 undefined */
+  causes: readonly ReprocessCause[] | undefined
+  /** 실패 원인을 받지 못했다 — 재처리는 그대로 할 수 있다 */
+  causesFailed: boolean
   run: ReprocessRun | null
   running: ReprocessProgress | null
   result: ReprocessProgress | null
@@ -43,8 +52,8 @@ const isNothingToReprocess = (error: unknown) =>
 
 /**
  * 운영 대시보드에서 바로 하는 외부 등록 재처리 — 확인 → 진행 → 결과가 한 창에서 바뀐다.
- * 실패 원인(오류 코드)은 보이지 않는다 — 외부 시스템이 준 코드라 관리자가 읽을 수 없고,
- * 다시 보낼지는 결과(또 실패한 비율)로 안내한다.
+ * 확인 단계에서 왜 실패했는지(마지막 오류 코드별 건수)를 같이 보여, 외부가 아직 내려가
+ * 있는데 다시 보내는 일을 줄인다.
  */
 export function ReprocessModal({
   open,
@@ -52,6 +61,8 @@ export function ReprocessModal({
   scopeName,
   failures,
   breakdown,
+  causes,
+  causesFailed,
   run,
   running,
   result,
@@ -202,6 +213,12 @@ export function ReprocessModal({
           ))}
         </dl>
       )}
+      <ReprocessCauses
+        causes={causes}
+        failed={causesFailed}
+        // 원인은 사전예약별로 나눠 받을 수 없다(서버 조건 없음) — 고른 사전예약이 있어도 전체다.
+        scoped={scopeName !== null}
+      />
       <div className={styles.meta}>
         <Clock className={styles.metaIcon} aria-hidden="true" />
         초당 {REPROCESS_RATE}건씩 차례로 보내요 · 약 {seconds}초
@@ -230,6 +247,58 @@ export function ReprocessModal({
         <ChevronRight className={styles.linkIcon} aria-hidden="true" />
       </Link>
     </Modal>
+  )
+}
+
+function ReprocessCauses({
+  causes,
+  failed,
+  scoped,
+}: {
+  causes: readonly ReprocessCause[] | undefined
+  failed: boolean
+  scoped: boolean
+}) {
+  const sorted = (causes ?? []).toSorted((a, b) => b.count - a.count)
+  const shown = sorted.slice(0, CAUSES_SHOWN)
+  const rest = sorted
+    .slice(CAUSES_SHOWN)
+    .reduce((sum, cause) => sum + cause.count, 0)
+  const status = failed
+    ? '실패 원인을 불러오지 못했어요.'
+    : causes === undefined
+      ? '실패 원인을 불러오는 중…'
+      : sorted.length === 0
+        ? '기록된 오류 코드가 없어요.'
+        : null
+
+  return (
+    <dl className={styles.box}>
+      <span className={styles.boxTitle}>
+        실패 원인{scoped && ' · 전체 사전예약 기준'}
+      </span>
+      {status ? (
+        <span className={styles.boxNote}>{status}</span>
+      ) : (
+        <>
+          {shown.map(({ errorCode, count }) => (
+            <div key={errorCode} className={styles.row}>
+              <dt className={styles.cause}>
+                {errorCodeMeaning[errorCode] ?? '알 수 없는 오류'}
+                <span className={styles.causeCode}>{errorCode}</span>
+              </dt>
+              <dd className={styles.dangerValue}>{formatNumber(count)}건</dd>
+            </div>
+          ))}
+          {rest > 0 && (
+            <div className={styles.row}>
+              <dt>그 외</dt>
+              <dd className={styles.dangerValue}>{formatNumber(rest)}건</dd>
+            </div>
+          )}
+        </>
+      )}
+    </dl>
   )
 }
 

@@ -1,6 +1,9 @@
 import { useLocation, useParams } from 'react-router'
 
-import { useDeadLetter } from '@entities/admin-dead-letter'
+import {
+  deadLetterEventLabel,
+  useDeadLetter,
+} from '@entities/admin-dead-letter'
 import { getErrorMessage } from '@shared/api/client'
 import { ADMIN_DEAD_LETTERS_PATH, readBackTo } from '@shared/config/routes'
 import {
@@ -48,18 +51,19 @@ export function AdminDeadLetterDetailPage() {
 
   return (
     <div className={styles.root}>
-      <Breadcrumb
-        items={[
-          { label: backTo.label, to: backTo.to },
-          { label: deadLetter.data.messageId },
-        ]}
-      />
-
-      {/* 되돌리기 결과를 기다리는 동안만 저절로 다시 받는다(useDeadLetter). */}
-      <RefreshStatus
-        updatedAt={deadLetter.dataUpdatedAt}
-        onRefresh={() => void deadLetter.refetch()}
-      />
+      <div className={styles.topRow}>
+        <Breadcrumb
+          items={[
+            { label: backTo.label, to: backTo.to },
+            { label: deadLetterEventLabel(deadLetter.data.eventType) },
+          ]}
+        />
+        {/* 되돌리기 결과를 기다리는 동안만 저절로 다시 받는다(useDeadLetter). */}
+        <RefreshStatus
+          updatedAt={deadLetter.dataUpdatedAt}
+          onRefresh={() => void deadLetter.refetch()}
+        />
+      </div>
 
       {deadLetter.isError && (
         <InlineAlert status="warning">

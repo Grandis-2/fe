@@ -44,6 +44,24 @@ export const boxTitle = style([
   { padding: `${spacing[10]} 0 ${spacing[4]}`, color: color.text.tertiary },
 ])
 
+export const boxNote = style([
+  typography.body.sub,
+  { padding: `${spacing[4]} 0 ${spacing[10]}`, color: color.text.secondary },
+])
+
+// 실패 원인 — 읽을 수 있는 뜻 옆에 서버가 준 코드를 작게 붙인다.
+export const cause = style({
+  display: 'flex',
+  alignItems: 'baseline',
+  flexWrap: 'wrap',
+  gap: spacing[6],
+})
+
+export const causeCode = style([
+  typography.body.caption,
+  { color: color.text.tertiary, fontFamily: 'monospace' },
+])
+
 export const row = style([
   typography.body.sub,
   {

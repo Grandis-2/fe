@@ -14,7 +14,6 @@ const signals: AdmissionSignals = {
   judged: true,
   judgedInSeconds: 0,
   congested: false,
-  limit: null,
 }
 
 const base = {

@@ -15,7 +15,6 @@ const signals: AdmissionSignals = {
   judged: true,
   judgedInSeconds: 0,
   congested: true,
-  limit: { perSecond: 30, at: 60_000 },
 }
 
 const flow = {
@@ -64,7 +63,6 @@ export const Following: Story = {
         backlog: 7,
         backlogPerMinute: 0,
         congested: false,
-        limit: null,
       },
       verdict: {
         kind: 'following',
@@ -113,7 +111,6 @@ export const Measuring: Story = {
         judged: false,
         judgedInSeconds: 25,
         congested: false,
-        limit: null,
       },
       verdict: {
         kind: 'measuring',

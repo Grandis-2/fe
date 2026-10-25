@@ -1,4 +1,6 @@
-import { ExternalLink, Link2 } from 'lucide-react'
+import { useState } from 'react'
+
+import { Eye, Link2 } from 'lucide-react'
 import { useNavigate, useParams } from 'react-router'
 
 import {
@@ -35,6 +37,7 @@ import {
   Tag,
 } from '@shared/ui'
 import { AdminPromotionForm } from '@widgets/admin/promotion-form'
+import { PreorderDetailPreviewModal } from '@widgets/preorder-detail'
 
 import * as styles from './AdminPromotionEditPage.css'
 
@@ -45,6 +48,7 @@ export function AdminPromotionEditPage() {
   const linkable = usePromotionLinkableProducts(promotionId)
   const update = useUpdateAdminPromotion(promotionId)
   const now = useNow(60_000)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   if (!promotion.data) {
     // 불러오는 중이면 화면 모양을 먼저 깐다 — 실패일 때만 안내와 돌아갈 길을 보인다.
@@ -114,7 +118,7 @@ export function AdminPromotionEditPage() {
         >
           {promotionStatusLabel[status]}
         </Tag>
-        {/* 고객 상세는 기간 밖이면 404 — 끝나면 링크를, 진행 중일 때만 고객 화면을 연다. */}
+        {/* 고객 상세는 기간 밖이면 404 — 끝나면 링크를, 진행 중일 때만 고객 화면을 본다. */}
         <div className={styles.titleActions}>
           {status !== 'ENDED' && (
             <Button
@@ -132,8 +136,8 @@ export function AdminPromotionEditPage() {
               size="small"
               variant="outline"
               color="cancel"
-              icon={ExternalLink}
-              onClick={() => window.open(customerPath, '_blank', 'noopener')}
+              icon={Eye}
+              onClick={() => setPreviewOpen(true)}
             >
               고객 화면 보기
             </Button>
@@ -217,8 +221,12 @@ export function AdminPromotionEditPage() {
             onSuccess: () => showToast('사전예약을 저장했습니다.'),
           })
         }
-        onCancel={() => navigate(ADMIN_PROMOTIONS_PATH)}
         onAddProduct={() => navigate(ADMIN_PRODUCT_NEW_PATH)}
+      />
+
+      <PreorderDetailPreviewModal
+        preorderId={previewOpen ? promotionId : undefined}
+        onClose={() => setPreviewOpen(false)}
       />
     </div>
   )

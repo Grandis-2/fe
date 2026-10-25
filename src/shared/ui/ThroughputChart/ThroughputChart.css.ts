@@ -116,7 +116,29 @@ export const crosshair = style({
   pointerEvents: 'none',
 })
 
-// 사건 시각 세로선 — 데이터 선보다 눈에 띄지 않게 가늘게, 글자는 위쪽에 붙인다.
+// 두 선 사이 — 적체가 쌓이는 만큼을 옅게
+export const between = style({
+  fill: `color-mix(in srgb, ${SERIES_1} 10%, transparent)`,
+})
+
+// 새 실패 같은 사건 — 마지막 선 위의 빨간 점
+export const incidentSwatch = style({
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%',
+  background: color.status.danger,
+  flexShrink: 0,
+})
+
+export const incident = style([
+  incidentSwatch,
+  {
+    position: 'absolute',
+    boxShadow: `0 0 0 2px ${color.background.base}`,
+    transform: 'translate(-50%, -50%)',
+    pointerEvents: 'none',
+  },
+])
 
 const tooltip = style([
   typography.body.caption,

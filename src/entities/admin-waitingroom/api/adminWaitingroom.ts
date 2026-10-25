@@ -30,9 +30,12 @@ const remove = (path: string) =>
   apiClient.request<AdmissionRateView>(`${BASE}${path}`, { method: 'DELETE' })
 
 // [waitingroom] PUT /api/v1/admin/waitingroom/admission-rate — 전역 입장 속도 변경
-/** 전 상품을 합친 초당 입장 인원. 0이면 입장을 멈춘다 */
-export const setGlobalCredit = (globalCredit: number) =>
-  put<GlobalCreditRequest>('/admission-rate', { globalCredit })
+/** 전 상품을 합친 초당 입장 인원. 0이면 입장을 멈춘다. 권장 상한을 넘기려면 confirm */
+export const setGlobalCredit = (globalCredit: number, confirm = false) =>
+  put<GlobalCreditRequest>('/admission-rate', {
+    globalCredit,
+    ...(confirm && { confirm }),
+  })
 // [waitingroom] DELETE /api/v1/admin/waitingroom/admission-rate — 전역 입장 속도 초기화
 export const resetGlobalCredit = () => remove('/admission-rate')
 

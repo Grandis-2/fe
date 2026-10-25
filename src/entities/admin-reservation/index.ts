@@ -16,6 +16,7 @@ export {
 } from './api/useAdminReservations'
 export { useReservationStatsHistory } from './api/useReservationStatsHistory'
 export { PartialReprocessError } from './api/adminReservation'
+export { errorCodeMeaning } from './model/errorCodes'
 export {
   actorLabel,
   countByStage,

@@ -5,61 +5,95 @@ import { color, spacing, typography } from '@shared/config/theme'
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[20],
+  gap: spacing[24],
 })
+
+// 지금 적용 중 — 카드 세 장과 바꿀 수 없는 참고 값 한 줄.
+export const status = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[12],
+})
+
+export const version = style([
+  typography.body.sub,
+  { color: color.text.secondary, fontVariantNumeric: 'tabular-nums' },
+])
+
+export const stats = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
+  gap: spacing[12],
+})
+
+export const reference = style([
+  typography.body.sub,
+  {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: `${spacing[6]} ${spacing[20]}`,
+    color: color.text.secondary,
+    fontVariantNumeric: 'tabular-nums',
+  },
+])
+
+export const strong = style({ color: color.text.primary, fontWeight: 600 })
 
 /** 섹션 내용을 감싸는 흰 카드 */
 export const card = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[16],
-  padding: spacing[20],
+  padding: `${spacing[20]} ${spacing[24]}`,
   borderRadius: '12px',
-  border: `1px solid ${color.border.subtle}`,
+  border: `1px solid ${color.border.default}`,
   background: color.background.base,
 })
 
-export const grid = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))',
-  gap: spacing[16],
-  alignItems: 'start',
+// 되돌릴 수 없는 일만 모은 위험 구역 — 빨간 테두리로 다른 섹션과 떼어 놓는다.
+export const dangerCard = style([
+  card,
+  {
+    borderColor: `color-mix(in srgb, ${color.status.danger} 35%, transparent)`,
+  },
+])
+
+export const faultFacts = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[2],
 })
 
-export const info = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(min(280px, 100%), 1fr))',
-  gap: spacing[8],
-  margin: 0,
-  paddingBottom: spacing[16],
-  borderBottom: `1px solid ${color.border.subtle}`,
-})
-
-export const row = style({
-  display: 'grid',
-  gridTemplateColumns: '140px 1fr',
+// 칸 아래 오류 문구가 생겨도 버튼은 칸 높이에 맞춘다.
+export const faultRow = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-end',
   gap: spacing[12],
 })
 
-export const term = style([typography.body.sub, { color: color.text.tertiary }])
+export const grow = style({ flex: '1 1 360px', minWidth: 0 })
 
-export const value = style([
-  typography.body.sub,
-  { margin: 0, color: color.text.primary },
-])
+export const faultButton = style({ flexShrink: 0 })
 
-export const subText = style([
-  typography.body.caption,
-  { color: color.text.tertiary },
-])
-
-export const action = style({
-  alignSelf: 'flex-end',
-})
-
-// 불러오는 동안의 줄 — 줄 사이를 실제 설정 줄과 비슷하게 띄운다.
-export const skeletonRows = style({
+export const targets = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[16],
+  gap: spacing[8],
 })
+
+export const targetsLabel = style([
+  typography.body.subMedium,
+  { color: color.text.secondary },
+])
+
+export const tags = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[6],
+})
+
+export const subText = style([
+  typography.body.sub,
+  { color: color.text.tertiary },
+])

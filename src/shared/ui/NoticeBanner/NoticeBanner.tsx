@@ -15,7 +15,7 @@ export type NoticeBannerProps = {
 /**
  * 관리자 상세 화면 맨 위의 "지금 할 일" 띠(예약·럭키드로우 회차). 문제가 있을 때만 나와서,
  * 띠가 보이면 무언가 있다는 뜻이다. 무엇이 막혔는지와 조치를 한 자리에 둔다.
- * danger는 지금 눌러야 하는 것, warning은 알아 둘 것, info는 상황 설명.
+ * danger는 지금 눌러야 하는 것, warning은 알아 둘 것, success는 이상 없음, info는 상황 설명.
  */
 export function NoticeBanner({
   tone,

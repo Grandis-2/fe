@@ -3,7 +3,7 @@ import { currentMockConfig } from './handlers/external-reservation'
 
 import type { AdminPreorderDetail } from '../types'
 
-// 부하 검증 [시험 시작] 동안만 도는 가짜 부하. 목 예약은 원래 고정이라 처리량 그래프가 0에
+// 부하 검증 화면을 보는 동안만 도는 가짜 부하. 목 예약은 원래 고정이라 처리량 그래프가 0에
 // 붙는다. 접수는 물결처럼 늘었다 줄고, 외부 등록은 초당 처리 한도와 Mock 설정(지연·실패율)을
 // 따른다 — 접수가 한도를 넘는 동안 적체가 쌓였다가 줄면서 풀린다.
 const TICK_MS = 1000

@@ -1,5 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 
+import { AlertCircle } from 'lucide-react'
+
 import {
   createEmptyPromotionFormValue,
   formatMonthDay,
@@ -15,7 +17,8 @@ import { useNow } from '@shared/lib/useNow'
 import {
   Button,
   DateRangeField,
-  FieldError,
+  FormFooter,
+  FormToc,
   ImageUploader,
   Input,
 } from '@shared/ui'
@@ -37,19 +40,19 @@ export type AdminPromotionFormProps = {
   /** 저장 중 — 제출을 막는다(연타하면 같은 프로모션이 여러 개 생긴다) */
   submitting?: boolean
   onSubmit: (value: AdminPromotionFormValue) => void
-  /** 등록 화면의 '취소' */
-  onCancel: () => void
+  /** 등록 화면의 '취소'. 수정 화면은 그 자리에 '되돌리기'가 있다 */
+  onCancel?: () => void
   /** '새 상품 등록' — 상품 등록 화면으로 보낸다 */
   onAddProduct: () => void
 }
 
 type SectionKey = 'basic' | 'images' | 'products'
 
-const sections: { key: SectionKey; title: string }[] = [
-  { key: 'basic', title: '기본 정보' },
-  { key: 'images', title: '이미지' },
-  { key: 'products', title: '연결 상품' },
-]
+const sectionTitles: Record<SectionKey, string> = {
+  basic: '기본 정보',
+  images: '이미지',
+  products: '연결 상품',
+}
 
 const sectionId = (key: SectionKey) => `promotion-${key}`
 
@@ -121,13 +124,11 @@ const opensAfterEnd = (
 
 function Section({
   sectionKey,
-  title,
   changed,
   description,
   children,
 }: {
   sectionKey: SectionKey
-  title: string
   changed: boolean
   description?: ReactNode
   children: ReactNode
@@ -139,8 +140,8 @@ function Section({
       aria-labelledby={`${sectionId(sectionKey)}-title`}
     >
       <h2 id={`${sectionId(sectionKey)}-title`} className={styles.sectionTitle}>
-        {title}
-        {changed && <span className={styles.changed}>바뀜</span>}
+        {sectionTitles[sectionKey]}
+        {changed && <ChangedMark />}
       </h2>
       {description && <div className={styles.description}>{description}</div>}
       {children}
@@ -148,9 +149,11 @@ function Section({
   )
 }
 
+const ChangedMark = () => <span className={styles.changed}>바뀜</span>
+
 /**
- * 사전예약 등록·수정 폼. 위에서 섹션 목차로 건너뛰고, 수정이면 저장된 값과 달라진 섹션에
- * '바뀜'을 붙이고 아래 고정 줄에 바뀐 내용을 요약한다.
+ * 사전예약 등록·수정 폼. 수정이면 저장된 값과 달라진 섹션에 '바뀜'을 붙이고, 상품 폼과 같은
+ * 아래 고정 버튼 줄(FormFooter)에 바뀐 내용을 요약한다.
  */
 export function AdminPromotionForm({
   mode,
@@ -191,140 +194,144 @@ export function AdminPromotionForm({
         notes: [],
       }
   const lateOpen = opensAfterEnd(value, products)
+  const toc = (Object.keys(sectionTitles) as SectionKey[]).map((key) => ({
+    id: sectionId(key),
+    label: sectionTitles[key],
+    badge: changed[key] ? <ChangedMark /> : undefined,
+  }))
 
   return (
     <form className={styles.root} onSubmit={handleSubmit}>
-      <nav className={styles.toc} aria-label="섹션">
-        {sections.map(({ key, title }) => (
-          <a key={key} className={styles.tocLink} href={`#${sectionId(key)}`}>
-            {title}
-            {changed[key] && (
-              <span className={styles.tocDot} aria-label="바뀜" />
+      <FormToc title={editing ? '이 사전예약의 정보' : '입력 항목'} items={toc}>
+        <div className={styles.sections}>
+          <Section sectionKey="basic" changed={changed.basic}>
+            <div className={styles.field}>
+              <Input
+                label="사전예약명"
+                required
+                maxLength={PROMOTION_NAME_MAX}
+                value={value.name}
+                onChange={(event) => patch({ name: event.target.value })}
+              />
+              <span className={styles.counter}>
+                {value.name.length} / {PROMOTION_NAME_MAX}
+              </span>
+            </div>
+            <DateRangeField
+              value={{ start: value.startDate, end: value.endDate }}
+              onChange={(range) =>
+                patch({ startDate: range.start, endDate: range.end })
+              }
+            />
+            <span className={styles.hint}>
+              고객에게 이 페이지가 보이는 기간이에요(끝 날 포함). 기간 밖에는
+              고객 링크가 열리지 않아요. 접수 오픈·마감은 연결한 상품마다 따로
+              정해요.
+            </span>
+            {lateOpen && (
+              <span className={styles.warn}>
+                &quot;{lateOpen.name}&quot;는 노출이 끝난 뒤(
+                {formatMonthDay(lateOpen.opensAt ?? '')})에 오픈해요 — 고객이 이
+                페이지에서 오픈을 맞지 못해요.
+              </span>
             )}
-          </a>
-        ))}
-      </nav>
+          </Section>
 
-      <Section sectionKey="basic" title="기본 정보" changed={changed.basic}>
-        <div className={styles.field}>
-          <Input
-            label="사전예약명"
-            required
-            maxLength={PROMOTION_NAME_MAX}
-            value={value.name}
-            onChange={(event) => patch({ name: event.target.value })}
-          />
-          <span className={styles.counter}>
-            {value.name.length} / {PROMOTION_NAME_MAX}
-          </span>
-        </div>
-        <DateRangeField
-          value={{ start: value.startDate, end: value.endDate }}
-          onChange={(range) =>
-            patch({ startDate: range.start, endDate: range.end })
-          }
-        />
-        <span className={styles.hint}>
-          고객에게 이 페이지가 보이는 기간이에요(끝 날 포함). 기간 밖에는 고객
-          링크가 열리지 않아요. 접수 오픈·마감은 연결한 상품마다 따로 정해요.
-        </span>
-        {lateOpen && (
-          <span className={styles.warn}>
-            &quot;{lateOpen.name}&quot;는 노출이 끝난 뒤(
-            {formatMonthDay(lateOpen.opensAt ?? '')})에 오픈해요 — 고객이 이
-            페이지에서 오픈을 맞지 못해요.
-          </span>
-        )}
-      </Section>
-
-      <Section
-        sectionKey="images"
-        title="이미지"
-        changed={changed.images}
-        description="썸네일은 사전예약 목록에, 상세 이미지는 페이지에 위에서부터 이어 붙어요. 끌거나 ←/→로 순서를 바꿔요."
-      >
-        <PromotionThumbnailField
-          upload={uploadPromotionImage}
-          value={value.thumbnail}
-          onChange={(thumbnail) => patch({ thumbnail })}
-        />
-        <div className={styles.tileFrame}>
-          <ImageUploader
-            label="상세 이미지"
-            ratio="portrait"
-            max={PROMOTION_DETAIL_IMAGES_MAX}
-            accept="image/jpeg,image/png"
-            upload={uploadPromotionImage}
-            value={value.detailImages}
-            onChange={(detailImages) => patch({ detailImages })}
-          />
-        </div>
-        <span className={styles.hint}>
-          JPG·PNG · 한 장 10MB, 가로·세로 8,000px 이하 · 올린 이미지는 저장해야
-          남아요
-        </span>
-      </Section>
-
-      <Section
-        sectionKey="products"
-        title="연결 상품"
-        changed={changed.products}
-        description="고객 페이지에 이 순서대로 보여요. 마감 일정은 상품에서 확인해요."
-      >
-        <PromotionProductLinker
-          products={products}
-          loading={productsLoading}
-          value={value.linkedProductIds}
-          saved={defaultValue?.linkedProductIds}
-          onChange={(linkedProductIds) => patch({ linkedProductIds })}
-          onAddProduct={onAddProduct}
-          now={now}
-        />
-      </Section>
-
-      <div className={styles.saveBar} role="region" aria-label="저장">
-        {editing && (
-          <span className={styles.saveSummary}>
-            {notes.length === 0 ? (
-              '바뀐 곳 없음'
-            ) : (
-              <>
-                바뀐 곳{' '}
-                <b className={styles.saveCount}>
-                  {Object.values(changed).filter(Boolean).length}곳
-                </b>{' '}
-                · {notes.join(' · ')}
-              </>
-            )}
-          </span>
-        )}
-        <span className={styles.saveActions}>
-          <FieldError message={problem ?? undefined} />
-          {editing ? (
-            <Button
-              variant="outline"
-              color="cancel"
-              disabled={notes.length === 0 || submitting}
-              onClick={() => {
-                setValue(defaultValue)
-                setProblem(null)
-              }}
-            >
-              되돌리기
-            </Button>
-          ) : (
-            <Button variant="outline" color="cancel" onClick={onCancel}>
-              취소
-            </Button>
-          )}
-          <Button
-            type="submit"
-            disabled={submitting || (editing && notes.length === 0)}
+          <Section
+            sectionKey="images"
+            changed={changed.images}
+            description="썸네일은 사전예약 목록에, 상세 이미지는 페이지에 위에서부터 이어 붙어요. 끌거나 ←/→로 순서를 바꿔요."
           >
-            {editing ? '저장' : '등록하기'}
+            <PromotionThumbnailField
+              upload={uploadPromotionImage}
+              value={value.thumbnail}
+              onChange={(thumbnail) => patch({ thumbnail })}
+            />
+            <div className={styles.tileFrame}>
+              <ImageUploader
+                label="상세 이미지"
+                ratio="portrait"
+                max={PROMOTION_DETAIL_IMAGES_MAX}
+                accept="image/jpeg,image/png"
+                upload={uploadPromotionImage}
+                value={value.detailImages}
+                onChange={(detailImages) => patch({ detailImages })}
+              />
+            </div>
+            <span className={styles.hint}>
+              JPG·PNG · 한 장 10MB, 가로·세로 8,000px 이하 · 올린 이미지는
+              저장해야 남아요
+            </span>
+          </Section>
+
+          <Section
+            sectionKey="products"
+            changed={changed.products}
+            description="고객 페이지에 이 순서대로 보여요. 마감 일정은 상품에서 확인해요."
+          >
+            <PromotionProductLinker
+              products={products}
+              loading={productsLoading}
+              value={value.linkedProductIds}
+              saved={defaultValue?.linkedProductIds}
+              onChange={(linkedProductIds) => patch({ linkedProductIds })}
+              onAddProduct={onAddProduct}
+              now={now}
+            />
+          </Section>
+        </div>
+      </FormToc>
+
+      <FormFooter
+        message={
+          problem ? (
+            <>
+              <AlertCircle className={styles.footerIcon} aria-hidden="true" />
+              {problem}
+            </>
+          ) : (
+            editing && (
+              <span className={styles.saveSummary}>
+                {notes.length === 0 ? (
+                  '바뀐 곳 없음'
+                ) : (
+                  <>
+                    바뀐 곳{' '}
+                    <b className={styles.saveCount}>
+                      {Object.values(changed).filter(Boolean).length}곳
+                    </b>{' '}
+                    · {notes.join(' · ')}
+                  </>
+                )}
+              </span>
+            )
+          )
+        }
+      >
+        {editing ? (
+          <Button
+            variant="outline"
+            color="cancel"
+            disabled={notes.length === 0 || submitting}
+            onClick={() => {
+              setValue(defaultValue)
+              setProblem(null)
+            }}
+          >
+            되돌리기
           </Button>
-        </span>
-      </div>
+        ) : (
+          <Button variant="outline" color="cancel" onClick={onCancel}>
+            취소
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={submitting || (editing && notes.length === 0)}
+        >
+          {editing ? '저장' : '등록하기'}
+        </Button>
+      </FormFooter>
     </form>
   )
 }

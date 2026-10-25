@@ -79,7 +79,12 @@ export type MockConfigUpdate = Pick<
 
 /** POST /external/reset — 전체 초기화라 확인 문자열을 받는다 */
 export type MockResetRequest = { confirm: 'RESET' }
-export type MockResetResponse = { deletedCount: number }
+// 등록 원장은 deletedCount, 럭키드로우는 회차·응모 수를 따로 준다.
+export type MockResetResponse = {
+  deletedCount: number
+  deletedDraws: number
+  deletedDrawEntries: number
+}
 
 export type MockFaultType = 'RESPONSE_LOST_AFTER_COMMIT' | 'SLOW_SUCCESS'
 
