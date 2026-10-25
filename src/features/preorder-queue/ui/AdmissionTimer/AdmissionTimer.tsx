@@ -1,8 +1,9 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { Timer } from 'lucide-react'
 
 import { productPath } from '@shared/config/routes'
+import { alertTabTitle } from '@shared/lib/alertTabTitle'
 import { useCountdown } from '@shared/lib/useCountdown'
 import { Button } from '@shared/ui'
 
@@ -49,6 +50,13 @@ function Countdown({
   // useCountdown이 매 렌더 새 Date로 타이머를 다시 걸지 않게 값이 바뀔 때만 만든다.
   const target = useMemo(() => new Date(usableUntil), [usableUntil])
   const { minutes, seconds, isOver } = useCountdown(target)
+  // 줄을 서다 다른 탭에 가 있는 동안 차례가 와 이 화면으로 넘어왔으면 탭 제목으로 알린다 — 입장권은 90~120초뿐이다.
+  // 시간이 지나면 되돌린다.
+  useEffect(
+    () =>
+      isOver ? undefined : alertTabTitle('(1) 내 차례예요 · 지금 예약하세요'),
+    [isOver],
+  )
 
   if (isOver)
     return (
