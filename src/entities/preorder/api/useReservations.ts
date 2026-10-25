@@ -233,13 +233,14 @@ export const useReservation = (preorderId: string) => {
 }
 
 // 예약 상태 이력. 예약이 바뀔 때(version) 다시 받는다 — 결과 화면이 예약을 폴링하는 동안 이력도 따라온다.
-// 새로 받는 동안엔 이전 이력을 그대로 보여 깜빡이지 않는다.
+// 새로 받는 동안엔 같은 예약의 이전 이력을 그대로 보여 깜빡이지 않는다 — 다른 예약으로 옮기면 앞 예약의 이력(취소 사유)을 보이지 않는다.
 export const useReservationHistory = (preorderId: string, version = 0) =>
   useQuery({
     queryKey: reservationKeys.history(preorderId, version),
     queryFn: ({ signal }) => getReservationHistory(preorderId, signal),
     enabled: preorderId !== '',
-    placeholderData: keepPreviousData,
+    placeholderData: (previous, previousQuery) =>
+      previousQuery?.queryKey[2] === preorderId ? previous : undefined,
     ...queryPolicy.live,
   })
 

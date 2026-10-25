@@ -256,9 +256,11 @@ export function ResultPage() {
       ? SETTLE_DELAYED_NOTICE[reservation.displayStatus]
       : undefined
   // 예약 접수 화면의 단계. 예약을 받는 중에도 처리 중으로 둔다 — 접수 직후 들어오므로 대개 처리 중이다.
-  // 받지 못했으면(isError) 단계를 정하지 않고 불러오지 못했다고 알린다.
+  // 끝내 받지 못했으면(isError, 데이터 없음) 단계를 정하지 않고 불러오지 못했다고 알린다. 이미 받은 뒤 갱신만 실패하면
+  // 받은 단계를 그대로 두고 PollingNotice가 알린다.
   const isPreorderView = status === 'preorder' && preorderId !== ''
-  const loadError = isPreorderView && reservationQuery.isError
+  const loadError =
+    isPreorderView && reservationQuery.isError && reservation === undefined
   const stage =
     isPreorderView && !loadError
       ? (reservation?.displayStatus ?? 'PROCESSING')
