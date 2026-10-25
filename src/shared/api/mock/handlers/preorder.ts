@@ -7,6 +7,9 @@ import { url } from '../url'
 import { isUuid, uuidViolation } from '../validate'
 
 import type {
+  ActivePreorder,
+  CursorPage,
+  OrderStatus,
   PreorderCancelResult,
   PreorderCounts,
   PreorderCountsResponse,
@@ -26,9 +29,20 @@ import type { RequestHandler } from 'msw'
 const SECOND = 1000
 const HOUR = 60 * 60 * SECOND
 // 목업은 접수 5초 뒤 외부 등록이 끝나 결제 가능(REGISTERED)이 되고, 취소는 3초 뒤 끝난다.
-const REGISTER_AFTER_MS = 5 * SECOND
+// .env.local에 VITE_MOCK_REGISTER_DELAY_MS(예: 20000)를 넣으면 등록이 그만큼 걸린다 — 등록 지연 안내를 시연한다.
+const REGISTER_AFTER_MS =
+  Number(import.meta.env.VITE_MOCK_REGISTER_DELAY_MS) || 5 * SECOND
 const CANCEL_AFTER_MS = 3 * SECOND
 const PAYMENT_WINDOW_MS = 24 * HOUR
+// 결제한 예약을 취소하면 환불을 마쳐야 취소가 끝난다. .env.local에 VITE_MOCK_REFUND_FAIL=true를 넣으면
+// 환불이 실패해 예약·주문이 취소 중에 머물고 주문 상세의 refundFailed가 true가 된다.
+const REFUND_FAILS = import.meta.env.VITE_MOCK_REFUND_FAIL === 'true'
+// 결제했고 아직 출고 전인 주문 — 예약을 취소하면 환불한다.
+const REFUNDABLE: OrderStatus[] = [
+  'AWAITING_CONFIRMATION',
+  'PREPARING_ITEMS',
+  'READY_TO_SHIP',
+]
 const STATUSES: PreorderStatus[] = [
   'PENDING_SYNC',
   'REGISTERED',
@@ -93,10 +107,18 @@ export function advance(record: PreorderRecord) {
     record.status === 'CANCELING' &&
     msSince(lastEvent.createdAt) >= CANCEL_AFTER_MS
   ) {
-    transition(record, 'CANCELED', 'SYSTEM')
-    // 예약이 취소되면 미결제 주문도 취소된다.
     const order = orders.find((it) => it.preorderId === record.preorderId)
-    if (order && order.status === 'AWAITING_PAYMENT') {
+    // 환불 중(취소 중)인 주문의 환불이 실패하면 예약도 취소 중에 머문다.
+    if (order?.status === 'CANCELING' && REFUND_FAILS) {
+      if (!order.refundFailed) {
+        order.refundFailed = true
+        saveOrderDb()
+      }
+      return record
+    }
+    transition(record, 'CANCELED', 'SYSTEM')
+    // 예약이 취소되면 미결제 주문은 취소되고, 환불 중이던 주문은 환불을 마쳐 취소된다.
+    if (order?.status === 'AWAITING_PAYMENT' || order?.status === 'CANCELING') {
       order.status = 'CANCELED'
       saveOrderDb()
     }
@@ -285,6 +307,24 @@ export const preorderHandlers: RequestHandler[] = [
     return ok<PreorderCountsResponse>({ counts: countByDisplayStatus() })
   }),
 
+  // 진행 중인 내 예약 — 상품마다 한 건, 취소 완료는 빠진다. 목업은 한 페이지로 다 준다. :preorderId보다 먼저 둔다.
+  http.get(url('/api/v1/preorders/active'), ({ request }) => {
+    if (!hasToken(request)) return unauthenticated()
+    return ok<CursorPage<ActivePreorder>>({
+      items: preorders
+        .map(toSummary)
+        .filter(({ displayStatus }) => displayStatus !== 'CANCELED')
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map(({ productId, preorderId, displayStatus, paymentDueAt }) => ({
+          productId,
+          preorderId,
+          displayStatus,
+          paymentDueAt,
+        })),
+      nextCursor: null,
+    })
+  }),
+
   // 내 예약 — 최신순, 취소된 예약 포함. 커서 페이지. displayStatus는 여러 개면 그중 하나(조회 시각 기준)이고
   // counts는 거르기와 상관없이 전부의 단계별 수다.
   http.get(url('/api/v1/preorders'), ({ request }) => {
@@ -389,13 +429,19 @@ export const preorderHandlers: RequestHandler[] = [
           message: '배송이 시작되어 취소할 수 없습니다.',
         })
       }
-      if (CANCELABLE.includes(record.status))
+      if (CANCELABLE.includes(record.status)) {
         transition(
           record,
           'CANCELING',
           'USER',
           typeof reason === 'string' ? reason : null,
         )
+        // 결제한(출고 전) 주문은 환불을 시작해 취소 중이 된다.
+        if (order && REFUNDABLE.includes(order.status)) {
+          order.status = 'CANCELING'
+          saveOrderDb()
+        }
+      }
       return ok<PreorderCancelResult>(
         {
           preorderId: record.preorderId,

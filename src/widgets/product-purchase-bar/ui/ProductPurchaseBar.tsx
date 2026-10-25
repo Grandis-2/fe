@@ -38,6 +38,10 @@ export type ProductPurchaseBarProps = {
   // 상품 조회가 안 끝났거나 실패한 동안 결제/사전예약을 막는다(ProductDetailPage의
   // isCheckoutReady 참고).
   checkoutDisabled?: boolean
+  // 결제·사전예약을 처리하는 동안 버튼에 대신 보일 문구. 있으면 버튼을 처리 중(aria-busy)으로 둔다.
+  checkoutBusyLabel?: string
+  // 기본 문구(사전예약하기·결제하기) 대신 보일 문구 — 이미 예약한 모델이면 그 예약 버튼('구매 확정하기' 등)이 된다.
+  checkoutLabel?: string
   // 일반 상품의 장바구니 담기(사전예약은 장바구니가 없다).
   onAddToCart: () => void
   addToCartDisabled?: boolean
@@ -67,6 +71,8 @@ export function ProductPurchaseBar({
   shipmentLabel,
   onCheckout,
   checkoutDisabled,
+  checkoutBusyLabel,
+  checkoutLabel,
   onAddToCart,
   addToCartDisabled,
 }: ProductPurchaseBarProps) {
@@ -191,15 +197,18 @@ export function ProductPurchaseBar({
                 }
                 onClick={onCheckout}
                 disabled={checkoutDisabled}
+                aria-busy={checkoutBusyLabel !== undefined || undefined}
               >
-                {isPreorder ? (
-                  '사전예약하기'
-                ) : (
-                  <>
-                    <span className={styles.desktopPrice}>{priceLabel}</span>
-                    결제하기
-                  </>
-                )}
+                {checkoutBusyLabel ??
+                  checkoutLabel ??
+                  (isPreorder ? (
+                    '사전예약하기'
+                  ) : (
+                    <>
+                      <span className={styles.desktopPrice}>{priceLabel}</span>
+                      결제하기
+                    </>
+                  ))}
               </ActionButton>
             </div>
           </Container>

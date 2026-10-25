@@ -40,14 +40,19 @@ export function useSession() {
 export const markProfileComplete = () =>
   useSessionStore.getState().markProfileComplete()
 
-// 세션이 있다가 없어질 때(로그아웃·가입 취소·재발급 실패·다른 탭 로그아웃) 한 번 부른다.
+// 세션이 있다가 없어지거나(로그아웃·가입 취소·재발급 실패·다른 탭 로그아웃) 다른 역할로 바뀔 때(회원 탭에서 관리자
+// 로그인) 한 번 부른다 — 앞 사람의 캐시(예약·주문)가 다음 세션에 보이지 않게. 재발급은 역할이 같아 부르지 않는다.
 // 지우는 경로가 여럿이라 각자 챙기지 않고 스토어 변화 하나로 잡는다.
 export function onSessionCleared(listener: () => void) {
-  let hadSession = useSessionStore.getState().sessionToken !== null
+  const identity = () => {
+    const { sessionToken, role } = useSessionStore.getState()
+    return sessionToken === null ? null : String(role)
+  }
+  let before = identity()
   return useSessionStore.subscribe(() => {
-    const hasSession = useSessionStore.getState().sessionToken !== null
-    if (hadSession && !hasSession) listener()
-    hadSession = hasSession
+    const now = identity()
+    if (before !== null && now !== before) listener()
+    before = now
   })
 }
 

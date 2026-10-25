@@ -204,7 +204,10 @@ export const cartPayButton = (page: Page) =>
 // 목 홍보 1(handlers/promotion.ts) — 맥북 프로 14와 NOVA 폴더블 1이 묶인 '오늘 오픈' 사전예약.
 // 폴더블 1은 이미 예약해 둔 상태로 시드돼 있다(fixtures/preorder.ts).
 export const TODAY_PROMOTION = '60000000-0000-4000-8000-000000000001'
-export const NOVA_FOLDABLE_1 = productId(15)
+export const NOVA_FOLDABLE_1 = productId(15) // 시드: 결제 대기(구매 확정 대기) 예약이 있다
+// 시드 예약이 없는 '오늘 오픈' 사전예약 — 단독 홍보(세 번째)로 묶여 있다.
+export const NOVA_FOLDABLE_3 = productId(17)
+export const FOLDABLE_3_PROMOTION = '60000000-0000-4000-8000-000000000003'
 
 /** 한국 시간 오늘 time(HH:MM:SS)인 Date. */
 export const kstToday = (time: string) => {
@@ -261,6 +264,20 @@ export async function queueFromPreorderDetail(
 /** 상품 페이지(데스크톱)의 옵션 패널 쪽 "사전예약하기" 버튼. */
 export const preorderSubmitButton = (page: Page) =>
   page.getByRole('button', { name: '사전예약하기', exact: true }).first()
+
+/**
+ * 사전예약하기를 누른 뒤 — 예약 접수 화면에서 외부 등록이 끝나 구매 확정이 켜지길 기다렸다가 그 예약의 결제로 간다.
+ * 접수 응답은 등록을 기다리지 않아 결제로 바로 가지 않는다.
+ */
+export async function confirmPreorder(page: Page) {
+  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+    timeout: 15_000,
+  })
+  await page
+    .getByRole('button', { name: '지금 구매 확정하기' })
+    .click({ timeout: 15_000 })
+  await expect(page).toHaveURL(/\/payment\?preorderId=/)
+}
 
 /**
  * 사전예약 접수 요청(POST /api/v1/preorders?productId=)을 모은다. MSW가 응답해도 페이지의

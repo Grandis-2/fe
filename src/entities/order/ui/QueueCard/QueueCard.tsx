@@ -9,6 +9,8 @@ export type QueueCardProps = {
   waitTime: string
   progressPercent: number
   totalWaitingCount: string
+  // 1초에 입장하는 인원('8명', '1명 미만'). 모르면 비운다.
+  admitPerSecond?: string | null
   // '나가기'를 한 번 더 확인한 뒤에만 호출된다.
   onLeave: () => void
   className?: string
@@ -19,6 +21,7 @@ export function QueueCard({
   waitTime,
   progressPercent,
   totalWaitingCount,
+  admitPerSecond,
   onLeave,
   className,
 }: QueueCardProps) {
@@ -45,8 +48,16 @@ export function QueueCard({
         />
       </div>
       <div className={styles.totalRow}>
-        전체 대기인원 <span className={styles.strong}>{totalWaitingCount}</span>
-        명
+        {admitPerSecond != null && (
+          <span className={styles.pace}>
+            입장 속도 초당{' '}
+            <span className={styles.strong}>{admitPerSecond}</span>
+          </span>
+        )}
+        <span>
+          전체 대기인원{' '}
+          <span className={styles.strong}>{totalWaitingCount}</span>명
+        </span>
       </div>
 
       <div className={styles.notice}>

@@ -24,6 +24,10 @@ export {
 } from './api/useQueue'
 export type { PreorderAccepted, QueueEntry, QueuePoll } from './model/queue'
 export {
+  activeReservationsQuery,
+  findActiveReservation,
+  useActiveReservation,
+  useActiveReservations,
   useCancelReservation,
   useMyReservations,
   usePendingPurchaseCount,
@@ -38,8 +42,14 @@ export {
   useSubscribedOpenAlerts,
   useToggleOpenAlert,
 } from './api/useOpenAlerts'
-export { NEEDS_PURCHASE, reservationStatusTag } from './model/reservation'
+export {
+  NEEDS_PURCHASE,
+  SETTLE_DELAYED_NOTICE,
+  cancelCause,
+  reservationStatusTag,
+} from './model/reservation'
 export type {
+  CancelCause,
   Reservation,
   ReservationDetail,
   ReservationDisplayStatus,

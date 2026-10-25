@@ -1,6 +1,10 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
+
 import {
+  activeReservationsQuery,
+  findActiveReservation,
   useEnterQueue,
   useQueueStatus,
   type QueuePoll,
@@ -8,12 +12,17 @@ import {
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { isRetryableError } from '@shared/api/queryPolicy'
 import { track } from '@shared/lib/analytics'
+import { delay } from '@shared/lib/delay'
+import { formatNumber } from '@shared/lib/formatNumber'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
+  INSECURE_MESSAGE,
   usePreorderQueueStore,
   type PreorderAdmission,
 } from '../model/preorderQueueStore'
+
+import { admissionKey } from './admissionKey'
 
 const TICK_MS = 1000
 // 차례가 온 뒤 바로 넘기지 않고 100%를 잠깐 보여준 다음 이동한다.
@@ -31,6 +40,9 @@ const SLOW_ENTER_MS = 500
 // 이만큼 조회에 성공하지 못하면 줄에서 빠졌을 수 있다(명세: 250초 넘게 조회하지 않으면).
 // 안내만 바꾸고 조회는 계속한다. 운영자가 이탈 유예를 늘렸어도 구매자 응답엔 그 값이 없어 기본값을 쓴다.
 const LEAVE_GRACE_MS = 250_000
+// 줄 서기 전 진행 중인 예약 확인을 이만큼만 기다린다 — 늦거나 실패하면 그냥 줄을 선다(확인 때문에 대기열을 막지 않는다).
+// 시트·상품 페이지가 30초 안에 받아 둔 값이 있으면 서버에 묻지 않고 바로 쓴다(activeReservationsQuery).
+const EXISTING_CHECK_MS = 1_500
 
 export type QueueStatus = 'waiting' | 'mine'
 type QueueWaiting = Extract<QueuePoll, { status: 'WAITING' }>
@@ -46,6 +58,13 @@ const formatEta = (etaSeconds: number) =>
         ? '약 5분'
         : '오래 걸림'
 
+// 입장 속도(초당 입장 수) — 예상 시간은 구간이라 줄이 움직이는지 보이지 않아, 직전 조회보다 줄어든 순번으로 센다.
+// 서버가 초 단위로 입장시키고 조회 간격도 초 단위라 초당으로 보인다. 움직였는데 1명이 안 되면 0이 아니라 '1명 미만'.
+const formatPace = (perSecond: number) =>
+  perSecond > 0 && perSecond < 0.5
+    ? '1명 미만'
+    : `${formatNumber(Math.round(perSecond))}명`
+
 type Options = {
   productId: string
   // 차례가 오면(모달이 닫혀 있어도) 받은 입장권과 함께 호출된다.
@@ -54,6 +73,8 @@ type Options = {
   onFail: (message: string) => void
   // 나가기를 누르면 호출된다 — 줄을 비워 다른 상품에 설 수 있게 한다.
   onLeave: () => void
+  // 이 모델에 진행 중인 내 예약이 있어 줄을 서지 않았다 — 상품 페이지로 보내 그 예약 버튼을 보인다.
+  onExisting: () => void
 }
 
 // 진입(POST) → Retry-After마다 조회(GET) → 입장권. 조회가 NOT_IN_QUEUE면 다시 진입한다(줄에 있었다면 같은 자리).
@@ -63,11 +84,14 @@ export function usePreorderQueue({
   onComplete,
   onFail,
   onLeave,
+  onExisting,
 }: Options) {
+  const queryClient = useQueryClient()
   const enter = useEnterQueue()
   const [isOpen, setIsOpen] = useState(true)
   // 서 있는 상품을 다시 누르면(joinPreorderQueue) 닫아 둔 창을 다시 연다 — 렌더 중에 바로 맞춘다.
   const reopenedAt = usePreorderQueueStore((state) => state.reopenedAt)
+  const restored = usePreorderQueueStore((state) => state.ticket?.restored)
   const [seenReopenedAt, setSeenReopenedAt] = useState(reopenedAt)
   if (reopenedAt !== seenReopenedAt) {
     setSeenReopenedAt(reopenedAt)
@@ -80,11 +104,19 @@ export function usePreorderQueue({
   // 진행률의 출발점(처음 본 순번)과 마지막으로 본 대기 상태 — 입장한 뒤에도 숫자가 '-'로 비지 않게 남겨 둔다.
   const [startPosition, setStartPosition] = useState<number | null>(null)
   const [lastWaiting, setLastWaiting] = useState<QueueWaiting | null>(null)
+  // 직전 조회의 순번·받은 시각과 그 사이 초당 입장 수. 같은 응답이 와도(구조 공유로 같은 객체) 받은 시각으로
+  // 새 조회인지 가린다.
+  const [pace, setPace] = useState<{
+    position: number
+    at: number
+    perSecond: number | null
+  } | null>(null)
   // 진입이 막혔을 때 다시 진입할 예약 — 객체를 새로 만들어 같은 지연이 반복돼도 이펙트가 다시 돈다.
   const [retry, setRetry] = useState<{ delayMs: number } | null>(null)
   // 호출부가 매 렌더 새 함수를 넘겨도 타이머가 리셋되지 않도록 Effect Event로 감싼다.
   const handleComplete = useEffectEvent(onComplete)
   const handleFail = useEffectEvent(onFail)
+  const handleExisting = useEffectEvent(onExisting)
 
   const join = useEffectEvent(() =>
     enter.mutate(productId, {
@@ -104,10 +136,26 @@ export function usePreorderQueue({
     }),
   )
 
-  // 마운트되는 순간 줄을 선다. 두 번 불려도(StrictMode) 서버는 자리를 하나만 잡는다.
+  // 마운트되면 줄을 선다 — 그 전에 이 모델에 진행 중인 내 예약이 있는지 본다. 서버는 회원·모델마다 예약 하나라
+  // 줄을 끝까지 서도 새로 접수할 수 없고, 같은 입장권을 다시 받으면 기존 예약으로 이어져 "또 예약됐다"로 보인다.
+  // StrictMode에서 두 번 마운트돼도 앞 것은 정리에서 끊겨 한 번만 줄을 선다.
   useEffect(() => {
-    join()
-  }, [])
+    let active = true
+    void Promise.race([
+      queryClient
+        .fetchQuery(activeReservationsQuery)
+        .then((items) => findActiveReservation(items, productId))
+        .catch(() => null),
+      delay(EXISTING_CHECK_MS).then(() => null),
+    ]).then((existing) => {
+      if (!active) return
+      if (existing) handleExisting()
+      else join()
+    })
+    return () => {
+      active = false
+    }
+  }, [queryClient, productId])
 
   useEffect(() => {
     if (!retry) return
@@ -153,6 +201,23 @@ export function usePreorderQueue({
     if (startPosition === null || waiting.position > startPosition)
       setStartPosition(waiting.position)
   }
+  if (waiting && poll.dataUpdatedAt !== pace?.at) {
+    // 다시 진입해 더 뒤로 섰으면 비교하지 않고 새로 잰다. 진입 응답(조회 전, dataUpdatedAt 0)과는 비교하지 않는다.
+    const comparable =
+      pace !== null &&
+      pace.at > 0 &&
+      waiting.position <= pace.position &&
+      poll.dataUpdatedAt > pace.at
+    setPace({
+      position: waiting.position,
+      at: poll.dataUpdatedAt,
+      perSecond: comparable
+        ? ((pace.position - waiting.position) /
+            (poll.dataUpdatedAt - pace.at)) *
+          1000
+        : null,
+    })
+  }
 
   // 진입 응답이 늦어 한 번 띄웠으면, 그 뒤 바로 입장이 와도 닫지 않고 100%를 보여 주고 넘어간다.
   const enterIsSlow = useDeadline(
@@ -184,13 +249,21 @@ export function usePreorderQueue({
       trackedTicket.current = admissionTicket
       track('Preorder Queue Admitted', { productId })
     }
-    const complete = () =>
-      handleComplete({
-        productId,
-        admissionTicket,
-        idempotencyKey: crypto.randomUUID(),
-        expiresAt: Date.now() + expiresIn * 1000,
-      })
+    // 키는 입장권에서 계산한다(admissionKey) — 같은 입장권을 다시 받은 창이 재전송으로 기존 예약을 받게.
+    // 계산이 실패하면(보안 연결이 아님 — 줄 서기 전에 막지만 새로고침으로 되살린 줄은 여기로 온다) 100%에서 멈추지 않고 알린다.
+    const complete = () => {
+      const expiresAt = Date.now() + expiresIn * 1000
+      void admissionKey(admissionTicket)
+        .then((idempotencyKey) =>
+          handleComplete({
+            productId,
+            admissionTicket,
+            idempotencyKey,
+            expiresAt,
+          }),
+        )
+        .catch(() => handleFail(INSECURE_MESSAGE))
+    }
     if (isHidden) {
       complete()
       return
@@ -225,6 +298,18 @@ export function usePreorderQueue({
         : waiting
           ? formatEta(waiting.etaSeconds)
           : '확인 중',
+    // 새로고침 뒤 다시 진입했는데 서버가 지켜 둔 자리(약 250초)로 돌려줬다. 새로 줄 설 때도 진입이 두 번
+    // 나가면(StrictMode·연타) 두 번째가 rejoined로 오므로, 저장해 둔 줄을 되살렸을 때만 본다.
+    rejoined:
+      restored &&
+      status === 'waiting' &&
+      entry?.status === 'WAITING' &&
+      entry.rejoined === true,
+    // 첫 조회 전엔 비교할 게 없어 비운다(null).
+    admitPerSecond:
+      status === 'waiting' && pace?.perSecond != null
+        ? formatPace(pace.perSecond)
+        : null,
     // 대기 인원은 조회 응답에만 있다 — 첫 조회 전엔 내 순번까지만 센다.
     totalWaiting: lastWaiting?.totalWaiting ?? lastWaiting?.position ?? null,
     progressPercent:
