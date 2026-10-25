@@ -311,7 +311,10 @@ export function AdminReservationsPage() {
       <span className={styles.tabLabel}>
         {reservationStageLabel[stage]}
         {stageCounts &&
-          (stage === 'REPROCESS_NEEDED' && stageCounts[stage] > 0 ? (
+          // 상품을 바꾸는 동안(이전 상품 값)은 빨간 배지도 흐린 숫자로 — 다른 상품의 실패 건수를 지금 값으로 읽지 않게.
+          (stage === 'REPROCESS_NEEDED' &&
+          stageCounts[stage] > 0 &&
+          !stats.isPlaceholderData ? (
             <CountBadge>
               {stageCounts[stage].toLocaleString('ko-KR')}
             </CountBadge>
