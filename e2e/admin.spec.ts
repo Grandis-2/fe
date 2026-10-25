@@ -91,3 +91,48 @@ test('M7 회원이 결제한 주문을 관리자가 배송 완료까지 처리�
     .filter({ hasText: `주문번호 ${orderId.slice(-8).toUpperCase()}` })
   await expect(orderCard.getByText('배송 완료', { exact: true })).toBeVisible()
 })
+
+test('M8 외부 예약 대조에서 서버 검사 결과를 보고 고친 뒤 다시 검사하면 줄어든다', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await loginAsAdmin(page)
+  await openAdminMenu(page, '외부 예약 대조')
+
+  // 시드: 한 시간 전 정기 검사에서 불일치 — 브라우저는 결과만 받는다.
+  const summary = page.getByRole('region', { name: '최근 검사 결과' })
+  await expect(summary).toContainText(/불일치 \d+건/)
+  const before = Number(
+    (await summary.textContent())?.match(/불일치 (\d+)건/)?.[1],
+  )
+
+  // 재처리는 서버가 뒤에서 한다 — '처리 중'이었다가 예약이 등록되면 '완료'로 바뀐다.
+  await page.getByRole('button', { name: /^재처리 필요/ }).click()
+  await page.getByRole('button', { name: '재처리', exact: true }).click()
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: '재처리', exact: true })
+    .click()
+  await expect(page.getByText('처리 중').first()).toBeVisible()
+  await expect(page.getByText('완료', { exact: true })).toBeVisible({
+    timeout: 20_000,
+  })
+
+  // 예약 취소는 사유를 받는다(기본 문구로 확인만 눌러도 된다).
+  await page.getByRole('button', { name: /^예약 취소 필요/ }).click()
+  await page.getByRole('button', { name: '예약 취소', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByLabel('취소 사유')).toHaveValue('외부에서 취소됨')
+  await dialog.getByRole('button', { name: '예약 취소', exact: true }).click()
+  await expect(page.getByText('완료', { exact: true })).toBeVisible({
+    timeout: 20_000,
+  })
+
+  // 다시 검사하면 고친 두 건이 빠진다.
+  await page.getByRole('button', { name: '지금 검사' }).click()
+  await expect(page.getByRole('button', { name: '검사 중…' })).toBeDisabled()
+  await expect(summary).toContainText(`불일치 ${before - 2}건`, {
+    timeout: 20_000,
+  })
+  await expect(page.getByText(/· 직접 요청 ·/)).toBeVisible()
+})

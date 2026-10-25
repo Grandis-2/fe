@@ -62,13 +62,6 @@ export const getAdminReservationsPage = (
       )
     : getAdminReservations({ ...params, status: statuses[0] }, signal)
 
-// [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자)을 쪽 끝까지
-/** 모든 예약을 끝까지 이어 받는다 — 외부 원장과 한 건씩 맞춰 볼 때만 쓴다(무겁다) */
-export const getAllAdminReservations = (signal?: AbortSignal) =>
-  fetchAllPages((page) =>
-    getAdminReservations({ page, size: PAGE_SIZE_MAX }, signal),
-  )
-
 // [preorder] GET /api/v1/admin/preorders/stats — 운영 현황(관리자)
 /** 상태별 예약 수와 동기화 작업 수. productId를 빼면 전체를 센다 */
 export const getReservationStats = (productId?: string, signal?: AbortSignal) =>

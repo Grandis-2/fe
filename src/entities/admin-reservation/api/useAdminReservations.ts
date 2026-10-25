@@ -21,7 +21,6 @@ import {
   getAdminMembers,
   getAdminReservation,
   getAdminReservationsPage,
-  getAllAdminReservations,
   getReservationStats,
   getSyncJobErrorGroups,
   reprocessAdminReservation,
@@ -62,23 +61,6 @@ export const useAdminReservations = (
     ...pollEvery(queryClient, queryKey, intervalMs),
   })
 }
-
-/**
- * 모든 예약. 외부 원장과 맞춰 보는 데만 쓴다. 서버가 한 쪽에 100건까지만 줘서 예약이
- * 2만 건이면 요청이 200번 넘게 나간다 — 화면에 들어와도 받지 않고(enabled: false) '대조
- * 실행'의 refetch로만 받는다. 상품은 받은 뒤 화면이 거른다 — 상품을 바꿀 때마다 다시 받지
- * 않으려고.
- * ponytail: 예약 수에 비례해 요청이 는다 — 서버 대조 API(reconciliation/runs)로 바꾸면 지운다.
- */
-export const useAllAdminReservations = () =>
-  useQuery({
-    // 재처리·취소 뒤 무효화(RESERVATIONS_KEY)에 끌려 혼자 다시 받으면 외부 원장과 받은
-    // 시점이 어긋난다 — 접두사 밖에 둔다.
-    queryKey: ['admin', 'reservations-snapshot'] as const,
-    queryFn: ({ signal }) => getAllAdminReservations(signal),
-    enabled: false,
-    ...queryPolicy.snapshot,
-  })
 
 const statsQuery = (
   queryClient: QueryClient,

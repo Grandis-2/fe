@@ -131,9 +131,9 @@ function groupByError(jobs: SyncJobSummary[]): SyncJobErrorGroup[] {
 
 /**
  * DEAD_LETTER 작업을 되돌린다. 실서버는 다시 등록을 보내는데, 목은 결과를 기다리지
- * 않고 바로 등록된 것으로 둔다.
+ * 않고 바로 등록된 것으로 둔다. 외부 예약 대조 목의 재처리도 쓴다.
  */
-function markReprocessed(detail: AdminPreorderDetail, job: SyncJob) {
+export function markReprocessed(detail: AdminPreorderDetail, job: SyncJob) {
   const at = new Date().toISOString()
   job.attempts.push({
     attemptNumber: job.attempts.length + 1,
@@ -166,6 +166,29 @@ function markReprocessed(detail: AdminPreorderDetail, job: SyncJob) {
     payableFrom: at,
     paymentDueAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     externalReference: `R-${detail.preorderId.slice(-6)}`,
+    version: detail.version + 1,
+  })
+}
+
+/**
+ * 관리자 취소. 목은 외부 취소를 기다리지 않고 바로 끝낸다. 외부 예약 대조 목의 예약 취소도
+ * 쓴다. 이미 취소 중·완료면 그대로 둔다.
+ */
+export function markCanceled(detail: AdminPreorderDetail, reason: string) {
+  if (detail.status === 'CANCELING' || detail.status === 'CANCELED') return
+  detail.events.push({
+    eventSequence: detail.events.length + 1,
+    fromStatus: detail.status,
+    toStatus: 'CANCELED',
+    actor: 'ADMIN',
+    reason,
+    createdAt: new Date().toISOString(),
+  })
+  Object.assign(detail, {
+    status: 'CANCELED',
+    displayStatus: 'CANCELED',
+    paymentDueAt: null,
+    cancelable: false,
     version: detail.version + 1,
   })
 }
@@ -346,24 +369,7 @@ export const adminReservationHandlers: RequestHandler[] = [
     if (!reason || reason.length < 5 || reason.length > 500) {
       return invalid([{ field: 'reason', message: '5~500자여야 합니다.' }])
     }
-    if (detail.status !== 'CANCELING' && detail.status !== 'CANCELED') {
-      const at = new Date().toISOString()
-      detail.events.push({
-        eventSequence: detail.events.length + 1,
-        fromStatus: detail.status,
-        toStatus: 'CANCELED',
-        actor: 'ADMIN',
-        reason,
-        createdAt: at,
-      })
-      Object.assign(detail, {
-        status: 'CANCELED',
-        displayStatus: 'CANCELED',
-        paymentDueAt: null,
-        cancelable: false,
-        version: detail.version + 1,
-      })
-    }
+    markCanceled(detail, reason)
     return ok(
       {
         preorderId: detail.preorderId,

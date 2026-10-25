@@ -4,7 +4,6 @@ export {
   useAdminMembers,
   useAdminReservation,
   useAdminReservations,
-  useAllAdminReservations,
   useCancelReservation,
   useReprocessFailedRegistrations,
   useReprocessReservation,
