@@ -50,4 +50,5 @@ npm run e2e               # Playwright E2E (e2e/*.spec.ts) — MSW를 켠 개발
 - 할 일이 있는 곳에서만 잡는다 — 문구 표시, 롤백, 다른 화면으로 이동. 할 일이 없으면 잡지 말고 위로 던지게 두고, `console.log`만 하고 삼키지 않는다.
 - 서버 데이터 **조회**는 `useEffect` + `.then/.catch` + `useState`로 직접 하지 않고 TanStack Query 훅을 쓴다 — 취소(`signal`), 재시도(`queryPolicy`, 4xx는 재시도 안 함), `isError`가 따라온다. 관리자 페이지도 이관을 마쳤다. 예외는 `PaymentCallbackPage`·`DrawPaymentCallbackPage` 둘이다 — 결제 승인은 조회가 아니라 페이지 진입 시 한 번 보내는 명령이고, `signal`로 중간에 끊기면 돈은 빠졌는데 승인 결과를 모르게 된다.
 - mutation(변경)은 자동 재시도하지 않는다(같은 요청이 두 번 반영될 수 있음). 진행 중엔 `isPending`으로 버튼을 막아 중복 제출을 막는다. 화면 반영은 기본이 **서버 확인**(`onSuccess`에서 응답으로 캐시 갱신)이고, 틀려도 되돌리면 그만인 값(장바구니 수량·토글)만 낙관적(`onMutate`)으로 한다 — 기준은 `queryPolicy.ts` 아래쪽 주석에 적어 뒀다.
+  단, 사전예약 접수는 멱등키가 있어 응답을 못 받은 경우(status 0)만 한 번 다시 보낸다(`useSubmitPreorder`).
 - "0건"과 "조회 실패"를 구분한다 — 실패를 빈 배열로 대체하지 말고 `undefined`/`isError`로 남겨 실패 문구를 보여준다(`AdminReservationsPage`의 `reservations` 참고).
