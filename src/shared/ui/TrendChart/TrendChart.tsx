@@ -69,8 +69,8 @@ export function TrendChart({
   if (times.length < 2) {
     return (
       <figure className={styles.root} aria-busy="true">
+        {/* 눈금 칸까지 덮는다 — 빈 눈금 칸을 남기면 왼쪽만 비어 보인다. */}
         <div className={styles.plotRow} aria-hidden="true">
-          <div className={styles.yAxis} />
           <div className={styles.placeholder}>
             <Skeleton height="100%" radius={8} />
           </div>
