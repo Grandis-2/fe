@@ -3,13 +3,18 @@ import { useEffect, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router'
 
 import { useSession } from '@entities/auth'
+import { useActiveReservation } from '@entities/preorder'
 import {
   sendProductView,
   useProduct,
   useShipmentBatches,
 } from '@entities/product'
 import { useRequireLogin } from '@features/login'
-import { AdmissionTimer, usePreorderSubmit } from '@features/preorder-queue'
+import {
+  AdmissionTimer,
+  existingReservationAction,
+  usePreorderSubmit,
+} from '@features/preorder-queue'
 import {
   useAddToCart,
   useProductPurchase,
@@ -55,7 +60,7 @@ export function ProductDetailPage() {
   // 조회수 랭킹 신호. 같은 사람·같은 상품은 서버가 하루 한 번만 세서 StrictMode 이중 실행도 괜찮다.
   // 상품이 실제로 보일 때만, 새로고침이면 세션을 되살린 뒤에 보낸다 — 먼저 보내면 같은 회원이
   // 비회원으로 한 번 더 세어진다.
-  const { isAuthReady } = useSession()
+  const { isAuthReady, isLoggedIn } = useSession()
   const viewedId = product?.productId
   useEffect(() => {
     if (isAuthReady && viewedId) sendProductView(viewedId)
@@ -65,6 +70,14 @@ export function ProductDetailPage() {
     enabled: isPreorder,
   })
   const shipmentLabel = shipmentStartLabel(shipmentBatches)
+  // 이미 이 모델을 예약했으면(회원·모델마다 하나) 사전예약하기 대신 그 예약 버튼을 보이고 누르면 그 예약으로 간다.
+  const { data: activeReservation } = useActiveReservation(
+    productId,
+    isPreorder && isLoggedIn,
+  )
+  const existingAction = activeReservation
+    ? existingReservationAction(activeReservation)
+    : null
   const purchase = useProductPurchase(product)
   const preorderSubmit = usePreorderSubmit()
   const { addToCart, isAdding } = useAddToCart()
@@ -94,6 +107,10 @@ export function ProductDetailPage() {
 
   // 일반 상품은 고른 옵션·수량을 결제 화면에 넘기고, 결제 화면이 바로 구매(BUY_NOW) 주문을 만든다.
   const handleCheckout = () => {
+    if (existingAction) {
+      navigate(existingAction.to)
+      return
+    }
     if (!product || !variant || !isCheckoutReady) return
     const purchasePayload: PurchaseDraft = {
       variantId: variant.variantId,
@@ -164,15 +181,18 @@ export function ProductDetailPage() {
   return (
     <div className={styles.root} data-theme="dark" data-header-theme="dark">
       <div className={styles.content}>
-        <AdmissionTimer productId={productId} productName={title} />
+        {!existingAction && (
+          <AdmissionTimer productId={productId} productName={title} />
+        )}
         <ProductOverview
           ref={layoutRef}
           product={product}
           purchase={purchase}
           shipmentLabel={shipmentLabel}
           onCheckout={handleCheckout}
-          checkoutDisabled={!isCheckoutReady}
+          checkoutDisabled={!isCheckoutReady && !existingAction}
           checkoutBusyLabel={checkoutBusyLabel}
+          checkoutLabel={existingAction?.label}
           onAddToCart={handleAddToCart}
           addToCartDisabled={!isCheckoutReady || isAdding}
         />
@@ -186,8 +206,9 @@ export function ProductDetailPage() {
         purchase={purchase}
         shipmentLabel={shipmentLabel}
         onCheckout={handleCheckout}
-        checkoutDisabled={!isCheckoutReady}
+        checkoutDisabled={!isCheckoutReady && !existingAction}
         checkoutBusyLabel={checkoutBusyLabel}
+        checkoutLabel={existingAction?.label}
         onAddToCart={handleAddToCart}
         addToCartDisabled={!isCheckoutReady || isAdding}
       />

@@ -1,6 +1,9 @@
 import { useEffect, useEffectEvent, useRef, useState } from 'react'
 
+import { useQueryClient } from '@tanstack/react-query'
+
 import {
+  activeReservationQuery,
   useEnterQueue,
   useQueueStatus,
   type QueuePoll,
@@ -8,6 +11,7 @@ import {
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { isRetryableError } from '@shared/api/queryPolicy'
 import { track } from '@shared/lib/analytics'
+import { delay } from '@shared/lib/delay'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { useDeadline } from '@shared/lib/useDeadline'
 
@@ -15,6 +19,8 @@ import {
   usePreorderQueueStore,
   type PreorderAdmission,
 } from '../model/preorderQueueStore'
+
+import { admissionKey } from './admissionKey'
 
 const TICK_MS = 1000
 // 차례가 온 뒤 바로 넘기지 않고 100%를 잠깐 보여준 다음 이동한다.
@@ -32,6 +38,8 @@ const SLOW_ENTER_MS = 500
 // 이만큼 조회에 성공하지 못하면 줄에서 빠졌을 수 있다(명세: 250초 넘게 조회하지 않으면).
 // 안내만 바꾸고 조회는 계속한다. 운영자가 이탈 유예를 늘렸어도 구매자 응답엔 그 값이 없어 기본값을 쓴다.
 const LEAVE_GRACE_MS = 250_000
+// 줄 서기 전 진행 중인 예약 확인을 이만큼만 기다린다 — 늦거나 실패하면 그냥 줄을 선다(확인 때문에 대기열을 막지 않는다).
+const EXISTING_CHECK_MS = 1_500
 
 export type QueueStatus = 'waiting' | 'mine'
 type QueueWaiting = Extract<QueuePoll, { status: 'WAITING' }>
@@ -62,6 +70,8 @@ type Options = {
   onFail: (message: string) => void
   // 나가기를 누르면 호출된다 — 줄을 비워 다른 상품에 설 수 있게 한다.
   onLeave: () => void
+  // 이 모델에 진행 중인 내 예약이 있어 줄을 서지 않았다 — 상품 페이지로 보내 그 예약 버튼을 보인다.
+  onExisting: () => void
 }
 
 // 진입(POST) → Retry-After마다 조회(GET) → 입장권. 조회가 NOT_IN_QUEUE면 다시 진입한다(줄에 있었다면 같은 자리).
@@ -71,7 +81,9 @@ export function usePreorderQueue({
   onComplete,
   onFail,
   onLeave,
+  onExisting,
 }: Options) {
+  const queryClient = useQueryClient()
   const enter = useEnterQueue()
   const [isOpen, setIsOpen] = useState(true)
   // 서 있는 상품을 다시 누르면(joinPreorderQueue) 닫아 둔 창을 다시 연다 — 렌더 중에 바로 맞춘다.
@@ -101,6 +113,7 @@ export function usePreorderQueue({
   // 호출부가 매 렌더 새 함수를 넘겨도 타이머가 리셋되지 않도록 Effect Event로 감싼다.
   const handleComplete = useEffectEvent(onComplete)
   const handleFail = useEffectEvent(onFail)
+  const handleExisting = useEffectEvent(onExisting)
 
   const join = useEffectEvent(() =>
     enter.mutate(productId, {
@@ -120,10 +133,25 @@ export function usePreorderQueue({
     }),
   )
 
-  // 마운트되는 순간 줄을 선다. 두 번 불려도(StrictMode) 서버는 자리를 하나만 잡는다.
+  // 마운트되면 줄을 선다 — 그 전에 이 모델에 진행 중인 내 예약이 있는지 본다. 서버는 회원·모델마다 예약 하나라
+  // 줄을 끝까지 서도 새로 접수할 수 없고, 같은 입장권을 다시 받으면 기존 예약으로 이어져 "또 예약됐다"로 보인다.
+  // StrictMode에서 두 번 마운트돼도 앞 것은 정리에서 끊겨 한 번만 줄을 선다.
   useEffect(() => {
-    join()
-  }, [])
+    let active = true
+    void Promise.race([
+      queryClient
+        .fetchQuery(activeReservationQuery(productId))
+        .catch(() => null),
+      delay(EXISTING_CHECK_MS).then(() => null),
+    ]).then((existing) => {
+      if (!active) return
+      if (existing) handleExisting()
+      else join()
+    })
+    return () => {
+      active = false
+    }
+  }, [queryClient, productId])
 
   useEffect(() => {
     if (!retry) return
@@ -216,13 +244,18 @@ export function usePreorderQueue({
       trackedTicket.current = admissionTicket
       track('Preorder Queue Admitted', { productId })
     }
-    const complete = () =>
-      handleComplete({
-        productId,
-        admissionTicket,
-        idempotencyKey: crypto.randomUUID(),
-        expiresAt: Date.now() + expiresIn * 1000,
-      })
+    // 키는 입장권에서 계산한다(admissionKey) — 같은 입장권을 다시 받은 창이 재전송으로 기존 예약을 받게.
+    const complete = () => {
+      const expiresAt = Date.now() + expiresIn * 1000
+      void admissionKey(admissionTicket).then((idempotencyKey) =>
+        handleComplete({
+          productId,
+          admissionTicket,
+          idempotencyKey,
+          expiresAt,
+        }),
+      )
+    }
     if (isHidden) {
       complete()
       return

@@ -25,6 +25,7 @@ export const Default: Story = {
     onComplete: fn(),
     onFail: fn(),
     onLeave: fn(),
+    onExisting: fn(),
   },
   beforeEach: () => {
     const enter = spyOn(apiClient, 'requestWithHeaders').mockReturnValue(

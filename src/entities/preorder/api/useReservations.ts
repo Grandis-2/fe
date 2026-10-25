@@ -4,7 +4,9 @@ import {
   keepPreviousData,
   useInfiniteQuery,
   type InfiniteData,
+  queryOptions,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
@@ -14,6 +16,7 @@ import type { PreorderStatus, PreorderPage } from '@shared/api/types'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
+  ACTIVE_RESERVATION,
   NEEDS_PURCHASE,
   type Reservation,
   type ReservationDetail,
@@ -48,7 +51,48 @@ export const reservationKeys = {
     ['reservations', 'detail', preorderId] as const,
   history: (preorderId: string) =>
     ['reservations', 'history', preorderId] as const,
+  active: (productId: string) => ['reservations', 'active', productId] as const,
 }
+
+// 이 모델에 진행 중인 내 예약(없으면 null). 대기열에 서기 직전에 한 번 묻는다(fetchQuery) — 있으면 줄을 끝까지 서도
+// 새로 접수할 수 없으니 그 예약으로 보낸다. 접수·취소 뒤 reservationKeys.all 무효화에 함께 걸린다.
+export const activeReservationQuery = (productId: string) =>
+  queryOptions({
+    queryKey: reservationKeys.active(productId),
+    queryFn: async ({ signal }) =>
+      (
+        await getMyReservations(
+          { productId, displayStatus: ACTIVE_RESERVATION },
+          signal,
+        )
+      ).items[0] ?? null,
+    ...queryPolicy.live,
+  })
+
+// 이 모델에 진행 중인 내 예약 — 사전예약 버튼을 그 예약으로 바꿔 보인다(상품 페이지). 비로그인은 401이라 enabled로 끈다.
+export const useActiveReservation = (productId: string, enabled = true) =>
+  useQuery({
+    ...activeReservationQuery(productId),
+    enabled: enabled && productId !== '',
+  })
+
+// 여러 모델의 진행 중인 내 예약을 모델 id로(사전예약 시트). 예약이 없는 모델은 빠진다.
+export const useActiveReservations = (
+  productIds: readonly string[],
+  enabled = true,
+) =>
+  useQueries({
+    queries: productIds.map((productId) => ({
+      ...activeReservationQuery(productId),
+      enabled,
+    })),
+    combine: (results) =>
+      new Map(
+        results.flatMap(({ data }) =>
+          data ? [[data.productId, data] as const] : [],
+        ),
+      ),
+  })
 
 // 목록에서 서버 처리를 기다리는 예약 id들.
 const settlingIds = (data: InfiniteData<PreorderPage> | undefined) =>

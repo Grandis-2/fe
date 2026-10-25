@@ -98,12 +98,11 @@ function admit(entry: Entry): Ticket {
   return ticket
 }
 
+// 실서버처럼 수명 안이면 이미 접수에 쓴 입장권도 그대로 다시 준다("같은 입장이면 언제 물어도 같은 입장권").
+// 쓴 입장권으로 새 접수가 오면 접수 쪽이 USED로 거절하고, 같은 키의 재전송이면 기존 예약을 돌려준다.
 const liveTicket = (productId: string) =>
   tickets.find(
-    (ticket) =>
-      ticket.productId === productId &&
-      !ticket.used &&
-      ticketExpiresIn(ticket) > 0,
+    (ticket) => ticket.productId === productId && ticketExpiresIn(ticket) > 0,
   )
 
 const admitted = (ticket: Ticket): QueueAdmitted => ({

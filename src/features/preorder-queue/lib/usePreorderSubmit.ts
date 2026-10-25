@@ -1,11 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 
 import { faro } from '@grafana/faro-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
 
-import { useSubmitPreorder, type PreorderAccepted } from '@entities/preorder'
+import {
+  activeReservationQuery,
+  useSubmitPreorder,
+  type PreorderAccepted,
+} from '@entities/preorder'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
-import { mypagePath, PREORDER_PATH, productPath } from '@shared/config/routes'
+import { PREORDER_PATH, productPath } from '@shared/config/routes'
 import { track } from '@shared/lib/analytics'
 import { showToast } from '@shared/model/toastStore'
 
@@ -25,7 +30,7 @@ const TICKET_ERRORS = [
 ]
 
 // 이미 접수된 예약이 있다 — 409 ACTIVE_PREORDER_EXISTS, 또는 응답을 못 받은 첫 접수가 커밋된 뒤
-// 옵션을 바꿔 같은 키로 다시 보낸 422 KEY_PAYLOAD_MISMATCH. 다시 눌러도 같은 오류라 사전예약 내역으로 보낸다.
+// 옵션을 바꿔 같은 키로 다시 보낸 422 KEY_PAYLOAD_MISMATCH. 다시 눌러도 같은 오류라 버튼을 그 예약으로 바꾼다.
 const isAlreadyAccepted = (caught: unknown) =>
   caught instanceof ApiRequestError &&
   ['ACTIVE_PREORDER_EXISTS', 'KEY_PAYLOAD_MISMATCH'].includes(caught.error.code)
@@ -45,6 +50,7 @@ export function usePreorderSubmit() {
   const admission = usePreorderQueueStore((state) => state.admission)
   const clearAdmission = usePreorderQueueStore((state) => state.clearAdmission)
   const submit = useSubmitPreorder()
+  const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [isWaiting, setIsWaiting] = useState(false)
   const waitRef = useRef<AbortController>(null)
@@ -105,15 +111,19 @@ export function usePreorderSubmit() {
           )
           if (controller.signal.aborted) return
           setIsWaiting(false)
+          // 같은 입장권(같은 키)으로 다시 보낸 접수는 새 예약이 아니라 기존 예약이다 — 또 예약된 것으로 읽히지 않게 알린다.
+          if (accepted.replayed)
+            showToast('이미 접수된 예약이에요. 그 예약으로 이어서 진행해요.')
           onSuccess(accepted, registered)
         },
         onError: (caught) => {
+          // 이미 이 모델의 예약이 있다 — 다른 화면으로 옮기지 않고 알린 뒤, 그 예약을 다시 받아 버튼을 그 예약으로 바꾼다.
           if (isAlreadyAccepted(caught)) {
             clearAdmission()
-            showToast(
-              '이미 접수한 예약이 있어요. 사전예약 내역에서 확인해 주세요.',
-            )
-            navigate(mypagePath('preorder-check'))
+            showToast('이미 예약한 모델이에요.')
+            void queryClient.invalidateQueries({
+              queryKey: activeReservationQuery(productId).queryKey,
+            })
             return
           }
           if (

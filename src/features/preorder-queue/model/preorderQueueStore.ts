@@ -17,7 +17,8 @@ export type PreorderQueueTicket = {
 export type PreorderAdmission = {
   productId: string
   admissionTicket: string
-  // 입장권 하나에 접수 키 하나 — 응답을 못 받아 다시 누르면 같은 키로 보내 중복 예약을 막는다.
+  // 입장권 하나에 접수 키 하나 — 입장권에서 계산한다(admissionKey). 응답을 못 받아 다시 누르거나, 같은 입장권을
+  // 다시 받은 창(다른 창, 결제 화면에서 나갔다 다시 예약)이 접수해도 같은 키라 기존 예약을 돌려받는다.
   idempotencyKey: string
   // 이 시각(ms)이 지나면 새 접수에 쓸 수 없다.
   expiresAt: number
