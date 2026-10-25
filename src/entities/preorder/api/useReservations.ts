@@ -52,8 +52,8 @@ export const reservationKeys = {
   counts: ['reservations', 'counts'] as const,
   detail: (preorderId: string) =>
     ['reservations', 'detail', preorderId] as const,
-  history: (preorderId: string) =>
-    ['reservations', 'history', preorderId] as const,
+  history: (preorderId: string, version: number) =>
+    ['reservations', 'history', preorderId, version] as const,
   active: ['reservations', 'active'] as const,
 }
 
@@ -176,15 +176,18 @@ const untilDueMs = (data: ReservationDetail | undefined) =>
     ? Math.max(Date.parse(data.paymentDueAt) - Date.now(), 0) + 1_000
     : null
 
-// 서버 처리를 저절로 기다리는 시간. 끝내 안 끝나는 경우(등록 재처리 대기, 환불 실패로 취소 중에 머묾, 만료 작업이
-// 꺼짐)가 있어 3초마다 계속 묻지 않고 멈춘 뒤 [다시 확인](recheck)으로만 묻는다.
+// 서버 처리를 3초마다 묻는 시간. 끝내 안 끝나는 경우(등록 재처리 대기, 환불 실패로 취소 중에 머묾, 만료 작업이
+// 꺼짐)가 있어 넘기면 지연 안내를 띄우고 30초 간격으로 늦춘다 — 끄지는 않는다. 끄면 그 뒤에 등록이 끝나도
+// [다시 확인](recheck)을 눌러야 구매 확정이 켜진다.
 // - 외부 등록: 접수 후 60초. 관리자 대조가 '등록 지연'으로 잡는 시간(RECONCILE_GRACE_MS)과 같아 사용자와 운영자가
 //   같은 시점에 지연을 본다.
 // - 만료 취소·취소: 기다리기 시작한 뒤 2분. 만료 취소는 서버가 1분 간격으로 찾아 시작하므로 그보다 넉넉히 둔다.
 const REGISTER_WAIT_MS = 60_000
 const SETTLE_WAIT_MS = 2 * 60_000
+// ponytail: 페이지를 열어 둔 동안은 상한 없이 묻는다(시간당 120건). 재처리가 몇 시간씩 밀리면 상한을 둔다.
+const SLOW_POLL_MS = 30_000
 
-// 처리를 기다리는 동안 실패하면 백오프하며 다시 묻고, 위 시간을 넘기면 자동 조회를 끄고 timedOut으로 알린다
+// 처리를 기다리는 동안 실패하면 백오프하며 다시 묻고, 위 시간을 넘기면 느린 간격으로 바꾸고 timedOut으로 알린다
 // (useOrder와 같은 모양).
 export const useReservation = (preorderId: string) => {
   const queryClient = useQueryClient()
@@ -199,11 +202,15 @@ export const useReservation = (preorderId: string) => {
   const query = useQuery({
     queryKey,
     queryFn: ({ signal }) => getReservation(preorderId, signal),
-    enabled: preorderId !== '' && !deadline.passed,
+    enabled: preorderId !== '',
     refetchInterval: ({ state: { data } }) =>
-      settlePollMs(data) ?? untilDueMs(data) ?? false,
+      settlePollMs(data) === null
+        ? (untilDueMs(data) ?? false)
+        : deadline.passed
+          ? SLOW_POLL_MS
+          : SETTLE_POLL_MS,
     // 제한 시간(60초·2분)은 다른 탭에 가 있어도 흐르므로 조회도 같이 돈다 — 안 그러면 그새 등록이 끝나도 돌아왔을 때
-    // 조회가 꺼져 있어 처리 중·지연 안내가 남는다. 상한이 있어 비용도 정해져 있다.
+    // 처리 중·지연 안내가 남는다.
     refetchIntervalInBackground: true,
     // PAYMENT_IN_PROGRESS·PAYMENT_EXPIRED로 바뀔 땐 version이 그대로라 같은 값은 받는다.
     structuralSharing: keepNewer<ReservationDetail>(({ version }) => version),
@@ -215,17 +222,24 @@ export const useReservation = (preorderId: string) => {
   })
   return {
     ...query,
-    // 제한이 지났고 마지막 요청도 끝났다. [다시 확인]은 한 번 더 묻고, 그래도 처리 중이면 다시 멈춘다.
+    // 제한이 지났고 마지막 요청도 끝났다. [다시 확인]은 바로 한 번 묻고 3초 간격으로 되돌린다 — 그래도 처리 중이면
+    // 제한이 지난 뒤 다시 늦춘다.
     timedOut: deadline.passed && query.fetchStatus === 'idle',
-    recheck: deadline.restart,
+    recheck: () => {
+      deadline.restart()
+      void query.refetch()
+    },
   }
 }
 
-export const useReservationHistory = (preorderId: string) =>
+// 예약 상태 이력. 예약이 바뀔 때(version) 다시 받는다 — 결과 화면이 예약을 폴링하는 동안 이력도 따라온다.
+// 새로 받는 동안엔 이전 이력을 그대로 보여 깜빡이지 않는다.
+export const useReservationHistory = (preorderId: string, version = 0) =>
   useQuery({
-    queryKey: reservationKeys.history(preorderId),
+    queryKey: reservationKeys.history(preorderId, version),
     queryFn: ({ signal }) => getReservationHistory(preorderId, signal),
     enabled: preorderId !== '',
+    placeholderData: keepPreviousData,
     ...queryPolicy.live,
   })
 

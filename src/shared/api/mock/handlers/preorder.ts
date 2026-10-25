@@ -29,7 +29,9 @@ import type { RequestHandler } from 'msw'
 const SECOND = 1000
 const HOUR = 60 * 60 * SECOND
 // 목업은 접수 5초 뒤 외부 등록이 끝나 결제 가능(REGISTERED)이 되고, 취소는 3초 뒤 끝난다.
-const REGISTER_AFTER_MS = 5 * SECOND
+// .env.local에 VITE_MOCK_REGISTER_DELAY_MS(예: 20000)를 넣으면 등록이 그만큼 걸린다 — 등록 지연 안내를 시연한다.
+const REGISTER_AFTER_MS =
+  Number(import.meta.env.VITE_MOCK_REGISTER_DELAY_MS) || 5 * SECOND
 const CANCEL_AFTER_MS = 3 * SECOND
 const PAYMENT_WINDOW_MS = 24 * HOUR
 // 결제한 예약을 취소하면 환불을 마쳐야 취소가 끝난다. .env.local에 VITE_MOCK_REFUND_FAIL=true를 넣으면

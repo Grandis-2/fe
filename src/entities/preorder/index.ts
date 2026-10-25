@@ -45,9 +45,11 @@ export {
 export {
   NEEDS_PURCHASE,
   SETTLE_DELAYED_NOTICE,
+  cancelCause,
   reservationStatusTag,
 } from './model/reservation'
 export type {
+  CancelCause,
   Reservation,
   ReservationDetail,
   ReservationDisplayStatus,

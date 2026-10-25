@@ -435,6 +435,8 @@ test.describe('F. 접수 뒤', () => {
       page.getByRole('button', { name: '지금 구매 확정하기' }),
     ).toBeEnabled()
     await expect(page.getByText('구매 확정 마감까지')).toBeVisible()
+    // 처리 기록이 등록 완료까지 따라온다(예약이 바뀌면 이력도 다시 받는다).
+    await expect(page.getByText('외부 예약 시스템 등록 완료')).toBeVisible()
   })
 
   test('F6 주소의 예약 id가 틀리면 처리 중이라 하지 않고 불러오지 못했다고 알린다', async ({

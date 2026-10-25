@@ -99,8 +99,9 @@ test('F8 구매 확정 기한이 지나면 예약 접수 화면이 취소된 예
   // (실서버는 1분 간격 작업이라 그 사이 '구매 확정 기한이 지났어요'가 먼저 보인다).
   await page.clock.fastForward(24 * 60 * 60 * 1000 + 5_000)
 
+  // 취소 이력(서버가 시작한 취소)으로 기한 만료를 가려 알린다.
   await expect(
-    page.getByRole('heading', { name: '예약이 취소되었어요' }),
+    page.getByRole('heading', { name: '구매 확정 기한이 지나 취소됐어요' }),
   ).toBeVisible({ timeout: 15_000 })
   await expect(
     page.getByRole('button', { name: '취소된 예약이에요' }),

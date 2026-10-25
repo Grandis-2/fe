@@ -5,7 +5,10 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router'
 import { useOrder } from '@entities/order'
 import {
   SETTLE_DELAYED_NOTICE,
+  cancelCause,
   useReservation,
+  useReservationHistory,
+  type CancelCause,
   type ReservationDetail,
 } from '@entities/preorder'
 import { orderToDrafts, reservationToDraft } from '@features/product-purchase'
@@ -18,12 +21,14 @@ import {
   type ResultStatus,
 } from '@shared/config/routes'
 import { shortId } from '@shared/lib/shortId'
+import { useDeadline } from '@shared/lib/useDeadline'
 import { ActionButton, PollingNotice } from '@shared/ui'
 import {
   OrderReceipt,
   OrderStatusMark,
   PurchaseDeadline,
   PurchaseSteps,
+  ReservationTimeline,
   usePayableAlert,
   type OrderReceiptRow,
   type OrderStatusTone,
@@ -142,10 +147,14 @@ const registering: PreorderStage = {
   badge: '예약 처리 중',
   heading: '예약 순서를 확보했어요',
   description:
-    '예약 시스템에 등록하고 있어요. 등록이 끝나면 이 화면에서 바로 구매를 확정할 수 있고, 화면을 닫아도 예약 순서는 그대로예요.',
+    '예약 시스템에 등록하고 있어요. 등록이 끝나면 이 화면에서 바로 구매를 확정할 수 있고, 화면을 닫아도 돼요.',
   note: content.preorder.note,
   disabledLabel: '예약 처리 중이에요',
 }
+// 외부 등록은 평소 1초 안팎이다. 접수 뒤 이만큼 지나도 처리 중이면 늦다고 먼저 알린다 — 60초 뒤엔 지연 안내가 더 뜬다.
+const SLOW_REGISTER_MS = 5_000
+const SLOW_REGISTER_DESCRIPTION =
+  '외부 예약 시스템 응답이 평소보다 늦어요. 실패하면 자동으로 다시 시도하는 중이니 화면을 닫아도 돼요.'
 const canceled = {
   tone: 'failure',
   note: undefined,
@@ -168,12 +177,12 @@ const preorderStage: Partial<Record<DisplayStatus, PreorderStage>> = {
     heading: '예약을 취소하고 있어요',
     description: '취소가 끝나면 사전예약 내역에도 반영돼요.',
   },
+  // 이력을 받기 전·못 받았을 때. 받으면 아래 canceledBy로 누가 왜 취소했는지 바꾼다.
   CANCELED: {
     ...canceled,
     badge: '예약 취소',
     heading: '예약이 취소되었어요',
-    description:
-      '구매 확정 기한이 지났거나 취소를 요청한 예약이에요. 다시 예약하려면 사전예약 페이지에서 새로 신청해 주세요.',
+    description: '다시 예약하려면 사전예약 페이지에서 새로 신청해 주세요.',
   },
   RESERVED: {
     tone: 'success',
@@ -182,6 +191,34 @@ const preorderStage: Partial<Record<DisplayStatus, PreorderStage>> = {
     description: '출시일에 맞춰 순서대로 발송해 드려요.',
     note: undefined,
     disabledLabel: '구매 확정 완료',
+  },
+}
+
+// 취소된 예약 — 취소를 시작한 이력으로 문구를 고른다. 시스템 사정(등록 실패)을 사용자 탓처럼 말하지 않는다.
+const RETRY_HINT = '다시 예약하려면 사전예약 페이지에서 새로 신청해 주세요.'
+const canceledBy: Record<
+  CancelCause,
+  Pick<PreorderStage, 'badge' | 'heading' | 'description'>
+> = {
+  USER: {
+    badge: '예약 취소',
+    heading: '요청하신 취소가 완료됐어요',
+    description: RETRY_HINT,
+  },
+  EXPIRY: {
+    badge: '기한 만료',
+    heading: '구매 확정 기한이 지나 취소됐어요',
+    description: `24시간 안에 구매를 확정하지 않은 예약은 자동으로 취소돼요. ${RETRY_HINT}`,
+  },
+  REGISTER_FAILED: {
+    badge: '예약 실패',
+    heading: '예약 등록을 마치지 못했어요',
+    description: `외부 예약 시스템 등록이 끝내 완료되지 않아 운영자가 예약을 취소했어요. 결제된 금액은 없어요. ${RETRY_HINT}`,
+  },
+  ADMIN: {
+    badge: '예약 취소',
+    heading: '운영자가 예약을 취소했어요',
+    description: `결제한 예약이었다면 결제 금액은 환불돼요. ${RETRY_HINT}`,
   },
 }
 
@@ -226,7 +263,26 @@ export function ResultPage() {
     isPreorderView && !loadError
       ? (reservation?.displayStatus ?? 'PROCESSING')
       : undefined
-  const stageContent = loadError ? loadFailed : stage && preorderStage[stage]
+  // 상태 이력 — 예약이 바뀔 때마다 따라 받는다. 처리 기록과 취소 사유가 같이 쓴다.
+  const history = useReservationHistory(
+    isPreorderView ? preorderId : '',
+    reservation?.version,
+  )
+  const cancel =
+    stage === 'CANCELED' && history.data ? cancelCause(history.data) : null
+  const isRegistering = stage === 'RECEIVED' || stage === 'PROCESSING'
+  const slowRegister = useDeadline(
+    isRegistering && reservation !== undefined,
+    SLOW_REGISTER_MS,
+    reservation ? Date.parse(reservation.createdAt) : undefined,
+  ).passed
+  const stageContent = loadError
+    ? loadFailed
+    : stage && {
+        ...preorderStage[stage],
+        ...(cancel && canceledBy[cancel.cause]),
+        ...(slowRegister && { description: SLOW_REGISTER_DESCRIPTION }),
+      }
   const { tone, badge, heading, description, primary, secondary, note } = {
     ...content[status],
     ...stageContent,
@@ -342,6 +398,18 @@ export function ResultPage() {
         {status === 'preorder' && dueAt && <PurchaseDeadline dueAt={dueAt} />}
         {status === 'preorder' && reservation && (
           <PurchaseSteps reservation={reservation} />
+        )}
+        {status === 'preorder' && history.data && (
+          <ReservationTimeline
+            events={history.data}
+            registering={isRegistering}
+          />
+        )}
+        {cancel?.reason && cancel.cause !== 'USER' && (
+          <div className={styles.failure}>
+            <span className={styles.failureTitle}>취소 사유</span>
+            <span className={styles.failureReason}>{cancel.reason}</span>
+          </div>
         )}
 
         {status === 'failed' && (
