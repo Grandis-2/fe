@@ -272,7 +272,12 @@ test.describe('B. 기다리는 중', () => {
 
     await held.click()
     await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
-    await expect(page.getByText(/안에 사전예약을 눌러 주세요/)).toBeVisible()
+    // 남은 시간은 차례가 온 때부터 센다 — 결제 화면에서 기다린 6초도 빠져 있다(목 입장권 120초 − 접수 여유 5초).
+    const timer = page.getByText(/안에 사전예약을 눌러 주세요/)
+    await expect(timer).toBeVisible()
+    const [, mm, ss] =
+      /(\d+):(\d+)/.exec((await timer.textContent()) ?? '') ?? []
+    expect(Number(mm) * 60 + Number(ss)).toBeLessThanOrEqual(115 - 6)
   })
 })
 

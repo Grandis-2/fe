@@ -252,6 +252,10 @@ export function usePreorderQueue({
   const admissionTicket =
     current?.status === 'ADMITTED' ? current.admissionTicket : null
   const expiresIn = current?.status === 'ADMITTED' ? current.expiresIn : 0
+  // expiresIn은 응답 시점 기준이다 — 넘어갈 때(모달 0.8초·알약 5초·결제 중 대기 뒤) 세면 그만큼 늦게 끝나는 줄 알고,
+  // 남은 시간이 보이는데 눌러도 ADMISSION_TICKET_STALE로 줄 맨 뒤가 된다. 조회 응답은 받은 시각, 진입에서 바로
+  // 입장했으면 보낸 시각(조금 이르게 잡히는 쪽)을 기준으로 한다.
+  const admittedAt = poll.data ? poll.dataUpdatedAt : enter.submittedAt
 
   // 결제 중에 차례가 왔다 — 모달을 닫고 알약으로만 알린다. 결제 경로를 벗어나면 아래에서 moveIn초를 센다.
   const held = holdNavigation && !released && status === 'mine' && !hasLeft
@@ -269,7 +273,7 @@ export function usePreorderQueue({
     // 키는 입장권에서 계산한다(admissionKey) — 같은 입장권을 다시 받은 창이 재전송으로 기존 예약을 받게.
     // 계산이 실패하면(보안 연결이 아님 — 줄 서기 전에 막지만 새로고침으로 되살린 줄은 여기로 온다) 100%에서 멈추지 않고 알린다.
     const complete = () => {
-      const expiresAt = Date.now() + expiresIn * 1000
+      const expiresAt = admittedAt + expiresIn * 1000
       void admissionKey(admissionTicket)
         .then((idempotencyKey) =>
           handleComplete({
@@ -299,6 +303,7 @@ export function usePreorderQueue({
     productId,
     admissionTicket,
     expiresIn,
+    admittedAt,
     isHidden,
     isOpen,
     moveIn,
