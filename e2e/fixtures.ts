@@ -266,6 +266,20 @@ export const preorderSubmitButton = (page: Page) =>
   page.getByRole('button', { name: '사전예약하기', exact: true }).first()
 
 /**
+ * 사전예약하기를 누른 뒤 — 예약 접수 화면에서 외부 등록이 끝나 구매 확정이 켜지길 기다렸다가 그 예약의 결제로 간다.
+ * 접수 응답은 등록을 기다리지 않아 결제로 바로 가지 않는다.
+ */
+export async function confirmPreorder(page: Page) {
+  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+    timeout: 15_000,
+  })
+  await page
+    .getByRole('button', { name: '지금 구매 확정하기' })
+    .click({ timeout: 15_000 })
+  await expect(page).toHaveURL(/\/payment\?preorderId=/)
+}
+
+/**
  * 사전예약 접수 요청(POST /api/v1/preorders?productId=)을 모은다. MSW가 응답해도 페이지의
  * request 이벤트에는 잡힌다. 멱등키·입장권·본문을 비교할 때 쓴다.
  */

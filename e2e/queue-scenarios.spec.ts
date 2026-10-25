@@ -1,4 +1,5 @@
 import {
+  confirmPreorder,
   collectPreorderSubmits,
   expect,
   fillPaymentForm,
@@ -122,6 +123,74 @@ test.describe('A. 줄 서기', () => {
 
     await pressReserve(page, '맥북 프로 14')
     await expect(queueDialog(page)).toBeVisible()
+  })
+
+  test('A14 오픈 순간 진행 중 예약 확인은 시트·줄 서기·상품 페이지를 통틀어 한 번만 서버에 묻는다', async ({
+    page,
+  }) => {
+    // 이 조회는 대기열을 거치지 않고 서버로 간다 — 모델마다·화면마다 묻으면 오픈 순간 DB에 몰린다.
+    const lookups: string[] = []
+    page.on('request', (request) => {
+      const { pathname, searchParams } = new URL(request.url())
+      if (
+        pathname === '/api/v1/preorders/active' ||
+        (pathname === '/api/v1/preorders' && searchParams.has('productId'))
+      )
+        lookups.push(`${pathname}${searchParams.size ? '?' : ''}`)
+    })
+
+    await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
+    await expect(preorderSubmitButton(page)).toBeVisible()
+
+    expect(lookups).toEqual(['/api/v1/preorders/active'])
+  })
+
+  test('A16 보안 연결(https)이 아닌 주소면 줄을 서기 전에 알리고 대기열에 들어가지 않는다', async ({
+    page,
+  }) => {
+    // 내부망 http 주소(http://192.168.x.x)로 연 것처럼 — 보안 연결이 아니고 crypto.subtle도 없다.
+    await page.addInitScript(() => {
+      Object.defineProperty(window, 'isSecureContext', { get: () => false })
+      Object.defineProperty(Crypto.prototype, 'subtle', {
+        get: () => undefined,
+      })
+    })
+    const queueRequests: string[] = []
+    page.on('request', (request) => {
+      if (new URL(request.url()).pathname === '/api/v1/preorders/queue')
+        queueRequests.push(request.method())
+    })
+    await page.goto(`/preorder/${TODAY_PROMOTION}`)
+    await pressReserve(page, '맥북 프로 14')
+
+    await expect(
+      page.getByText(
+        '보안 연결(https)이 아니라 예약할 수 없어요. 사이트 주소로 다시 접속해 주세요.',
+      ),
+    ).toBeVisible()
+    await expect(queueDialog(page)).toHaveCount(0)
+    expect(queueRequests).toEqual([])
+  })
+
+  test('A15 접수 키를 만들 수 없으면(crypto.subtle 없음) 100%에서 멈추지 않고 알린다', async ({
+    page,
+  }) => {
+    // 내부망 http 주소(http://192.168.x.x)로 열면 crypto.subtle이 없다.
+    await page.addInitScript(() =>
+      Object.defineProperty(Crypto.prototype, 'subtle', {
+        get: () => undefined,
+      }),
+    )
+    await joinMacbookQueue(page)
+
+    await expect(
+      page.getByText(
+        '보안 연결(https)이 아니라 예약할 수 없어요. 사이트 주소로 다시 접속해 주세요.',
+      ),
+    ).toBeVisible({ timeout: 30_000 })
+    await expect(queueDialog(page)).toBeHidden()
+    await expect(queuePill(page)).toHaveCount(0)
+    await expect(page).toHaveURL(`/preorder/${TODAY_PROMOTION}`)
   })
 })
 
@@ -251,9 +320,7 @@ test.describe('D. 접수', () => {
   }) => {
     await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
     await preorderSubmitButton(page).click()
-    await expect(page).toHaveURL(/\/payment\?preorderId=/, {
-      timeout: 15_000,
-    })
+    await confirmPreorder(page)
     const firstPreorderId = new URL(page.url()).searchParams.get('preorderId')
 
     // 결제하지 않고 나갔다가 사전예약 시트를 다시 연다 — 서버는 회원·모델마다 예약 하나라 다시 예약할 수 없다.
@@ -335,9 +402,7 @@ test.describe('E. 여러 창', () => {
 
     // 창 1이 먼저 접수한다.
     await preorderSubmitButton(page).click()
-    await expect(page).toHaveURL(/\/payment\?preorderId=/, {
-      timeout: 15_000,
-    })
+    await confirmPreorder(page)
     const firstPreorderId = new URL(page.url()).searchParams.get('preorderId')
 
     // 창 2는 다시 볼 때 그 예약을 알아본다(목 예약 DB는 창마다 메모리라 새로고침으로 다시 읽힌다).
@@ -348,29 +413,27 @@ test.describe('E. 여러 창', () => {
 })
 
 test.describe('F. 접수 뒤', () => {
-  test('F2 접수 뒤 5초 안에 등록을 확인하지 못하면 예약 접수 화면으로 가고, 등록이 끝나 있으면 구매 확정을 켠다', async ({
+  test('F2 접수하면 결제로 바로 가지 않고, 예약 접수 화면이 처리 중에서 구매 확정 가능으로 바뀌는 걸 보여 준다', async ({
     page,
   }) => {
     await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
-    const accepted = page.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        new URL(response.url()).pathname === '/api/v1/preorders' &&
-        response.status() === 202,
-    )
     await preorderSubmitButton(page).click()
-    await accepted
-    // 등록 확인 조회만 실패시켜 5초를 넘긴다.
-    await setMockFault(page, 'all')
-    await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
-      timeout: 15_000,
-    })
-    await setMockFault(page, null)
-    await page.reload()
+    await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/)
+
+    // 접수(202)는 외부 등록을 기다리지 않는다 — 목은 접수 5초 뒤 등록이 끝난다.
+    await expect(
+      page.getByRole('heading', { name: '예약 순서를 확보했어요' }),
+    ).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: '예약 처리 중이에요' }),
+    ).toBeDisabled()
 
     await expect(
+      page.getByRole('heading', { name: '예약이 접수되었어요' }),
+    ).toBeVisible({ timeout: 15_000 })
+    await expect(
       page.getByRole('button', { name: '지금 구매 확정하기' }),
-    ).toBeEnabled({ timeout: 15_000 })
+    ).toBeEnabled()
     await expect(page.getByText('구매 확정 마감까지')).toBeVisible()
   })
 
@@ -394,7 +457,7 @@ test.describe('F. 접수 뒤', () => {
     await stubTossPayments(page)
     await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
     await preorderSubmitButton(page).click()
-    await expect(page).toHaveURL(/\/payment\?preorderId=/, { timeout: 15_000 })
+    await confirmPreorder(page)
     await fillPaymentForm(page)
     await page.getByRole('button', { name: /결제하기$/ }).click()
     await expect(

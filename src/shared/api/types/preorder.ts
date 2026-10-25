@@ -58,6 +58,12 @@ export type PreorderSummary = {
   version: number
 }
 
+// GET /api/v1/preorders/active 한 줄 — 진행 중인 내 예약(상품마다 많아야 한 건, 취소 완료는 빠짐).
+export type ActivePreorder = Pick<
+  PreorderSummary,
+  'productId' | 'preorderId' | 'displayStatus' | 'paymentDueAt'
+>
+
 // 예약 상세 — 접수 뒤 폴링하는 대상.
 export type PreorderDetail = PreorderSummary & {
   // 외부 예약 시스템의 예약 번호. 등록 확인 전엔 null.

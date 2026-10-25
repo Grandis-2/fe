@@ -7,6 +7,8 @@ import { url } from '../url'
 import { isUuid, uuidViolation } from '../validate'
 
 import type {
+  ActivePreorder,
+  CursorPage,
   OrderStatus,
   PreorderCancelResult,
   PreorderCounts,
@@ -301,6 +303,24 @@ export const preorderHandlers: RequestHandler[] = [
   http.get(url('/api/v1/preorders/counts'), ({ request }) => {
     if (!hasToken(request)) return unauthenticated()
     return ok<PreorderCountsResponse>({ counts: countByDisplayStatus() })
+  }),
+
+  // 진행 중인 내 예약 — 상품마다 한 건, 취소 완료는 빠진다. 목업은 한 페이지로 다 준다. :preorderId보다 먼저 둔다.
+  http.get(url('/api/v1/preorders/active'), ({ request }) => {
+    if (!hasToken(request)) return unauthenticated()
+    return ok<CursorPage<ActivePreorder>>({
+      items: preorders
+        .map(toSummary)
+        .filter(({ displayStatus }) => displayStatus !== 'CANCELED')
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map(({ productId, preorderId, displayStatus, paymentDueAt }) => ({
+          productId,
+          preorderId,
+          displayStatus,
+          paymentDueAt,
+        })),
+      nextCursor: null,
+    })
   }),
 
   // 내 예약 — 최신순, 취소된 예약 포함. 커서 페이지. displayStatus는 여러 개면 그중 하나(조회 시각 기준)이고

@@ -98,11 +98,21 @@ export const usePreorderQueueStore = create<PreorderQueueStore>()((set) => ({
   },
 }))
 
+// 접수 키는 입장권에서 계산하는데(crypto.subtle) 보안 연결(HTTPS·localhost)에서만 된다 — 내부망 http 주소로 열면
+// 줄을 다 선 뒤가 아니라 서기 전에 알린다.
+export const INSECURE_MESSAGE =
+  '보안 연결(https)이 아니라 예약할 수 없어요. 사이트 주소로 다시 접속해 주세요.'
+
 // 줄은 한 번에 하나다 — 다른 상품의 줄(입장 직전 포함)이 있으면 바꾸지 않는다. 바꾸면 기존 대기가
 // 끊기고, 막 받은 입장권도 저장되지 못한다. 나가기를 누르면 줄이 비워져 다른 상품에 설 수 있다.
 export const joinPreorderQueue = (
   ticket: Omit<PreorderQueueTicket, 'joinedAt'>,
 ) => {
+  // 테스트(node)엔 window가 없다 — 값이 false일 때만 막는다.
+  if (globalThis.isSecureContext === false) {
+    showToast(INSECURE_MESSAGE)
+    return
+  }
   const { ticket: current, reopen } = usePreorderQueueStore.getState()
   // 같은 상품이면 줄을 다시 서지 않고 닫아 둔 대기열 창만 다시 연다.
   if (current?.productId === ticket.productId) {

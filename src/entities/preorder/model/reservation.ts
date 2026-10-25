@@ -35,17 +35,6 @@ export const NEEDS_PURCHASE: ReservationDisplayStatus[] = [
   'PAYMENT_IN_PROGRESS',
 ]
 
-// 진행 중인 예약 — 취소 완료만 아니면 같은 모델에 새로 접수할 수 없다(서버 uq_preorder_active: 회원·모델마다 하나).
-export const ACTIVE_RESERVATION: ReservationDisplayStatus[] = [
-  'RECEIVED',
-  'PROCESSING',
-  'PAYABLE',
-  'PAYMENT_IN_PROGRESS',
-  'PAYMENT_EXPIRED',
-  'RESERVED',
-  'CANCELING',
-]
-
 // 서버 처리를 기다리다 자동 조회를 멈췄을 때의 안내(useReservation의 timedOut). 지금 단계에 맞는 문구를 고른다.
 // 예약 접수·결제 화면이 같이 쓴다.
 const registerDelayed = {

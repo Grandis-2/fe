@@ -89,9 +89,8 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
     isLoggedIn && status === 'soon',
   )
   const toggleOpenAlert = useToggleOpenAlert()
-  // 이미 예약한 모델은 시트에서 예약하기 대신 그 예약 버튼을 보인다 — 시트를 열었을 때만 묻는다.
+  // 이미 예약한 모델은 시트에서 예약하기 대신 그 예약 버튼을 보인다 — 시트를 열었을 때 내 예약 전부를 한 번 묻는다.
   const reservations = useActiveReservations(
-    preorder.models.map((model) => model.productId),
     isLoggedIn && isSheetOpen && status === 'live',
   )
 

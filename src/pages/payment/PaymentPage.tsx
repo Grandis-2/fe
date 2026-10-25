@@ -389,6 +389,9 @@ export function PaymentPage() {
 
   if (!preorderId && !isCart && !drawId && !buyNowItems)
     return <Navigate to={HOME_PATH} replace />
+  // 이미 결제한 예약 — 결제 완료 뒤 뒤로 가기로 돌아온 경우다. 빈 결제 폼 대신 완료 화면으로 바꿔 둔다.
+  if (detail?.displayStatus === 'RESERVED')
+    return <Navigate to={resultPath('preorder-paid')} replace />
 
   // 예약·장바구니·회차를 아직 못 받았으면 안내만 보인다.
   const loadQuery = drawId ? draw : isCart ? cart : reservation

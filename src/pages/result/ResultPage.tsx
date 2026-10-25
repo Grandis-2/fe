@@ -86,7 +86,7 @@ const content: Record<
     badge: '구매 확정 대기',
     heading: '예약이 접수되었어요',
     description:
-      '주문이 몰려 결제까지 완료되지 못했어요. 예약 순서는 확보되었으니, 24시간 안에 직접 구매를 확정해 주세요.',
+      '예약 등록이 끝났어요. 예약 순서는 확보되었으니, 24시간 안에 구매를 확정해 주세요.',
     // 예약 id가 있으면 그 예약의 결제로 보낸다(아래 primaryTo).
     primary: { label: '지금 구매 확정하기', to: mypagePath('preorder-check') },
     secondary: {
@@ -127,7 +127,7 @@ const content: Record<
 }
 
 // 예약 접수 화면은 예약의 화면 단계에 따라 상단과 꺼진 버튼 문구를 바꾼다. 구매를 확정할 수 있는 단계는
-// content.preorder 그대로다. 외부 등록이 5초 안에 끝나지 않아 넘어온 예약은 처리 중에서 시작하고, 결제 기한이
+// content.preorder 그대로다. 접수 직후엔 처리 중(외부 등록)에서 시작해 등록이 끝나면 구매 확정이 켜지고, 결제 기한이
 // 지나면 서버가 만료 취소를 시작해 기한 지남 → 취소 중 → 취소 완료로 간다.
 type DisplayStatus = ReservationDetail['displayStatus']
 type PreorderStage = Pick<
@@ -142,7 +142,7 @@ const registering: PreorderStage = {
   badge: '예약 처리 중',
   heading: '예약 순서를 확보했어요',
   description:
-    '주문이 몰려 예약 등록이 조금 늦어지고 있어요. 등록이 끝나면 이 화면에서 바로 구매를 확정할 수 있고, 화면을 닫아도 예약 순서는 그대로예요.',
+    '예약 시스템에 등록하고 있어요. 등록이 끝나면 이 화면에서 바로 구매를 확정할 수 있고, 화면을 닫아도 예약 순서는 그대로예요.',
   note: content.preorder.note,
   disabledLabel: '예약 처리 중이에요',
 }
@@ -218,8 +218,8 @@ export function ResultPage() {
     reservationQuery.timedOut && reservation
       ? SETTLE_DELAYED_NOTICE[reservation.displayStatus]
       : undefined
-  // 예약 접수 화면의 단계. 예약을 받는 중에도 처리 중으로 둔다 — 5초 안에 등록됐으면 결제로 바로 갔으니,
-  // 여기 온 예약은 대개 처리 중이다. 받지 못했으면(isError) 단계를 정하지 않고 불러오지 못했다고 알린다.
+  // 예약 접수 화면의 단계. 예약을 받는 중에도 처리 중으로 둔다 — 접수 직후 들어오므로 대개 처리 중이다.
+  // 받지 못했으면(isError) 단계를 정하지 않고 불러오지 못했다고 알린다.
   const isPreorderView = status === 'preorder' && preorderId !== ''
   const loadError = isPreorderView && reservationQuery.isError
   const stage =

@@ -1,4 +1,5 @@
 import {
+  confirmPreorder,
   expect,
   kstToday,
   loginAs,
@@ -51,7 +52,7 @@ test('E6 탭을 복제해 같은 입장권·같은 접수 키로 다시 접수�
   // 접수하면 입장권을 지우므로 그 전에 복제할 값을 잡아 둔다.
   const { preorder_admission: admission } = await readSession(page)
   await preorderSubmitButton(page).click()
-  await expect(page).toHaveURL(/\/payment\?preorderId=/, { timeout: 15_000 })
+  await confirmPreorder(page)
   const firstPreorderId = new URL(page.url()).searchParams.get('preorderId')
   // 접수 뒤의 목 대기열 — 입장권이 쓰인 상태다.
   const { mock_waitingroom: queue } = await readSession(page)
@@ -61,10 +62,15 @@ test('E6 탭을 복제해 같은 입장권·같은 접수 키로 다시 접수�
     mock_waitingroom: queue,
   })
   await copy.goto(`/products/${MACBOOK_PRO_14}`)
-  await preorderSubmitButton(copy).click()
+  // 진행 중 예약 조회가 먼저 오면 버튼이 구매 확정하기로 바뀌고, 그 전에 누르면 같은 키로 재전송한다.
+  // 어느 쪽이든 새 예약 없이 처음 예약의 결제로 가야 한다.
+  await copy
+    .getByRole('button', { name: /^(사전예약하기|구매 확정하기)$/ })
+    .first()
+    .click()
 
   // 같은 키 재전송이라 새 예약 없이 처음 예약의 결제로 간다.
-  await expect(copy).toHaveURL(`/payment?preorderId=${firstPreorderId}`, {
+  await expect(copy).toHaveURL(new RegExp(`preorderId=${firstPreorderId}$`), {
     timeout: 15_000,
   })
   await expect(copy.getByText('대기열에 다시 입장해 주세요')).toHaveCount(0)

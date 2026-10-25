@@ -3,7 +3,8 @@ import { useEffect, useEffectEvent, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 
 import {
-  activeReservationQuery,
+  activeReservationsQuery,
+  findActiveReservation,
   useEnterQueue,
   useQueueStatus,
   type QueuePoll,
@@ -16,6 +17,7 @@ import { formatNumber } from '@shared/lib/formatNumber'
 import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
+  INSECURE_MESSAGE,
   usePreorderQueueStore,
   type PreorderAdmission,
 } from '../model/preorderQueueStore'
@@ -39,6 +41,7 @@ const SLOW_ENTER_MS = 500
 // 안내만 바꾸고 조회는 계속한다. 운영자가 이탈 유예를 늘렸어도 구매자 응답엔 그 값이 없어 기본값을 쓴다.
 const LEAVE_GRACE_MS = 250_000
 // 줄 서기 전 진행 중인 예약 확인을 이만큼만 기다린다 — 늦거나 실패하면 그냥 줄을 선다(확인 때문에 대기열을 막지 않는다).
+// 시트·상품 페이지가 30초 안에 받아 둔 값이 있으면 서버에 묻지 않고 바로 쓴다(activeReservationsQuery).
 const EXISTING_CHECK_MS = 1_500
 
 export type QueueStatus = 'waiting' | 'mine'
@@ -140,7 +143,8 @@ export function usePreorderQueue({
     let active = true
     void Promise.race([
       queryClient
-        .fetchQuery(activeReservationQuery(productId))
+        .fetchQuery(activeReservationsQuery)
+        .then((items) => findActiveReservation(items, productId))
         .catch(() => null),
       delay(EXISTING_CHECK_MS).then(() => null),
     ]).then((existing) => {
@@ -245,16 +249,19 @@ export function usePreorderQueue({
       track('Preorder Queue Admitted', { productId })
     }
     // 키는 입장권에서 계산한다(admissionKey) — 같은 입장권을 다시 받은 창이 재전송으로 기존 예약을 받게.
+    // 계산이 실패하면(보안 연결이 아님 — 줄 서기 전에 막지만 새로고침으로 되살린 줄은 여기로 온다) 100%에서 멈추지 않고 알린다.
     const complete = () => {
       const expiresAt = Date.now() + expiresIn * 1000
-      void admissionKey(admissionTicket).then((idempotencyKey) =>
-        handleComplete({
-          productId,
-          admissionTicket,
-          idempotencyKey,
-          expiresAt,
-        }),
-      )
+      void admissionKey(admissionTicket)
+        .then((idempotencyKey) =>
+          handleComplete({
+            productId,
+            admissionTicket,
+            idempotencyKey,
+            expiresAt,
+          }),
+        )
+        .catch(() => handleFail(INSECURE_MESSAGE))
     }
     if (isHidden) {
       complete()

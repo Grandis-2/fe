@@ -1,4 +1,5 @@
 import {
+  confirmPreorder,
   expect,
   loginAs,
   MACBOOK_PRO_14,
@@ -28,15 +29,19 @@ test('비회원이 사전예약 하러가기를 누르면 모델 대신 로그�
   await expect(page.getByRole('dialog', { name: '사전예약' })).toHaveCount(0)
 })
 
-test('대기열을 통과해 접수하면 결제 페이지로 가고 사전예약 내역에 순번이 생긴다', async ({
+test('대기열을 통과해 접수하면 예약 접수 화면에서 등록을 지켜본 뒤 구매 확정으로 가고, 사전예약 내역에 순번이 생긴다', async ({
   page,
 }) => {
   await loginAs(page)
   await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
   await preorderSubmitButton(page).click()
 
-  // 접수(202) 뒤 외부 등록이 끝나길 최대 5초 기다렸다가 결제로 넘어간다.
-  await expect(page).toHaveURL(/\/payment\?preorderId=/, { timeout: 15_000 })
+  // 접수(202)는 외부 등록을 기다리지 않는다 — 결제로 바로 가지 않고 예약 접수 화면에서 등록이 끝나길 본다.
+  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/)
+  await expect(
+    page.getByRole('heading', { name: '예약이 접수되었어요' }),
+  ).toBeVisible({ timeout: 15_000 })
+  await confirmPreorder(page)
 
   await page.goto('/mypage?state=preorder-check')
   await expect(page.getByText('예약 순번 1,287번')).toBeVisible()
