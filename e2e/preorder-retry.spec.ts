@@ -107,6 +107,28 @@ test('H4 응답을 못 받고 같은 내용을 다시 보내면 처음 예약번
   await expectSingleNewReservation(page)
 })
 
+test('H5 접수 응답이 끊기면 같은 키로 한 번 저절로 다시 보내고, 예약은 하나만 생긴다', async ({
+  page,
+}) => {
+  const submits = collectPreorderSubmits(page)
+  await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
+  // 목이 예약은 저장하고 응답만 12초 늦춘다 — 요청 타임아웃(10초)이 지나 응답 없음으로 끝난다.
+  await page.evaluate(() =>
+    sessionStorage.setItem('mock-submit-delay-ms', '12000'),
+  )
+  await preorderSubmitButton(page).click()
+
+  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+    timeout: 25_000,
+  })
+  expect(submits).toHaveLength(2)
+  expect(submits[1].idempotencyKey).toBe(submits[0].idempotencyKey)
+  await expect(
+    page.getByText('이미 접수된 예약이에요. 그 예약으로 이어서 진행해요.'),
+  ).toBeVisible()
+  await expectSingleNewReservation(page)
+})
+
 test('대기열 진입 응답이 늦어도 눌렀을 때 대기 모달이 먼저 뜬다', async ({
   page,
 }) => {
