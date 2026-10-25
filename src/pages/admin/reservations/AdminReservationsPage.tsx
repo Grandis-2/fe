@@ -250,7 +250,9 @@ export function AdminReservationsPage() {
   const reservations = data?.items
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
   // 아직 한 번도 못 받았으면 data가 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
-  const stats = useReservationStats(productId, refreshInterval)
+  const stats = useReservationStats(productId, refreshInterval, {
+    keepPrevious: true,
+  })
   // 이미 받은 값이 있는데 다시 받는 데 실패하고 있으면(재시도 중 포함) 멈춘 값임을 알린다.
   const staleError =
     (reservations !== undefined ? pollingError(list) : null) ??
@@ -333,12 +335,19 @@ export function AdminReservationsPage() {
       <span className={styles.tabLabel}>
         {reservationStageLabel[stage]}
         {stageCounts &&
-          (stage === 'REPROCESS_NEEDED' && stageCounts[stage] > 0 ? (
+          // 상품을 바꾸는 동안(이전 상품 값)은 빨간 배지도 흐린 숫자로 — 다른 상품의 실패 건수를 지금 값으로 읽지 않게.
+          (stage === 'REPROCESS_NEEDED' &&
+          stageCounts[stage] > 0 &&
+          !stats.isPlaceholderData ? (
             <CountBadge>
               {stageCounts[stage].toLocaleString('ko-KR')}
             </CountBadge>
           ) : (
-            <span className={styles.tabCount}>
+            <span
+              className={
+                stats.isPlaceholderData ? styles.tabCountStale : styles.tabCount
+              }
+            >
               {stageCounts[stage].toLocaleString('ko-KR')}
             </span>
           ))}

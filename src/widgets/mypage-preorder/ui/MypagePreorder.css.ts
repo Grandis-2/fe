@@ -49,6 +49,14 @@ export const tabs = style({
   marginBottom: spacing[8],
 })
 
+// 환불 중 안내 아래에 주문 내역으로 가는 버튼을 붙인다.
+export const refund = style({
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  gap: spacing[8],
+})
+
 // 버튼 둘을 반씩 나눈다.
 export const actions = style({
   display: 'grid',

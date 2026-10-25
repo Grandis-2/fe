@@ -63,10 +63,14 @@ export const getAdminReservationsPage = (
     : getAdminReservations({ ...params, status: statuses[0] }, signal)
 
 // [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자)을 쪽 끝까지
-/** 모든 예약을 끝까지 이어 받는다 — 외부 원장과 한 건씩 맞춰 볼 때만 쓴다(무겁다) */
+/**
+ * 모든 예약을 끝까지 이어 받는다 — 외부 원장과 한 건씩 맞춰 볼 때만 쓴다(무겁다). 오픈 중엔 받는 사이 새 접수로
+ * 쪽이 밀리므로 예약 id로 중복을 거른다(안 거르면 오래된 예약이 빠져 대조가 '외부에만 있음'으로 잡는다)
+ */
 export const getAllAdminReservations = (signal?: AbortSignal) =>
-  fetchAllPages((page) =>
-    getAdminReservations({ page, size: PAGE_SIZE_MAX }, signal),
+  fetchAllPages(
+    (page) => getAdminReservations({ page, size: PAGE_SIZE_MAX }, signal),
+    ({ preorderId }) => preorderId,
   )
 
 // [preorder] GET /api/v1/admin/preorders/stats — 운영 현황(관리자)
@@ -185,13 +189,15 @@ export async function reprocessAdminReservations(
   signal?: AbortSignal,
 ) {
   const wanted = preorderIds && new Set(preorderIds)
-  const deadJobs = await fetchAllPages((page) =>
-    getAdminSyncJobs({
-      jobType: 'REGISTER',
-      status: 'DEAD_LETTER',
-      page,
-      size: PAGE_SIZE_MAX,
-    }),
+  const deadJobs = await fetchAllPages(
+    (page) =>
+      getAdminSyncJobs({
+        jobType: 'REGISTER',
+        status: 'DEAD_LETTER',
+        page,
+        size: PAGE_SIZE_MAX,
+      }),
+    ({ syncJobId }) => syncJobId,
   )
   const syncJobIds = deadJobs
     .filter((job) => !wanted || wanted.has(job.preorderId))
@@ -273,13 +279,15 @@ const pause = (ms: number, signal?: AbortSignal) =>
  */
 export async function reprocessFailedRegistrations(productId?: string) {
   if (!productId) return reprocessAdminReservations()
-  const failed = await fetchAllPages((page) =>
-    getAdminReservations({
-      productId,
-      registerJobStatus: 'DEAD_LETTER',
-      page,
-      size: PAGE_SIZE_MAX,
-    }),
+  const failed = await fetchAllPages(
+    (page) =>
+      getAdminReservations({
+        productId,
+        registerJobStatus: 'DEAD_LETTER',
+        page,
+        size: PAGE_SIZE_MAX,
+      }),
+    ({ preorderId }) => preorderId,
   )
   return reprocessAdminReservations(
     failed.map((reservation) => reservation.preorderId),

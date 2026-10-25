@@ -1,6 +1,8 @@
 import { apiClient } from '@shared/api/client'
 import { toQueryString } from '@shared/api/queryString'
 import type {
+  ActivePreorder,
+  CursorPage,
   PreorderCancelRequest,
   PreorderCancelResult,
   PreorderCountsResponse,
@@ -23,6 +25,24 @@ export const getMyReservations = (
   apiClient.request<PreorderPage>(`/api/v1/preorders${toQueryString(params)}`, {
     signal,
   })
+
+// [preorder] GET /api/v1/preorders/active — 내 진행 중인 예약
+// 상품마다 많아야 한 건, 취소 완료는 빠진다. 한 번에 200건이라 보통 첫 응답에 다 오지만, 중간에 멈추면 뒤쪽 상품이
+// 예약하지 않은 것으로 보이므로 nextCursor가 없을 때까지 읽는다.
+export const getActiveReservations = async (signal?: AbortSignal) => {
+  const items: ActivePreorder[] = []
+  let cursor: string | null = null
+  do {
+    // cursor를 다시 받아 쓰는 반복이라 타입을 적어 둔다(추론이 순환한다).
+    const page: CursorPage<ActivePreorder> = await apiClient.request(
+      `/api/v1/preorders/active${toQueryString({ cursor })}`,
+      { signal },
+    )
+    items.push(...page.items)
+    cursor = page.nextCursor
+  } while (cursor)
+  return items
+}
 
 // [preorder] GET /api/v1/preorders/counts — 내 예약 화면 단계별 수
 // 목록 없이 숫자만 — 헤더·마이페이지 배지가 부른다. 8개 단계가 다 오고 없는 단계는 0.

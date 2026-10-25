@@ -10,10 +10,12 @@ export type PreorderQueueCardProps = {
     | 'myOrder'
     | 'waitTime'
     | 'totalWaiting'
+    | 'admitPerSecond'
     | 'progressPercent'
     | 'leave'
     | 'poll'
     | 'mayHaveLeftQueue'
+    | 'rejoined'
   >
 }
 
@@ -30,6 +32,11 @@ export function PreorderQueueCard({ queue }: PreorderQueueCardProps) {
       ) : (
         <PollingNotice query={queue.poll} />
       )}
+      {queue.rejoined && (
+        <InlineAlert status="info">
+          전에 서 있던 자리 그대로예요. 순번을 잃지 않았어요.
+        </InlineAlert>
+      )}
       <QueueCard
         myOrderNumber={
           queue.myOrder === null ? '-' : formatNumber(queue.myOrder)
@@ -39,6 +46,7 @@ export function PreorderQueueCard({ queue }: PreorderQueueCardProps) {
         totalWaitingCount={
           queue.totalWaiting === null ? '-' : formatNumber(queue.totalWaiting)
         }
+        admitPerSecond={queue.admitPerSecond}
         onLeave={queue.leave}
       />
     </>

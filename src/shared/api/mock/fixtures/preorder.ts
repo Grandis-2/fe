@@ -41,6 +41,8 @@ export type OrderRecord = Order & {
   // 바로 구매 Idempotency-Key — 같은 키로 다시 오면 이 주문을 돌려준다.
   idempotencyKey?: string
   events: OrderEvent[]
+  // 취소 중 환불이 실패했는지(상세에만 싣는다).
+  refundFailed?: boolean
 }
 
 // 장바구니 한 줄의 원본. 이름·가격·재고는 조회할 때 상품 목업에서 계산한다.

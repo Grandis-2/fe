@@ -19,7 +19,11 @@ import {
   usePlaceOrder,
   type CartOrderItem,
 } from '@entities/order'
-import { useReservation, type ReservationDetail } from '@entities/preorder'
+import {
+  SETTLE_DELAYED_NOTICE,
+  useReservation,
+  type ReservationDetail,
+} from '@entities/preorder'
 import { useProfile } from '@entities/profile'
 import {
   DaumPostcodeSearch,
@@ -198,6 +202,10 @@ export function PaymentPage() {
     .join(' ')
 
   const detail = reservation.data
+  const settleDelayed =
+    reservation.timedOut && detail
+      ? SETTLE_DELAYED_NOTICE[detail.displayStatus]
+      : undefined
   const drawData = draw.data
   const cartLines = isCart
     ? cart.data?.filter(({ cartItemId }) => cartItemIds.includes(cartItemId))
@@ -381,6 +389,9 @@ export function PaymentPage() {
 
   if (!preorderId && !isCart && !drawId && !buyNowItems)
     return <Navigate to={HOME_PATH} replace />
+  // 이미 결제한 예약 — 결제 완료 뒤 뒤로 가기로 돌아온 경우다. 빈 결제 폼 대신 완료 화면으로 바꿔 둔다.
+  if (detail?.displayStatus === 'RESERVED')
+    return <Navigate to={resultPath('preorder-paid')} replace />
 
   // 예약·장바구니·회차를 아직 못 받았으면 안내만 보인다.
   const loadQuery = drawId ? draw : isCart ? cart : reservation
@@ -419,8 +430,16 @@ export function PaymentPage() {
           {paymentError && (
             <InlineAlert status="error">{paymentError}</InlineAlert>
           )}
-          {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. */}
-          <PollingNotice query={reservation} />
+          {/* 예약 외부 등록·취소를 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 정한 시간(외부 등록은 접수 후 60초)이
+              지나면 멈춘다. */}
+          <PollingNotice
+            query={reservation}
+            timeout={
+              settleDelayed
+                ? { ...settleDelayed, onRecheck: reservation.recheck }
+                : null
+            }
+          />
           {checkout.blockedReason && (
             <InlineAlert status="info">{checkout.blockedReason}</InlineAlert>
           )}

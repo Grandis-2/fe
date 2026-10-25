@@ -9,6 +9,7 @@ import {
   formatPreorderPeriod,
   getPreorderSchedule,
   kstInstant,
+  useActiveReservations,
   usePreorder,
   useSubscribedOpenAlerts,
   useToggleOpenAlert,
@@ -17,7 +18,10 @@ import {
   type PreorderStatus,
 } from '@entities/preorder'
 import { useRequireLogin } from '@features/login'
-import { joinPreorderQueue } from '@features/preorder-queue'
+import {
+  existingReservationAction,
+  joinPreorderQueue,
+} from '@features/preorder-queue'
 import { getErrorMessage } from '@shared/api/client'
 import { PREORDER_PATH, productPath } from '@shared/config/routes'
 import { useCountdown } from '@shared/lib/useCountdown'
@@ -98,6 +102,10 @@ export function PreorderPromotion({
     isLoggedIn && status === 'soon' && !preview,
   )
   const toggleOpenAlert = useToggleOpenAlert()
+  // 이미 예약한 모델은 시트에서 예약하기 대신 그 예약 버튼을 보인다 — 시트를 열었을 때 내 예약 전부를 한 번 묻는다.
+  const reservations = useActiveReservations(
+    isLoggedIn && isSheetOpen && status !== 'soon',
+  )
 
   // 매 렌더 새 Date면 useCountdown의 interval이 매초 다시 걸린다 — 날짜가 바뀔 때만 만든다.
   const openAt = useMemo(
@@ -291,6 +299,11 @@ export function PreorderPromotion({
             productName: model.name,
             to: productPath(model.productId),
           })
+        }}
+        reservations={reservations}
+        onOpenReservation={(reservation) => {
+          setIsSheetOpen(false)
+          navigate(existingReservationAction(reservation).to)
         }}
         onToggleNotify={toggleNotify}
         onPurchase={(model) => navigate(productPath(model.productId))}

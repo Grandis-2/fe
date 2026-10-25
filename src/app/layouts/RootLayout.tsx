@@ -95,6 +95,12 @@ export function RootLayout() {
             showToast(message)
           }}
           onLeave={clearQueue}
+          // 이미 예약한 모델(목록 카드에서 바로 줄을 선 경우) — 줄을 서지 않고 상품 페이지로 간다. 거기 버튼이 그 예약으로 바뀌어 있다.
+          onExisting={() => {
+            clearQueue()
+            showToast('이미 예약한 모델이에요.')
+            navigate(queueTicket.to)
+          }}
         />
       )}
     </>

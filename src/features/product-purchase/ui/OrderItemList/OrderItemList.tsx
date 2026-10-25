@@ -29,9 +29,10 @@ export function OrderItemList({ items }: OrderItemListProps) {
       </div>
 
       <div className={styles.list}>
-        {shownItems.map((item) => (
+        {/* 같은 옵션이 보증 여부만 달리 두 줄일 수 있어 id만으로는 겹친다. 줄 순서는 바뀌지 않는다. */}
+        {shownItems.map((item, index) => (
           <ProductPaymentCard
-            key={item.variantId}
+            key={`${item.variantId}-${index}`}
             className={styles.item}
             product={{
               imageSrc: item.imageUrl ?? undefined,

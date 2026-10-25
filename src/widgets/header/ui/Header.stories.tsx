@@ -15,8 +15,13 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 // 헤더가 세션 스토어를 직접 읽으므로 회원 스토리는 스토어에 세션을 넣고, 끝나면 지운다.
+// 회원은 세션 + USER 역할 + 추가 정보 입력 완료다(useSession의 isLoggedIn).
 const signIn = () => {
-  useSessionStore.setState({ sessionToken: 'story-session' })
+  useSessionStore.setState({
+    sessionToken: 'story-session',
+    role: 'USER',
+    profileComplete: true,
+  })
   return () => useSessionStore.getState().clearSession()
 }
 

@@ -115,6 +115,10 @@ export const description = style([
   },
 ])
 
+// 취소 원인을 아직 모를 때 — 문구가 바뀌어 보이지 않게 자리만 잡아 둔다.
+export const headingPending = style([heading, { visibility: 'hidden' }])
+export const descriptionPending = style([description, { visibility: 'hidden' }])
+
 export const failure = style({
   display: 'flex',
   flexDirection: 'column',
