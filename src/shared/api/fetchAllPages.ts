@@ -1,6 +1,8 @@
 // 오프셋 페이지(page는 0부터, 전체 건수 total)를 끝까지 이어 받아 items만 모은다.
 // 화면이 전체 목록·건수를 한 번에 써야 하는데 서버가 쪽 크기를 100으로 막아 둔 목록용이다.
 export const PAGE_SIZE_MAX = 100
+// 이만큼 받아도 끝나지 않으면(받는 동안 쪽마다 새 항목이 쪽 크기 넘게 끼는 경우) 빠진 목록을 돌려주지 않고 실패한다.
+const MAX_PAGES = 100
 
 /**
  * 최신순 목록을 받는 동안 앞에 새 항목이 끼면 뒤 쪽이 밀려 이미 받은 항목이 다음 쪽에 또 온다. 그 중복이
@@ -14,6 +16,8 @@ export async function fetchAllPages<TItem>(
 ): Promise<TItem[]> {
   const byKey = new Map<string, TItem>()
   for (let page = 0; ; page += 1) {
+    if (page === MAX_PAGES)
+      throw new Error('목록이 받는 동안 계속 늘어나 끝까지 받지 못했어요.')
     const result = await fetchPage(page)
     result.items.forEach((item, index) =>
       byKey.set(keyOf ? keyOf(item) : `${page}:${index}`, item),

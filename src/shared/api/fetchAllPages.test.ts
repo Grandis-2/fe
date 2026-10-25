@@ -36,4 +36,14 @@ describe('fetchAllPages', () => {
     expect(items.length).toBe(25)
     expect(calls).toBe(3)
   })
+
+  it('쪽마다 새 항목이 쪽 크기 넘게 끼어 끝나지 않으면 빠진 목록 대신 실패한다', async () => {
+    let total = 10
+    const flooded = () => {
+      total += 20
+      return Promise.resolve({ items: ['same'], total })
+    }
+
+    await expect(fetchAllPages(flooded, (id) => id)).rejects.toThrow()
+  })
 })
