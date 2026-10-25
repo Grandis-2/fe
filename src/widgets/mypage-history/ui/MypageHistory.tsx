@@ -199,7 +199,7 @@ export function MypageHistory() {
     : (data?.pages.flatMap(({ items }) => items) ?? [])
   const refundFailedIds = useRefundFailedOrderIds(
     orders
-      .filter(({ status }) => status === 'CANCELING')
+      .filter(({ status }) => status === 'CANCELING' || status === 'CANCELED')
       .map(({ orderId }) => orderId),
   )
 

@@ -153,6 +153,13 @@ export function expireCartOrders() {
       isCartDue(order)
     )
       moveOrder(order, 'CANCELED', 'SYSTEM', 'PAYMENT_EXPIRED')
+    // 취소 중인 사전예약 주문은 예약의 취소 처리(환불 완료·실패)를 따라간다 — 주문 내역만 열어도 반영되게.
+    if (order.status === 'CANCELING' && order.preorderId) {
+      const preorder = preorders.find(
+        (it) => it.preorderId === order.preorderId,
+      )
+      if (preorder) advance(preorder)
+    }
   }
 }
 

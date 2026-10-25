@@ -89,14 +89,27 @@ export const useOrder = (orderId: string) => {
   }
 }
 
-// 환불이 실패한 주문 id. 환불 실패(refundFailed)는 목록 응답엔 없어 상세를 따로 묻는다 — 환불이 실패한 주문은
-// 취소 중에 머무르므로 취소 중인 주문(보통 0~1건)만 넘긴다.
-export const useRefundFailedOrderIds = (cancelingOrderIds: string[]) =>
+// 환불 중인 주문의 상세를 다시 묻는 간격 — 환불이 끝나거나 실패하면 멈춘다.
+const REFUND_POLL_MS = 10_000
+
+// 환불이 실패한 주문 id. 환불 실패(refundFailed)는 목록 응답엔 없어 상세를 따로 묻는다 — 취소 중 주문(환불 실패면
+// 거기 머문다)과 취소된 주문(결과를 모른 채 취소해 자동 환불한 주문도 실패할 수 있다)을 넘긴다.
+// 취소 중이면 그새 환불이 실패할 수 있어 끝날 때까지 다시 묻는다.
+// ponytail: 불러온 취소 주문마다 상세를 한 번씩 묻는다. 목록 응답에 refundFailed가 오면 이 조회를 지운다.
+export const useRefundFailedOrderIds = (canceledOrderIds: string[]) =>
   useQueries({
-    queries: cancelingOrderIds.map((orderId) => ({
+    queries: canceledOrderIds.map((orderId) => ({
       queryKey: orderKeys.detail(orderId),
       queryFn: ({ signal }: { signal: AbortSignal }) =>
         getOrder(orderId, signal),
+      refetchInterval: ({
+        state: { data },
+      }: {
+        state: { data?: Awaited<ReturnType<typeof getOrder>> }
+      }) =>
+        data?.status === 'CANCELING' && !data.refundFailed
+          ? REFUND_POLL_MS
+          : false,
       ...queryPolicy.live,
     })),
     combine: (results) =>
