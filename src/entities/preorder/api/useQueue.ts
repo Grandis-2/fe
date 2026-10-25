@@ -54,14 +54,13 @@ export const useQueueStatus = (
   })
 }
 
-// 접수는 돈·순번이 걸린 명령이라 자동 재시도하지 않는다 — 재전송은 같은 Idempotency-Key로 사용자가 다시 누른다.
-// 접수되면 내 예약 목록이 바뀌므로 다시 받는다.
 // 접수는 멱등키(입장권에서 계산)를 달고 가서, 같은 키로 다시 보내면 서버가 새로 접수하지 않고 기존 예약을 돌려준다
 // (입장권이 만료됐어도 키 확인이 먼저다). 그래서 다른 mutation과 달리 응답을 못 받은 경우(타임아웃·네트워크, status 0)만
 // 한 번 더 보낸다 — 사용자가 '접수됐나? 다시 누르면 두 번 되나?'를 고민하지 않게.
 const isNoResponse = (error: unknown) =>
   error instanceof ApiRequestError && error.status === 0
 
+// 접수되면 내 예약 목록이 바뀌므로 다시 받는다.
 export const useSubmitPreorder = () => {
   const queryClient = useQueryClient()
   return useMutation({
