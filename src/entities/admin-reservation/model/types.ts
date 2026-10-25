@@ -1,5 +1,6 @@
 import type {
   AdminPreorderDetail,
+  AdminPreorderSort,
   AdminPreorderSummary,
   PreorderEvent,
   PreorderStats,
@@ -13,6 +14,7 @@ import type {
 export type AdminReservation = AdminPreorderSummary
 export type ReservationEvent = PreorderEvent
 export type ReservationSyncJob = SyncJob
+export type ReservationSort = AdminPreorderSort
 
 /**
  * 예약 상세. 목록 한 줄처럼 REGISTER 작업 상태를 붙여 둔다 — 상태 태그·재처리 판단을

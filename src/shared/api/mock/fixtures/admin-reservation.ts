@@ -205,16 +205,22 @@ function buildReservation(
   }
 }
 
-// 순번은 상품마다 1부터 빈틈없이 매긴다.
+// 순번은 상품마다 1부터 빈틈없이 매긴다. 순번은 입장 순서, 접수 시각은 폼을 다 쓴 시각이라
+// 둘의 순서가 어긋난다 — 입장 순서를 접수 순서와 다르게 섞어(7과 48은 서로소) 순번순 정렬이
+// 접수순과 달라 보이게 한다.
+const RESERVATION_COUNT = 48
+const positionOf = new Map<number, number>()
 const positions = new Map<string, number>()
+for (let step = 0; step < RESERVATION_COUNT; step++) {
+  const index = (step * 7) % RESERVATION_COUNT
+  const { productId } = buildReservation(index, 0)
+  const position = (positions.get(productId) ?? 0) + 1
+  positions.set(productId, position)
+  positionOf.set(index, position)
+}
 export const reservationStore: AdminPreorderDetail[] = Array.from(
-  { length: 48 },
-  (_, index) => {
-    const draft = buildReservation(index, 0)
-    const position = (positions.get(draft.productId) ?? 0) + 1
-    positions.set(draft.productId, position)
-    return buildReservation(index, position)
-  },
+  { length: RESERVATION_COUNT },
+  (_, index) => buildReservation(index, positionOf.get(index)!),
 )
 
 export const findReservation = (preorderId: string) =>

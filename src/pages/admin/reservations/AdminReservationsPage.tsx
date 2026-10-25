@@ -25,6 +25,7 @@ import {
   useReprocessReservations,
   useReservationStats,
   type AdminReservation,
+  type ReservationSort,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
@@ -74,12 +75,8 @@ const fromOf = (period: Period, now: number) => {
   return new Date(now - span[period])
 }
 
-/**
- * 정렬 — 탭마다 볼 순서가 다르다(실패는 오래된 것부터, 결제 대기는 기한 임박순). 서버에
- * 정렬 조건이 없어 아직 고를 수 없다 — 화면에서 정렬하면 받은 한 페이지 안에서만 바뀌어
- * 전체 순서로 오해한다. 서버는 최신 접수순으로 준다.
- */
-const sortOptions: DropdownOption<string>[] = [
+/** 정렬 — 서버가 정렬해 쪽을 넘겨도 전체 순서가 이어진다. 순번순은 상품을 골라야 된다(명세) */
+const sortOptions: DropdownOption<ReservationSort>[] = [
   { label: '최신 접수순', value: 'NEWEST' },
   { label: '오래된 접수순', value: 'OLDEST' },
   { label: '대기 순번순', value: 'QUEUE_POSITION' },
@@ -111,29 +108,34 @@ const formatReceivedAt = (iso: string) => {
 // query는 탭이 서버에 보내는 조건이다. 서버는 상태를 하나만 거를 수 있어 묶인 탭은 상태를
 // 여럿 주고, 그 순서대로 이어 붙여 쪽을 나눈다(확정은 결제 대기 다음 결제 완료, 취소는 취소
 // 중 다음 취소 완료). 처리 중(PENDING_SYNC)엔 외부 등록 실패도 섞여 나온다 — 서버에 '실패
-// 빼고' 조건이 없다. 실패 행은 빨간 배경이라 구분된다.
+// 빼고' 조건이 없다. 실패 행은 빨간 배경이라 구분된다. sort는 탭의 기본 순서 — 실패·처리
+// 중은 오래 기다린 것부터, 확정은 결제 기한 임박순이다.
 const statusFilters = [
   {
     value: 'REPROCESS_NEEDED',
     stage: 'REPROCESS_NEEDED',
     query: { registerJobStatus: 'DEAD_LETTER' },
+    sort: 'OLDEST',
   },
   {
     value: 'PROCESSING',
     stage: 'PROCESSING',
     query: { statuses: ['PENDING_SYNC'] },
+    sort: 'OLDEST',
   },
   {
     value: 'CONFIRMED',
     stage: 'CONFIRMED',
     query: { statuses: ['REGISTERED', 'RESERVED'] },
+    sort: 'PAYMENT_DUE',
   },
   {
     value: 'CANCELED',
     stage: 'CANCELED',
     query: { statuses: ['CANCELING', 'CANCELED'] },
+    sort: 'NEWEST',
   },
-  { value: 'all', stage: 'ALL', query: {} },
+  { value: 'all', stage: 'ALL', query: {}, sort: 'NEWEST' },
 ] as const
 
 const PAGE_SIZE = 10
@@ -179,7 +181,16 @@ export function AdminReservationsPage() {
       { replace: true },
     )
   const toFirstPage = () => setParam('page', undefined)
-  const setStatusFilter = (next: StatusFilter) => setParam('status', next)
+  // 고른 정렬. 없으면 탭의 기본 순서 — 탭을 바꾸면 그 탭의 기본으로 돌아간다.
+  const [sortChoice, setSortChoice] = useState<ReservationSort>()
+  const setStatusFilter = (next: StatusFilter) => {
+    setParam('status', next)
+    setSortChoice(undefined)
+  }
+  const selectSort = (next: ReservationSort) => {
+    setSortChoice(next)
+    toFirstPage()
+  }
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const productId = searchParams.get('product') ?? undefined
   // 차수 번호는 상품마다 따로라, 상품을 바꾸면 차수를 비운다.
@@ -231,10 +242,20 @@ export function AdminReservationsPage() {
     })),
   ]
 
+  // 순번순은 상품이 있어야 해서(없으면 400), 상품을 비우면 탭 기본 순서로 돌아간다.
+  const sort =
+    sortChoice === 'QUEUE_POSITION' && !productId
+      ? tab.sort
+      : (sortChoice ?? tab.sort)
+  const visibleSortOptions = productId
+    ? sortOptions
+    : sortOptions.filter((option) => option.value !== 'QUEUE_POSITION')
+
   // 탭·필터 모두 서버가 거르고, 쪽도 서버가 나눈다 — 100건이 넘어도 쪽을 넘겨 끝까지 본다.
   const list = useAdminReservations(
     {
       ...tab.query,
+      sort,
       productId,
       batchNumber: productId ? batchNumber : undefined,
       externalReference,
@@ -580,13 +601,13 @@ export function AdminReservationsPage() {
           value={period}
           onSelect={selectPeriod}
         />
-        {/* 서버에 정렬 조건이 생기면 연다(백엔드 작업 후). */}
         <Dropdown
           className={styles.field}
-          label="정렬 · 백엔드 작업 후"
-          fieldLabel="정렬, 백엔드 작업 후 열려요"
-          options={sortOptions}
-          disabled
+          label="정렬"
+          fieldLabel="정렬"
+          options={visibleSortOptions}
+          value={sort}
+          onSelect={selectSort}
         />
       </div>
 

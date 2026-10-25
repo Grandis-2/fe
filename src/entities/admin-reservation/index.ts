@@ -44,6 +44,7 @@ export type {
   AdminReservation,
   AdminReservationDetail,
   ReservationEvent,
+  ReservationSort,
   ReservationState,
   ReservationSyncJob,
 } from './model/types'

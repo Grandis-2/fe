@@ -34,8 +34,16 @@ export type OffsetPage<TItem> = Pick<
   'items' | 'page' | 'size' | 'total'
 >
 
+/**
+ * 목록 순서. NEWEST(기본) 최신 접수순, OLDEST 오래된 접수순, QUEUE_POSITION 순번순(productId
+ * 필수), PAYMENT_DUE 결제 기한이 가까운 REGISTERED를 앞에 두고 나머지는 뒤에
+ */
+export type AdminPreorderSort =
+  'NEWEST' | 'OLDEST' | 'QUEUE_POSITION' | 'PAYMENT_DUE'
+
 export type AdminPreorderListParams = {
   status?: PreorderStatus
+  sort?: AdminPreorderSort
   productId?: string
   registerJobStatus?: SyncJobStatus
   /** 배송 차수 — 차수 번호는 상품마다 따로라 productId와 같이 보낸다 */

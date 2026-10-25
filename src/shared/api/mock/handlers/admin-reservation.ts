@@ -14,6 +14,7 @@ import type {
   AdminCancelRequest,
   AdminNoteRequest,
   AdminPreorderDetail,
+  AdminPreorderSort,
   AdminPreorderSummary,
   BatchReprocess,
   OffsetPage,
@@ -44,6 +45,28 @@ function toSummary(detail: AdminPreorderDetail): AdminPreorderSummary {
     registerJobStatus:
       syncJobs.find((job) => job.jobType === 'REGISTER')?.status ?? null,
   }
+}
+
+// 목록 정렬(명세). 값이 같으면 예약 id로 한 번 더 정해 쪽을 넘겨도 겹치지 않는다.
+const dueOf = (item: AdminPreorderSummary) =>
+  item.status === 'REGISTERED' && item.paymentDueAt
+    ? Date.parse(item.paymentDueAt)
+    : Infinity
+const sorters: Record<
+  AdminPreorderSort,
+  (a: AdminPreorderSummary, b: AdminPreorderSummary) => number
+> = {
+  NEWEST: (a, b) =>
+    b.createdAt.localeCompare(a.createdAt) ||
+    b.preorderId.localeCompare(a.preorderId),
+  OLDEST: (a, b) =>
+    a.createdAt.localeCompare(b.createdAt) ||
+    a.preorderId.localeCompare(b.preorderId),
+  QUEUE_POSITION: (a, b) =>
+    a.queuePosition - b.queuePosition ||
+    a.preorderId.localeCompare(b.preorderId),
+  PAYMENT_DUE: (a, b) =>
+    dueOf(a) - dueOf(b) || a.preorderId.localeCompare(b.preorderId),
 }
 
 const OPEN_JOB_STATES = [
@@ -207,6 +230,15 @@ export const adminReservationHandlers: RequestHandler[] = [
       return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
     }
     const page = Number(query.get('page') ?? 0)
+    const sort = (query.get('sort') ?? 'NEWEST') as AdminPreorderSort
+    if (!(sort in sorters)) {
+      return invalid([{ field: 'sort', message: '알 수 없는 정렬입니다.' }])
+    }
+    if (sort === 'QUEUE_POSITION' && !productId) {
+      return invalid([
+        { field: 'productId', message: '순번순은 상품을 골라야 합니다.' },
+      ])
+    }
 
     const matched = reservationStore
       .filter(
@@ -224,8 +256,7 @@ export const adminReservationHandlers: RequestHandler[] = [
             item.shipmentBatch.batchNumber === Number(batchNumber)) &&
           (!from || Date.parse(item.createdAt) >= Date.parse(from)),
       )
-      // 최신 접수가 위로 온다.
-      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .toSorted(sorters[sort])
 
     const start = page * size
     return ok<OffsetPage<AdminPreorderSummary>>({
