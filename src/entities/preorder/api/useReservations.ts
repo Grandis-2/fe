@@ -83,10 +83,16 @@ const NO_RESERVATIONS: ReadonlyMap<string, ActivePreorder> = new Map()
 const byProductId = (items: ActivePreorder[]) =>
   new Map(items.map((item) => [item.productId, item]))
 
-// 진행 중인 내 예약을 모델 id로(사전예약 시트). 예약이 없는 모델은 빠진다.
-export const useActiveReservations = (enabled = true) =>
-  useQuery({ ...activeReservationsQuery, enabled, select: byProductId }).data ??
-  NO_RESERVATIONS
+// 진행 중인 내 예약을 모델 id로(사전예약 시트). 예약이 없는 모델은 빠진다. 받는 중이면 undefined — 시트가 그동안
+// 예약하기를 막는다. 끈 조회·실패는 빈 맵이라 막지 않는다(서버가 409로 지킨다).
+export const useActiveReservations = (enabled = true) => {
+  const { data, isLoading } = useQuery({
+    ...activeReservationsQuery,
+    enabled,
+    select: byProductId,
+  })
+  return isLoading ? undefined : (data ?? NO_RESERVATIONS)
+}
 
 // 목록에서 서버 처리를 기다리는 예약 id들.
 const settlingIds = (data: InfiniteData<PreorderPage> | undefined) =>
