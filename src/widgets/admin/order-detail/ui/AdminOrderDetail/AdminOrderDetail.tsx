@@ -14,7 +14,6 @@ import {
   type AdminOrderStatus,
   type NextShippingStep,
 } from '@entities/admin-order'
-import { useAdminMembers } from '@entities/admin-reservation'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { copyText } from '@shared/lib/copyText'
 import {
@@ -81,10 +80,6 @@ const copy = (text: string, what: string) =>
  */
 export function AdminOrderDetail({ order }: AdminOrderDetailProps) {
   const advance = useAdvanceShipping()
-  const { data: members } = useAdminMembers([order.customerId])
-  const memberName = members?.find(
-    (member) => member.memberId === order.customerId,
-  )?.name
   const [failure, setFailure] = useState<string | null>(null)
   const next = nextShippingStepOf(order.status)
   const number = orderNo(order.orderId)
@@ -144,7 +139,7 @@ export function AdminOrderDetail({ order }: AdminOrderDetailProps) {
         </Tag>
         <span className={styles.summary}>
           {[
-            memberName,
+            order.customerName,
             formatWon(order.totalAmount),
             `${formatShortDateTime(order.createdAt)} 주문`,
           ]
@@ -274,7 +269,7 @@ export function AdminOrderDetail({ order }: AdminOrderDetailProps) {
             <dl className={styles.list}>
               {[
                 { label: '출처', value: adminOrderSourceLabel[order.source] },
-                { label: '회원', value: memberName ?? '—' },
+                { label: '회원', value: order.customerName ?? '—' },
               ].map(({ label, value }) => (
                 <Fragment key={label}>
                   <dt className={styles.term}>{label}</dt>

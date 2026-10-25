@@ -10,6 +10,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const order = {
   orderId: '50000000-0000-4000-8000-000000001002',
   customerId: '5d1c2e3f-4a5b-4c6d-8e7f-000000001004',
+  customerName: '정**',
   status: 'AWAITING_CONFIRMATION' as const,
   source: 'DRAW' as const,
   totalAmount: 0,

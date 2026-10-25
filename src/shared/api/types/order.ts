@@ -176,10 +176,13 @@ export type ConfirmPaymentResponse = {
 
 export type AdminOrderSummary = Order & {
   customerId: string
+  // 가린 회원 이름(첫 글자 뒤에 **). 회원 정보를 받지 못하면 null.
+  customerName: string | null
 }
 
 export type AdminOrderDetail = OrderDetail & {
   customerId: string
+  customerName: string | null
 }
 
 // 오프셋 페이지 — page는 0부터, 전체 건수는 total.

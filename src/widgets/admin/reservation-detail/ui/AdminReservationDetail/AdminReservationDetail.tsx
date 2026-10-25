@@ -21,7 +21,6 @@ import {
   reservationStateVariant,
   reservationStateLabel,
   reservationStateOf,
-  useAdminMembers,
   useCancelReservation,
   useReprocessReservation,
   useSaveReservationNote,
@@ -68,7 +67,6 @@ export function AdminReservationDetail({
   const reprocess = useReprocessReservation()
   const cancel = useCancelReservation()
   const saveNote = useSaveReservationNote()
-  const { data: members } = useAdminMembers([reservation.customerId])
   // 이 예약에 반영되지 못한 처리(이벤트 DLQ). 한 예약에 몇 건 안 돼 한 번에 받는다.
   const deadLetters = useDeadLetters('preorder', {
     preorderId: reservation.preorderId,
@@ -81,9 +79,6 @@ export function AdminReservationDetail({
   const due =
     payment === 'PENDING' ? paymentDueLabel(reservation.paymentDueAt) : null
   const number = reservationNo(reservation.preorderId)
-  const memberName = members?.find(
-    (member) => member.memberId === reservation.customerId,
-  )?.name
   const registerJob = reservation.syncJobs.find(
     (job) => job.jobType === 'REGISTER',
   )
@@ -190,7 +185,7 @@ export function AdminReservationDetail({
         </Tag>
         <span className={styles.summary}>
           {[
-            memberName,
+            reservation.customerName,
             `${reservation.productTitle} ${reservation.optionTitle}`,
             `순번 ${reservation.queuePosition.toLocaleString('ko-KR')}`,
           ]
@@ -351,7 +346,9 @@ export function AdminReservationDetail({
             </h2>
             <dl className={styles.list}>
               <dt className={styles.term}>이름</dt>
-              <dd className={styles.value}>{memberName ?? '—'}</dd>
+              <dd className={styles.value}>
+                {reservation.customerName ?? '—'}
+              </dd>
               <dt className={styles.term}>회원 id</dt>
               <dd className={styles.value}>{reservation.customerId}</dd>
             </dl>

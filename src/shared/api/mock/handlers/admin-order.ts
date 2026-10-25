@@ -1,7 +1,7 @@
 import { http } from 'msw'
 
 import { settleDueDraws } from '../drawSettlement'
-import { mockMembers } from '../fixtures/admin-reservation'
+import { maskName, mockMembers } from '../fixtures/admin-reservation'
 import { draws } from '../fixtures/draw'
 import { orders as memberOrders, saveOrderDb } from '../fixtures/preorder'
 import { mockUuid } from '../fixtures/product'
@@ -121,6 +121,7 @@ const buildSeedOrders = (): AdminOrderRecord[] =>
     return {
       orderId: mockUuid(5, 1000 + i),
       customerId: member.memberId,
+      customerName: maskName(member.name),
       status,
       source,
       totalAmount: unitPrice * quantity,
@@ -196,7 +197,11 @@ const catchUp = () => {
 const all = (): AdminOrderRecord[] => [
   ...memberOrders.map(
     ({ preorderId: _p, cartItems: _c, ...order }) =>
-      ({ ...order, customerId: ME }) as AdminOrderRecord,
+      ({
+        ...order,
+        customerId: ME,
+        customerName: maskName(mockMembers[0].name),
+      }) as AdminOrderRecord,
   ),
   ...seedOrders,
 ]

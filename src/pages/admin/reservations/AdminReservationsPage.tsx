@@ -20,7 +20,6 @@ import {
   reservationStateVariant,
   reservationStateLabel,
   reservationStateOf,
-  useAdminMembers,
   useAdminReservations,
   useReprocessReservations,
   useReservationStats,
@@ -282,13 +281,6 @@ export function AdminReservationsPage() {
 
   const reprocess = useReprocessReservations()
 
-  // 회원 이름은 예약 응답에 없어서 보이는 회원 id만 모아 이름으로 바꾼다.
-  const { data: members = [] } = useAdminMembers(
-    (reservations ?? []).map((reservation) => reservation.customerId),
-  )
-  const memberName = (memberId: string) =>
-    members.find((member) => member.memberId === memberId)?.name ?? '—'
-
   const openDetail = (reservation: AdminReservation) =>
     navigate(adminReservationPath(reservation.preorderId))
 
@@ -302,27 +294,27 @@ export function AdminReservationsPage() {
   // 탭·검색으로 보이는 것 중 재처리할 수 있는 것만 고를 수 있다 — 상태가 바뀌어 빠진 예약은
   // 고른 채로 남아도 보내지 않는다.
   const selectable = visibleReservations.filter(isReprocessable)
-  const selectedIds = selectable
-    .filter((reservation) => selected.has(reservation.preorderId))
-    .map((reservation) => reservation.preorderId)
+  const selectedRows = selectable.filter((reservation) =>
+    selected.has(reservation.preorderId),
+  )
   const allSelected =
-    selectable.length > 0 && selectedIds.length === selectable.length
+    selectable.length > 0 && selectedRows.length === selectable.length
   const toggle = (ids: string[], checked: boolean) =>
     setSelected((prev) => toggleInSet(prev, ids, checked))
 
   // 외부로 등록을 다시 보내는 조치라 한 번 더 묻는다. 끝나면 목록을 다시 받아 표를 갱신한다.
   const confirmReprocess = () => {
-    const ids = selectedIds
+    const rows = selectedRows
     openModal({
       theme: 'light',
-      title: `${ids.length.toLocaleString('ko-KR')}건을 재처리할까요?`,
+      title: `${rows.length.toLocaleString('ko-KR')}건을 재처리할까요?`,
       description:
         '고른 예약을 외부 예약 시스템에 다시 등록합니다. 차례로 처리돼서 반영까지 몇 초 걸릴 수 있습니다.',
       confirmLabel: '재처리',
       onConfirm: () => {
         closeModal()
         setFeedback(undefined)
-        reprocess.mutate(ids, {
+        reprocess.mutate(rows, {
           onSuccess: ({ targetCount, skippedCount, estimatedSeconds }) => {
             setSelected(new Set())
             setFeedback({
@@ -435,7 +427,7 @@ export function AdminReservationsPage() {
       header: '예약자',
       render: (reservation) => (
         <span className={styles.cellText}>
-          {memberName(reservation.customerId)}
+          {reservation.customerName ?? '—'}
         </span>
       ),
     },
@@ -614,11 +606,11 @@ export function AdminReservationsPage() {
       {selectable.length > 0 && (
         <div className={styles.selectionBar}>
           <span className={styles.selectionCount}>
-            {selectedIds.length.toLocaleString('ko-KR')}건 선택됨
+            {selectedRows.length.toLocaleString('ko-KR')}건 선택됨
           </span>
           <Button
             size="small"
-            disabled={selectedIds.length === 0 || reprocess.isPending}
+            disabled={selectedRows.length === 0 || reprocess.isPending}
             onClick={confirmReprocess}
           >
             {reprocess.isPending ? '재처리 요청 중…' : '선택한 예약 재처리'}

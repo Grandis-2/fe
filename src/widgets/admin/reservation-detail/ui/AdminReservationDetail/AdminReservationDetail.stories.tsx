@@ -32,6 +32,7 @@ const base: Reservation = {
   externalReference: 'R-20261008-0048213579',
   cancelable: true,
   customerId: '5d1c2e3f-4a5b-4c6d-8e7f-000000001001',
+  customerName: '이**',
   internalNote: null,
   registerJobStatus: 'SUCCEEDED',
   syncJobs: [],
@@ -59,6 +60,8 @@ type Story = StoryObj<typeof meta>
 /** 결제 대기 — 취소는 되고 재처리할 건 없다 */
 export const PaymentPending: Story = {
   play: async ({ canvas }) => {
+    // 회원 이름은 상세 응답의 가린 이름(customerName)을 그대로 쓴다.
+    await expect(canvas.getByText(/^이\*\* · /)).toBeVisible()
     await expect(canvas.getByText('확정')).toBeVisible()
     await expect(canvas.getByText('결제 대기')).toBeVisible()
     await expect(canvas.getByText(/시간 남음/)).toBeVisible()

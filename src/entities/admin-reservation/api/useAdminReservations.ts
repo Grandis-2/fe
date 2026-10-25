@@ -18,7 +18,6 @@ import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
   cancelAdminReservation,
-  getAdminMembers,
   getAdminReservation,
   getAdminReservationsPage,
   getReservationStats,
@@ -26,10 +25,14 @@ import {
   reprocessAdminReservation,
   reprocessAdminReservations,
   reprocessFailedRegistrations,
+  reprocessSyncJobs,
+  targetsOf,
   toAdminReservationDetail,
   updateAdminReservationNote,
   type AdminReservationListParams,
 } from './adminReservation'
+
+import type { AdminReservation } from '../model/types'
 
 const RESERVATIONS_KEY = ['admin', 'reservations'] as const
 const POLL_INTERVAL_MS = 10_000
@@ -104,21 +107,6 @@ export const useReservationStatsByProduct = (
 }
 
 /**
- * 표에 보이는 회원 id를 이름으로 바꾼다. 이름은 예약만큼 자주 바뀌지 않아 폴링하지
- * 않는다. id 순서가 달라도 같은 캐시를 쓰도록 정렬해 키로 쓴다.
- */
-export const useAdminMembers = (memberIds: string[]) => {
-  const ids = [...new Set(memberIds)].sort()
-  return useQuery({
-    queryKey: ['admin', 'members', ids] as const,
-    queryFn: ({ signal }) => getAdminMembers(ids, signal),
-    select: (response) => response.items,
-    enabled: ids.length > 0,
-    ...queryPolicy.catalog,
-  })
-}
-
-/**
  * 재시도가 소진된(DEAD_LETTER) 외부 등록을 다시 시도한다. 결과는 조금 뒤에 반영되므로
  * 목록·집계를 무효화해 다시 받는다.
  */
@@ -157,8 +145,9 @@ export const useSyncJobErrorGroups = (
 export const useReprocessReservations = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (preorderIds?: string[]) =>
-      reprocessAdminReservations(preorderIds),
+    // 목록 줄에 작업 id가 있어 작업 목록을 다시 받지 않고 바로 보낸다.
+    mutationFn: (reservations: readonly AdminReservation[]) =>
+      reprocessSyncJobs(targetsOf(reservations)),
     // 앞 묶음이 받아들여졌으면 뒤 묶음이 실패해도 목록은 바뀌었다 — 성공·실패 모두 다시 받는다.
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),

@@ -3,7 +3,6 @@ import { http } from 'msw'
 import { deadLetterStore } from '../fixtures/admin-dead-letter'
 import {
   findReservation,
-  mockMembers,
   reservationStore,
 } from '../fixtures/admin-reservation'
 import { isOpenScenarioRunning, requeueForReprocess } from '../openScenario'
@@ -40,10 +39,11 @@ function toSummary(detail: AdminPreorderDetail): AdminPreorderSummary {
     syncJobs,
     ...summary
   } = detail
+  const register = syncJobs.find((job) => job.jobType === 'REGISTER')
   return {
     ...summary,
-    registerJobStatus:
-      syncJobs.find((job) => job.jobType === 'REGISTER')?.status ?? null,
+    registerJobStatus: register?.status ?? null,
+    registerSyncJobId: register?.syncJobId ?? null,
   }
 }
 
@@ -68,6 +68,22 @@ const sorters: Record<
   PAYMENT_DUE: (a, b) =>
     dueOf(a) - dueOf(b) || a.preorderId.localeCompare(b.preorderId),
 }
+
+/** 외부 등록을 기다리는 예약 중 REGISTER 작업이 조건에 맞는 것의 가장 오래된 접수 시각 */
+const oldestReceived = (
+  details: AdminPreorderDetail[],
+  matches: (job: SyncJob) => boolean,
+) =>
+  details
+    .filter(
+      (detail) =>
+        detail.status === 'PENDING_SYNC' &&
+        detail.syncJobs.some(
+          (job) => job.jobType === 'REGISTER' && matches(job),
+        ),
+    )
+    .map((detail) => detail.createdAt)
+    .toSorted()[0] ?? null
 
 const OPEN_JOB_STATES = [
   'PENDING',
@@ -123,20 +139,12 @@ function countStats(productId: string | null): PreorderStats {
     paymentOverdue: matched.filter(
       (detail) => detail.displayStatus === 'PAYMENT_EXPIRED',
     ).length,
-    // 재처리 필요(DEAD_LETTER)로 멈춘 예약은 빼고 아직 처리 중인 것만 본다.
-    // ponytail: 명세가 둘 중 무엇인지 말하지 않아(백엔드 요청서 Q3) 의미상 맞는 쪽으로 가정했다.
-    oldestPendingSyncAt:
-      matched
-        .filter(
-          (detail) =>
-            detail.status === 'PENDING_SYNC' &&
-            detail.syncJobs.some(
-              (job) =>
-                job.jobType === 'REGISTER' && job.status !== 'DEAD_LETTER',
-            ),
-        )
-        .map((detail) => detail.createdAt)
-        .toSorted()[0] ?? null,
+    // 명세: 앞의 것은 재처리 필요(DEAD_LETTER)까지, 뒤의 것은 등록 작업이 아직 도는 것만 센다.
+    oldestPendingSyncAt: oldestReceived(matched, () => true),
+    oldestInFlightSyncAt: oldestReceived(
+      matched,
+      (job) => job.status !== 'DEAD_LETTER',
+    ),
     countedAt: new Date().toISOString(),
   }
 }
@@ -437,22 +445,5 @@ export const adminReservationHandlers: RequestHandler[] = [
     }
     detail.internalNote = note
     return ok(detail)
-  }),
-
-  // 보이는 id만 이름으로 바꾼다. 없는 회원은 빠진다(실서버와 같다).
-  http.get(url('/api/v1/admin/members'), ({ request }) => {
-    const ids = new URL(request.url).searchParams
-      .getAll('ids')
-      .flatMap((value) => value.split(','))
-      .filter(Boolean)
-    if (ids.length < 1 || ids.length > 100) {
-      return invalid([{ field: 'ids', message: '1~100개여야 합니다.' }])
-    }
-    // 서버처럼 첫 글자만 남기고 가린다(김철수 → 김**).
-    return ok({
-      items: mockMembers
-        .filter((member) => ids.includes(member.memberId))
-        .map((member) => ({ ...member, name: `${[...member.name][0]}**` })),
-    })
   }),
 ]

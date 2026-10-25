@@ -24,6 +24,10 @@ export type SyncJobType = 'REGISTER' | 'CANCEL'
 /** 관리자 목록 한 줄 */
 export type AdminPreorderSummary = Omit<PreorderSummary, 'imageUrl'> & {
   customerId: string
+  /** 가린 회원 이름(첫 글자와 **). 회원 정보를 받지 못하면 null */
+  customerName: string | null
+  /** 외부 등록(REGISTER) 작업 id — 일괄 재처리의 syncJobIds에 그대로 쓴다. 작업이 없으면 null */
+  registerSyncJobId: string | null
   /** 외부 등록 작업 상태. DEAD_LETTER면 재처리가 필요하다. 작업이 없으면 null */
   registerJobStatus: SyncJobStatus | null
 }
@@ -126,6 +130,8 @@ export type SyncJob = SyncJobSummary & { attempts: SyncAttempt[] }
 /** 관리자 예약 상세. 회원용 상세에 회원 id, 내부 메모, 동기화 작업, 상태 이력이 붙는다 */
 export type AdminPreorderDetail = Omit<PreorderDetail, 'imageUrl'> & {
   customerId: string
+  /** 가린 회원 이름(첫 글자와 **). 회원 정보를 받지 못하면 null */
+  customerName: string | null
   /** 회원에게 보이지 않는 관리자 메모(최대 1000자). 없으면 null */
   internalNote: string | null
   syncJobs: SyncJob[]
@@ -158,20 +164,9 @@ export type PreorderStats = {
   deadLetters: { waiting: number; oldestWaitingAt: string | null }
   /** 결제 기한이 지났는데 아직 만료 처리 전인 예약 수 */
   paymentOverdue: number
-  /** 외부 등록을 기다리는 예약 중 가장 오래된 접수 시각. 없으면 null */
+  /** 외부 등록을 기다리는 예약 중 가장 오래된 접수 시각. 재처리 필요(DEAD_LETTER)도 센다. 없으면 null */
   oldestPendingSyncAt: string | null
+  /** 그중 등록 작업이 아직 도는(PENDING·PROCESSING·RETRY_SCHEDULED) 예약만의 가장 오래된 접수 시각 */
+  oldestInFlightSyncAt: string | null
   countedAt: string
-}
-
-/**
- * 예약 응답엔 회원 id만 있어 이름을 따로 받는다. 가입 때 입력한 실명이고, 비어 있으면
- * 카카오 표시 이름이다(명세 예시는 '김**'처럼 가린 값이라 백엔드에 확인 중).
- */
-export type AdminMember = {
-  memberId: string
-  name: string
-}
-
-export type AdminMemberListResponse = {
-  items: AdminMember[]
 }

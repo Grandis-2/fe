@@ -2,7 +2,6 @@ import { adminProductStore } from './admin-product'
 import { shipmentBatchStore } from './admin-shipment'
 
 import type {
-  AdminMember,
   AdminPreorderDetail,
   PreorderDisplayStatus,
   PreorderEvent,
@@ -13,8 +12,11 @@ import type {
   SyncJobStatus,
 } from '../../types'
 
-/** 예약 응답엔 회원 id만 있어 이름은 회원 이름 조회로 받는다 */
-export const mockMembers: AdminMember[] = [
+/** 서버처럼 첫 글자만 남기고 가린다(김철수 → 김**) */
+export const maskName = (name: string) => `${[...name][0]}**`
+
+/** 목 회원. 응답엔 이름을 가려(maskName) 싣는다 */
+export const mockMembers: { memberId: string; name: string }[] = [
   { memberId: '5d1c2e3f-4a5b-4c6d-8e7f-000000001001', name: '이주현' },
   { memberId: '5d1c2e3f-4a5b-4c6d-8e7f-000000001002', name: '김태윤' },
   { memberId: '5d1c2e3f-4a5b-4c6d-8e7f-000000001003', name: '박서연' },
@@ -198,6 +200,7 @@ function buildReservation(
     externalReference: registered ? `R-${20_000 + index}` : null,
     cancelable: status !== 'CANCELING' && status !== 'CANCELED',
     customerId: member.memberId,
+    customerName: maskName(member.name),
     internalNote:
       index % 7 === 0 ? 'VIP 고객 — 배송 일정 문의 이력 있음' : null,
     syncJobs: [register],

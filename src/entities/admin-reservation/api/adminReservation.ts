@@ -7,7 +7,6 @@ import {
 import { toQueryString } from '@shared/api/queryString'
 import type {
   AdminCancelRequest,
-  AdminMemberListResponse,
   AdminNoteRequest,
   AdminPreorderDetail,
   AdminPreorderListParams,
@@ -165,13 +164,85 @@ export class PartialReprocessError extends ApiRequestError {
   }
 }
 
+/** 목록 줄 중 외부 등록 작업이 있는 것만 재처리 대상으로 */
+export const targetsOf = (
+  reservations: readonly Pick<
+    AdminPreorderSummary,
+    'preorderId' | 'registerSyncJobId'
+  >[],
+): ReprocessTarget[] =>
+  reservations.flatMap(({ preorderId, registerSyncJobId }) =>
+    registerSyncJobId ? [{ preorderId, syncJobId: registerSyncJobId }] : [],
+  )
+
+/** 재처리할 외부 등록 작업 — 부분 실패 때 못 보낸 예약을 알려 주려고 예약 id를 같이 든다 */
+export type ReprocessTarget = { preorderId: string; syncJobId: string }
+
+const nothingToReprocess = () =>
+  new ApiRequestError(
+    {
+      code: 'NOTHING_TO_REPROCESS',
+      message: '재처리할 작업이 없습니다. 목록을 새로 고쳐 확인해 주세요.',
+      details: null,
+    },
+    409,
+  )
+
+// [preorder] POST /api/v1/admin/preorders/sync-jobs/reprocess-batch — 일괄 재처리
+/**
+ * 외부 등록 작업을 한 번에 다시 시도한다. 1000건씩 나눠 보내고, 서버는 대상 수만 바로 주고
+ * 실제 재처리는 이어서 한다.
+ */
+export async function reprocessSyncJobs(
+  targets: readonly ReprocessTarget[],
+  signal?: AbortSignal,
+) {
+  if (targets.length === 0) throw nothingToReprocess()
+  const total: BatchReprocess = {
+    targetCount: 0,
+    skippedCount: 0,
+    estimatedSeconds: 0,
+  }
+  // 차례로 보낸다 — 서버가 요청마다 초당 정해진 수만큼 처리해서 예상 시간은 더해진다.
+  // ponytail: 서버에는 전역 속도 제한이 없어 묶음이 겹쳐 돌면 외부 호출 속도가 묶음 수만큼 배로 늘어난다.
+  // 그래서 앞 묶음의 예상 시간만큼 기다렸다 다음 묶음을 보낸다. be에 전역 제한이 생기면 이 대기를 뺀다.
+  let waitMs = 0
+  for (let i = 0; i < targets.length; i += REPROCESS_BATCH_MAX) {
+    let batch: BatchReprocess
+    try {
+      if (waitMs > 0) await pause(waitMs, signal)
+      batch = await apiClient.request<BatchReprocess>(
+        `${BASE}/sync-jobs/reprocess-batch`,
+        {
+          method: 'POST',
+          body: {
+            syncJobIds: targets
+              .slice(i, i + REPROCESS_BATCH_MAX)
+              .map((target) => target.syncJobId),
+          } satisfies ReprocessBatchRequest,
+        },
+      )
+    } catch (caught: unknown) {
+      // 앞 묶음이 하나도 안 받아들여졌으면 그대로 던진다. 받아들여진 게 있으면 그 수와 남은 건을 알린다.
+      if (i === 0) throw caught
+      throw new PartialReprocessError(total, [
+        ...new Set(targets.slice(i).map((target) => target.preorderId)),
+      ])
+    }
+    total.targetCount += batch.targetCount
+    total.skippedCount += batch.skippedCount
+    total.estimatedSeconds += batch.estimatedSeconds
+    waitMs = batch.estimatedSeconds * 1000
+  }
+  return total
+}
+
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록
-// → POST /api/v1/admin/preorders/sync-jobs/reprocess-batch — 조건으로 일괄 재처리
+// → reprocessSyncJobs
 /**
  * 여러 예약의 외부 등록을 한 번에 다시 시도한다. preorderIds를 빼면 재처리 대기 전부.
- * 일괄 재처리는 작업 id를 받는데 예약 목록엔 없어서, 재처리 대기(DEAD_LETTER) REGISTER
- * 작업을 받아 예약 id로 골라 1000건씩 나눠 보낸다. 서버는 대상 수만 바로 주고 실제
- * 재처리는 이어서 한다.
+ * 재처리 대기(DEAD_LETTER) REGISTER 작업을 받아 예약 id로 고른다 — 작업 id를 이미 알면
+ * reprocessSyncJobs를 바로 부른다.
  */
 export async function reprocessAdminReservations(
   preorderIds?: string[],
@@ -186,58 +257,12 @@ export async function reprocessAdminReservations(
       size: PAGE_SIZE_MAX,
     }),
   )
-  const syncJobIds = deadJobs
-    .filter((job) => !wanted || wanted.has(job.preorderId))
-    .map((job) => job.syncJobId)
-  if (syncJobIds.length === 0) {
-    throw new ApiRequestError(
-      {
-        code: 'NOTHING_TO_REPROCESS',
-        message: '재처리할 작업이 없습니다. 목록을 새로 고쳐 확인해 주세요.',
-        details: null,
-      },
-      409,
-    )
-  }
-  const total: BatchReprocess = {
-    targetCount: 0,
-    skippedCount: 0,
-    estimatedSeconds: 0,
-  }
-  const preorderOf = new Map(
-    deadJobs.map((job) => [job.syncJobId, job.preorderId]),
+  return reprocessSyncJobs(
+    deadJobs
+      .filter((job) => !wanted || wanted.has(job.preorderId))
+      .map(({ preorderId, syncJobId }) => ({ preorderId, syncJobId })),
+    signal,
   )
-  // 차례로 보낸다 — 서버가 요청마다 초당 정해진 수만큼 처리해서 예상 시간은 더해진다.
-  // ponytail: 서버에는 전역 속도 제한이 없어 묶음이 겹쳐 돌면 외부 호출 속도가 묶음 수만큼 배로 늘어난다.
-  // 그래서 앞 묶음의 예상 시간만큼 기다렸다 다음 묶음을 보낸다. be에 전역 제한이 생기면 이 대기를 뺀다.
-  let waitMs = 0
-  for (let i = 0; i < syncJobIds.length; i += REPROCESS_BATCH_MAX) {
-    let batch: BatchReprocess
-    try {
-      if (waitMs > 0) await pause(waitMs, signal)
-      batch = await apiClient.request<BatchReprocess>(
-        `${BASE}/sync-jobs/reprocess-batch`,
-        {
-          method: 'POST',
-          body: {
-            syncJobIds: syncJobIds.slice(i, i + REPROCESS_BATCH_MAX),
-          } satisfies ReprocessBatchRequest,
-        },
-      )
-    } catch (caught: unknown) {
-      // 앞 묶음이 하나도 안 받아들여졌으면 그대로 던진다. 받아들여진 게 있으면 그 수와 남은 건을 알린다.
-      if (i === 0) throw caught
-      const unsent = new Set(
-        syncJobIds.slice(i).flatMap((id) => preorderOf.get(id) ?? []),
-      )
-      throw new PartialReprocessError(total, [...unsent])
-    }
-    total.targetCount += batch.targetCount
-    total.skippedCount += batch.skippedCount
-    total.estimatedSeconds += batch.estimatedSeconds
-    waitMs = batch.estimatedSeconds * 1000
-  }
-  return total
 }
 
 // 취소 신호가 오면 기다림을 끝내고 실패로 돌린다 — 호출부가 남은 건을 보내지 못한 것으로 센다.
@@ -259,10 +284,10 @@ const pause = (ms: number, signal?: AbortSignal) =>
   })
 
 // [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자) · 재처리 필요만
-// → reprocessAdminReservations
+// → reprocessSyncJobs
 /**
  * 외부 등록이 실패한 예약을 다시 시도한다. productId를 주면 그 사전예약만, 빼면 전부.
- * 일괄 재처리는 상품으로 거를 수 없어 그 사전예약의 실패 예약을 먼저 받아 고른다.
+ * 일괄 재처리는 상품으로 거를 수 없어 그 사전예약의 실패 예약을 먼저 받아 작업 id를 모은다.
  */
 export async function reprocessFailedRegistrations(productId?: string) {
   if (!productId) return reprocessAdminReservations()
@@ -274,9 +299,7 @@ export async function reprocessFailedRegistrations(productId?: string) {
       size: PAGE_SIZE_MAX,
     }),
   )
-  return reprocessAdminReservations(
-    failed.map((reservation) => reservation.preorderId),
-  )
+  return reprocessSyncJobs(targetsOf(failed))
 }
 
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록(errorGroups만)
@@ -298,14 +321,6 @@ export const getSyncJobErrorGroups = async (
       group.errorCode !== null,
   )
 }
-
-// [member] GET /api/v1/admin/members — 회원 이름 조회(관리자)
-/** 회원 id를 이름으로 바꾼다. 한 번에 1~100개이고 ids 없이 부르면 400이다 */
-export const getAdminMembers = (ids: string[], signal?: AbortSignal) =>
-  apiClient.request<AdminMemberListResponse>(
-    `/api/v1/admin/members${toQueryString({ ids: ids.join(',') })}`,
-    { signal },
-  )
 
 /** 상세에 REGISTER 작업 상태를 붙인다 — 목록 한 줄과 같은 판단 함수를 쓰려고 */
 export const toAdminReservationDetail = (
