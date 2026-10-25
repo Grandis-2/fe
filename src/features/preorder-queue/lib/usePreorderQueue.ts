@@ -202,9 +202,10 @@ export function usePreorderQueue({
       setStartPosition(waiting.position)
   }
   if (waiting && poll.dataUpdatedAt !== pace?.at) {
-    // 다시 진입해 더 뒤로 섰으면 비교하지 않고 새로 잰다.
+    // 다시 진입해 더 뒤로 섰으면 비교하지 않고 새로 잰다. 진입 응답(조회 전, dataUpdatedAt 0)과는 비교하지 않는다.
     const comparable =
       pace !== null &&
+      pace.at > 0 &&
       waiting.position <= pace.position &&
       poll.dataUpdatedAt > pace.at
     setPace({
