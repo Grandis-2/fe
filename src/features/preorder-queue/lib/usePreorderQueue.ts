@@ -186,16 +186,22 @@ export function usePreorderQueue({
       handleFail(getErrorMessage(poll.error, '대기 순번을 확인하지 못했어요.'))
   }, [poll.error])
 
-  // 마지막으로 성공한 조회부터 실패가 이어진 지 250초가 지났다.
+  // 마지막으로 성공한 조회부터 실패가 이어진 지 250초가 지났다. 오프라인이면 요청이 멈춰(paused) 실패로 세지지
+  // 않으므로 끊긴 시간도 같이 센다.
   const mayHaveLeftQueue = useDeadline(
-    poll.failureCount > 0,
+    poll.failureCount > 0 || poll.fetchStatus === 'paused',
     LEAVE_GRACE_MS,
     poll.dataUpdatedAt,
   ).passed
 
+  // 줄에서 빠져(NOT_IN_QUEUE) 다시 섰더니 더 뒤로 갔다 — 순번이 말없이 뛰지 않게 앞 순번을 남겨 알린다.
+  const [droppedFrom, setDroppedFrom] = useState<number | null>(null)
   const waiting = current?.status === 'WAITING' ? current : null
   // 렌더 중에 바로 맞춘다(이펙트에서 setState하면 react-hooks/set-state-in-effect에 걸린다).
   if (waiting && waiting !== lastWaiting) {
+    // 순번은 줄어들기만 한다 — 늘었으면 다시 진입해 뒤로 선 것이다.
+    if (lastWaiting && waiting.position > lastWaiting.position)
+      setDroppedFrom(lastWaiting.position)
     setLastWaiting(waiting)
     // 다시 진입해 더 뒤로 섰으면 그 순번부터 센다.
     if (startPosition === null || waiting.position > startPosition)
@@ -286,6 +292,8 @@ export function usePreorderQueue({
     // 조회가 실패하고 있을 때의 안내용(PollingNotice).
     poll: { fetchStatus: poll.fetchStatus, failureCount: poll.failureCount },
     mayHaveLeftQueue,
+    // 줄에서 빠져 다시 섰을 때 앞 순번(없으면 null).
+    droppedFrom,
     isOpen,
     hasLeft,
     moveIn,
