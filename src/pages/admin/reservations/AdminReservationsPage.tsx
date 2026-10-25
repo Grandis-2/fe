@@ -25,7 +25,6 @@ import {
   useReprocessReservations,
   useReservationStats,
   type AdminReservation,
-  type ReservationState,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
@@ -43,6 +42,7 @@ import {
   Dropdown,
   InlineAlert,
   Input,
+  Navigator,
   RefreshStatus,
   SegmentedTabs,
   Table,
@@ -107,30 +107,44 @@ const formatReceivedAt = (iso: string) => {
 }
 
 // 처리할 일이 있는 상태부터 — 실패가 맨 앞이다. stage는 집계 건수(countByStage)의 칸이다.
+// query는 탭이 서버에 보내는 조건이다. 서버는 상태를 하나만 거를 수 있어 묶인 탭은 상태를
+// 여럿 주고, 그 순서대로 이어 붙여 쪽을 나눈다(확정은 결제 대기 다음 결제 완료, 취소는 취소
+// 중 다음 취소 완료). 처리 중(PENDING_SYNC)엔 외부 등록 실패도 섞여 나온다 — 서버에 '실패
+// 빼고' 조건이 없다. 실패 행은 빨간 배경이라 구분된다.
 const statusFilters = [
-  { value: 'REPROCESS_NEEDED', stage: 'REPROCESS_NEEDED' },
-  { value: 'PROCESSING', stage: 'PROCESSING' },
-  { value: 'CONFIRMED', stage: 'CONFIRMED' },
-  { value: 'CANCELED', stage: 'CANCELED' },
-  { value: 'all', stage: 'ALL' },
+  {
+    value: 'REPROCESS_NEEDED',
+    stage: 'REPROCESS_NEEDED',
+    query: { registerJobStatus: 'DEAD_LETTER' },
+  },
+  {
+    value: 'PROCESSING',
+    stage: 'PROCESSING',
+    query: { statuses: ['PENDING_SYNC'] },
+  },
+  {
+    value: 'CONFIRMED',
+    stage: 'CONFIRMED',
+    query: { statuses: ['REGISTERED', 'RESERVED'] },
+  },
+  {
+    value: 'CANCELED',
+    stage: 'CANCELED',
+    query: { statuses: ['CANCELING', 'CANCELED'] },
+  },
+  { value: 'all', stage: 'ALL', query: {} },
 ] as const
 
-// 한 번에 받는 최근 예약 수(서버 상한). 표·탭·검색은 이 안에서 한다.
-const LIST_SIZE = 100
+const PAGE_SIZE = 20
 
 type StatusFilter = (typeof statusFilters)[number]['value']
-
-/** 탭이 거르는 상태. 취소 탭은 곧 취소될 취소 중까지 함께 보여준다 */
-const matchesFilter = (state: ReservationState, filter: StatusFilter) =>
-  filter === 'all' ||
-  state === filter ||
-  (filter === 'CANCELED' && state === 'CANCELING')
 
 type Feedback = { status: 'success' | 'error'; message: string }
 
 /**
  * 예약 접수 현황. 10초마다 자동 갱신하고, 외부 등록이 끝내 실패한 예약은 골라서 한 번에
- * 재처리한다(맨 왼쪽 체크박스). 탭 건수는 집계 API로 전체를 세고, 표는 최근 예약을 보여준다.
+ * 재처리한다(맨 왼쪽 체크박스). 탭 건수는 집계 API로 전체를 세고, 표는 서버가 나눈 쪽을
+ * 넘겨 끝까지 본다.
  * 운영 대시보드의 외부 등록 실패 카드가 실패 탭을 연 채로 이 화면에 온다.
  */
 export function AdminReservationsPage() {
@@ -141,21 +155,29 @@ export function AdminReservationsPage() {
   // 처음 들어오면(status 없음) 할 일이 있는 외부 등록 실패부터. 모르는 값(옛 링크·잘못 친
   // 주소)이면 전체 — 실패 탭으로 열면 일반 예약이 다 빠져 보인다.
   const statusParam = searchParams.get('status')
-  const statusFilter: StatusFilter =
+  const tab =
     statusParam === null
-      ? 'REPROCESS_NEEDED'
-      : (statusFilters.find(({ value }) => value === statusParam)?.value ??
-        'all')
+      ? statusFilters[0]
+      : (statusFilters.find(({ value }) => value === statusParam) ??
+        statusFilters[statusFilters.length - 1])
+  const statusFilter: StatusFilter = tab.value
+  // 쪽도 주소(?page=, 1부터)에 둔다 — 상세에서 돌아와도 보던 쪽이다. 손으로 고친 값(1.5,
+  // Infinity)은 첫 쪽으로 — 정수가 아니면 서버가 400을 준다.
+  const pageParam = Number(searchParams.get('page'))
+  const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1
+  // 쪽 말고 다른 조건이 바뀌면 첫 쪽으로 돌아간다 — 3쪽을 보다 탭을 바꾸면 빈 쪽이 뜬다.
   const setParam = (key: string, value: string | undefined) =>
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev)
         if (value === undefined) params.delete(key)
         else params.set(key, value)
+        if (key !== 'page') params.delete('page')
         return params
       },
       { replace: true },
     )
+  const toFirstPage = () => setParam('page', undefined)
   const setStatusFilter = (next: StatusFilter) => setParam('status', next)
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const productId = searchParams.get('product') ?? undefined
@@ -164,6 +186,10 @@ export function AdminReservationsPage() {
   const setProductId = (next: string | undefined) => {
     setParam('product', next)
     setBatchNumber(undefined)
+  }
+  const selectBatch = (next: number | undefined) => {
+    setBatchNumber(next)
+    toFirstPage()
   }
   // 외부 예약 번호는 정확히 같은 것만 찾아서, 다 친 뒤(Enter) 보낸다 — 칠 때마다 묻지 않게.
   const [referenceDraft, setReferenceDraft] = useState('')
@@ -174,6 +200,7 @@ export function AdminReservationsPage() {
   const selectPeriod = (next: Period) => {
     setPeriod(next)
     setFrom(fromOf(next, Date.now())?.toISOString())
+    toFirstPage()
   }
   // 재처리할 예약(예약 id). 실제로 보내는 건 지금 표에서 재처리할 수 있는 것만이다.
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
@@ -206,23 +233,22 @@ export function AdminReservationsPage() {
     })),
   ]
 
-  // 필터는 서버가 거른다. 탭은 실패만 서버 조건(외부 등록 작업 상태)이 있고, 나머지는 서버
-  // 상태값 하나로 못 고르는 묶음('확정' = 결제 대기 + 결제 완료)이라 받은 목록을 화면이 거른다.
-  // shortcut: 최근 100건만 받는다. 넘으면 표 위에 알리고, 더 보려면 서버 페이지로 바꾼다.
+  // 탭·필터 모두 서버가 거르고, 쪽도 서버가 나눈다 — 100건이 넘어도 쪽을 넘겨 끝까지 본다.
   const list = useAdminReservations(
     {
+      ...tab.query,
       productId,
       batchNumber: productId ? batchNumber : undefined,
       externalReference,
       from,
-      registerJobStatus:
-        statusFilter === 'REPROCESS_NEEDED' ? 'DEAD_LETTER' : undefined,
-      size: LIST_SIZE,
+      page: page - 1,
+      size: PAGE_SIZE,
     },
     refreshInterval,
   )
-  const { data: page, isPending, isError, error, dataUpdatedAt, refetch } = list
-  const reservations = page?.items
+  const { data, isPending, isError, error, dataUpdatedAt, refetch } = list
+  const reservations = data?.items
+  const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
   // 아직 한 번도 못 받았으면 data가 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
   const stats = useReservationStats(productId, refreshInterval, {
     keepPrevious: true,
@@ -249,9 +275,7 @@ export function AdminReservationsPage() {
     void stats.refetch()
   }
 
-  const visibleReservations = (reservations ?? []).filter((reservation) =>
-    matchesFilter(reservationStateOf(reservation), statusFilter),
-  )
+  const visibleReservations = reservations ?? []
 
   // 탭·검색으로 보이는 것 중 재처리할 수 있는 것만 고를 수 있다 — 상태가 바뀌어 빠진 예약은
   // 고른 채로 남아도 보내지 않는다.
@@ -302,8 +326,8 @@ export function AdminReservationsPage() {
 
   const stageCounts = stats.data && countByStage(stats.data)
 
-  // 탭에 전체 건수를 붙인다(집계 API) — 표는 최근 100건이라 탭 숫자와 표 줄 수가 다를 수 있다.
-  // 집계를 못 받았으면 숫자를 빼서 0건으로 읽히지 않게 한다.
+  // 탭에 전체 건수를 붙인다(집계 API). 표는 상품 말고 다른 조건(차수·기간·외부 번호)도 따라서
+  // 탭 숫자와 표 건수가 다를 수 있다. 집계를 못 받았으면 숫자를 빼서 0건으로 읽히지 않게 한다.
   // 실패 건수는 빨간 배지로 — 따로 경고 띠를 두지 않아도 어느 탭에서든 먼저 보인다.
   const tabs = statusFilters.map(({ value, stage }) => ({
     value,
@@ -518,6 +542,7 @@ export function AdminReservationsPage() {
           onSubmit={(event) => {
             event.preventDefault()
             setExternalReference(referenceDraft.trim() || undefined)
+            toFirstPage()
           }}
         >
           <Input
@@ -527,7 +552,10 @@ export function AdminReservationsPage() {
             onChange={(event) => {
               setReferenceDraft(event.target.value)
               // 지우면 바로 조건을 푼다 — 빈 칸에 Enter를 또 누르게 하지 않는다.
-              if (!event.target.value.trim()) setExternalReference(undefined)
+              if (!event.target.value.trim()) {
+                setExternalReference(undefined)
+                toFirstPage()
+              }
             }}
           />
         </form>
@@ -547,7 +575,7 @@ export function AdminReservationsPage() {
           }
           options={batchOptions}
           value={batchNumber}
-          onSelect={setBatchNumber}
+          onSelect={selectBatch}
           disabled={!productId}
         />
         <Dropdown
@@ -583,13 +611,6 @@ export function AdminReservationsPage() {
         </div>
       )}
 
-      {page && page.total > page.items.length && (
-        <div className={styles.subText}>
-          전체 {page.total.toLocaleString('ko-KR')}건 중 최근{' '}
-          {page.items.length.toLocaleString('ko-KR')}건만 표시합니다.
-        </div>
-      )}
-
       <Table
         columns={columns}
         rows={visibleReservations}
@@ -603,14 +624,23 @@ export function AdminReservationsPage() {
             `${reservationNo(reservation.preorderId)} 상세 보기`,
           onClick: openDetail,
         }}
-        pageSize={10}
         loading={isPending}
+        loadingRows={PAGE_SIZE}
         emptyMessage={
           isError
             ? getErrorMessage(error, '예약을 불러오지 못했습니다.')
             : '조건에 맞는 예약이 없습니다.'
         }
       />
+
+      {totalPages > 1 && (
+        <Navigator
+          className={styles.navigator}
+          totalPages={totalPages}
+          currentPage={page}
+          onPageChange={(next) => setParam('page', String(next))}
+        />
+      )}
     </div>
   )
 }

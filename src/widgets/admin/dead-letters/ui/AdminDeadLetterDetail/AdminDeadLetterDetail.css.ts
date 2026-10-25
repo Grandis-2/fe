@@ -2,23 +2,53 @@ import { style } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@shared/config/theme'
 
+const mono = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[20],
+  gap: spacing[16],
 })
 
 export const titleRow = style({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
-  gap: spacing[12],
+  gap: `${spacing[12]} ${spacing[16]}`,
+})
+
+export const heading = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[4],
+  minWidth: 0,
+})
+
+export const titleLine = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: spacing[10],
 })
 
 export const title = style([
   typography.title.xlSemibold,
   { margin: 0, color: color.text.primary },
 ])
+
+// 무슨 이벤트가 어느 예약에서 얼마나 멈췄는지 — 제목 아래 한 줄.
+export const summary = style([
+  typography.body.sub,
+  {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: `${spacing[4]} ${spacing[12]}`,
+    color: color.text.secondary,
+  },
+])
+
+export const code = style({ fontFamily: mono, fontSize: '13px' })
 
 // 상태 태그와 떨어뜨려, 조치 버튼임을 드러낸다.
 export const actions = style({
@@ -27,60 +57,90 @@ export const actions = style({
   marginLeft: 'auto',
 })
 
-export const cards = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',
-  gap: spacing[20],
-  alignItems: 'start',
+// 왼쪽은 넓게 원문, 오른쪽은 좁게 참고 정보. 좁으면 아래로 내려간다.
+export const columns = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[16],
+  alignItems: 'flex-start',
 })
 
-/** 섹션 내용을 감싸는 흰 카드 */
-export const card = style({
+export const main = style({ flex: '2 1 560px' })
+
+export const side = style({
+  flex: '1 1 340px',
+  minWidth: 0,
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[12],
-  margin: 0,
-  padding: spacing[20],
-  borderRadius: '12px',
-  border: `1px solid ${color.border.subtle}`,
-  background: color.background.base,
+  gap: spacing[16],
 })
 
-export const row = style({
-  display: 'grid',
-  gridTemplateColumns: '120px 1fr',
-  gap: spacing[12],
-})
-
-export const term = style([
-  typography.body.defaultRegular,
-  { color: color.text.tertiary },
+export const titleNote = style([
+  typography.body.subMedium,
+  { color: color.text.secondary },
 ])
 
-export const value = style([
-  typography.body.defaultRegular,
-  { margin: 0, color: color.text.primary, wordBreak: 'break-all' },
-])
+export const note = style([typography.body.sub, { color: color.text.tertiary }])
+
+export const muted = style({ color: color.text.tertiary })
 
 export const link = style({
   color: color.primary.base,
   textDecoration: 'underline',
+  fontVariantNumeric: 'tabular-nums',
 })
 
-// 원문은 최대 256KB라 길면 상자 안에서 스크롤한다.
-export const body = style([
+export const trace = style({
+  listStyle: 'none',
+  margin: 0,
+  padding: 0,
+  display: 'flex',
+  flexDirection: 'column',
+})
+
+export const traceRow = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[10],
+  padding: `${spacing[10]} 0`,
+  borderBottom: `1px solid ${color.border.subtle}`,
+  selectors: { '&:last-child': { borderBottom: 'none' } },
+})
+
+export const traceLabel = style([
+  typography.body.sub,
+  { width: '96px', flexShrink: 0, color: color.text.secondary },
+])
+
+export const traceValue = style({
+  flex: 1,
+  minWidth: 0,
+  fontFamily: mono,
+  fontSize: '13px',
+  color: color.text.primary,
+  overflowWrap: 'anywhere',
+})
+
+export const history = style({
+  listStyle: 'none',
+  margin: 0,
+  padding: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[10],
+})
+
+export const historyRow = style([
   typography.body.sub,
   {
-    margin: 0,
-    maxHeight: '480px',
-    overflow: 'auto',
-    padding: spacing[20],
-    borderRadius: '12px',
-    border: `1px solid ${color.border.subtle}`,
-    background: color.background.base,
+    display: 'grid',
+    gridTemplateColumns: '128px minmax(0, 1fr)',
+    gap: spacing[12],
     color: color.text.primary,
-    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-all',
   },
 ])
+
+export const historyAt = style({
+  color: color.text.secondary,
+  fontVariantNumeric: 'tabular-nums',
+})

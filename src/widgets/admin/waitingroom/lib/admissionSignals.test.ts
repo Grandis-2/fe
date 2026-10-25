@@ -48,10 +48,9 @@ describe('admissionSignals', () => {
     )
     expect(signals.judged).toBe(true)
     expect(signals.congested).toBe(false)
-    expect(signals.limit).toBeNull()
   })
 
-  it('30초 내내 대기가 늘면 밀림이고, 그때 처리 속도가 한계다', () => {
+  it('30초 내내 대기가 늘면 밀림이다', () => {
     // 접수 초당 40, 처리 초당 30 — 대기가 5초마다 50건씩 쌓인다.
     const rows: [number, number, number][] = Array.from(
       { length: 7 },
@@ -62,7 +61,6 @@ describe('admissionSignals', () => {
     expect(signals.received).toBe(40)
     expect(signals.processed).toBe(30)
     expect(signals.backlogPerMinute).toBe(600)
-    expect(signals.limit).toEqual({ perSecond: 30, at: 30_000 })
   })
 
   it('한 번이라도 줄면 밀림이 아니다', () => {
@@ -80,7 +78,7 @@ describe('admissionSignals', () => {
     expect(signals.congested).toBe(false)
   })
 
-  it('풀린 뒤에도 마지막으로 밀린 때의 한계를 기억한다', () => {
+  it('대기가 줄기 시작하면 밀림이 풀린다', () => {
     const rising: [number, number, number][] = Array.from(
       { length: 7 },
       (_, i) => [i * 200, i * 150, 100 + i * 50],
@@ -91,7 +89,6 @@ describe('admissionSignals', () => {
     ]
     const signals = admissionSignals(series([...rising, ...easing]))
     expect(signals.congested).toBe(false)
-    expect(signals.limit).toEqual({ perSecond: 30, at: 30_000 })
   })
 
   it('폴링이 끊긴 뒤에는 새 30초가 찰 때까지 판단하지 않는다', () => {

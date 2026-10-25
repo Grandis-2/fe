@@ -1,7 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { expect, fn } from 'storybook/test'
-
-import { diagnose, type LoadTestSignals } from '../../lib/diagnose'
+import { expect } from 'storybook/test'
 
 import { AdminLoadTest } from './AdminLoadTest'
 
@@ -71,40 +69,32 @@ const withData = (Story: () => React.ReactNode) => {
 const meta = {
   component: AdminLoadTest,
   tags: ['ai-generated'],
-  args: {
-    productNames: new Map([
-      [IPHONE, '아이폰 18 Pro'],
-      [GALAXY, '갤럭시 S27'],
-    ]),
-    onSelectProduct: fn(),
-  },
+  args: { header: { title: '부하 검증' } },
+  // 기록한 구간이 브라우저에 남아 이야기끼리 섞이지 않게 비운다.
+  beforeEach: () => localStorage.removeItem('nova.admin.load-test.recording'),
 } satisfies Meta<typeof AdminLoadTest>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 세 구역과 Grafana·조작 화면 링크가 보인다 */
+/** 값을 못 받아도 틀(조작·차트 자리·점검)은 보인다 */
 export const Default: Story = {
   play: async ({ canvas }) => {
+    await expect(canvas.getByText('실시간')).toBeVisible()
     await expect(
-      canvas.getByRole('link', { name: 'Grafana 열기' }),
+      canvas.getByRole('link', { name: 'Grafana ↗' }),
     ).toHaveAttribute('target', '_blank')
-    await expect(
-      canvas.getByRole('link', { name: '대기열 관리' }),
-    ).toBeVisible()
     await expect(canvas.getByRole('link', { name: 'Mock 설정' })).toBeVisible()
     await expect(canvas.getByText('처리 중 적체')).toBeVisible()
   },
 }
 
-/** 전체 보기 — 상품별 대기열을 나눠 보이고, 행을 누르면 그 상품으로 들어간다 */
+/** 전체 — 접수 중인 상품의 대기 인원을 더하고, 입장 속도는 전역 값이다 */
 export const AllProducts: Story = {
   decorators: [withData],
-  play: async ({ canvas, args, userEvent }) => {
-    await expect(canvas.getByText('총 대기 인원')).toBeVisible()
-    await expect(canvas.getByText('5,000명')).toBeVisible()
-    await userEvent.click(canvas.getByText('갤럭시 S27'))
-    await expect(args.onSelectProduct).toHaveBeenCalledWith(GALAXY)
+  play: async ({ canvas }) => {
+    await expect(canvas.getAllByText('5,000명')[0]).toBeVisible()
+    await expect(canvas.getAllByText('150명/초')[0]).toBeVisible()
   },
 }
 
@@ -113,68 +103,28 @@ export const OneProduct: Story = {
   decorators: [withData],
   args: { productId: IPHONE },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText('대기 인원')).toBeVisible()
-    await expect(canvas.getByText('4,200명')).toBeVisible()
-    await expect(canvas.getByText('100명/초')).toBeVisible()
-    await expect(canvas.getByText('상한 150명/초')).toBeVisible()
-    await expect(canvas.queryByText('갤럭시 S27')).toBeNull()
-    await expect(
-      canvas.getByText(/외부 등록이 실패 중인 작업.*전체 상품 기준/),
-    ).toBeVisible()
+    await expect(canvas.getAllByText('4,200명')[0]).toBeVisible()
+    await expect(canvas.getAllByText('100명/초')[0]).toBeVisible()
+    await expect(canvas.getByText('상한 150')).toBeVisible()
+    await expect(canvas.getByText(/전체 상품 기준/)).toBeVisible()
   },
 }
 
-/** 시험을 시작하면 그 시각부터 세고, 종료하면 구간을 Grafana 링크에 담는다 */
-export const TestRun: Story = {
+/** 구간 기록 — 시작하면 '기록 중', 끝내면 기록한 구간 표에 한 줄이 남는다 */
+export const Recording: Story = {
   decorators: [withData],
   play: async ({ canvas, userEvent }) => {
-    await userEvent.click(canvas.getByRole('button', { name: '시험 시작' }))
-    await expect(canvas.getByText('시험 시작 뒤 접수')).toBeVisible()
-    await userEvent.click(canvas.getByRole('button', { name: '시험 종료' }))
-    const grafana = canvas.getByRole('link', {
-      name: '이 시험 구간을 Grafana에서 보기',
-    })
-    await expect(grafana.getAttribute('href')).toMatch(/from=\d+&to=\d+/)
+    await userEvent.click(
+      canvas.getByRole('button', { name: '구간 기록 시작' }),
+    )
+    await expect(canvas.getByText(/기록 중/)).toBeVisible()
     await expect(
-      canvas.getByRole('button', { name: '새 시험 시작' }),
+      canvas.getByRole('link', { name: 'Grafana ↗' }).getAttribute('href'),
+    ).toMatch(/from=\d+&to=now/)
+    await userEvent.click(canvas.getByRole('button', { name: '기록 끝' }))
+    await expect(canvas.getByText('실시간')).toBeVisible()
+    await expect(
+      canvas.getByRole('button', { name: '결과 복사' }),
     ).toBeVisible()
-  },
-}
-
-const calm: LoadTestSignals = {
-  braking: false,
-  backlogPerMinute: 0,
-  newRegisterFailures: 0,
-  newEventFailures: 0,
-  topErrorCode: null,
-}
-
-/** 상태 판정 — 실패 → 브레이크 → 적체 순으로 심각한 것을 먼저 말한다 */
-export const VerdictOrder: Story = {
-  decorators: [withData],
-  play: async () => {
-    await expect(diagnose(calm).status).toBe('success')
-    await expect(diagnose({ ...calm, backlogPerMinute: null }).message).toBe(
-      '값을 모으는 중입니다.',
-    )
-    await expect(diagnose({ ...calm, backlogPerMinute: 30 }).message).toContain(
-      '분당 30건',
-    )
-    await expect(
-      diagnose({ ...calm, backlogPerMinute: 30, braking: true }).message,
-    ).toContain('입장을 자동으로 줄이고')
-    const failed = diagnose({
-      ...calm,
-      braking: true,
-      newRegisterFailures: 3,
-      topErrorCode: 'TIMEOUT',
-    })
-    await expect(failed.status).toBe('error')
-    await expect(failed.message).toContain('3건')
-    await expect(failed.message).toContain('TIMEOUT')
-    // 시험 전(null)에는 실패를 판정하지 않는다.
-    await expect(diagnose({ ...calm, newRegisterFailures: null }).status).toBe(
-      'success',
-    )
   },
 }

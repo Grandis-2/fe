@@ -80,8 +80,8 @@ export const Edit: Story = {
     )
     await expect(args.onEditShipmentBatches).toHaveBeenCalled()
 
-    await userEvent.click(canvas.getByRole('button', { name: '취소' }))
-    await expect(args.onCancel).toHaveBeenCalled()
+    // 수정 화면은 취소 대신 되돌리기다.
+    await expect(canvas.queryByRole('button', { name: '취소' })).toBeNull()
   },
 }
 
@@ -423,7 +423,10 @@ export const EditLocksSoon: Story = {
   },
 }
 
-/** 서버와 다른 곳을 저장 줄에 섹션 이름으로 보여준다 */
+/**
+ * 서버와 다른 곳을 저장 줄에 섹션 이름으로 보여준다. 바뀐 게 없으면 저장·되돌리기를 막고,
+ * 되돌리기를 누르면 저장된 값으로 돌아간다.
+ */
 export const EditPendingChanges: Story = {
   args: {
     mode: 'edit',
@@ -433,9 +436,19 @@ export const EditPendingChanges: Story = {
       value.name === savedProduct.name ? [] : ['기본 정보'],
   },
   play: async ({ canvas }) => {
+    const save = canvas.getByRole('button', { name: '수정하기' })
+    const revert = canvas.getByRole('button', { name: '되돌리기' })
     await expect(canvas.queryByText(/저장하지 않은 변경/)).toBeNull()
+    await expect(save).toBeDisabled()
+    await expect(revert).toBeDisabled()
+
     await userEvent.type(canvas.getByLabelText(/상품명/), ' 2')
     await expect(canvas.getByText(/저장하지 않은 변경 1곳/)).toBeVisible()
+    await expect(save).toBeEnabled()
+
+    await userEvent.click(revert)
+    await expect(canvas.getByLabelText(/상품명/)).toHaveValue(savedProduct.name)
+    await expect(save).toBeDisabled()
   },
 }
 

@@ -9,7 +9,6 @@ const meta = {
   tags: ['ai-generated'],
   args: {
     productId: '0199c40a-6b1e-7d52-9a3f-2c4e6f8a0b1d',
-    onCancel: fn(),
     onPreview: fn(),
   },
 } satisfies Meta<typeof AdminProductEditForm>

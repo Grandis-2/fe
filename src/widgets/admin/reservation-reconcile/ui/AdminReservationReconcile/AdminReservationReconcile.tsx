@@ -109,7 +109,8 @@ export function AdminReservationReconcile() {
   const [feedback, setFeedback] = useState<Feedback>()
 
   const reservations = useAllAdminReservations()
-  const ledger = useExternalLedger()
+  // 둘 다 무거워 들어와도 받지 않는다 — '대조 실행'을 눌러야 받는다.
+  const ledger = useExternalLedger({ enabled: false })
   const reprocessOne = useReprocessReservation()
   const reprocessMany = useReprocessReservations()
   const reprocessing = reprocessOne.isPending || reprocessMany.isPending

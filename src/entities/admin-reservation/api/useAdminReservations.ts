@@ -13,14 +13,14 @@ import {
   pollingRetry,
   queryPolicy,
 } from '@shared/api/queryPolicy'
-import type { AdminPreorderListParams, PreorderStats } from '@shared/api/types'
+import type { PreorderStats, SyncJobStatus } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
   cancelAdminReservation,
   getAdminMembers,
   getAdminReservation,
-  getAdminReservations,
+  getAdminReservationsPage,
   getAllAdminReservations,
   getReservationStats,
   getSyncJobErrorGroups,
@@ -29,6 +29,7 @@ import {
   reprocessFailedRegistrations,
   toAdminReservationDetail,
   updateAdminReservationNote,
+  type AdminReservationListParams,
 } from './adminReservation'
 
 const RESERVATIONS_KEY = ['admin', 'reservations'] as const
@@ -47,23 +48,27 @@ const reservationKey = (preorderId: string) =>
  * 실패하면 pollEvery가 그 간격에서 백오프하며 계속 다시 묻는다.
  */
 export const useAdminReservations = (
-  params: AdminPreorderListParams = {},
+  params: AdminReservationListParams = {},
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
 ) => {
   const queryClient = useQueryClient()
   const queryKey = [...RESERVATIONS_KEY, 'list', params] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getAdminReservations(params, signal),
+    queryFn: ({ signal }) => getAdminReservationsPage(params, signal),
+    // 쪽·탭을 바꾸는 동안 이전 쪽을 둔다 — 표가 비었다 채워지며 높이가 튀지 않게.
+    placeholderData: keepPreviousData,
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
   })
 }
 
 /**
- * 모든 예약. 외부 원장과 맞춰 보는 데만 쓴다. 무거워서 화면에 처음 들어올 때 한 번만
- * 받고, 그 뒤엔 '대조 실행'의 refetch로만 다시 받는다. 상품은 받은 뒤 화면이 거른다 —
- * 상품을 바꿀 때마다 다시 받지 않으려고.
+ * 모든 예약. 외부 원장과 맞춰 보는 데만 쓴다. 서버가 한 쪽에 100건까지만 줘서 예약이
+ * 2만 건이면 요청이 200번 넘게 나간다 — 화면에 들어와도 받지 않고(enabled: false) '대조
+ * 실행'의 refetch로만 받는다. 상품은 받은 뒤 화면이 거른다 — 상품을 바꿀 때마다 다시 받지
+ * 않으려고.
+ * ponytail: 예약 수에 비례해 요청이 는다 — 서버 대조 API(reconciliation/runs)로 바꾸면 지운다.
  */
 export const useAllAdminReservations = () =>
   useQuery({
@@ -71,6 +76,7 @@ export const useAllAdminReservations = () =>
     // 시점이 어긋난다 — 접두사 밖에 둔다.
     queryKey: ['admin', 'reservations-snapshot'] as const,
     queryFn: ({ signal }) => getAllAdminReservations(signal),
+    enabled: false,
     ...queryPolicy.snapshot,
   })
 
@@ -152,13 +158,23 @@ export const useReprocessReservation = () => {
   })
 }
 
-/** 외부 등록 실패를 오류 코드별로. 부하 시험 중 무엇 때문에 실패하는지 본다 */
-export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
+/**
+ * 외부 등록 실패를 오류 코드별로. 부하 시험 중 무엇 때문에 실패하는지, 재처리 전에 왜
+ * 실패했는지(status DEAD_LETTER) 본다. enabled가 false면 묻지 않는다(닫힌 모달).
+ */
+export const useSyncJobErrorGroups = (
+  intervalMs: RefreshInterval | false,
+  {
+    status,
+    enabled = true,
+  }: { status?: SyncJobStatus; enabled?: boolean } = {},
+) => {
   const queryClient = useQueryClient()
-  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors'] as const
+  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors', status] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getSyncJobErrorGroups(signal),
+    queryFn: ({ signal }) => getSyncJobErrorGroups(status, signal),
+    enabled,
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
   })

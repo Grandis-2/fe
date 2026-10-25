@@ -1,10 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
-import type { DeadLetterListParams } from '@shared/api/types'
+import type { DeadLetterListParams, DeadLetterStatus } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
-import { isRedriveInFlight } from '../model/types'
+import { deadLetterStatuses, isRedriveInFlight } from '../model/types'
 
 import {
   discardDeadLetter,
@@ -49,6 +54,28 @@ export const useDeadLetters = (
     ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
   })
 }
+
+/**
+ * 상태마다 몇 건인지 — 탭 옆 숫자. 목록 API가 상태 하나씩만 걸러서 상태마다 한 건만
+ * 달라고 해 total을 쓴다. 못 받은 상태는 undefined라 화면이 0과 구분한다.
+ */
+export const useDeadLetterCounts = (intervalMs?: RefreshInterval) =>
+  useQueries({
+    queries: deadLetterStatuses.map((status) => ({
+      queryKey: [...DEAD_LETTERS_KEY, 'count', status] as const,
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        getDeadLetters({ status, size: 1 }, signal),
+      ...queryPolicy.live,
+      refetchInterval: intervalMs ?? false,
+    })),
+    combine: (results) =>
+      Object.fromEntries(
+        deadLetterStatuses.map((status, index) => [
+          status,
+          results[index].data?.total,
+        ]),
+      ) as Record<DeadLetterStatus, number | undefined>,
+  })
 
 /** 메시지 상세. 되돌리기 결과를 기다리는 동안만 다시 받는다 */
 export const useDeadLetter = (deadLetterId: string) =>

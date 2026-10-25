@@ -25,6 +25,9 @@ export function fail(
     retryAfterSeconds?: number
     // 409 ORDER_STEP_NOT_ALLOWED에서만 — 주문의 지금 상태.
     status?: string
+    // 대기열 전역 속도의 409 확인 필요 · 400 위험선 넘음에서만 — 그때 서버 용량 기준.
+    recommendedMax?: number
+    dangerLine?: number
   },
 ) {
   const {
@@ -34,13 +37,23 @@ export function fail(
     retryable,
     retryAfterSeconds,
     status: currentStatus,
+    recommendedMax,
+    dangerLine,
   } = error
   const details =
     violations ||
     retryable !== undefined ||
     retryAfterSeconds !== undefined ||
-    currentStatus !== undefined
-      ? { violations, retryable, retryAfterSeconds, status: currentStatus }
+    currentStatus !== undefined ||
+    recommendedMax !== undefined
+      ? {
+          violations,
+          retryable,
+          retryAfterSeconds,
+          status: currentStatus,
+          recommendedMax,
+          dangerLine,
+        }
       : null
 
   return HttpResponse.json<ApiResponse<never>>(

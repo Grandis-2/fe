@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useNavigate, useParams, useSearchParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
 
 import {
   AdminProductDisplayTag,
@@ -64,7 +64,6 @@ const defaultTabOf = (product: AdminProductDetailModel): AdminProductTab =>
  * 상품은 제목과 '어떤 탭을 보여줄지'(사전 예약 여부)를 정하는 데만 쓴다.
  */
 export function AdminProductDetailPage() {
-  const navigate = useNavigate()
   const visibility = useProductVisibility()
   const saleStatus = useProductSaleStatus()
   const { productId = '' } = useParams()
@@ -179,7 +178,6 @@ export function AdminProductDetailPage() {
       {tab === 'edit' && (
         <AdminProductEditForm
           productId={productId}
-          onCancel={() => navigate(ADMIN_PRODUCTS_PATH)}
           onPreview={(value) => setPreviewProduct(toPreviewProduct(value))}
           onEditShipmentBatches={() => setTab('shipping')}
         />

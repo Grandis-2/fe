@@ -10,6 +10,9 @@ import * as styles from './TrendChart.css'
 
 export type TrendChartTone = 'primary' | 'warning'
 
+/** 강조할 구간(ms) — 빗금 띠로 깔고 왼쪽 위에 이름을 붙인다 */
+export type TrendChartBand = { from: number; to: number; label: string }
+
 export type TrendChartProps = {
   /** 표본 시각(ms), 시간 순 */
   times: readonly number[]
@@ -21,6 +24,10 @@ export type TrendChartProps = {
   label: string
   /** 선 색 — 나빠지는 중이면 warning */
   tone?: TrendChartTone
+  /** 기준선(상한 등) — 점선으로 긋고 오른쪽 위에 이름을 붙인다 */
+  reference?: { value: number; label: string }
+  /** 강조할 구간(브레이크가 걸린 동안 등) */
+  bands?: readonly TrendChartBand[]
 }
 
 const WIDTH = 600
@@ -29,6 +36,8 @@ const PAD_TOP = 10
 // 축 최댓값의 하한 — 값이 모두 0이면 축이 1·1·0(0.5 반올림)으로 찍히고, 0과 1을 오가는 값이
 // 그래프 꼭대기까지 치솟아 보인다.
 const MIN_SCALE = 10
+// 이보다 좁은 띠(그림 폭 %)엔 이름을 붙이지 않는다 — '브레이크 0.6×' 한 줄이 들어갈 만큼
+const LABEL_MIN_BAND_PERCENT = 18
 
 const formatTime = (ms: number) =>
   new Date(ms).toLocaleTimeString('ko-KR', {
@@ -51,6 +60,8 @@ export function TrendChart({
   unit,
   label,
   tone = 'primary',
+  reference,
+  bands = [],
 }: TrendChartProps) {
   const gradientId = useId()
   const [hover, setHover] = useState<number | null>(null)
@@ -58,8 +69,8 @@ export function TrendChart({
   if (times.length < 2) {
     return (
       <figure className={styles.root} aria-busy="true">
+        {/* 눈금 칸까지 덮는다 — 빈 눈금 칸을 남기면 왼쪽만 비어 보인다. */}
         <div className={styles.plotRow} aria-hidden="true">
-          <div className={styles.yAxis} />
           <div className={styles.placeholder}>
             <Skeleton height="100%" radius={8} />
           </div>
@@ -76,7 +87,7 @@ export function TrendChart({
 
   const first = times[0]
   const span = times[times.length - 1] - first || 1
-  const max = niceMax(Math.max(...values, MIN_SCALE))
+  const max = niceMax(Math.max(...values, reference?.value ?? 0, MIN_SCALE))
   const xOf = (at: number) => ((at - first) / span) * WIDTH
   const yOf = (value: number) => HEIGHT - (value / max) * (HEIGHT - PAD_TOP)
   const points = times.map((at, i) => ({ x: xOf(at), y: yOf(values[i]) }))
@@ -85,9 +96,15 @@ export function TrendChart({
 
   const last = times.length - 1
   const shown = hover ?? last
+  const shownBand = bands.find(
+    (band) => times[shown] >= band.from && times[shown] <= band.to,
+  )
   // 점·세로선·툴팁은 글자처럼 찌그러지지 않게 HTML로 겹친다(그림은 가로로 늘어난다).
   const leftOf = (i: number) => `${(points[i].x / WIDTH) * 100}%`
   const topOf = (i: number) => `${(points[i].y / HEIGHT) * 100}%`
+  // 띠는 그리는 구간 안으로 자른다(앞부분이 표본 밖에서 시작했을 수 있다).
+  const percentOf = (at: number) =>
+    Math.min(100, Math.max(0, ((at - first) / span) * 100))
 
   const handleMove = (event: PointerEvent<HTMLDivElement>) => {
     const box = event.currentTarget.getBoundingClientRect()
@@ -113,7 +130,15 @@ export function TrendChart({
           onPointerMove={handleMove}
           onPointerLeave={() => setHover(null)}
           role="img"
-          aria-label={`${label}. 지금 ${formatValue(values[last], unit)}`}
+          aria-label={[
+            `${label}. 지금 ${formatValue(values[last], unit)}`,
+            reference?.label,
+            ...bands.map(
+              (band) => `${formatTime(band.from)}부터 ${band.label}`,
+            ),
+          ]
+            .filter(Boolean)
+            .join(', ')}
         >
           <svg
             className={styles.svg}
@@ -138,6 +163,16 @@ export function TrendChart({
                 vectorEffect="non-scaling-stroke"
               />
             ))}
+            {reference && (
+              <line
+                className={styles.reference}
+                x1={0}
+                x2={WIDTH}
+                y1={yOf(reference.value)}
+                y2={yOf(reference.value)}
+                vectorEffect="non-scaling-stroke"
+              />
+            )}
             {/* 면과 선을 묶어 처음 나타날 때 왼쪽부터 함께 펼친다. */}
             <g className={styles.marks}>
               <path d={area} fill={`url(#${gradientId})`} />
@@ -150,6 +185,40 @@ export function TrendChart({
             </g>
           </svg>
 
+          {bands.map((band) => {
+            const left = percentOf(band.from)
+            const right = percentOf(band.to)
+            if (right <= left) return null
+            return (
+              <span
+                key={band.from}
+                className={styles.band}
+                style={{ left: `${left}%`, width: `${right - left}%` }}
+                aria-hidden="true"
+              >
+                {/* 좁은 띠는 이름이 옆 띠·끝점과 겹쳐 빗금만 둔다 — 이름은 올리면 툴팁에 나온다.
+                    오른쪽 절반에선 띠 끝에 붙여 그림 밖으로 넘치지 않게 한다. */}
+                {right - left >= LABEL_MIN_BAND_PERCENT && (
+                  <span
+                    className={
+                      left > 50 ? styles.bandLabelEnd : styles.bandLabel
+                    }
+                  >
+                    {band.label}
+                  </span>
+                )}
+              </span>
+            )
+          })}
+          {reference && (
+            <span
+              className={styles.referenceLabel}
+              style={{ top: `${(yOf(reference.value) / HEIGHT) * 100}%` }}
+              aria-hidden="true"
+            >
+              {reference.label}
+            </span>
+          )}
           {hover !== null && (
             <span
               className={styles.crosshair}
@@ -174,6 +243,9 @@ export function TrendChart({
                 {formatTime(times[shown])}
               </span>
               <b>{formatValue(values[shown], unit)}</b>
+              {shownBand && (
+                <span className={styles.tooltipBand}>{shownBand.label}</span>
+              )}
             </div>
           )}
         </div>

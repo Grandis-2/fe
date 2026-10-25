@@ -18,7 +18,7 @@ export const caption = style([
   { color: color.text.secondary },
 ])
 
-// 접수 [≤ / >] 외부 등록 처리 | 처리 한계 — 좁으면 줄을 바꾼다.
+// 접수 [≤ / >] 외부 등록 처리 — 좁으면 줄을 바꾼다.
 export const metrics = style({
   display: 'flex',
   flexWrap: 'wrap',
@@ -59,6 +59,11 @@ export const metricPending = style([
 export const metricNote = style([
   typography.body.sub,
   { color: color.text.secondary },
+])
+
+export const metricNoteWarn = style([
+  typography.body.subSemibold,
+  { color: color.text.primary },
 ])
 
 // 접수와 처리 사이 비교 기호 — 따라가면 초록, 밀리면 주황, 판단 전이면 회색.
@@ -107,6 +112,12 @@ export const currentValue = style([
   },
 ])
 
+// 설정보다 적게 들어갈 때 설정 줄 아래에 붙는 한 줄 — 서버 증설 대기·브레이크.
+export const shortfall = style([
+  typography.body.subSemibold,
+  { color: color.text.primary },
+])
+
 export const unit = style([
   typography.body.defaultRegular,
   { marginLeft: spacing[2], color: color.text.secondary },
@@ -136,7 +147,7 @@ const previewBase = style([
   },
 ])
 
-// 바꾼 값이 처리 한계 안쪽이면 초록, 넘으면 빨강, 한계를 모르면 무채색.
+// 권장 상한 안·대기가 풀리면 초록, 확인이 필요하면 주황, 용량을 모르면 무채색.
 export const preview = styleVariants({
   success: [previewBase, { background: color.background.subtleSuccess }],
   warning: [previewBase, { background: color.background.subtleWarning }],

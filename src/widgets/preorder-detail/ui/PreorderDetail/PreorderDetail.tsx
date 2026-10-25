@@ -53,10 +53,15 @@ const CTA_LABEL: Record<PreorderStatus, string> = {
 export type PreorderDetailProps = {
   /** 사전예약 홍보 id(라우트 파라미터) */
   preorderId: string
+  /** 관리자 미리보기(PreorderPromotion의 preview) */
+  preview?: boolean
 }
 
 // 사전예약 홍보를 불러와 상세를 그린다. 없거나 기간 밖이면 서버가 404를 준다.
-export function PreorderDetail({ preorderId }: PreorderDetailProps) {
+export function PreorderDetail({
+  preorderId,
+  preview = false,
+}: PreorderDetailProps) {
   const { data: preorder, error } = usePreorder(preorderId)
 
   if (error) {
@@ -68,16 +73,24 @@ export function PreorderDetail({ preorderId }: PreorderDetailProps) {
   }
   // 실패는 위에서 걸렀으니 데이터가 없으면 아직 받는 중이다.
   if (!preorder) return <PageSkeleton tone="dark" />
-  return <PreorderPromotion preorder={preorder} />
+  return <PreorderPromotion preorder={preorder} preview={preview} />
 }
 
 export type PreorderPromotionProps = {
   preorder: Preorder
+  /**
+   * 관리자 미리보기 — 고객 화면 그대로 그리되 뒤로 가기를 빼고 하단 버튼을 막는다.
+   * 미리보기에서 예약·알림 신청이 실제로 나가면 안 된다.
+   */
+  preview?: boolean
 }
 
 // 사전예약 프로모션 상세. 상태(날짜로 계산)마다 뱃지·일정 강조·유의사항·하단 버튼·
 // 모델 시트가 달라진다 — 진행 중: 예약, 오픈 전: 카운트다운 + 오픈 알림, 마감: 일반 구매.
-export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
+export function PreorderPromotion({
+  preorder,
+  preview = false,
+}: PreorderPromotionProps) {
   const navigate = useNavigate()
   const requireLogin = useRequireLogin()
   const { status, ddayLabel } = getPreorderSchedule(preorder)
@@ -86,7 +99,7 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
   // 오픈 알림은 모델(상품)마다 따로 신청한다.
   const subscribedIds = useSubscribedOpenAlerts(
     preorder.models.map((model) => model.productId),
-    isLoggedIn && status === 'soon',
+    isLoggedIn && status === 'soon' && !preview,
   )
   const toggleOpenAlert = useToggleOpenAlert()
   // 이미 예약한 모델은 시트에서 예약하기 대신 그 예약 버튼을 보인다 — 시트를 열었을 때 내 예약 전부를 한 번 묻는다.
@@ -135,10 +148,12 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
   return (
     <div className={styles.root}>
       <div className={styles.intro}>
-        <Link to={PREORDER_PATH} className={styles.back}>
-          <ChevronLeft size={16} aria-hidden="true" />
-          사전예약
-        </Link>
+        {!preview && (
+          <Link to={PREORDER_PATH} className={styles.back}>
+            <ChevronLeft size={16} aria-hidden="true" />
+            사전예약
+          </Link>
+        )}
         <div className={styles.badges}>
           <span className={styles.statusBadge[status]}>
             {STATUS_LABEL[status]}
@@ -261,7 +276,12 @@ export function PreorderPromotion({ preorder }: PreorderPromotionProps) {
             사전예약은 종료되었어요. 지금은 일반 구매로 만나보세요.
           </div>
         )}
-        <Button size="large" className={styles.cta} onClick={openSheet}>
+        <Button
+          size="large"
+          className={styles.cta}
+          disabled={preview}
+          onClick={openSheet}
+        >
           {ctaLabel}
         </Button>
       </div>

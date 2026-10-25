@@ -7,66 +7,9 @@ export const root = style({
   flexDirection: 'column',
   gap: spacing[24],
   width: '100%',
-  maxWidth: '1240px',
 })
 
-/** 등록 화면 — 섹션만 한 줄로 */
-export const plain = style({ maxWidth: '1000px' })
-
-/** 수정 화면 — 섹션 오른쪽에 목차가 붙는다. 좁으면 목차를 뺀다 */
-export const withToc = style({
-  display: 'grid',
-  gridTemplateColumns: 'minmax(0, 1fr) 220px',
-  gap: spacing[24],
-  alignItems: 'start',
-  '@media': {
-    '(max-width: 1100px)': { gridTemplateColumns: 'minmax(0, 1fr)' },
-  },
-})
-
-export const toc = style({
-  position: 'sticky',
-  top: spacing[20],
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[2],
-  padding: spacing[12],
-  borderRadius: '12px',
-  border: `1px solid ${color.border.default}`,
-  background: color.background.base,
-  '@media': {
-    '(max-width: 1100px)': { display: 'none' },
-  },
-})
-
-export const tocTitle = style([
-  typography.body.subSemibold,
-  {
-    padding: `${spacing[4]} ${spacing[10]} ${spacing[8]}`,
-    color: color.text.tertiary,
-  },
-])
-
-export const tocLink = style([
-  typography.body.sub,
-  {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing[8],
-    padding: `${spacing[8]} ${spacing[10]}`,
-    borderRadius: '8px',
-    color: color.text.secondary,
-    textDecoration: 'none',
-    selectors: {
-      '&:hover': {
-        background: color.background.surface,
-        color: color.text.primary,
-      },
-    },
-  },
-])
-
+/** 목차의 잠김 표시 */
 export const tocIcon = style({
   width: '14px',
   height: '14px',

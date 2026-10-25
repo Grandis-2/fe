@@ -103,3 +103,7 @@ export const dueSoon = style([
 export const failedRow = style({
   background: `color-mix(in srgb, ${color.status.danger} 4%, ${color.background.base})`,
 })
+
+export const navigator = style({
+  alignSelf: 'center',
+})

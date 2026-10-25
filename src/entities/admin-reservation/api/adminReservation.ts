@@ -1,5 +1,9 @@
 import { ApiRequestError, apiClient } from '@shared/api/client'
-import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
+import {
+  fetchAllPages,
+  fetchConcatPage,
+  PAGE_SIZE_MAX,
+} from '@shared/api/fetchAllPages'
 import { toQueryString } from '@shared/api/queryString'
 import type {
   AdminCancelRequest,
@@ -12,8 +16,10 @@ import type {
   BatchReprocess,
   OffsetPage,
   PreorderStats,
+  PreorderStatus,
   ReprocessBatchRequest,
   SyncJobListResponse,
+  SyncJobStatus,
 } from '@shared/api/types'
 
 import type { AdminReservationDetail } from '../model/types'
@@ -30,6 +36,31 @@ export const getAdminReservations = (
     `${BASE}${toQueryString(params)}`,
     { signal },
   )
+
+export type AdminReservationListParams = Omit<
+  AdminPreorderListParams,
+  'status'
+> & { statuses?: readonly PreorderStatus[] }
+
+// [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자) 한 쪽, 상태 여럿
+/**
+ * 서버는 상태를 하나만 거를 수 있어서, 상태를 여럿 주면 상태별 목록을 준 순서대로 이어
+ * 붙여 쪽을 나눈다('확정' 탭 = 결제 대기 다음에 결제 완료).
+ */
+export const getAdminReservationsPage = (
+  { statuses = [], ...params }: AdminReservationListParams,
+  signal?: AbortSignal,
+) =>
+  statuses.length > 1
+    ? fetchConcatPage(
+        statuses.map(
+          (status) => (page: number, size: number) =>
+            getAdminReservations({ ...params, status, page, size }, signal),
+        ),
+        params.page ?? 0,
+        params.size ?? 20,
+      )
+    : getAdminReservations({ ...params, status: statuses[0] }, signal)
 
 // [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자)을 쪽 끝까지
 /**
@@ -266,14 +297,21 @@ export async function reprocessFailedRegistrations(productId?: string) {
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록(errorGroups만)
 /**
  * 외부 등록 작업의 마지막 시도 오류 코드별 수. 성공했거나 시도 전인 작업은 errorCode가
- * null이라 빼고, 지금 실패 중(재시도 대기·DEAD_LETTER)인 것만 남는다.
+ * null이라 빼고, 지금 실패 중(재시도 대기·DEAD_LETTER)인 것만 남는다. status를 주면 그
+ * 상태의 작업만 센다(DEAD_LETTER = 재처리할 실패의 원인).
  */
-export const getSyncJobErrorGroups = async (signal?: AbortSignal) => {
+export const getSyncJobErrorGroups = async (
+  status?: SyncJobStatus,
+  signal?: AbortSignal,
+) => {
   const { errorGroups } = await getAdminSyncJobs(
-    { jobType: 'REGISTER', groupByError: true, size: 1 },
+    { jobType: 'REGISTER', status, groupByError: true, size: 1 },
     signal,
   )
-  return (errorGroups ?? []).filter((group) => group.errorCode !== null)
+  return (errorGroups ?? []).filter(
+    (group): group is { errorCode: string; count: number } =>
+      group.errorCode !== null,
+  )
 }
 
 // [member] GET /api/v1/admin/members — 회원 이름 조회(관리자)

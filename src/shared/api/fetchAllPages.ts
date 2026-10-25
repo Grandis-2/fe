@@ -27,3 +27,43 @@ export async function fetchAllPages<TItem>(
       return [...byKey.values()]
   }
 }
+
+/**
+ * 여러 목록을 앞 목록부터 차례로 이어 붙인 것처럼 page번째 쪽을 받는다. 서버가 한 번에 한
+ * 조건만 거를 수 있는데 화면은 두 조건을 한 목록으로 보여줘야 할 때 쓴다 — 섞어 정렬하지
+ * 않고 앞 목록이 다 나온 뒤 다음 목록이 나온다. 쪽이 두 목록에 걸치거나 서버 쪽 경계와
+ * 어긋나면 한 목록에서 두 쪽을 받는다. 다 채운 뒤의 목록은 건수만 알려고 1건씩 묻는다.
+ */
+export async function fetchConcatPage<TItem>(
+  sources: ((
+    page: number,
+    size: number,
+  ) => Promise<{
+    items: TItem[]
+    total: number
+  }>)[],
+  page: number,
+  size: number,
+): Promise<{ items: TItem[]; page: number; size: number; total: number }> {
+  const items: TItem[] = []
+  let before = 0
+  for (const fetchPage of sources) {
+    const need = size - items.length
+    if (need === 0) {
+      before += (await fetchPage(0, 1)).total
+      continue
+    }
+    // 앞 목록까지 다 썼으면 이 목록의 처음부터, 아니면 쪽 시작이 이 목록 안 어디인지.
+    const offset = page * size + items.length - before
+    const serverPage = Math.floor(offset / size)
+    const first = await fetchPage(serverPage, size)
+    items.push(...first.items.slice(offset % size, (offset % size) + need))
+    const rest = size - items.length
+    if (rest > 0 && offset % size > 0 && (serverPage + 1) * size < first.total)
+      items.push(
+        ...(await fetchPage(serverPage + 1, size)).items.slice(0, rest),
+      )
+    before += first.total
+  }
+  return { items, page, size, total: before }
+}

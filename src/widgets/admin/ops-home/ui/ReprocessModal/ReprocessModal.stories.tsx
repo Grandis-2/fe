@@ -37,6 +37,12 @@ const meta = {
       { name: '아이폰 18 Pro', count: 812 },
       { name: '갤럭시 Z 폴드8', count: 48 },
     ],
+    causes: [
+      { errorCode: 'HTTP_503', count: 700 },
+      { errorCode: 'TIMEOUT', count: 150 },
+      { errorCode: 'EXT_UNKNOWN', count: 10 },
+    ],
+    causesFailed: false,
     run: null,
     running: null,
     result: null,
@@ -57,6 +63,29 @@ export const Confirm: Story = {
     await waitFor(() => expect(row).toBeVisible())
     await userEvent.click(canvas.getByRole('button', { name: '860건 재처리' }))
     await expect(args.onConfirm).toHaveBeenCalled()
+  },
+}
+
+/** 왜 실패했는지 — 뜻과 코드를 많은 순으로 보인다. 모르는 코드는 '알 수 없는 오류' */
+export const Causes: Story = {
+  play: async ({ canvas }) => {
+    const top = await canvas.findByText('외부 일시 사용 불가')
+    await waitFor(() => expect(top).toBeVisible())
+    await expect(canvas.getByText('HTTP_503')).toBeVisible()
+    await expect(canvas.getByText('700건')).toBeVisible()
+    await expect(canvas.getByText('알 수 없는 오류')).toBeVisible()
+  },
+}
+
+/** 원인을 못 받아도 재처리는 할 수 있다 */
+export const CausesFailed: Story = {
+  args: { causes: undefined, causesFailed: true },
+  play: async ({ canvas }) => {
+    const note = await canvas.findByText('실패 원인을 불러오지 못했어요.')
+    await waitFor(() => expect(note).toBeVisible())
+    await expect(
+      canvas.getByRole('button', { name: '860건 재처리' }),
+    ).toBeEnabled()
   },
 }
 

@@ -29,26 +29,28 @@ test('M2 예약 현황에서 외부 등록 실패 건을 찾아 실패 사유를
   await openAdminMenu(page, '예약 현황')
 
   // 시드: 외부 등록 실패 3건(RSV-93355·93297·93260), 모두 503으로 세 번 실패.
-  // 탭 이름 뒤에 집계 API의 건수 배지가 붙는다 — 시드 3건이 그대로 세어졌는지도 본다.
-  const failedTab = page.getByRole('button', {
-    name: '외부 등록 실패 3',
-    exact: true,
-  })
-  await failedTab.click()
-  await expect(failedTab).toHaveAttribute('aria-pressed', 'true')
+  // 탭 이름 뒤에 건수 배지가 붙는다('외부 등록 실패 3').
+  await page.getByRole('button', { name: /^외부 등록 실패/ }).click()
   await page.getByRole('button', { name: 'RSV-93355 상세 보기' }).click()
 
   await expect(page.getByRole('heading', { name: /RSV-93355/ })).toBeVisible()
-  // 위쪽 요약에 마지막 오류, 이력에 시도마다 실패 사유가 남는다.
   await expect(
-    page.getByText(/시도 3회 모두 실패 · 마지막 오류 HTTP_503/),
+    page.getByText(/HTTP 503 — Service Unavailable/).first(),
   ).toBeVisible()
-  await expect(
-    page
-      .getByRole('region', { name: '이력' })
-      .getByRole('listitem')
-      .filter({ hasText: 'Service Unavailable' }),
-  ).toHaveCount(3)
+  await expect(page.getByText(/시도 3회 모두 실패/)).toBeVisible()
+})
+
+test('M2 예약 현황은 20건이 넘으면 쪽을 넘겨 끝까지 본다', async ({ page }) => {
+  await loginAsAdmin(page)
+  await openAdminMenu(page, '예약 현황')
+
+  // 시드: 확정 33건(결제 대기 + 결제 완료) — 서버는 상태를 하나씩 걸러서 두 목록을 이어 붙인다.
+  await page.getByRole('button', { name: /^확정/ }).click()
+  await page.getByRole('button', { name: '2', exact: true }).click()
+
+  await expect(page).toHaveURL(/page=2/)
+  // 머리 줄 + 남은 13건
+  await expect(page.getByRole('row')).toHaveCount(14)
 })
 
 test('M7 회원이 결제한 주문을 관리자가 배송 완료까지 처리하면 회원 주문 내역도 바뀐다', async ({

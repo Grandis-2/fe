@@ -33,10 +33,10 @@ type Story = StoryObj<typeof meta>
 export const Default: Story = {
   play: async ({ canvas, args, userEvent }) => {
     await expect(canvas.getByLabelText('일시 실패 확률(%)')).toHaveValue(5)
-    const latency = canvas.getByLabelText('등록 지연 평균(ms)')
+    const latency = canvas.getByLabelText('평균 응답 시간(ms)')
     await userEvent.clear(latency)
     await userEvent.type(latency, '800')
-    await userEvent.click(canvas.getByRole('button', { name: '설정 저장' }))
+    await userEvent.click(canvas.getByRole('button', { name: '팀에 적용' }))
     await expect(args.onSave).toHaveBeenCalledWith({
       registerLatencyMs: 800,
       failureRate: 0.05,
@@ -48,20 +48,20 @@ export const Default: Story = {
 /** 꼬리를 켜면 세 칸을 함께 보내고, 평균을 넘는 꼬리는 막는다 */
 export const Tail: Story = {
   play: async ({ canvas, args, userEvent }) => {
-    await userEvent.click(canvas.getByLabelText(/느린 꼬리 걸기/))
-    await userEvent.clear(canvas.getByLabelText('꼬리 확률(%)'))
-    await userEvent.type(canvas.getByLabelText('꼬리 확률(%)'), '50')
-    await userEvent.clear(canvas.getByLabelText('꼬리 최소(ms)'))
-    await userEvent.type(canvas.getByLabelText('꼬리 최소(ms)'), '2000')
-    await userEvent.clear(canvas.getByLabelText('꼬리 최대(ms)'))
-    await userEvent.type(canvas.getByLabelText('꼬리 최대(ms)'), '4000')
+    await userEvent.click(canvas.getByRole('switch', { name: /느린 꼬리/ }))
+    await userEvent.clear(canvas.getByLabelText('걸릴 확률(%)'))
+    await userEvent.type(canvas.getByLabelText('걸릴 확률(%)'), '50')
+    await userEvent.clear(canvas.getByLabelText('최소(ms)'))
+    await userEvent.type(canvas.getByLabelText('최소(ms)'), '2000')
+    await userEvent.clear(canvas.getByLabelText('최대(ms)'))
+    await userEvent.type(canvas.getByLabelText('최대(ms)'), '4000')
     await expect(
-      canvas.getByRole('button', { name: '설정 저장' }),
+      canvas.getByRole('button', { name: '팀에 적용' }),
     ).toBeDisabled()
 
-    await userEvent.clear(canvas.getByLabelText('꼬리 확률(%)'))
-    await userEvent.type(canvas.getByLabelText('꼬리 확률(%)'), '2')
-    await userEvent.click(canvas.getByRole('button', { name: '설정 저장' }))
+    await userEvent.clear(canvas.getByLabelText('걸릴 확률(%)'))
+    await userEvent.type(canvas.getByLabelText('걸릴 확률(%)'), '2')
+    await userEvent.click(canvas.getByRole('button', { name: '팀에 적용' }))
     await expect(args.onSave).toHaveBeenCalledWith(
       expect.objectContaining({
         latencyTailRate: 0.02,

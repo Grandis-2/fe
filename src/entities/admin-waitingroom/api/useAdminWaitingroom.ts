@@ -53,12 +53,23 @@ export const useWaitingroomStatus = (intervalMs: RefreshInterval) => {
   })
 }
 
-export const useAdmissionRates = () =>
-  useQuery({
+/**
+ * 운영값과 서버 용량. 권장 상한·실제 적용·서버 대수는 사전예약 서버가 늘고 줄 때마다 바뀌어
+ * 현황과 같은 간격으로 다시 받는다.
+ */
+export const useAdmissionRates = (intervalMs: RefreshInterval) => {
+  const queryClient = useQueryClient()
+  return useQuery({
     queryKey: RATES_KEY,
     queryFn: ({ signal }) => getAdmissionRates(signal),
     ...queryPolicy.live,
+    ...pollEvery(
+      queryClient,
+      RATES_KEY,
+      intervalMs === false ? false : Math.max(intervalMs, MIN_POLL_MS),
+    ),
   })
+}
 
 export type AdmissionRateChange =
   | {
@@ -66,6 +77,8 @@ export type AdmissionRateChange =
       value: number | null
       /** 주면 이 상품들의 상한도 같은 값으로 맞춘다(null이면 기본값으로) */
       productIds?: readonly string[]
+      /** 권장 상한을 넘겨 늘리는 걸 확인했다 */
+      confirm?: boolean
     }
   | { kind: 'maxWait'; value: number | null }
   | { kind: 'leaveGrace'; value: number | null }
@@ -78,7 +91,7 @@ const applyChange = async (change: AdmissionRateChange) => {
       const { value } = change
       let view = await (value === null
         ? resetGlobalCredit()
-        : setGlobalCredit(value))
+        : setGlobalCredit(value, change.confirm))
       // 상품 상한은 한 건씩 바꾼다 — 응답마다 바뀐 뒤의 전체 운영값이라 마지막 것이 최신이다.
       for (const productId of change.productIds ?? [])
         view = await (value === null

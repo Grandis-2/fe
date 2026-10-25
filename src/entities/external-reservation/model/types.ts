@@ -42,6 +42,15 @@ export const mockMixedResponses: MockMixedResponse[] = [
   'HTTP_504',
 ]
 
+/** 섞을 응답의 짧은 이름 — 칩에 그대로 쓴다 */
+export const mockMixedResponseLabel: Record<MockMixedResponse, string> = {
+  HTTP_500: '500',
+  HTTP_500_NO_BODY: '500 본문 없음',
+  HTTP_502: '502',
+  HTTP_503: '503',
+  HTTP_504: '504',
+}
+
 export const mockFaultTypeLabel: Record<MockFaultType, string> = {
   RESPONSE_LOST_AFTER_COMMIT: '저장 뒤 응답 유실',
   SLOW_SUCCESS: '늦게 성공',
