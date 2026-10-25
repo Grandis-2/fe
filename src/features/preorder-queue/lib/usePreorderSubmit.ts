@@ -107,6 +107,17 @@ export function usePreorderSubmit() {
             })
             return
           }
+          // 다시 보내도 응답을 못 받았다(useSubmitPreorder가 한 번 재전송) — 접수됐을 수 있으니 내 예약을 다시 받아,
+          // 접수됐으면 버튼이 그 예약으로 바뀐다. 입장권·키는 그대로라 다시 눌러도 예약은 하나만 생긴다.
+          if (caught instanceof ApiRequestError && caught.status === 0) {
+            void queryClient.invalidateQueries({
+              queryKey: activeReservationsQuery.queryKey,
+            })
+            showToast(
+              '응답이 늦어 접수 여부를 확인하고 있어요. 다시 눌러도 예약은 하나만 접수돼요.',
+            )
+            return
+          }
           if (
             caught instanceof ApiRequestError &&
             TICKET_ERRORS.includes(caught.error.code)

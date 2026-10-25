@@ -156,7 +156,8 @@ export const keepNewer =
       : replaceEqualDeep(prev, next)
 
 // QueryClient 기본값 — 정책을 고르지 않은 쿼리도 4xx를 헛되이 재시도하지 않게 한다.
-// 변경(mutation)은 같은 요청이 두 번 반영될 수 있어 자동 재시도하지 않는다.
+// 변경(mutation)은 같은 요청이 두 번 반영될 수 있어 자동 재시도하지 않는다. 예외는 사전예약 접수 하나 —
+// 멱등키가 있어 응답을 못 받은 경우(status 0)만 한 번 다시 보낸다(useSubmitPreorder).
 export const defaultQueryOptions = {
   queries: { retry: retryUpTo(1) },
   mutations: { retry: false },
