@@ -89,6 +89,17 @@ export const Live: Story = {
   },
 }
 
+// 관리자 미리보기 — 뒤로 가기가 없고 하단 버튼이 눌리지 않는다.
+export const Preview: Story = {
+  args: { preorder: withDates([-9, 5, 9, 12]), preview: true },
+  play: async ({ canvas }) => {
+    await expect(canvas.queryByRole('link', { name: /사전예약/ })).toBeNull()
+    await expect(
+      canvas.getByRole('button', { name: '사전예약 하러가기' }),
+    ).toBeDisabled()
+  },
+}
+
 // 회원은 시트에서 모델별 오픈 알림을 켠다.
 // 알림 신청은 목 서버로 간다 — 목의 오픈 전 상품이어야 409 없이 신청된다.
 const beforeOpenProduct = products.find(

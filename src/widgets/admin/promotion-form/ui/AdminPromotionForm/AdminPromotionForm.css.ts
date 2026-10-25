@@ -1,19 +1,18 @@
 import { style } from '@vanilla-extract/css'
 
-import {
-  ADMIN_FORM_MAX_WIDTH,
-  color,
-  spacing,
-  typography,
-} from '@shared/config/theme'
+import { color, spacing, typography } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[16],
   width: '100%',
-  // 상품 폼과 같은 폭
-  maxWidth: ADMIN_FORM_MAX_WIDTH,
+})
+
+export const sections = style({
+  display: 'flex',
+  flexDirection: 'column',
+  gap: spacing[16],
 })
 
 export const section = style({
@@ -24,6 +23,8 @@ export const section = style({
   border: `1px solid ${color.border.default}`,
   borderRadius: '12px',
   background: color.background.base,
+  // 목차로 건너오면 제목이 화면 맨 위에 딱 붙지 않게 둔다.
+  scrollMarginTop: spacing[20],
 })
 
 export const sectionTitle = style([

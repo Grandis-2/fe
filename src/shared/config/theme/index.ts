@@ -6,7 +6,6 @@ export { color } from './tokens/color/semantic.css'
 export { spacing } from './tokens/spacing'
 export { breakpoint, productDetailBreakpoint } from './tokens/breakpoint'
 export {
-  ADMIN_FORM_MAX_WIDTH,
   FIXED_BOTTOM_BAR_VAR,
   TAB_BAR_HEIGHT,
   TAB_BAR_OFFSET,

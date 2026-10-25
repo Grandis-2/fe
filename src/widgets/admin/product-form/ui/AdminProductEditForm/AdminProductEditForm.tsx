@@ -24,7 +24,6 @@ import * as styles from './AdminProductEditForm.css'
 
 export type AdminProductEditFormProps = {
   productId: string
-  onCancel: () => void
   /** 폼에 지금 있는 값 — 저장 전 사진도 미리보기에 보이게 넘긴다 */
   onPreview: (value: AdminProductFormValue) => void
   /** 배송 구간 설정 탭으로 보낸다 — 1차 배송일은 거기서 고친다 */
@@ -43,7 +42,6 @@ export type AdminProductEditFormProps = {
  */
 export function AdminProductEditForm({
   productId,
-  onCancel,
   onPreview,
   onEditShipmentBatches,
 }: AdminProductEditFormProps) {
@@ -150,7 +148,6 @@ export function AdminProductEditForm({
             },
           })
         }}
-        onCancel={onCancel}
         onPreview={onPreview}
         onEditShipmentBatches={onEditShipmentBatches}
       />
