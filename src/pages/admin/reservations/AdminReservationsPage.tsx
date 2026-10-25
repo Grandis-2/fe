@@ -135,7 +135,7 @@ const statusFilters = [
   { value: 'all', stage: 'ALL', query: {} },
 ] as const
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 
 type StatusFilter = (typeof statusFilters)[number]['value']
 
@@ -208,10 +208,7 @@ export function AdminReservationsPage() {
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>(DEFAULT_INTERVAL)
 
-  const { data: products = [] } = useAdminProducts({
-    saleMode: 'PREORDER',
-    size: 100,
-  })
+  const { data: products = [] } = useAdminProducts({ saleMode: 'PREORDER' })
 
   // 값이 undefined인 첫 항목이 '전체 상품' — 서버에 productId를 안 보낸다.
   const productOptions: DropdownOption<string | undefined>[] = [

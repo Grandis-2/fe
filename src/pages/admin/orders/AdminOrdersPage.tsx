@@ -38,7 +38,7 @@ import { BulkShippingModal } from '@widgets/admin/order-bulk-shipping'
 
 import * as styles from './AdminOrdersPage.css'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 const ALL = 'all'
 
 /** 위 카드 — 관리자가 손대야 하는 단계와 오래 머물면 문제인 취소 처리 중 */
@@ -411,7 +411,7 @@ export function AdminOrdersPage() {
           onClick: (order) => navigate(adminOrderPath(order.orderId)),
         }}
         loading={orders.isPending}
-        loadingRows={10}
+        loadingRows={PAGE_SIZE}
         emptyMessage={
           orders.isError
             ? getErrorMessage(orders.error, '주문을 불러오지 못했습니다.')

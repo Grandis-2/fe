@@ -17,7 +17,7 @@ import {
 } from '@entities/admin-waitingroom'
 import {
   mockFailureModeLabel,
-  useExternalLedger,
+  useExternalLedgerHasRows,
   useMockConfig,
   useUpdateMockConfig,
 } from '@entities/external-reservation'
@@ -225,7 +225,8 @@ export function AdminLoadTest({
   const errors = useSyncJobErrorGroups(REFRESH_INTERVAL)
   const mock = useMockConfig()
   const updateMock = useUpdateMockConfig()
-  const ledger = useExternalLedger()
+  // 원장이 비었는지만 본다 — 전체를 받으면 예약 수만큼 요청이 는다.
+  const ledger = useExternalLedgerHasRows()
   const recording = useRecording()
 
   const statsPoints: (StatsPoint & { eventFailures: number })[] =
@@ -424,7 +425,6 @@ export function AdminLoadTest({
     },
   ]
 
-  const ledgerCount = ledger.data?.length
   const checks = [
     {
       key: 'queue',
@@ -448,12 +448,14 @@ export function AdminLoadTest({
     },
     {
       key: 'ledger',
-      ok: ledgerCount === 0,
+      ok: ledger.data === false,
       label: ledger.isError
         ? '외부 원장을 확인하지 못했어요'
-        : ledgerCount === 0
-          ? '외부 원장 비어 있음'
-          : `외부 원장에 지난 기록 ${valueOf(ledgerCount, '건')}`,
+        : ledger.data === undefined
+          ? '외부 원장 확인 중'
+          : ledger.data
+            ? '외부 원장에 지난 기록 있음'
+            : '외부 원장 비어 있음',
     },
   ]
 

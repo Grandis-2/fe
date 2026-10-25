@@ -86,10 +86,7 @@ export function AdminReservationReconcile() {
   const setProductId = (next: string | undefined) =>
     setParam(PRODUCT_PARAM, next)
 
-  const { data: products = [] } = useAdminProducts({
-    saleMode: 'PREORDER',
-    size: 100,
-  })
+  const { data: products = [] } = useAdminProducts({ saleMode: 'PREORDER' })
   // 값이 undefined인 첫 항목이 '전체 상품' — 외부에만 있는 등록까지 다 본다.
   const productOptions: DropdownOption<string | undefined>[] = [
     { label: '전체 상품', value: undefined },

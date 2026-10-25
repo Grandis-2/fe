@@ -1,5 +1,8 @@
 // 밖에서는 TanStack Query 훅으로만 들어온다.
-export { useExternalLedger } from './api/useExternalLedger'
+export {
+  useExternalLedger,
+  useExternalLedgerHasRows,
+} from './api/useExternalLedger'
 export {
   useInjectMockFault,
   useMockConfig,

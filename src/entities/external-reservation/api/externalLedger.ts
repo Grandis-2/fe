@@ -7,8 +7,12 @@ import { requestExternal } from './externalClient'
 const PAGE_SIZE = 1000
 
 // [mock] GET /external/reservations — 원장 목록 조회
-const getLedgerPage = (cursor: string | null, signal?: AbortSignal) => {
-  const query = new URLSearchParams({ size: String(PAGE_SIZE) })
+const getLedgerPage = (
+  cursor: string | null,
+  signal?: AbortSignal,
+  size = PAGE_SIZE,
+) => {
+  const query = new URLSearchParams({ size: String(size) })
   if (cursor) query.set('cursor', cursor)
   return requestExternal<ExternalLedgerPage>(
     `/external/reservations?${query}`,
@@ -17,6 +21,11 @@ const getLedgerPage = (cursor: string | null, signal?: AbortSignal) => {
     },
   )
 }
+
+// [mock] GET /external/reservations — 원장 목록 조회(1건)
+/** 원장에 기록이 하나라도 있는지 — 전체를 받지 않고 1건만 본다 */
+export const hasExternalLedgerRows = async (signal?: AbortSignal) =>
+  (await getLedgerPage(null, signal, 1)).items.length > 0
 
 /**
  * 외부 원장 전체를 커서로 끝까지 받는다. 거르기 기능이 없어(모르는 파라미터는 400)

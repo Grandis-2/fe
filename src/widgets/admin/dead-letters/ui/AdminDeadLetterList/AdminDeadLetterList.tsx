@@ -501,7 +501,7 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
           columns={columns}
           rows={items ?? []}
           rowKey={(item) => item.deadLetterId}
-          pageSize={20}
+          pageSize={10}
           onRowClick={openDetail}
           loading={deadLetters.isPending}
           emptyMessage={

@@ -27,10 +27,7 @@ export function AdminLoadTestPage() {
       { replace: true },
     )
   const dragScroll = useDragScroll<HTMLDivElement>()
-  const { data: products = [] } = useAdminProducts({
-    saleMode: 'PREORDER',
-    size: 100,
-  })
+  const { data: products = [] } = useAdminProducts({ saleMode: 'PREORDER' })
 
   return (
     <div className={styles.root}>

@@ -40,17 +40,17 @@ test('M2 예약 현황에서 외부 등록 실패 건을 찾아 실패 사유를
   await expect(page.getByText(/시도 3회 모두 실패/)).toBeVisible()
 })
 
-test('M2 예약 현황은 20건이 넘으면 쪽을 넘겨 끝까지 본다', async ({ page }) => {
+test('M2 예약 현황은 10건이 넘으면 쪽을 넘겨 끝까지 본다', async ({ page }) => {
   await loginAsAdmin(page)
   await openAdminMenu(page, '예약 현황')
 
   // 시드: 확정 33건(결제 대기 + 결제 완료) — 서버는 상태를 하나씩 걸러서 두 목록을 이어 붙인다.
   await page.getByRole('button', { name: /^확정/ }).click()
-  await page.getByRole('button', { name: '2', exact: true }).click()
+  await page.getByRole('button', { name: '4', exact: true }).click()
 
-  await expect(page).toHaveURL(/page=2/)
-  // 머리 줄 + 남은 13건
-  await expect(page.getByRole('row')).toHaveCount(14)
+  await expect(page).toHaveURL(/page=4/)
+  // 머리 줄 + 남은 3건
+  await expect(page.getByRole('row')).toHaveCount(4)
 })
 
 test('M7 회원이 결제한 주문을 관리자가 배송 완료까지 처리하면 회원 주문 내역도 바뀐다', async ({

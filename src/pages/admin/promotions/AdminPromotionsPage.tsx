@@ -109,10 +109,8 @@ export function AdminPromotionsPage() {
   const [sort, setSort] = useState<PromotionSort>('due')
 
   const promotions = useAdminPromotions()
-  // 연결할 상품이 있는지만 본다 — 한 개만 받는다.
-  const preorderProducts = useAdminProducts({ saleMode: 'PREORDER', size: 1 })
-  // 고객 노출 판정용 — 첫 100개 안에 없는 상품은 판정하지 않는다(목록 밖일 수 있다).
-  const listedPreorders = useAdminProducts({ saleMode: 'PREORDER', size: 100 })
+  // 고객 노출 판정용 — 사전예약 상품 전부. 비었으면 연결할 상품이 없다.
+  const listedPreorders = useAdminProducts({ saleMode: 'PREORDER' })
 
   // 탭 건수도 검색어로 거른 목록에서 센다 — 표와 숫자가 어긋나지 않게.
   const query = keyword.trim().toLowerCase()
@@ -152,7 +150,7 @@ export function AdminPromotionsPage() {
   // 연결할 사전예약 상품이 없으면 사전예약부터 만들 수 없다.
   const startCreate = () => {
     // 아직 모르면(불러오는 중·실패) 막지 않는다 — 등록 화면에서 다시 보여준다.
-    if (preorderProducts.data?.length === 0) {
+    if (listedPreorders.data?.length === 0) {
       openModal({
         theme: 'light',
         title: '안내',
