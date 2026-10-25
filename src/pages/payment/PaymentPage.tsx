@@ -30,6 +30,7 @@ import {
   type DaumPostcodeAddress,
 } from '@features/address-search'
 import { startDrawEntryPayment, startOrderPayment } from '@features/payment'
+import { usePreorderQueueStore } from '@features/preorder-queue'
 import {
   cartLineToDraft,
   drawToDraft,
@@ -49,6 +50,7 @@ import { formatWon } from '@shared/lib/formatNumber'
 import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
+import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import {
   ActionButton,
@@ -287,10 +289,25 @@ export function PaymentPage() {
 
   // ① 주문 생성(같은 예약이면 기존 주문) → ② 결제 준비(tossOrderId·금액·주문명) → ③ 토스 결제창(카드).
   // 정상 진행되면 브라우저가 successUrl/failUrl로 이동하므로, catch는 결제창이 뜨기 전 오류만 잡는다.
-  const handlePayment = async () => {
+  const handlePayment = async (queueConfirmed = false) => {
     form.markSubmitted()
     setPaymentError(null)
     if (!form.requiredFilled || !payable) return
+    // 대기열에 선 채 결제하면 결제 중에 차례가 올 수 있다 — 막지는 않고(구매 확정 기한이 걸린 결제도 있다) 한 번 알린다.
+    // 결제 중엔 화면을 옮기지 않고 알약으로만 알린다(RootLayout holdNavigation).
+    const queueTicket = usePreorderQueueStore.getState().ticket
+    if (queueTicket && !queueConfirmed) {
+      openModal({
+        title: '대기열에 서 있어요',
+        description: `'${queueTicket.productName}' 대기열에 서 있어요.\n결제하는 동안 차례가 오면, 결제를 마친 뒤 '내 차례예요' 알림을 눌러 예약 페이지로 가 주세요. 입장권은 2분 안팎이면 끝나요.`,
+        confirmLabel: '결제 계속',
+        onConfirm: () => {
+          closeModal()
+          void handlePayment(true)
+        },
+      })
+      return
+    }
 
     try {
       const shipTo = {

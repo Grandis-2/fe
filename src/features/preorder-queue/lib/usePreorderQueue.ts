@@ -75,6 +75,9 @@ type Options = {
   onLeave: () => void
   // 이 모델에 진행 중인 내 예약이 있어 줄을 서지 않았다 — 상품 페이지로 보내 그 예약 버튼을 보인다.
   onExisting: () => void
+  // 결제 중이라 화면을 옮기면 안 된다 — 차례가 와도 알약을 누를 때까지 기다린다(결제 승인 확인 중에 옮기면
+  // 승인 결과를 버린다).
+  holdNavigation?: boolean
 }
 
 // 진입(POST) → Retry-After마다 조회(GET) → 입장권. 조회가 NOT_IN_QUEUE면 다시 진입한다(줄에 있었다면 같은 자리).
@@ -85,6 +88,7 @@ export function usePreorderQueue({
   onFail,
   onLeave,
   onExisting,
+  holdNavigation = false,
 }: Options) {
   const queryClient = useQueryClient()
   const enter = useEnterQueue()
@@ -98,6 +102,8 @@ export function usePreorderQueue({
     setIsOpen(true)
   }
   const [hasLeft, setHasLeft] = useState(false)
+  // 결제 중에 차례가 와 알약을 눌렀다 — 그때부터는 결제 경로여도 넘어간다.
+  const [released, setReleased] = useState(false)
   // 아래 effect는 moveIn을 셀 때마다 다시 돈다 — 입장 이벤트는 입장권마다 한 번만 남긴다.
   const trackedTicket = useRef<string | null>(null)
   const [moveIn, setMoveIn] = useState(MOVE_NOTICE_SECONDS)
@@ -247,10 +253,15 @@ export function usePreorderQueue({
     current?.status === 'ADMITTED' ? current.admissionTicket : null
   const expiresIn = current?.status === 'ADMITTED' ? current.expiresIn : 0
 
+  // 결제 중에 차례가 왔다 — 모달을 닫고 알약으로만 알린다. 결제 경로를 벗어나면 아래에서 moveIn초를 센다.
+  const held = holdNavigation && !released && status === 'mine' && !hasLeft
+  if (held && isOpen) setIsOpen(false)
+
   // 내 차례가 오면 모달이 닫혀 있어도 넘어간다. 모달이 열려 있으면 100%를 잠깐 보여 주고,
   // 닫혀 있으면 QueuePill이 moveIn초를 센 뒤 넘어간다(그 사이 누르면 모달이 열려 바로 넘어간다).
   useEffect(() => {
     if (!admissionTicket || hasLeft) return
+    if (held) return
     if (trackedTicket.current !== admissionTicket) {
       trackedTicket.current = admissionTicket
       track('Preorder Queue Admitted', { productId })
@@ -284,7 +295,16 @@ export function usePreorderQueue({
     }
     const id = setTimeout(() => setMoveIn((s) => s - 1), TICK_MS)
     return () => clearTimeout(id)
-  }, [productId, admissionTicket, expiresIn, isHidden, isOpen, moveIn, hasLeft])
+  }, [
+    productId,
+    admissionTicket,
+    expiresIn,
+    isHidden,
+    isOpen,
+    moveIn,
+    hasLeft,
+    held,
+  ])
 
   return {
     status,
@@ -297,6 +317,7 @@ export function usePreorderQueue({
     isOpen,
     hasLeft,
     moveIn,
+    held,
     // 진입 응답 전에는 순번을 모른다(null).
     myOrder: position,
     ahead: Math.max(0, (position ?? 1) - 1),
@@ -328,6 +349,11 @@ export function usePreorderQueue({
           : ((startPosition - position) / (startPosition - 1)) * 100,
     close: () => setIsOpen(false),
     reopen: () => setIsOpen(true),
+    // 결제 중에 붙잡아 둔 차례로 지금 넘어간다 — 모달이 100%를 잠깐 보인 뒤 이동한다.
+    moveNow: () => {
+      setReleased(true)
+      setIsOpen(true)
+    },
     // 나가면 조회를 멈춘다 — 서버 줄에서는 약 250초 뒤 빠진다.
     leave: () => {
       setHasLeft(true)

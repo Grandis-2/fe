@@ -5,7 +5,11 @@ import { Outlet, useLocation, useNavigate } from 'react-router'
 import { logout, useSession } from '@entities/auth'
 import { KAKAO_CALLBACK_PATH } from '@features/login'
 import { PreorderQueue, usePreorderQueueStore } from '@features/preorder-queue'
-import { ADMIN_LOGIN_PATH, SIGNUP_PATH } from '@shared/config/routes'
+import {
+  ADMIN_LOGIN_PATH,
+  PAYMENT_PATH,
+  SIGNUP_PATH,
+} from '@shared/config/routes'
 import { useModalStore } from '@shared/model/modalStore'
 import { showToast, useToastStore } from '@shared/model/toastStore'
 import { Modal, ToastViewport } from '@shared/ui'
@@ -85,6 +89,8 @@ export function RootLayout() {
           key={queueTicket.joinedAt}
           productId={queueTicket.productId}
           productName={queueTicket.productName}
+          // 결제 화면·승인 확인(/payment/…) 중엔 차례가 와도 옮기지 않는다 — 옮기면 승인 결과를 버린다.
+          holdNavigation={location.pathname.startsWith(PAYMENT_PATH)}
           onComplete={(admission) => {
             admitQueue(admission)
             clearQueue()

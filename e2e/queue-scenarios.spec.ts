@@ -1,4 +1,5 @@
 import {
+  cartPayButton,
   confirmPreorder,
   collectPreorderSubmits,
   expect,
@@ -11,6 +12,7 @@ import {
   NOVA_FOLDABLE_3,
   passPreorderQueue,
   preorderSubmitButton,
+  readTossRequest,
   setKstClock,
   setMockFault,
   stubDaumPostcode,
@@ -240,6 +242,37 @@ test.describe('B. 기다리는 중', () => {
       timeout: 45_000,
     })
     await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
+  })
+
+  test('B14 대기열에 선 채 결제하면 한 번 알리고, 결제 화면에 있는 동안 차례가 와도 옮기지 않는다', async ({
+    page,
+  }) => {
+    await stubDaumPostcode(page)
+    await joinMacbookQueue(page)
+    await closeQueueDialog(page)
+    // 새로고침으로 되살린 줄은 창을 다시 띄운다.
+    await page.goto('/mypage?state=cart')
+    await closeQueueDialog(page)
+    await page.getByText('전체 선택').click()
+    await page.getByRole('button', { name: '결제하기', exact: true }).click()
+    await expect(page).toHaveURL(/\/payment\?cart=/)
+
+    await fillPaymentForm(page)
+    await cartPayButton(page).click()
+    const notice = page.getByRole('dialog', { name: '대기열에 서 있어요' })
+    await expect(notice).toBeVisible()
+    await notice.getByRole('button', { name: '취소' }).click()
+    expect(await readTossRequest(page)).toBeNull()
+
+    const held = page.getByRole('button', { name: /결제를 마치면 눌러서/ })
+    await expect(held).toBeVisible({ timeout: 45_000 })
+    // 결제 경로가 아니면 5초 뒤 이동한다(B13) — 그보다 오래 머무는지 본다.
+    await page.waitForTimeout(6_000)
+    await expect(page).toHaveURL(/\/payment\?cart=/)
+
+    await held.click()
+    await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
+    await expect(page.getByText(/안에 사전예약을 눌러 주세요/)).toBeVisible()
   })
 })
 

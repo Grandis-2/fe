@@ -17,6 +17,8 @@ export type PreorderQueueProps = {
   onLeave: () => void
   // 이 모델에 진행 중인 내 예약이 있어 줄을 서지 않았으면 호출된다.
   onExisting: () => void
+  // 결제 중이면 차례가 와도 알약을 누를 때까지 이동하지 않는다.
+  holdNavigation?: boolean
 }
 
 // 대기열 한 번(줄 서기 → 대기 → 이동/나가기). 전역 모달(useModalStore)을 쓰지 않고 자기 Modal을
@@ -31,6 +33,7 @@ export function PreorderQueue({
   onFail,
   onLeave,
   onExisting,
+  holdNavigation,
 }: PreorderQueueProps) {
   const queue = usePreorderQueue({
     productId,
@@ -38,6 +41,7 @@ export function PreorderQueue({
     onFail,
     onLeave,
     onExisting,
+    holdNavigation,
   })
 
   return (
