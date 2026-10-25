@@ -1,6 +1,7 @@
 import { useSearchParams } from 'react-router'
 
 import { useAdminProducts } from '@entities/admin-product'
+import { useDragScroll } from '@shared/lib/useDragScroll'
 import { Chip } from '@shared/ui'
 import { AdminLoadTest } from '@widgets/admin/load-test'
 
@@ -25,6 +26,7 @@ export function AdminLoadTestPage() {
       },
       { replace: true },
     )
+  const dragScroll = useDragScroll<HTMLDivElement>()
   const { data: products = [] } = useAdminProducts({
     saleMode: 'PREORDER',
     size: 100,
@@ -39,12 +41,18 @@ export function AdminLoadTestPage() {
         // 제목 줄 오른쪽 도구(범위·Grafana·구간 기록)가 넓어 설명 없이 제목만 둔다(시안과 같다).
         header={{ title: '부하 검증' }}
         scope={
-          <div className={styles.scope} role="group" aria-label="볼 상품">
+          <div
+            className={styles.scope}
+            role="group"
+            aria-label="볼 상품"
+            {...dragScroll}
+          >
             {[{ productId: undefined, name: '전체' }, ...products].map(
               (product) => (
                 <Chip
                   key={product.productId ?? 'all'}
                   variant="solid"
+                  className={styles.scopeChip}
                   selected={product.productId === productId}
                   aria-pressed={product.productId === productId}
                   onClick={() => setProductId(product.productId)}
