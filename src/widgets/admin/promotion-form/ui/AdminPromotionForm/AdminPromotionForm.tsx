@@ -1,5 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from 'react'
 
+import { AlertCircle } from 'lucide-react'
+
 import {
   createEmptyPromotionFormValue,
   formatMonthDay,
@@ -15,7 +17,7 @@ import { useNow } from '@shared/lib/useNow'
 import {
   Button,
   DateRangeField,
-  FieldError,
+  FormFooter,
   ImageUploader,
   Input,
 } from '@shared/ui'
@@ -44,12 +46,6 @@ export type AdminPromotionFormProps = {
 }
 
 type SectionKey = 'basic' | 'images' | 'products'
-
-const sections: { key: SectionKey; title: string }[] = [
-  { key: 'basic', title: '기본 정보' },
-  { key: 'images', title: '이미지' },
-  { key: 'products', title: '연결 상품' },
-]
 
 const sectionId = (key: SectionKey) => `promotion-${key}`
 
@@ -134,7 +130,6 @@ function Section({
 }) {
   return (
     <section
-      id={sectionId(sectionKey)}
       className={styles.section}
       aria-labelledby={`${sectionId(sectionKey)}-title`}
     >
@@ -149,8 +144,8 @@ function Section({
 }
 
 /**
- * 사전예약 등록·수정 폼. 위에서 섹션 목차로 건너뛰고, 수정이면 저장된 값과 달라진 섹션에
- * '바뀜'을 붙이고 아래 고정 줄에 바뀐 내용을 요약한다.
+ * 사전예약 등록·수정 폼. 수정이면 저장된 값과 달라진 섹션에 '바뀜'을 붙이고, 상품 폼과 같은
+ * 아래 고정 버튼 줄(FormFooter)에 바뀐 내용을 요약한다.
  */
 export function AdminPromotionForm({
   mode,
@@ -194,17 +189,6 @@ export function AdminPromotionForm({
 
   return (
     <form className={styles.root} onSubmit={handleSubmit}>
-      <nav className={styles.toc} aria-label="섹션">
-        {sections.map(({ key, title }) => (
-          <a key={key} className={styles.tocLink} href={`#${sectionId(key)}`}>
-            {title}
-            {changed[key] && (
-              <span className={styles.tocDot} aria-label="바뀜" />
-            )}
-          </a>
-        ))}
-      </nav>
-
       <Section sectionKey="basic" title="기본 정보" changed={changed.basic}>
         <div className={styles.field}>
           <Input
@@ -282,49 +266,56 @@ export function AdminPromotionForm({
         />
       </Section>
 
-      <div className={styles.saveBar} role="region" aria-label="저장">
-        {editing && (
-          <span className={styles.saveSummary}>
-            {notes.length === 0 ? (
-              '바뀐 곳 없음'
-            ) : (
-              <>
-                바뀐 곳{' '}
-                <b className={styles.saveCount}>
-                  {Object.values(changed).filter(Boolean).length}곳
-                </b>{' '}
-                · {notes.join(' · ')}
-              </>
-            )}
-          </span>
-        )}
-        <span className={styles.saveActions}>
-          <FieldError message={problem ?? undefined} />
-          {editing ? (
-            <Button
-              variant="outline"
-              color="cancel"
-              disabled={notes.length === 0 || submitting}
-              onClick={() => {
-                setValue(defaultValue)
-                setProblem(null)
-              }}
-            >
-              되돌리기
-            </Button>
+      <FormFooter
+        message={
+          problem ? (
+            <>
+              <AlertCircle className={styles.footerIcon} aria-hidden="true" />
+              {problem}
+            </>
           ) : (
-            <Button variant="outline" color="cancel" onClick={onCancel}>
-              취소
-            </Button>
-          )}
+            editing && (
+              <span className={styles.saveSummary}>
+                {notes.length === 0 ? (
+                  '바뀐 곳 없음'
+                ) : (
+                  <>
+                    바뀐 곳{' '}
+                    <b className={styles.saveCount}>
+                      {Object.values(changed).filter(Boolean).length}곳
+                    </b>{' '}
+                    · {notes.join(' · ')}
+                  </>
+                )}
+              </span>
+            )
+          )
+        }
+      >
+        {editing ? (
           <Button
-            type="submit"
-            disabled={submitting || (editing && notes.length === 0)}
+            variant="outline"
+            color="cancel"
+            disabled={notes.length === 0 || submitting}
+            onClick={() => {
+              setValue(defaultValue)
+              setProblem(null)
+            }}
           >
-            {editing ? '저장' : '등록하기'}
+            되돌리기
           </Button>
-        </span>
-      </div>
+        ) : (
+          <Button variant="outline" color="cancel" onClick={onCancel}>
+            취소
+          </Button>
+        )}
+        <Button
+          type="submit"
+          disabled={submitting || (editing && notes.length === 0)}
+        >
+          {editing ? '저장' : '등록하기'}
+        </Button>
+      </FormFooter>
     </form>
   )
 }

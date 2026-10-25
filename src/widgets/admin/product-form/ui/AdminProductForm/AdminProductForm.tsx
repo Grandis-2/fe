@@ -276,7 +276,7 @@ export function AdminProductForm({
         )
       )}
 
-      <div className={editing ? styles.withToc : styles.plain}>
+      <div className={editing ? styles.withToc : undefined}>
         {/* 잠기면 섹션마다 fieldset으로 안의 입력·버튼을 한꺼번에 막는다 — 칸마다 disabled를
             넘기지 않는다. 사진 칸은 잠금과 상관없이 고칠 수 있어 막지 않는다. */}
         <div className={styles.sections}>

@@ -1,46 +1,19 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, shadow, spacing, typography } from '@shared/config/theme'
+import {
+  ADMIN_FORM_MAX_WIDTH,
+  color,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[16],
   width: '100%',
-  // 상품 폼과 같은 폭 — 관리자 폼이 화면을 다 쓰면 한 줄이 너무 길어진다.
-  maxWidth: '1000px',
-})
-
-export const toc = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: spacing[6],
-})
-
-export const tocLink = style([
-  typography.body.subSemibold,
-  {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: spacing[6],
-    minHeight: '36px',
-    padding: `0 ${spacing[12]}`,
-    borderRadius: '999px',
-    border: `1px solid ${color.border.default}`,
-    background: color.background.base,
-    color: color.text.primary,
-    textDecoration: 'none',
-    selectors: {
-      '&:hover': { borderColor: color.border.hover },
-    },
-  },
-])
-
-export const tocDot = style({
-  width: '8px',
-  height: '8px',
-  borderRadius: '999px',
-  background: color.status.warning,
+  // 상품 폼과 같은 폭
+  maxWidth: ADMIN_FORM_MAX_WIDTH,
 })
 
 export const section = style({
@@ -51,8 +24,6 @@ export const section = style({
   border: `1px solid ${color.border.default}`,
   borderRadius: '12px',
   background: color.background.base,
-  // 목차로 건너왔을 때 위에 붙지 않게
-  scrollMarginTop: spacing[20],
 })
 
 export const sectionTitle = style([
@@ -111,36 +82,18 @@ export const tileFrame = style({
   background: color.background.base,
 })
 
-// 아래에 붙어 따라오는 저장 줄 — 긴 폼을 내려가도 바뀐 내용과 저장이 늘 보인다.
-export const saveBar = style({
-  position: 'sticky',
-  bottom: spacing[16],
-  zIndex: 1,
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  gap: spacing[12],
-  marginTop: spacing[8],
-  padding: `${spacing[12]} ${spacing[20]}`,
-  border: `1px solid ${color.border.default}`,
-  borderRadius: '12px',
-  background: color.background.base,
-  boxShadow: shadow.md,
+export const footerIcon = style({
+  width: '16px',
+  height: '16px',
+  flexShrink: 0,
 })
 
+/** 저장 줄의 바뀐 곳 요약 — 실패 문구가 아니라 회색으로 */
 export const saveSummary = style([
-  typography.body.defaultRegular,
+  typography.body.subMedium,
   { color: color.text.secondary },
 ])
 
 export const saveCount = style({
   color: color.text.primary,
-})
-
-export const saveActions = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  gap: spacing[8],
-  marginLeft: 'auto',
 })

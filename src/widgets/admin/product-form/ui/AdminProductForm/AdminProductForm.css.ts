@@ -1,17 +1,19 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@shared/config/theme'
+import {
+  ADMIN_FORM_MAX_WIDTH,
+  color,
+  spacing,
+  typography,
+} from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
   gap: spacing[24],
   width: '100%',
-  maxWidth: '1240px',
+  maxWidth: ADMIN_FORM_MAX_WIDTH,
 })
-
-/** 등록 화면 — 섹션만 한 줄로 */
-export const plain = style({ maxWidth: '1000px' })
 
 /** 수정 화면 — 섹션 오른쪽에 목차가 붙는다. 좁으면 목차를 뺀다 */
 export const withToc = style({
