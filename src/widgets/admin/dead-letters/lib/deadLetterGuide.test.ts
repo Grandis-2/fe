@@ -31,6 +31,15 @@ describe('deadLetterGuide', () => {
       }).title,
     ).toMatch(/PREORDER_GIFT_GRANTED/)
   })
+
+  it('보내는 중(REDRIVING)은 보냈다고 하지 않는다 — 보내기에 실패하면 이 상태로 남는다', () => {
+    expect(deadLetterGuide({ ...base, status: 'REDRIVING' }).title).toBe(
+      '원래 큐로 보내는 중이에요',
+    )
+    expect(deadLetterGuide({ ...base, status: 'REDRIVEN' }).title).toMatch(
+      /보냈고/,
+    )
+  })
 })
 
 describe('deadLetterSteps', () => {

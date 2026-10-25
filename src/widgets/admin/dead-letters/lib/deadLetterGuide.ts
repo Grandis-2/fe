@@ -58,7 +58,14 @@ export function deadLetterGuide(record: GuideInput): DeadLetterGuide {
         description:
           '서버 로그에서 messageId로 오류를 찾아 고친 뒤 되돌리세요. 고치지 않고 되돌리면 다시 실패해 새 메시지로 쌓여요.',
       }
+    // 보내기에 실패하면 서버가 REDRIVING에 그대로 둔다 — 보냈다고 단정하지 않는다.
     case 'REDRIVING':
+      return {
+        tone: 'info',
+        title: '원래 큐로 보내는 중이에요',
+        description:
+          '보통 몇 초 안에 끝나요. 오래 이대로면 보내기에 실패한 것일 수 있어 개발팀에 알려 주세요.',
+      }
     case 'REDRIVEN':
       return {
         tone: 'info',
