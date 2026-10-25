@@ -21,7 +21,7 @@ import {
   type ProductPaymentCardItem,
 } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
-import { mypagePath, paymentPath } from '@shared/config/routes'
+import { mypagePath, paymentPath, resultPath } from '@shared/config/routes'
 import { formatDotDateMinute } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { toggleInSet } from '@shared/lib/toggleInSet'
@@ -303,6 +303,18 @@ export function MypagePreorder() {
                 </Button>
               </div>
             )) ||
+          // 끝난 예약은 예약 접수 화면에서 왜 끝났는지(원인 · 취소 사유)와 처리 기록을 본다 — 카드마다 이력을 묻지 않는다.
+          (ENDED.includes(reservation.displayStatus) && (
+            <Button
+              variant="outline"
+              size="small"
+              onClick={() =>
+                navigate(resultPath('preorder', reservation.preorderId))
+              }
+            >
+              처리 기록 보기
+            </Button>
+          )) ||
           undefined
         )
       }
