@@ -25,11 +25,16 @@ const TICKET_ERRORS = [
   'ADMISSION_TICKET_USED',
 ]
 
-// 이미 접수된 예약이 있다 — 409 ACTIVE_PREORDER_EXISTS, 또는 응답을 못 받은 첫 접수가 커밋된 뒤
-// 옵션을 바꿔 같은 키로 다시 보낸 422 KEY_PAYLOAD_MISMATCH. 다시 눌러도 같은 오류라 버튼을 그 예약으로 바꾼다.
-const isAlreadyAccepted = (caught: unknown) =>
-  caught instanceof ApiRequestError &&
-  ['ACTIVE_PREORDER_EXISTS', 'KEY_PAYLOAD_MISMATCH'].includes(caught.error.code)
+// 이미 접수된 예약이 있다 — 다시 눌러도 같은 오류라 버튼을 그 예약으로 바꾼다. 422는 응답을 못 받은 첫 접수가
+// 커밋된 뒤 옵션을 바꿔 같은 키로 다시 보낸 것이다 — 예약은 앞 옵션이라, 바꾼 옵션으로 된 줄 알고 결제하지 않게 따로 알린다.
+const alreadyAcceptedMessage = (caught: unknown) => {
+  if (!(caught instanceof ApiRequestError)) return null
+  if (caught.error.code === 'ACTIVE_PREORDER_EXISTS')
+    return '이미 예약한 모델이에요.'
+  if (caught.error.code === 'KEY_PAYLOAD_MISMATCH')
+    return '앞서 고른 옵션으로 이미 접수됐어요. 예약 내용을 확인해 주세요.'
+  return null
+}
 
 type SubmitTarget = {
   productId: string
@@ -99,9 +104,10 @@ export function usePreorderSubmit() {
         },
         onError: (caught) => {
           // 이미 이 모델의 예약이 있다 — 다른 화면으로 옮기지 않고 알린 뒤, 그 예약을 다시 받아 버튼을 그 예약으로 바꾼다.
-          if (isAlreadyAccepted(caught)) {
+          const alreadyMessage = alreadyAcceptedMessage(caught)
+          if (alreadyMessage) {
             clearAdmission()
-            showToast('이미 예약한 모델이에요.')
+            showToast(alreadyMessage)
             void queryClient.invalidateQueries({
               queryKey: activeReservationsQuery.queryKey,
             })
