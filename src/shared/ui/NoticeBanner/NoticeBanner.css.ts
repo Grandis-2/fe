@@ -11,7 +11,7 @@ const base = style({
   border: '1px solid transparent',
 })
 
-// 빨강: 지금 눌러야 하는 것 / 주황: 알아 둘 것(할 일 없음) / 회색: 상황 설명.
+// 빨강: 지금 눌러야 하는 것 / 주황: 알아 둘 것(할 일 없음) / 초록: 이상 없음 / 회색: 상황 설명.
 export const tone = styleVariants({
   danger: [
     base,
@@ -25,6 +25,13 @@ export const tone = styleVariants({
     {
       background: color.background.subtleWarning,
       borderColor: `color-mix(in srgb, ${color.status.warning} 40%, transparent)`,
+    },
+  ],
+  success: [
+    base,
+    {
+      background: color.background.subtleSuccess,
+      borderColor: `color-mix(in srgb, ${color.status.success} 30%, transparent)`,
     },
   ],
   info: [

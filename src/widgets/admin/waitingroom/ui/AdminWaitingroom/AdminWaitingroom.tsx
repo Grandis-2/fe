@@ -43,7 +43,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>(DEFAULT_INTERVAL)
   const status = useWaitingroomStatus(refreshInterval)
-  const rates = useAdmissionRates()
+  const rates = useAdmissionRates(refreshInterval)
   const admission = useAdmissionChange()
 
   const view = status.data
@@ -125,9 +125,13 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
           {view && ' 아래 숫자는 마지막으로 받은 값입니다.'}
         </InlineAlert>
       )}
-      {rates.isError && (
-        <InlineAlert status="error">
-          {getErrorMessage(rates.error, '운영값을 불러오지 못했습니다.')}
+      {pollingError(rates) !== null && (
+        <InlineAlert status={rates.data ? 'warning' : 'error'}>
+          {getErrorMessage(
+            pollingError(rates),
+            '운영값을 불러오지 못했습니다.',
+          )}
+          {rates.data && ' 운영값과 서버 용량은 마지막으로 받은 값입니다.'}
         </InlineAlert>
       )}
       {admission.error && (
@@ -145,6 +149,7 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
             brakeFactor={view?.brakeFactor ?? null}
             loading={status.isPending}
             globalSetting={rates.data?.globalCredit}
+            capacity={rates.data?.capacity}
             maxCredit={maxCredit}
             productIds={allProductIds}
             admission={admission}

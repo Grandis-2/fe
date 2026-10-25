@@ -7,17 +7,23 @@ import type { Meta, StoryObj } from '@storybook/react-vite'
 const meta = {
   component: AdminMockSettings,
   tags: ['ai-generated'],
+  args: { header: { title: 'Mock 설정' } },
 } satisfies Meta<typeof AdminMockSettings>
 
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 공용 서버 경고가 맨 위에 있고, 키가 없으면 결함 걸기를 막는다 */
+/** 지금 적용 중인 값이 맨 위에 있고, 키가 없으면 결함 걸기를 막는다 */
 export const Default: Story = {
   play: async ({ canvas }) => {
     await expect(
-      canvas.getByText(/팀이 같이 쓰는 Mock 서버입니다/),
+      canvas.getByRole('region', { name: '지금 적용 중' }),
     ).toBeVisible()
+    // 제목 줄 오른쪽에 마지막 갱신이 붙는다.
+    await expect(
+      canvas.getByRole('heading', { level: 1, name: 'Mock 설정' }),
+    ).toBeVisible()
+    await expect(canvas.getByText(/마지막 갱신/)).toBeVisible()
     await expect(
       canvas.getByRole('button', { name: '결함 걸기' }),
     ).toBeDisabled()
@@ -28,7 +34,7 @@ export const Default: Story = {
 export const ResetGuard: Story = {
   play: async ({ canvas, userEvent }) => {
     const button = canvas.getByRole('button', { name: '원장 모두 지우기' })
-    const input = canvas.getByLabelText('확인을 위해 RESET를 입력하세요')
+    const input = canvas.getByLabelText('확인을 위해 RESET 입력')
     await userEvent.type(input, 'reset')
     await expect(button).toBeDisabled()
     await userEvent.clear(input)

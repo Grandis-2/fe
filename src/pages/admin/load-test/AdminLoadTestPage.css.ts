@@ -1,34 +1,28 @@
 import { style } from '@vanilla-extract/css'
 
-import { color, spacing, typography } from '@shared/config/theme'
+import { spacing } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[20],
-})
-
-export const header = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'flex-start',
-  justifyContent: 'space-between',
   gap: spacing[16],
 })
 
-export const heading = style({
+// 사전예약이 많아도 한 줄 — 가로로 넘기고(마우스로 끌기), 스크롤바는 숨긴다.
+export const scope = style({
   display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[8],
+  flexWrap: 'nowrap',
+  alignItems: 'center',
+  gap: spacing[6],
+  overflowX: 'auto',
+  scrollbarWidth: 'none',
+  cursor: 'grab',
+  userSelect: 'none',
+  selectors: {
+    '&::-webkit-scrollbar': { display: 'none' },
+    '&:active': { cursor: 'grabbing' },
+  },
 })
 
-// 다른 관리자 화면(예약 현황·상품 관리)의 제목과 같은 크기다.
-export const title = style([
-  typography.title.xlSemibold,
-  { margin: 0, color: color.text.primary },
-])
-
-export const description = style([
-  typography.body.sub,
-  { color: color.text.tertiary },
-])
+// 칩이 줄어들거나 글자가 접히지 않게 한다.
+export const scopeChip = style({ flexShrink: 0, whiteSpace: 'nowrap' })

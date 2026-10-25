@@ -5,7 +5,10 @@ import { CircleCheck, TriangleAlert } from 'lucide-react'
 import { useAdminDraws, useStuckDraws } from '@entities/admin-draw'
 import { useAdminOrderCounts } from '@entities/admin-order'
 import { useAdminProductCount } from '@entities/admin-product'
-import { useReservationStats } from '@entities/admin-reservation'
+import {
+  useReservationStats,
+  useSyncJobErrorGroups,
+} from '@entities/admin-reservation'
 import {
   isBraking,
   useWaitingroomStatusHistory,
@@ -225,6 +228,11 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   // 재처리는 이 화면에서 모달로 한다 — 고른 사전예약이 있으면 그것만, 없으면 전부.
   // 범위와 집계는 실행할 때 고른 상품으로 훅이 고정해 센다.
   const reprocess = useReprocessRun(selected)
+  // 재처리 확인 창을 열 때만 실패 원인을 묻는다.
+  const causes = useSyncJobErrorGroups(false, {
+    status: 'DEAD_LETTER',
+    enabled: reprocess.open,
+  })
   const reprocessAction = { label: '재처리', onClick: reprocess.show }
   // 모달의 사전예약별 건수 — 마감돼 목록에서 빠진 회차에 남은 실패는 한 줄로 묶는다.
   const breakdownTotal = failedPreorders.reduce(
@@ -552,6 +560,8 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         scopeName={selected ? nameOf(selected) : null}
         failures={failures ?? 0}
         breakdown={reprocessBreakdown}
+        causes={causes.data}
+        causesFailed={causes.isError}
         run={reprocess.run}
         running={reprocess.running}
         result={reprocess.result}

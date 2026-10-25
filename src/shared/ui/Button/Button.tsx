@@ -1,26 +1,15 @@
 import type { ButtonHTMLAttributes } from 'react'
 
-import { spacing } from '@shared/config/theme'
-
 import * as styles from './Button.css'
+import {
+  iconSize,
+  variantStyles,
+  type ButtonColor,
+  type ButtonSize,
+  type ButtonVariant,
+} from './buttonVariants'
 
 import type { LucideIcon } from 'lucide-react'
-
-type ButtonColor = 'primary' | 'secondary' | 'cancel' | 'close'
-type ButtonVariant = 'solid' | 'outline' | 'subtle'
-type ButtonSize = 'large' | 'medium' | 'small'
-
-const variantStyles = {
-  solid: styles.solid,
-  outline: styles.outline,
-  subtle: styles.subtle,
-}
-
-const iconSize: Record<ButtonSize, string> = {
-  small: spacing[16],
-  medium: spacing[20],
-  large: spacing[24],
-}
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   color?: ButtonColor

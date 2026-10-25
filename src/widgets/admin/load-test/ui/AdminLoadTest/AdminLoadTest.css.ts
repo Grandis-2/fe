@@ -1,58 +1,140 @@
-import { style } from '@vanilla-extract/css'
+import { keyframes, style } from '@vanilla-extract/css'
 
+import { errorCodeMeaning } from '@entities/admin-reservation'
 import { color, spacing, typography } from '@shared/config/theme'
 
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
-  gap: spacing[24],
-})
-
-export const cards = style({
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
   gap: spacing[16],
 })
 
-// 카드 값 아래에 변화량·시험 중 증가분을 작게 붙인다.
-export const valueWithNote = style({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: spacing[4],
+const badge = style([
+  typography.body.subMedium,
+  { display: 'inline-flex', alignItems: 'center', gap: spacing[6] },
+])
+export const liveBadge = style([badge, { color: color.status.success }])
+export const recordingBadge = style([badge, { color: color.status.danger }])
+
+const pulse = keyframes({ '50%': { opacity: 0.35 } })
+const dot = style({
+  width: '8px',
+  height: '8px',
+  borderRadius: '50%',
+  '@media': {
+    '(prefers-reduced-motion: no-preference)': {
+      animation: `${pulse} 1.6s ease-in-out infinite`,
+    },
+  },
+})
+export const liveDot = style([dot, { background: color.status.success }])
+export const recordingDot = style([dot, { background: color.status.danger }])
+
+export const kpis = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+  gap: spacing[12],
 })
 
-export const note = style([
+// 같은 줄 카드는 높이를 맞춘다(낮은 카드가 위에 붙어 아래가 비지 않게).
+export const row = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'stretch',
+  gap: spacing[16],
+})
+export const wideCard = style({ flex: '3 1 520px' })
+export const sideCard = style({ flex: '2 1 340px' })
+
+// 실패 원인 표 — 알려진 오류 코드가 다 나와도 카드가 늘지 않게 그만큼 자리를 잡아 둔다.
+// 한 줄 = 위아래 여백 14px×2 + 14px 글자(줄 높이 1.3) + 구분선 1px, 머리글 한 줄을 더한다.
+const TABLE_ROW_HEIGHT = `(${spacing[14]} * 2 + 14px * 1.3 + 1px)`
+export const errorTable = style({
+  minHeight: `calc(${Object.keys(errorCodeMeaning).length + 1} * ${TABLE_ROW_HEIGHT})`,
+})
+
+export const caption = style([
   typography.body.caption,
   { color: color.text.tertiary },
 ])
 
-/** 섹션 내용을 감싸는 흰 카드 */
-export const card = style({
-  padding: spacing[20],
-  borderRadius: '12px',
-  border: `1px solid ${color.border.subtle}`,
-  background: color.background.base,
+export const chartPair = style({
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(min(420px, 100%), 1fr))',
+  gap: spacing[16],
 })
 
-export const subTitle = style([
-  typography.body.defaultMedium,
-  { color: color.text.primary },
+export const miniValue = style([
+  typography.title.lgSemibold,
+  { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
 ])
 
-export const mockSummary = style([
+// 실패 원인 표의 비율 막대
+export const shareCell = style({
+  display: 'flex',
+  alignItems: 'center',
+  gap: spacing[8],
+  fontVariantNumeric: 'tabular-nums',
+})
+
+export const shareBar = style({
+  flex: 1,
+  height: '6px',
+  borderRadius: '999px',
+  background: color.background.subSurface,
+  overflow: 'hidden',
+})
+
+export const shareFill = style({
+  display: 'block',
+  height: '100%',
+  background: color.status.danger,
+})
+
+export const chips = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[6],
+})
+
+export const checks = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: `${spacing[10]} ${spacing[32]}`,
+  margin: 0,
+  padding: 0,
+  listStyle: 'none',
+})
+
+export const check = style([
   typography.body.defaultRegular,
-  { color: color.text.primary },
+  {
+    display: 'flex',
+    alignItems: 'center',
+    gap: spacing[10],
+    color: color.text.primary,
+  },
 ])
 
-export const link = style({
-  color: color.primary.base,
-  textDecoration: 'underline',
+const checkMark = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+  width: '18px',
+  height: '18px',
+  borderRadius: '50%',
 })
+export const checkOk = style([
+  checkMark,
+  { background: color.background.subtleSuccess, color: color.status.success },
+])
+export const checkNo = style([
+  checkMark,
+  { background: color.background.subtleWarning, color: color.status.warning },
+])
 
-export const externalLink = style([
+export const link = style([
   typography.body.subMedium,
-  {
-    color: color.primary.base,
-    textDecoration: 'underline',
-  },
+  { color: color.primary.base, textDecoration: 'none' },
 ])

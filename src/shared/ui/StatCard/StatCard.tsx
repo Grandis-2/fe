@@ -18,6 +18,8 @@ export type StatCardProps = {
   muted?: boolean
   /** 불러오는 중 — value 대신 회색 막대를 깐다('—'·'조회 실패'와 섞이지 않게) */
   loading?: boolean
+  /** 나빠진 값이면 카드 바탕을 칠한다 — warning은 지켜볼 것, danger는 손봐야 할 것 */
+  tone?: 'warning' | 'danger'
   className?: string
 }
 
@@ -27,11 +29,14 @@ export function StatCard({
   caption,
   muted,
   loading = false,
+  tone,
   className,
 }: StatCardProps) {
   return (
     <div
-      className={[styles.root, className].filter(Boolean).join(' ')}
+      className={[tone ? styles.tone[tone] : styles.root, className]
+        .filter(Boolean)
+        .join(' ')}
       aria-busy={loading || undefined}
     >
       <div className={styles.label}>{label}</div>
@@ -42,7 +47,17 @@ export function StatCard({
           <span className={srOnly}>불러오는 중</span>
         </div>
       ) : (
-        <div className={muted ? styles.valueMuted : styles.value}>{value}</div>
+        <div
+          className={
+            muted
+              ? styles.valueMuted
+              : tone === 'danger'
+                ? styles.valueDanger
+                : styles.value
+          }
+        >
+          {value}
+        </div>
       )}
       {caption && <div className={styles.caption}>{caption}</div>}
     </div>

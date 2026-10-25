@@ -2,7 +2,7 @@ import { http } from 'msw'
 
 import { reservationStore } from '../fixtures/admin-reservation'
 import { isOpenScenarioRunning, scenarioQueue } from '../openScenario'
-import { invalid, ok } from '../response'
+import { fail, invalid, ok } from '../response'
 import { url } from '../url'
 
 import type {
@@ -25,6 +25,11 @@ const MAX_GLOBAL_CREDIT = 1500
 const DEFAULT_GLOBAL = 15
 const DEFAULT_CAP = 15
 const DEFAULT_GRACE = 250
+// 사전예약 서버 용량 — 권장 상한까지 바로 반영, 위험선까지는 확인 뒤 증설되면 반영.
+// ponytail: 실서버 값을 모른다 — 명세 예시(기본 150 · 권장 300 · 위험 500)를 서버가 낮춘
+// 기본값(15)에 맞춰 1/10로 줄였다. 실서버 값을 확인하면 그 값으로 바꾼다.
+const RECOMMENDED_MAX = 30
+const DANGER_LINE = 50
 
 const state: {
   globalCredit: number | null
@@ -48,6 +53,10 @@ const setting = (
 
 const capOf = (productId: string) => state.caps.get(productId) ?? DEFAULT_CAP
 
+const globalOf = () => state.globalCredit ?? DEFAULT_GLOBAL
+// ponytail: 증설은 오지 않는다 — 권장 위로 올리면 계속 서버 늘어나는 중으로 남는다.
+const appliedGlobal = () => Math.min(globalOf(), RECOMMENDED_MAX)
+
 function view(): AdmissionRateView {
   const ids = [...new Set([...productIds, ...state.caps.keys()])].toSorted()
   return {
@@ -64,6 +73,16 @@ function view(): AdmissionRateView {
           : Math.max(1, Math.min(capOf(productId), DEFAULT_GLOBAL)) *
             state.maxWait,
     })),
+    capacity: {
+      recommendedMax: RECOMMENDED_MAX,
+      dangerLine: DANGER_LINE,
+      appliedCredit: appliedGlobal(),
+      readyTasks: 3,
+      warmingTasks: globalOf() > RECOMMENDED_MAX ? 2 : 0,
+      brakeFactor: 1,
+      relayBadRatio: 0.01,
+      scalingPending: globalOf() > RECOMMENDED_MAX,
+    },
   }
 }
 
@@ -77,9 +96,7 @@ function waveSnapshot(now: number): Snapshot {
   const wave = (offset: number) =>
     (Math.sin((now / 60_000 + offset) * Math.PI * 2) + 1) / 2
   const brakeFactor = wave(0.3) > 0.85 ? 0.6 : 1
-  const global = Math.round(
-    (state.globalCredit ?? DEFAULT_GLOBAL) * brakeFactor,
-  )
+  const global = Math.round(appliedGlobal() * brakeFactor)
   const share = Math.floor(global / Math.max(productIds.length, 1))
   const products: ProductStatus[] = productIds.map((productId, index) => {
     const waiting = Math.round(wave(index / 3) * 1200)
@@ -100,11 +117,9 @@ function waveSnapshot(now: number): Snapshot {
 
 // 오픈 시나리오의 대기열 — 몰린 사람이 입장 속도만큼 빠지고, 적체가 쌓이면 브레이크가 걸린다.
 function scenarioSnapshot(now: number): Snapshot {
-  const queue = scenarioQueue(state.globalCredit ?? DEFAULT_GLOBAL, capOf)
+  const queue = scenarioQueue(appliedGlobal(), capOf)
   return {
-    globalCredit: Math.round(
-      (state.globalCredit ?? DEFAULT_GLOBAL) * queue.brakeFactor,
-    ),
+    globalCredit: Math.round(appliedGlobal() * queue.brakeFactor),
     brakeFactor: queue.brakeFactor,
     products: queue.products.map((product) => ({
       productId: product.productId,
@@ -167,8 +182,33 @@ export const adminWaitingroomHandlers: RequestHandler[] = [
 
   http.put(url(`${BASE}/admission-rate`), async ({ request }) => {
     const field: keyof GlobalCreditRequest = 'globalCredit'
+    const body = (await request
+      .clone()
+      .json()
+      .catch(() => null)) as GlobalCreditRequest | null
     const value = await readInt(request, field, 0, MAX_GLOBAL_CREDIT)
     if (value === null) return outOfRange(field, 0, MAX_GLOBAL_CREDIT)
+    // 줄이기는 언제나 받는다. 늘릴 때만 용량을 본다.
+    if (value > globalOf()) {
+      const limits = {
+        recommendedMax: RECOMMENDED_MAX,
+        dangerLine: DANGER_LINE,
+      }
+      if (value > DANGER_LINE)
+        return fail(400, {
+          code: 'ADMISSION_RATE_UNREACHABLE',
+          message:
+            '사전예약 서버를 최대로 늘려도 받을 수 없는 입장 속도입니다.',
+          ...limits,
+        })
+      if (value > RECOMMENDED_MAX && body?.confirm !== true)
+        return fail(409, {
+          code: 'ADMISSION_RATE_NEEDS_CONFIRM',
+          message:
+            '사전예약 서버가 늘어난 뒤에 반영되는 입장 속도입니다. 확인 후 다시 요청해 주세요.',
+          ...limits,
+        })
+    }
     state.globalCredit = value
     return ok(view())
   }),

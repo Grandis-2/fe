@@ -240,7 +240,11 @@ export const externalReservationHandlers: RequestHandler[] = [
     }
     const deletedCount = buildLedger().length
     ledgerCleared = true
-    return HttpResponse.json<Reply<MockResetResponse>>({ deletedCount })
+    return HttpResponse.json<Reply<MockResetResponse>>({
+      deletedCount,
+      deletedDraws: 0,
+      deletedDrawEntries: 0,
+    })
   }),
 
   http.post(url('/external/faults'), async ({ request }) => {

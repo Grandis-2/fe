@@ -12,6 +12,7 @@ export {
   MOCK_LATENCY_MAX_MS,
   mockFailureModeLabel,
   mockFaultTypeLabel,
+  mockMixedResponseLabel,
   mockMixedResponses,
 } from './model/types'
 export type {
