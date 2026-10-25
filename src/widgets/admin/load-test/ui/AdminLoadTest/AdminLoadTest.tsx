@@ -704,14 +704,16 @@ export function AdminLoadTest({
               )}
             </InlineAlert>
           )}
-          <Table
-            columns={errorColumns(failureTotal)}
-            rows={failures.toSorted((a, b) => b.count - a.count)}
-            rowKey={(group) => group.errorCode ?? 'none'}
-            loading={errors.isPending}
-            loadingRows={3}
-            emptyMessage="실패 중인 작업이 없습니다."
-          />
+          <div className={styles.errorTable}>
+            <Table
+              columns={errorColumns(failureTotal)}
+              rows={failures.toSorted((a, b) => b.count - a.count)}
+              rowKey={(group) => group.errorCode ?? 'none'}
+              loading={errors.isPending}
+              loadingRows={3}
+              emptyMessage="실패 중인 작업이 없습니다."
+            />
+          </div>
           <span className={styles.caption}>
             재시도로 풀리는 것도 섞여 있어요. 끝내 실패한 건은 예약 현황에서
             재처리해요.

@@ -1,5 +1,9 @@
 import { ApiRequestError, apiClient } from '@shared/api/client'
-import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
+import {
+  fetchAllPages,
+  fetchConcatPage,
+  PAGE_SIZE_MAX,
+} from '@shared/api/fetchAllPages'
 import { toQueryString } from '@shared/api/queryString'
 import type {
   AdminCancelRequest,
@@ -12,6 +16,7 @@ import type {
   BatchReprocess,
   OffsetPage,
   PreorderStats,
+  PreorderStatus,
   ReprocessBatchRequest,
   SyncJobListResponse,
 } from '@shared/api/types'
@@ -30,6 +35,31 @@ export const getAdminReservations = (
     `${BASE}${toQueryString(params)}`,
     { signal },
   )
+
+export type AdminReservationListParams = Omit<
+  AdminPreorderListParams,
+  'status'
+> & { statuses?: readonly PreorderStatus[] }
+
+// [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자) 한 쪽, 상태 여럿
+/**
+ * 서버는 상태를 하나만 거를 수 있어서, 상태를 여럿 주면 상태별 목록을 준 순서대로 이어
+ * 붙여 쪽을 나눈다('확정' 탭 = 결제 대기 다음에 결제 완료).
+ */
+export const getAdminReservationsPage = (
+  { statuses = [], ...params }: AdminReservationListParams,
+  signal?: AbortSignal,
+) =>
+  statuses.length > 1
+    ? fetchConcatPage(
+        statuses.map(
+          (status) => (page: number, size: number) =>
+            getAdminReservations({ ...params, status, page, size }, signal),
+        ),
+        params.page ?? 0,
+        params.size ?? 20,
+      )
+    : getAdminReservations({ ...params, status: statuses[0] }, signal)
 
 // [preorder] GET /api/v1/admin/preorders — 예약 목록(관리자)을 쪽 끝까지
 /** 모든 예약을 끝까지 이어 받는다 — 외부 원장과 한 건씩 맞춰 볼 때만 쓴다(무겁다) */

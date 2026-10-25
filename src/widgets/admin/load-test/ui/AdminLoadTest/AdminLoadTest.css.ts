@@ -2,6 +2,8 @@ import { keyframes, style } from '@vanilla-extract/css'
 
 import { color, spacing, typography } from '@shared/config/theme'
 
+import { errorCodeMeaning } from '../../model/errorCodes'
+
 export const root = style({
   display: 'flex',
   flexDirection: 'column',
@@ -35,14 +37,22 @@ export const kpis = style({
   gap: spacing[12],
 })
 
+// 같은 줄 카드는 높이를 맞춘다(낮은 카드가 위에 붙어 아래가 비지 않게).
 export const row = style({
   display: 'flex',
   flexWrap: 'wrap',
-  alignItems: 'flex-start',
+  alignItems: 'stretch',
   gap: spacing[16],
 })
 export const wideCard = style({ flex: '3 1 520px' })
 export const sideCard = style({ flex: '2 1 340px' })
+
+// 실패 원인 표 — 알려진 오류 코드가 다 나와도 카드가 늘지 않게 그만큼 자리를 잡아 둔다.
+// 한 줄 = 위아래 여백 14px×2 + 14px 글자(줄 높이 1.3) + 구분선 1px, 머리글 한 줄을 더한다.
+const TABLE_ROW_HEIGHT = `(${spacing[14]} * 2 + 14px * 1.3 + 1px)`
+export const errorTable = style({
+  minHeight: `calc(${Object.keys(errorCodeMeaning).length + 1} * ${TABLE_ROW_HEIGHT})`,
+})
 
 export const caption = style([
   typography.body.caption,

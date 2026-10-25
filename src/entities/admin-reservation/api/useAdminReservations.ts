@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useMutation,
   useQueries,
   useQuery,
@@ -12,14 +13,14 @@ import {
   pollingRetry,
   queryPolicy,
 } from '@shared/api/queryPolicy'
-import type { AdminPreorderListParams, PreorderStats } from '@shared/api/types'
+import type { PreorderStats } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
   cancelAdminReservation,
   getAdminMembers,
   getAdminReservation,
-  getAdminReservations,
+  getAdminReservationsPage,
   getAllAdminReservations,
   getReservationStats,
   getSyncJobErrorGroups,
@@ -28,6 +29,7 @@ import {
   reprocessFailedRegistrations,
   toAdminReservationDetail,
   updateAdminReservationNote,
+  type AdminReservationListParams,
 } from './adminReservation'
 
 const RESERVATIONS_KEY = ['admin', 'reservations'] as const
@@ -46,14 +48,16 @@ const reservationKey = (preorderId: string) =>
  * 실패하면 pollEvery가 그 간격에서 백오프하며 계속 다시 묻는다.
  */
 export const useAdminReservations = (
-  params: AdminPreorderListParams = {},
+  params: AdminReservationListParams = {},
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
 ) => {
   const queryClient = useQueryClient()
   const queryKey = [...RESERVATIONS_KEY, 'list', params] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getAdminReservations(params, signal),
+    queryFn: ({ signal }) => getAdminReservationsPage(params, signal),
+    // 쪽·탭을 바꾸는 동안 이전 쪽을 둔다 — 표가 비었다 채워지며 높이가 튀지 않게.
+    placeholderData: keepPreviousData,
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
   })
