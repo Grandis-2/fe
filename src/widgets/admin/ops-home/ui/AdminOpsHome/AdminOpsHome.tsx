@@ -12,7 +12,7 @@ import {
 import {
   isBraking,
   useWaitingroomStatusHistory,
-  waitEstimate,
+  productWaitEstimate,
 } from '@entities/admin-waitingroom'
 import {
   OpenPreorderPicker,
@@ -195,22 +195,17 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         }
       : null
 
-  // 외부 등록을 기다리는 작업(재처리 필요는 빼고) — 0이면 오래 기다리는 접수 시각이
-  // 재처리 필요 건을 가리킬 수 있어 밀림으로 보지 않는다.
+  // 외부 등록을 기다리는 작업(재처리 필요는 빼고)
   const waitingRegister = t
     ? t.syncJobs.REGISTER.PENDING +
       t.syncJobs.REGISTER.PROCESSING +
       t.syncJobs.REGISTER.RETRY_SCHEDULED
     : 0
-  // ponytail: oldestPendingSyncAt엔 재처리 필요(DEAD_LETTER) 예약도 들어 있어, 실패가 있으면
-  // 그 접수 시각을 밀림으로 잘못 읽는다 — 실패가 있으면 밀림을 띄우지 않는다(실패 할 일이
-  // 먼저 뜬다). 서버가 처리 중인 것만의 시각을 주면 이 조건을 뺀다.
+  // 등록 작업이 아직 도는 예약만의 시각이라 재처리 필요(실패)가 있어도 밀림을 따로 본다.
   const slowAge =
-    t?.oldestPendingSyncAt &&
-    waitingRegister > 0 &&
-    t.syncJobs.REGISTER.DEAD_LETTER === 0 &&
-    now - Date.parse(t.oldestPendingSyncAt) > SLOW_AFTER_MS
-      ? ageOf(t.oldestPendingSyncAt, now)
+    t?.oldestInFlightSyncAt &&
+    now - Date.parse(t.oldestInFlightSyncAt) > SLOW_AFTER_MS
+      ? ageOf(t.oldestInFlightSyncAt, now)
       : null
 
   // 대기가 긴 사전예약 — 입장이 멈췄는데 줄이 있으면(초당 0) 끝이 없으니 같이 띄운다.
@@ -218,7 +213,8 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     (product) =>
       product.waiting > 0 &&
       (product.credit <= 0 ||
-        product.waiting / product.credit >= LONG_WAIT_SECONDS),
+        (product.estimatedWaitSeconds ?? product.waiting / product.credit) >=
+          LONG_WAIT_SECONDS),
   )
 
   const reprocessPath = adminReservationsPath(
@@ -280,7 +276,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           title:
             product.credit <= 0
               ? `${nameOf(product.productId)} 입장 멈춤 · ${formatNumber(product.waiting)}명 대기`
-              : `${nameOf(product.productId)} 대기 ${waitEstimate(product.waiting, product.credit)}`,
+              : `${nameOf(product.productId)} 대기 ${productWaitEstimate(product)}`,
           action: { label: '속도 조절', to: ADMIN_WAITINGROOM_PATH },
         })),
         t.paymentOverdue > 0 && {

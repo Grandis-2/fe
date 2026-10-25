@@ -48,6 +48,7 @@ const statsOf = ({
   },
   paymentOverdue,
   oldestPendingSyncAt: slowSince ?? null,
+  oldestInFlightSyncAt: slowSince ?? null,
   countedAt: '2026-10-08T05:00:00Z',
 })
 
@@ -58,6 +59,8 @@ const queueProduct = (productId: string, waiting: number, credit: number) => ({
   waiting,
   credit,
   cap: 150,
+  // 서버처럼 대기 ÷ 초당 입장(올림), 멈췄으면 null
+  estimatedWaitSeconds: credit > 0 ? Math.ceil(waiting / credit) : null,
   opensAt: '2026-10-08T05:00:00Z',
   closesAt: '2026-10-08T07:00:00Z',
 })

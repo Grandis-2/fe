@@ -71,6 +71,11 @@ export type ProductStatus = {
    * null을 줄 수 있다(코드 리뷰 지적) — entities가 기본값으로 채운다.
    */
   cap: number | null
+  /**
+   * 지금 줄을 서면 기다릴 시간(초, 올림) — 대기 인원 ÷ 초당 입장(배분 전이면 전역 속도와 상한 중
+   * 작은 값). 줄이 없으면 0. 접수 중이 아니거나, 비공개이거나, 입장을 멈췄으면 null
+   */
+  estimatedWaitSeconds: number | null
   opensAt: string
   closesAt: string
 }

@@ -628,7 +628,7 @@ export function AdminLoadTest({
           value={valueOf(lastStat?.backlog, '건')}
           caption={
             s && lastStat?.backlog
-              ? `가장 오래 ${ageOf(s.oldestPendingSyncAt, stats.dataUpdatedAt) ?? '—'}`
+              ? `가장 오래 ${ageOf(s.oldestInFlightSyncAt, stats.dataUpdatedAt) ?? '—'}`
               : perMinuteNote(backlogSlope, '건')
           }
         />

@@ -86,6 +86,10 @@ function view(): AdmissionRateView {
   }
 }
 
+// 서버처럼 줄이 없으면 0, 입장을 멈췄으면 null.
+const estimatedWait = (waiting: number, credit: number) =>
+  waiting === 0 ? 0 : credit > 0 ? Math.ceil(waiting / credit) : null
+
 type Snapshot = Pick<
   WaitingroomStatusView,
   'globalCredit' | 'brakeFactor' | 'products'
@@ -108,6 +112,10 @@ function waveSnapshot(now: number): Snapshot {
       waiting,
       credit: waiting === 0 ? 0 : Math.min(share, capOf(productId)),
       cap: capOf(productId),
+      estimatedWaitSeconds: estimatedWait(
+        waiting,
+        waiting === 0 ? 0 : Math.min(share, capOf(productId)),
+      ),
       opensAt: new Date(now - 30 * 60_000).toISOString(),
       closesAt: new Date(now + 90 * 60_000).toISOString(),
     }
@@ -133,6 +141,7 @@ function scenarioSnapshot(now: number): Snapshot {
       waiting: product.waiting,
       credit: product.credit,
       cap: capOf(product.productId),
+      estimatedWaitSeconds: estimatedWait(product.waiting, product.credit),
       opensAt: new Date(now - 30 * 60_000).toISOString(),
       closesAt: new Date(now + 90 * 60_000).toISOString(),
     })),

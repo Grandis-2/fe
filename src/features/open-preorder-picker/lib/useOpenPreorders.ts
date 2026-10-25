@@ -1,5 +1,8 @@
 import { useReservationStatsByProduct } from '@entities/admin-reservation'
-import { useWaitingroomStatus, waitEstimate } from '@entities/admin-waitingroom'
+import {
+  productWaitEstimate,
+  useWaitingroomStatus,
+} from '@entities/admin-waitingroom'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 /** 지금 접수 중인 사전예약 하나 — 대기열 현황과 그 상품의 집계를 합친 값 */
@@ -11,7 +14,7 @@ export type OpenPreorder = {
   credit: number
   /** 초당 입장 상한. 운영값이 없으면 null(서버 기본값) — 숫자를 지어내지 않는다 */
   cap: number | null
-  /** 맨 뒤 예상 대기(waitEstimate). 줄이 없으면 null */
+  /** 맨 뒤 예상 대기(서버 값, productWaitEstimate). 줄이 없으면 null */
   wait: string | null
   /** 외부 등록 실패(재처리 필요). 못 받았으면 null */
   failures: number | null
@@ -51,7 +54,7 @@ export function useOpenPreorders(
       waiting: product.waiting,
       credit: product.credit,
       cap: product.cap,
-      wait: waitEstimate(product.waiting, product.credit),
+      wait: productWaitEstimate(product),
       failures: data ? data.syncJobs.REGISTER.DEAD_LETTER : null,
       closesAt: product.closesAt,
     }

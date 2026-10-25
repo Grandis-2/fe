@@ -2,7 +2,7 @@ import { useState } from 'react'
 
 import { useReservationStatsByProduct } from '@entities/admin-reservation'
 import {
-  waitEstimate,
+  productWaitEstimate,
   type WaitingroomProductRate,
   type WaitingroomProductStatus,
 } from '@entities/admin-waitingroom'
@@ -164,21 +164,12 @@ export function ProductCapList({
             const atCap = cap !== null && cap > 0 && product.credit >= cap
             const query = statsOf(product.productId)
             const oldest = oldestSeconds(
-              query?.data?.oldestPendingSyncAt,
+              query?.data?.oldestInFlightSyncAt,
               query?.dataUpdatedAt ?? 0,
             )
             const register = query?.data?.syncJobs.REGISTER
-            // 가장 오래 기다린 시각엔 재처리 필요(DEAD_LETTER) 건도 들어 있어, 처리 중인
-            // 작업이 있고 실패가 없을 때만 밀림으로 본다(운영 대시보드와 같은 기준).
-            const slow =
-              register !== undefined &&
-              register.PENDING +
-                register.PROCESSING +
-                register.RETRY_SCHEDULED >
-                0 &&
-              register.DEAD_LETTER === 0 &&
-              oldest !== null &&
-              oldest * 1000 > SLOW_AFTER_MS
+            // 등록 작업이 아직 도는 예약만의 시각이라 재처리 필요(실패)와 섞이지 않는다.
+            const slow = oldest !== null && oldest * 1000 > SLOW_AFTER_MS
             return (
               <li key={product.productId} className={styles.row}>
                 <div className={styles.name}>
@@ -201,7 +192,7 @@ export function ProductCapList({
                 <div className={styles.stat}>
                   <span className={styles.statLabel}>맨 뒤 대기</span>
                   <span className={styles.statValue}>
-                    {waitEstimate(product.waiting, product.credit) ?? '—'}
+                    {productWaitEstimate(product) ?? '—'}
                   </span>
                 </div>
                 <div className={styles.register}>
