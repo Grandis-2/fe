@@ -1,4 +1,5 @@
 import {
+  keepPreviousData,
   useMutation,
   useQueries,
   useQuery,
@@ -92,11 +93,20 @@ const statsQuery = (
   }
 }
 
-/** 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다 */
+/**
+ * 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다.
+ * keepPrevious면 상품을 바꿔 키가 바뀌는 동안 이전 숫자를 남겨 둔다(isPlaceholderData) — 숫자가 사라졌다 나타나지 않게.
+ * 쓰는 쪽은 그동안 숫자를 흐리게 그려 이전 상품 숫자를 지금 값으로 읽지 않게 한다.
+ */
 export const useReservationStats = (
   productId?: string,
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
-) => useQuery(statsQuery(useQueryClient(), productId, intervalMs))
+  { keepPrevious = false } = {},
+) =>
+  useQuery({
+    ...statsQuery(useQueryClient(), productId, intervalMs),
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
+  })
 
 /**
  * 여러 상품의 집계를 한꺼번에(상품마다 한 요청). 운영 홈이 진행 중인 사전예약마다
