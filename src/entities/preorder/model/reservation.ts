@@ -37,7 +37,8 @@ export const NEEDS_PURCHASE: ReservationDisplayStatus[] = [
 
 // 누가 왜 취소했는지 — 취소를 시작한 이력 한 줄(→ 취소 중, 또는 바로 취소 완료)로 가른다.
 // 서버엔 '등록 실패' 상태가 없다. 외부 등록이 끝내 안 되면 작업이 재처리 대기(DEAD_LETTER)로 남아 예약은 처리 중이고,
-// 운영자가 재처리하거나 취소한다. 그래서 처리 중에서 운영자가 취소한 예약이 사용자에겐 '등록 실패'다.
+// 운영자가 재처리하거나 취소한다. 그래서 처리 중에서 운영자가 취소한 예약(REGISTER_FAILED)은 대개 등록 실패지만,
+// 다른 이유일 수도 있어 화면은 '등록 중 취소'까지만 말하고 까닭은 취소 사유(reason)로 보인다.
 // 서버가 스스로 취소하는 건 결제 기한 만료뿐이다(SYSTEM).
 export type CancelCause = 'USER' | 'EXPIRY' | 'REGISTER_FAILED' | 'ADMIN'
 export const cancelCause = (

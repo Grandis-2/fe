@@ -5,7 +5,8 @@ import * as styles from './ReservationTimeline.css'
 type ReservationTimelineProps = {
   events: readonly ReservationEvent[]
   // 지금 외부 등록을 기다리는 중이면 마지막에 '등록 중' 줄을 붙인다(이력은 상태가 바뀔 때만 생긴다).
-  registering: boolean
+  // slow: 오래 걸려(60초) 자동 재시도가 끝났을 수 있다 — '자동 재시도'라고 약속하지 않는다.
+  registering: false | 'pending' | 'slow'
 }
 
 const timeFormat = new Intl.DateTimeFormat('ko-KR', {
@@ -85,7 +86,11 @@ export function ReservationTimeline({
             <span className={styles.dot.current} aria-hidden />
             <span className={styles.time}>지금</span>
             <span className={styles.label}>외부 예약 시스템에 등록하는 중</span>
-            <span className={styles.meta}>시스템 · 실패하면 자동 재시도</span>
+            <span className={styles.meta}>
+              {registering === 'slow'
+                ? '시스템 · 응답 지연 중'
+                : '시스템 · 실패하면 자동 재시도'}
+            </span>
           </li>
         )}
       </ol>

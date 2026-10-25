@@ -212,8 +212,8 @@ const canceledBy: Record<
   },
   REGISTER_FAILED: {
     badge: '예약 실패',
-    heading: '예약 등록을 마치지 못했어요',
-    description: `외부 예약 시스템 등록이 끝내 완료되지 않아 운영자가 예약을 취소했어요. 결제된 금액은 없어요. ${RETRY_HINT}`,
+    heading: '예약 등록 중 취소됐어요',
+    description: `예약 시스템 등록이 끝나기 전에 운영자가 예약을 취소했어요. 결제된 금액은 없어요. ${RETRY_HINT}`,
   },
   ADMIN: {
     badge: '예약 취소',
@@ -270,6 +270,10 @@ export function ResultPage() {
   )
   const cancel =
     stage === 'CANCELED' && history.data ? cancelCause(history.data) : null
+  // 취소된 예약의 이력을 아직 못 받았다(첫 조회, 또는 예약이 바뀌어 이전 이력을 보여 주는 중) — 일반 문구를 띄웠다가
+  // 원인 문구로 바뀌지 않게 제목 · 설명을 자리만 잡아 둔다. 이력 조회가 실패하면 일반 문구로 둔다.
+  const cancelPending =
+    stage === 'CANCELED' && (history.isPending || history.isPlaceholderData)
   const isRegistering = stage === 'RECEIVED' || stage === 'PROCESSING'
   const slowRegister = useDeadline(
     isRegistering && reservation !== undefined,
@@ -281,7 +285,11 @@ export function ResultPage() {
     : stage && {
         ...preorderStage[stage],
         ...(cancel && canceledBy[cancel.cause]),
-        ...(slowRegister && { description: SLOW_REGISTER_DESCRIPTION }),
+        // 60초가 지나면(timedOut) 자동 재시도가 끝났을 수 있다 — 아래 지연 안내와 말이 어긋나지 않게 덮지 않는다.
+        ...(slowRegister &&
+          !reservationQuery.timedOut && {
+            description: SLOW_REGISTER_DESCRIPTION,
+          }),
       }
   const { tone, badge, heading, description, primary, secondary, note } = {
     ...content[status],
@@ -367,8 +375,18 @@ export function ResultPage() {
         <div className={styles.hero}>
           <OrderStatusMark tone={tone} />
           <span className={styles.badge[tone]}>{badge}</span>
-          <h1 className={styles.heading}>{heading}</h1>
-          <div className={styles.description}>{description}</div>
+          <h1
+            className={cancelPending ? styles.headingPending : styles.heading}
+          >
+            {heading}
+          </h1>
+          <div
+            className={
+              cancelPending ? styles.descriptionPending : styles.description
+            }
+          >
+            {description}
+          </div>
         </div>
 
         {/* 처리·승인을 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 예약 처리는 정한 시간(외부 등록은 접수 후 60초),
@@ -402,7 +420,9 @@ export function ResultPage() {
         {status === 'preorder' && history.data && (
           <ReservationTimeline
             events={history.data}
-            registering={isRegistering}
+            registering={
+              isRegistering && (reservationQuery.timedOut ? 'slow' : 'pending')
+            }
           />
         )}
         {cancel?.reason && cancel.cause !== 'USER' && (

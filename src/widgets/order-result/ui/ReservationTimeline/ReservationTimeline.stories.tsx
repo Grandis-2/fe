@@ -23,12 +23,21 @@ const accepted = {
 
 // 접수만 됐고 외부 등록을 기다리는 중 — 마지막에 '등록하는 중' 줄이 붙는다.
 export const Registering: Story = {
-  args: { events: [accepted], registering: true },
+  args: { events: [accepted], registering: 'pending' },
   play: async ({ canvas }) => {
     await expect(canvas.getAllByRole('listitem')).toHaveLength(2)
     await expect(
       canvas.getByText('외부 예약 시스템에 등록하는 중'),
     ).toBeVisible()
+  },
+}
+
+// 60초가 넘게 등록 중 — 자동 재시도가 끝났을 수 있어 재시도를 약속하지 않는다.
+export const RegisteringSlow: Story = {
+  args: { events: [accepted], registering: 'slow' },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByText('시스템 · 응답 지연 중')).toBeVisible()
+    await expect(canvas.queryByText(/자동 재시도/)).toBeNull()
   },
 }
 

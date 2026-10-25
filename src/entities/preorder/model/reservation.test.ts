@@ -47,7 +47,7 @@ describe('cancelCause', () => {
     ).toBe('EXPIRY')
   })
 
-  it('처리 중(외부 등록 대기)에서 운영자가 취소했으면 등록 실패', () => {
+  it('처리 중(외부 등록 대기)에서 운영자가 취소했으면 등록 중 취소(REGISTER_FAILED)', () => {
     expect(
       cancelCause([
         accepted,
