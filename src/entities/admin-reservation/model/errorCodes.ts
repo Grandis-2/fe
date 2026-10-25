@@ -1,4 +1,4 @@
-/** 외부 등록 실패 코드의 뜻 — 표에 같이 적는다. 모르는 코드는 비워 둔다 */
+/** 외부 등록 실패 코드의 뜻 — 코드 옆에 같이 적는다. 모르는 코드는 비워 둔다 */
 export const errorCodeMeaning: Record<string, string> = {
   TIMEOUT: '외부 응답 없음(타임아웃)',
   EXT_TIMEOUT: '외부 응답 없음(타임아웃)',

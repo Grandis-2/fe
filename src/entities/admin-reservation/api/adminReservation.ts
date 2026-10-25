@@ -19,6 +19,7 @@ import type {
   PreorderStatus,
   ReprocessBatchRequest,
   SyncJobListResponse,
+  SyncJobStatus,
 } from '@shared/api/types'
 
 import type { AdminReservationDetail } from '../model/types'
@@ -288,14 +289,21 @@ export async function reprocessFailedRegistrations(productId?: string) {
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록(errorGroups만)
 /**
  * 외부 등록 작업의 마지막 시도 오류 코드별 수. 성공했거나 시도 전인 작업은 errorCode가
- * null이라 빼고, 지금 실패 중(재시도 대기·DEAD_LETTER)인 것만 남는다.
+ * null이라 빼고, 지금 실패 중(재시도 대기·DEAD_LETTER)인 것만 남는다. status를 주면 그
+ * 상태의 작업만 센다(DEAD_LETTER = 재처리할 실패의 원인).
  */
-export const getSyncJobErrorGroups = async (signal?: AbortSignal) => {
+export const getSyncJobErrorGroups = async (
+  status?: SyncJobStatus,
+  signal?: AbortSignal,
+) => {
   const { errorGroups } = await getAdminSyncJobs(
-    { jobType: 'REGISTER', groupByError: true, size: 1 },
+    { jobType: 'REGISTER', status, groupByError: true, size: 1 },
     signal,
   )
-  return (errorGroups ?? []).filter((group) => group.errorCode !== null)
+  return (errorGroups ?? []).filter(
+    (group): group is { errorCode: string; count: number } =>
+      group.errorCode !== null,
+  )
 }
 
 // [member] GET /api/v1/admin/members — 회원 이름 조회(관리자)

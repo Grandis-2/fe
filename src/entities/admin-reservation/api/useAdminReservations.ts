@@ -13,7 +13,7 @@ import {
   pollingRetry,
   queryPolicy,
 } from '@shared/api/queryPolicy'
-import type { PreorderStats } from '@shared/api/types'
+import type { PreorderStats, SyncJobStatus } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
@@ -146,13 +146,23 @@ export const useReprocessReservation = () => {
   })
 }
 
-/** 외부 등록 실패를 오류 코드별로. 부하 시험 중 무엇 때문에 실패하는지 본다 */
-export const useSyncJobErrorGroups = (intervalMs: RefreshInterval) => {
+/**
+ * 외부 등록 실패를 오류 코드별로. 부하 시험 중 무엇 때문에 실패하는지, 재처리 전에 왜
+ * 실패했는지(status DEAD_LETTER) 본다. enabled가 false면 묻지 않는다(닫힌 모달).
+ */
+export const useSyncJobErrorGroups = (
+  intervalMs: RefreshInterval | false,
+  {
+    status,
+    enabled = true,
+  }: { status?: SyncJobStatus; enabled?: boolean } = {},
+) => {
   const queryClient = useQueryClient()
-  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors'] as const
+  const queryKey = [...RESERVATIONS_KEY, 'sync-job-errors', status] as const
   return useQuery({
     queryKey,
-    queryFn: ({ signal }) => getSyncJobErrorGroups(signal),
+    queryFn: ({ signal }) => getSyncJobErrorGroups(status, signal),
+    enabled,
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
   })

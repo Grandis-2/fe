@@ -4,6 +4,7 @@ import { Check, CircleDot, Square, TriangleAlert } from 'lucide-react'
 import { Link } from 'react-router'
 
 import {
+  errorCodeMeaning,
   useReservationStats,
   useReservationStatsHistory,
   useSyncJobErrorGroups,
@@ -69,7 +70,6 @@ import {
   type StatsPoint,
 } from '../../lib/recording'
 import { useRecording } from '../../lib/useRecording'
-import { errorCodeMeaning } from '../../model/errorCodes'
 import { MOCK_PRESETS, presetOf } from '../../model/mockPresets'
 
 import * as styles from './AdminLoadTest.css'

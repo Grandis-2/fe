@@ -1,8 +1,7 @@
 import { keyframes, style } from '@vanilla-extract/css'
 
+import { errorCodeMeaning } from '@entities/admin-reservation'
 import { color, spacing, typography } from '@shared/config/theme'
-
-import { errorCodeMeaning } from '../../model/errorCodes'
 
 export const root = style({
   display: 'flex',
