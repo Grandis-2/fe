@@ -302,7 +302,7 @@ export const Operational: Story = {
   },
 }
 
-/** 화면을 막 열어 표본이 둘 미만이면 재는 중 */
+/** 서버가 막 떠서 잰 구간이 짧으면 재는 중 */
 export const Measuring: Story = {
   args: {
     flow: {
