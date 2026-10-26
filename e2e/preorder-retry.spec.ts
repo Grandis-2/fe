@@ -129,7 +129,7 @@ test('H5 접수 응답이 끊기면 같은 키로 한 번 저절로 다시 보�
   await expectSingleNewReservation(page)
 })
 
-test('대기열 진입 응답이 늦어도 눌렀을 때 대기 모달이 먼저 뜬다', async ({
+test('대기열 진입 응답이 늦으면 대기 모달 대신 입장 확인 중을 먼저 알린다', async ({
   page,
 }) => {
   // 진입(POST /preorders/queue)만 5초 늦게 보낸다 — axios는 XHR이라 send를 미룬다.
@@ -160,8 +160,11 @@ test('대기열 진입 응답이 늦어도 눌렀을 때 대기 모달이 먼저
     .first()
     .click()
 
-  // 진입 응답(5초)보다 먼저 떠야 한다.
-  await expect(page.getByText(/조금만 기다려주세요/)).toBeVisible({
+  // 진입 응답(5초)보다 먼저 떠야 한다. 서버가 줄을 세웠는지 아직 모르니 대기 모달은 띄우지 않는다.
+  await expect(
+    page.getByRole('status').filter({ hasText: '입장 확인 중…' }),
+  ).toBeVisible({
     timeout: 2_000,
   })
+  await expect(page.getByText(/조금만 기다려주세요/)).toBeHidden()
 })

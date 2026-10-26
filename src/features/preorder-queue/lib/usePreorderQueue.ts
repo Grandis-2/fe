@@ -34,8 +34,9 @@ const QUEUE_FULL_RETRY_MS = 10_000
 const UNAVAILABLE_RETRY_MS = 2_000
 // 예상 시간을 계산할 수 없을 때 서버가 주는 값 — 이 이상은 "오래 걸림".
 const UNKNOWN_ETA = 450
-// 진입 응답이 이만큼 안 오면 모달을 띄운다 — 바로 입장이면 그 전에 답이 와서 깜빡이지 않고,
-// 응답이 늦으면(최대 타임아웃 10초) 눌렀는데 아무 일도 없는 것처럼 보이지 않게.
+// 누른 뒤 이만큼 답이 없으면 '입장 확인 중' 알약을 띄운다 — 응답이 늦어도(최대 타임아웃 10초) 눌렀는데 아무 일도
+// 없는 것처럼 보이지 않게. 대기열 모달은 서버가 줄을 세웠을 때(WAITING)만 띄운다 — 바로 입장인데 대기열이
+// 떴다 사라지면 줄을 선 것처럼 보인다.
 const SLOW_ENTER_MS = 500
 // 이만큼 조회에 성공하지 못하면 줄에서 빠졌을 수 있다(명세: 250초 넘게 조회하지 않으면).
 // 안내만 바꾸고 조회는 계속한다. 운영자가 이탈 유예를 늘렸어도 구매자 응답엔 그 값이 없어 기본값을 쓴다.
@@ -231,22 +232,17 @@ export function usePreorderQueue({
     })
   }
 
-  // 진입 응답이 늦어 한 번 띄웠으면, 그 뒤 바로 입장이 와도 닫지 않고 100%를 보여 주고 넘어간다.
-  const enterIsSlow = useDeadline(
-    enter.isPending,
-    SLOW_ENTER_MS,
-    enter.submittedAt,
-  ).passed
-  const [shownWhileEntering, setShownWhileEntering] = useState(false)
-  if (enterIsSlow && !shownWhileEntering) setShownWhileEntering(true)
-
-  // 진입에서 바로 입장(200)하면 대기열을 보여 주지 않고 넘어간다. 그래서 첫 응답이 SLOW_ENTER_MS 안에
-  // 오면 띄우지 않는다(띄웠다 바로 닫히며 깜빡이지 않게). 한 번이라도 기다렸거나, 진입 응답이 늦었거나,
-  // 다시 진입을 예약했으면 보여 준다.
-  const isHidden = lastWaiting === null && retry === null && !shownWhileEntering
+  // 진입에서 바로 입장(200)하면 대기열을 보여 주지 않고 넘어간다 — 응답이 늦었어도 마찬가지다. 한 번이라도
+  // 기다렸거나(WAITING) 다시 진입을 예약했으면(줄이 가득 참·일시 장애) 보여 준다.
+  const isHidden = lastWaiting === null && retry === null
 
   const status: QueueStatus =
     current?.status === 'ADMITTED' ? 'mine' : 'waiting'
+  // 대기열을 띄우기 전 답을 기다리는 중(진행 중 예약 확인 → 진입)이 SLOW_ENTER_MS를 넘겼다.
+  const checking = useDeadline(
+    isHidden && status !== 'mine' && !hasLeft,
+    SLOW_ENTER_MS,
+  ).passed
   // 입장했으면 맨 앞(1번), 진입 응답 전이면 모른다(null).
   const position = status === 'mine' ? 1 : (waiting?.position ?? null)
   const admissionTicket =
@@ -314,6 +310,7 @@ export function usePreorderQueue({
   return {
     status,
     isHidden,
+    checking,
     // 조회가 실패하고 있을 때의 안내용(PollingNotice).
     poll: { fetchStatus: poll.fetchStatus, failureCount: poll.failureCount },
     mayHaveLeftQueue,

@@ -68,7 +68,8 @@ export function PreorderQueue({
       >
         <PreorderQueueCard queue={queue} />
       </Modal>
-      {!queue.isOpen && !queue.hasLeft && (
+      {/* 모달을 닫아 뒀거나, 대기열을 띄우기 전 답을 기다리는 중이면(입장 확인 중) 알약을 띄운다. */}
+      {((!queue.isOpen && !queue.hasLeft) || queue.checking) && (
         <QueuePill productName={productName} queue={queue} />
       )}
     </>

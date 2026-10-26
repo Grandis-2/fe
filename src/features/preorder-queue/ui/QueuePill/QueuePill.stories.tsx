@@ -18,6 +18,7 @@ const queue = {
   waitTime: '약 5분',
   moveIn: 5,
   held: false,
+  checking: false,
   reopen: fn(),
   moveNow: fn(),
 } as const
@@ -50,5 +51,14 @@ export const HeldDuringPayment: Story = {
     await userEvent.click(canvas.getByRole('button'))
     await expect(args.queue.moveNow).toHaveBeenCalled()
     await expect(args.queue.reopen).not.toHaveBeenCalled()
+  },
+}
+
+// 누른 뒤 0.5초가 지나도 서버 답이 없다 — 대기열을 띄우지 않고 확인 중임만 알린다.
+export const Checking: Story = {
+  args: { productName: '아이폰 18 Pro', queue: { ...queue, checking: true } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('status')).toHaveTextContent('입장 확인 중…')
+    await expect(canvas.queryByRole('button')).toBeNull()
   },
 }

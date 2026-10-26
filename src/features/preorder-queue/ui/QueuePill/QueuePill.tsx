@@ -11,7 +11,14 @@ export type QueuePillProps = {
   productName: string
   queue: Pick<
     PreorderQueueState,
-    'status' | 'myOrder' | 'waitTime' | 'moveIn' | 'held' | 'reopen' | 'moveNow'
+    | 'status'
+    | 'myOrder'
+    | 'waitTime'
+    | 'moveIn'
+    | 'held'
+    | 'checking'
+    | 'reopen'
+    | 'moveNow'
   >
 }
 
@@ -32,7 +39,23 @@ const MESSAGE: Record<QueueStatus, (myOrder: number | null) => string> = {
 // 대기열 모달을 닫아 둔 동안 위에 떠서 순번을 보여 준다. 누르면 모달이 다시 열린다.
 // 닫아 둬도 순번 조회는 계속되므로 자리를 잃지 않는다.
 export function QueuePill({ productName, queue }: QueuePillProps) {
-  const { status, myOrder, waitTime, moveIn, held, reopen, moveNow } = queue
+  const { status, myOrder, waitTime, moveIn, held, checking, reopen, moveNow } =
+    queue
+
+  // 대기열을 띄우기 전 서버 답을 기다리는 중 — 누를 것이 없어 버튼이 아니라 상태 표시다.
+  if (checking)
+    return (
+      <div className={[styles.root, styles.border.waiting].join(' ')}>
+        <span className={styles.dot.waiting} aria-hidden="true" />
+        <span className={styles.desktopOnly}>
+          <span className={styles.product}>{productName} 사전예약</span>
+          <span className={styles.divider} aria-hidden="true" />
+        </span>
+        <span className={styles.text} role="status">
+          입장 확인 중…
+        </span>
+      </div>
+    )
 
   return (
     <button
