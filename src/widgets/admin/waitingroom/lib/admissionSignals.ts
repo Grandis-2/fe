@@ -4,6 +4,13 @@
  */
 export const CONGESTION_WINDOW_MS = 30_000
 
+/**
+ * 밀림으로 볼 외부 등록 대기의 분당 증가. 서버 속도는 1분의 처음·끝 차이라 몇 건 오르내리는
+ * 출렁임도 증가로 잡혀, 이보다 적게 늘면 따라가는 것으로 본다. 임시값이다 — 부하 검증으로
+ * 정상 흔들림을 재서 다시 정한다.
+ */
+export const CONGESTION_BACKLOG_PER_MIN = 10
+
 /** 운영 현황(GET /admin/preorders/stats)에서 판정에 쓰는 칸만 */
 export type FlowStats = {
   countedAt: string
@@ -34,7 +41,7 @@ export type AdmissionSignals = {
   /** 판단할 만큼 잰 구간이 찼는지. 아니면 judgedInSeconds 뒤에 판단한다 */
   judged: boolean
   judgedInSeconds: number
-  /** 잰 구간 동안 외부 등록 대기가 늘었다 = 처리가 접수를 못 따라간다 */
+  /** 잰 구간 동안 외부 등록 대기가 분당 CONGESTION_BACKLOG_PER_MIN 넘게 늘었다 = 처리가 접수를 못 따라간다 */
   congested: boolean
 }
 
@@ -66,6 +73,7 @@ export function admissionSignals(
       0,
       Math.ceil((CONGESTION_WINDOW_MS - coveredMs) / 1000),
     ),
-    congested: judged && (rates?.backlogPerMin ?? 0) > 0,
+    congested:
+      judged && (rates?.backlogPerMin ?? 0) > CONGESTION_BACKLOG_PER_MIN,
   }
 }

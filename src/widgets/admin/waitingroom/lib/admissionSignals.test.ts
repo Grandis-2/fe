@@ -59,6 +59,18 @@ describe('admissionSignals', () => {
     expect(signals.backlogPerMinute).toBe(240)
   })
 
+  it('조금 오르내리는 건 밀림으로 보지 않는다', () => {
+    const signals = admissionSignals(
+      stats({
+        receivedPerSec: 10,
+        registeredPerSec: 9.9,
+        backlogPerMin: 6,
+        windowSeconds: 60,
+      }),
+    )
+    expect(signals.congested).toBe(false)
+  })
+
   it('대기가 그대로거나 줄면 밀림이 아니다', () => {
     const steady = {
       receivedPerSec: 10,
