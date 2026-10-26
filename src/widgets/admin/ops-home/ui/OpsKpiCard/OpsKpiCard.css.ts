@@ -67,3 +67,9 @@ export const emptyText = style([
   typography.body.defaultMedium,
   { color: color.text.secondary },
 ])
+
+// 숫자 아래 기준 시각 같은 보조 설명.
+export const caption = style([
+  typography.body.sub,
+  { color: color.text.secondary },
+])

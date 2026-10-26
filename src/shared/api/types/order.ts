@@ -176,10 +176,19 @@ export type ConfirmPaymentResponse = {
 
 export type AdminOrderSummary = Order & {
   customerId: string
+  // 가린 회원 이름(첫 글자 뒤에 **). 회원 정보를 받지 못하면 null.
+  customerName: string | null
 }
 
 export type AdminOrderDetail = OrderDetail & {
   customerId: string
+  customerName: string | null
+}
+
+// GET /api/v1/admin/orders/stats — 상태별 주문 수. 모든 상태가 상태 표 순서대로 오고, 없는 상태는 0.
+export type AdminOrderStats = {
+  byStatus: Record<OrderStatus, number>
+  countedAt: string
 }
 
 // 오프셋 페이지 — page는 0부터, 전체 건수는 total.
@@ -194,6 +203,15 @@ export type AdminOrderPage = {
 export type AdminOrderListParams = {
   status?: OrderStatus
   source?: OrderSource
+  // 받는 분 이름(전체 일치, 앞뒤 공백·영문 대소문자 무시, 50자 이하).
+  shipToName?: string
+  // 받는 분 전화번호 끝 숫자 4자리.
+  shipToPhoneLast4?: string
+  // 이 상품이 든 주문.
+  productId?: string
+  // 주문 시각 [from, to) — 오프셋이 있는 ISO-8601.
+  from?: string
+  to?: string
   page?: number
   // 1~100(기본 20).
   size?: number

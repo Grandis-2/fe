@@ -1,4 +1,5 @@
 import type { ProductImageBundle, StockOverviewItem } from '@shared/api/types'
+import { toLocalInputValue } from '@shared/lib/period'
 import type { DateRange, UploadedImage } from '@shared/ui'
 
 import {
@@ -239,12 +240,8 @@ export const toIso = (local: string) =>
   local ? new Date(local).toISOString() : undefined
 
 // 반대로 ISO를 datetime-local이 읽는 형식으로 자른다(로컬 시각 기준).
-function toLocalInput(iso: string | null) {
-  if (!iso) return ''
-  const date = new Date(iso)
-  const pad = (value: number) => String(value).padStart(2, '0')
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
-}
+const toLocalInput = (iso: string | null) =>
+  iso ? toLocalInputValue(new Date(iso)) : ''
 
 const toUploadedImages = (bundle?: ProductImageBundle): UploadedImage[] =>
   (bundle?.items ?? []).map((item) => ({

@@ -70,6 +70,22 @@ export type StockCorrectionRequest = {
   reason: string
 }
 
+/** GET .../stock/options/{optionId}/reconcile — 보정 미리보기(아무것도 바꾸지 않는다) */
+export type StockCorrectionPreview = {
+  optionId: string
+  /** 재고를 넣지 않은 옵션이면 false이고 장부 값은 0 */
+  registered: boolean
+  /** 총량. 보정으로 바뀌지 않는다 */
+  stockTotal: number
+  stockReserved: number
+  stockSold: number
+  /** 보정하면 stockReserved·stockSold가 이 값이 된다 */
+  expectedReserved: number
+  expectedSold: number
+  /** 장부가 주문 기준과 같다(보정할 것 없음) */
+  matches: boolean
+}
+
 export type StockCorrectionResponse = {
   optionId: string
   registered: boolean

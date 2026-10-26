@@ -10,6 +10,7 @@ import { queryPolicy } from '@shared/api/queryPolicy'
 import type {
   ProductRegistrationRequest,
   SaleStatusChangeRequest,
+  ProductConversionRequest,
 } from '@shared/api/types'
 import { delay } from '@shared/lib/delay'
 import { pollUntil } from '@shared/lib/pollUntil'
@@ -19,6 +20,9 @@ import { toRegistrationRequest } from '../model/registration'
 
 import {
   closePreorderCampaign,
+  convertAdminProduct,
+  deleteAdminProduct,
+  reopenPreorderCampaign,
   getAdminProduct,
   getPreorderCampaign,
   getRegistrationStatus,
@@ -203,6 +207,51 @@ export const useClosePreorderCampaign = () => {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (productId: string) => closePreorderCampaign(productId),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
+  })
+}
+
+/**
+ * 상품을 지운다. 지운 상품의 상세는 404라 다시 받지 않고 캐시에서 빼고, 목록만 다시 받는다
+ * — 화면은 성공하면 목록으로 간다.
+ */
+export const useDeleteAdminProduct = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: deleteAdminProduct,
+    onSuccess: (_data, productId) => {
+      queryClient.removeQueries({ queryKey: adminProductKey(productId) })
+      return queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY })
+    },
+  })
+}
+
+/** 일반 상품으로 전환한다. 판매 방식·탭 구성이 바뀌어 상세·목록을 다시 받는다 */
+export const useConvertAdminProduct = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      productId,
+      ...body
+    }: { productId: string } & ProductConversionRequest) =>
+      convertAdminProduct(productId, body),
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
+  })
+}
+
+/** 마감한 접수를 새 마감 시각까지 다시 연다. 상세의 회차 상태가 바뀌어 다시 받는다 */
+export const useReopenPreorderCampaign = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      productId,
+      closesAt,
+    }: {
+      productId: string
+      closesAt: string
+    }) => reopenPreorderCampaign(productId, closesAt),
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: ADMIN_PRODUCTS_KEY }),
   })

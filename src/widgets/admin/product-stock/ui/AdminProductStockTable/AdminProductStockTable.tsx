@@ -9,6 +9,7 @@ import {
   useAdminProduct,
   useAdminProductStock,
   useCorrectStockOption,
+  usePreviewStockCorrection,
   useStockDrifts,
   type AdminProductStock,
   type AdminStockDrift,
@@ -81,6 +82,7 @@ export function AdminProductStockTable({
   const runStale =
     runAt !== null && now - Date.parse(runAt) > RECONCILE_STALE_MS
   const correct = useCorrectStockOption(productId)
+  const preview = usePreviewStockCorrection(productId)
   const [filter, setFilter] = useState<Filter>('all')
 
   const failed = product.error ?? stock.error
@@ -100,12 +102,46 @@ export function AdminProductStockTable({
     (drifts.data?.options ?? []).map((item) => item.optionId),
   )
 
+  // 새벽 대조 뒤 주문이 들어왔을 수 있어, 확인 창을 열기 전에 지금 숫자를 다시 받는다.
   const confirmCorrect = (drift: AdminStockDrift, row?: AdminProductStock) => {
     correct.reset()
+    preview.mutate(drift.optionId, {
+      onSuccess: (now) => {
+        const name = row ? optionName(row) : '이 옵션'
+        if (now.matches) {
+          showToast(`${name}은(는) 이미 주문 기준과 같아요.`)
+          void drifts.refetch()
+          return
+        }
+        // 보정하면 409(STOCK_TOTAL_BELOW_EXPECTED) — 보내기 전에 막고 할 일을 알린다.
+        const expected = now.expectedReserved + now.expectedSold
+        if (expected > now.stockTotal) {
+          openModal({
+            theme: 'light',
+            title: '전체 수량을 먼저 늘려 주세요',
+            description: `${name}의 주문 기준 수량(결제 대기 + 판매 완료) ${formatNumber(expected)}개가 전체 수량 ${formatNumber(now.stockTotal)}개보다 많아 보정할 수 없어요. 재고 수정에서 전체 수량을 ${formatNumber(expected)}개 이상으로 늘린 뒤 보정해 주세요.`,
+            confirmLabel: '확인',
+            onConfirm: closeModal,
+          })
+          return
+        }
+        openCorrect(drift, name, now)
+      },
+    })
+  }
+
+  const openCorrect = (
+    drift: AdminStockDrift,
+    name: string,
+    now: Pick<
+      AdminStockDrift,
+      'stockReserved' | 'stockSold' | 'expectedReserved' | 'expectedSold'
+    >,
+  ) => {
     openModal({
       theme: 'light',
       title: '주문 기준으로 보정할까요?',
-      description: `${row ? optionName(row) : '이 옵션'}의 결제 대기 ${formatNumber(drift.stockReserved)} → ${formatNumber(drift.expectedReserved)}, 판매 완료 ${formatNumber(drift.stockSold)} → ${formatNumber(drift.expectedSold)}로 바뀝니다.
+      description: `${name}의 결제 대기 ${formatNumber(now.stockReserved)} → ${formatNumber(now.expectedReserved)}, 판매 완료 ${formatNumber(now.stockSold)} → ${formatNumber(now.expectedSold)}로 바뀝니다(지금 기준).
 전체 수량은 그대로이고, 사유는 보정 기록에 남습니다.`,
       children: (
         <ReasonForm
@@ -272,13 +308,18 @@ export function AdminProductStockTable({
             <Button
               size="small"
               variant="outline"
-              disabled={correct.isPending}
+              disabled={correct.isPending || preview.isPending}
               onClick={() => confirmCorrect(firstDrift, firstDriftRow)}
             >
               {correct.isPending ? '보정 중…' : '사유 쓰고 보정하기'}
             </Button>
           }
         />
+      )}
+      {preview.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(preview.error, '지금 장부를 확인하지 못했습니다.')}
+        </InlineAlert>
       )}
       {correct.isError && (
         <InlineAlert status="error">

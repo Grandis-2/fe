@@ -10,14 +10,19 @@ import {
   deadLetterFailureReasonTag,
   deadLetterStatusColor,
   deadLetterStatusLabel,
+  deadLetterTargetLabel,
+  isRefundRequest,
   useDiscardDeadLetter,
   useRedriveDeadLetter,
   type DeadLetterRecord,
+  type DeadLetterService,
 } from '@entities/admin-dead-letter'
+import { orderNo } from '@entities/admin-order'
 import { reservationNo } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import {
   adminDeadLetterPath,
+  adminOrderPath,
   adminReservationPath,
   type BackTo,
 } from '@shared/config/routes'
@@ -50,6 +55,10 @@ import * as styles from './AdminDeadLetterDetail.css'
 
 export type AdminDeadLetterDetailProps = {
   deadLetter: DeadLetterRecord
+  /** 어느 서비스의 DLQ인지 — 되돌리기·버리기 주소와 관련 대상(예약/주문)이 갈린다 */
+  service: DeadLetterService
+  /** 되돌리기를 기다린 지 오래돼 저절로 새로 고치기를 멈췄다 */
+  stalled?: boolean
 }
 
 type BodyView = 'pretty' | 'raw'
@@ -59,8 +68,8 @@ const bodyViews: { value: BodyView; label: string }[] = [
   { value: 'raw', label: '받은 그대로' },
 ]
 
-// 판단에 쓰는 값 — 무슨 처리였고 어느 예약인지.
-const KEY_FIELDS = ['"eventType"', '"preorderId"']
+// 판단에 쓰는 값 — 무슨 처리였고 어느 예약·주문인지.
+const KEY_FIELDS = ['"eventType"', '"preorderId"', '"orderId"']
 
 const timeOrDash = (iso: string | null) => (iso ? formatDotDateTime(iso) : '—')
 
@@ -86,15 +95,17 @@ const NOW_INTERVAL_MS = 60_000
  */
 export function AdminDeadLetterDetail({
   deadLetter,
+  service,
+  stalled = false,
 }: AdminDeadLetterDetailProps) {
   const location = useLocation()
   const now = useNow(NOW_INTERVAL_MS).getTime()
-  const redrive = useRedriveDeadLetter()
-  const discard = useDiscardDeadLetter()
+  const redrive = useRedriveDeadLetter(service)
+  const discard = useDiscardDeadLetter(service)
   const busy = redrive.isPending || discard.isPending
   const pretty = prettyBody(deadLetter.body)
   const [view, setView] = useState<BodyView>('pretty')
-  const guide = deadLetterGuide(deadLetter)
+  const guide = deadLetterGuide(deadLetter, { stalled })
 
   // 지난 실패 문구가 남아 있으면 이번 시도의 결과처럼 보인다.
   const resetErrors = () => {
@@ -125,8 +136,10 @@ export function AdminDeadLetterDetail({
     openModal({
       theme: 'light',
       title: '메시지를 버릴까요?',
-      description:
-        '버리면 이 메시지가 하려던 처리는 일어나지 않고, 되돌릴 수 없습니다. 내용이 잘못됐다면 보낸 쪽에 다시 발행을 요청해 주세요.',
+      // 환불 요청을 버리면 주문이 취소 중에 멈추고 다시 보낼 길이 없다(명세) — 먼저 알린다.
+      description: isRefundRequest(deadLetter.eventType)
+        ? '환불 요청을 버리면 이 주문은 취소 중에 머물고, 주문 쪽에서 환불 요청을 다시 보낼 방법이 없습니다. 결제와 주문을 확인해 환불을 직접 처리해 주세요. 버리면 되돌릴 수 없습니다.'
+        : '버리면 이 메시지가 하려던 처리는 일어나지 않고, 되돌릴 수 없습니다. 내용이 잘못됐다면 보낸 쪽에 다시 발행을 요청해 주세요.',
       children: (
         <ReasonForm
           label="버리는 이유"
@@ -146,19 +159,30 @@ export function AdminDeadLetterDetail({
     })
   }
 
-  // 예약 상세의 '돌아가기'가 이 메시지로 오게 한다.
+  // 예약·주문 상세의 '돌아가기'가 이 메시지로 오게 한다.
   const backTo: BackTo = {
     label: '이벤트 DLQ 메시지',
-    to: location.pathname,
+    to: location.pathname + location.search,
   }
-  const reservationLink = deadLetter.preorderId && (
+  const target = deadLetterTargetLabel[service]
+  const relatedLink = deadLetter.orderId ? (
     <Link
       className={styles.link}
-      to={adminReservationPath(deadLetter.preorderId)}
+      to={adminOrderPath(deadLetter.orderId)}
       state={{ backTo }}
     >
-      {reservationNo(deadLetter.preorderId)}
+      {orderNo(deadLetter.orderId)}
     </Link>
+  ) : (
+    deadLetter.preorderId && (
+      <Link
+        className={styles.link}
+        to={adminReservationPath(deadLetter.preorderId)}
+        state={{ backTo }}
+      >
+        {reservationNo(deadLetter.preorderId)}
+      </Link>
+    )
   )
 
   const history = [
@@ -214,7 +238,11 @@ export function AdminDeadLetterDetail({
             {deadLetter.eventType && (
               <span className={styles.code}>{deadLetter.eventType}</span>
             )}
-            {reservationLink && <span>관련 예약 {reservationLink}</span>}
+            {relatedLink && (
+              <span>
+                관련 {target} {relatedLink}
+              </span>
+            )}
             {stuck && <span>{stuck}</span>}
           </div>
         </div>
@@ -308,7 +336,7 @@ export function AdminDeadLetterDetail({
           <span className={styles.note}>
             {pretty === null
               ? 'JSON으로 읽을 수 없는 원문이라 받은 그대로 보여줍니다. '
-              : '노란 줄은 판단에 쓰는 값(이벤트 종류·예약)이에요. '}
+              : `노란 줄은 판단에 쓰는 값(이벤트 종류·${target})이에요. `}
             회원 정보가 들어 있을 수 있으니 밖에 붙여 넣을 땐 가려 주세요.
           </span>
         </Panel>
@@ -318,12 +346,15 @@ export function AdminDeadLetterDetail({
             <DescriptionList
               items={[
                 {
-                  label: '관련 예약',
-                  value: reservationLink || (
-                    <span className={styles.muted}>예약과 무관</span>
+                  label: `관련 ${target}`,
+                  value: relatedLink || (
+                    <span className={styles.muted}>{target}과 무관</span>
                   ),
                 },
-                { label: '회원 id', value: deadLetter.customerId ?? '—' },
+                // 결제 이벤트에는 회원 id가 없다.
+                ...(service === 'preorder'
+                  ? [{ label: '회원 id', value: deadLetter.customerId ?? '—' }]
+                  : []),
                 {
                   label: '실패 이유',
                   value: (
@@ -351,7 +382,10 @@ export function AdminDeadLetterDetail({
                   value: deadLetter.redrivenFromId ? (
                     <Link
                       className={styles.link}
-                      to={adminDeadLetterPath(deadLetter.redrivenFromId)}
+                      to={adminDeadLetterPath(
+                        deadLetter.redrivenFromId,
+                        service,
+                      )}
                     >
                       이전 메시지 보기
                     </Link>

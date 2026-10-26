@@ -10,11 +10,12 @@ const run = {
   target: 860,
   skipped: 0,
   estimatedSeconds: 43,
+  batchIds: ['batch-1'],
   startedAt: 0,
   scope: null,
   deadLetterAtStart: 900,
 }
-// 집계 시각이 예상 시간을 넘은 뒤의 값 — 줄어든 건수만 말한다.
+// 마감까지 서버 결과를 못 받아 끝낸 값 — 줄어든 건수만 말한다.
 const progress = (deadLetterNow: number, sent = 860) => ({
   sent,
   remainingSeconds: 0,
@@ -22,6 +23,8 @@ const progress = (deadLetterNow: number, sent = 860) => ({
   deadLetterAtStart: 900,
   deadLetterNow,
   reduced: 900 - deadLetterNow,
+  outcome: null,
+  timedOut: true,
 })
 
 const meta = {
@@ -142,14 +145,39 @@ export const Running: Story = {
       deadLetterAtStart: 900,
       deadLetterNow: null,
       reduced: null,
+      outcome: null,
+      timedOut: false,
     },
   },
 }
 
-/** 3 · 끝남 — 재처리 필요가 얼마나 줄었는지와 예약 현황으로 가는 길 */
-export const Reduced: Story = { args: { run, result: progress(40) } }
+/** 3 · 끝남 — 서버가 센 결과(성공·다시 실패·빠짐)를 그대로 보인다 */
+export const Finished: Story = {
+  args: {
+    run,
+    result: {
+      ...progress(30),
+      timedOut: false,
+      outcome: { succeeded: 825, failed: 30, canceled: 3, unsent: 2 },
+    },
+  },
+  play: async ({ canvas }) => {
+    const success = await canvas.findByText('825건')
+    await waitFor(() => expect(success).toBeVisible())
+    await expect(canvas.getByText(/다시 실패한 30건/)).toBeVisible()
+  },
+}
 
-/** 3-b · 끝났는데 안 줄었다 — 외부 등록이 계속 실패하는지 확인하라고 안내 */
+/** 3-a · 마감까지 끝을 확인하지 못함 — 결과를 단정하지 않고 줄어든 건수와 예약 현황으로 가는 길 */
+export const Reduced: Story = {
+  args: { run, result: progress(40) },
+  play: async ({ canvas }) => {
+    const title = await canvas.findByText('진행을 끝까지 확인하지 못했어요')
+    await waitFor(() => expect(title).toBeVisible())
+  },
+}
+
+/** 3-b · 끝을 확인하지 못했고 안 줄었다 — 외부 등록이 계속 실패하는지 확인하라고 안내 */
 export const NotReduced: Story = {
   args: { run, result: progress(900) },
   play: async ({ canvas }) => {

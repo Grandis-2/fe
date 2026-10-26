@@ -3,7 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ApiRequestError } from '@shared/api/client'
 import { queryPolicy } from '@shared/api/queryPolicy'
 
-import { correctStockOption, getLatestStockReconcileRun } from './adminStock'
+import {
+  correctStockOption,
+  getLatestStockReconcileRun,
+  previewStockCorrection,
+} from './adminStock'
 import { adminProductStockKey, stockReconcileRunKey } from './keys'
 
 /**
@@ -33,6 +37,16 @@ export const useStockDrifts = (productId: string) =>
       finishedAt: run?.finishedAt ?? null,
     }),
     ...queryPolicy.live,
+  })
+
+/**
+ * 보정 직전의 지금 숫자 — 새벽 대조 뒤 주문이 들어왔으면 대조 결과와 다르다. 확인 창을
+ * 열 때 한 번만 받으면 돼서 조회 캐시 대신 버튼마다 부른다(진행 중·실패를 버튼이 보인다).
+ */
+export const usePreviewStockCorrection = (productId: string) =>
+  useMutation({
+    mutationFn: (optionId: string) =>
+      previewStockCorrection(productId, optionId),
   })
 
 /**

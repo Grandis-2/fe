@@ -433,3 +433,13 @@ export type AdminProductListParams = {
   /** 1~100(기본 20) */
   size?: number
 }
+
+/**
+ * POST /admin/products/{productId}/conversion — 마감된 사전예약을 일반 상품으로. stocks엔 이
+ * 상품의 옵션을 판매 중지 옵션까지 빠짐없이 한 번씩(1~500개) 넣는다. 모르는 필드는 400
+ */
+export type ProductConversionRequest = {
+  stocks: { variantId: string; stock: number }[]
+  /** 일반 판매 할인율(정수 %, 0~99). 생략하면 0 — 사전예약 할인율을 이어 쓰지 않는다 */
+  discountRate?: number
+}

@@ -1196,6 +1196,39 @@ export const adminProductHandlers: RequestHandler[] = [
     },
   ),
 
+  // 마감한 접수 다시 열기 — 새 마감 시각까지. 판매 중지·비공개·오픈 전은 409.
+  http.post(
+    url('/api/v1/admin/preorders/products/:productId/campaign/reopen'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product || product.saleMode !== 'PREORDER') return notFound()
+      const body = (await request.json().catch(() => null)) as {
+        closesAt?: string
+      } | null
+      if (!body?.closesAt || Date.parse(body.closesAt) <= Date.now())
+        return invalid([
+          { field: 'closesAt', message: '지금보다 뒤여야 합니다.' },
+        ])
+      if (product.saleStatus === 'BEFORE_OPEN')
+        return fail(409, {
+          code: 'SALE_NOT_OPEN',
+          message: '오픈 전 회차는 일정 변경으로 고칩니다.',
+        })
+      if (
+        product.saleStatus === 'OPEN' ||
+        saleStatusOf(product.productId) !== 'ACTIVE'
+      )
+        return fail(409, {
+          code: 'CAMPAIGN_NOT_REOPENABLE',
+          message: '다시 열 수 있는 회차가 아닙니다.',
+        })
+      product.saleStatus = 'OPEN'
+      product.sale.closeAt = body.closesAt
+      product.updatedAt = new Date().toISOString()
+      return ok(campaignOf(product))
+    },
+  ),
+
   // 사진 한 장 올리기 — 실서버와 같은 형식·크기 규칙으로 400·413을 준다.
   http.post(url('/api/v1/admin/images'), async ({ request }) => {
     const purpose = new URL(request.url).searchParams.get('purpose')
@@ -1283,6 +1316,79 @@ export const adminProductHandlers: RequestHandler[] = [
       return ok(toAdminProductResponse(product), 201)
     },
   ),
+
+  // 일반 상품 전환 — 마감된 사전예약만. 판매 방식을 바꾸고, 넣은 옵션별 재고를 새 재고로 둔다
+  // (사전예약 때 잡힌 수량은 이어지지 않는다).
+  http.post(
+    url('/api/v1/admin/products/:productId/conversion'),
+    async ({ request, params }) => {
+      const product = findProduct(String(params.productId))
+      if (!product) return notFound()
+      const body = (await request.json().catch(() => null)) as {
+        stocks?: { variantId: string; stock: number }[]
+        discountRate?: number
+      } | null
+      if (!body?.stocks?.length)
+        return invalid([
+          { field: 'stocks', message: '옵션 재고가 필요합니다.' },
+        ])
+      if (body.discountRate !== undefined && !isDiscountRate(body.discountRate))
+        return invalid([
+          { field: 'discountRate', message: '0~99 정수여야 합니다.' },
+        ])
+      if (product.saleMode !== 'PREORDER' || product.saleStatus !== 'CLOSED')
+        return fail(409, {
+          code: 'PRODUCT_NOT_CONVERTIBLE',
+          message: '마감된 사전예약 상품만 일반 상품으로 바꿀 수 있습니다.',
+        })
+      const now = new Date().toISOString()
+      // variantId는 옵션 코드다(상세 응답과 같은 값).
+      for (const { variantId, stock } of body.stocks) {
+        const next = {
+          productId: product.productId,
+          optionCode: variantId,
+          policy: 'LIMITED' as const,
+          initialQuantity: stock,
+          availableQuantity: stock,
+          reservedQuantity: 0,
+          adjustmentsEnabled: true,
+          updatedAt: now,
+          updatedBy: 'admin',
+        }
+        const item = findStockItem(product.productId, variantId)
+        if (item) Object.assign(item, next)
+        else adminStockStore.push(next)
+      }
+      product.saleMode = 'IN_STOCK'
+      pausedProducts.delete(product.productId)
+      discountRates.set(product.productId, body.discountRate ?? 0)
+      product.updatedAt = now
+      return ok(toAdminProductResponse(product))
+    },
+  ),
+
+  // 상품 삭제 — 접수 중(오픈 3분 전~마감 전) 사전예약은 409, 지우면 저장소에서 뺀다.
+  http.delete(url('/api/v1/admin/products/:productId'), ({ params }) => {
+    const productId = String(params.productId)
+    const index = adminProductStore.findIndex(
+      (product) => product.productId === productId,
+    )
+    if (index < 0) return notFound()
+    const product = adminProductStore[index]
+    const locked =
+      product.saleMode === 'PREORDER' &&
+      saleStatusOf(productId) === 'ACTIVE' &&
+      (product.saleStatus === 'OPEN' ||
+        (product.saleStatus === 'BEFORE_OPEN' &&
+          Date.now() >= Date.parse(product.sale.openAt) - 3 * 60_000))
+    if (locked)
+      return fail(409, {
+        code: 'PRODUCT_DELETE_NOT_ALLOWED',
+        message: '사전예약 접수 중에는 상품을 지울 수 없습니다.',
+      })
+    adminProductStore.splice(index, 1)
+    return new HttpResponse(null, { status: 204 })
+  }),
 
   // 사진 한 장 빼기 — 빈 묶음은 함께 없어진다.
   http.delete(

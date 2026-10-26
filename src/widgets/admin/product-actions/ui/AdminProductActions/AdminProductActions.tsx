@@ -1,5 +1,8 @@
 import {
   canClosePreorderEarly,
+  canConvertToInStock,
+  deleteBlockedReason,
+  reopenPreorderOf,
   isPublicSetting,
   saleStatusActionOf,
   type AdminProductDetailModel,
@@ -13,7 +16,13 @@ type SaleTarget = Pick<AdminProductDetailModel, 'productId' | 'name'>
 export type AdminProductActionsProps = {
   product: Pick<
     AdminProductDetailModel,
-    'productId' | 'name' | 'displayStatus' | 'saleMode' | 'status' | 'campaign'
+    | 'productId'
+    | 'name'
+    | 'displayStatus'
+    | 'saleMode'
+    | 'status'
+    | 'campaign'
+    | 'variants'
   >
   onPublish: (product: VisibilityTarget) => void
   onHide: (product: VisibilityTarget) => void
@@ -23,6 +32,14 @@ export type AdminProductActionsProps = {
   onCancel: (product: SaleTarget) => void
   /** 사전예약 접수 조기 마감 — 받은 예약은 남기고 새 접수만 막는다 */
   onCloseEarly: (product: SaleTarget) => void
+  /** 마감한 접수 다시 열기 — 새 마감 시각을 받는다 */
+  onReopen: (product: SaleTarget) => void
+  /** 상품 삭제 — 되돌릴 수 없어 이름을 입력받는다 */
+  onDelete: (product: SaleTarget) => void
+  /** 마감한 사전예약을 일반 상품으로 — 옵션마다 처음 재고를 받는다 */
+  onConvert: (
+    product: SaleTarget & Pick<AdminProductDetailModel, 'variants'>,
+  ) => void
   /** 전환 요청이 도는 중 — 같은 전환을 두 번 보내지 않게 메뉴를 막는다 */
   pending?: boolean
   className?: string
@@ -44,6 +61,9 @@ export function AdminProductActions({
   onResume,
   onCancel,
   onCloseEarly,
+  onReopen,
+  onDelete,
+  onConvert,
   pending = false,
   className,
 }: AdminProductActionsProps) {
@@ -81,9 +101,35 @@ export function AdminProductActions({
     ? { label: '접수 조기 마감하기', onSelect: () => onCloseEarly(product) }
     : null
 
-  const items = [visibilityItem, closeItem, saleItem].filter(
-    (item): item is ActionMenuItem => item !== null,
-  )
+  // 마감한 회차만 — 숨김이면 서버가 받지 않아 이유를 적고 막는다.
+  const reopen = reopenPreorderOf(product)
+  const reopenItem: ActionMenuItem | null = reopen && {
+    label: '접수 다시 열기',
+    disabledReason: reopen.ok ? undefined : reopen.reason,
+    onSelect: () => (reopen.ok ? onReopen(product) : undefined),
+  }
+
+  const convertItem: ActionMenuItem | null = canConvertToInStock(product)
+    ? { label: '일반 상품으로 전환', onSelect: () => onConvert(product) }
+    : null
+
+  // 되돌릴 수 없어 맨 아래 빨갛게 둔다. 접수 중인 사전예약은 서버가 막아 이유를 적는다.
+  const blocked = deleteBlockedReason(product)
+  const deleteItem: ActionMenuItem = {
+    label: '상품 삭제',
+    danger: true,
+    disabledReason: blocked ?? undefined,
+    onSelect: () => (blocked ? undefined : onDelete(product)),
+  }
+
+  const items = [
+    visibilityItem,
+    closeItem,
+    reopenItem,
+    convertItem,
+    saleItem,
+    deleteItem,
+  ].filter((item): item is ActionMenuItem => item !== null)
 
   return (
     <ActionMenu

@@ -1,5 +1,6 @@
 import { apiClient } from '@shared/api/client'
 import type {
+  StockCorrectionPreview,
   StockCorrectionRequest,
   StockCorrectionResponse,
   StockOverviewResponse,
@@ -29,6 +30,13 @@ export const getLatestStockReconcileRun = (signal?: AbortSignal) =>
   apiClient.request<StockReconcileRunResponse>(
     '/api/v1/admin/stock/reconcile-runs/latest',
     { signal },
+  )
+
+// [order] GET /api/v1/admin/products/{productId}/stock/options/{optionId}/reconcile — 보정 미리보기
+/** 지금 장부와 주문 기준 수량. 아무것도 바꾸지 않는다 — 보정 확인 창에 쓴다 */
+export const previewStockCorrection = (productId: string, optionId: string) =>
+  apiClient.request<StockCorrectionPreview>(
+    `${stockPath(productId)}/options/${optionId}/reconcile`,
   )
 
 // [order] POST /api/v1/admin/products/{productId}/stock/options/{optionId}/reconcile — 주문 기준으로 보정

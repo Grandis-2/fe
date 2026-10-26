@@ -31,6 +31,25 @@ describe('deadLetterGuide', () => {
       }).title,
     ).toMatch(/PREORDER_GIFT_GRANTED/)
   })
+
+  it('보내는 중(REDRIVING)은 보냈다고 하지 않는다 — 보내기에 실패하면 이 상태로 남는다', () => {
+    expect(deadLetterGuide({ ...base, status: 'REDRIVING' }).title).toBe(
+      '원래 큐로 보내는 중이에요',
+    )
+    expect(deadLetterGuide({ ...base, status: 'REDRIVEN' }).title).toMatch(
+      /보냈고/,
+    )
+  })
+
+  it('기다린 지 오래돼 새로 고치기를 멈췄으면 멈췄을 수 있다고 알린다', () => {
+    const stalled = { stalled: true }
+    expect(
+      deadLetterGuide({ ...base, status: 'REDRIVING' }, stalled),
+    ).toMatchObject({ tone: 'warning', title: '보내기가 멈춘 것 같아요' })
+    expect(
+      deadLetterGuide({ ...base, status: 'REDRIVEN' }, stalled),
+    ).toMatchObject({ tone: 'warning', title: '처리 결과가 늦어요' })
+  })
 })
 
 describe('deadLetterSteps', () => {

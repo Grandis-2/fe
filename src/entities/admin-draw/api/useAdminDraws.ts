@@ -7,7 +7,7 @@ import {
 
 import { ApiRequestError } from '@shared/api/client'
 import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
-import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
+import { pollEvery, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
 
@@ -32,16 +32,20 @@ const ADMIN_DRAWS_KEY = ['admin', 'draws'] as const
 export const useAdminDraws = (
   /** 자동으로 다시 받는 간격. 운영 대시보드처럼 열어 두는 화면이 준다 */
   intervalMs: RefreshInterval = false,
-) =>
-  useQuery({
-    queryKey: [...ADMIN_DRAWS_KEY, 'list'] as const,
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...ADMIN_DRAWS_KEY, 'list'] as const
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) =>
       fetchAllPages((page) =>
         getAdminDraws({ page, size: PAGE_SIZE_MAX }, signal),
       ),
     ...queryPolicy.live,
-    refetchInterval: intervalMs,
+    // 실패하면 그 간격에서 백오프하며 다시 묻는다.
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
+}
 
 export const useAdminDraw = (drawId: string) =>
   useQuery({

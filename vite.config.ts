@@ -56,6 +56,8 @@ export default defineConfig(({ mode }) => ({
           proxy.on('proxyReq', (req) => {
             // 앱의 CORS · 재발급 Origin 검사를 운영 프런트로 통과시킨다 (개발 서버에서만)
             req.setHeader('origin', 'https://www.grandis-nova.link')
+            // 인증 없는 /external/config·faults·reset 은 ALB 가 운영 프런트 Referer 만 받는다.
+            req.setHeader('referer', 'https://www.grandis-nova.link/')
             // localhost 의 다른 쿠키(IDE, Auth.js 등)는 넘기지 않는다 — WAF 가 차단한 원인.
             // 관리자 리프레시는 admin_refresh_token 이라 이름을 같이 받는다 — 빼면
             // 관리자 세션이 새로고침마다 끊긴다.

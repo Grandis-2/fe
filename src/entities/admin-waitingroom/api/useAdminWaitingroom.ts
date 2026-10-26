@@ -1,4 +1,9 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 
 import { pollEvery, queryPolicy } from '@shared/api/queryPolicy'
 import type {
@@ -10,6 +15,7 @@ import type { RefreshInterval } from '@shared/config/refreshInterval'
 import {
   clearMaxWait,
   getAdmissionRates,
+  getSettingChanges,
   getWaitingroomStatus,
   resetGlobalCredit,
   resetLeaveGrace,
@@ -111,6 +117,20 @@ const applyChange = async (change: AdmissionRateChange) => {
         : setProductCap(change.productId, change.value)
   }
 }
+
+/**
+ * 운영값 변경 이력(최신순). 끝까지 내리면 다음 쪽을 받는다. 같은 키 아래라 운영값을 바꾸면
+ * 다시 받아 방금 바꾼 것이 맨 위에 붙는다.
+ */
+export const useSettingChanges = () =>
+  useInfiniteQuery({
+    queryKey: [...WAITINGROOM_KEY, 'changes'] as const,
+    queryFn: ({ pageParam, signal }) => getSettingChanges(pageParam, signal),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: ({ nextCursor }) => nextCursor ?? undefined,
+    select: (data) => data.pages.flatMap((page) => page.items),
+    ...queryPolicy.live,
+  })
 
 /**
  * 운영값 하나를 바꾸거나 기본값으로 되돌린다. 응답이 바뀐 뒤의 전체 운영값이라 그대로

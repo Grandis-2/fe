@@ -1,11 +1,15 @@
+import type { ReprocessBatchesProgress } from '@entities/admin-reservation'
+
 /**
- * 대시보드에서 시작한 일괄 재처리 한 번 — 서버 응답(대상 수·건너뛴 수·예상 시간), 시작 시각,
- * 고른 범위(상품 id, 전체면 null)와 시작 직전의 재처리 필요 건수.
+ * 대시보드에서 시작한 일괄 재처리 한 번 — 서버 응답(대상 수·건너뛴 수·예상 시간·진행 조회 id),
+ * 시작 시각, 고른 범위(상품 id, 전체면 null)와 시작 직전의 재처리 필요 건수.
  */
 export type ReprocessRun = {
   target: number
   skipped: number
   estimatedSeconds: number
+  /** 진행 조회(reprocess-batches/{batchId})에 쓰는 묶음 id들 */
+  batchIds: string[]
   startedAt: number
   /** 실행 시점에 고른 상품 — 이후 화면에서 고르기를 바꿔도 이 범위로 센다 */
   scope: string | null
@@ -13,11 +17,17 @@ export type ReprocessRun = {
   deadLetterAtStart: number | null
 }
 
+/** 서버가 센 결과 — 보낸 작업마다 외부 등록이 어떻게 끝났는지 */
+export type ReprocessOutcome = Pick<
+  ReprocessBatchesProgress,
+  'succeeded' | 'failed' | 'canceled' | 'unsent'
+>
+
 export type ReprocessProgress = {
-  /** 지금쯤 보냈을 건수 — 서버가 초당 일정하게 보낸다고 보고 시간으로 어림한다 */
+  /** 다룬 건수 — 결과가 나왔거나 보내지 못한 것. 서버 진행을 아직 못 받았으면 시간으로 어림한다 */
   sent: number
   remainingSeconds: number
-  /** 예상 시간이 지났고, 그 뒤에 센 집계를 받았다 */
+  /** 모든 대상의 결과가 나왔다 */
   finished: boolean
   /** 시작 직전의 재처리 필요 건수. 못 쟀으면 null */
   deadLetterAtStart: number | null
@@ -25,38 +35,70 @@ export type ReprocessProgress = {
   deadLetterNow: number | null
   /** 시작 전보다 줄어든 건수(0 이상). 둘 중 하나라도 없으면 null */
   reduced: number | null
+  /** 서버가 센 결과. 진행을 아직 못 받았으면 null */
+  outcome: ReprocessOutcome | null
+  /** 마감이 지나도록 끝을 확인하지 못해 묻기를 멈췄다 — 결과는 예약 현황에서 본다 */
+  timedOut: boolean
 }
 
 /**
- * 재처리 진행을 어림한다. 서버는 일괄 재처리의 진행을 따로 주지 않는다. 보낸 건수는 시간으로,
- * 끝남은 집계 시각이 예상 시간을 넘은 뒤로 본다. 결과는 "재처리 필요 건수가 얼마나 줄었는지"만
- * 말한다 — 이 값으로 보낸 작업이 몇 건 성공·실패했는지는 알 수 없다.
- * 집계 시각은 서버가 센 시각(countedAt)이라 서버 캐시(최대 5초)만큼 옛 값일 수 있는 건 이미
- * 시각에 담긴다. 서버와 브라우저 시계가 어긋나면 끝나는 시점도 그만큼 앞뒤로 움직인다.
- * ponytail: 집계엔 재처리 중 새로 생긴 실패도 섞여 '줄어든 건수'가 조금 적게 나올 수 있다.
- * 한계와 업그레이드 경로: 서버가 일괄 재처리의 진행(처리·성공·실패 건수)을 주거나 보낸 작업 id
- * 묶음의 상태를 조회하게 되면, 그 값으로 바꾸고 "모두 다시 등록했어요" 같은 단정 문구를 되살린다.
+ * 재처리 진행. 서버의 진행 조회(batches)를 받았으면 그 값으로 — 다룬 건수와 결과(성공·다시
+ * 실패·취소)를 그대로 쓰고, 결과가 다 나와야 끝났다고 본다. 아직 못 받았으면 서버가 초당
+ * 일정하게 보낸다고 보고 시간으로 어림하고, 집계 시각이 예상 시간을 넘은 뒤를 끝으로 본다.
+ * 남은 시간은 언제나 예상 시간으로 센다(서버는 남은 시간을 주지 않는다).
  */
 export function reprocessProgress(
   run: ReprocessRun,
-  /** 지금 재처리 필요 건수. 집계를 못 받았으면 null — 끝났다고 보지 않는다 */
+  batches: ReprocessBatchesProgress | undefined,
+  /** 지금 재처리 필요 건수. 집계를 못 받았으면 null */
   deadLetterNow: number | null,
   /** 그 집계를 서버가 센 시각(ms, countedAt) */
   countedAt: number,
+  /** 마감이 지났다(useReprocessRun이 잰다) — 끝나지 않았어도 끝난 것으로 보고 결과를 모른다고 한다 */
+  expired = false,
 ): ReprocessProgress {
   const durationMs = Math.max(1, run.estimatedSeconds) * 1000
   const elapsed = Math.max(0, countedAt - run.startedAt)
-  const finished = deadLetterNow !== null && elapsed >= durationMs
   const reduced =
     run.deadLetterAtStart !== null && deadLetterNow !== null
       ? Math.max(0, run.deadLetterAtStart - deadLetterNow)
       : null
-  return {
-    sent: Math.round(run.target * Math.min(1, elapsed / durationMs)),
+  const base = {
     remainingSeconds: Math.max(0, Math.ceil((durationMs - elapsed) / 1000)),
-    finished,
     deadLetterAtStart: run.deadLetterAtStart,
     deadLetterNow,
     reduced,
+    timedOut: false,
+  }
+  // 서버가 끝을 알리지 않는 채로 마감이 지나면 기다림을 끝낸다. 받은 진행은 끝난 결과가 아니라 쓰지 않는다.
+  if (expired && !batches?.finished)
+    return {
+      ...base,
+      sent: batches
+        ? batches.targetCount - batches.pending
+        : Math.round(run.target * Math.min(1, elapsed / durationMs)),
+      finished: true,
+      outcome: null,
+      timedOut: true,
+    }
+  if (batches)
+    return {
+      ...base,
+      sent: batches.targetCount - batches.pending,
+      finished: batches.finished,
+      outcome: {
+        succeeded: batches.succeeded,
+        failed: batches.failed,
+        canceled: batches.canceled,
+        unsent: batches.unsent,
+      },
+    }
+  // 서버 진행을 못 받는 동안은 시간으로 어림만 한다 — 끝은 서버 결과나 마감으로만 정한다.
+  // 예상 시간이 지났다고 끝으로 보면 진행 조회가 계속 실패할 때 확인 전에 "마쳤어요"가 뜬다.
+  return {
+    ...base,
+    sent: Math.round(run.target * Math.min(1, elapsed / durationMs)),
+    finished: false,
+    outcome: null,
   }
 }

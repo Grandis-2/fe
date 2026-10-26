@@ -25,6 +25,7 @@ import {
 } from '@shared/ui'
 import {
   AdminProductActions,
+  useProductDelete,
   useProductSaleStatus,
   useProductVisibility,
 } from '@widgets/admin/product-actions'
@@ -66,6 +67,7 @@ const defaultTabOf = (product: AdminProductDetailModel): AdminProductTab =>
 export function AdminProductDetailPage() {
   const visibility = useProductVisibility()
   const saleStatus = useProductSaleStatus()
+  const productDelete = useProductDelete()
   const { productId = '' } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const product = useAdminProduct(productId)
@@ -148,13 +150,20 @@ export function AdminProductDetailPage() {
         <AdminProductActions
           className={styles.actions}
           product={product.data}
-          pending={visibility.isPending || saleStatus.isPending}
+          pending={
+            visibility.isPending ||
+            saleStatus.isPending ||
+            productDelete.isPending
+          }
           onPublish={visibility.confirmPublish}
           onHide={visibility.confirmHide}
           onPause={saleStatus.confirmPause}
           onResume={saleStatus.confirmResume}
           onCancel={saleStatus.confirmCancel}
           onCloseEarly={saleStatus.confirmCloseEarly}
+          onReopen={saleStatus.confirmReopen}
+          onDelete={productDelete.confirmDelete}
+          onConvert={saleStatus.confirmConvert}
         />
       </div>
 
@@ -168,6 +177,11 @@ export function AdminProductDetailPage() {
       {saleStatus.isError && (
         <InlineAlert status="error">
           {getErrorMessage(saleStatus.error, '판매 상태를 바꾸지 못했습니다.')}
+        </InlineAlert>
+      )}
+      {productDelete.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(productDelete.error, '상품을 지우지 못했습니다.')}
         </InlineAlert>
       )}
 

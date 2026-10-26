@@ -5,6 +5,7 @@ import { adminDrawHandlers } from './admin-draw'
 import { adminOrderHandlers } from './admin-order'
 import { adminProductHandlers } from './admin-product'
 import { adminPromotionHandlers } from './admin-promotion'
+import { adminReconciliationHandlers } from './admin-reconciliation'
 import { adminReservationHandlers } from './admin-reservation'
 import { adminShipmentHandlers } from './admin-shipment'
 import { adminStockHandlers } from './admin-stock'
@@ -29,6 +30,7 @@ export const handlers: RequestHandler[] = [
   forceErrorHandler,
   // /admin/preorders/dead-letters가 예약 상세(/admin/preorders/:preorderId)보다 먼저 잡혀야 한다.
   ...adminDeadLetterHandlers,
+  ...adminReconciliationHandlers,
   ...adminReservationHandlers,
   ...externalReservationHandlers,
   ...adminShipmentHandlers,

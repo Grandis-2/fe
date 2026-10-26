@@ -6,14 +6,24 @@ import { retryOf, unsentAfterError, type Unsent } from './reprocessRetry'
 
 const partial = (unsentPreorderIds: string[]) =>
   new PartialReprocessError(
-    { targetCount: 1000, skippedCount: 2, estimatedSeconds: 50 },
+    {
+      targetCount: 1000,
+      skippedCount: 2,
+      estimatedSeconds: 50,
+      batchIds: ['batch-2'],
+    },
     unsentPreorderIds,
   )
 
 const previous: Unsent = {
   scope: null,
   preorderIds: ['a'],
-  accepted: { targetCount: 1000, skippedCount: 0, estimatedSeconds: 50 },
+  accepted: {
+    targetCount: 1000,
+    skippedCount: 0,
+    estimatedSeconds: 50,
+    batchIds: ['batch-1'],
+  },
   deadLetterAtStart: 1500,
 }
 
@@ -31,6 +41,7 @@ describe('reprocessRetry', () => {
       targetCount: 2000,
       skippedCount: 2,
       estimatedSeconds: 100,
+      batchIds: ['batch-1', 'batch-2'],
     })
     expect(next?.deadLetterAtStart).toBe(1500)
   })

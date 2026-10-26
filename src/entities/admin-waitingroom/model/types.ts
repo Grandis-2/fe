@@ -3,6 +3,8 @@ import type {
   CapacityGuide,
   ProductRate,
   ProductStatus,
+  SettingChange,
+  SettingChangeKind,
   WaitingroomRuntime,
   WaitingroomSetting,
   WaitingroomStatusView,
@@ -15,6 +17,23 @@ export type WaitingroomStatus = Omit<WaitingroomStatusView, 'products'> & {
 }
 export type AdmissionRates = AdmissionRateView
 export type AdmissionCapacity = CapacityGuide
+export type WaitingroomSettingChange = SettingChange
+
+/** 변경 이력의 운영값 이름 — 상품 상한은 화면이 상품 이름을 앞에 붙인다 */
+export const settingChangeKindLabel: Record<SettingChangeKind, string> = {
+  GLOBAL_CREDIT: '전역 입장 속도',
+  PRODUCT_CREDIT: '입장 상한',
+  LEAVE_GRACE: '자리 지켜 주기',
+  MAX_WAIT: '최대 대기 시간',
+}
+
+/** 변경 이력 값의 단위 — 속도는 명/초, 시간은 초 */
+export const settingChangeUnit: Record<SettingChangeKind, string> = {
+  GLOBAL_CREDIT: '명/초',
+  PRODUCT_CREDIT: '명/초',
+  LEAVE_GRACE: '초',
+  MAX_WAIT: '초',
+}
 export type WaitingroomProductRate = ProductRate
 export type { WaitingroomSetting }
 

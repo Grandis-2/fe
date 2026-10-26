@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router'
 
 import {
   adminOrderSourceLabel,
-  adminOrderSources,
   adminOrderStatusColor,
   adminOrderStatuses,
   adminOrderStatusLabel,
@@ -12,21 +11,24 @@ import {
   nextShippingStepOf,
   orderNo,
   type AdminOrder,
-  type AdminOrderSource,
   type AdminOrderStatus,
   useAdminOrderCounts,
   useAdminOrders,
 } from '@entities/admin-order'
+import { useAdminProducts } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { adminOrderPath } from '@shared/config/routes'
 import { formatShortDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
+import { periodRange, toPeriodOptions, type Period } from '@shared/lib/period'
 import { toggleInSet } from '@shared/lib/toggleInSet'
+import { useClampPage } from '@shared/lib/useClampPage'
 import {
   Button,
   Checkbox,
   Dropdown,
   InlineAlert,
+  Input,
   Navigator,
   RefreshStatus,
   SegmentedTabs,
@@ -38,7 +40,7 @@ import { BulkShippingModal } from '@widgets/admin/order-bulk-shipping'
 
 import * as styles from './AdminOrdersPage.css'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 const ALL = 'all'
 
 /** 위 카드 — 관리자가 손대야 하는 단계와 오래 머물면 문제인 취소 처리 중 */
@@ -66,7 +68,8 @@ const todoCards = [
 }[]
 const todoStatuses = todoCards.map(({ status }) => status)
 
-// 탭은 배송 흐름, 나머지 상태(결제 전·취소)는 드롭다운으로 — 상태 필터는 한 번에 하나다.
+// 탭은 배송 흐름과 취소. 결제 전 상태(결제 대기·결제 확인 중)는 관리자가 할 일이 없어 두지
+// 않는다 — 특정 주문은 받는 분 이름·전화로 찾는다.
 const tabStatuses = [
   'AWAITING_CONFIRMATION',
   'PREPARING_ITEMS',
@@ -74,26 +77,30 @@ const tabStatuses = [
   'SHIPPED',
   'DELIVERED',
 ] as const satisfies readonly AdminOrderStatus[]
+/** 취소 탭 — 취소 중 다음 취소 완료를 이어 붙인다(서버는 상태를 하나만 거른다) */
+const CANCELED_TAB = 'canceled'
+const canceledStatuses: AdminOrderStatus[] = ['CANCELING', 'CANCELED']
 const tabs = [
   { value: ALL, label: '전체' },
   ...tabStatuses.map((status) => ({
     value: status,
     label: adminOrderStatusLabel[status],
   })),
+  { value: CANCELED_TAB, label: '취소' },
 ]
-const otherStatusOptions: DropdownOption<AdminOrderStatus | undefined>[] = [
-  { value: undefined, label: '선택 안 함' },
-  ...adminOrderStatuses
-    .filter((status) => !(tabStatuses as readonly string[]).includes(status))
-    .map((status) => ({ value: status, label: adminOrderStatusLabel[status] })),
+
+/**
+ * 고객 문의를 받았을 때 찾는 방법. 주문 번호는 두지 않는다 — 화면의 번호는 id 뒤 8자리인데
+ * 서버(q)는 id 앞부분으로 찾아, 고객이 불러 준 번호로는 나오지 않는다.
+ */
+type SearchBy = 'name' | 'phone4'
+const searchByOptions: DropdownOption<SearchBy>[] = [
+  { value: 'name', label: '받는 분 이름' },
+  { value: 'phone4', label: '전화 끝 4자리' },
 ]
-const sourceOptions: DropdownOption<AdminOrderSource | undefined>[] = [
-  { value: undefined, label: '모든 출처' },
-  ...adminOrderSources.map((source) => ({
-    value: source,
-    label: adminOrderSourceLabel[source],
-  })),
-]
+const SHIP_TO_NAME_MAX = 50
+const periods: Period[] = ['all', 'today', 'yesterday', 'week', 'month']
+const periodOptions = toPeriodOptions(periods)
 
 /** 주소의 값이 아는 값일 때만 쓴다 — 손으로 고친 주소가 400을 부르지 않게 */
 const pick = <TValue extends string>(
@@ -110,26 +117,79 @@ const maskPhone = (phone: string) =>
 
 /**
  * 모든 회원의 주문. 위 카드로 처리할 일을 고르고, 같은 상태끼리 골라 다음 배송 단계로 한 번에
- * 옮긴다. 상태·출처·쪽은 주소에 둬서 상세에 들어갔다 돌아와도 보던 자리가 남는다.
+ * 옮긴다. 상태·검색·쪽은 주소에 둬서 상세에 들어갔다 돌아와도 보던 자리가 남는다.
  */
 export function AdminOrdersPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const source = pick<AdminOrderSource>(
-    searchParams.get('source'),
-    adminOrderSources,
-  )
-  const status = pick<AdminOrderStatus>(
-    searchParams.get('status'),
-    adminOrderStatuses,
-  )
+  // 상태 하나(탭·위 카드) 또는 취소 탭. 위 '취소 처리 중' 카드는 취소 중만 거른다.
+  const canceledTab = searchParams.get('status') === CANCELED_TAB
+  const status = canceledTab
+    ? undefined
+    : pick<AdminOrderStatus>(searchParams.get('status'), adminOrderStatuses)
   // 손으로 고친 주소(?page=1.5, ?page=Infinity)도 첫 쪽으로 — 정수가 아니면 서버가 400을 준다.
   const pageParam = Number(searchParams.get('page'))
   const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1
 
+  // 검색·상품·기간도 주소에 둔다 — 상세에 들어갔다 돌아와도 찾던 결과가 남는다. 손으로 고친
+  // 주소(?phone4=12, 너무 긴 이름)는 서버가 400을 주니 없는 것으로 본다.
+  const nameParam = searchParams.get('name')
+  const shipToName =
+    nameParam && nameParam.length <= SHIP_TO_NAME_MAX ? nameParam : undefined
+  const phoneParam = searchParams.get('phone4')
+  const phone4 =
+    phoneParam && /^\d{4}$/.test(phoneParam) ? phoneParam : undefined
+  const productId = searchParams.get('product') ?? undefined
+  const period = pick<Period>(searchParams.get('period'), periods) ?? 'all'
+  const [searchBy, setSearchBy] = useState<SearchBy>(
+    phone4 !== undefined ? 'phone4' : 'name',
+  )
+  const [draft, setDraft] = useState(shipToName ?? phone4 ?? '')
+  // 주소의 검색 조건이 바뀌면(뒤로 가기·링크로 들어옴) 칸도 따라간다 — 안 그러면 칸과 결과가
+  // 어긋나고, 그대로 Enter를 누르면 옛 칸 값이 새 조건을 덮는다. 조건이 풀리면 고른 기준은 둔다.
+  const urlSearch =
+    phone4 !== undefined
+      ? `phone4:${phone4}`
+      : (shipToName && `name:${shipToName}`) || ''
+  const [syncedSearch, setSyncedSearch] = useState(urlSearch)
+  if (urlSearch !== syncedSearch) {
+    setSyncedSearch(urlSearch)
+    if (phone4 !== undefined || shipToName !== undefined) {
+      setSearchBy(phone4 !== undefined ? 'phone4' : 'name')
+      setDraft(phone4 ?? shipToName ?? '')
+    } else setDraft('')
+  }
+  // 서버가 400을 줄 값은 보내지 않고 칸 아래에 알린다.
+  const draftError =
+    searchBy === 'phone4'
+      ? draft !== '' && !/^\d{4}$/.test(draft)
+        ? '숫자 4자리로 입력해 주세요.'
+        : undefined
+      : draft.trim().length > SHIP_TO_NAME_MAX
+        ? `${SHIP_TO_NAME_MAX}자까지 입력할 수 있어요.`
+        : undefined
+  // 기간은 고른 순간을 기준으로 센다 — 자정을 넘겨 띄워 둔 채 '오늘'을 다시 고르면 그날로 잡힌다.
+  // 고른 뒤 쪽을 넘기는 동안엔 같은 값이라 조회 키가 흔들리지 않는다.
+  const [periodAt, setPeriodAt] = useState(() => Date.now())
+  const products = useAdminProducts()
+  // 상품 목록을 못 받으면 '모든 상품'만 남는데, 상품이 없는 것과 헷갈리지 않게 첫 항목에 적는다.
+  const productOptions: DropdownOption<string | undefined>[] = [
+    {
+      value: undefined,
+      label: products.isError ? '모든 상품 (목록을 못 불러옴)' : '모든 상품',
+    },
+    ...(products.data ?? []).map((product) => ({
+      value: product.productId,
+      label: product.name,
+    })),
+  ]
+
   const orders = useAdminOrders({
-    source,
-    status,
+    statuses: canceledTab ? canceledStatuses : status && [status],
+    shipToName,
+    shipToPhoneLast4: phone4,
+    productId,
+    ...periodRange(period, periodAt),
     page: page - 1,
     size: PAGE_SIZE,
   })
@@ -156,7 +216,7 @@ export function AdminOrdersPage() {
 
   // 필터를 바꾸면 첫 쪽부터 본다.
   const setParam = (
-    key: 'source' | 'status' | 'page',
+    key: 'status' | 'page' | 'name' | 'phone4' | 'product' | 'period',
     value: string | undefined,
   ) => {
     setSelected(new Set())
@@ -175,6 +235,12 @@ export function AdminOrdersPage() {
       { replace: true },
     )
   }
+
+  useClampPage(
+    page,
+    orders.data && !orders.isPlaceholderData ? totalPages : null,
+    (next) => setParam('page', String(next)),
+  )
 
   const refresh = () => {
     void orders.refetch()
@@ -342,37 +408,69 @@ export function AdminOrdersPage() {
         </InlineAlert>
       )}
 
-      <div className={styles.filters}>
-        <SegmentedTabs
-          items={tabs}
-          // 드롭다운 쪽 상태를 고르면 어느 탭도 켜지지 않는다.
-          value={status ?? ALL}
-          onChange={(next) => setParam('status', next)}
+      <SegmentedTabs
+        items={tabs}
+        // 위 카드로 고른 상태(취소 중 등)는 탭이 아니라 어느 탭도 켜지지 않는다.
+        value={canceledTab ? CANCELED_TAB : (status ?? ALL)}
+        onChange={(next) => setParam('status', next)}
+      />
+
+      {/* 고객 문의로 찾기 — 이름은 전체 일치, 전화는 끝 4자리. 다 친 뒤(Enter) 보낸다. */}
+      <div className={styles.searchRow}>
+        <Dropdown
+          className={styles.field}
+          label="받는 분 이름"
+          fieldLabel="검색 기준"
+          size="medium"
+          options={searchByOptions}
+          value={searchBy}
+          onSelect={(next) => {
+            setSearchBy(next)
+            setDraft('')
+            setParam(searchBy, undefined)
+          }}
         />
-        <div className={styles.dropdowns}>
-          <Dropdown
-            className={styles.field}
-            label="선택 안 함"
-            fieldLabel="다른 상태"
-            size="medium"
-            options={otherStatusOptions}
-            value={
-              status && !(tabStatuses as readonly string[]).includes(status)
-                ? status
-                : undefined
-            }
-            onSelect={(next) => setParam('status', next)}
+        <form
+          className={styles.searchField}
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (!draftError) setParam(searchBy, draft.trim() || undefined)
+          }}
+        >
+          <Input
+            label={searchBy === 'name' ? '받는 분 이름' : '전화 끝 4자리'}
+            size="small"
+            inputMode={searchBy === 'phone4' ? 'numeric' : undefined}
+            value={draft}
+            error={draftError}
+            onChange={(event) => {
+              setDraft(event.target.value)
+              // 지우면 바로 조건을 푼다 — 빈 칸에 Enter를 또 누르게 하지 않는다.
+              if (!event.target.value.trim()) setParam(searchBy, undefined)
+            }}
           />
-          <Dropdown
-            className={styles.field}
-            label="모든 출처"
-            fieldLabel="출처"
-            size="medium"
-            options={sourceOptions}
-            value={source}
-            onSelect={(next) => setParam('source', next)}
-          />
-        </div>
+        </form>
+        <Dropdown
+          className={styles.field}
+          label="모든 상품"
+          fieldLabel="상품"
+          size="medium"
+          options={productOptions}
+          value={productId}
+          onSelect={(next) => setParam('product', next)}
+        />
+        <Dropdown
+          className={styles.field}
+          label="전체 기간"
+          fieldLabel="주문 기간"
+          size="medium"
+          options={periodOptions}
+          value={period}
+          onSelect={(next) => {
+            setPeriodAt(Date.now())
+            setParam('period', next)
+          }}
+        />
       </div>
 
       {step && selectable.length > 0 && (
@@ -411,7 +509,7 @@ export function AdminOrdersPage() {
           onClick: (order) => navigate(adminOrderPath(order.orderId)),
         }}
         loading={orders.isPending}
-        loadingRows={10}
+        loadingRows={PAGE_SIZE}
         emptyMessage={
           orders.isError
             ? getErrorMessage(orders.error, '주문을 불러오지 못했습니다.')

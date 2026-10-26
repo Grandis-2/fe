@@ -1,16 +1,17 @@
 // 밖에서는 TanStack Query 훅으로만 들어온다 — 생 API 함수(getAdminReservations 등)를
 // 내보내면 signal 취소·폴링 백오프·4xx 재시도 차단을 건너뛰는 길이 열린다.
 export {
-  useAdminMembers,
   useAdminReservation,
   useAdminReservations,
-  useAllAdminReservations,
   useCancelReservation,
   useReprocessFailedRegistrations,
   useReprocessReservation,
+  useResolveCancelJob,
+  useRetryCancelJob,
+  useReprocessBatches,
   useReprocessReservations,
   useReservationStats,
-  useReservationStatsByProduct,
+  useProductStats,
   useSaveReservationNote,
   useSyncJobErrorGroups,
 } from './api/useAdminReservations'
@@ -28,6 +29,7 @@ export {
   syncJobStatusLabel,
   syncJobTypeLabel,
   isReprocessable,
+  stuckCancelJob,
   isPaymentDueSoon,
   paymentDueLabel,
   paymentStateColor,
@@ -45,6 +47,9 @@ export type {
   AdminReservation,
   AdminReservationDetail,
   ReservationEvent,
+  ReservationSort,
   ReservationState,
   ReservationSyncJob,
 } from './model/types'
+export type { ReprocessBatchesProgress } from './api/useAdminReservations'
+export type { ReprocessStarted } from './api/adminReservation'

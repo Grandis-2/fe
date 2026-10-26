@@ -14,6 +14,7 @@ const inStock: Product = {
   saleMode: 'IN_STOCK',
   status: 'ACTIVE',
   campaign: null,
+  variants: [],
 }
 
 const DAY = 24 * 60 * 60 * 1000
@@ -42,6 +43,9 @@ const meta = {
     onResume: fn(),
     onCancel: fn(),
     onCloseEarly: fn(),
+    onReopen: fn(),
+    onDelete: fn(),
+    onConvert: fn(),
   },
 } satisfies Meta<typeof AdminProductActions>
 
@@ -57,13 +61,14 @@ const openMenu = async (
   return canvas.getAllByRole('menuitem')
 }
 
-/** 게시중 일반 상품 — 숨기기와 판매 중지가 있다 */
+/** 게시중 일반 상품 — 숨기기와 판매 중지, 맨 아래 상품 삭제가 있다 */
 export const Published: Story = {
   play: async ({ canvas, args }) => {
     const items = await openMenu(canvas)
     await expect(items.map((item) => item.textContent)).toEqual([
       '숨김으로 전환하기',
       '판매 중지하기',
+      '상품 삭제',
     ])
     await userEvent.click(items[0])
     await expect(args.onHide).toHaveBeenCalled()
@@ -151,7 +156,8 @@ export const PreorderOpenClosesEarly: Story = {
   args: { product: preorder('OPEN', -60 * 60 * 1000) },
   play: async ({ canvas, args }) => {
     const items = await openMenu(canvas)
-    await expect(items.map((item) => item.textContent)).toEqual([
+    // 맨 아래 상품 삭제는 접수 중이라 막혀 있다(OpenPreorderCannotDelete).
+    await expect(items.slice(0, 3).map((item) => item.textContent)).toEqual([
       '숨김으로 전환하기',
       '접수 조기 마감하기',
       '판매 중지하기',
@@ -179,8 +185,12 @@ export const PreorderOpenPaused: Story = {
     product: { ...preorder('OPEN', -60 * 60 * 1000), status: 'PAUSED' },
   },
   play: async ({ canvas }) => {
+    // 회차를 취소(판매 중지)했으면 공개 전환과 상품 삭제만 남는다.
     const items = await openMenu(canvas)
-    await expect(items).toHaveLength(1)
+    await expect(items.map((item) => item.textContent)).toEqual([
+      '숨김으로 전환하기',
+      '상품 삭제',
+    ])
   },
 }
 
@@ -191,5 +201,65 @@ export const Pending: Story = {
     await expect(
       canvas.getByRole('button', { name: '갤럭시 Z 폴드8 관리 메뉴' }),
     ).toBeDisabled()
+  },
+}
+
+/** 마감한 사전예약 — 접수를 다시 여는 길을 준다 */
+export const ClosedReopen: Story = {
+  args: {
+    product: { ...preorder('CLOSED', -2 * DAY), displayStatus: 'ENDED' },
+  },
+  play: async ({ canvas, args }) => {
+    const items = await openMenu(canvas)
+    const reopen = items.find((item) => item.textContent === '접수 다시 열기')
+    await expect(reopen).toBeDefined()
+    await userEvent.click(reopen!)
+    await expect(args.onReopen).toHaveBeenCalled()
+  },
+}
+
+/** 숨김이면 서버가 받지 않아 다시 열기를 막고 이유를 적는다 */
+export const ClosedHiddenReopen: Story = {
+  args: {
+    product: { ...preorder('CLOSED', -2 * DAY), displayStatus: 'HIDDEN' },
+  },
+  play: async ({ canvas, args }) => {
+    const items = await openMenu(canvas)
+    const reopen = items.find((item) =>
+      item.textContent?.startsWith('접수 다시 열기'),
+    )
+    await expect(reopen).toBeDefined()
+    await userEvent.click(reopen!)
+    await expect(args.onReopen).not.toHaveBeenCalled()
+  },
+}
+
+/** 접수 중인 사전예약은 서버가 지우기를 막아 이유를 적고 막는다 */
+export const OpenPreorderCannotDelete: Story = {
+  args: { product: preorder('OPEN', -DAY / 2) },
+  play: async ({ canvas, args }) => {
+    const items = await openMenu(canvas)
+    const remove = items.find((item) =>
+      item.textContent?.startsWith('상품 삭제'),
+    )
+    await expect(remove).toBeDefined()
+    await userEvent.click(remove!)
+    await expect(args.onDelete).not.toHaveBeenCalled()
+  },
+}
+
+/** 마감한 사전예약 — 일반 상품으로 전환하는 길을 준다 */
+export const ClosedConvert: Story = {
+  args: {
+    product: { ...preorder('CLOSED', -2 * DAY), displayStatus: 'ENDED' },
+  },
+  play: async ({ canvas, args }) => {
+    const items = await openMenu(canvas)
+    const convert = items.find(
+      (item) => item.textContent === '일반 상품으로 전환',
+    )
+    await expect(convert).toBeDefined()
+    await userEvent.click(convert!)
+    await expect(args.onConvert).toHaveBeenCalled()
   },
 }

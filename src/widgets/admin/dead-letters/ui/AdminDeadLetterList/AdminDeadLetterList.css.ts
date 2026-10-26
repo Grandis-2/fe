@@ -90,3 +90,12 @@ export const subLink = style([
   typography.body.sub,
   { color: color.text.tertiary, textDecoration: 'underline' },
 ])
+
+// 상태 탭은 왼쪽, 서비스 고르기는 오른쪽 끝 — 좁으면 서비스 고르기가 아래로 내려간다.
+export const controls = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-end',
+  justifyContent: 'space-between',
+  gap: spacing[12],
+})

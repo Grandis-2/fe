@@ -6,10 +6,7 @@ import { AdminWaitingroom } from '@widgets/admin/waitingroom'
  * 시각과 한 줄에 두려고 위젯이 그린다.
  */
 export function AdminWaitingroomPage() {
-  const { data: products = [] } = useAdminProducts({
-    saleMode: 'PREORDER',
-    size: 100,
-  })
+  const { data: products = [] } = useAdminProducts({ saleMode: 'PREORDER' })
   const productNames = new Map(
     products.map((product) => [product.productId, product.name]),
   )

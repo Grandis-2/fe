@@ -1,4 +1,5 @@
 import { reservationStore } from './admin-reservation'
+import { orders } from './preorder'
 
 import type { DeadLetterDetail } from '../../types'
 
@@ -124,5 +125,63 @@ export const deadLetterStore: DeadLetterDetail[] = seeds.map(
   },
 )
 
-export const findDeadLetter = (deadLetterId: string) =>
-  deadLetterStore.find((item) => item.deadLetterId === deadLetterId)
+/*
+ * 결제 DLQ 목. 결제 서비스가 받는 이벤트(환불 요청 등)가 멈춘 것 — 줄에 예약·회원 대신 주문
+ * id가 있다. 처리 대기 환불 요청 하나와 처리된 승인 중 알림 하나로 시작한다.
+ */
+const paymentSeeds = [
+  {
+    eventType: 'ORDER_REFUND_REQUESTED',
+    status: 'OPEN' as const,
+    hoursAgo: 3,
+    order: orders[0],
+  },
+  {
+    eventType: 'ORDER_PAYMENT_AUTHORIZING',
+    status: 'SUCCEEDED' as const,
+    hoursAgo: 28,
+    order: orders[1],
+  },
+]
+
+export const paymentDeadLetterStore: DeadLetterDetail[] = paymentSeeds.map(
+  ({ hoursAgo, order, ...seed }, index) => {
+    const createdAt = iso(hoursAgo * HOUR)
+    const eventId = seededId(300 + index)
+    const orderId = order?.orderId ?? null
+    const done = seed.status === 'SUCCEEDED'
+    return {
+      deadLetterId: seededId(200 + index),
+      messageId: `pay-msg-${String(index + 1).padStart(4, '0')}`,
+      eventId,
+      eventType: seed.eventType,
+      orderId,
+      failureReason: 'PROCESSING_FAILED',
+      receiveCount: 5,
+      status: seed.status,
+      redrivable: seed.status === 'OPEN',
+      redrivenFromId: null,
+      sentAt: iso(hoursAgo * HOUR + 60_000),
+      updatedAt: createdAt,
+      sourceQueue: 'payment-events',
+      aggregateType: orderId ? 'ORDER' : null,
+      aggregateId: orderId,
+      body: JSON.stringify({
+        eventId,
+        eventType: seed.eventType,
+        aggregateType: 'ORDER',
+        aggregateId: orderId,
+        occurredAt: createdAt,
+        payload: { amount: order?.totalAmount ?? 0 },
+      }),
+      redriveRequestedBy: done ? 'admin' : null,
+      redriveStartedAt: done ? createdAt : null,
+      redrivenAt: done ? createdAt : null,
+      outcomeAt: done ? createdAt : null,
+      discardedBy: null,
+      discardedAt: null,
+      discardNote: null,
+      createdAt,
+    }
+  },
+)

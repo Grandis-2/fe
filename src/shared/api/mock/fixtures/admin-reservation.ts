@@ -2,7 +2,6 @@ import { adminProductStore } from './admin-product'
 import { shipmentBatchStore } from './admin-shipment'
 
 import type {
-  AdminMember,
   AdminPreorderDetail,
   PreorderDisplayStatus,
   PreorderEvent,
@@ -13,8 +12,11 @@ import type {
   SyncJobStatus,
 } from '../../types'
 
-/** 예약 응답엔 회원 id만 있어 이름은 회원 이름 조회로 받는다 */
-export const mockMembers: AdminMember[] = [
+/** 서버처럼 첫 글자만 남기고 가린다(김철수 → 김**) */
+export const maskName = (name: string) => `${[...name][0]}**`
+
+/** 목 회원. 응답엔 이름을 가려(maskName) 싣는다 */
+export const mockMembers: { memberId: string; name: string }[] = [
   { memberId: '5d1c2e3f-4a5b-4c6d-8e7f-000000001001', name: '이주현' },
   { memberId: '5d1c2e3f-4a5b-4c6d-8e7f-000000001002', name: '김태윤' },
   { memberId: '5d1c2e3f-4a5b-4c6d-8e7f-000000001003', name: '박서연' },
@@ -198,6 +200,7 @@ function buildReservation(
     externalReference: registered ? `R-${20_000 + index}` : null,
     cancelable: status !== 'CANCELING' && status !== 'CANCELED',
     customerId: member.memberId,
+    customerName: maskName(member.name),
     internalNote:
       index % 7 === 0 ? 'VIP 고객 — 배송 일정 문의 이력 있음' : null,
     syncJobs: [register],
@@ -205,17 +208,55 @@ function buildReservation(
   }
 }
 
-// 순번은 상품마다 1부터 빈틈없이 매긴다.
+// 순번은 상품마다 1부터 빈틈없이 매긴다. 순번은 입장 순서, 접수 시각은 폼을 다 쓴 시각이라
+// 둘의 순서가 어긋난다 — 입장 순서를 접수 순서와 다르게 섞어(7과 48은 서로소) 순번순 정렬이
+// 접수순과 달라 보이게 한다.
+const RESERVATION_COUNT = 48
+const positionOf = new Map<number, number>()
 const positions = new Map<string, number>()
+for (let step = 0; step < RESERVATION_COUNT; step++) {
+  const index = (step * 7) % RESERVATION_COUNT
+  const { productId } = buildReservation(index, 0)
+  const position = (positions.get(productId) ?? 0) + 1
+  positions.set(productId, position)
+  positionOf.set(index, position)
+}
 export const reservationStore: AdminPreorderDetail[] = Array.from(
-  { length: 48 },
-  (_, index) => {
-    const draft = buildReservation(index, 0)
-    const position = (positions.get(draft.productId) ?? 0) + 1
-    positions.set(draft.productId, position)
-    return buildReservation(index, position)
-  },
+  { length: RESERVATION_COUNT },
+  (_, index) => buildReservation(index, positionOf.get(index)!),
 )
+
+// 외부 취소가 재시도까지 다 실패해 취소 중에 멈춘 예약 하나 — 마지막 취소 예약을 그렇게 바꾼다
+// (관리자가 다시 보내거나, 외부에서 확인한 뒤 끝낸다).
+{
+  const stuck = reservationStore.findLast((item) => item.status === 'CANCELED')
+  if (stuck) {
+    const failedAt = stuck.events.at(-1)!.createdAt
+    stuck.events.pop()
+    Object.assign(stuck, { status: 'CANCELING', displayStatus: 'CANCELING' })
+    stuck.syncJobs.push({
+      syncJobId: seededId('5a6b7c8d', 0),
+      preorderId: stuck.preorderId,
+      jobType: 'CANCEL',
+      status: 'DEAD_LETTER',
+      attemptCount: 3,
+      lastErrorCode: 'HTTP_503',
+      deadLetteredAt: failedAt,
+      createdAt: failedAt,
+      updatedAt: failedAt,
+      attempts: [1, 2, 3].map((attemptNumber) => ({
+        attemptNumber,
+        actor: 'SYSTEM' as const,
+        result: 'FAILED',
+        httpStatus: 503,
+        errorCode: 'HTTP_503',
+        errorMessage: 'Service Unavailable',
+        startedAt: failedAt,
+        finishedAt: failedAt,
+      })),
+    })
+  }
+}
 
 export const findReservation = (preorderId: string) =>
   reservationStore.find((item) => item.preorderId === preorderId)

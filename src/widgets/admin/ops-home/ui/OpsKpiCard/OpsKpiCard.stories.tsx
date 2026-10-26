@@ -63,3 +63,18 @@ export const Pending: Story = {
 export const Loading: Story = {
   args: { loading: true },
 }
+
+/** 실시간이 아닌 값은 언제 기준인지 숫자 아래에 적는다 */
+export const WithCaption: Story = {
+  args: {
+    label: '외부 예약 대조',
+    linkLabel: '대조하기',
+    value: 3,
+    unit: '건',
+    caption: '3시간 전 검사',
+  },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('link')).toHaveTextContent('3건')
+    await expect(canvas.getByText('3시간 전 검사')).toBeVisible()
+  },
+}

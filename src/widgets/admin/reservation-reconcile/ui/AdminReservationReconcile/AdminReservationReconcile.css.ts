@@ -1,4 +1,4 @@
-import { style } from '@vanilla-extract/css'
+import { style, styleVariants } from '@vanilla-extract/css'
 
 import { color, motion, spacing, typography } from '@shared/config/theme'
 
@@ -33,7 +33,57 @@ export const runStatus = style([
   },
 ])
 
-export const note = style([typography.body.sub, { color: color.text.tertiary }])
+// 최근 검사 결과 카드 — 판정 태그 · 설명 · 오른쪽 끝 정기 검사 안내. 어긋남이 있으면 테두리를 붉힌다.
+const summaryBase = style([
+  typography.body.defaultRegular,
+  {
+    display: 'flex',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: `${spacing[12]} ${spacing[24]}`,
+    padding: `${spacing[16]} ${spacing[20]}`,
+    borderRadius: '12px',
+    border: `1px solid ${color.border.default}`,
+    background: color.background.base,
+    color: color.text.secondary,
+  },
+])
+
+export const summary = styleVariants({
+  default: [summaryBase],
+  alert: [summaryBase, { borderColor: color.status.danger }],
+})
+
+const summaryTagBase = style([
+  typography.body.defaultMedium,
+  {
+    padding: `${spacing[4]} ${spacing[10]}`,
+    borderRadius: '6px',
+    whiteSpace: 'nowrap',
+  },
+])
+
+export const summaryTag = styleVariants({
+  run: [
+    summaryTagBase,
+    { background: color.primary.subtler, color: color.primary.focus },
+  ],
+  ok: [
+    summaryTagBase,
+    { background: color.background.subtleSuccess, color: color.text.primary },
+  ],
+  fail: [
+    summaryTagBase,
+    { background: color.background.subtleDanger, color: color.status.danger },
+  ],
+})
+
+export const summaryText = style({ flex: '1 1 320px', minWidth: 0 })
+
+export const summaryAside = style([
+  typography.body.sub,
+  { marginLeft: 'auto', color: color.text.tertiary },
+])
 
 // 탭 이름 옆에 그 유형의 건수를 붙인다. 0건은 흐리게.
 export const tabLabel = style({
@@ -153,3 +203,32 @@ export const detailButton = style({
 })
 
 export const detailIcon = style({ width: '18px', height: '18px' })
+
+// 서버 검사 코드 — 개발팀에 물을 때 그대로 읽게 작게 붙인다.
+export const code = style([
+  typography.body.caption,
+  {
+    color: color.text.tertiary,
+    fontFamily: 'ui-monospace, Menlo, monospace',
+  },
+])
+
+// 조치 뒤 상태 — 처리 중(브랜드색) · 완료(초록) · 실패(빨강).
+export const stateWait = style([
+  typography.body.subSemibold,
+  { color: color.primary.base, whiteSpace: 'nowrap' },
+])
+
+export const stateOk = style([
+  typography.body.subSemibold,
+  { color: color.text.primary, whiteSpace: 'nowrap' },
+])
+
+export const stateFail = style([
+  typography.body.subSemibold,
+  { color: color.status.danger },
+])
+
+export const navigator = style({ alignSelf: 'center' })
+
+export const actionButton = style({ whiteSpace: 'nowrap' })
