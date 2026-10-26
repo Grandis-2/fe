@@ -17,9 +17,13 @@ import type {
 const BASE = '/api/v1/admin/preorders/reconciliation'
 
 // [preorder] GET /api/v1/admin/preorders/reconciliation/runs — 검사 실행 목록(최근 요청 순)
-export const getReconciliationRuns = (size: number, signal?: AbortSignal) =>
+export const getReconciliationRuns = (
+  size: number,
+  signal?: AbortSignal,
+  page = 0,
+) =>
   apiClient.request<OffsetPage<ReconciliationRun>>(
-    `${BASE}/runs${toQueryString({ page: 0, size })}`,
+    `${BASE}/runs${toQueryString({ page, size })}`,
     { signal },
   )
 

@@ -32,4 +32,11 @@ describe('periodRange', () => {
       periodRange('week', NOW + 60 * 60 * 1000),
     )
   })
+
+  // TZ=America/New_York에서 돌리면 서머타임이 끝나는 2026-11-01을 건넌다(한국은 서머타임이 없어 그대로 통과).
+  it('서머타임이 바뀌는 날을 건너도 하한은 그날 자정이다', () => {
+    const now = new Date(2026, 10, 3, 15, 30).getTime()
+    const { from } = periodRange('week', now)
+    expect(from).toBe(new Date(2026, 9, 28).toISOString())
+  })
 })

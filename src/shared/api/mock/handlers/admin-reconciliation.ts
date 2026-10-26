@@ -247,11 +247,20 @@ function startRun(run: ReconciliationRun) {
     })
   }, START_DELAY_MS)
   setTimeout(() => {
+    // 이 범위를 덮는 직전 검사(전체, 또는 같은 상품)에서 이어 온다 — 상품 하나만 검사하면 그
+    // 상품 것만 남긴다. 다른 상품 검사의 결과로 전체 검사를 채우지 않는다.
     const previous = runs.find(
-      (item) => item !== run && item.status === 'COMPLETED',
+      (item) =>
+        item !== run &&
+        item.status === 'COMPLETED' &&
+        (item.productId === null || item.productId === run.productId),
     )
     const carried = (previous ? (findingsByRun.get(previous.runId) ?? []) : [])
       .filter(stillOpen)
+      .filter(
+        (finding) =>
+          run.productId === null || finding.productId === run.productId,
+      )
       .map((finding) => ({
         ...finding,
         findingId: crypto.randomUUID(),

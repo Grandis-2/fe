@@ -140,6 +140,15 @@ export const pollingError = ({
 }) => error ?? (failureCount > 0 ? failureReason : null)
 
 /**
+ * 끝나면 더 바뀌지 않는 조회(일괄 재처리 묶음 등) — 끝난 뒤엔 포커스·다시 마운트로 묻지 않는다.
+ * 프리셋(live 등) 뒤에 펼친다. 무효화(invalidateQueries)는 그대로 다시 받는다.
+ */
+export const freezeWhenDone = <TData>(done: (data: TData) => boolean) => ({
+  staleTime: ({ state: { data } }: { state: { data?: TData } }) =>
+    data !== undefined && done(data) ? Infinity : 0,
+})
+
+/**
  * 폴링 응답이 지금 캐시보다 옛것이면 버린다(useQuery의 structuralSharing에 넣는다).
  * 요청은 한 키에 하나씩 나가지만, 서버 인스턴스마다 캐시·복제 시점이 달라 나중 응답이
  * 더 옛 값일 수 있다 — 명세가 version·countedAt으로 거르라고 한다. 같으면 받는다.

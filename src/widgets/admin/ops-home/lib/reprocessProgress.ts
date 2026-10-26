@@ -93,10 +93,12 @@ export function reprocessProgress(
         unsent: batches.unsent,
       },
     }
+  // 서버 진행을 못 받는 동안은 시간으로 어림만 한다 — 끝은 서버 결과나 마감으로만 정한다.
+  // 예상 시간이 지났다고 끝으로 보면 진행 조회가 계속 실패할 때 확인 전에 "마쳤어요"가 뜬다.
   return {
     ...base,
     sent: Math.round(run.target * Math.min(1, elapsed / durationMs)),
-    finished: deadLetterNow !== null && elapsed >= durationMs,
+    finished: false,
     outcome: null,
   }
 }

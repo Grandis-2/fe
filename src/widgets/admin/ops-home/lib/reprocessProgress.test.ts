@@ -25,20 +25,13 @@ describe('reprocessProgress', () => {
     expect(progress.finished).toBe(false)
   })
 
-  it('예상 시간이 지나고 그 뒤에 센 집계여야 끝났다고 본다', () => {
-    // 집계 시각이 예상 시간 안이면 아직 처리 중일 수 있다.
+  it('서버 진행을 못 받으면 예상 시간이 지나도 끝으로 보지 않는다 — 끝은 마감이 정한다', () => {
     expect(
-      reprocessProgress(run, undefined, 400, run.startedAt + 42_000).finished,
+      reprocessProgress(run, undefined, 400, run.startedAt + 99_000).finished,
     ).toBe(false)
     expect(
-      reprocessProgress(run, undefined, 400, run.startedAt + 43_000).finished,
-    ).toBe(true)
-  })
-
-  it('집계를 못 받았으면 끝났다고 보지 않는다', () => {
-    expect(
-      reprocessProgress(run, undefined, null, run.startedAt + 99_000).finished,
-    ).toBe(false)
+      reprocessProgress(run, undefined, 400, run.startedAt + 99_000, true),
+    ).toMatchObject({ finished: true, timedOut: true, outcome: null })
   })
 
   it('시작 전보다 줄어든 건수를 보여 준다(음수로는 가지 않는다)', () => {

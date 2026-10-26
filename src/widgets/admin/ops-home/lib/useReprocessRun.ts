@@ -24,12 +24,10 @@ const POLL_MS = 5_000
 const deadlineOf = (estimatedSeconds: number) =>
   Math.max(2 * 60_000, estimatedSeconds * 3 * 1000)
 
-// 서버가 센 결과가 있으면 그대로 알리고, 없으면(진행 조회 실패) 재처리 필요가 얼마나
+// 서버가 센 결과가 있으면 그대로 알리고, 없으면(마감까지 끝을 못 봄) 재처리 필요가 얼마나
 // 줄었는지와 확인할 곳만 알린다 — 그 값으로는 몇 건이 성공했는지 단정할 수 없다.
 const resultMessage = (progress: ReprocessProgress) => {
   const { outcome } = progress
-  if (progress.timedOut)
-    return '재처리 진행을 끝까지 확인하지 못했어요. 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요.'
   if (outcome)
     return [
       `재처리를 마쳤어요. ${formatNumber(outcome.succeeded)}건 등록`,
@@ -43,7 +41,7 @@ const resultMessage = (progress: ReprocessProgress) => {
     before !== null && now !== null
       ? ` 재처리 필요 ${formatNumber(before)}건 → ${formatNumber(now)}건.`
       : ''
-  return `재처리 요청을 마쳤어요.${counts} 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요.`
+  return `재처리 진행을 끝까지 확인하지 못했어요.${counts} 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요.`
 }
 
 /**

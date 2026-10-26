@@ -5,6 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
+import { PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
 import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { OffsetPage, ReconciliationRun } from '@shared/api/types'
 
@@ -75,6 +76,44 @@ export const useReconciliationFindings = (
  * 검사 중이 돼 끝날 때까지 몇 초마다 묻기 시작한다. 409(이미 검사 중)는 지금 도는 검사를
  * 보여 줘야 해서 목록을 다시 받는다.
  */
+// 비교할 앞 검사를 찾아 거슬러 올라가는 쪽 수(100개씩) — 그보다 앞이면 비교하지 않는다.
+const PREVIOUS_SEARCH_PAGES = 3
+
+/** 비교할 수 있는 바로 앞 검사 — 같은 범위(productId)이고 더 일찍 요청해 끝난 검사 */
+const isPreviousOf =
+  (run: ReconciliationRun) => (candidate: ReconciliationRun) =>
+    candidate.status === 'COMPLETED' &&
+    candidate.runId !== run.runId &&
+    candidate.productId === run.productId &&
+    candidate.createdAt < run.createdAt
+
+/**
+ * run과 비교할 바로 앞 검사. 최근 목록(recent)에 있으면 그것을 쓰고, 없으면(사이에 다른 범위의
+ * 검사가 많이 돌았음) 더 앞 쪽을 찾아 본다 — 서버는 범위만 같으면 오래된 검사와도 비교한다.
+ * 끝난 검사는 바뀌지 않아 한 번 찾으면 다시 묻지 않는다. 못 찾으면 undefined.
+ */
+export const usePreviousRun = (
+  run: ReconciliationRun | undefined,
+  recent: readonly ReconciliationRun[] | undefined,
+) => {
+  const inRecent = run && recent?.find(isPreviousOf(run))
+  const older = useQuery({
+    queryKey: [...RUNS_KEY, 'previous', run?.runId] as const,
+    queryFn: async ({ signal }) => {
+      for (let page = 0; page < PREVIOUS_SEARCH_PAGES; page += 1) {
+        const result = await getReconciliationRuns(PAGE_SIZE_MAX, signal, page)
+        const found = result.items.find(isPreviousOf(run!))
+        if (found) return found
+        if ((page + 1) * PAGE_SIZE_MAX >= result.total) break
+      }
+      return null
+    },
+    enabled: run !== undefined && recent !== undefined && !inRecent,
+    ...queryPolicy.catalog,
+  })
+  return inRecent ?? older.data ?? undefined
+}
+
 /**
  * 두 검사의 비교. 끝난 검사끼리라 결과가 바뀌지 않아 다시 묻지 않는다. 둘 중 하나라도
  * 없으면(첫 검사) 묻지 않는다.

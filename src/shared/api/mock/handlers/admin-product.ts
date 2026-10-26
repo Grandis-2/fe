@@ -1317,7 +1317,8 @@ export const adminProductHandlers: RequestHandler[] = [
     },
   ),
 
-  // 일반 상품 전환 — 마감된 사전예약만. 목은 재고 수량을 따로 두지 않고 판매 방식만 바꾼다.
+  // 일반 상품 전환 — 마감된 사전예약만. 판매 방식을 바꾸고, 넣은 옵션별 재고를 새 재고로 둔다
+  // (사전예약 때 잡힌 수량은 이어지지 않는다).
   http.post(
     url('/api/v1/admin/products/:productId/conversion'),
     async ({ request, params }) => {
@@ -1340,10 +1341,28 @@ export const adminProductHandlers: RequestHandler[] = [
           code: 'PRODUCT_NOT_CONVERTIBLE',
           message: '마감된 사전예약 상품만 일반 상품으로 바꿀 수 있습니다.',
         })
+      const now = new Date().toISOString()
+      // variantId는 옵션 코드다(상세 응답과 같은 값).
+      for (const { variantId, stock } of body.stocks) {
+        const next = {
+          productId: product.productId,
+          optionCode: variantId,
+          policy: 'LIMITED' as const,
+          initialQuantity: stock,
+          availableQuantity: stock,
+          reservedQuantity: 0,
+          adjustmentsEnabled: true,
+          updatedAt: now,
+          updatedBy: 'admin',
+        }
+        const item = findStockItem(product.productId, variantId)
+        if (item) Object.assign(item, next)
+        else adminStockStore.push(next)
+      }
       product.saleMode = 'IN_STOCK'
       pausedProducts.delete(product.productId)
       discountRates.set(product.productId, body.discountRate ?? 0)
-      product.updatedAt = new Date().toISOString()
+      product.updatedAt = now
       return ok(toAdminProductResponse(product))
     },
   ),

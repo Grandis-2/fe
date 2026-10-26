@@ -49,6 +49,16 @@ describe('summarizeWindow', () => {
     })
   })
 
+  it('대기열 표본이 구간 앞뒤에 없으면 집계가 다 있어도 일부로 표시한다', () => {
+    const record = summarizeWindow(
+      active,
+      120_000,
+      [stat(1000, 0, 0, 2), stat(120_000, 60, 0, 2)],
+      [queue(60_000, 1, 30, 10)],
+    )
+    expect(record.complete).toBe(false)
+  })
+
   it('새로 고침 등으로 구간 앞 표본이 없으면 일부로 표시한다', () => {
     const record = summarizeWindow(
       active,

@@ -15,7 +15,7 @@ const run = {
   scope: null,
   deadLetterAtStart: 900,
 }
-// 서버 진행을 못 받아 시간으로 어림한 뒤의 값 — 줄어든 건수만 말한다.
+// 마감까지 서버 결과를 못 받아 끝낸 값 — 줄어든 건수만 말한다.
 const progress = (deadLetterNow: number, sent = 860) => ({
   sent,
   remainingSeconds: 0,
@@ -24,7 +24,7 @@ const progress = (deadLetterNow: number, sent = 860) => ({
   deadLetterNow,
   reduced: 900 - deadLetterNow,
   outcome: null,
-  timedOut: false,
+  timedOut: true,
 })
 
 const meta = {
@@ -157,6 +157,7 @@ export const Finished: Story = {
     run,
     result: {
       ...progress(30),
+      timedOut: false,
       outcome: { succeeded: 825, failed: 30, canceled: 3, unsent: 2 },
     },
   },
@@ -167,23 +168,20 @@ export const Finished: Story = {
   },
 }
 
-/** 3-a · 서버 진행을 못 받았을 때 — 재처리 필요가 얼마나 줄었는지와 예약 현황으로 가는 길 */
-export const Reduced: Story = { args: { run, result: progress(40) } }
+/** 3-a · 마감까지 끝을 확인하지 못함 — 결과를 단정하지 않고 줄어든 건수와 예약 현황으로 가는 길 */
+export const Reduced: Story = {
+  args: { run, result: progress(40) },
+  play: async ({ canvas }) => {
+    const title = await canvas.findByText('진행을 끝까지 확인하지 못했어요')
+    await waitFor(() => expect(title).toBeVisible())
+  },
+}
 
-/** 3-b · 끝났는데 안 줄었다 — 외부 등록이 계속 실패하는지 확인하라고 안내 */
+/** 3-b · 끝을 확인하지 못했고 안 줄었다 — 외부 등록이 계속 실패하는지 확인하라고 안내 */
 export const NotReduced: Story = {
   args: { run, result: progress(900) },
   play: async ({ canvas }) => {
     const notice = await canvas.findByText(/아직 줄지 않았어요/)
     await waitFor(() => expect(notice).toBeVisible())
-  },
-}
-
-/** 3-c · 마감이 지나도록 끝을 확인하지 못함 — 결과를 단정하지 않고 예약 현황으로 보낸다 */
-export const TimedOut: Story = {
-  args: { run, result: { ...progress(880), timedOut: true } },
-  play: async ({ canvas }) => {
-    const title = await canvas.findByText('진행을 끝까지 확인하지 못했어요')
-    await waitFor(() => expect(title).toBeVisible())
   },
 }

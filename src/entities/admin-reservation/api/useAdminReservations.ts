@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query'
 
 import {
+  freezeWhenDone,
   keepNewer,
   pollEvery,
   pollingRetry,
@@ -218,12 +219,7 @@ export const useReprocessBatches = (
         queryFn: ({ signal }: { signal: AbortSignal }) =>
           getReprocessBatch(batchId, signal),
         ...queryPolicy.live,
-        // 끝난 묶음은 더 바뀌지 않는다 — 포커스·다른 예약 변경으로 다시 받지 않는다.
-        staleTime: ({
-          state: { data },
-        }: {
-          state: { data?: BatchReprocessProgress }
-        }) => (data && isBatchDone(data) ? Infinity : 0),
+        ...freezeWhenDone(isBatchDone),
         // 첫 응답 전에도 묻는다 — 시작 직후라 아직 없을 수 있다.
         refetchInterval: ({
           state: { data },

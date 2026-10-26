@@ -157,52 +157,65 @@ export function AdminReservationsPage() {
   const pageParam = Number(searchParams.get('page'))
   const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1
   // 쪽 말고 다른 조건이 바뀌면 첫 쪽으로 돌아간다 — 3쪽을 보다 탭을 바꾸면 빈 쪽이 뜬다.
-  const setParam = (key: string, value: string | undefined) =>
+  // clear: 이 조건에 딸려 같이 풀리는 조건(탭 → 정렬, 상품 → 차수).
+  const setParam = (
+    key: string,
+    value: string | undefined,
+    clear: readonly string[] = [],
+  ) =>
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev)
         if (value === undefined) params.delete(key)
         else params.set(key, value)
         if (key !== 'page') params.delete('page')
+        clear.forEach((name) => params.delete(name))
         return params
       },
       { replace: true },
     )
-  const toFirstPage = () => setParam('page', undefined)
+  // 정렬·기간·차수·외부 예약 번호도 주소에 둔다 — 상세에 갔다 오거나 새로 고쳐도 같은 쪽에 같은
+  // 행이 보인다(쪽만 주소에 있고 조건이 풀리면 다른 행이 나온다). 모르는 값은 없는 것으로 본다.
   // 고른 정렬. 없으면 탭의 기본 순서 — 탭을 바꾸면 그 탭의 기본으로 돌아간다.
-  const [sortChoice, setSortChoice] = useState<ReservationSort>()
-  const setStatusFilter = (next: StatusFilter) => {
-    setParam('status', next)
-    setSortChoice(undefined)
-  }
-  const selectSort = (next: ReservationSort) => {
-    setSortChoice(next)
-    toFirstPage()
-  }
+  const sortChoice = sortOptions.find(
+    ({ value }) => value === searchParams.get('sort'),
+  )?.value
+  const setStatusFilter = (next: StatusFilter) =>
+    setParam('status', next, ['sort'])
+  const selectSort = (next: ReservationSort) => setParam('sort', next)
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const productId = searchParams.get('product') ?? undefined
   // 예약 상세의 '이 회원의 예약'로 들어오면 그 회원 것만 본다.
   const customerId = searchParams.get('customer') ?? undefined
   // 차수 번호는 상품마다 따로라, 상품을 바꾸면 차수를 비운다.
-  const [batchNumber, setBatchNumber] = useState<number>()
-  const setProductId = (next: string | undefined) => {
-    setParam('product', next)
-    setBatchNumber(undefined)
-  }
-  const selectBatch = (next: number | undefined) => {
-    setBatchNumber(next)
-    toFirstPage()
-  }
+  const batchParam = Number(searchParams.get('batch'))
+  const batchNumber =
+    Number.isSafeInteger(batchParam) && batchParam >= 1 ? batchParam : undefined
+  const setProductId = (next: string | undefined) =>
+    setParam('product', next, ['batch'])
+  const selectBatch = (next: number | undefined) =>
+    setParam('batch', next === undefined ? undefined : String(next))
   // 외부 예약 번호는 정확히 같은 것만 찾아서, 다 친 뒤(Enter) 보낸다 — 칠 때마다 묻지 않게.
-  const [referenceDraft, setReferenceDraft] = useState('')
-  const [externalReference, setExternalReference] = useState<string>()
-  const [period, setPeriod] = useState<Period>('all')
-  // shortcut: 고른 순간을 기준으로 구간을 고정한다 — '최근 1시간'을 오래 띄워 두면 창이 밀리지 않는다. 문제가 되면 갱신마다 다시 잡는다.
-  const [range, setRange] = useState<{ from?: string; to?: string }>({})
+  const externalReference = searchParams.get('ref') ?? undefined
+  const [referenceDraft, setReferenceDraft] = useState(externalReference ?? '')
+  // 주소가 바뀌면(뒤로 가기·링크) 칸도 따라간다 — 칸과 결과가 어긋나지 않게.
+  const [syncedReference, setSyncedReference] = useState(externalReference)
+  if (externalReference !== syncedReference) {
+    setSyncedReference(externalReference)
+    setReferenceDraft(externalReference ?? '')
+  }
+  const setExternalReference = (next: string | undefined) =>
+    setParam('ref', next)
+  const period =
+    periods.find((item) => item === searchParams.get('period')) ?? 'all'
+  // 고른 순간을 기준으로 구간을 고정한다 — 쪽을 넘기는 동안 조회 키가 흔들리지 않는다. 주소로
+  // 들어오면(새로 고침·뒤로 가기) 그때가 기준이다.
+  // shortcut: '최근 1시간'을 오래 띄워 두면 창이 밀리지 않는다. 문제가 되면 갱신마다 다시 잡는다.
+  const [periodAt, setPeriodAt] = useState(() => Date.now())
+  const range = periodRange(period, periodAt)
   const selectPeriod = (next: Period) => {
-    setPeriod(next)
-    setRange(periodRange(next, Date.now()))
-    toFirstPage()
+    setPeriodAt(Date.now())
+    setParam('period', next === 'all' ? undefined : next)
   }
   // 재처리할 예약(예약 id). 실제로 보내는 건 지금 표에서 재처리할 수 있는 것만이다.
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
@@ -210,12 +223,18 @@ export function AdminReservationsPage() {
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>(DEFAULT_INTERVAL)
 
-  const { data: products = [] } = useAdminProducts({ saleMode: 'PREORDER' })
+  const products = useAdminProducts({ saleMode: 'PREORDER' })
 
-  // 값이 undefined인 첫 항목이 '전체 상품' — 서버에 productId를 안 보낸다.
+  // 값이 undefined인 첫 항목이 '전체 상품' — 서버에 productId를 안 보낸다. 목록을 못 받으면
+  // 그 항목만 남아 상품이 없는 것처럼 보이니, 못 받았다고 같이 적는다(차수도 같다).
   const productOptions: DropdownOption<string | undefined>[] = [
-    { label: ALL_PRODUCTS, value: undefined },
-    ...products.map((product) => ({
+    {
+      label: products.isError
+        ? `${ALL_PRODUCTS} (목록을 못 불러옴)`
+        : ALL_PRODUCTS,
+      value: undefined,
+    },
+    ...(products.data ?? []).map((product) => ({
       label: product.name,
       value: product.productId,
     })),
@@ -225,7 +244,10 @@ export function AdminReservationsPage() {
     enabled: productId !== undefined,
   })
   const batchOptions: DropdownOption<number | undefined>[] = [
-    { label: '전체 차수', value: undefined },
+    {
+      label: batches.isError ? '전체 차수 (차수를 못 불러옴)' : '전체 차수',
+      value: undefined,
+    },
     ...(batches.data ?? []).map((batch) => ({
       label: `${batch.batchNumber}차`,
       value: batch.batchNumber,
@@ -561,7 +583,6 @@ export function AdminReservationsPage() {
           onSubmit={(event) => {
             event.preventDefault()
             setExternalReference(referenceDraft.trim() || undefined)
-            toFirstPage()
           }}
         >
           <Input
@@ -571,10 +592,7 @@ export function AdminReservationsPage() {
             onChange={(event) => {
               setReferenceDraft(event.target.value)
               // 지우면 바로 조건을 푼다 — 빈 칸에 Enter를 또 누르게 하지 않는다.
-              if (!event.target.value.trim()) {
-                setExternalReference(undefined)
-                toFirstPage()
-              }
+              if (!event.target.value.trim()) setExternalReference(undefined)
             }}
           />
         </form>

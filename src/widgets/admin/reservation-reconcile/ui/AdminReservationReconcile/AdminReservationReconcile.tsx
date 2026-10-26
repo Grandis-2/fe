@@ -20,6 +20,7 @@ import {
   useExternalCancelFindings,
   useReconciliationDiff,
   useReconciliationFindings,
+  usePreviousRun,
   useReconciliationRuns,
   useReprocessFinding,
   useStartReconciliationRun,
@@ -200,16 +201,9 @@ export function AdminReservationReconcile() {
   const shown = runs.data?.find((run) => run.status === 'COMPLETED')
   const failed = latest?.status === 'FAILED' ? latest : undefined
   const counts = countByGroup(shown?.findingCounts ?? {})
-  // 같은 범위의 바로 앞 완료 검사와 비교한다 — 서버가 범위가 다르면 비교하지 않는다.
-  const previous = shown
-    ? runs.data?.find(
-        (run) =>
-          run.status === 'COMPLETED' &&
-          run.runId !== shown.runId &&
-          run.productId === shown.productId &&
-          run.createdAt < shown.createdAt,
-      )
-    : undefined
+  // 같은 범위의 바로 앞 완료 검사와 비교한다 — 서버가 범위가 다르면 비교하지 않는다. 최근
+  // 목록에 없으면 훅이 더 앞 쪽에서 찾는다.
+  const previous = usePreviousRun(shown, runs.data)
   const diff = useReconciliationDiff(shown?.runId, previous?.runId)
   const introducedKeys = new Set(
     (diff.data?.introduced ?? []).map(

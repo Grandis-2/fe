@@ -74,6 +74,16 @@ export function summarizeWindow(
     points.filter(({ at }) => at >= active.startedAt && at <= endedAt)
   const s = inWindow(stats)
   const q = inWindow(queue)
+  const coversWindow = (points: readonly { at: number }[]) => {
+    const head = points[0]
+    const tail = points.at(-1)
+    return (
+      !!head &&
+      !!tail &&
+      head.at - active.startedAt <= EDGE_GAP_MS &&
+      endedAt - tail.at <= EDGE_GAP_MS
+    )
+  }
   const first = s[0]
   const last = s.at(-1)
   const seconds = first && last ? (last.at - first.at) / 1000 : 0
@@ -94,11 +104,8 @@ export function summarizeWindow(
     endedAt,
     scopeLabel: active.scopeLabel,
     condition: active.condition,
-    complete:
-      !!first &&
-      !!last &&
-      first.at - active.startedAt <= EDGE_GAP_MS &&
-      endedAt - last.at <= EDGE_GAP_MS,
+    // 예약 집계와 대기열 현황은 따로 받는다 — 둘 다 구간 앞뒤에 표본이 있어야 최대·평균이 맞다.
+    complete: coversWindow(s) && coversWindow(q),
     maxWaiting: maxOf(q.map((point) => point.waiting)),
     maxCredit: maxOf(q.map((point) => point.credit)),
     avgProcessed:

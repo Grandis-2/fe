@@ -171,6 +171,8 @@ export const useDeadLetter = (
 }
 
 // 메시지 상태와 그 서비스의 화면이 같이 바뀌므로 둘 다 다시 받는다(다른 서비스 DLQ는 그대로).
+// 실패해도 다시 받는다(onSettled) — 서버가 메시지를 집어 보내는 중(REDRIVING)으로 바꾼 뒤
+// 오류(503 등)를 줄 수 있어, 옛 OPEN 상태로 두면 결과를 모르는 채 되돌리기 버튼이 다시 열린다.
 const useInvalidateAfterChange = (service: DeadLetterService) => {
   const queryClient = useQueryClient()
   return () =>
@@ -187,7 +189,7 @@ export const useRedriveDeadLetter = (service: DeadLetterService) => {
   return useMutation({
     mutationFn: (deadLetterId: string) =>
       redriveDeadLetter(service, deadLetterId),
-    onSuccess: invalidate,
+    onSettled: invalidate,
   })
 }
 
@@ -196,7 +198,7 @@ export const useRedriveDeadLetters = (service: DeadLetterService) => {
   return useMutation({
     mutationFn: (deadLetterIds: string[]) =>
       redriveDeadLetters(service, deadLetterIds),
-    onSuccess: invalidate,
+    onSettled: invalidate,
   })
 }
 
@@ -210,6 +212,6 @@ export const useDiscardDeadLetter = (service: DeadLetterService) => {
       deadLetterId: string
       note: string
     }) => discardDeadLetter(service, deadLetterId, { note }),
-    onSuccess: invalidate,
+    onSettled: invalidate,
   })
 }

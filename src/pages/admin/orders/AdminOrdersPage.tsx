@@ -131,15 +131,34 @@ export function AdminOrdersPage() {
   const pageParam = Number(searchParams.get('page'))
   const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1
 
-  // 검색·상품·기간도 주소에 둔다 — 상세에 들어갔다 돌아와도 찾던 결과가 남는다.
-  const shipToName = searchParams.get('name') ?? undefined
-  const phone4 = searchParams.get('phone4') ?? undefined
+  // 검색·상품·기간도 주소에 둔다 — 상세에 들어갔다 돌아와도 찾던 결과가 남는다. 손으로 고친
+  // 주소(?phone4=12, 너무 긴 이름)는 서버가 400을 주니 없는 것으로 본다.
+  const nameParam = searchParams.get('name')
+  const shipToName =
+    nameParam && nameParam.length <= SHIP_TO_NAME_MAX ? nameParam : undefined
+  const phoneParam = searchParams.get('phone4')
+  const phone4 =
+    phoneParam && /^\d{4}$/.test(phoneParam) ? phoneParam : undefined
   const productId = searchParams.get('product') ?? undefined
   const period = pick<Period>(searchParams.get('period'), periods) ?? 'all'
   const [searchBy, setSearchBy] = useState<SearchBy>(
     phone4 !== undefined ? 'phone4' : 'name',
   )
   const [draft, setDraft] = useState(shipToName ?? phone4 ?? '')
+  // 주소의 검색 조건이 바뀌면(뒤로 가기·링크로 들어옴) 칸도 따라간다 — 안 그러면 칸과 결과가
+  // 어긋나고, 그대로 Enter를 누르면 옛 칸 값이 새 조건을 덮는다. 조건이 풀리면 고른 기준은 둔다.
+  const urlSearch =
+    phone4 !== undefined
+      ? `phone4:${phone4}`
+      : (shipToName && `name:${shipToName}`) || ''
+  const [syncedSearch, setSyncedSearch] = useState(urlSearch)
+  if (urlSearch !== syncedSearch) {
+    setSyncedSearch(urlSearch)
+    if (phone4 !== undefined || shipToName !== undefined) {
+      setSearchBy(phone4 !== undefined ? 'phone4' : 'name')
+      setDraft(phone4 ?? shipToName ?? '')
+    } else setDraft('')
+  }
   // 서버가 400을 줄 값은 보내지 않고 칸 아래에 알린다.
   const draftError =
     searchBy === 'phone4'
@@ -149,12 +168,17 @@ export function AdminOrdersPage() {
       : draft.trim().length > SHIP_TO_NAME_MAX
         ? `${SHIP_TO_NAME_MAX}자까지 입력할 수 있어요.`
         : undefined
-  // shortcut: 기간은 화면을 연 날 기준이다 — 자정을 넘겨 띄워 두면 '오늘'이 어제로 남는다. 문제가 되면 고를 때마다 다시 잡는다.
-  const [openedAt] = useState(() => Date.now())
-  const { data: products = [] } = useAdminProducts()
+  // 기간은 고른 순간을 기준으로 센다 — 자정을 넘겨 띄워 둔 채 '오늘'을 다시 고르면 그날로 잡힌다.
+  // 고른 뒤 쪽을 넘기는 동안엔 같은 값이라 조회 키가 흔들리지 않는다.
+  const [periodAt, setPeriodAt] = useState(() => Date.now())
+  const products = useAdminProducts()
+  // 상품 목록을 못 받으면 '모든 상품'만 남는데, 상품이 없는 것과 헷갈리지 않게 첫 항목에 적는다.
   const productOptions: DropdownOption<string | undefined>[] = [
-    { value: undefined, label: '모든 상품' },
-    ...products.map((product) => ({
+    {
+      value: undefined,
+      label: products.isError ? '모든 상품 (목록을 못 불러옴)' : '모든 상품',
+    },
+    ...(products.data ?? []).map((product) => ({
       value: product.productId,
       label: product.name,
     })),
@@ -165,7 +189,7 @@ export function AdminOrdersPage() {
     shipToName,
     shipToPhoneLast4: phone4,
     productId,
-    ...periodRange(period, openedAt),
+    ...periodRange(period, periodAt),
     page: page - 1,
     size: PAGE_SIZE,
   })
@@ -442,7 +466,10 @@ export function AdminOrdersPage() {
           size="medium"
           options={periodOptions}
           value={period}
-          onSelect={(next) => setParam('period', next)}
+          onSelect={(next) => {
+            setPeriodAt(Date.now())
+            setParam('period', next)
+          }}
         />
       </div>
 
