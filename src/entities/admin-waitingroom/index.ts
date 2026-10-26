@@ -2,6 +2,7 @@
 export {
   useAdmissionRates,
   useChangeAdmissionRate,
+  useSettingChanges,
   useWaitingroomStatus,
 } from './api/useAdminWaitingroom'
 export { useWaitingroomStatusHistory } from './api/useWaitingroomStatusHistory'
@@ -18,6 +19,8 @@ export type {
 } from './lib/admissionCapacity'
 export {
   isBraking,
+  settingChangeKindLabel,
+  settingChangeUnit,
   settingSourceLabel,
   WAITINGROOM_DEFAULTS,
   waitingroomRuntimeLabel,
@@ -28,5 +31,6 @@ export type {
   WaitingroomProductRate,
   WaitingroomProductStatus,
   WaitingroomSetting,
+  WaitingroomSettingChange,
   WaitingroomStatus,
 } from './model/types'

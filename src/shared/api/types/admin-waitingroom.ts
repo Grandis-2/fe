@@ -113,3 +113,30 @@ export type ProductCapRequest = { cap: number }
 
 /** PUT max-wait(1..86400) · leave-grace(250..1800) */
 export type SecondsRequest = { seconds: number }
+
+/** 바꾼 운영값 — 전역 초당 입장, 상품별 상한, 이탈 유예(초), 최대 대기 시간(초) */
+export type SettingChangeKind =
+  'GLOBAL_CREDIT' | 'PRODUCT_CREDIT' | 'LEAVE_GRACE' | 'MAX_WAIT'
+
+/** 운영값 변경 한 건 */
+export type SettingChange = {
+  at: string
+  /** 바꾼 관리자. 지금은 관리자 계정이 하나라 늘 admin */
+  by: string
+  kind: SettingChangeKind
+  /** PRODUCT_CREDIT이면 그 상품 id, 아니면 null */
+  productId: string | null
+  /** 바꾸기 전 값. 기본값을 쓰고 있었으면 null */
+  from: number | null
+  /** 바꾼 값. 기본값으로 되돌렸으면 null */
+  to: number | null
+  /** 권장 상한을 넘겨 확인을 받고 저장했다(전역 입장 속도에서만) */
+  confirmed: boolean
+}
+
+/** GET /admin/waitingroom/changes — 최신순, 30일·최대 1만 건 보관 */
+export type SettingChangesView = {
+  items: SettingChange[]
+  /** 마지막 쪽이면 null */
+  nextCursor: string | null
+}

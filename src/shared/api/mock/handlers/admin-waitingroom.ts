@@ -11,6 +11,9 @@ import type {
   ProductCapRequest,
   ProductStatus,
   SecondsRequest,
+  SettingChange,
+  SettingChangeKind,
+  SettingChangesView,
   WaitingroomSetting,
   WaitingroomStatusView,
 } from '../../types'
@@ -183,7 +186,39 @@ const readInt = async (
 const outOfRange = (field: string, min: number, max: number) =>
   invalid([{ field, message: `${min}..${max} 범위의 정수여야 합니다.` }])
 
+// 운영값 변경 이력 — 서버처럼 같은 값을 다시 저장하거나 이미 기본값인 걸 되돌린 건 남기지 않는다.
+const changes: SettingChange[] = []
+function record(
+  kind: SettingChangeKind,
+  from: number | null,
+  to: number | null,
+  productId: string | null = null,
+  confirmed = false,
+) {
+  if (from === to) return
+  changes.unshift({
+    at: new Date().toISOString(),
+    by: 'admin',
+    kind,
+    productId,
+    from,
+    to,
+    confirmed,
+  })
+}
+
 export const adminWaitingroomHandlers: RequestHandler[] = [
+  // 목 커서는 다음 시작 위치를 숫자로 담는다 — 실서버 커서는 해석하지 않는다.
+  http.get(url(`${BASE}/changes`), ({ request }) => {
+    const params = new URL(request.url).searchParams
+    const start = Number(params.get('cursor') ?? 0)
+    const size = Number(params.get('size') ?? 20)
+    const end = start + size
+    return ok<SettingChangesView>({
+      items: changes.slice(start, end),
+      nextCursor: end < changes.length ? String(end) : null,
+    })
+  }),
   http.get(url(`${BASE}/status`), () => ok(status())),
   http.get(url(`${BASE}/admission-rate`), () => ok(view())),
 
@@ -216,10 +251,18 @@ export const adminWaitingroomHandlers: RequestHandler[] = [
           ...limits,
         })
     }
+    record(
+      'GLOBAL_CREDIT',
+      state.globalCredit,
+      value,
+      null,
+      value > RECOMMENDED_MAX && body?.confirm === true,
+    )
     state.globalCredit = value
     return ok(view())
   }),
   http.delete(url(`${BASE}/admission-rate`), () => {
+    record('GLOBAL_CREDIT', state.globalCredit, null)
     state.globalCredit = null
     return ok(view())
   }),
@@ -230,14 +273,28 @@ export const adminWaitingroomHandlers: RequestHandler[] = [
       const field: keyof ProductCapRequest = 'cap'
       const value = await readInt(request, field, 1, MAX_GLOBAL_CREDIT)
       if (value === null) return outOfRange(field, 1, MAX_GLOBAL_CREDIT)
-      state.caps.set(String(params.productId), value)
+      const productId = String(params.productId)
+      record(
+        'PRODUCT_CREDIT',
+        state.caps.get(productId) ?? null,
+        value,
+        productId,
+      )
+      state.caps.set(productId, value)
       return ok(view())
     },
   ),
   http.delete(
     url(`${BASE}/products/:productId/admission-rate`),
     ({ params }) => {
-      state.caps.delete(String(params.productId))
+      const productId = String(params.productId)
+      record(
+        'PRODUCT_CREDIT',
+        state.caps.get(productId) ?? null,
+        null,
+        productId,
+      )
+      state.caps.delete(productId)
       return ok(view())
     },
   ),
@@ -246,10 +303,12 @@ export const adminWaitingroomHandlers: RequestHandler[] = [
     const field: keyof SecondsRequest = 'seconds'
     const value = await readInt(request, field, 1, 86_400)
     if (value === null) return outOfRange(field, 1, 86_400)
+    record('MAX_WAIT', state.maxWait, value)
     state.maxWait = value
     return ok(view())
   }),
   http.delete(url(`${BASE}/max-wait`), () => {
+    record('MAX_WAIT', state.maxWait, null)
     state.maxWait = null
     return ok(view())
   }),
@@ -258,10 +317,12 @@ export const adminWaitingroomHandlers: RequestHandler[] = [
     const field: keyof SecondsRequest = 'seconds'
     const value = await readInt(request, field, 250, 1_800)
     if (value === null) return outOfRange(field, 250, 1_800)
+    record('LEAVE_GRACE', state.leaveGrace, value)
     state.leaveGrace = value
     return ok(view())
   }),
   http.delete(url(`${BASE}/leave-grace`), () => {
+    record('LEAVE_GRACE', state.leaveGrace, null)
     state.leaveGrace = null
     return ok(view())
   }),
