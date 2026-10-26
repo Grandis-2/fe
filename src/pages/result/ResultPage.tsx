@@ -3,7 +3,14 @@ import { useMemo } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router'
 
 import { useOrder } from '@entities/order'
-import { useReservation, type ReservationDetail } from '@entities/preorder'
+import {
+  SETTLE_DELAYED_NOTICE,
+  cancelCause,
+  useReservation,
+  useReservationHistory,
+  type CancelCause,
+  type ReservationDetail,
+} from '@entities/preorder'
 import { orderToDrafts, reservationToDraft } from '@features/product-purchase'
 import {
   HOME_PATH,
@@ -15,12 +22,14 @@ import {
 } from '@shared/config/routes'
 import { shortId } from '@shared/lib/shortId'
 import { useDeadline } from '@shared/lib/useDeadline'
-import { ActionButton, InlineAlert, PollingNotice } from '@shared/ui'
+import { ActionButton, PollingNotice } from '@shared/ui'
 import {
   OrderReceipt,
   OrderStatusMark,
   PurchaseDeadline,
   PurchaseSteps,
+  ReservationTimeline,
+  usePayableAlert,
   type OrderReceiptRow,
   type OrderStatusTone,
 } from '@widgets/order-result'
@@ -82,7 +91,7 @@ const content: Record<
     badge: '구매 확정 대기',
     heading: '예약이 접수되었어요',
     description:
-      '주문이 몰려 결제까지 완료되지 못했어요. 예약 순서는 확보되었으니, 24시간 안에 직접 구매를 확정해 주세요.',
+      '예약 등록이 끝났어요. 예약 순서는 확보되었으니, 24시간 안에 구매를 확정해 주세요.',
     // 예약 id가 있으면 그 예약의 결제로 보낸다(아래 primaryTo).
     primary: { label: '지금 구매 확정하기', to: mypagePath('preorder-check') },
     secondary: {
@@ -123,7 +132,7 @@ const content: Record<
 }
 
 // 예약 접수 화면은 예약의 화면 단계에 따라 상단과 꺼진 버튼 문구를 바꾼다. 구매를 확정할 수 있는 단계는
-// content.preorder 그대로다. 외부 등록이 5초 안에 끝나지 않아 넘어온 예약은 처리 중에서 시작하고, 결제 기한이
+// content.preorder 그대로다. 접수 직후엔 처리 중(외부 등록)에서 시작해 등록이 끝나면 구매 확정이 켜지고, 결제 기한이
 // 지나면 서버가 만료 취소를 시작해 기한 지남 → 취소 중 → 취소 완료로 간다.
 type DisplayStatus = ReservationDetail['displayStatus']
 type PreorderStage = Pick<
@@ -138,10 +147,14 @@ const registering: PreorderStage = {
   badge: '예약 처리 중',
   heading: '예약 순서를 확보했어요',
   description:
-    '주문이 몰려 예약 등록이 조금 늦어지고 있어요. 등록이 끝나면 이 화면에서 바로 구매를 확정할 수 있고, 화면을 닫아도 예약 순서는 그대로예요.',
+    '예약 시스템에 등록하고 있어요. 등록이 끝나면 이 화면에서 바로 구매를 확정할 수 있고, 화면을 닫아도 돼요.',
   note: content.preorder.note,
   disabledLabel: '예약 처리 중이에요',
 }
+// 외부 등록은 평소 1초 안팎이다. 접수 뒤 이만큼 지나도 처리 중이면 늦다고 먼저 알린다 — 60초 뒤엔 지연 안내가 더 뜬다.
+const SLOW_REGISTER_MS = 5_000
+const SLOW_REGISTER_DESCRIPTION =
+  '외부 예약 시스템 응답이 평소보다 늦어요. 실패하면 자동으로 다시 시도하는 중이니 화면을 닫아도 돼요.'
 const canceled = {
   tone: 'failure',
   note: undefined,
@@ -164,12 +177,12 @@ const preorderStage: Partial<Record<DisplayStatus, PreorderStage>> = {
     heading: '예약을 취소하고 있어요',
     description: '취소가 끝나면 사전예약 내역에도 반영돼요.',
   },
+  // 이력을 받기 전·못 받았을 때. 받으면 아래 canceledBy로 누가 왜 취소했는지 바꾼다.
   CANCELED: {
     ...canceled,
     badge: '예약 취소',
     heading: '예약이 취소되었어요',
-    description:
-      '구매 확정 기한이 지났거나 취소를 요청한 예약이에요. 다시 예약하려면 사전예약 페이지에서 새로 신청해 주세요.',
+    description: '다시 예약하려면 사전예약 페이지에서 새로 신청해 주세요.',
   },
   RESERVED: {
     tone: 'success',
@@ -181,9 +194,43 @@ const preorderStage: Partial<Record<DisplayStatus, PreorderStage>> = {
   },
 }
 
-// 외부 등록이 끝내 실패하면(재처리 대기) 처리 중으로 남는다. 관리자 대조가 '등록 지연'으로 잡는 시간
-// (RECONCILE_GRACE_MS)과 같게 맞춰, 사용자와 운영자가 같은 시점에 지연을 본다.
-const REGISTER_DELAYED_MS = 60_000
+// 취소된 예약 — 취소를 시작한 이력으로 문구를 고른다. 시스템 사정(등록 실패)을 사용자 탓처럼 말하지 않는다.
+const RETRY_HINT = '다시 예약하려면 사전예약 페이지에서 새로 신청해 주세요.'
+const canceledBy: Record<
+  CancelCause,
+  Pick<PreorderStage, 'badge' | 'heading' | 'description'>
+> = {
+  USER: {
+    badge: '예약 취소',
+    heading: '요청하신 취소가 완료됐어요',
+    description: RETRY_HINT,
+  },
+  EXPIRY: {
+    badge: '기한 만료',
+    heading: '구매 확정 기한이 지나 취소됐어요',
+    description: `24시간 안에 구매를 확정하지 않은 예약은 자동으로 취소돼요. ${RETRY_HINT}`,
+  },
+  REGISTER_FAILED: {
+    badge: '예약 실패',
+    heading: '예약 등록 중 취소됐어요',
+    description: `예약 시스템 등록이 끝나기 전에 운영자가 예약을 취소했어요. 결제된 금액은 없어요. ${RETRY_HINT}`,
+  },
+  ADMIN: {
+    badge: '예약 취소',
+    heading: '운영자가 예약을 취소했어요',
+    description: `결제한 예약이었다면 결제 금액은 환불돼요. ${RETRY_HINT}`,
+  },
+}
+
+// 예약을 끝내 받지 못했다(주소의 예약 id가 틀렸거나 남의 예약이면 404) — 처리 중이라고 하지 않는다.
+const loadFailed: PreorderStage = {
+  tone: 'failure',
+  badge: '확인 필요',
+  heading: '예약을 불러오지 못했어요',
+  description: '사전예약 내역에서 예약 상태를 확인해 주세요.',
+  note: undefined,
+  disabledLabel: '예약을 확인할 수 없어요',
+}
 
 export function ResultPage() {
   const [searchParams] = useSearchParams()
@@ -203,22 +250,53 @@ export function ResultPage() {
   const orderQuery = useOrder(isPaid ? orderId : '')
   const reservation = reservationQuery.data
   const order = orderQuery.data
-  // 예약 접수 화면의 단계. 예약을 받기 전에도 처리 중으로 둔다 — 5초 안에 등록됐으면 결제로 바로 갔으니,
-  // 여기 온 예약은 대개 처리 중이다.
+  usePayableAlert(reservation?.displayStatus)
+  const settleDelayed =
+    reservationQuery.timedOut && reservation
+      ? SETTLE_DELAYED_NOTICE[reservation.displayStatus]
+      : undefined
+  // 예약 접수 화면의 단계. 예약을 받는 중에도 처리 중으로 둔다 — 접수 직후 들어오므로 대개 처리 중이다.
+  // 끝내 받지 못했으면(isError, 데이터 없음) 단계를 정하지 않고 불러오지 못했다고 알린다. 이미 받은 뒤 갱신만 실패하면
+  // 받은 단계를 그대로 두고 PollingNotice가 알린다.
+  const isPreorderView = status === 'preorder' && preorderId !== ''
+  const loadError =
+    isPreorderView && reservationQuery.isError && reservation === undefined
   const stage =
-    status === 'preorder' && preorderId !== ''
+    isPreorderView && !loadError
       ? (reservation?.displayStatus ?? 'PROCESSING')
       : undefined
-  const stageContent = stage && preorderStage[stage]
+  // 상태 이력 — 예약이 바뀔 때마다 따라 받는다. 처리 기록과 취소 사유가 같이 쓴다.
+  const history = useReservationHistory(
+    isPreorderView ? preorderId : '',
+    reservation?.version,
+  )
+  const cancel =
+    stage === 'CANCELED' && history.data ? cancelCause(history.data) : null
+  // 취소된 예약의 이력을 아직 못 받았다(첫 조회, 또는 예약이 바뀌어 이전 이력을 보여 주는 중) — 일반 문구를 띄웠다가
+  // 원인 문구로 바뀌지 않게 제목 · 설명을 자리만 잡아 둔다. 이력 조회가 실패하면 일반 문구로 둔다.
+  const cancelPending =
+    stage === 'CANCELED' && (history.isPending || history.isPlaceholderData)
+  const isRegistering = stage === 'RECEIVED' || stage === 'PROCESSING'
+  const slowRegister = useDeadline(
+    isRegistering && reservation !== undefined,
+    SLOW_REGISTER_MS,
+    reservation ? Date.parse(reservation.createdAt) : undefined,
+  ).passed
+  const stageContent = loadError
+    ? loadFailed
+    : stage && {
+        ...preorderStage[stage],
+        ...(cancel && canceledBy[cancel.cause]),
+        // 60초가 지나면(timedOut) 자동 재시도가 끝났을 수 있다 — 아래 지연 안내와 말이 어긋나지 않게 덮지 않는다.
+        ...(slowRegister &&
+          !reservationQuery.timedOut && {
+            description: SLOW_REGISTER_DESCRIPTION,
+          }),
+      }
   const { tone, badge, heading, description, primary, secondary, note } = {
     ...content[status],
     ...stageContent,
   }
-  const isRegisterDelayed = useDeadline(
-    reservation?.status === 'PENDING_SYNC',
-    REGISTER_DELAYED_MS,
-    reservation && Date.parse(reservation.createdAt),
-  ).passed
   // useCountdown이 매 렌더 새 Date로 타이머를 다시 걸지 않게 값이 바뀔 때만 만든다.
   const paymentDueAt = reservation?.paymentDueAt
   const dueAt = useMemo(
@@ -286,7 +364,8 @@ export function ResultPage() {
     status === 'failed' && preorderId
       ? { label: '사전예약 내역 보기', to: mypagePath('preorder-check') }
       : secondary
-  const primaryDisabled = stage !== undefined && !PURCHASABLE.includes(stage)
+  const primaryDisabled =
+    loadError || (stage !== undefined && !PURCHASABLE.includes(stage))
 
   return (
     <div
@@ -298,18 +377,30 @@ export function ResultPage() {
         <div className={styles.hero}>
           <OrderStatusMark tone={tone} />
           <span className={styles.badge[tone]}>{badge}</span>
-          <h1 className={styles.heading}>{heading}</h1>
-          <div className={styles.description}>{description}</div>
+          <h1
+            className={cancelPending ? styles.headingPending : styles.heading}
+          >
+            {heading}
+          </h1>
+          <div
+            className={
+              cancelPending ? styles.descriptionPending : styles.description
+            }
+          >
+            {description}
+          </div>
         </div>
 
-        {/* 처리·승인을 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 승인은 70초가 지나면 멈춘다. */}
-        <PollingNotice query={reservationQuery} />
-        {isRegisterDelayed && (
-          <InlineAlert status="warning">
-            등록이 평소보다 오래 걸리고 있어요. 예약 순서는 그대로이고, 등록이
-            끝나면 사전예약 내역에도 표시돼요.
-          </InlineAlert>
-        )}
+        {/* 처리·승인을 기다리며 다시 묻는 중에 실패하고 있으면 알린다. 예약 처리는 정한 시간(외부 등록은 접수 후 60초),
+            승인은 70초가 지나면 멈춘다. */}
+        <PollingNotice
+          query={reservationQuery}
+          timeout={
+            settleDelayed
+              ? { ...settleDelayed, onRecheck: reservationQuery.recheck }
+              : null
+          }
+        />
         <PollingNotice
           query={orderQuery}
           timeout={
@@ -327,6 +418,20 @@ export function ResultPage() {
         {status === 'preorder' && dueAt && <PurchaseDeadline dueAt={dueAt} />}
         {status === 'preorder' && reservation && (
           <PurchaseSteps reservation={reservation} />
+        )}
+        {status === 'preorder' && history.data && (
+          <ReservationTimeline
+            events={history.data}
+            registering={
+              isRegistering && (reservationQuery.timedOut ? 'slow' : 'pending')
+            }
+          />
+        )}
+        {cancel?.reason && cancel.cause !== 'USER' && (
+          <div className={styles.failure}>
+            <span className={styles.failureTitle}>취소 사유</span>
+            <span className={styles.failureReason}>{cancel.reason}</span>
+          </div>
         )}
 
         {status === 'failed' && (

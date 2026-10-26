@@ -311,13 +311,15 @@ export async function reprocessAdminReservations(
   signal?: AbortSignal,
 ) {
   const wanted = preorderIds && new Set(preorderIds)
-  const deadJobs = await fetchAllPages((page) =>
-    getAdminSyncJobs({
-      jobType: 'REGISTER',
-      status: 'DEAD_LETTER',
-      page,
-      size: PAGE_SIZE_MAX,
-    }),
+  const deadJobs = await fetchAllPages(
+    (page) =>
+      getAdminSyncJobs({
+        jobType: 'REGISTER',
+        status: 'DEAD_LETTER',
+        page,
+        size: PAGE_SIZE_MAX,
+      }),
+    ({ syncJobId }) => syncJobId,
   )
   return reprocessSyncJobs(
     deadJobs.filter((job) => !wanted || wanted.has(job.preorderId)),
@@ -350,13 +352,16 @@ const pause = (ms: number, signal?: AbortSignal) =>
  * 일괄 재처리는 상품으로 거를 수 없어 실패 예약을 먼저 받아 작업 id를 모은다.
  */
 export async function reprocessFailedRegistrations(productId?: string) {
-  const failed = await fetchAllPages((page) =>
-    getAdminReservations({
-      productId,
-      registerJobStatus: 'DEAD_LETTER',
-      page,
-      size: PAGE_SIZE_MAX,
-    }),
+  if (!productId) return reprocessAdminReservations()
+  const failed = await fetchAllPages(
+    (page) =>
+      getAdminReservations({
+        productId,
+        registerJobStatus: 'DEAD_LETTER',
+        page,
+        size: PAGE_SIZE_MAX,
+      }),
+    ({ preorderId }) => preorderId,
   )
   return reprocessSyncJobs(targetsOf(failed))
 }

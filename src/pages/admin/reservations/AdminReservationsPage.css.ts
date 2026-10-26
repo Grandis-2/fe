@@ -34,6 +34,9 @@ export const tabCount = style({
   opacity: 0.8,
 })
 
+// 상품을 바꾼 직전 — 새 상품 숫자를 받는 동안 이전 숫자를 흐리게 남긴다.
+export const tabCountStale = style([tabCount, { opacity: 0.35 }])
+
 // 고른 건수와 재처리 단추 — 표 바로 위에 붙어 무엇을 보낼지 보인다.
 export const selectionBar = style({
   display: 'flex',

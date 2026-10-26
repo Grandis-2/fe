@@ -36,5 +36,7 @@ test('J2 휴대폰에서 하단 탭으로 들어가 사전예약을 접수하고
   // 데스크톱 옵션 패널의 버튼은 숨고 하단 고정바의 버튼만 남는다.
   await preorderSubmitButton(page).click()
 
-  await expect(page).toHaveURL(/\/payment\?preorderId=/, { timeout: 15_000 })
+  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+    timeout: 15_000,
+  })
 })

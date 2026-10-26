@@ -21,7 +21,7 @@ import {
   type ProductPaymentCardItem,
 } from '@entities/product'
 import { getErrorMessage } from '@shared/api/client'
-import { paymentPath } from '@shared/config/routes'
+import { mypagePath, paymentPath, resultPath } from '@shared/config/routes'
 import { formatDotDateMinute } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { toggleInSet } from '@shared/lib/toggleInSet'
@@ -224,7 +224,8 @@ export function MypagePreorder() {
   const confirmCancel = (reservation: Reservation) =>
     openModal({
       title: '예약을 취소할까요?',
-      description: `${reservation.productTitle} · ${reservation.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.`,
+      // 결제한 예약은 환불을 마쳐야 취소가 끝난다.
+      description: `${reservation.productTitle} · ${reservation.optionTitle}\n취소하면 순번이 사라지고, 다시 신청하려면 대기열부터 다시 서야 해요.${reservation.status === 'RESERVED' ? '\n결제한 금액은 환불되고, 환불이 끝나면 취소가 완료돼요.' : ''}`,
       confirmLabel: '예약 취소',
       cancelLabel: '닫기',
       onConfirm: () => {
@@ -284,7 +285,37 @@ export function MypagePreorder() {
             </ActionButton>
           </div>
         ) : (
-          cancelButton(reservation) || undefined
+          cancelButton(reservation) ||
+          // 결제한 예약은 환불을 마쳐야 취소가 끝난다 — 환불이 실패하면 취소 중에 머물고, 실패 안내는 주문 내역이 띄운다.
+          (reservation.status === 'CANCELING' &&
+            reservation.reservedAt !== null && (
+              <div className={styles.refund}>
+                <InlineAlert status="info">
+                  결제한 금액을 환불하고 있어요. 환불이 끝나면 취소가 완료되고,
+                  환불 결과는 주문 내역에서도 볼 수 있어요.
+                </InlineAlert>
+                <Button
+                  variant="outline"
+                  size="small"
+                  onClick={() => navigate(mypagePath('history'))}
+                >
+                  주문 내역 보기
+                </Button>
+              </div>
+            )) ||
+          // 끝난 예약은 예약 접수 화면에서 왜 끝났는지(원인 · 취소 사유)와 처리 기록을 본다 — 카드마다 이력을 묻지 않는다.
+          (ENDED.includes(reservation.displayStatus) && (
+            <Button
+              variant="outline"
+              size="small"
+              onClick={() =>
+                navigate(resultPath('preorder', reservation.preorderId))
+              }
+            >
+              처리 기록 보기
+            </Button>
+          )) ||
+          undefined
         )
       }
     >

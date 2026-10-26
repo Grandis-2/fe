@@ -1,4 +1,4 @@
-import { expect, fn } from 'storybook/test'
+import { expect, fn, waitFor } from 'storybook/test'
 
 import { MobileMenu } from './MobileMenu'
 
@@ -16,12 +16,15 @@ type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
   play: async ({ canvas, userEvent, args }) => {
-    await expect(canvas.getByRole('link', { name: /스마트폰/ })).toBeVisible()
+    // 열 때 투명(opacity 0)에서 나타나는 애니메이션이 있어 다 보일 때까지 기다린다.
+    await waitFor(() =>
+      expect(canvas.getByRole('link', { name: /스마트폰/ })).toBeVisible(),
+    )
 
-    await userEvent.click(canvas.getByRole('tab', { name: '이벤트' }))
-    await expect(
-      canvas.getByText('아이폰 18 Pro, Pro Max 사전예약 오픈'),
-    ).toBeVisible()
+    const lucky = canvas.getByRole('tab', { name: 'LUCKY' })
+    await userEvent.click(lucky)
+    await expect(lucky).toHaveAttribute('aria-selected', 'true')
+    await expect(canvas.queryByRole('link', { name: /스마트폰/ })).toBeNull()
 
     await userEvent.click(canvas.getByRole('button', { name: '메뉴 닫기' }))
     await expect(args.onClose).toHaveBeenCalledTimes(1)

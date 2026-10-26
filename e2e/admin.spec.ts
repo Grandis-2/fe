@@ -72,8 +72,12 @@ test('M7 회원이 결제한 주문을 관리자가 배송 완료까지 처리�
   // 관리자로 로그인하면 회원 로그인은 풀린다.
   await loginAsAdmin(page)
   await openAdminMenu(page, '주문 관리')
-  await page.getByLabel('주문 id로 열기').fill(orderId)
-  await page.getByRole('button', { name: '열기', exact: true }).click()
+  // 표는 최신 주문부터라 방금 결제한 주문이 첫 쪽에 있다(주문번호 = id 끝 8자리).
+  await page
+    .getByRole('button', {
+      name: `주문 ${orderId.slice(-8).toUpperCase()} 상세 보기`,
+    })
+    .click()
 
   for (const step of ['배송 준비 시작', '포장 완료', '출고', '배송 완료']) {
     await page.getByRole('button', { name: step, exact: true }).click()
