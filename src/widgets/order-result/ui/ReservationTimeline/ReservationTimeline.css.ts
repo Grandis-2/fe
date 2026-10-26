@@ -61,9 +61,15 @@ export const dot = styleVariants({
   },
 })
 
+// 줄마다 따로 그리드라 칸이 맞지 않는다 — 시각 칸 너비를 고정해 '10:00:26'이든 '지금'이든 이름이 같은 자리에서 시작한다.
+// 7ch = 'HH:MM:SS'(고정폭 숫자 6자리 + 숫자보다 좁은 콜론 2개)가 들어가는 너비.
 export const time = style([
   typography.body.caption,
-  { color: color.text.tertiary, fontVariantNumeric: 'tabular-nums' },
+  {
+    width: '7ch',
+    color: color.text.tertiary,
+    fontVariantNumeric: 'tabular-nums',
+  },
 ])
 
 export const label = style([typography.body.sub, { color: color.text.primary }])

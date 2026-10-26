@@ -30,6 +30,7 @@ import {
   type DaumPostcodeAddress,
 } from '@features/address-search'
 import { startDrawEntryPayment, startOrderPayment } from '@features/payment'
+import { usePreorderQueueStore } from '@features/preorder-queue'
 import {
   cartLineToDraft,
   drawToDraft,
@@ -49,6 +50,7 @@ import { formatWon } from '@shared/lib/formatNumber'
 import { formatPhoneInput, toPhoneDigits } from '@shared/lib/formatPhone'
 import { useFormFields } from '@shared/lib/useFormFields'
 import { useIdempotencyKey } from '@shared/lib/useIdempotencyKey'
+import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import {
   ActionButton,
@@ -291,6 +293,22 @@ export function PaymentPage() {
     form.markSubmitted()
     setPaymentError(null)
     if (!form.requiredFilled || !payable) return
+    // 대기열에 서 있는 동안은 결제하지 않는다 — 결제하는 사이 차례가 오면 입장권(2분 안팎)을 놓치거나, 결제 승인을
+    // 확인하는 화면이 상품 페이지로 넘어가 승인 결과를 버린다. 예약을 마치거나 대기열에서 나가면 결제할 수 있다.
+    const queueTicket = usePreorderQueueStore.getState().ticket
+    if (queueTicket) {
+      openModal({
+        title: '대기열에 서 있어요',
+        description: `'${queueTicket.productName}' 대기열에 서 있는 동안은 결제할 수 없어요.\n예약을 마치거나 대기열에서 나간 뒤 결제해 주세요.`,
+        confirmLabel: '대기열 보기',
+        cancelLabel: '닫기',
+        onConfirm: () => {
+          closeModal()
+          usePreorderQueueStore.getState().reopen()
+        },
+      })
+      return
+    }
 
     try {
       const shipTo = {

@@ -1,4 +1,4 @@
-import { fn } from 'storybook/test'
+import { expect, fn } from 'storybook/test'
 
 import { QueueCard } from './QueueCard'
 
@@ -20,6 +20,10 @@ export const Default: Story = {
     totalWaitingCount: '373',
     admitPerSecond: '8명',
     onLeave: fn(),
+  },
+  play: async ({ canvas }) => {
+    const progress = canvas.getByRole('progressbar', { name: '대기 진행률' })
+    await expect(progress).toHaveAttribute('aria-valuenow', '65')
   },
 }
 

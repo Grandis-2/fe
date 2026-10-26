@@ -127,9 +127,12 @@ export async function loginWithKakao(
   body: KakaoCallbackRequest,
 ): Promise<Pick<SessionState, 'profileComplete'>> {
   const session = await postKakaoCallback(body)
+  // 다른 회원으로 바뀔 수 있다 — 세션엔 회원 id가 없어 비교할 수 없으니 앞 세션을 먼저 지워 그 회원의 캐시를
+  // 비운다(onSessionCleared). 세션이 없었으면 아무 일도 없다.
+  useSessionStore.getState().clearSession()
   useSessionStore.getState().setSession(session)
   // 가입 진행 중 세션은 알리지 않는다 — 받은 탭은 /signup 밖이라 RootLayout이 가입 취소로
   // 보고 로그아웃시켜 버린다.
-  if (session.profileComplete) broadcastSessionUpdated(session)
+  if (session.profileComplete) broadcastSessionUpdated(session, true)
   return { profileComplete: session.profileComplete }
 }

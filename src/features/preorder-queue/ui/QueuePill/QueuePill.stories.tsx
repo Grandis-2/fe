@@ -1,4 +1,4 @@
-import { fn } from 'storybook/test'
+import { expect, fn } from 'storybook/test'
 
 import { QueuePill } from './QueuePill'
 
@@ -17,6 +17,7 @@ const queue = {
   myOrder: 131,
   waitTime: '약 5분',
   moveIn: 5,
+  checking: false,
   reopen: fn(),
 } as const
 
@@ -34,5 +35,14 @@ export const Mine: Story = {
   args: {
     productName: '아이폰 18 Pro',
     queue: { ...queue, status: 'mine', myOrder: 1, moveIn: 3 },
+  },
+}
+
+// 누른 뒤 0.5초가 지나도 서버 답이 없다 — 대기열을 띄우지 않고 확인 중임만 알린다.
+export const Checking: Story = {
+  args: { productName: '아이폰 18 Pro', queue: { ...queue, checking: true } },
+  play: async ({ canvas }) => {
+    await expect(canvas.getByRole('status')).toHaveTextContent('입장 확인 중…')
+    await expect(canvas.queryByRole('button')).toBeNull()
   },
 }

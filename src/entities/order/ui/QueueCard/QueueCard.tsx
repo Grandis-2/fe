@@ -32,7 +32,8 @@ export function QueueCard({
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
       <div className={styles.orderGroup}>
         <span className={styles.label}>나의 대기 순서</span>
-        <div className={styles.orderRow}>
+        {/* 순번이 바뀌면 숫자와 '번'만 묶어 읽어 준다 — 예상 시간·전체 인원까지 넣으면 몇 초마다 길게 읽혀 시끄럽다. */}
+        <div className={styles.orderRow} aria-live="polite" aria-atomic="true">
           <span className={styles.orderNumber}>{myOrderNumber}</span>
           <span className={styles.orderUnit}>번</span>
         </div>
@@ -41,7 +42,14 @@ export function QueueCard({
         </span>
       </div>
 
-      <div className={styles.progressTrack}>
+      <div
+        className={styles.progressTrack}
+        role="progressbar"
+        aria-label="대기 진행률"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(clampedPercent)}
+      >
         <div
           className={styles.progressFill}
           style={{ width: `${clampedPercent}%` }}

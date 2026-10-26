@@ -1,4 +1,4 @@
-import { http } from 'msw'
+import { delay, http } from 'msw'
 
 import { batchFor, preorders, saveOrderDb } from '../fixtures/preorder'
 import { products } from '../fixtures/product'
@@ -24,6 +24,19 @@ const TICKET_LIFETIME_SECONDS = 120
 const REPLAY_WINDOW_SECONDS = 600
 // 예상 시간을 모를 때 서버가 주는 값.
 const UNKNOWN_ETA = 450
+
+// 새 접수의 응답만 늦춘다 — 예약은 먼저 저장해 '접수는 됐는데 응답을 못 받음'을 만든다. 요청 타임아웃(10초)보다 길게
+// 주면(예: 12000) 첫 요청은 응답 없음(status 0)으로 끝나고, 앱이 같은 키로 한 번 다시 보내 기존 예약을 받는다(같은 내용
+// 재전송). 재전송은 아래 replay 분기라 늦추지 않는다. .env.local의 VITE_MOCK_SUBMIT_DELAY_MS, E2E는 sessionStorage로 켠다.
+const submitDelayMs = () => {
+  try {
+    const value = Number(sessionStorage.getItem('mock-submit-delay-ms'))
+    if (value > 0) return value
+  } catch {
+    // 저장소를 못 쓰면 .env 값을 쓴다.
+  }
+  return Number(import.meta.env.VITE_MOCK_SUBMIT_DELAY_MS) || 0
+}
 
 type Entry = {
   productId: string
@@ -411,6 +424,8 @@ export const waitingroomHandlers: RequestHandler[] = [
     }
     preorders.push(record)
     saveOrderDb()
+    const delayMs = submitDelayMs()
+    if (delayMs > 0) await delay(delayMs)
     const result = accepted(record, false)
     const response = ok(result, 202)
     response.headers.set('Location', result.statusUrl)

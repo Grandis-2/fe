@@ -22,7 +22,12 @@ type AnalyticsEvents = {
   // 사전예약 퍼널 — 클릭 → (대기열 입장) → 접수 → 결제 시작 → 결제 완료
   'Preorder Apply Clicked': { productId: string; queued: boolean }
   'Preorder Queue Admitted': { productId: string }
-  'Preorder Submitted': { productId: string; preorderId: string }
+  'Preorder Submitted': {
+    productId: string
+    preorderId: string
+    // 5초 안에 외부 등록이 끝나 결제로 바로 갔는지.
+    registered: boolean
+  }
   'Preorder Payment Started': { preorderId: string; orderId: string }
   'Preorder Paid': { preorderId: string; orderId: string }
 }

@@ -28,7 +28,7 @@ npm run e2e               # Playwright E2E (e2e/*.spec.ts) — MSW를 켠 개발
 
 - `npm run test`는 순수 로직 단위 테스트(`src/**/*.test.ts`, node)만 돈다 — 결제 승인처럼 돈·재시도가 걸린 로직에 둔다. 화면 검증은 `npm run lint` + `npm run build` + 브라우저 확인.
 - 목 결제 승인을 느리게 하려면 `.env.local`에 `VITE_MOCK_CONFIRM_DELAY_MS=15000` — 승인 중 폴링·재전송·새로고침을 재현한다.
-- 목 외부 등록(접수 → 구매 확정 가능, 기본 5초)을 느리게 하려면 `VITE_MOCK_REGISTER_DELAY_MS=20000` — 등록 지연 안내·처리 기록을 재현한다.
+- 목 외부 등록(접수 → 구매 확정 가능)은 기본 2초라 접수하면 결제로 바로 간다(상품 페이지가 등록을 5초까지 기다린다). 5초를 넘기는 경로(예약 접수 화면의 처리 중 → 구매 확정 가능, 지연 안내·처리 기록)는 `VITE_MOCK_REGISTER_DELAY_MS=20000`으로 재현한다.
 - 커밋 시 husky가 commitlint(`feat:`/`fix:`/`test:` …)와 lint-staged(eslint --fix, prettier)를 돌린다.
 - MSW는 dev에서 기본 on이다. 실제 API에 붙이려면 `.env.local`에 `VITE_USE_MSW=false`.
 

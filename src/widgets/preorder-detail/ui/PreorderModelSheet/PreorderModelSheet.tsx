@@ -34,11 +34,10 @@ export type PreorderModelSheetProps = {
   /** 오픈 알림을 신청한 모델 id */
   subscribedIds: ReadonlySet<string>
   onReserve: (model: PreorderModel) => void
-  /** 이미 예약한 모델(상품 id → 진행 중인 내 예약). 이 모델은 예약하기 대신 그 예약 버튼을 보인다 */
-  reservations: ReadonlyMap<
-    string,
-    Pick<Reservation, 'preorderId' | 'displayStatus'>
-  >
+  /** 이미 예약한 모델(상품 id → 진행 중인 내 예약). 이 모델은 예약하기 대신 그 예약 버튼을 보인다. 받는 중이면 undefined라 예약하기를 막는다 */
+  reservations:
+    | ReadonlyMap<string, Pick<Reservation, 'preorderId' | 'displayStatus'>>
+    | undefined
   onOpenReservation: (
     reservation: Pick<Reservation, 'preorderId' | 'displayStatus'>,
   ) => void
@@ -81,7 +80,7 @@ export function PreorderModelSheet({
     }
     // 서버는 회원·모델마다 예약 하나라 다시 예약할 수 없다 — 줄을 서지 않고 그 예약으로 간다.
     // 마감 뒤에도 구매 확정이 남은 예약이 있어 일반 구매보다 먼저 보인다.
-    const reservation = reservations.get(model.productId)
+    const reservation = reservations?.get(model.productId)
     if (reservation) {
       return (
         <Button
@@ -97,8 +96,11 @@ export function PreorderModelSheet({
       <Button
         rounded
         className={styles.action}
-        // 홍보가 열려 있어도 모델마다 자기 예약 시간(오픈~마감) 밖이면 막는다.
-        disabled={status === 'live' && !isModelReservable(preorder, model)}
+        // 홍보가 열려 있어도 모델마다 자기 예약 시간(오픈~마감) 밖이면 막는다. 내 예약을 받는 중에도 막는다.
+        disabled={
+          status === 'live' &&
+          (reservations === undefined || !isModelReservable(preorder, model))
+        }
         onClick={() => (status === 'live' ? onReserve : onPurchase)(model)}
       >
         {status === 'live' ? '예약하기' : '구매하기'}

@@ -76,7 +76,7 @@ test('E6 탭을 복제해 같은 입장권·같은 접수 키로 다시 접수�
   await expect(copy.getByText('대기열에 다시 입장해 주세요')).toHaveCount(0)
 })
 
-test('B15 줄 서는 중 다른 창에서 로그아웃하면 대기열이 닫히고 로그인이 필요하다고 알린다', async ({
+test('B15 줄 서는 중 다른 창에서 로그아웃하면 대기열이 닫히고 그렇게 알린다', async ({
   page,
   context,
 }) => {
@@ -99,8 +99,8 @@ test('B15 줄 서는 중 다른 창에서 로그아웃하면 대기열이 닫히
   await other.getByRole('button', { name: '로그아웃' }).click()
   await expect(other).toHaveURL('/')
 
-  // 로그아웃이 창 1에도 전해져 다음 순번 조회가 401이 되면 대기열을 끝낸다.
-  await expect(page.getByText('로그인이 필요합니다.')).toBeVisible({
+  // 로그아웃이 창 1에도 전해지면 그 회원의 줄·입장권을 비우고 대기열을 닫는다.
+  await expect(page.getByText('로그아웃되어 대기열을 닫았어요.')).toBeVisible({
     timeout: 15_000,
   })
   await expect(page.getByText('조금만 기다려주세요')).toBeHidden()
@@ -116,4 +116,26 @@ test('B15 줄 서는 중 다른 창에서 로그아웃하면 대기열이 닫히
   await expect(page.getByRole('banner')).toBeVisible()
   await page.waitForTimeout(2_000)
   expect(queueRequests).toEqual([])
+})
+
+test('B16 줄을 선 채 로그아웃하면 줄·입장권 저장소를 비워 다음 회원이 이어받지 않는다', async ({
+  page,
+}) => {
+  await loginAs(page)
+  await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
+  const stored = () =>
+    page.evaluate(() => [
+      sessionStorage.getItem('preorder_queue_ticket'),
+      sessionStorage.getItem('preorder_admission'),
+    ])
+  expect((await stored())[1]).not.toBeNull()
+
+  await page.goto('/mypage')
+  await page.getByRole('button', { name: '로그아웃' }).click()
+  await expect(page).toHaveURL('/')
+
+  expect(await stored()).toEqual([null, null])
+  await page.goto(`/products/${MACBOOK_PRO_14}`)
+  await expect(page.getByRole('banner')).toBeVisible()
+  await expect(page.getByText(/안에 사전예약을 눌러 주세요/)).toHaveCount(0)
 })
