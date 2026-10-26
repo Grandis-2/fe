@@ -243,9 +243,15 @@ test.describe('B. 기다리는 중', () => {
       timeout: 45_000,
     })
     await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
+    // 남은 시간은 차례가 온 때부터 센다 — 알약이 센 5초도 빠져 있다(목 입장권 120초 − 접수 여유 5초).
+    const timer = page.getByText(/안에 사전예약을 눌러 주세요/)
+    await expect(timer).toBeVisible()
+    const [, mm, ss] =
+      /(\d+):(\d+)/.exec((await timer.textContent()) ?? '') ?? []
+    expect(Number(mm) * 60 + Number(ss)).toBeLessThanOrEqual(115 - 5)
   })
 
-  test('B14 대기열에 선 채 결제하면 한 번 알리고, 결제 화면에 있는 동안 차례가 와도 옮기지 않는다', async ({
+  test('B14 대기열에 선 채로는 결제할 수 없고, 대기열 창을 다시 열 수 있다', async ({
     page,
   }) => {
     await stubDaumPostcode(page)
@@ -262,23 +268,10 @@ test.describe('B. 기다리는 중', () => {
     await cartPayButton(page).click()
     const notice = page.getByRole('dialog', { name: '대기열에 서 있어요' })
     await expect(notice).toBeVisible()
-    await notice.getByRole('button', { name: '취소' }).click()
     expect(await readTossRequest(page)).toBeNull()
 
-    const held = page.getByRole('button', { name: /결제를 마치면 눌러서/ })
-    await expect(held).toBeVisible({ timeout: 45_000 })
-    // 결제 경로가 아니면 5초 뒤 이동한다(B13) — 그보다 오래 머무는지 본다.
-    await page.waitForTimeout(6_000)
-    await expect(page).toHaveURL(/\/payment\?cart=/)
-
-    await held.click()
-    await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
-    // 남은 시간은 차례가 온 때부터 센다 — 결제 화면에서 기다린 6초도 빠져 있다(목 입장권 120초 − 접수 여유 5초).
-    const timer = page.getByText(/안에 사전예약을 눌러 주세요/)
-    await expect(timer).toBeVisible()
-    const [, mm, ss] =
-      /(\d+):(\d+)/.exec((await timer.textContent()) ?? '') ?? []
-    expect(Number(mm) * 60 + Number(ss)).toBeLessThanOrEqual(115 - 6)
+    await notice.getByRole('button', { name: '대기열 보기' }).click()
+    await expect(queueDialog(page)).toBeVisible()
   })
 })
 

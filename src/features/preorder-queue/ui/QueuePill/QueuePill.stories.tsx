@@ -17,10 +17,8 @@ const queue = {
   myOrder: 131,
   waitTime: '약 5분',
   moveIn: 5,
-  held: false,
   checking: false,
   reopen: fn(),
-  moveNow: fn(),
 } as const
 
 export const Waiting: Story = {
@@ -37,20 +35,6 @@ export const Mine: Story = {
   args: {
     productName: '아이폰 18 Pro',
     queue: { ...queue, status: 'mine', myOrder: 1, moveIn: 3 },
-  },
-}
-
-// 결제 중에 차례가 왔다 — 옮기지 않고, 누르면 그때 예약 페이지로 간다.
-export const HeldDuringPayment: Story = {
-  args: {
-    productName: '아이폰 18 Pro',
-    queue: { ...queue, status: 'mine', myOrder: 1, held: true },
-  },
-  play: async ({ args, canvas, userEvent }) => {
-    await expect(canvas.queryByText(/초 뒤 이동/)).toBeNull()
-    await userEvent.click(canvas.getByRole('button'))
-    await expect(args.queue.moveNow).toHaveBeenCalled()
-    await expect(args.queue.reopen).not.toHaveBeenCalled()
   },
 }
 
