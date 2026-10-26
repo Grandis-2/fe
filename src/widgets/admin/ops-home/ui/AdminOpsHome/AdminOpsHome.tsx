@@ -5,6 +5,7 @@ import { CircleCheck, TriangleAlert } from 'lucide-react'
 import { useAdminDraws, useStuckDraws } from '@entities/admin-draw'
 import { useAdminOrderCounts } from '@entities/admin-order'
 import { useAdminProductCount } from '@entities/admin-product'
+import { useReconciliationRuns } from '@entities/admin-reconciliation'
 import {
   useReservationStats,
   useSyncJobErrorGroups,
@@ -33,6 +34,7 @@ import { slopePerSecond } from '@shared/lib/samples'
 import { InlineAlert, RefreshStatus, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
+import { reconcileSummary } from '../../lib/reconcileSummary'
 import { useReprocessRun } from '../../lib/useReprocessRun'
 import { useScrolledPast } from '../../lib/useScrolledPast'
 import { DrawSummaryCard } from '../DrawSummaryCard'
@@ -309,7 +311,12 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   })
   const stuckDraws = useStuckDraws(stuckCandidates, now)
 
+  // 대조는 하루 한 번·마감 뒤·요청 때만 돌아 5초 갱신에 넣지 않는다(훅이 1분마다 묻는다).
+  const runs = useReconciliationRuns()
+  const reconcile = reconcileSummary(runs.data, selected, runs.dataUpdatedAt)
+
   const refresh = () => {
+    void runs.refetch()
     void stats.refetch()
     void queue.refetch()
     refetchStats()
@@ -431,16 +438,15 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           tone={failures ? 'danger' : 'default'}
           loading={stats.isPending}
         />
-        {/* ponytail: 불일치 건수를 주는 API가 없어 자리만 둔다(값은 '—'). 대조는 예약 전체와
-            외부 원장 전체를 받아야 해서 5초 갱신에 넣지 않는다 — 백엔드에 stats 응답의 대조
-            요약을 요청해 뒀고, 생기면 value에 그 숫자를 넣는다. */}
         <OpsKpiCard
           label="외부 예약 대조"
           to={ADMIN_RECONCILIATION_PATH}
           linkLabel="대조하기"
-          value={null}
+          value={reconcile.value}
           unit="건"
-          emptyText="집계 준비 중"
+          emptyText={reconcile.emptyText}
+          caption={reconcile.caption}
+          loading={runs.isPending}
         />
         <OpsKpiCard
           // 주문은 상품으로 거를 수 없어 고른 사전예약과 상관없이 전체다.

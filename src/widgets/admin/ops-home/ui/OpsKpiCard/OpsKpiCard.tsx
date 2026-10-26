@@ -16,6 +16,8 @@ export type OpsKpiCardProps = {
   unit: string
   /** 값이 아직 없는 이유(예: '집계 준비 중'). 주면 '—' 대신 이 문구를 보인다 */
   emptyText?: string
+  /** 숫자 아래 한 줄 — 언제 기준인 값인지 등 */
+  caption?: string
   /** danger면 바탕까지 칠해 줄에서 먼저 보이게 한다 */
   tone?: 'default' | 'danger'
   loading?: boolean
@@ -29,6 +31,7 @@ export function OpsKpiCard({
   value,
   unit,
   emptyText,
+  caption,
   tone = 'default',
   loading = false,
 }: OpsKpiCardProps) {
@@ -61,6 +64,7 @@ export function OpsKpiCard({
           {value !== null && <span className={styles.unit}>{unit}</span>}
         </span>
       )}
+      {caption && <span className={styles.caption}>{caption}</span>}
     </Link>
   )
 }

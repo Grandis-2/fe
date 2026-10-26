@@ -116,6 +116,24 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
     ],
   })
   queryClient.setQueryData(['admin', 'draws', 'list'], [])
+  // 마지막 대조 검사 — 아이폰에서 불일치 3건.
+  queryClient.setQueryData(['admin', 'reconciliation', 'runs'], {
+    items: [
+      {
+        runId: 'run-1',
+        status: 'COMPLETED',
+        verdict: 'MISMATCHED',
+        productId: null,
+        finishedAt: '2026-10-08T02:00:00Z',
+        findingCount: 3,
+        findingCounts: { REGISTERED_NOT_IN_MOCK: 3 },
+        findingCountsByProduct: [{ productId: IPHONE, count: 3 }],
+      },
+    ],
+    page: 0,
+    size: 10,
+    total: 1,
+  })
   queryClient.setQueryData(['admin', 'orders', 'stats'], {
     byStatus: {
       AWAITING_PAYMENT: 0,
