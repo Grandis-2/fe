@@ -6,6 +6,7 @@ export {
   useCancelReservation,
   useReprocessFailedRegistrations,
   useReprocessReservation,
+  useReprocessBatches,
   useReprocessReservations,
   useReservationStats,
   useProductStats,
@@ -47,3 +48,5 @@ export type {
   ReservationState,
   ReservationSyncJob,
 } from './model/types'
+export type { ReprocessBatchesProgress } from './api/useAdminReservations'
+export type { ReprocessStarted } from './api/adminReservation'

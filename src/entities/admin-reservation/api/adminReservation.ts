@@ -13,6 +13,7 @@ import type {
   AdminPreorderSummary,
   AdminSyncJobListParams,
   BatchReprocess,
+  BatchReprocessProgress,
   OffsetPage,
   PreorderStats,
   PreorderStatus,
@@ -162,15 +163,20 @@ const getAdminSyncJobs = (
 // 일괄 재처리 한 번에 보낼 수 있는 작업 수(명세 syncJobIds maxItems).
 const REPROCESS_BATCH_MAX = 1000
 
+/** 일괄 재처리를 시작한 결과 — 1000건씩 나눠 보낸 묶음들의 합과 진행 조회용 id들 */
+export type ReprocessStarted = Omit<BatchReprocess, 'batchId'> & {
+  batchIds: string[]
+}
+
 /**
  * 일괄 재처리 중 앞 묶음은 받아들여졌고 뒤 묶음이 실패했다. 받아들여진 합계와, 보내지 못해
  * 다시 보내야 할 예약 id를 싣는다 — 다시 보낼 때는 이 id만 보낸다.
  */
 export class PartialReprocessError extends ApiRequestError {
-  readonly accepted: BatchReprocess
+  readonly accepted: ReprocessStarted
   readonly unsentPreorderIds: string[]
 
-  constructor(accepted: BatchReprocess, unsentPreorderIds: string[]) {
+  constructor(accepted: ReprocessStarted, unsentPreorderIds: string[]) {
     super(
       {
         code: 'REPROCESS_PARTIAL',
@@ -212,18 +218,19 @@ function nothingToReprocess() {
 
 // [preorder] POST /api/v1/admin/preorders/sync-jobs/reprocess-batch — 일괄 재처리
 /**
- * 외부 등록 작업을 한 번에 다시 시도한다. 1000건씩 나눠 보내고, 서버는 대상 수만 바로 주고
- * 실제 재처리는 이어서 한다.
+ * 외부 등록 작업을 한 번에 다시 시도한다. 1000건씩 나눠 보내고, 서버는 대상 수와 진행 조회
+ * id(batchId)만 바로 주고 실제 재처리는 이어서 한다.
  */
 export async function reprocessSyncJobs(
   targets: readonly ReprocessTarget[],
   signal?: AbortSignal,
 ) {
   if (targets.length === 0) throw nothingToReprocess()
-  const total: BatchReprocess = {
+  const total: ReprocessStarted = {
     targetCount: 0,
     skippedCount: 0,
     estimatedSeconds: 0,
+    batchIds: [],
   }
   // 차례로 보낸다 — 서버가 요청마다 초당 정해진 수만큼 처리해서 예상 시간은 더해진다.
   // ponytail: 서버에는 전역 속도 제한이 없어 묶음이 겹쳐 돌면 외부 호출 속도가 묶음 수만큼 배로 늘어난다.
@@ -254,10 +261,19 @@ export async function reprocessSyncJobs(
     total.targetCount += batch.targetCount
     total.skippedCount += batch.skippedCount
     total.estimatedSeconds += batch.estimatedSeconds
+    total.batchIds.push(batch.batchId)
     waitMs = batch.estimatedSeconds * 1000
   }
   return total
 }
+
+// [preorder] GET /api/v1/admin/preorders/sync-jobs/reprocess-batches/{batchId} — 일괄 재처리 진행
+/** 보낸 수와 결과(성공·다시 실패·취소)·남은 수. 하루 동안 조회할 수 있다 */
+export const getReprocessBatch = (batchId: string, signal?: AbortSignal) =>
+  apiClient.request<BatchReprocessProgress>(
+    `${BASE}/sync-jobs/reprocess-batches/${encodeURIComponent(batchId)}`,
+    { signal },
+  )
 
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록
 // → reprocessSyncJobs

@@ -1,6 +1,7 @@
 import {
   keepPreviousData,
   useMutation,
+  useQueries,
   useQuery,
   useQueryClient,
   type QueryClient,
@@ -13,6 +14,7 @@ import {
   queryPolicy,
 } from '@shared/api/queryPolicy'
 import type {
+  BatchReprocessProgress,
   PreorderStats,
   ProductStatsPhase,
   SyncJobStatus,
@@ -24,6 +26,7 @@ import {
   getAdminReservation,
   getAdminReservationsPage,
   getProductStats,
+  getReprocessBatch,
   getReservationStats,
   getSyncJobErrorGroups,
   reprocessAdminReservation,
@@ -147,6 +150,62 @@ export const useSyncJobErrorGroups = (
     ...pollEvery(queryClient, queryKey, intervalMs),
   })
 }
+
+// 일괄 재처리 진행을 묻는 간격 — 결과가 다 나올 때까지만 묻는다.
+const BATCH_POLL_MS = 2_000
+
+/** 일괄 재처리 묶음들을 합친 진행. finished는 모든 묶음이 대상을 다 다루고 결과도 다 나왔을 때 */
+export type ReprocessBatchesProgress = Pick<
+  BatchReprocessProgress,
+  | 'targetCount'
+  | 'sent'
+  | 'unsent'
+  | 'succeeded'
+  | 'failed'
+  | 'canceled'
+  | 'pending'
+> & { finished: boolean }
+
+const isBatchDone = (batch: BatchReprocessProgress) =>
+  batch.finishedAt !== null && batch.pending === 0
+
+/**
+ * 일괄 재처리의 진행 — 시작할 때 받은 batchId들을 끝날 때까지 묻고 합친다. 하나라도 아직
+ * 못 받았으면 undefined(화면은 예상 시간으로 어림한다).
+ */
+export const useReprocessBatches = (batchIds: readonly string[]) =>
+  useQueries({
+    queries: batchIds.map((batchId) => ({
+      queryKey: [...RESERVATIONS_KEY, 'reprocess-batch', batchId] as const,
+      queryFn: ({ signal }: { signal: AbortSignal }) =>
+        getReprocessBatch(batchId, signal),
+      ...queryPolicy.live,
+      refetchInterval: ({
+        state: { data },
+      }: {
+        state: { data?: BatchReprocessProgress }
+      }) => (data && isBatchDone(data) ? false : BATCH_POLL_MS),
+    })),
+    combine: (results): ReprocessBatchesProgress | undefined => {
+      const batches = results.map((result) => result.data)
+      if (batches.length === 0 || batches.some((batch) => !batch))
+        return undefined
+      const all = batches as BatchReprocessProgress[]
+      const sum = (
+        key: keyof ReprocessBatchesProgress & keyof BatchReprocessProgress,
+      ) => all.reduce((total, batch) => total + (batch[key] as number), 0)
+      return {
+        targetCount: sum('targetCount'),
+        sent: sum('sent'),
+        unsent: sum('unsent'),
+        succeeded: sum('succeeded'),
+        failed: sum('failed'),
+        canceled: sum('canceled'),
+        pending: sum('pending'),
+        finished: all.every(isBatchDone),
+      }
+    },
+  })
 
 /** 여러 예약 일괄 재처리. 응답은 시작한 건수뿐이라 결과는 다시 조회해 본다 */
 export const useReprocessReservations = () => {

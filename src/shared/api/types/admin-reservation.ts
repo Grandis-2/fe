@@ -121,10 +121,36 @@ export type ReprocessBatchRequest = {
 
 /** 일괄 재처리 시작 결과. 실제 재처리는 서버가 초당 ratePerSecond건씩 이어서 한다 */
 export type BatchReprocess = {
+  /** 진행 조회(reprocess-batches/{batchId})에 쓴다. 하루 동안 조회할 수 있다 */
+  batchId: string
   targetCount: number
   /** 지정한 id 중 없거나 재처리 조건 밖이라 건너뛴 수 */
   skippedCount: number
   estimatedSeconds: number
+}
+
+/** GET /admin/preorders/sync-jobs/reprocess-batches/{batchId} — 일괄 재처리 진행 */
+export type BatchReprocessProgress = {
+  batchId: string
+  targetCount: number
+  skippedCount: number
+  /** 재처리 요청을 남긴 수 */
+  sent: number
+  /** 다뤘지만 그사이 상태가 바뀌었거나 기록에 실패해 요청을 남기지 못한 수(결과로 세지 않는다) */
+  unsent: number
+  /** 보낸 뒤 외부 등록에 성공한 수 */
+  succeeded: number
+  /** 보낸 뒤 다시 실패해 DEAD_LETTER가 된 수 */
+  failed: number
+  /** 보낸 뒤 예약 취소로 무효가 된 수 */
+  canceled: number
+  /** 아직 보내지 않았거나 결과를 기다리는 수 */
+  pending: number
+  startedAt: string
+  /** 마지막으로 대상을 다룬 시각 — 끝나지 않았는데 오래 그대로면 보내기가 멈춘 것 */
+  lastProgressAt: string | null
+  /** 모든 대상을 다룬 시각. 아직이면 null */
+  finishedAt: string | null
 }
 
 /** 동기화 작업 상세 — 상세 응답에는 시도 기록이 붙는다 */

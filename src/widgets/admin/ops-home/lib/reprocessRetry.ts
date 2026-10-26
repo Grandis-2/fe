@@ -1,15 +1,14 @@
-import { PartialReprocessError } from '@entities/admin-reservation'
+import {
+  PartialReprocessError,
+  type ReprocessStarted,
+} from '@entities/admin-reservation'
 
 /** 부분 실패 뒤 다시 보낼 것 — 보내지 못한 예약, 그 전에 받아들여진 합계, 처음 시작 때의 건수 */
 export type Unsent = {
   /** 실행한 범위(상품 id, 전체면 null) — 범위가 다르면 이어 쓰지 않는다 */
   scope: string | null
   preorderIds: string[]
-  accepted: {
-    targetCount: number
-    skippedCount: number
-    estimatedSeconds: number
-  }
+  accepted: ReprocessStarted
   deadLetterAtStart: number | null
 }
 
@@ -37,6 +36,7 @@ export const unsentAfterError = (
       skippedCount: caught.accepted.skippedCount + (before?.skippedCount ?? 0),
       estimatedSeconds:
         caught.accepted.estimatedSeconds + (before?.estimatedSeconds ?? 0),
+      batchIds: [...(before?.batchIds ?? []), ...caught.accepted.batchIds],
     },
     // 줄어든 건수는 처음 시작 때와 비교해야 하므로 처음 값을 이어 쓴다.
     deadLetterAtStart: retry?.deadLetterAtStart ?? deadLetterAtStart,

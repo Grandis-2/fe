@@ -75,8 +75,13 @@ export function ReprocessModal({
   const modal = { open, onClose, theme: 'light' } as const
 
   if (run && result) {
-    // 보낸 작업의 결과는 집계로 셀 수 없다 — 재처리 필요가 얼마나 줄었는지와 확인할 곳만 보여 준다.
-    const { deadLetterAtStart: before, deadLetterNow: now, reduced } = result
+    // 서버가 센 결과(outcome)가 있으면 그대로, 없으면 재처리 필요가 얼마나 줄었는지만 보여 준다.
+    const {
+      deadLetterAtStart: before,
+      deadLetterNow: now,
+      reduced,
+      outcome,
+    } = result
     const reservationsOfScope = adminReservationsPath(
       'REPROCESS_NEEDED',
       run.scope ?? undefined,
@@ -91,31 +96,65 @@ export function ReprocessModal({
         title={<Headline tone="success">재처리 요청을 마쳤어요</Headline>}
         description="외부 등록 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요."
       >
-        <dl className={styles.box}>
-          <div className={styles.row}>
-            <dt>요청한 건수</dt>
-            <dd className={styles.value}>{formatNumber(run.target)}건</dd>
-          </div>
-          <div className={styles.row}>
-            <dt>재처리 필요 (시작 전)</dt>
-            <dd className={styles.value}>
-              {before === null ? '—' : `${formatNumber(before)}건`}
-            </dd>
-          </div>
-          <div className={styles.row}>
-            <dt>재처리 필요 (지금)</dt>
-            <dd className={styles.value}>
-              {now === null ? '—' : `${formatNumber(now)}건`}
-            </dd>
-          </div>
-          <div className={styles.row}>
-            <dt>줄어든 건수</dt>
-            <dd className={styles.value}>
-              {reduced === null ? '—' : `${formatNumber(reduced)}건`}
-            </dd>
-          </div>
-        </dl>
-        {reduced === 0 && (
+        {outcome ? (
+          <dl className={styles.box}>
+            <div className={styles.row}>
+              <dt>요청한 건수</dt>
+              <dd className={styles.value}>{formatNumber(run.target)}건</dd>
+            </div>
+            <div className={styles.row}>
+              <dt>외부 등록 성공</dt>
+              <dd className={styles.value}>
+                {formatNumber(outcome.succeeded)}건
+              </dd>
+            </div>
+            <div className={styles.row}>
+              <dt>다시 실패</dt>
+              <dd className={styles.value}>{formatNumber(outcome.failed)}건</dd>
+            </div>
+            {outcome.canceled + outcome.unsent > 0 && (
+              <div className={styles.row}>
+                <dt>취소·상태 변경으로 빠짐</dt>
+                <dd className={styles.value}>
+                  {formatNumber(outcome.canceled + outcome.unsent)}건
+                </dd>
+              </div>
+            )}
+          </dl>
+        ) : (
+          <dl className={styles.box}>
+            <div className={styles.row}>
+              <dt>요청한 건수</dt>
+              <dd className={styles.value}>{formatNumber(run.target)}건</dd>
+            </div>
+            <div className={styles.row}>
+              <dt>재처리 필요 (시작 전)</dt>
+              <dd className={styles.value}>
+                {before === null ? '—' : `${formatNumber(before)}건`}
+              </dd>
+            </div>
+            <div className={styles.row}>
+              <dt>재처리 필요 (지금)</dt>
+              <dd className={styles.value}>
+                {now === null ? '—' : `${formatNumber(now)}건`}
+              </dd>
+            </div>
+            <div className={styles.row}>
+              <dt>줄어든 건수</dt>
+              <dd className={styles.value}>
+                {reduced === null ? '—' : `${formatNumber(reduced)}건`}
+              </dd>
+            </div>
+          </dl>
+        )}
+        {outcome && outcome.failed > 0 && (
+          <InlineAlert status="warning">
+            다시 실패한 {formatNumber(outcome.failed)}건은 외부 예약 시스템이
+            계속 거절하는 것일 수 있어요. 예약 현황에서 실패 사유를 확인해
+            주세요.
+          </InlineAlert>
+        )}
+        {!outcome && reduced === 0 && (
           <InlineAlert status="info">
             아직 줄지 않았어요. 외부 등록이 계속 실패하는 것일 수 있어요.
           </InlineAlert>

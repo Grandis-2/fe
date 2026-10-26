@@ -16,6 +16,7 @@ import type {
   AdminPreorderSort,
   AdminPreorderSummary,
   BatchReprocess,
+  BatchReprocessProgress,
   OffsetPage,
   PreorderStats,
   PreorderStatus,
@@ -86,6 +87,15 @@ const oldestReceived = (
     )
     .map((detail) => detail.createdAt)
     .toSorted()[0] ?? null
+
+// 일괄 재처리 진행을 묻는 데 쓰는 기록 — 메모리라 새로 고치면 사라진다.
+type MockReprocessBatch = {
+  startedAt: number
+  rate: number
+  targets: (readonly [AdminPreorderDetail, SyncJob])[]
+  skipped: number
+}
+const reprocessBatches = new Map<string, MockReprocessBatch>()
 
 const OPEN_JOB_STATES = [
   'PENDING',
@@ -425,8 +435,16 @@ export const adminReservationHandlers: RequestHandler[] = [
       if (isOpenScenarioRunning()) requeueForReprocess(detail, job, rate)
       else markReprocessed(detail, job)
     }
+    const batchId = crypto.randomUUID()
+    reprocessBatches.set(batchId, {
+      startedAt: Date.now(),
+      rate,
+      targets,
+      skipped: ids.size === 0 ? 0 : ids.size - targets.length,
+    })
     return ok<BatchReprocess>(
       {
+        batchId,
         targetCount: targets.length,
         skippedCount: ids.size === 0 ? 0 : ids.size - targets.length,
         estimatedSeconds: Math.ceil(targets.length / rate),
@@ -434,6 +452,49 @@ export const adminReservationHandlers: RequestHandler[] = [
       202,
     )
   }),
+
+  // 초당 rate건씩 보낸 것으로 세고, 보낸 것의 결과는 작업·예약 상태로 센다.
+  http.get(
+    url(`${BASE}/sync-jobs/reprocess-batches/:batchId`),
+    ({ params }) => {
+      const batchId = String(params.batchId)
+      const batch = reprocessBatches.get(batchId)
+      if (!batch)
+        return fail(404, {
+          code: 'REPROCESS_BATCH_NOT_FOUND',
+          message: '일괄 재처리를 찾을 수 없습니다.',
+        })
+      const now = Date.now()
+      const sentCount = Math.min(
+        batch.targets.length,
+        Math.floor(((now - batch.startedAt) / 1000) * batch.rate),
+      )
+      const sent = batch.targets.slice(0, sentCount)
+      const count = (match: (entry: (typeof sent)[number]) => boolean) =>
+        sent.filter(match).length
+      const canceled = count(
+        ([detail]) =>
+          detail.status === 'CANCELING' || detail.status === 'CANCELED',
+      )
+      const succeeded = count(([, job]) => job.status === 'SUCCEEDED')
+      const failed = count(([, job]) => job.status === 'DEAD_LETTER')
+      const done = sentCount === batch.targets.length
+      return ok<BatchReprocessProgress>({
+        batchId,
+        targetCount: batch.targets.length,
+        skippedCount: batch.skipped,
+        sent: sentCount,
+        unsent: 0,
+        succeeded,
+        failed,
+        canceled,
+        pending: batch.targets.length - succeeded - failed - canceled,
+        startedAt: new Date(batch.startedAt).toISOString(),
+        lastProgressAt: sentCount > 0 ? new Date(now).toISOString() : null,
+        finishedAt: done ? new Date(now).toISOString() : null,
+      })
+    },
+  ),
 
   // DEAD_LETTER인 REGISTER 작업만 되돌린다.
   http.post(url(`${BASE}/sync-jobs/:syncJobId/reprocess`), ({ params }) => {
