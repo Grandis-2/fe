@@ -28,12 +28,14 @@ import {
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
+import { adminReservationsPath } from '@shared/config/routes'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import {
   Button,
+  ButtonLink,
   InlineAlert,
   NoticeBanner,
   ProgressSteps,
@@ -341,9 +343,22 @@ export function AdminReservationDetail({
             className={styles.panel}
             aria-labelledby="reservation-member"
           >
-            <h2 id="reservation-member" className={styles.panelTitle}>
-              회원
-            </h2>
+            <div className={styles.panelHeader}>
+              <h2 id="reservation-member" className={styles.panelTitle}>
+                회원
+              </h2>
+              <ButtonLink
+                to={adminReservationsPath(
+                  'all',
+                  undefined,
+                  reservation.customerId,
+                )}
+                variant="outline"
+                size="small"
+              >
+                이 회원의 예약
+              </ButtonLink>
+            </div>
             <dl className={styles.list}>
               <dt className={styles.term}>이름</dt>
               <dd className={styles.value}>

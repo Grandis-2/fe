@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { CircleCheck } from 'lucide-react'
+import { CircleCheck, UserRound } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import {
@@ -33,6 +33,7 @@ import {
   type RefreshInterval,
 } from '@shared/config/refreshInterval'
 import { adminReservationPath } from '@shared/config/routes'
+import { periodLabels, periodRange, type Period } from '@shared/lib/period'
 import { toggleInSet } from '@shared/lib/toggleInSet'
 import { useClampPage } from '@shared/lib/useClampPage'
 import { closeModal, openModal } from '@shared/model/modalStore'
@@ -57,22 +58,12 @@ const ALL_PRODUCTS = '전체 상품'
 // 오픈 중엔 실패가 쌓이는 걸 바로 봐야 해서, 집계 캐시 하한(5초)을 기본으로 둔다.
 const DEFAULT_INTERVAL: RefreshInterval = 5_000
 
-/** 접수 기간 — 고른 순간을 기준으로 하한(from)을 잡는다 */
-type Period = 'all' | 'hour' | 'today' | 'week' | 'month'
-const periodOptions: DropdownOption<Period>[] = [
-  { label: '전체 기간', value: 'all' },
-  { label: '최근 1시간', value: 'hour' },
-  { label: '오늘', value: 'today' },
-  { label: '최근 7일', value: 'week' },
-  { label: '최근 30일', value: 'month' },
-]
-const DAY_MS = 24 * 60 * 60 * 1000
-const fromOf = (period: Period, now: number) => {
-  if (period === 'all') return undefined
-  if (period === 'today') return new Date(new Date(now).setHours(0, 0, 0, 0))
-  const span = { hour: 60 * 60 * 1000, week: 7 * DAY_MS, month: 30 * DAY_MS }
-  return new Date(now - span[period])
-}
+/** 접수 기간 — 고른 순간을 기준으로 [from, to)를 잡는다 */
+const periods: Period[] = ['all', 'hour', 'today', 'yesterday', 'week', 'month']
+const periodOptions: DropdownOption<Period>[] = periods.map((period) => ({
+  label: periodLabels[period],
+  value: period,
+}))
 
 /** 정렬 — 서버가 정렬해 쪽을 넘겨도 전체 순서가 이어진다. 순번순은 상품을 골라야 된다(명세) */
 const sortOptions: DropdownOption<ReservationSort>[] = [
@@ -192,6 +183,8 @@ export function AdminReservationsPage() {
   }
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const productId = searchParams.get('product') ?? undefined
+  // 예약 상세의 '이 회원의 예약'로 들어오면 그 회원 것만 본다.
+  const customerId = searchParams.get('customer') ?? undefined
   // 차수 번호는 상품마다 따로라, 상품을 바꾸면 차수를 비운다.
   const [batchNumber, setBatchNumber] = useState<number>()
   const setProductId = (next: string | undefined) => {
@@ -206,11 +199,11 @@ export function AdminReservationsPage() {
   const [referenceDraft, setReferenceDraft] = useState('')
   const [externalReference, setExternalReference] = useState<string>()
   const [period, setPeriod] = useState<Period>('all')
-  // shortcut: 고른 순간을 기준으로 하한을 고정한다 — '최근 1시간'을 오래 띄워 두면 창이 밀리지 않는다. 문제가 되면 갱신마다 다시 잡는다.
-  const [from, setFrom] = useState<string>()
+  // shortcut: 고른 순간을 기준으로 구간을 고정한다 — '최근 1시간'을 오래 띄워 두면 창이 밀리지 않는다. 문제가 되면 갱신마다 다시 잡는다.
+  const [range, setRange] = useState<{ from?: string; to?: string }>({})
   const selectPeriod = (next: Period) => {
     setPeriod(next)
-    setFrom(fromOf(next, Date.now())?.toISOString())
+    setRange(periodRange(next, Date.now()))
     toFirstPage()
   }
   // 재처리할 예약(예약 id). 실제로 보내는 건 지금 표에서 재처리할 수 있는 것만이다.
@@ -258,7 +251,8 @@ export function AdminReservationsPage() {
       productId,
       batchNumber: productId ? batchNumber : undefined,
       externalReference,
-      from,
+      ...range,
+      customerId,
       page: page - 1,
       size: PAGE_SIZE,
     },
@@ -542,6 +536,20 @@ export function AdminReservationsPage() {
       />
 
       {/* 탭 아래 — 서버가 거르는 조건과 정렬. 탭 건수는 상품만 따른다(집계 API 조건). */}
+      {customerId && (
+        <InlineAlert status="brand" icon={UserRound}>
+          <span className={styles.customerFilter}>
+            {reservations?.[0]?.customerName ?? '한 회원'}의 예약만 보고 있어요.
+            <Button
+              variant="outline"
+              size="small"
+              onClick={() => setParam('customer', undefined)}
+            >
+              모든 회원 보기
+            </Button>
+          </span>
+        </InlineAlert>
+      )}
       <div className={styles.filters}>
         <form
           className={styles.referenceField}

@@ -54,8 +54,11 @@ export type AdminPreorderListParams = {
   batchNumber?: number
   /** 외부 예약 번호(정확히 같은 것만) */
   externalReference?: string
-  /** 접수 시각 하한(포함), ISO date-time */
+  /** 접수 시각 [from, to), ISO date-time */
   from?: string
+  to?: string
+  /** 회원 id — 한 회원의 예약만 */
+  customerId?: string
   page?: number
   /** 1~100(기본 20) */
   size?: number

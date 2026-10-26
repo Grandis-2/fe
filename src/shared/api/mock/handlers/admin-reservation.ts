@@ -265,6 +265,8 @@ export const adminReservationHandlers: RequestHandler[] = [
     const batchNumber = query.get('batchNumber')
     const externalReference = query.get('externalReference')?.trim()
     const from = query.get('from')
+    const to = query.get('to')
+    const customerId = query.get('customerId')
     const size = Number(query.get('size') ?? 20)
     if (!Number.isInteger(size) || size < 1 || size > 100) {
       return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
@@ -294,7 +296,9 @@ export const adminReservationHandlers: RequestHandler[] = [
             item.registerJobStatus === registerJobStatus) &&
           (!batchNumber ||
             item.shipmentBatch.batchNumber === Number(batchNumber)) &&
-          (!from || Date.parse(item.createdAt) >= Date.parse(from)),
+          (!from || Date.parse(item.createdAt) >= Date.parse(from)) &&
+          (!to || Date.parse(item.createdAt) < Date.parse(to)) &&
+          (!customerId || item.customerId === customerId),
       )
       .toSorted(sorters[sort])
 
