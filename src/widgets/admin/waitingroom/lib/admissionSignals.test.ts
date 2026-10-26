@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { admissionSignals, type FlowStats } from './admissionSignals'
+import {
+  admissionSignals,
+  congestionThreshold,
+  type FlowStats,
+} from './admissionSignals'
 
 const stats = (
   rates: FlowStats['rates'],
@@ -82,5 +86,30 @@ describe('admissionSignals', () => {
     expect(
       admissionSignals(stats({ ...steady, backlogPerMin: -30 })).congested,
     ).toBe(false)
+  })
+
+  it('문턱 = 무작위 흔들림(3√(2×대기)) + 1초치 접수, 바닥은 10건', () => {
+    // 지금 실서버(초당 20명 · 등록 0.5초): 대기 약 10 → 3√20 + 20 ≈ 33
+    expect(Math.round(congestionThreshold(10, 20, 60))).toBe(33)
+    // 위험선(초당 150명 · 0.8초): 대기 약 120 → 3√240 + 150 ≈ 196
+    expect(Math.round(congestionThreshold(120, 150, 60))).toBe(196)
+    expect(congestionThreshold(0, 0, 60)).toBe(10)
+    // 30초만 쟀으면 분당으로 늘린 만큼 흔들림도 두 배
+    expect(congestionThreshold(120, 150, 30)).toBeCloseTo(
+      congestionThreshold(120, 150, 60) * 2,
+    )
+  })
+
+  it('1초 몰림의 톱니는 거르고, 처리가 몇 % 넘게 느리면 잡는다', () => {
+    const at150 = (backlogPerMin: number) => ({
+      receivedPerSec: 150,
+      registeredPerSec: 150 - backlogPerMin / 60,
+      backlogPerMin,
+      windowSeconds: 60,
+    })
+    // 대기 100(실패 20을 뺌) — 문턱 약 192. 몰림으로 100건 오르내린 건 밀림이 아니다.
+    expect(admissionSignals(stats(at150(100), 120)).congested).toBe(false)
+    // 처리가 초당 5건(약 3%) 느리면 분당 300건씩 늘어 밀림이다.
+    expect(admissionSignals(stats(at150(300), 120)).congested).toBe(true)
   })
 })
