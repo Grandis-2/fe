@@ -23,16 +23,15 @@ import type { RequestHandler } from 'msw'
 // ponytail: 현황 숫자는 시간으로 흔들어 만든 가짜다 — 부하 검증 화면의 그래프가 움직이게 하려고.
 
 const BASE = '/api/v1/admin/waitingroom'
-const MAX_GLOBAL_CREDIT = 1500
-// 서버가 2026-10-21에 기본값을 150에서 15로 낮췄다.
+// 서버가 2026-10-21에 기본값을 150에서 15로, 최댓값을 1500에서 150으로 낮췄다(명세 문구는 옛 값).
+const MAX_GLOBAL_CREDIT = 150
 const DEFAULT_GLOBAL = 15
 const DEFAULT_CAP = 15
 const DEFAULT_GRACE = 250
 // 사전예약 서버 용량 — 권장 상한까지 바로 반영, 위험선까지는 확인 뒤 증설되면 반영.
-// ponytail: 실서버 값을 모른다 — 명세 예시(기본 150 · 권장 300 · 위험 500)를 서버가 낮춘
-// 기본값(15)에 맞춰 1/10로 줄였다. 실서버 값을 확인하면 그 값으로 바꾼다.
-const RECOMMENDED_MAX = 30
-const DANGER_LINE = 50
+// 실서버 2026-10-26 값: 준비된 서버 1대에 권장 100 · 위험선 150.
+const RECOMMENDED_MAX = 100
+const DANGER_LINE = 150
 
 const state: {
   globalCredit: number | null
@@ -80,8 +79,8 @@ function view(): AdmissionRateView {
       recommendedMax: RECOMMENDED_MAX,
       dangerLine: DANGER_LINE,
       appliedCredit: appliedGlobal(),
-      readyTasks: 3,
-      warmingTasks: globalOf() > RECOMMENDED_MAX ? 2 : 0,
+      readyTasks: 1,
+      warmingTasks: globalOf() > RECOMMENDED_MAX ? 1 : 0,
       brakeFactor: 1,
       relayBadRatio: 0.01,
       scalingPending: globalOf() > RECOMMENDED_MAX,
