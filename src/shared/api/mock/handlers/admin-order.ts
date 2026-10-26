@@ -240,6 +240,16 @@ export const adminOrderHandlers: RequestHandler[] = [
     const { page, size, violations } = readPaging(params)
     const status = params.get('status')
     const source = params.get('source')
+    const shipToName = params.get('shipToName')?.trim().toLowerCase()
+    const phone4 = params.get('shipToPhoneLast4')
+    const productId = params.get('productId')
+    const from = params.get('from')
+    const to = params.get('to')
+    if (phone4 && !/^d{4}$/.test(phone4))
+      violations.push({
+        field: 'shipToPhoneLast4',
+        message: '숫자 4자리여야 합니다.',
+      })
     if (
       status &&
       !PATH.concat('CANCELING', 'CANCELED').includes(status as OrderStatus)
@@ -252,6 +262,18 @@ export const adminOrderHandlers: RequestHandler[] = [
     const filtered = all()
       .filter((it) => !status || it.status === status)
       .filter((it) => !source || it.source === source)
+      .filter(
+        (it) => !shipToName || it.shipTo.name.toLowerCase() === shipToName,
+      )
+      .filter(
+        (it) => !phone4 || it.shipTo.phone.replace(/D/g, '').endsWith(phone4),
+      )
+      .filter(
+        (it) =>
+          !productId || it.items.some((item) => item.productId === productId),
+      )
+      .filter((it) => !from || Date.parse(it.createdAt) >= Date.parse(from))
+      .filter((it) => !to || Date.parse(it.createdAt) < Date.parse(to))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
     const { items, total } = toPage(filtered, page, size)
     return ok<AdminOrderPage>({

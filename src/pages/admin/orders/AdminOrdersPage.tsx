@@ -17,10 +17,12 @@ import {
   useAdminOrderCounts,
   useAdminOrders,
 } from '@entities/admin-order'
+import { useAdminProducts } from '@entities/admin-product'
 import { getErrorMessage } from '@shared/api/client'
 import { adminOrderPath } from '@shared/config/routes'
 import { formatShortDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
+import { periodLabels, periodRange, type Period } from '@shared/lib/period'
 import { toggleInSet } from '@shared/lib/toggleInSet'
 import { useClampPage } from '@shared/lib/useClampPage'
 import {
@@ -28,6 +30,7 @@ import {
   Checkbox,
   Dropdown,
   InlineAlert,
+  Input,
   Navigator,
   RefreshStatus,
   SegmentedTabs,
@@ -96,6 +99,22 @@ const sourceOptions: DropdownOption<AdminOrderSource | undefined>[] = [
   })),
 ]
 
+/**
+ * 고객 문의를 받았을 때 찾는 방법. 주문 번호는 두지 않는다 — 화면의 번호는 id 뒤 8자리인데
+ * 서버(q)는 id 앞부분으로 찾아, 고객이 불러 준 번호로는 나오지 않는다.
+ */
+type SearchBy = 'name' | 'phone4'
+const searchByOptions: DropdownOption<SearchBy>[] = [
+  { value: 'name', label: '받는 분 이름' },
+  { value: 'phone4', label: '전화 끝 4자리' },
+]
+const SHIP_TO_NAME_MAX = 50
+const periods: Period[] = ['all', 'today', 'yesterday', 'week', 'month']
+const periodOptions: DropdownOption<Period>[] = periods.map((period) => ({
+  value: period,
+  label: periodLabels[period],
+}))
+
 /** 주소의 값이 아는 값일 때만 쓴다 — 손으로 고친 주소가 400을 부르지 않게 */
 const pick = <TValue extends string>(
   value: string | null,
@@ -128,9 +147,42 @@ export function AdminOrdersPage() {
   const pageParam = Number(searchParams.get('page'))
   const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1
 
+  // 검색·상품·기간도 주소에 둔다 — 상세에 들어갔다 돌아와도 찾던 결과가 남는다.
+  const shipToName = searchParams.get('name') ?? undefined
+  const phone4 = searchParams.get('phone4') ?? undefined
+  const productId = searchParams.get('product') ?? undefined
+  const period = pick<Period>(searchParams.get('period'), periods) ?? 'all'
+  const [searchBy, setSearchBy] = useState<SearchBy>(
+    phone4 !== undefined ? 'phone4' : 'name',
+  )
+  const [draft, setDraft] = useState(shipToName ?? phone4 ?? '')
+  // 서버가 400을 줄 값은 보내지 않고 칸 아래에 알린다.
+  const draftError =
+    searchBy === 'phone4'
+      ? draft !== '' && !/^\d{4}$/.test(draft)
+        ? '숫자 4자리로 입력해 주세요.'
+        : undefined
+      : draft.trim().length > SHIP_TO_NAME_MAX
+        ? `${SHIP_TO_NAME_MAX}자까지 입력할 수 있어요.`
+        : undefined
+  // shortcut: 기간은 화면을 연 날 기준이다 — 자정을 넘겨 띄워 두면 '오늘'이 어제로 남는다. 문제가 되면 고를 때마다 다시 잡는다.
+  const [openedAt] = useState(() => Date.now())
+  const { data: products = [] } = useAdminProducts()
+  const productOptions: DropdownOption<string | undefined>[] = [
+    { value: undefined, label: '모든 상품' },
+    ...products.map((product) => ({
+      value: product.productId,
+      label: product.name,
+    })),
+  ]
+
   const orders = useAdminOrders({
     source,
     status,
+    shipToName,
+    shipToPhoneLast4: phone4,
+    productId,
+    ...periodRange(period, openedAt),
     page: page - 1,
     size: PAGE_SIZE,
   })
@@ -157,7 +209,8 @@ export function AdminOrdersPage() {
 
   // 필터를 바꾸면 첫 쪽부터 본다.
   const setParam = (
-    key: 'source' | 'status' | 'page',
+    key:
+      'source' | 'status' | 'page' | 'name' | 'phone4' | 'product' | 'period',
     value: string | undefined,
   ) => {
     setSelected(new Set())
@@ -380,6 +433,61 @@ export function AdminOrdersPage() {
             onSelect={(next) => setParam('source', next)}
           />
         </div>
+      </div>
+
+      {/* 고객 문의로 찾기 — 이름은 전체 일치, 전화는 끝 4자리. 다 친 뒤(Enter) 보낸다. */}
+      <div className={styles.searchRow}>
+        <Dropdown
+          className={styles.field}
+          label="받는 분 이름"
+          fieldLabel="검색 기준"
+          size="medium"
+          options={searchByOptions}
+          value={searchBy}
+          onSelect={(next) => {
+            setSearchBy(next)
+            setDraft('')
+            setParam(searchBy, undefined)
+          }}
+        />
+        <form
+          className={styles.searchField}
+          onSubmit={(event) => {
+            event.preventDefault()
+            if (!draftError) setParam(searchBy, draft.trim() || undefined)
+          }}
+        >
+          <Input
+            label={searchBy === 'name' ? '받는 분 이름' : '전화 끝 4자리'}
+            size="small"
+            inputMode={searchBy === 'phone4' ? 'numeric' : undefined}
+            value={draft}
+            error={draftError}
+            onChange={(event) => {
+              setDraft(event.target.value)
+              // 지우면 바로 조건을 푼다 — 빈 칸에 Enter를 또 누르게 하지 않는다.
+              if (!event.target.value.trim()) setParam(searchBy, undefined)
+            }}
+          />
+        </form>
+        <Dropdown
+          className={styles.field}
+          label="모든 상품"
+          fieldLabel="상품"
+          size="medium"
+          options={productOptions}
+          value={productId}
+          onSelect={(next) => setParam('product', next)}
+        />
+        <Dropdown
+          className={styles.field}
+          label="전체 기간"
+          fieldLabel="주문 기간"
+          size="medium"
+          options={periodOptions}
+          value={period}
+          onSelect={(next) => setParam('period', next)}
+        />
       </div>
 
       {step && selectable.length > 0 && (

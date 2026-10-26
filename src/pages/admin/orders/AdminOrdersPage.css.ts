@@ -149,3 +149,13 @@ export const next = style([
 export const navigator = style({
   alignSelf: 'center',
 })
+
+// 검색 기준·검색 칸·상품·기간. 좁으면 줄을 바꾼다.
+export const searchRow = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'flex-start',
+  gap: spacing[12],
+})
+
+export const searchField = style({ flex: '1 1 240px', minWidth: 0 })
