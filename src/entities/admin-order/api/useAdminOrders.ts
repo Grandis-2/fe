@@ -6,7 +6,7 @@ import {
 } from '@tanstack/react-query'
 
 import { ApiRequestError } from '@shared/api/client'
-import { queryPolicy } from '@shared/api/queryPolicy'
+import { pollEvery, pollingError, queryPolicy } from '@shared/api/queryPolicy'
 import type {
   AdminOrderListParams,
   OrderStatus,
@@ -50,18 +50,20 @@ export const useAdminOrderCounts = <TStatus extends OrderStatus>(
   /** 자동으로 다시 받는 간격. 운영 대시보드처럼 열어 두는 화면이 준다 */
   intervalMs: RefreshInterval = false,
 ) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...ADMIN_ORDERS_KEY, 'stats'] as const
   const stats = useQuery({
-    queryKey: [...ADMIN_ORDERS_KEY, 'stats'] as const,
+    queryKey,
     queryFn: ({ signal }) => getAdminOrderStats(undefined, signal),
     ...queryPolicy.live,
-    refetchInterval: intervalMs,
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
   const counts = Object.fromEntries(
     statuses.map((status) => [status, stats.data?.byStatus[status] ?? null]),
   ) as Record<TStatus, number | null>
   const refetch = () => void stats.refetch()
-  /** 받지 못했다 — 화면이 "마지막으로 받은 값"이라고 알린다 */
-  return { counts, refetch, isError: stats.isError }
+  /** 받지 못했다 — 화면이 "마지막으로 받은 값"이라고 알린다. 폴링은 재시도 중에도 켠다 */
+  return { counts, refetch, isError: pollingError(stats) !== null }
 }
 
 export const useAdminOrder = (orderId: string) =>

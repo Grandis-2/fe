@@ -34,7 +34,10 @@ import { slopePerSecond } from '@shared/lib/samples'
 import { InlineAlert, RefreshStatus, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
-import { reconcileSummary } from '../../lib/reconcileSummary'
+import {
+  reconcileSummary,
+  type ReconcileSummary,
+} from '../../lib/reconcileSummary'
 import { useReprocessRun } from '../../lib/useReprocessRun'
 import { useScrolledPast } from '../../lib/useScrolledPast'
 import { DrawSummaryCard } from '../DrawSummaryCard'
@@ -313,7 +316,17 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
 
   // 대조는 하루 한 번·마감 뒤·요청 때만 돌아 5초 갱신에 넣지 않는다(훅이 1분마다 묻는다).
   const runs = useReconciliationRuns()
-  const reconcile = reconcileSummary(runs.data, selected, runs.dataUpdatedAt)
+  // 처음부터 못 받았으면 '값 없음'과 구분하고, 받은 뒤 실패면 마지막 값이라고 붙인다.
+  const summary: ReconcileSummary =
+    runs.isError && !runs.data
+      ? { value: null, emptyText: '불러오지 못함' }
+      : reconcileSummary(runs.data, selected, runs.dataUpdatedAt)
+  const reconcile = runs.isError
+    ? {
+        ...summary,
+        caption: summary.caption && `${summary.caption} · 갱신 실패`,
+      }
+    : summary
 
   const refresh = () => {
     void runs.refetch()

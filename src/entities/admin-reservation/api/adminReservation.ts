@@ -83,6 +83,8 @@ export async function getProductStats(
   signal?: AbortSignal,
 ) {
   const items: ProductStatsItem[] = []
+  // 서버가 받은 커서를 다시 주면 거기서 멈춘다(무한 반복 방지).
+  const seen = new Set<string>()
   let cursor: string | undefined
   do {
     const page = await apiClient.request<ProductStatsPage>(
@@ -91,6 +93,8 @@ export async function getProductStats(
     )
     items.push(...page.items)
     cursor = page.nextCursor ?? undefined
+    if (cursor && seen.has(cursor)) break
+    if (cursor) seen.add(cursor)
   } while (cursor)
   return items
 }

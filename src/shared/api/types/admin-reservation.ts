@@ -154,10 +154,6 @@ type OpenSyncJobCounts = Record<
   number
 >
 
-/**
- * GET /admin/preorders/stats — 운영 현황. 최대 5초 늦을 수 있고, 0인 칸도 빠지지
- * 않고 온다.
- */
 /** 서버가 10초마다 남긴 기록의 처음·끝 차이로 잰 최근 1분 속도 */
 export type StatsRates = {
   /** 초당 접수 */
@@ -170,6 +166,10 @@ export type StatsRates = {
   windowSeconds: number
 }
 
+/**
+ * GET /admin/preorders/stats — 운영 현황. 최대 5초 늦을 수 있고, 0인 칸도 빠지지
+ * 않고 온다.
+ */
 export type PreorderStats = {
   productId: string | null
   /** 원장 상태별 예약 수 */

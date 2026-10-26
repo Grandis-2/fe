@@ -7,10 +7,19 @@ import {
   type WaitingroomProductStatus,
 } from '@entities/admin-waitingroom'
 import { SLOW_AFTER_MS } from '@features/open-preorder-picker'
+import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
-import { Button, Chip, Skeleton, Tag, UsageCells } from '@shared/ui'
+import {
+  Button,
+  Chip,
+  InlineAlert,
+  Skeleton,
+  Tag,
+  UsageCells,
+} from '@shared/ui'
 
 import { formatSeconds, oldestSeconds } from '../../lib/duration'
 import { NumberSettingForm } from '../NumberSettingForm'
@@ -71,6 +80,7 @@ export function ProductCapList({
     phase === 'CLOSED' ? 'CLOSED' : 'OPEN',
     refreshInterval,
   )
+  const statsError = pollingError(productStats)
   const capOf = (productId: string) =>
     rates?.find((item) => item.productId === productId)?.cap
 
@@ -142,6 +152,14 @@ export function ProductCapList({
           </Chip>
         ))}
       </div>
+
+      {/* 집계는 태그만 채운다 — 못 받아도 목록은 대기열 값으로 보인다. */}
+      {statsError !== null && (
+        <InlineAlert status="warning">
+          {getErrorMessage(statsError, '등록 현황을 불러오지 못했어요.')}{' '}
+          재처리·밀림 표시를 뺐어요.
+        </InlineAlert>
+      )}
 
       {loading ? (
         <Skeleton height={160} />
