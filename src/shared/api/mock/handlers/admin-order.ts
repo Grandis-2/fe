@@ -245,7 +245,7 @@ export const adminOrderHandlers: RequestHandler[] = [
     const productId = params.get('productId')
     const from = params.get('from')
     const to = params.get('to')
-    if (phone4 && !/^d{4}$/.test(phone4))
+    if (phone4 && !/^\d{4}$/.test(phone4))
       violations.push({
         field: 'shipToPhoneLast4',
         message: '숫자 4자리여야 합니다.',
@@ -266,7 +266,7 @@ export const adminOrderHandlers: RequestHandler[] = [
         (it) => !shipToName || it.shipTo.name.toLowerCase() === shipToName,
       )
       .filter(
-        (it) => !phone4 || it.shipTo.phone.replace(/D/g, '').endsWith(phone4),
+        (it) => !phone4 || it.shipTo.phone.replace(/\D/g, '').endsWith(phone4),
       )
       .filter(
         (it) =>

@@ -79,15 +79,6 @@ export const todoHint = style([
   { color: color.text.secondary },
 ])
 
-// 상태 탭. 좁으면 줄을 바꾼다.
-export const filters = style({
-  display: 'flex',
-  flexWrap: 'wrap',
-  alignItems: 'center',
-  justifyContent: 'space-between',
-  gap: spacing[12],
-})
-
 export const field = style({ width: '160px' })
 
 // 고른 건수와 다음 단계 단추 — 표 바로 위에 붙어 무엇을 옮길지 보인다.

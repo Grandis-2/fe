@@ -108,7 +108,6 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     nameOf,
     statsOf,
     statsQuery,
-    refetchStats,
   } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
   // 대시보드가 보는 범위 — 처음엔 전체(null). 고른 사전예약이 마감돼 목록에서 빠지면 전체로
@@ -332,7 +331,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     void runs.refetch()
     void stats.refetch()
     void queue.refetch()
-    refetchStats()
+    void statsQuery.refetch()
     void draws.refetch()
     orders.refetch()
     void activeProducts.refetch()

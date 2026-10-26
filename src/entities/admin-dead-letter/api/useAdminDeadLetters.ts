@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
+import { pollEvery, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { DeadLetterListParams, DeadLetterStatus } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
@@ -87,21 +87,25 @@ export const useDeadLetterCounts = (
     'eventType' | 'failureReason' | 'from' | 'to'
   >,
   intervalMs?: RefreshInterval,
-) =>
-  useQueries({
-    queries: deadLetterStatuses.map((status) => ({
-      queryKey: [
+) => {
+  const queryClient = useQueryClient()
+  return useQueries({
+    queries: deadLetterStatuses.map((status) => {
+      const queryKey = [
         ...DEAD_LETTERS_KEY,
         service,
         'count',
         status,
         filters,
-      ] as const,
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        getDeadLetters(service, { ...filters, status, size: 1 }, signal),
-      ...queryPolicy.live,
-      refetchInterval: intervalMs ?? false,
-    })),
+      ] as const
+      return {
+        queryKey,
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          getDeadLetters(service, { ...filters, status, size: 1 }, signal),
+        ...queryPolicy.live,
+        ...pollEvery(queryClient, queryKey, intervalMs ?? false),
+      }
+    }),
     combine: (results) =>
       Object.fromEntries(
         deadLetterStatuses.map((status, index) => [
@@ -110,28 +114,40 @@ export const useDeadLetterCounts = (
         ]),
       ) as Record<DeadLetterStatus, number | undefined>,
   })
+}
 
 /** 메시지 상세. 되돌리기 결과를 기다리는 동안만 다시 받는다 */
 export const useDeadLetter = (
   service: DeadLetterService,
   deadLetterId: string,
-) =>
-  useQuery({
-    queryKey: [...DEAD_LETTERS_KEY, service, 'detail', deadLetterId] as const,
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = [
+    ...DEAD_LETTERS_KEY,
+    service,
+    'detail',
+    deadLetterId,
+  ] as const
+  const pollMs = (
+    data: Awaited<ReturnType<typeof getDeadLetter>> | undefined,
+  ) => (data && isRedriveInFlight(data.status) ? IN_FLIGHT_POLL_MS : null)
+  return useQuery({
+    queryKey,
     queryFn: ({ signal }) => getDeadLetter(service, deadLetterId, signal),
     ...queryPolicy.live,
-    refetchInterval: (query) =>
-      query.state.data && isRedriveInFlight(query.state.data.status)
-        ? IN_FLIGHT_POLL_MS
-        : false,
+    refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
+    ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
   })
+}
 
-// 메시지 상태와 그 서비스의 화면이 같이 바뀌므로 둘 다 다시 받는다.
+// 메시지 상태와 그 서비스의 화면이 같이 바뀌므로 둘 다 다시 받는다(다른 서비스 DLQ는 그대로).
 const useInvalidateAfterChange = (service: DeadLetterService) => {
   const queryClient = useQueryClient()
   return () =>
     Promise.all([
-      queryClient.invalidateQueries({ queryKey: DEAD_LETTERS_KEY }),
+      queryClient.invalidateQueries({
+        queryKey: [...DEAD_LETTERS_KEY, service],
+      }),
       queryClient.invalidateQueries({ queryKey: RELATED_KEY[service] }),
     ])
 }

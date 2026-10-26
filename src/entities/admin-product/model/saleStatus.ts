@@ -112,8 +112,5 @@ export const canConvertToInStock = (
   product: Pick<AdminProductDetailModel, 'saleMode' | 'campaign'>,
 ) => product.saleMode === 'PREORDER' && product.campaign?.status === 'CLOSED'
 
-/** 일반 판매 할인율 범위(정수 %) */
-export const CONVERSION_DISCOUNT_MAX = 99
-
 /** 회차 취소 사유 길이(앞뒤 공백 제외) — 서버가 1~500자만 받는다 */
 export const CANCEL_REASON_MAX = 500

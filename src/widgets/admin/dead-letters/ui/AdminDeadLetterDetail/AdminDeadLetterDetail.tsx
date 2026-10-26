@@ -10,6 +10,7 @@ import {
   deadLetterFailureReasonTag,
   deadLetterStatusColor,
   deadLetterStatusLabel,
+  deadLetterTargetLabel,
   isRefundRequest,
   useDiscardDeadLetter,
   useRedriveDeadLetter,
@@ -160,7 +161,7 @@ export function AdminDeadLetterDetail({
     label: '이벤트 DLQ 메시지',
     to: location.pathname + location.search,
   }
-  const relatedLabel = service === 'payment' ? '관련 주문' : '관련 예약'
+  const target = deadLetterTargetLabel[service]
   const relatedLink = deadLetter.orderId ? (
     <Link
       className={styles.link}
@@ -236,7 +237,7 @@ export function AdminDeadLetterDetail({
             )}
             {relatedLink && (
               <span>
-                {relatedLabel} {relatedLink}
+                관련 {target} {relatedLink}
               </span>
             )}
             {stuck && <span>{stuck}</span>}
@@ -332,7 +333,7 @@ export function AdminDeadLetterDetail({
           <span className={styles.note}>
             {pretty === null
               ? 'JSON으로 읽을 수 없는 원문이라 받은 그대로 보여줍니다. '
-              : `노란 줄은 판단에 쓰는 값(이벤트 종류·${service === 'payment' ? '주문' : '예약'})이에요. `}
+              : `노란 줄은 판단에 쓰는 값(이벤트 종류·${target})이에요. `}
             회원 정보가 들어 있을 수 있으니 밖에 붙여 넣을 땐 가려 주세요.
           </span>
         </Panel>
@@ -342,11 +343,9 @@ export function AdminDeadLetterDetail({
             <DescriptionList
               items={[
                 {
-                  label: relatedLabel,
+                  label: `관련 ${target}`,
                   value: relatedLink || (
-                    <span className={styles.muted}>
-                      {service === 'payment' ? '주문과 무관' : '예약과 무관'}
-                    </span>
+                    <span className={styles.muted}>{target}과 무관</span>
                   ),
                 },
                 // 결제 이벤트에는 회원 id가 없다.

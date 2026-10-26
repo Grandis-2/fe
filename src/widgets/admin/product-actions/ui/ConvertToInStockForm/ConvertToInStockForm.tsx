@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import {
-  CONVERSION_DISCOUNT_MAX,
+  DISCOUNT_RATE_MAX,
   type AdminProductDetailModel,
 } from '@entities/admin-product'
 import { Input, ModalActions, Tag } from '@shared/ui'
@@ -40,8 +40,7 @@ export function ConvertToInStockForm({
     Object.fromEntries(variants.map((variant) => [variant.variantId, '0'])),
   )
   const [discount, setDiscount] = useState('0')
-  const discountOk =
-    isWhole(discount) && Number(discount) <= CONVERSION_DISCOUNT_MAX
+  const discountOk = isWhole(discount) && Number(discount) <= DISCOUNT_RATE_MAX
   const stocksOk = variants.every((variant) =>
     isWhole(stocks[variant.variantId] ?? ''),
   )
@@ -85,9 +84,7 @@ export function ConvertToInStockForm({
         variant="stacked"
         inputMode="numeric"
         value={discount}
-        error={
-          discountOk ? undefined : `0~${CONVERSION_DISCOUNT_MAX} 사이 숫자로`
-        }
+        error={discountOk ? undefined : `0~${DISCOUNT_RATE_MAX} 사이 숫자로`}
         onChange={(event) => setDiscount(event.target.value)}
       />
       <ModalActions

@@ -10,6 +10,10 @@ export const periodLabels: Record<Period, string> = {
   month: '최근 30일',
 }
 
+/** 기간 드롭다운 항목 — 화면마다 고를 수 있는 기간만 넘긴다 */
+export const toPeriodOptions = (periods: readonly Period[]) =>
+  periods.map((period) => ({ value: period, label: periodLabels[period] }))
+
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /**

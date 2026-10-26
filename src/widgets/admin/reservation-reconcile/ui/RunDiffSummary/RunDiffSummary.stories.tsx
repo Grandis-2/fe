@@ -9,7 +9,6 @@ const meta = {
   tags: ['ai-generated'],
   args: {
     counts: { introduced: 3, persisting: 12, resolved: 5 },
-    loading: false,
     failed: false,
   },
 } satisfies Meta<typeof RunDiffSummary>

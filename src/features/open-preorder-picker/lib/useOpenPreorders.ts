@@ -52,9 +52,6 @@ export function useOpenPreorders(
     }
   })
 
-  /** 상품별 집계를 지금 다시 받는다 — 화면의 새로 고침이 같이 부른다 */
-  const refetchStats = () => void statsQuery.refetch()
-
   return {
     queue,
     openProducts,
@@ -63,6 +60,5 @@ export function useOpenPreorders(
     statsOf,
     /** 상품별 집계 요청 — 받는 중·실패를 볼 때 */
     statsQuery,
-    refetchStats,
   }
 }

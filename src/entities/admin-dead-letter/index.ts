@@ -17,6 +17,7 @@ export {
   deadLetterFailureReasonTag,
   deadLetterFailureReasons,
   deadLetterServiceLabel,
+  deadLetterTargetLabel,
   deadLetterServices,
   deadLetterStatusColor,
   deadLetterStatuses,

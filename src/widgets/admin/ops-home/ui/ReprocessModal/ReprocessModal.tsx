@@ -90,63 +90,42 @@ export function ReprocessModal({
       onClose()
       navigate(reservationsOfScope)
     }
+    const rows: (readonly [string, number | null])[] = outcome
+      ? [
+          ['요청한 건수', run.target],
+          ['외부 등록 성공', outcome.succeeded],
+          ['다시 실패', outcome.failed],
+          ...(outcome.canceled + outcome.unsent > 0
+            ? [
+                [
+                  '취소·상태 변경으로 빠짐',
+                  outcome.canceled + outcome.unsent,
+                ] as const,
+              ]
+            : []),
+        ]
+      : [
+          ['요청한 건수', run.target],
+          ['재처리 필요 (시작 전)', before],
+          ['재처리 필요 (지금)', now],
+          ['줄어든 건수', reduced],
+        ]
     return (
       <Modal
         {...modal}
         title={<Headline tone="success">재처리 요청을 마쳤어요</Headline>}
         description="외부 등록 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요."
       >
-        {outcome ? (
-          <dl className={styles.box}>
-            <div className={styles.row}>
-              <dt>요청한 건수</dt>
-              <dd className={styles.value}>{formatNumber(run.target)}건</dd>
-            </div>
-            <div className={styles.row}>
-              <dt>외부 등록 성공</dt>
+        <dl className={styles.box}>
+          {rows.map(([label, value]) => (
+            <div key={label} className={styles.row}>
+              <dt>{label}</dt>
               <dd className={styles.value}>
-                {formatNumber(outcome.succeeded)}건
+                {value === null ? '—' : `${formatNumber(value)}건`}
               </dd>
             </div>
-            <div className={styles.row}>
-              <dt>다시 실패</dt>
-              <dd className={styles.value}>{formatNumber(outcome.failed)}건</dd>
-            </div>
-            {outcome.canceled + outcome.unsent > 0 && (
-              <div className={styles.row}>
-                <dt>취소·상태 변경으로 빠짐</dt>
-                <dd className={styles.value}>
-                  {formatNumber(outcome.canceled + outcome.unsent)}건
-                </dd>
-              </div>
-            )}
-          </dl>
-        ) : (
-          <dl className={styles.box}>
-            <div className={styles.row}>
-              <dt>요청한 건수</dt>
-              <dd className={styles.value}>{formatNumber(run.target)}건</dd>
-            </div>
-            <div className={styles.row}>
-              <dt>재처리 필요 (시작 전)</dt>
-              <dd className={styles.value}>
-                {before === null ? '—' : `${formatNumber(before)}건`}
-              </dd>
-            </div>
-            <div className={styles.row}>
-              <dt>재처리 필요 (지금)</dt>
-              <dd className={styles.value}>
-                {now === null ? '—' : `${formatNumber(now)}건`}
-              </dd>
-            </div>
-            <div className={styles.row}>
-              <dt>줄어든 건수</dt>
-              <dd className={styles.value}>
-                {reduced === null ? '—' : `${formatNumber(reduced)}건`}
-              </dd>
-            </div>
-          </dl>
-        )}
+          ))}
+        </dl>
         {outcome && outcome.failed > 0 && (
           <InlineAlert status="warning">
             다시 실패한 {formatNumber(outcome.failed)}건은 외부 예약 시스템이

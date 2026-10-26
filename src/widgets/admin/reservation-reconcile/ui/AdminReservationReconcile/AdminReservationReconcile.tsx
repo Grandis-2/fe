@@ -658,7 +658,6 @@ export function AdminReservationReconcile() {
               resolved: diff.data.resolved.length,
             }
           }
-          loading={diff.isPending}
           failed={diff.isError}
         />
       )}

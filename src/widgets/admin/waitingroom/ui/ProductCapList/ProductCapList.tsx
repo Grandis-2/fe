@@ -75,10 +75,11 @@ export function ProductCapList({
 }: ProductCapListProps) {
   const [phase, setPhase] = useState<Phase>('OPEN')
   const shown = products.filter((product) => product.phase === phase)
-  // 상품별 집계를 한 번에 받는다. 오픈 전 회차는 서버가 세지 않아 접수 중 목록으로 묻는다.
+  // 상품별 집계를 한 번에 받는다. 오픈 전 회차는 서버가 세지 않아 묻지 않는다.
   const productStats = useProductStats(
     phase === 'CLOSED' ? 'CLOSED' : 'OPEN',
     refreshInterval,
+    { enabled: phase !== 'BEFORE_OPEN' },
   )
   const statsError = pollingError(productStats)
   const capOf = (productId: string) =>

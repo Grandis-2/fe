@@ -144,15 +144,15 @@ export async function reprocessAdminReservation(preorderId: string) {
   )
   // 그사이 다른 관리자가 재처리했거나 예약이 취소됐다 — 목록을 다시 받으면 맞춰진다.
   if (!job) throw nothingToReprocess()
-  return apiClient.request<unknown>(
-    `${BASE}/sync-jobs/${job.syncJobId}/reprocess`,
-    { method: 'POST' },
-  )
+  return reprocessSyncJob(job.syncJobId)
 }
 
-// [preorder] POST /api/v1/admin/preorders/sync-jobs/{syncJobId}/reprocess — 실패한 외부 취소 다시 보내기
-/** DEAD_LETTER인 외부 취소(CANCEL)를 한 번 더 보낸다. 예약이 취소 중일 때만 된다 */
-export const retryCancelJob = (syncJobId: string) =>
+// [preorder] POST /api/v1/admin/preorders/sync-jobs/{syncJobId}/reprocess — DEAD_LETTER 작업 재처리
+/**
+ * DEAD_LETTER인 작업을 한 번 더 보낸다 — 외부 등록(REGISTER)이든 외부 취소(CANCEL)든 같은
+ * 주소다. 외부 취소는 예약이 취소 중일 때만 된다
+ */
+export const reprocessSyncJob = (syncJobId: string) =>
   apiClient.request<unknown>(`${BASE}/sync-jobs/${syncJobId}/reprocess`, {
     method: 'POST',
   })

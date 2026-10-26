@@ -47,7 +47,11 @@ export {
   useStockDrifts,
 } from './api/useStockReconcile'
 export { toPreviewProduct, validateRegistration } from './model/registration'
-export { serverIssuesOf, validateProductBasics } from './model/validation'
+export {
+  DISCOUNT_RATE_MAX,
+  serverIssuesOf,
+  validateProductBasics,
+} from './model/validation'
 export type { FormField, FormIssue } from './model/validation'
 export {
   CANCEL_REASON_MAX,
@@ -55,7 +59,6 @@ export {
   reopenPreorderOf,
   deleteBlockedReason,
   canConvertToInStock,
-  CONVERSION_DISCOUNT_MAX,
   saleStatusActionOf,
 } from './model/saleStatus'
 export type { SaleStatusAction } from './model/saleStatus'

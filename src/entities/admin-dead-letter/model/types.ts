@@ -21,6 +21,12 @@ export const deadLetterServiceLabel: Record<DeadLetterService, string> = {
   payment: '결제',
 }
 
+/** 메시지가 가리키는 대상 — 예약 DLQ는 예약, 결제 DLQ는 주문 */
+export const deadLetterTargetLabel: Record<DeadLetterService, string> = {
+  preorder: '예약',
+  payment: '주문',
+}
+
 export const deadLetterServices = Object.keys(
   deadLetterServiceLabel,
 ) as DeadLetterService[]

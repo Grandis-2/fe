@@ -9,6 +9,7 @@ import {
   deadLetterFailureReasonTag,
   deadLetterFailureReasons,
   deadLetterServiceLabel,
+  deadLetterTargetLabel,
   deadLetterServices,
   deadLetterStatusColor,
   deadLetterStatusLabel,
@@ -43,7 +44,7 @@ import {
 import { formatDistance } from '@shared/lib/formatDistance'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber } from '@shared/lib/formatNumber'
-import { periodLabels, periodRange, type Period } from '@shared/lib/period'
+import { periodRange, toPeriodOptions, type Period } from '@shared/lib/period'
 import { toggleInSet } from '@shared/lib/toggleInSet'
 import { useNow } from '@shared/lib/useNow'
 import { closeModal, openModal } from '@shared/model/modalStore'
@@ -83,10 +84,7 @@ const PARAM = {
 
 // 쌓인 기간 — 하루 단위라 같은 날 안에서는 조회 키가 흔들리지 않는다.
 const periods: Period[] = ['all', 'today', 'yesterday', 'week', 'month']
-const periodOptions: DropdownOption<Period>[] = periods.map((period) => ({
-  value: period,
-  label: periodLabels[period],
-}))
+const periodOptions = toPeriodOptions(periods)
 
 const ALL = 'all'
 
@@ -187,9 +185,11 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
   const redrive = useRedriveDeadLetters(service)
 
   // 서비스를 바꾸면 이벤트 종류가 달라져 그 조건과 고른 것을 비운다.
+  // 보내는 중이던 되돌리기도 잊는다 — 늦게 온 결과 안내가 다른 서비스 화면에 뜨지 않게.
   const selectService = (next: DeadLetterService) => {
     setSelected(new Set())
     setFeedback(undefined)
+    redrive.reset()
     setSearchParams(
       (prev) => {
         prev.delete(PARAM.eventType)
@@ -356,7 +356,7 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
     // 예약 DLQ는 예약, 결제 DLQ는 주문으로 간다.
     {
       key: 'related',
-      header: service === 'payment' ? '관련 주문' : '관련 예약',
+      header: `관련 ${deadLetterTargetLabel[service]}`,
       render: (item) =>
         item.orderId ? (
           <Link
@@ -378,7 +378,7 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
           </Link>
         ) : (
           <span className={styles.subText}>
-            {service === 'payment' ? '주문과 무관' : '예약과 무관'}
+            {deadLetterTargetLabel[service]}과 무관
           </span>
         ),
     },
@@ -533,7 +533,7 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
       <Panel
         title={
           <>
-            메시지 {formatNumber(items?.length ?? 0)}건
+            메시지{items && ` ${formatNumber(items.length)}건`}
             <span className={styles.titleNote}>
               {tab.value === 'open' ? '오래 멈춘 것부터' : '최근에 쌓인 것부터'}
             </span>

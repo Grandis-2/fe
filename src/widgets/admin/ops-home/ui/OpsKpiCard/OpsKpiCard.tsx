@@ -14,7 +14,7 @@ export type OpsKpiCardProps = {
   /** 못 받았으면 null — '—'로 보여 0건과 구분한다 */
   value: number | null
   unit: string
-  /** 값이 아직 없는 이유(예: '집계 준비 중'). 주면 '—' 대신 이 문구를 보인다 */
+  /** 값이 아직 없는 이유(예: '검사 기록 없음'). 주면 '—' 대신 이 문구를 보인다 */
   emptyText?: string
   /** 숫자 아래 한 줄 — 언제 기준인 값인지 등 */
   caption?: string

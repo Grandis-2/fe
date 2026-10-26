@@ -4,7 +4,6 @@ import {
   useQueries,
   useQuery,
   useQueryClient,
-  type QueryClient,
 } from '@tanstack/react-query'
 
 import {
@@ -16,6 +15,7 @@ import {
 import type {
   BatchReprocessProgress,
   PreorderStats,
+  ProductStatsItem,
   ProductStatsPhase,
   SyncJobStatus,
 } from '@shared/api/types'
@@ -34,7 +34,7 @@ import {
   reprocessFailedRegistrations,
   reprocessSyncJobs,
   resolveCancelJob,
-  retryCancelJob,
+  reprocessSyncJob,
   targetsOf,
   toAdminReservationDetail,
   updateAdminReservationNote,
@@ -74,30 +74,28 @@ export const useAdminReservations = (
   })
 }
 
-const statsQuery = (
-  queryClient: QueryClient,
-  productId: string | undefined,
-  intervalMs: RefreshInterval,
+/** 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다 */
+export const useReservationStats = (
+  productId?: string,
+  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
 ) => {
+  const queryClient = useQueryClient()
   const queryKey = reservationStatsKey(productId)
-  return {
+  return useQuery({
     queryKey,
-    queryFn: ({ signal }: { signal: AbortSignal }) =>
-      getReservationStats(productId, signal),
+    queryFn: ({ signal }) => getReservationStats(productId, signal),
     // 소수 초 자릿수가 응답마다 달라(0·3·6자리) 문자열이 아니라 시각으로 비교한다.
     structuralSharing: keepNewer<PreorderStats>(({ countedAt }) =>
       Date.parse(countedAt),
     ),
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
-  }
+  })
 }
 
-/** 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다 */
-export const useReservationStats = (
-  productId?: string,
-  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
-) => useQuery(statsQuery(useQueryClient(), productId, intervalMs))
+// 모듈에 둬야 렌더마다 Map을 새로 만들지 않는다(select 함수가 같으면 결과를 재사용).
+const byProductId = (items: ProductStatsItem[]) =>
+  new Map(items.map((item) => [item.productId, item]))
 
 /**
  * 접수 중(OPEN)·마감된(CLOSED) 회차의 상품별 집계를 한 요청으로. 운영 대시보드와 대기열
@@ -106,13 +104,15 @@ export const useReservationStats = (
 export const useProductStats = (
   phase: ProductStatsPhase,
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
+  { enabled = true }: { enabled?: boolean } = {},
 ) => {
   const queryClient = useQueryClient()
   const queryKey = [...RESERVATIONS_KEY, 'stats-products', phase] as const
   return useQuery({
     queryKey,
     queryFn: ({ signal }) => getProductStats(phase, signal),
-    select: (items) => new Map(items.map((item) => [item.productId, item])),
+    select: byProductId,
+    enabled,
     ...queryPolicy.live,
     ...pollEvery(queryClient, queryKey, intervalMs),
   })
@@ -135,7 +135,7 @@ export const useReprocessReservation = () => {
 export const useRetryCancelJob = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: retryCancelJob,
+    mutationFn: reprocessSyncJob,
     onSuccess: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })
@@ -182,13 +182,7 @@ const BATCH_POLL_MS = 2_000
 /** 일괄 재처리 묶음들을 합친 진행. finished는 모든 묶음이 대상을 다 다루고 결과도 다 나왔을 때 */
 export type ReprocessBatchesProgress = Pick<
   BatchReprocessProgress,
-  | 'targetCount'
-  | 'sent'
-  | 'unsent'
-  | 'succeeded'
-  | 'failed'
-  | 'canceled'
-  | 'pending'
+  'targetCount' | 'unsent' | 'succeeded' | 'failed' | 'canceled' | 'pending'
 > & { finished: boolean }
 
 const isBatchDone = (batch: BatchReprocessProgress) =>
@@ -205,6 +199,12 @@ export const useReprocessBatches = (batchIds: readonly string[]) =>
       queryFn: ({ signal }: { signal: AbortSignal }) =>
         getReprocessBatch(batchId, signal),
       ...queryPolicy.live,
+      // 끝난 묶음은 더 바뀌지 않는다 — 포커스·다른 예약 변경으로 다시 받지 않는다.
+      staleTime: ({
+        state: { data },
+      }: {
+        state: { data?: BatchReprocessProgress }
+      }) => (data && isBatchDone(data) ? Infinity : 0),
       refetchInterval: ({
         state: { data },
       }: {
@@ -221,7 +221,6 @@ export const useReprocessBatches = (batchIds: readonly string[]) =>
       ) => all.reduce((total, batch) => total + (batch[key] as number), 0)
       return {
         targetCount: sum('targetCount'),
-        sent: sum('sent'),
         unsent: sum('unsent'),
         succeeded: sum('succeeded'),
         failed: sum('failed'),

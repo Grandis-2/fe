@@ -33,7 +33,8 @@ import {
   type RefreshInterval,
 } from '@shared/config/refreshInterval'
 import { adminReservationPath } from '@shared/config/routes'
-import { periodLabels, periodRange, type Period } from '@shared/lib/period'
+import { formatNumber } from '@shared/lib/formatNumber'
+import { periodRange, toPeriodOptions, type Period } from '@shared/lib/period'
 import { toggleInSet } from '@shared/lib/toggleInSet'
 import { useClampPage } from '@shared/lib/useClampPage'
 import { closeModal, openModal } from '@shared/model/modalStore'
@@ -60,10 +61,7 @@ const DEFAULT_INTERVAL: RefreshInterval = 5_000
 
 /** 접수 기간 — 고른 순간을 기준으로 [from, to)를 잡는다 */
 const periods: Period[] = ['all', 'hour', 'today', 'yesterday', 'week', 'month']
-const periodOptions: DropdownOption<Period>[] = periods.map((period) => ({
-  label: periodLabels[period],
-  value: period,
-}))
+const periodOptions = toPeriodOptions(periods)
 
 /** 정렬 — 서버가 정렬해 쪽을 넘겨도 전체 순서가 이어진다. 순번순은 상품을 골라야 된다(명세) */
 const sortOptions: DropdownOption<ReservationSort>[] = [
@@ -300,7 +298,7 @@ export function AdminReservationsPage() {
   const confirmReprocess = () => {
     openModal({
       theme: 'light',
-      title: `${selectedRows.length.toLocaleString('ko-KR')}건을 재처리할까요?`,
+      title: `${formatNumber(selectedRows.length)}건을 재처리할까요?`,
       description:
         '고른 예약을 외부 예약 시스템에 다시 등록합니다. 차례로 처리돼서 반영까지 몇 초 걸릴 수 있습니다.',
       confirmLabel: '재처리',
@@ -313,9 +311,9 @@ export function AdminReservationsPage() {
             setFeedback({
               status: 'success',
               message: [
-                `${targetCount.toLocaleString('ko-KR')}건 재처리를 시작했습니다(약 ${estimatedSeconds}초).`,
+                `${formatNumber(targetCount)}건 재처리를 시작했습니다(약 ${estimatedSeconds}초).`,
                 skippedCount > 0 &&
-                  `${skippedCount.toLocaleString('ko-KR')}건은 이미 처리됐거나 상태가 바뀌어 건너뛰었습니다.`,
+                  `${formatNumber(skippedCount)}건은 이미 처리됐거나 상태가 바뀌어 건너뛰었습니다.`,
               ]
                 .filter(Boolean)
                 .join(' '),
@@ -343,12 +341,10 @@ export function AdminReservationsPage() {
         {reservationStageLabel[stage]}
         {stageCounts &&
           (stage === 'REPROCESS_NEEDED' && stageCounts[stage] > 0 ? (
-            <CountBadge>
-              {stageCounts[stage].toLocaleString('ko-KR')}
-            </CountBadge>
+            <CountBadge>{formatNumber(stageCounts[stage])}</CountBadge>
           ) : (
             <span className={styles.tabCount}>
-              {stageCounts[stage].toLocaleString('ko-KR')}
+              {formatNumber(stageCounts[stage])}
             </span>
           ))}
       </span>
@@ -430,7 +426,7 @@ export function AdminReservationsPage() {
       align: 'right',
       render: (reservation) => (
         <span className={styles.number}>
-          {reservation.queuePosition.toLocaleString('ko-KR')}
+          {formatNumber(reservation.queuePosition)}
         </span>
       ),
     },
@@ -613,7 +609,7 @@ export function AdminReservationsPage() {
       {selectable.length > 0 && (
         <div className={styles.selectionBar}>
           <span className={styles.selectionCount}>
-            {selectedRows.length.toLocaleString('ko-KR')}건 선택됨
+            {formatNumber(selectedRows.length)}건 선택됨
           </span>
           <Button
             size="small"

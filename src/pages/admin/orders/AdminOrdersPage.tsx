@@ -20,7 +20,7 @@ import { getErrorMessage } from '@shared/api/client'
 import { adminOrderPath } from '@shared/config/routes'
 import { formatShortDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber, formatWon } from '@shared/lib/formatNumber'
-import { periodLabels, periodRange, type Period } from '@shared/lib/period'
+import { periodRange, toPeriodOptions, type Period } from '@shared/lib/period'
 import { toggleInSet } from '@shared/lib/toggleInSet'
 import { useClampPage } from '@shared/lib/useClampPage'
 import {
@@ -100,10 +100,7 @@ const searchByOptions: DropdownOption<SearchBy>[] = [
 ]
 const SHIP_TO_NAME_MAX = 50
 const periods: Period[] = ['all', 'today', 'yesterday', 'week', 'month']
-const periodOptions: DropdownOption<Period>[] = periods.map((period) => ({
-  value: period,
-  label: periodLabels[period],
-}))
+const periodOptions = toPeriodOptions(periods)
 
 /** 주소의 값이 아는 값일 때만 쓴다 — 손으로 고친 주소가 400을 부르지 않게 */
 const pick = <TValue extends string>(
@@ -387,14 +384,12 @@ export function AdminOrdersPage() {
         </InlineAlert>
       )}
 
-      <div className={styles.filters}>
-        <SegmentedTabs
-          items={tabs}
-          // 위 카드로 고른 상태(취소 중 등)는 탭이 아니라 어느 탭도 켜지지 않는다.
-          value={canceledTab ? CANCELED_TAB : (status ?? ALL)}
-          onChange={(next) => setParam('status', next)}
-        />
-      </div>
+      <SegmentedTabs
+        items={tabs}
+        // 위 카드로 고른 상태(취소 중 등)는 탭이 아니라 어느 탭도 켜지지 않는다.
+        value={canceledTab ? CANCELED_TAB : (status ?? ALL)}
+        onChange={(next) => setParam('status', next)}
+      />
 
       {/* 고객 문의로 찾기 — 이름은 전체 일치, 전화는 끝 4자리. 다 친 뒤(Enter) 보낸다. */}
       <div className={styles.searchRow}>
