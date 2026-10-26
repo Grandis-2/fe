@@ -1,6 +1,7 @@
 import { apiClient } from '@shared/api/client'
 import { toQueryString } from '@shared/api/queryString'
 import type {
+  ProductConversionRequest,
   AdminProductListItem,
   AdminProductListParams,
   AdminProductResponse,
@@ -148,15 +149,49 @@ export const putPreorderCampaign = (
     { method: 'PUT', body },
   )
 
+// [catalog] POST /api/v1/admin/products/{productId}/conversion — 일반 상품 전환
+/**
+ * 마감된 사전예약 상품을 같은 상품 그대로 일반 상품으로 바꾼다. 판매 중이 되고 수정 잠금이
+ * 풀린다. 재고는 order가 이어서 만들어 잠깐 회원에게 안 보인다. 마감 전·회차 취소·이미
+ * 일반 상품이면 409, 옵션이 빠지거나 겹치면 400, 사전예약 서비스가 안 되면 503
+ */
+export const convertAdminProduct = (
+  productId: string,
+  body: ProductConversionRequest,
+) =>
+  apiClient.request<unknown>(`${BASE}/${productId}/conversion`, {
+    method: 'POST',
+    body,
+  })
+
+// [catalog] DELETE /api/v1/admin/products/{productId} — 상품 삭제
+/**
+ * 상품을 지운다(204). 되돌릴 수 없고 관리자·회원 목록과 상세에서 모두 빠진다. 사전예약 오픈
+ * 3분 전~마감 전이나 진행 중인 드로우의 증정품이면 409
+ */
+export const deleteAdminProduct = (productId: string) =>
+  apiClient.request<unknown>(`${BASE}/${productId}`, { method: 'DELETE' })
+
 // [preorder] POST /api/v1/admin/preorders/products/{productId}/campaign/close — 접수 조기 마감
 /**
  * 접수 중인 회차를 지금 마감한다. 새 접수만 막히고 받은 예약과 순번은 그대로다.
- * 다시 열 수 없다. 이미 마감됐으면 그대로 200, 오픈 전이면 409
+ * 다시 열 수 있다(reopen). 이미 마감됐으면 그대로 200, 오픈 전이면 409
  */
 export const closePreorderCampaign = (productId: string) =>
   apiClient.request<unknown>(
     `/api/v1/admin/preorders/products/${productId}/campaign/close`,
     { method: 'POST' },
+  )
+
+// [preorder] POST /api/v1/admin/preorders/products/{productId}/campaign/reopen — 마감한 접수 다시 열기
+/**
+ * 마감된 회차를 새 마감 시각까지 다시 연다. 받은 예약·배송 차수는 그대로이고 새 접수는
+ * 이어지는 순번을 받는다. 판매 중지·비공개 상품이나 오픈 전 회차는 409
+ */
+export const reopenPreorderCampaign = (productId: string, closesAt: string) =>
+  apiClient.request<unknown>(
+    `/api/v1/admin/preorders/products/${productId}/campaign/reopen`,
+    { method: 'POST', body: { closesAt } },
   )
 
 // [catalog] PATCH /api/v1/admin/products/{productId}/sale-status — 상품 판매 상태 변경

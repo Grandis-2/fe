@@ -31,3 +31,9 @@ export function periodRange(
     ? { from, to: new Date(today).toISOString() }
     : { from }
 }
+
+const pad = (value: number) => String(value).padStart(2, '0')
+
+/** datetime-local 칸에 넣는 로컬 시각 'YYYY-MM-DDTHH:mm' */
+export const toLocalInputValue = (date: Date) =>
+  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`

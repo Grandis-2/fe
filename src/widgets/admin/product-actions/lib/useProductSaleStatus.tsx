@@ -1,12 +1,18 @@
 import {
   CANCEL_REASON_MAX,
   useClosePreorderCampaign,
+  useConvertAdminProduct,
+  useReopenPreorderCampaign,
   useSetAdminProductSaleStatus,
   type AdminProduct,
+  type AdminProductDetailModel,
 } from '@entities/admin-product'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import { ReasonForm } from '@shared/ui'
+
+import { ConvertToInStockForm } from '../ui/ConvertToInStockForm'
+import { ReopenCampaignForm } from '../ui/ReopenCampaignForm'
 
 type SaleTarget = Pick<AdminProduct, 'productId' | 'name'>
 
@@ -19,6 +25,8 @@ type SaleTarget = Pick<AdminProduct, 'productId' | 'name'>
 export function useProductSaleStatus() {
   const saleStatus = useSetAdminProductSaleStatus()
   const closeEarly = useClosePreorderCampaign()
+  const reopen = useReopenPreorderCampaign()
+  const convert = useConvertAdminProduct()
 
   const run = (
     product: SaleTarget,
@@ -53,6 +61,8 @@ export function useProductSaleStatus() {
   const open = (content: Parameters<typeof openModal>[0]) => {
     saleStatus.reset()
     closeEarly.reset()
+    reopen.reset()
+    convert.reset()
     openModal({ theme: 'light', ...content })
   }
 
@@ -93,13 +103,63 @@ ${product.name}을(를) 다시 판매할 수 없습니다.`,
     confirmCloseEarly: (product: SaleTarget) =>
       open({
         title: '접수를 지금 마감할까요?',
-        description: `${product.name}의 새 예약 접수가 바로 끝나고, 다시 열 수 없습니다.
+        description: `${product.name}의 새 예약 접수가 바로 끝납니다. 필요하면 다시 열 수 있습니다.
 이미 받은 예약과 순번은 그대로입니다. 예약까지 취소하려면 판매 중지를 쓰세요.`,
         confirmLabel: '접수 마감',
         onConfirm: () => runClose(product),
       }),
-    isPending: saleStatus.isPending || closeEarly.isPending,
-    isError: saleStatus.isError || closeEarly.isError,
-    error: saleStatus.error ?? closeEarly.error,
+    // 마감한 회차 — 새 마감 시각까지 접수를 다시 받는다. 회원이 바로 다시 접수할 수 있다.
+    confirmReopen: (product: SaleTarget) =>
+      open({
+        title: '접수를 다시 열까요?',
+        description: `${product.name}의 접수를 새 마감 시각까지 다시 엽니다. 회원이 바로 다시 예약할 수 있어요.
+받은 예약과 배송 차수는 그대로이고, 새 예약은 이어지는 순번을 받습니다.`,
+        children: (
+          <ReopenCampaignForm
+            onConfirm={(closesAt) => {
+              closeModal()
+              reopen.mutate(
+                { productId: product.productId, closesAt },
+                { onSuccess: () => showToast('접수를 다시 열었습니다.') },
+              )
+            }}
+            onCancel={closeModal}
+          />
+        ),
+      }),
+    // 마감한 사전예약 — 같은 상품 그대로 일반 판매로. 옵션마다 처음 재고를 받는다.
+    confirmConvert: (
+      product: SaleTarget & Pick<AdminProductDetailModel, 'variants'>,
+    ) =>
+      open({
+        title: '일반 상품으로 전환할까요?',
+        description: `${product.name}을(를) 같은 상품 그대로 일반 판매로 바꿉니다. 바로 판매 중이 되고 수정 잠금이 풀려요.
+재고를 만드는 동안 잠깐 회원에게 안 보일 수 있어요. 받은 예약은 그대로입니다.`,
+        children: (
+          <ConvertToInStockForm
+            variants={product.variants}
+            onConfirm={(value) => {
+              closeModal()
+              convert.mutate(
+                { productId: product.productId, ...value },
+                { onSuccess: () => showToast('일반 상품으로 전환했습니다.') },
+              )
+            }}
+            onCancel={closeModal}
+          />
+        ),
+      }),
+    isPending:
+      saleStatus.isPending ||
+      closeEarly.isPending ||
+      reopen.isPending ||
+      convert.isPending,
+    isError:
+      saleStatus.isError ||
+      closeEarly.isError ||
+      reopen.isError ||
+      convert.isError,
+    error:
+      saleStatus.error ?? closeEarly.error ?? reopen.error ?? convert.error,
   }
 }
