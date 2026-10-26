@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { useReservationStatsByProduct } from '@entities/admin-reservation'
+import { useProductStats } from '@entities/admin-reservation'
 import {
   productWaitEstimate,
   type WaitingroomProductRate,
@@ -66,12 +66,11 @@ export function ProductCapList({
 }: ProductCapListProps) {
   const [phase, setPhase] = useState<Phase>('OPEN')
   const shown = products.filter((product) => product.phase === phase)
-  const productStats = useReservationStatsByProduct(
-    shown.map((product) => product.productId),
+  // 상품별 집계를 한 번에 받는다. 오픈 전 회차는 서버가 세지 않아 접수 중 목록으로 묻는다.
+  const productStats = useProductStats(
+    phase === 'CLOSED' ? 'CLOSED' : 'OPEN',
     refreshInterval,
   )
-  const statsOf = (productId: string) =>
-    productStats[shown.findIndex((item) => item.productId === productId)]
   const capOf = (productId: string) =>
     rates?.find((item) => item.productId === productId)?.cap
 
@@ -162,12 +161,12 @@ export function ProductCapList({
             const cap = capOf(product.productId)?.value ?? product.cap
             const applied = product.cap !== cap ? product.cap : null
             const atCap = cap !== null && cap > 0 && product.credit >= cap
-            const query = statsOf(product.productId)
+            const stats = productStats.data?.get(product.productId)
             const oldest = oldestSeconds(
-              query?.data?.oldestInFlightSyncAt,
-              query?.dataUpdatedAt ?? 0,
+              stats?.oldestInFlightSyncAt,
+              productStats.dataUpdatedAt,
             )
-            const register = query?.data?.syncJobs.REGISTER
+            const register = stats?.syncJobs.REGISTER
             // 등록 작업이 아직 도는 예약만의 시각이라 재처리 필요(실패)와 섞이지 않는다.
             const slow = oldest !== null && oldest * 1000 > SLOW_AFTER_MS
             return (

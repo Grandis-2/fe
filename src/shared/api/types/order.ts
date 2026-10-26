@@ -185,6 +185,12 @@ export type AdminOrderDetail = OrderDetail & {
   customerName: string | null
 }
 
+// GET /api/v1/admin/orders/stats — 상태별 주문 수. 모든 상태가 상태 표 순서대로 오고, 없는 상태는 0.
+export type AdminOrderStats = {
+  byStatus: Record<OrderStatus, number>
+  countedAt: string
+}
+
 // 오프셋 페이지 — page는 0부터, 전체 건수는 total.
 export type AdminOrderPage = {
   items: AdminOrderSummary[]

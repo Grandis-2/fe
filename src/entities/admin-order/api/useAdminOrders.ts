@@ -1,7 +1,6 @@
 import {
   keepPreviousData,
   useMutation,
-  useQueries,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query'
@@ -20,7 +19,12 @@ import {
   type ShippingOutcome,
 } from '../lib/shippingOutcome'
 
-import { advanceShipping, getAdminOrder, getAdminOrders } from './adminOrder'
+import {
+  advanceShipping,
+  getAdminOrder,
+  getAdminOrderStats,
+  getAdminOrders,
+} from './adminOrder'
 
 const ADMIN_ORDERS_KEY = ['admin', 'orders'] as const
 
@@ -37,8 +41,8 @@ export const useAdminOrders = (params: AdminOrderListParams) =>
   })
 
 /**
- * 상태별 주문 수. 건수만 필요해 상태마다 한 건씩 받고 total을 쓴다 — 목록과 같은 키라
- * 주문 관리 화면이 같은 조건으로 연 쪽과 캐시를 나눠 쓴다.
+ * 상태별 주문 수 — 상태별 집계(orders/stats) 한 번으로 받아 화면이 고른 상태만 꺼낸다.
+ * 같은 키라 대시보드와 주문 관리 화면이 한 요청을 나눠 쓴다.
  * @returns 상태 → 건수. 못 받았으면 null
  */
 export const useAdminOrderCounts = <TStatus extends OrderStatus>(
@@ -46,30 +50,18 @@ export const useAdminOrderCounts = <TStatus extends OrderStatus>(
   /** 자동으로 다시 받는 간격. 운영 대시보드처럼 열어 두는 화면이 준다 */
   intervalMs: RefreshInterval = false,
 ) => {
-  const queries = useQueries({
-    queries: statuses.map((status) => {
-      const params = { status, size: 1 }
-      return {
-        queryKey: [...ADMIN_ORDERS_KEY, 'list', params] as const,
-        queryFn: ({ signal }: { signal: AbortSignal }) =>
-          getAdminOrders(params, signal),
-        ...queryPolicy.live,
-        refetchInterval: intervalMs,
-      }
-    }),
+  const stats = useQuery({
+    queryKey: [...ADMIN_ORDERS_KEY, 'stats'] as const,
+    queryFn: ({ signal }) => getAdminOrderStats(undefined, signal),
+    ...queryPolicy.live,
+    refetchInterval: intervalMs,
   })
   const counts = Object.fromEntries(
-    statuses.map((status, index) => [
-      status,
-      queries[index]?.data?.total ?? null,
-    ]),
+    statuses.map((status) => [status, stats.data?.byStatus[status] ?? null]),
   ) as Record<TStatus, number | null>
-  const refetch = () => {
-    for (const query of queries) void query.refetch()
-  }
-  /** 하나라도 받지 못했다 — 화면이 "마지막으로 받은 값"이라고 알린다 */
-  const isError = queries.some((query) => query.isError)
-  return { counts, refetch, isError }
+  const refetch = () => void stats.refetch()
+  /** 받지 못했다 — 화면이 "마지막으로 받은 값"이라고 알린다 */
+  return { counts, refetch, isError: stats.isError }
 }
 
 export const useAdminOrder = (orderId: string) =>

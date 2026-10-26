@@ -8,7 +8,7 @@ export {
   useReprocessReservation,
   useReprocessReservations,
   useReservationStats,
-  useReservationStatsByProduct,
+  useProductStats,
   useSaveReservationNote,
   useSyncJobErrorGroups,
 } from './api/useAdminReservations'

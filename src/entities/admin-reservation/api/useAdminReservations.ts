@@ -1,7 +1,6 @@
 import {
   keepPreviousData,
   useMutation,
-  useQueries,
   useQuery,
   useQueryClient,
   type QueryClient,
@@ -13,13 +12,18 @@ import {
   pollingRetry,
   queryPolicy,
 } from '@shared/api/queryPolicy'
-import type { PreorderStats, SyncJobStatus } from '@shared/api/types'
+import type {
+  PreorderStats,
+  ProductStatsPhase,
+  SyncJobStatus,
+} from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
   cancelAdminReservation,
   getAdminReservation,
   getAdminReservationsPage,
+  getProductStats,
   getReservationStats,
   getSyncJobErrorGroups,
   reprocessAdminReservation,
@@ -91,18 +95,21 @@ export const useReservationStats = (
 ) => useQuery(statsQuery(useQueryClient(), productId, intervalMs))
 
 /**
- * 여러 상품의 집계를 한꺼번에(상품마다 한 요청). 운영 홈이 진행 중인 사전예약마다
- * 상태를 나눠 보일 때 쓴다. 같은 키라 예약 현황의 상품별 집계와 캐시를 나눠 쓴다.
+ * 접수 중(OPEN)·마감된(CLOSED) 회차의 상품별 집계를 한 요청으로. 운영 대시보드와 대기열
+ * 관리가 사전예약마다 상태를 나눠 보일 때 쓴다. data는 상품 id → 집계다.
  */
-export const useReservationStatsByProduct = (
-  productIds: readonly string[],
+export const useProductStats = (
+  phase: ProductStatsPhase,
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
 ) => {
   const queryClient = useQueryClient()
-  return useQueries({
-    queries: productIds.map((productId) =>
-      statsQuery(queryClient, productId, intervalMs),
-    ),
+  const queryKey = [...RESERVATIONS_KEY, 'stats-products', phase] as const
+  return useQuery({
+    queryKey,
+    queryFn: ({ signal }) => getProductStats(phase, signal),
+    select: (items) => new Map(items.map((item) => [item.productId, item])),
+    ...queryPolicy.live,
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
 }
 

@@ -13,6 +13,7 @@ import {
   isBraking,
   useWaitingroomStatusHistory,
   productWaitEstimate,
+  productWaitSeconds,
 } from '@entities/admin-waitingroom'
 import {
   OpenPreorderPicker,
@@ -94,14 +95,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     SLOW_POLL_MS,
   )
 
-  // 진행 중인 사전예약 — 동시에 여럿 열릴 수 있어 각각의 집계를 따로 받는다.
+  // 진행 중인 사전예약 — 동시에 여럿 열릴 수 있어 상품별 집계를 함께 받는다.
   const {
     queue,
     openProducts,
     items: openPreorders,
     nameOf,
     statsOf,
-    statsQueryOf,
+    statsQuery,
     refetchStats,
   } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
@@ -124,14 +125,9 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     .filter((value) => value !== undefined)
   // 대기열 현황을 못 받으면 진행 중인 사전예약을 몰라 범위가 비는데, 그걸 0건으로 세지 않는다.
   const scopeLoaded = q !== undefined && scopeStats.length === scopeIds.length
-  const scopeQueries = scopeIds.map(statsQueryOf)
-  const scopePending =
-    queue.isPending || scopeQueries.some((query) => query?.isPending)
-  // 사전예약별 집계가 하나라도 실패하면 위 숫자가 비거나 멈춘다 — 전체 집계와 따로 알린다.
-  const scopeError =
-    scopeQueries
-      .map((query) => (query ? pollingError(query) : null))
-      .find((error) => error !== null) ?? null
+  const scopePending = queue.isPending || statsQuery.isPending
+  // 사전예약별 집계가 실패하면 위 숫자가 비거나 멈춘다 — 전체 집계와 따로 알린다.
+  const scopeError = pollingError(statsQuery)
   const countOf = (status: keyof (typeof scopeStats)[number]['preorders']) =>
     scopeLoaded
       ? scopeStats.reduce((total, value) => total + value.preorders[status], 0)
@@ -213,8 +209,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     (product) =>
       product.waiting > 0 &&
       (product.credit <= 0 ||
-        (product.estimatedWaitSeconds ?? product.waiting / product.credit) >=
-          LONG_WAIT_SECONDS),
+        (productWaitSeconds(product) ?? 0) >= LONG_WAIT_SECONDS),
   )
 
   const reprocessPath = adminReservationsPath(

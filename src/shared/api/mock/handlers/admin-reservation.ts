@@ -19,6 +19,8 @@ import type {
   OffsetPage,
   PreorderStats,
   PreorderStatus,
+  ProductStatsPage,
+  StatsRates,
   ReprocessBatchRequest,
   SyncJob,
   SyncJobErrorGroup,
@@ -106,6 +108,31 @@ function countWaiting(preorderIds: ReadonlySet<string> | null) {
   }
 }
 
+// 서버처럼 10초마다 남긴 기록의 최근 1분으로 속도를 잰다(집계를 부를 때 따라잡는다).
+const STEP_MS = 10_000
+const RATE_WINDOW_MS = 60_000
+type StatsLogEntry = { at: number; received: number; pendingSync: number }
+const statsLog = new Map<string, StatsLogEntry[]>()
+
+function ratesOf(key: string, entry: StatsLogEntry): StatsRates | null {
+  const log = statsLog.get(key) ?? []
+  if (!log.length || entry.at - log.at(-1)!.at >= STEP_MS) log.push(entry)
+  while (entry.at - log[0].at > RATE_WINDOW_MS) log.shift()
+  statsLog.set(key, log)
+  const first = log[0]
+  const last = log.at(-1)!
+  const seconds = (last.at - first.at) / 1000
+  if (seconds <= 0) return null
+  const received = last.received - first.received
+  const backlog = last.pendingSync - first.pendingSync
+  return {
+    receivedPerSec: received / seconds,
+    registeredPerSec: Math.max(0, received - backlog) / seconds,
+    backlogPerMin: (backlog / seconds) * 60,
+    windowSeconds: Math.round(seconds),
+  }
+}
+
 function countStats(productId: string | null): PreorderStats {
   const matched = reservationStore.filter(
     (detail) => !productId || detail.productId === productId,
@@ -145,6 +172,11 @@ function countStats(productId: string | null): PreorderStats {
       matched,
       (job) => job.status !== 'DEAD_LETTER',
     ),
+    rates: ratesOf(productId ?? '', {
+      at: Date.now(),
+      received: Object.values(preorders).reduce((sum, n) => sum + n, 0),
+      pendingSync: preorders.PENDING_SYNC,
+    }),
     countedAt: new Date().toISOString(),
   }
 }
@@ -309,6 +341,40 @@ export const adminReservationHandlers: RequestHandler[] = [
   http.get(url(`${BASE}/stats`), ({ request }) =>
     ok(countStats(new URL(request.url).searchParams.get('productId'))),
   ),
+
+  // 목의 사전예약은 모두 접수 중이다(대기열 목과 같은 일정) — 마감된 회차는 없다.
+  http.get(url(`${BASE}/stats/products`), ({ request }) => {
+    const phase = new URL(request.url).searchParams.get('phase')
+    if (phase !== 'OPEN' && phase !== 'CLOSED') {
+      return invalid([
+        { field: 'phase', message: 'OPEN 또는 CLOSED여야 합니다.' },
+      ])
+    }
+    const now = Date.now()
+    const ids =
+      phase === 'OPEN'
+        ? [
+            ...new Set(reservationStore.map((item) => item.productId)),
+          ].toSorted()
+        : []
+    return ok<ProductStatsPage>({
+      items: ids.map((productId) => {
+        const {
+          countedAt: _countedAt,
+          rates: _rates,
+          ...stats
+        } = countStats(productId)
+        return {
+          ...stats,
+          productId,
+          opensAt: new Date(now - 30 * 60_000).toISOString(),
+          closesAt: new Date(now + 90 * 60_000).toISOString(),
+        }
+      }),
+      nextCursor: null,
+      countedAt: new Date(now).toISOString(),
+    })
+  }),
 
   http.get(url(`${BASE}/:preorderId`), ({ params }) => {
     const detail = findReservation(String(params.preorderId))

@@ -14,6 +14,7 @@ import { expireCartOrders } from './order'
 import type {
   AdminOrderDetail,
   AdminOrderPage,
+  AdminOrderStats,
   AdminOrderSummary,
   AdvanceShippingRequest,
   OrderEvent,
@@ -258,6 +259,21 @@ export const adminOrderHandlers: RequestHandler[] = [
       page,
       size,
       total,
+    })
+  }),
+
+  // stats는 경로 :orderId보다 먼저 잡혀야 한다. 모든 상태가 0이라도 온다.
+  http.get(url('/api/v1/admin/orders/stats'), () => {
+    catchUp()
+    const orders = all()
+    return ok<AdminOrderStats>({
+      byStatus: Object.fromEntries(
+        PATH.concat('CANCELING', 'CANCELED').map((status) => [
+          status,
+          orders.filter((it) => it.status === status).length,
+        ]),
+      ) as AdminOrderStats['byStatus'],
+      countedAt: new Date().toISOString(),
     })
   }),
 

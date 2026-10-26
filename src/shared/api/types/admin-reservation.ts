@@ -155,6 +155,18 @@ type OpenSyncJobCounts = Record<
  * GET /admin/preorders/stats — 운영 현황. 최대 5초 늦을 수 있고, 0인 칸도 빠지지
  * 않고 온다.
  */
+/** 서버가 10초마다 남긴 기록의 처음·끝 차이로 잰 최근 1분 속도 */
+export type StatsRates = {
+  /** 초당 접수 */
+  receivedPerSec: number
+  /** 초당 외부 등록 대기에서 빠져나간 수(등록 완료 + 등록 전 취소) */
+  registeredPerSec: number
+  /** 분당 외부 등록 대기 증감. 양수면 밀린다 */
+  backlogPerMin: number
+  /** 실제로 잰 구간(초). 기록이 빠지면 60보다 짧다 */
+  windowSeconds: number
+}
+
 export type PreorderStats = {
   productId: string | null
   /** 원장 상태별 예약 수 */
@@ -168,5 +180,27 @@ export type PreorderStats = {
   oldestPendingSyncAt: string | null
   /** 그중 등록 작업이 아직 도는(PENDING·PROCESSING·RETRY_SCHEDULED) 예약만의 가장 오래된 접수 시각 */
   oldestInFlightSyncAt: string | null
+  /** 최근 1분 속도. 서버가 막 떴거나 접수 중이 아닌 상품이면 null */
+  rates: StatsRates | null
+  countedAt: string
+}
+
+/** GET /admin/preorders/stats/products 한 줄 — 운영 현황과 같은 칸에 회차 일정이 붙는다(속도는 없다) */
+export type ProductStatsItem = Omit<
+  PreorderStats,
+  'productId' | 'countedAt' | 'rates'
+> & {
+  productId: string
+  opensAt: string
+  closesAt: string
+}
+
+/** OPEN은 접수 중 회차를 마감이 가까운 순으로, CLOSED는 마감된 회차를 최근 마감순으로 */
+export type ProductStatsPhase = 'OPEN' | 'CLOSED'
+
+export type ProductStatsPage = {
+  items: ProductStatsItem[]
+  /** 마지막 쪽이면 null */
+  nextCursor: string | null
   countedAt: string
 }

@@ -4,6 +4,7 @@ import type {
   AdminOrderDetail,
   AdminOrderListParams,
   AdminOrderPage,
+  AdminOrderStats,
   AdvanceShippingRequest,
   ShippingStepResponse,
 } from '@shared/api/types'
@@ -18,6 +19,14 @@ export const getAdminOrders = (
   apiClient.request<AdminOrderPage>(`${BASE}${toQueryString(params)}`, {
     signal,
   })
+
+// [order] GET /api/v1/admin/orders/stats — 상태별 주문 수
+/** 상태마다 몇 건인지 한 번에. productId를 주면 그 상품을 담은 주문만 센다 */
+export const getAdminOrderStats = (productId?: string, signal?: AbortSignal) =>
+  apiClient.request<AdminOrderStats>(
+    `${BASE}/stats${toQueryString({ productId })}`,
+    { signal },
+  )
 
 export const getAdminOrder = (orderId: string, signal?: AbortSignal) =>
   apiClient.request<AdminOrderDetail>(

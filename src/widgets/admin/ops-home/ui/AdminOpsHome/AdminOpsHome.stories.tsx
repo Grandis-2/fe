@@ -78,15 +78,27 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
   )
   // 진행 중인 두 사전예약 — 실패는 아이폰에 몰려 있다.
   queryClient.setQueryData(
-    ['admin', 'reservations', 'stats', IPHONE],
-    statsOf({ ...counts, registerFailures: counts.registerFailures - 15 }),
-  )
-  queryClient.setQueryData(
-    ['admin', 'reservations', 'stats', GALAXY],
-    statsOf({
-      ...counts,
-      registerFailures: Math.min(15, counts.registerFailures),
-    }),
+    ['admin', 'reservations', 'stats-products', 'OPEN'],
+    [
+      {
+        ...statsOf({
+          ...counts,
+          registerFailures: counts.registerFailures - 15,
+        }),
+        productId: IPHONE,
+        opensAt: '2026-10-08T05:00:00Z',
+        closesAt: '2026-10-08T07:00:00Z',
+      },
+      {
+        ...statsOf({
+          ...counts,
+          registerFailures: Math.min(15, counts.registerFailures),
+        }),
+        productId: GALAXY,
+        opensAt: '2026-10-08T05:00:00Z',
+        closesAt: '2026-10-08T07:00:00Z',
+      },
+    ],
   )
   queryClient.setQueryData(['admin', 'waitingroom', 'status'], {
     nodeId: 'node-1',
@@ -104,37 +116,23 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
     ],
   })
   queryClient.setQueryData(['admin', 'draws', 'list'], [])
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'PREPARING_ITEMS', size: 1 }],
-    orderPage(counts.shipping),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'READY_TO_SHIP', size: 1 }],
-    orderPage(0),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'AWAITING_CONFIRMATION', size: 1 }],
-    orderPage(52),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'SHIPPED', size: 1 }],
-    orderPage(210),
-  )
+  queryClient.setQueryData(['admin', 'orders', 'stats'], {
+    byStatus: {
+      AWAITING_PAYMENT: 0,
+      AUTHORIZING: 0,
+      AWAITING_CONFIRMATION: 52,
+      PREPARING_ITEMS: counts.shipping,
+      READY_TO_SHIP: 0,
+      SHIPPED: 210,
+      DELIVERED: 0,
+      CANCELING: 0,
+      CANCELED: 0,
+    },
+    countedAt: '2026-10-08T05:00:00Z',
+  })
   queryClient.setQueryData(
     ['admin', 'products', 'list', { status: 'ACTIVE', size: 1 }],
     orderPage(42),
-  )
-  queryClient.setQueryData(
-    ['admin', 'products', 'list', { status: 'PAUSED', size: 1 }],
-    orderPage(3),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'AWAITING_CONFIRMATION', size: 1 }],
-    orderPage(52),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'SHIPPED', size: 1 }],
-    orderPage(210),
   )
   queryClient.setQueryData(
     ['admin', 'products', 'list', { status: 'ACTIVE', size: 1 }],

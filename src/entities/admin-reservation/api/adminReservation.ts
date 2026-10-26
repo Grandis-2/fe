@@ -16,9 +16,13 @@ import type {
   OffsetPage,
   PreorderStats,
   PreorderStatus,
+  ProductStatsItem,
+  ProductStatsPage,
+  ProductStatsPhase,
   ReprocessBatchRequest,
   SyncJobListResponse,
   SyncJobStatus,
+  SyncJobSummary,
 } from '@shared/api/types'
 
 import type { AdminReservationDetail } from '../model/types'
@@ -69,6 +73,28 @@ export const getReservationStats = (productId?: string, signal?: AbortSignal) =>
     { signal },
   )
 
+// [preorder] GET /api/v1/admin/preorders/stats/products — 상품별 운영 현황
+/**
+ * 접수 중(OPEN)이나 마감된(CLOSED) 회차의 상품별 집계를 한 번에. 상품마다 stats를 따로
+ * 부르지 않는다. 쪽은 커서로 넘기고, 회차가 100개를 넘는 일은 드물어 끝까지 받는다.
+ */
+export async function getProductStats(
+  phase: ProductStatsPhase,
+  signal?: AbortSignal,
+) {
+  const items: ProductStatsItem[] = []
+  let cursor: string | undefined
+  do {
+    const page = await apiClient.request<ProductStatsPage>(
+      `${BASE}/stats/products${toQueryString({ phase, cursor, size: PAGE_SIZE_MAX })}`,
+      { signal },
+    )
+    items.push(...page.items)
+    cursor = page.nextCursor ?? undefined
+  } while (cursor)
+  return items
+}
+
 // [preorder] GET /api/v1/admin/preorders/{preorderId} — 예약 상세(관리자)
 /** 예약 상세 — 회원, 내부 메모, 동기화 작업, 상태 이력까지 */
 export const getAdminReservation = (preorderId: string, signal?: AbortSignal) =>
@@ -112,16 +138,7 @@ export async function reprocessAdminReservation(preorderId: string) {
       syncJob.jobType === 'REGISTER' && syncJob.status === 'DEAD_LETTER',
   )
   // 그사이 다른 관리자가 재처리했거나 예약이 취소됐다 — 목록을 다시 받으면 맞춰진다.
-  if (!job) {
-    throw new ApiRequestError(
-      {
-        code: 'NOTHING_TO_REPROCESS',
-        message: '재처리할 작업이 없습니다. 목록을 새로 고쳐 확인해 주세요.',
-        details: null,
-      },
-      409,
-    )
-  }
+  if (!job) throw nothingToReprocess()
   return apiClient.request<unknown>(
     `${BASE}/sync-jobs/${job.syncJobId}/reprocess`,
     { method: 'POST' },
@@ -176,10 +193,10 @@ export const targetsOf = (
   )
 
 /** 재처리할 외부 등록 작업 — 부분 실패 때 못 보낸 예약을 알려 주려고 예약 id를 같이 든다 */
-export type ReprocessTarget = { preorderId: string; syncJobId: string }
+export type ReprocessTarget = Pick<SyncJobSummary, 'preorderId' | 'syncJobId'>
 
-const nothingToReprocess = () =>
-  new ApiRequestError(
+function nothingToReprocess() {
+  return new ApiRequestError(
     {
       code: 'NOTHING_TO_REPROCESS',
       message: '재처리할 작업이 없습니다. 목록을 새로 고쳐 확인해 주세요.',
@@ -187,6 +204,7 @@ const nothingToReprocess = () =>
     },
     409,
   )
+}
 
 // [preorder] POST /api/v1/admin/preorders/sync-jobs/reprocess-batch — 일괄 재처리
 /**
@@ -258,9 +276,7 @@ export async function reprocessAdminReservations(
     }),
   )
   return reprocessSyncJobs(
-    deadJobs
-      .filter((job) => !wanted || wanted.has(job.preorderId))
-      .map(({ preorderId, syncJobId }) => ({ preorderId, syncJobId })),
+    deadJobs.filter((job) => !wanted || wanted.has(job.preorderId)),
     signal,
   )
 }
@@ -287,10 +303,9 @@ const pause = (ms: number, signal?: AbortSignal) =>
 // → reprocessSyncJobs
 /**
  * 외부 등록이 실패한 예약을 다시 시도한다. productId를 주면 그 사전예약만, 빼면 전부.
- * 일괄 재처리는 상품으로 거를 수 없어 그 사전예약의 실패 예약을 먼저 받아 작업 id를 모은다.
+ * 일괄 재처리는 상품으로 거를 수 없어 실패 예약을 먼저 받아 작업 id를 모은다.
  */
 export async function reprocessFailedRegistrations(productId?: string) {
-  if (!productId) return reprocessAdminReservations()
   const failed = await fetchAllPages((page) =>
     getAdminReservations({
       productId,
