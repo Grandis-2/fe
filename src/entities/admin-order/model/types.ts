@@ -66,10 +66,6 @@ export const adminOrderSourceLabel: Record<OrderSource, string> = {
   DRAW: '럭키드로우 당첨',
 }
 
-export const adminOrderSources = Object.keys(
-  adminOrderSourceLabel,
-) as OrderSource[]
-
 /** 화면에 보이는 짧은 주문 번호 — 회원 화면의 주문번호와 같다. 전체 id는 상세에서 본다 */
 export const orderNo = shortId
 

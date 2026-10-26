@@ -79,18 +79,12 @@ export const todoHint = style([
   { color: color.text.secondary },
 ])
 
-// 왼쪽 상태 탭, 오른쪽 다른 상태·출처. 좁으면 줄을 바꾼다.
+// 상태 탭. 좁으면 줄을 바꾼다.
 export const filters = style({
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
   justifyContent: 'space-between',
-  gap: spacing[12],
-})
-
-export const dropdowns = style({
-  display: 'flex',
-  flexWrap: 'wrap',
   gap: spacing[12],
 })
 

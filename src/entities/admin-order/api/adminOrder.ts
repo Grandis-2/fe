@@ -1,6 +1,8 @@
 import { apiClient } from '@shared/api/client'
+import { fetchConcatPage } from '@shared/api/fetchAllPages'
 import { toQueryString } from '@shared/api/queryString'
 import type {
+  OrderStatus,
   AdminOrderDetail,
   AdminOrderListParams,
   AdminOrderPage,
@@ -27,6 +29,31 @@ export const getAdminOrderStats = (productId?: string, signal?: AbortSignal) =>
     `${BASE}/stats${toQueryString({ productId })}`,
     { signal },
   )
+
+/** 목록 조건 — statuses를 여럿 주면 상태별 목록을 준 순서대로 이어 붙여 쪽을 나눈다 */
+export type AdminOrderListQuery = Omit<AdminOrderListParams, 'status'> & {
+  statuses?: readonly OrderStatus[]
+}
+
+// [order] GET /api/v1/admin/orders — 전체 주문 목록 한 쪽, 상태 여럿
+/**
+ * 서버는 상태를 하나만 거를 수 있어서, 상태를 여럿 주면(취소 탭 = 취소 중 다음 취소 완료)
+ * 상태별 목록을 이어 붙여 쪽을 나눈다.
+ */
+export const getAdminOrdersPage = (
+  { statuses = [], ...params }: AdminOrderListQuery,
+  signal?: AbortSignal,
+) =>
+  statuses.length > 1
+    ? fetchConcatPage(
+        statuses.map(
+          (status) => (page: number, size: number) =>
+            getAdminOrders({ ...params, status, page, size }, signal),
+        ),
+        params.page ?? 0,
+        params.size ?? 20,
+      )
+    : getAdminOrders({ ...params, status: statuses[0] }, signal)
 
 export const getAdminOrder = (orderId: string, signal?: AbortSignal) =>
   apiClient.request<AdminOrderDetail>(

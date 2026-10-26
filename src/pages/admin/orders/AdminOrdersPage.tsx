@@ -4,7 +4,6 @@ import { useNavigate, useSearchParams } from 'react-router'
 
 import {
   adminOrderSourceLabel,
-  adminOrderSources,
   adminOrderStatusColor,
   adminOrderStatuses,
   adminOrderStatusLabel,
@@ -12,7 +11,6 @@ import {
   nextShippingStepOf,
   orderNo,
   type AdminOrder,
-  type AdminOrderSource,
   type AdminOrderStatus,
   useAdminOrderCounts,
   useAdminOrders,
@@ -70,7 +68,8 @@ const todoCards = [
 }[]
 const todoStatuses = todoCards.map(({ status }) => status)
 
-// 탭은 배송 흐름, 나머지 상태(결제 전·취소)는 드롭다운으로 — 상태 필터는 한 번에 하나다.
+// 탭은 배송 흐름과 취소. 결제 전 상태(결제 대기·결제 확인 중)는 관리자가 할 일이 없어 두지
+// 않는다 — 특정 주문은 받는 분 이름·전화로 찾는다.
 const tabStatuses = [
   'AWAITING_CONFIRMATION',
   'PREPARING_ITEMS',
@@ -78,25 +77,16 @@ const tabStatuses = [
   'SHIPPED',
   'DELIVERED',
 ] as const satisfies readonly AdminOrderStatus[]
+/** 취소 탭 — 취소 중 다음 취소 완료를 이어 붙인다(서버는 상태를 하나만 거른다) */
+const CANCELED_TAB = 'canceled'
+const canceledStatuses: AdminOrderStatus[] = ['CANCELING', 'CANCELED']
 const tabs = [
   { value: ALL, label: '전체' },
   ...tabStatuses.map((status) => ({
     value: status,
     label: adminOrderStatusLabel[status],
   })),
-]
-const otherStatusOptions: DropdownOption<AdminOrderStatus | undefined>[] = [
-  { value: undefined, label: '선택 안 함' },
-  ...adminOrderStatuses
-    .filter((status) => !(tabStatuses as readonly string[]).includes(status))
-    .map((status) => ({ value: status, label: adminOrderStatusLabel[status] })),
-]
-const sourceOptions: DropdownOption<AdminOrderSource | undefined>[] = [
-  { value: undefined, label: '모든 출처' },
-  ...adminOrderSources.map((source) => ({
-    value: source,
-    label: adminOrderSourceLabel[source],
-  })),
+  { value: CANCELED_TAB, label: '취소' },
 ]
 
 /**
@@ -130,19 +120,16 @@ const maskPhone = (phone: string) =>
 
 /**
  * 모든 회원의 주문. 위 카드로 처리할 일을 고르고, 같은 상태끼리 골라 다음 배송 단계로 한 번에
- * 옮긴다. 상태·출처·쪽은 주소에 둬서 상세에 들어갔다 돌아와도 보던 자리가 남는다.
+ * 옮긴다. 상태·검색·쪽은 주소에 둬서 상세에 들어갔다 돌아와도 보던 자리가 남는다.
  */
 export function AdminOrdersPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const source = pick<AdminOrderSource>(
-    searchParams.get('source'),
-    adminOrderSources,
-  )
-  const status = pick<AdminOrderStatus>(
-    searchParams.get('status'),
-    adminOrderStatuses,
-  )
+  // 상태 하나(탭·위 카드) 또는 취소 탭. 위 '취소 처리 중' 카드는 취소 중만 거른다.
+  const canceledTab = searchParams.get('status') === CANCELED_TAB
+  const status = canceledTab
+    ? undefined
+    : pick<AdminOrderStatus>(searchParams.get('status'), adminOrderStatuses)
   // 손으로 고친 주소(?page=1.5, ?page=Infinity)도 첫 쪽으로 — 정수가 아니면 서버가 400을 준다.
   const pageParam = Number(searchParams.get('page'))
   const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1
@@ -177,8 +164,7 @@ export function AdminOrdersPage() {
   ]
 
   const orders = useAdminOrders({
-    source,
-    status,
+    statuses: canceledTab ? canceledStatuses : status && [status],
     shipToName,
     shipToPhoneLast4: phone4,
     productId,
@@ -209,8 +195,7 @@ export function AdminOrdersPage() {
 
   // 필터를 바꾸면 첫 쪽부터 본다.
   const setParam = (
-    key:
-      'source' | 'status' | 'page' | 'name' | 'phone4' | 'product' | 'period',
+    key: 'status' | 'page' | 'name' | 'phone4' | 'product' | 'period',
     value: string | undefined,
   ) => {
     setSelected(new Set())
@@ -405,34 +390,10 @@ export function AdminOrdersPage() {
       <div className={styles.filters}>
         <SegmentedTabs
           items={tabs}
-          // 드롭다운 쪽 상태를 고르면 어느 탭도 켜지지 않는다.
-          value={status ?? ALL}
+          // 위 카드로 고른 상태(취소 중 등)는 탭이 아니라 어느 탭도 켜지지 않는다.
+          value={canceledTab ? CANCELED_TAB : (status ?? ALL)}
           onChange={(next) => setParam('status', next)}
         />
-        <div className={styles.dropdowns}>
-          <Dropdown
-            className={styles.field}
-            label="선택 안 함"
-            fieldLabel="다른 상태"
-            size="medium"
-            options={otherStatusOptions}
-            value={
-              status && !(tabStatuses as readonly string[]).includes(status)
-                ? status
-                : undefined
-            }
-            onSelect={(next) => setParam('status', next)}
-          />
-          <Dropdown
-            className={styles.field}
-            label="모든 출처"
-            fieldLabel="출처"
-            size="medium"
-            options={sourceOptions}
-            value={source}
-            onSelect={(next) => setParam('source', next)}
-          />
-        </div>
       </div>
 
       {/* 고객 문의로 찾기 — 이름은 전체 일치, 전화는 끝 4자리. 다 친 뒤(Enter) 보낸다. */}

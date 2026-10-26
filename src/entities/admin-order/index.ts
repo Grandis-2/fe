@@ -11,7 +11,6 @@ export type { ShippingBatchResult } from './api/useAdminOrders'
 export type { ShippingOutcome } from './lib/shippingOutcome'
 export {
   adminOrderSourceLabel,
-  adminOrderSources,
   adminOrderStatusColor,
   adminOrderStatuses,
   adminOrderStatusLabel,

@@ -7,11 +7,7 @@ import {
 
 import { ApiRequestError } from '@shared/api/client'
 import { pollEvery, pollingError, queryPolicy } from '@shared/api/queryPolicy'
-import type {
-  AdminOrderListParams,
-  OrderStatus,
-  ShippingStep,
-} from '@shared/api/types'
+import type { OrderStatus, ShippingStep } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
@@ -23,7 +19,8 @@ import {
   advanceShipping,
   getAdminOrder,
   getAdminOrderStats,
-  getAdminOrders,
+  getAdminOrdersPage,
+  type AdminOrderListQuery,
 } from './adminOrder'
 
 const ADMIN_ORDERS_KEY = ['admin', 'orders'] as const
@@ -32,10 +29,10 @@ const ADMIN_ORDERS_KEY = ['admin', 'orders'] as const
  * 주문 한 쪽. 쪽·필터를 바꾸는 동안 이전 쪽을 그대로 두고(placeholderData) 다 오면
  * 바꾼다 — 바꿀 때마다 표가 비었다 채워지며 높이가 튀지 않는다.
  */
-export const useAdminOrders = (params: AdminOrderListParams) =>
+export const useAdminOrders = (params: AdminOrderListQuery) =>
   useQuery({
     queryKey: [...ADMIN_ORDERS_KEY, 'list', params] as const,
-    queryFn: ({ signal }) => getAdminOrders(params, signal),
+    queryFn: ({ signal }) => getAdminOrdersPage(params, signal),
     placeholderData: keepPreviousData,
     ...queryPolicy.live,
   })
