@@ -102,3 +102,10 @@ export const value = style([
     overflowWrap: 'anywhere',
   },
 ])
+
+// 안내 오른쪽 조치 둘 — 좁으면 아래로 내린다.
+export const bannerActions = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: spacing[8],
+})

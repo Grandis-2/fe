@@ -1,5 +1,7 @@
 import { expect } from 'storybook/test'
 
+import { closeModal, useModalStore } from '@shared/model/modalStore'
+
 import { AdminReservationDetail } from './AdminReservationDetail'
 
 import type { AdminReservationDetailProps } from './AdminReservationDetail'
@@ -108,5 +110,47 @@ export const Canceled: Story = {
   play: async ({ canvas }) => {
     await expect(canvas.queryByRole('button', { name: '예약 취소' })).toBeNull()
     await expect(canvas.queryByRole('button', { name: '재처리' })).toBeNull()
+  },
+}
+
+/** 외부 취소가 다 실패해 취소 중에 멈췄다 — 다시 보내거나, 외부에서 확인한 뒤 끝낸다 */
+export const CancelStuck: Story = {
+  args: {
+    reservation: {
+      ...base,
+      status: 'CANCELING',
+      displayStatus: 'CANCELING',
+      paymentDueAt: null,
+      cancelable: false,
+      syncJobs: [
+        ...base.syncJobs,
+        {
+          syncJobId: '5a6b7c8d-0000-4000-8000-000000000001',
+          preorderId: base.preorderId,
+          jobType: 'CANCEL',
+          status: 'DEAD_LETTER',
+          attemptCount: 3,
+          lastErrorCode: 'HTTP_503',
+          deadLetteredAt: '2026-10-08T05:20:00Z',
+          createdAt: '2026-10-08T05:10:00Z',
+          updatedAt: '2026-10-08T05:20:00Z',
+          attempts: [],
+        },
+      ],
+    },
+  },
+  play: async ({ canvas, userEvent }) => {
+    await expect(
+      canvas.getByText(/취소를 보내지 못해 취소 중에 멈춰 있어요/),
+    ).toBeVisible()
+    await expect(
+      canvas.getByRole('button', { name: '다시 보내기' }),
+    ).toBeVisible()
+    await userEvent.click(
+      canvas.getByRole('button', { name: '취소 확인 후 끝내기' }),
+    )
+    // 사유를 받는 확인 창이 열린다 — 확인한 내용 없이는 끝낼 수 없다.
+    await expect(useModalStore.getState().isOpen).toBe(true)
+    closeModal()
   },
 }

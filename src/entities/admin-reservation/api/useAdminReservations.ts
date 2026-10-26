@@ -33,6 +33,8 @@ import {
   reprocessAdminReservations,
   reprocessFailedRegistrations,
   reprocessSyncJobs,
+  resolveCancelJob,
+  retryCancelJob,
   targetsOf,
   toAdminReservationDetail,
   updateAdminReservationNote,
@@ -125,6 +127,29 @@ export const useReprocessReservation = () => {
   return useMutation({
     mutationFn: reprocessAdminReservation,
     onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/** 실패한 외부 취소를 한 번 더 보낸다. 결과는 조금 뒤에 반영돼 다시 받는다 */
+export const useRetryCancelJob = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: retryCancelJob,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/**
+ * 외부에서 확인한 뒤 멈춘 외부 취소를 끝낸다. 409(이미 끝남·그사이 바뀜)여도 지금 상태를
+ * 다시 받아 맞춘다.
+ */
+export const useResolveCancelJob = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: resolveCancelJob,
+    onSettled: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })
 }

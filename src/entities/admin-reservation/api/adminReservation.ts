@@ -150,6 +150,30 @@ export async function reprocessAdminReservation(preorderId: string) {
   )
 }
 
+// [preorder] POST /api/v1/admin/preorders/sync-jobs/{syncJobId}/reprocess — 실패한 외부 취소 다시 보내기
+/** DEAD_LETTER인 외부 취소(CANCEL)를 한 번 더 보낸다. 예약이 취소 중일 때만 된다 */
+export const retryCancelJob = (syncJobId: string) =>
+  apiClient.request<unknown>(`${BASE}/sync-jobs/${syncJobId}/reprocess`, {
+    method: 'POST',
+  })
+
+// [preorder] POST /api/v1/admin/preorders/sync-jobs/{syncJobId}/resolve — 포기한 외부 취소 끝내기
+/**
+ * 외부 예약 시스템에서 이미 취소됐거나 예약이 없음을 확인한 뒤 취소를 끝낸다. 예약이 취소
+ * 완료가 되고 회원에게 취소 알림이 간다. 사유(5~500자)는 이력에 남는다. 이미 끝났으면 409
+ */
+export const resolveCancelJob = ({
+  syncJobId,
+  reason,
+}: {
+  syncJobId: string
+  reason: string
+}) =>
+  apiClient.request<unknown>(`${BASE}/sync-jobs/${syncJobId}/resolve`, {
+    method: 'POST',
+    body: { reason },
+  })
+
 // [preorder] GET /api/v1/admin/preorders/sync-jobs — 동기화 작업 목록
 const getAdminSyncJobs = (
   params: AdminSyncJobListParams,

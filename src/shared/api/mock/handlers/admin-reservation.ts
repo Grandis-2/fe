@@ -266,6 +266,35 @@ export function markCanceled(detail: AdminPreorderDetail, reason: string) {
   })
 }
 
+/** 멈춘 외부 취소를 끝낸다 — 작업은 성공, 예약은 취소 완료(재처리면 SYSTEM, 관리자 확인이면 ADMIN·사유) */
+function finishCancel(
+  detail: AdminPreorderDetail,
+  job: SyncJob,
+  actor: 'SYSTEM' | 'ADMIN',
+  reason: string | null,
+) {
+  const at = new Date().toISOString()
+  Object.assign(job, {
+    status: 'SUCCEEDED',
+    lastErrorCode: null,
+    deadLetteredAt: null,
+    updatedAt: at,
+  })
+  detail.events.push({
+    eventSequence: detail.events.length + 1,
+    fromStatus: 'CANCELING',
+    toStatus: 'CANCELED',
+    actor,
+    reason,
+    createdAt: at,
+  })
+  Object.assign(detail, {
+    status: 'CANCELED',
+    displayStatus: 'CANCELED',
+    version: detail.version + 1,
+  })
+}
+
 export const adminReservationHandlers: RequestHandler[] = [
   http.get(url(BASE), ({ request }) => {
     const query = new URL(request.url).searchParams
@@ -496,7 +525,7 @@ export const adminReservationHandlers: RequestHandler[] = [
     },
   ),
 
-  // DEAD_LETTER인 REGISTER 작업만 되돌린다.
+  // DEAD_LETTER인 작업만 되돌린다. 외부 취소는 예약이 취소 중일 때만 — 목은 바로 성공한다.
   http.post(url(`${BASE}/sync-jobs/:syncJobId/reprocess`), ({ params }) => {
     const detail = reservationStore.find((item) =>
       item.syncJobs.some((job) => job.syncJobId === params.syncJobId),
@@ -517,11 +546,54 @@ export const adminReservationHandlers: RequestHandler[] = [
       })
     }
 
-    markReprocessed(detail, job)
+    if (job.jobType === 'CANCEL') {
+      if (detail.status !== 'CANCELING')
+        return fail(409, {
+          code: 'STATE_CONFLICT',
+          message: '취소 중인 예약이 아닙니다.',
+        })
+      finishCancel(detail, job, 'SYSTEM', null)
+    } else markReprocessed(detail, job)
     // 응답은 되돌린 직후의 작업 요약이다(시도 기록 없이).
     const { attempts: _attempts, ...summary } = job
     return ok({ ...summary, status: 'PENDING', deadLetteredAt: null }, 202)
   }),
+
+  // 외부에서 취소를 확인한 뒤 끝낸다 — 사유는 이력에 남는다.
+  http.post(
+    url(`${BASE}/sync-jobs/:syncJobId/resolve`),
+    async ({ request, params }) => {
+      const body = (await request.json().catch(() => null)) as {
+        reason?: string
+      } | null
+      const reason = body?.reason?.trim() ?? ''
+      if (reason.length < 5 || reason.length > 500)
+        return invalid([{ field: 'reason', message: '5~500자여야 합니다.' }])
+      const detail = reservationStore.find((item) =>
+        item.syncJobs.some((job) => job.syncJobId === params.syncJobId),
+      )
+      const job = detail?.syncJobs.find(
+        (item) => item.syncJobId === params.syncJobId,
+      )
+      if (!detail || !job)
+        return fail(404, {
+          code: 'SYNC_JOB_NOT_FOUND',
+          message: '작업을 찾을 수 없습니다.',
+        })
+      if (
+        job.jobType !== 'CANCEL' ||
+        job.status !== 'DEAD_LETTER' ||
+        detail.status !== 'CANCELING'
+      )
+        return fail(409, {
+          code: 'SYNC_JOB_NOT_RESOLVABLE',
+          message:
+            '끝낼 수 있는 외부 취소가 아닙니다. 상세를 다시 확인해 주세요.',
+        })
+      finishCancel(detail, job, 'ADMIN', reason)
+      return ok({ preorderId: detail.preorderId, status: detail.status })
+    },
+  ),
 
   // 관리자 취소 — 사유는 이력에 남는다. 목은 외부 취소를 기다리지 않고 바로 끝낸다.
   http.post(url(`${BASE}/:preorderId/cancel`), async ({ request, params }) => {

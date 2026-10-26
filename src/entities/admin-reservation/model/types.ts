@@ -72,6 +72,19 @@ export const isReprocessable = (
   reservation: Pick<AdminReservation, 'registerJobStatus'>,
 ) => reservation.registerJobStatus === 'DEAD_LETTER'
 
+/**
+ * 외부 취소가 재시도까지 다 실패해 취소 중에 멈춘 작업. 관리자가 다시 보내거나, 외부에서
+ * 확인한 뒤 끝낸다. 없으면 undefined
+ */
+export const stuckCancelJob = (
+  reservation: Pick<AdminReservationDetail, 'status' | 'syncJobs'>,
+) =>
+  reservation.status === 'CANCELING'
+    ? reservation.syncJobs.find(
+        (job) => job.jobType === 'CANCEL' && job.status === 'DEAD_LETTER',
+      )
+    : undefined
+
 /* ------------------------------------------------------------------ *
  * 상태 열 — 예약이 어디까지 왔는지
  * ------------------------------------------------------------------ */

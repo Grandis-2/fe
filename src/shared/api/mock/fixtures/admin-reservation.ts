@@ -226,5 +226,37 @@ export const reservationStore: AdminPreorderDetail[] = Array.from(
   (_, index) => buildReservation(index, positionOf.get(index)!),
 )
 
+// 외부 취소가 재시도까지 다 실패해 취소 중에 멈춘 예약 하나 — 마지막 취소 예약을 그렇게 바꾼다
+// (관리자가 다시 보내거나, 외부에서 확인한 뒤 끝낸다).
+{
+  const stuck = reservationStore.findLast((item) => item.status === 'CANCELED')
+  if (stuck) {
+    const failedAt = stuck.events.at(-1)!.createdAt
+    stuck.events.pop()
+    Object.assign(stuck, { status: 'CANCELING', displayStatus: 'CANCELING' })
+    stuck.syncJobs.push({
+      syncJobId: seededId('5a6b7c8d', 0),
+      preorderId: stuck.preorderId,
+      jobType: 'CANCEL',
+      status: 'DEAD_LETTER',
+      attemptCount: 3,
+      lastErrorCode: 'HTTP_503',
+      deadLetteredAt: failedAt,
+      createdAt: failedAt,
+      updatedAt: failedAt,
+      attempts: [1, 2, 3].map((attemptNumber) => ({
+        attemptNumber,
+        actor: 'SYSTEM' as const,
+        result: 'FAILED',
+        httpStatus: 503,
+        errorCode: 'HTTP_503',
+        errorMessage: 'Service Unavailable',
+        startedAt: failedAt,
+        finishedAt: failedAt,
+      })),
+    })
+  }
+}
+
 export const findReservation = (preorderId: string) =>
   reservationStore.find((item) => item.preorderId === preorderId)
