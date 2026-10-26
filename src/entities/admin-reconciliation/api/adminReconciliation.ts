@@ -2,6 +2,7 @@ import { apiClient } from '@shared/api/client'
 import { fetchConcatPage } from '@shared/api/fetchAllPages'
 import { toQueryString } from '@shared/api/queryString'
 import type {
+  ReconciliationRunDiff,
   ExternalCancelBatchRequest,
   ExternalCancelBatchResponse,
   FindingCancelRequest,
@@ -32,6 +33,18 @@ export const startReconciliationRun = (body: ReconciliationRunRequest = {}) =>
     method: 'POST',
     body,
   })
+
+// [preorder] GET /api/v1/admin/preorders/reconciliation/runs/{runId}/diff — 두 검사 결과 비교
+/** 직전 검사와 비교해 신규·잔여·해소로 나눈다. 두 검사가 완료·같은 범위여야 한다 */
+export const getRunDiff = (
+  runId: string,
+  against: string,
+  signal?: AbortSignal,
+) =>
+  apiClient.request<ReconciliationRunDiff>(
+    `${BASE}/runs/${encodeURIComponent(runId)}/diff${toQueryString({ against })}`,
+    { signal },
+  )
 
 // [preorder] GET /api/v1/admin/preorders/reconciliation/runs/{runId}/findings — 불일치 목록
 const getFindings = (

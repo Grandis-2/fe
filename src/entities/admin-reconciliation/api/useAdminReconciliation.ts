@@ -16,6 +16,7 @@ import {
   externalCancelFindings,
   getReconciliationFindings,
   getReconciliationRuns,
+  getRunDiff,
   reprocessFinding,
   startReconciliationRun,
   type FindingQuery,
@@ -66,6 +67,18 @@ export const useReconciliationFindings = (
  * 검사 중이 돼 끝날 때까지 몇 초마다 묻기 시작한다. 409(이미 검사 중)는 지금 도는 검사를
  * 보여 줘야 해서 목록을 다시 받는다.
  */
+/**
+ * 두 검사의 비교. 끝난 검사끼리라 결과가 바뀌지 않아 다시 묻지 않는다. 둘 중 하나라도
+ * 없으면(첫 검사) 묻지 않는다.
+ */
+export const useReconciliationDiff = (runId?: string, against?: string) =>
+  useQuery({
+    queryKey: [...RECONCILIATION_KEY, 'diff', runId, against] as const,
+    queryFn: ({ signal }) => getRunDiff(runId!, against!, signal),
+    enabled: runId !== undefined && against !== undefined,
+    ...queryPolicy.catalog,
+  })
+
 export const useStartReconciliationRun = () => {
   const queryClient = useQueryClient()
   return useMutation({

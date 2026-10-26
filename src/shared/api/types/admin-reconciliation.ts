@@ -106,3 +106,21 @@ export type ExternalCancelBatchItem = {
 }
 
 export type ExternalCancelBatchResponse = { items: ExternalCancelBatchItem[] }
+
+/** 불일치를 가르는 검사 종류와 대상 — 두 검사의 같은 불일치를 짝짓는 열쇠 */
+export type FindingKey = { checkCode: string; targetKey: string }
+
+/**
+ * GET /runs/{runId}/diff?against= — 두 완료된 검사(같은 범위)의 비교. 다르면 409
+ * RECONCILIATION_NOT_COMPARABLE
+ */
+export type ReconciliationRunDiff = {
+  runId: string
+  againstRunId: string
+  /** 신규 — 기준 검사에만 있다 */
+  introduced: FindingKey[]
+  /** 잔여 — 두 검사에 모두 있다 */
+  persisting: FindingKey[]
+  /** 해소 — 비교한 검사에만 있다(조치로 고쳐졌는지는 예약 이력에서 확인) */
+  resolved: FindingKey[]
+}

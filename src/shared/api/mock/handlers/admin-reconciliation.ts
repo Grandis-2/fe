@@ -7,6 +7,7 @@ import { url } from '../url'
 import { markCanceled, markReprocessed } from './admin-reservation'
 
 import type {
+  ReconciliationRunDiff,
   AdminPreorderDetail,
   ExternalCancelBatchItem,
   ExternalCancelBatchRequest,
@@ -364,6 +365,45 @@ export const adminReconciliationHandlers: RequestHandler[] = [
       page,
       size,
       total: matched.length,
+    })
+  }),
+
+  // 두 검사의 불일치를 (검사 종류, 대상)으로 짝지어 신규·잔여·해소로 나눈다.
+  http.get(url(`${BASE}/runs/:runId/diff`), ({ request, params }) => {
+    const runId = String(params.runId)
+    const against = new URL(request.url).searchParams.get('against') ?? ''
+    const base = runs.find((run) => run.runId === runId)
+    const other = runs.find((run) => run.runId === against)
+    if (!base || !other)
+      return fail(404, {
+        code: 'RECONCILIATION_RUN_NOT_FOUND',
+        message: '검사를 찾을 수 없습니다.',
+      })
+    if (
+      base.status !== 'COMPLETED' ||
+      other.status !== 'COMPLETED' ||
+      base.productId !== other.productId
+    )
+      return fail(409, {
+        code: 'RECONCILIATION_NOT_COMPARABLE',
+        message: '완료된 같은 범위의 검사끼리만 비교할 수 있습니다.',
+      })
+    const keyOf = (finding: ReconciliationFinding) => ({
+      checkCode: finding.checkCode,
+      targetKey: finding.targetKey,
+    })
+    const id = (key: { checkCode: string; targetKey: string }) =>
+      `${key.checkCode}|${key.targetKey}`
+    const now = (findingsByRun.get(runId) ?? []).map(keyOf)
+    const before = (findingsByRun.get(against) ?? []).map(keyOf)
+    const nowIds = new Set(now.map(id))
+    const beforeIds = new Set(before.map(id))
+    return ok<ReconciliationRunDiff>({
+      runId,
+      againstRunId: against,
+      introduced: now.filter((key) => !beforeIds.has(id(key))),
+      persisting: now.filter((key) => beforeIds.has(id(key))),
+      resolved: before.filter((key) => !nowIds.has(id(key))),
     })
   }),
 

@@ -4,6 +4,7 @@ export {
   useCancelFinding,
   useExternalCancelFinding,
   useExternalCancelFindings,
+  useReconciliationDiff,
   useReconciliationFindings,
   useReconciliationRuns,
   useReprocessFinding,

@@ -18,6 +18,7 @@ import {
   useCancelFinding,
   useExternalCancelFinding,
   useExternalCancelFindings,
+  useReconciliationDiff,
   useReconciliationFindings,
   useReconciliationRuns,
   useReprocessFinding,
@@ -50,6 +51,8 @@ import {
   Tag,
 } from '@shared/ui'
 import type { DropdownOption, TableColumn } from '@shared/ui'
+
+import { RunDiffSummary } from '../RunDiffSummary'
 
 import * as styles from './AdminReservationReconcile.css'
 
@@ -197,6 +200,22 @@ export function AdminReservationReconcile() {
   const shown = runs.data?.find((run) => run.status === 'COMPLETED')
   const failed = latest?.status === 'FAILED' ? latest : undefined
   const counts = countByGroup(shown?.findingCounts ?? {})
+  // 같은 범위의 바로 앞 완료 검사와 비교한다 — 서버가 범위가 다르면 비교하지 않는다.
+  const previous = shown
+    ? runs.data?.find(
+        (run) =>
+          run.status === 'COMPLETED' &&
+          run.runId !== shown.runId &&
+          run.productId === shown.productId &&
+          run.createdAt < shown.createdAt,
+      )
+    : undefined
+  const diff = useReconciliationDiff(shown?.runId, previous?.runId)
+  const introducedKeys = new Set(
+    (diff.data?.introduced ?? []).map(
+      (key) => `${key.checkCode}|${key.targetKey}`,
+    ),
+  )
   const checkCodes =
     tab === 'all' ? [] : codesOfGroup(tab, shown?.findingCounts ?? {})
   // 고른 묶음이 이번 검사에 없으면 묻지 않고 빈 표로 둔다.
@@ -519,6 +538,16 @@ export function AdminReservationReconcile() {
         <span className={styles.stacked}>
           <span className={styles.cellText}>
             {findingDescription(finding.checkCode)}
+            {introducedKeys.has(
+              `${finding.checkCode}|${finding.targetKey}`,
+            ) && (
+              <>
+                {' '}
+                <Tag variant="subtle" size="small" color="red">
+                  신규
+                </Tag>
+              </>
+            )}
           </span>
           <span className={styles.code}>{finding.checkCode}</span>
         </span>
@@ -620,6 +649,19 @@ export function AdminReservationReconcile() {
       )}
 
       <RunSummary running={running} failed={failed} shown={shown} />
+      {previous && (
+        <RunDiffSummary
+          counts={
+            diff.data && {
+              introduced: diff.data.introduced.length,
+              persisting: diff.data.persisting.length,
+              resolved: diff.data.resolved.length,
+            }
+          }
+          loading={diff.isPending}
+          failed={diff.isError}
+        />
+      )}
 
       <SegmentedTabs
         items={tabs}
