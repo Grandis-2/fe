@@ -35,7 +35,7 @@ test('H2 사전예약하기를 같은 순간에 두 번 눌러도 예약은 하�
     button.click()
   })
 
-  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, {
     timeout: 15_000,
   })
   // 요청이 두 번 나갔다면 같은 멱등키여야 한다.
@@ -64,7 +64,7 @@ test('H3 서버가 잠깐 실패한 뒤 다시 누르면 같은 멱등키로 한
   await setMockFault(page, null)
   await preorderSubmitButton(page).click()
 
-  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, {
     timeout: 15_000,
   })
   expect(submits).toHaveLength(2)
@@ -79,7 +79,7 @@ test('H4 응답을 못 받고 같은 내용을 다시 보내면 처음 예약번
   const submits = collectPreorderSubmits(page)
   await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
   await preorderSubmitButton(page).click()
-  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, {
     timeout: 15_000,
   })
   const preorderId = new URL(page.url()).searchParams.get('preorderId')
@@ -118,7 +118,7 @@ test('H5 접수 응답이 끊기면 같은 키로 한 번 저절로 다시 보�
   )
   await preorderSubmitButton(page).click()
 
-  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, {
     timeout: 25_000,
   })
   expect(submits).toHaveLength(2)

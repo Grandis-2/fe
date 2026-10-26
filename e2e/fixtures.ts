@@ -266,18 +266,21 @@ export const preorderSubmitButton = (page: Page) =>
   page.getByRole('button', { name: '사전예약하기', exact: true }).first()
 
 /**
- * 사전예약하기를 누른 뒤 — 예약 접수 화면에서 외부 등록이 끝나 구매 확정이 켜지길 기다렸다가 그 예약의 결제로 간다.
- * 접수 응답은 등록을 기다리지 않아 결제로 바로 가지 않는다.
+ * 사전예약하기를 누른 뒤 — 상품 페이지가 외부 등록을 5초까지 기다리고, 목은 2초 뒤 등록하므로 그 예약의 결제로 바로 간다.
  */
 export async function confirmPreorder(page: Page) {
-  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
-    timeout: 15_000,
-  })
-  await page
-    .getByRole('button', { name: '지금 구매 확정하기' })
-    .click({ timeout: 15_000 })
-  await expect(page).toHaveURL(/\/payment\?preorderId=/)
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, { timeout: 15_000 })
 }
+
+/**
+ * 목 외부 등록에 걸리는 시간(ms)을 바꾼다(탭을 닫거나 null로 풀 때까지). 5초를 넘기면 접수 뒤 결제가 아니라
+ * 예약 접수 화면(처리 중 → 구매 확정 가능)으로 간다.
+ */
+export const setMockRegisterDelay = (page: Page, ms: number | null) =>
+  page.evaluate((value) => {
+    if (value) sessionStorage.setItem('mock-register-delay-ms', String(value))
+    else sessionStorage.removeItem('mock-register-delay-ms')
+  }, ms)
 
 /**
  * 사전예약 접수 요청(POST /api/v1/preorders?productId=)을 모은다. MSW가 응답해도 페이지의

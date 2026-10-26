@@ -15,6 +15,7 @@ import {
   readTossRequest,
   setKstClock,
   setMockFault,
+  setMockRegisterDelay,
   stubDaumPostcode,
   stubTossPayments,
   test,
@@ -451,14 +452,17 @@ test.describe('E. 여러 창', () => {
 })
 
 test.describe('F. 접수 뒤', () => {
-  test('F2 접수하면 결제로 바로 가지 않고, 예약 접수 화면이 처리 중에서 구매 확정 가능으로 바뀌는 걸 보여 준다', async ({
+  test('F2 외부 등록이 5초를 넘기면 결제로 가지 않고, 예약 접수 화면이 처리 중에서 구매 확정 가능으로 바뀌는 걸 보여 준다', async ({
     page,
   }) => {
     await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
+    // 상품 페이지는 등록을 5초까지만 기다린다 — 8초 걸리게 해 예약 접수 화면으로 넘긴다.
+    await setMockRegisterDelay(page, 8_000)
     await preorderSubmitButton(page).click()
-    await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/)
+    await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+      timeout: 15_000,
+    })
 
-    // 접수(202)는 외부 등록을 기다리지 않는다 — 목은 접수 5초 뒤 등록이 끝난다.
     await expect(
       page.getByRole('heading', { name: '예약 순서를 확보했어요' }),
     ).toBeVisible()

@@ -28,10 +28,19 @@ import type { RequestHandler } from 'msw'
 
 const SECOND = 1000
 const HOUR = 60 * 60 * SECOND
-// 목업은 접수 5초 뒤 외부 등록이 끝나 결제 가능(REGISTERED)이 되고, 취소는 3초 뒤 끝난다.
+// 목업은 접수 2초 뒤 외부 등록이 끝나 결제 가능(REGISTERED)이 되고, 취소는 3초 뒤 끝난다. 접수 화면은 등록을
+// 5초까지 기다려 결제로 바로 보내므로 평소엔 결제로 간다.
 // .env.local에 VITE_MOCK_REGISTER_DELAY_MS(예: 20000)를 넣으면 등록이 그만큼 걸린다 — 등록 지연 안내를 시연한다.
-const REGISTER_AFTER_MS =
-  Number(import.meta.env.VITE_MOCK_REGISTER_DELAY_MS) || 5 * SECOND
+// E2E는 탭 저장소 mock-register-delay-ms로 테스트마다 바꾼다(setMockRegisterDelay).
+const registerAfterMs = () => {
+  try {
+    const override = Number(sessionStorage.getItem('mock-register-delay-ms'))
+    if (override) return override
+  } catch {
+    // 저장소를 못 쓰면 기본값.
+  }
+  return Number(import.meta.env.VITE_MOCK_REGISTER_DELAY_MS) || 2 * SECOND
+}
 const CANCEL_AFTER_MS = 3 * SECOND
 const PAYMENT_WINDOW_MS = 24 * HOUR
 // 결제한 예약을 취소하면 환불을 마쳐야 취소가 끝난다. .env.local에 VITE_MOCK_REFUND_FAIL=true를 넣으면
@@ -90,10 +99,10 @@ export function transition(
 export function advance(record: PreorderRecord) {
   if (
     record.status === 'PENDING_SYNC' &&
-    msSince(record.createdAt) >= REGISTER_AFTER_MS
+    msSince(record.createdAt) >= registerAfterMs()
   ) {
     const at = new Date(
-      new Date(record.createdAt).getTime() + REGISTER_AFTER_MS,
+      new Date(record.createdAt).getTime() + registerAfterMs(),
     ).toISOString()
     record.payableFrom = at
     record.externalReference = `EXT-${record.queuePosition}`

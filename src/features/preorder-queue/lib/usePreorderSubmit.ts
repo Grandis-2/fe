@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react'
+
 import { faro } from '@grafana/faro-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
@@ -17,6 +19,8 @@ import {
   joinPreorderQueue,
   usePreorderQueueStore,
 } from '../model/preorderQueueStore'
+
+import { waitForRegistration } from './waitForRegistration'
 
 // 이 입장권은 더 쓸 수 없다 — 지우고 다음에 누를 때 다시 줄을 선다.
 const TICKET_ERRORS = [
@@ -46,16 +50,23 @@ type SubmitTarget = {
 // 사전예약하기 — 이 상품의 입장권이 살아 있으면 접수한다. 대기열은 사전예약 페이지에서만 서므로,
 // 입장권이 없으면 상세에서 줄을 세우지 않고 사전예약 페이지로 보낸다. 이 상품의 입장권이 만료됐으면
 // (옵션을 고르다 시간이 지남) 목록으로 보내지 않고 이 자리에서 다시 줄을 세운다.
-// 접수(202)되면 바로 onSuccess를 부른다 — 외부 등록은 기다리지 않고 예약 접수 화면이 상태 변화를 보여 준다.
+// 접수(202)되면 외부 등록을 최대 5초 기다려 등록됐는지(registered)와 함께 onSuccess를 부른다 — 등록됐으면 결제로
+// 바로 가고(예약 접수 화면을 한 번 더 거치지 않게), 늦으면 예약 접수 화면이 이어서 기다린다.
 export function usePreorderSubmit() {
   const admission = usePreorderQueueStore((state) => state.admission)
   const clearAdmission = usePreorderQueueStore((state) => state.clearAdmission)
   const submit = useSubmitPreorder()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const [isWaiting, setIsWaiting] = useState(false)
+  const waitRef = useRef<AbortController>(null)
+
+  // 기다리는 중에 화면을 떠나면 묻기를 멈추고, 늦게 끝나도 다른 화면으로 끌고 가지 않는다.
+  useEffect(() => () => waitRef.current?.abort(), [])
+
   const submitPreorder = (
     { productId, productName, optionId }: SubmitTarget,
-    onSuccess: (accepted: PreorderAccepted) => void,
+    onSuccess: (accepted: PreorderAccepted, registered: boolean) => void,
   ) => {
     if (!admission || admission.productId !== productId) {
       showToast('사전예약 페이지에서 대기열을 거쳐야 예약할 수 있어요.')
@@ -79,7 +90,7 @@ export function usePreorderSubmit() {
         idempotencyKey: admission.idempotencyKey,
       },
       {
-        onSuccess: (accepted) => {
+        onSuccess: async (accepted) => {
           clearAdmission()
           // 같은 키 재전송인데 그사이 취소한(취소 중인) 예약이다 — 재신청은 새 입장권·새 키로 줄부터 다시 선다.
           if (
@@ -91,16 +102,29 @@ export function usePreorderSubmit() {
             )
             return
           }
+          // 재전송으로 돌아온 기존 예약이 이미 등록돼 있으면 기다리지 않는다.
+          let registered = accepted.status === 'REGISTERED'
+          if (!registered) {
+            const controller = new AbortController()
+            waitRef.current = controller
+            setIsWaiting(true)
+            registered = await waitForRegistration(
+              accepted.preorderId,
+              controller.signal,
+            )
+            if (controller.signal.aborted) return
+            setIsWaiting(false)
+          }
           // 재전송이면 기존 예약이 replayed로 다시 온다 — 예약 하나는 한 번만 센다.
           track(
             'Preorder Submitted',
-            { productId, preorderId: accepted.preorderId },
+            { productId, preorderId: accepted.preorderId, registered },
             accepted.preorderId,
           )
           // 같은 입장권(같은 키)으로 다시 보낸 접수는 새 예약이 아니라 기존 예약이다 — 또 예약된 것으로 읽히지 않게 알린다.
           if (accepted.replayed)
             showToast('이미 접수된 예약이에요. 그 예약으로 이어서 진행해요.')
-          onSuccess(accepted)
+          onSuccess(accepted, registered)
         },
         onError: (caught) => {
           // 이미 이 모델의 예약이 있다 — 다른 화면으로 옮기지 않고 알린 뒤, 그 예약을 다시 받아 버튼을 그 예약으로 바꾼다.
@@ -135,5 +159,11 @@ export function usePreorderSubmit() {
     )
   }
 
-  return { submitPreorder, isPending: submit.isPending }
+  // 접수 요청(최대 10초) → 외부 등록 확인(최대 5초) 중 어디인지. 버튼이 꺼진 채 멈춘 것처럼 보이지 않게 문구로 알린다.
+  const phase: 'submitting' | 'registering' | null = submit.isPending
+    ? 'submitting'
+    : isWaiting
+      ? 'registering'
+      : null
+  return { submitPreorder, isPending: phase !== null, phase }
 }
