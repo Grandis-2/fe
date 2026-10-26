@@ -43,6 +43,7 @@ import {
 import { formatDistance } from '@shared/lib/formatDistance'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatNumber } from '@shared/lib/formatNumber'
+import { periodLabels, periodRange, type Period } from '@shared/lib/period'
 import { toggleInSet } from '@shared/lib/toggleInSet'
 import { useNow } from '@shared/lib/useNow'
 import { closeModal, openModal } from '@shared/model/modalStore'
@@ -77,7 +78,15 @@ const PARAM = {
   tab: 'tab',
   eventType: 'event',
   failureReason: 'reason',
+  period: 'period',
 } as const
+
+// 쌓인 기간 — 하루 단위라 같은 날 안에서는 조회 키가 흔들리지 않는다.
+const periods: Period[] = ['all', 'today', 'yesterday', 'week', 'month']
+const periodOptions: DropdownOption<Period>[] = periods.map((period) => ({
+  value: period,
+  label: periodLabels[period],
+}))
 
 const ALL = 'all'
 
@@ -140,6 +149,8 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
     deadLetterFailureReasons.find(
       (reason) => reason === searchParams.get(PARAM.failureReason),
     ) ?? ALL
+  const period =
+    periods.find((item) => item === searchParams.get(PARAM.period)) ?? 'all'
   const setParam = (key: string, value: string, fallback: string) =>
     setSearchParams(
       (prev) => {
@@ -160,6 +171,7 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
   const filters = {
     eventType: eventType === ALL ? undefined : eventType,
     failureReason: failureReason === ALL ? undefined : failureReason,
+    ...periodRange(period, now),
   }
   const complete = COMPLETE_TABS.includes(tab.value)
   const statuses: readonly DeadLetterStatus[] = tab.statuses
@@ -544,6 +556,14 @@ export function AdminDeadLetterList({ header }: AdminDeadLetterListProps) {
               options={reasonOptions}
               value={failureReason}
               onSelect={(next) => setParam(PARAM.failureReason, next, ALL)}
+            />
+            <Dropdown
+              label="쌓인 기간"
+              size="small"
+              width="140px"
+              options={periodOptions}
+              value={period}
+              onSelect={(next) => setParam(PARAM.period, next, 'all')}
             />
           </>
         }

@@ -82,7 +82,10 @@ export const useDeadLetters = (
  */
 export const useDeadLetterCounts = (
   service: DeadLetterService,
-  filters: Pick<DeadLetterListParams, 'eventType' | 'failureReason'>,
+  filters: Pick<
+    DeadLetterListParams,
+    'eventType' | 'failureReason' | 'from' | 'to'
+  >,
   intervalMs?: RefreshInterval,
 ) =>
   useQueries({

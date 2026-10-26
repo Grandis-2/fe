@@ -85,6 +85,14 @@ const deadLetterHandlers = (
         .filter(matches('preorderId'))
         .filter(matches('customerId'))
         .filter(matches('orderId'))
+        // 쌓인 시각 [from, to)
+        .filter(
+          (item) =>
+            (!query.get('from') ||
+              item.createdAt >= new Date(query.get('from')!).toISOString()) &&
+            (!query.get('to') ||
+              item.createdAt < new Date(query.get('to')!).toISOString()),
+        )
         .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
 
       const start = page * size
