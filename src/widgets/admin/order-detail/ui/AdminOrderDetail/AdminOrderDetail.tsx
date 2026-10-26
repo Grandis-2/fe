@@ -151,10 +151,15 @@ export function AdminOrderDetail({ order }: AdminOrderDetailProps) {
       {failure && <InlineAlert status="error">{failure}</InlineAlert>}
 
       {/* 지금 할 일 — 빨강은 확인이 필요한 문제, 회색은 다음 단계·상황 설명이다. */}
+      {/* 취소 완료인데 환불 실패면 결제 확인 실패로 취소한 주문의 자동 환불이 실패한 경우다. */}
       {order.refundFailed && (
         <NoticeBanner
           tone="danger"
-          title="취소 중 환불이 실패했어요"
+          title={
+            order.status === 'CANCELED'
+              ? '주문은 취소됐지만 환불이 실패했어요'
+              : '취소 중 환불이 실패했어요'
+          }
           description="원인은 결제 기록에서 확인해 주세요."
         />
       )}

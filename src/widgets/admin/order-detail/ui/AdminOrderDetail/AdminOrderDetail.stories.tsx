@@ -101,6 +101,16 @@ export const AwaitingPayment: Story = {
 export const RefundFailed: Story = {
   args: { order: { ...order, status: 'CANCELING', refundFailed: true } },
   play: async ({ canvas }) => {
-    await expect(canvas.getByText(/환불이 실패했어요/)).toBeVisible()
+    await expect(canvas.getByText('취소 중 환불이 실패했어요')).toBeVisible()
+  },
+}
+
+/** 취소는 끝났는데 환불이 실패했으면(결제 확인 실패 뒤 자동 환불 실패) 그렇게 말한다 */
+export const CanceledRefundFailed: Story = {
+  args: { order: { ...order, status: 'CANCELED', refundFailed: true } },
+  play: async ({ canvas }) => {
+    await expect(
+      canvas.getByText('주문은 취소됐지만 환불이 실패했어요'),
+    ).toBeVisible()
   },
 }
