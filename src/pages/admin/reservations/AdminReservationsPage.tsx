@@ -304,17 +304,16 @@ export function AdminReservationsPage() {
 
   // 외부로 등록을 다시 보내는 조치라 한 번 더 묻는다. 끝나면 목록을 다시 받아 표를 갱신한다.
   const confirmReprocess = () => {
-    const rows = selectedRows
     openModal({
       theme: 'light',
-      title: `${rows.length.toLocaleString('ko-KR')}건을 재처리할까요?`,
+      title: `${selectedRows.length.toLocaleString('ko-KR')}건을 재처리할까요?`,
       description:
         '고른 예약을 외부 예약 시스템에 다시 등록합니다. 차례로 처리돼서 반영까지 몇 초 걸릴 수 있습니다.',
       confirmLabel: '재처리',
       onConfirm: () => {
         closeModal()
         setFeedback(undefined)
-        reprocess.mutate(rows, {
+        reprocess.mutate(selectedRows, {
           onSuccess: ({ targetCount, skippedCount, estimatedSeconds }) => {
             setSelected(new Set())
             setFeedback({

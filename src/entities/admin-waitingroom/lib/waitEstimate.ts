@@ -17,16 +17,29 @@ export function waitEstimate(waiting: number, perSecond: number | null) {
   return formatWait(Math.ceil(waiting / perSecond))
 }
 
+type WaitInput = Pick<
+  WaitingroomProductStatus,
+  'waiting' | 'credit' | 'estimatedWaitSeconds'
+>
+
 /**
- * 사전예약 하나의 맨 뒤 예상 대기 — 서버가 센 값(estimatedWaitSeconds)을 쓴다. 서버 값이
- * 없으면(입장 멈춤·접수 전) 지금 배분된 속도로 어림한다.
+ * 사전예약 하나의 맨 뒤 예상 대기(초) — 서버가 센 값(estimatedWaitSeconds)을 쓴다. 서버 값이
+ * 없으면(입장 멈춤·접수 전) 지금 배분된 속도로 어림한다. 줄이 없거나 입장을 멈췄으면 null.
  */
-export const productWaitEstimate = (
-  product: Pick<
-    WaitingroomProductStatus,
-    'waiting' | 'credit' | 'estimatedWaitSeconds'
-  >,
-) =>
-  product.waiting > 0 && product.estimatedWaitSeconds !== null
-    ? formatWait(product.estimatedWaitSeconds)
-    : waitEstimate(product.waiting, product.credit)
+export const productWaitSeconds = ({
+  waiting,
+  credit,
+  estimatedWaitSeconds,
+}: WaitInput) => {
+  if (waiting <= 0) return null
+  if (estimatedWaitSeconds !== null) return estimatedWaitSeconds
+  return credit > 0 ? Math.ceil(waiting / credit) : null
+}
+
+/** productWaitSeconds를 읽기 좋게. 줄이 있는데 입장을 멈췄으면 '입장 멈춤' */
+export const productWaitEstimate = (product: WaitInput) => {
+  const seconds = productWaitSeconds(product)
+  return seconds === null
+    ? waitEstimate(product.waiting, product.credit)
+    : formatWait(seconds)
+}

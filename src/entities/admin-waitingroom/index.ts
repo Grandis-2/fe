@@ -6,7 +6,11 @@ export {
 } from './api/useAdminWaitingroom'
 export { useWaitingroomStatusHistory } from './api/useWaitingroomStatusHistory'
 export type { AdmissionRateChange } from './api/useAdminWaitingroom'
-export { productWaitEstimate, waitEstimate } from './lib/waitEstimate'
+export {
+  productWaitEstimate,
+  productWaitSeconds,
+  waitEstimate,
+} from './lib/waitEstimate'
 export { admissionRateRefusal, admissionZone } from './lib/admissionCapacity'
 export type {
   AdmissionRateRefusal,

@@ -104,18 +104,16 @@ function waveSnapshot(now: number): Snapshot {
   const share = Math.floor(global / Math.max(productIds.length, 1))
   const products: ProductStatus[] = productIds.map((productId, index) => {
     const waiting = Math.round(wave(index / 3) * 1200)
+    const credit = waiting === 0 ? 0 : Math.min(share, capOf(productId))
     return {
       productId,
       phase: 'OPEN',
       runtime:
         waiting === 0 ? 'IDLE' : waiting < share ? 'DRAINING' : 'QUEUEING',
       waiting,
-      credit: waiting === 0 ? 0 : Math.min(share, capOf(productId)),
+      credit,
       cap: capOf(productId),
-      estimatedWaitSeconds: estimatedWait(
-        waiting,
-        waiting === 0 ? 0 : Math.min(share, capOf(productId)),
-      ),
+      estimatedWaitSeconds: estimatedWait(waiting, credit),
       opensAt: new Date(now - 30 * 60_000).toISOString(),
       closesAt: new Date(now + 90 * 60_000).toISOString(),
     }
