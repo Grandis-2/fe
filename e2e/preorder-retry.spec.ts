@@ -35,7 +35,7 @@ test('H2 사전예약하기를 같은 순간에 두 번 눌러도 예약은 하�
     button.click()
   })
 
-  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, {
     timeout: 15_000,
   })
   // 요청이 두 번 나갔다면 같은 멱등키여야 한다.
@@ -64,7 +64,7 @@ test('H3 서버가 잠깐 실패한 뒤 다시 누르면 같은 멱등키로 한
   await setMockFault(page, null)
   await preorderSubmitButton(page).click()
 
-  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, {
     timeout: 15_000,
   })
   expect(submits).toHaveLength(2)
@@ -79,7 +79,7 @@ test('H4 응답을 못 받고 같은 내용을 다시 보내면 처음 예약번
   const submits = collectPreorderSubmits(page)
   await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
   await preorderSubmitButton(page).click()
-  await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, {
     timeout: 15_000,
   })
   const preorderId = new URL(page.url()).searchParams.get('preorderId')
@@ -107,7 +107,29 @@ test('H4 응답을 못 받고 같은 내용을 다시 보내면 처음 예약번
   await expectSingleNewReservation(page)
 })
 
-test('대기열 진입 응답이 늦어도 눌렀을 때 대기 모달이 먼저 뜬다', async ({
+test('H5 접수 응답이 끊기면 같은 키로 한 번 저절로 다시 보내고, 예약은 하나만 생긴다', async ({
+  page,
+}) => {
+  const submits = collectPreorderSubmits(page)
+  await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
+  // 목이 예약은 저장하고 응답만 12초 늦춘다 — 요청 타임아웃(10초)이 지나 응답 없음으로 끝난다.
+  await page.evaluate(() =>
+    sessionStorage.setItem('mock-submit-delay-ms', '12000'),
+  )
+  await preorderSubmitButton(page).click()
+
+  await expect(page).toHaveURL(/\/payment\?preorderId=/, {
+    timeout: 25_000,
+  })
+  expect(submits).toHaveLength(2)
+  expect(submits[1].idempotencyKey).toBe(submits[0].idempotencyKey)
+  await expect(
+    page.getByText('이미 접수된 예약이에요. 그 예약으로 이어서 진행해요.'),
+  ).toBeVisible()
+  await expectSingleNewReservation(page)
+})
+
+test('대기열 진입 응답이 늦으면 대기 모달 대신 입장 확인 중을 먼저 알린다', async ({
   page,
 }) => {
   // 진입(POST /preorders/queue)만 5초 늦게 보낸다 — axios는 XHR이라 send를 미룬다.
@@ -138,8 +160,11 @@ test('대기열 진입 응답이 늦어도 눌렀을 때 대기 모달이 먼저
     .first()
     .click()
 
-  // 진입 응답(5초)보다 먼저 떠야 한다.
-  await expect(page.getByText(/조금만 기다려주세요/)).toBeVisible({
+  // 진입 응답(5초)보다 먼저 떠야 한다. 서버가 줄을 세웠는지 아직 모르니 대기 모달은 띄우지 않는다.
+  await expect(
+    page.getByRole('status').filter({ hasText: '입장 확인 중…' }),
+  ).toBeVisible({
     timeout: 2_000,
   })
+  await expect(page.getByText(/조금만 기다려주세요/)).toBeHidden()
 })

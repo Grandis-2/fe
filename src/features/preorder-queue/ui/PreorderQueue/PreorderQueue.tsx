@@ -45,17 +45,27 @@ export function PreorderQueue({
       <Modal
         open={queue.isOpen && !queue.isHidden}
         onClose={queue.close}
+        // 순번이 한참 남았는데 '곧 이동'이라고 하지 않는다 — 아래 예상 대기('오래 걸림')와 말이 어긋난다.
         title={
-          <>
-            조금만 기다려주세요,
-            <br />곧 예약 페이지로 이동합니다.
-          </>
+          queue.status === 'mine' ? (
+            <>
+              내 차례예요,
+              <br />곧 예약 페이지로 이동합니다.
+            </>
+          ) : (
+            <>
+              조금만 기다려주세요,
+              <br />
+              차례가 오면 예약 페이지로 이동합니다.
+            </>
+          )
         }
         description={productName}
       >
         <PreorderQueueCard queue={queue} />
       </Modal>
-      {!queue.isOpen && !queue.hasLeft && (
+      {/* 모달을 닫아 뒀거나, 대기열을 띄우기 전 답을 기다리는 중이면(입장 확인 중) 알약을 띄운다. */}
+      {((!queue.isOpen && !queue.hasLeft) || queue.checking) && (
         <QueuePill productName={productName} queue={queue} />
       )}
     </>

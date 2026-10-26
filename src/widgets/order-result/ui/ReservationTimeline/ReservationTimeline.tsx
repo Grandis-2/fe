@@ -74,11 +74,14 @@ export function ReservationTimeline({
               {timeFormat.format(new Date(event.createdAt))}
             </span>
             <span className={styles.label}>{eventLabel(event)}</span>
-            <span className={styles.meta}>
-              {ACTOR_LABEL[event.actor]}
-              {index > 0 &&
-                ` · ${elapsed(sorted[index - 1].createdAt, event.createdAt)}`}
-            </span>
+            {/* 첫 줄은 걸린 시간이 없어 '나' 혼자 남는다 — 내가 접수한 건 당연하니 뺀다(운영자 접수면 남긴다). */}
+            {(index > 0 || event.actor !== 'USER') && (
+              <span className={styles.meta}>
+                {ACTOR_LABEL[event.actor]}
+                {index > 0 &&
+                  ` · ${elapsed(sorted[index - 1].createdAt, event.createdAt)}`}
+              </span>
+            )}
           </li>
         ))}
         {registering && (

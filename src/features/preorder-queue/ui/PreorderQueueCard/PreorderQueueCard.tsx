@@ -15,6 +15,7 @@ export type PreorderQueueCardProps = {
     | 'leave'
     | 'poll'
     | 'mayHaveLeftQueue'
+    | 'droppedFrom'
     | 'rejoined'
   >
 }
@@ -31,6 +32,13 @@ export function PreorderQueueCard({ queue }: PreorderQueueCardProps) {
         </InlineAlert>
       ) : (
         <PollingNotice query={queue.poll} />
+      )}
+      {queue.droppedFrom !== null && (
+        <InlineAlert status="warning">
+          연결이 끊긴 사이 줄에서 빠져 다시 줄을 섰어요 (
+          {formatNumber(queue.droppedFrom)}번 →{' '}
+          {queue.myOrder === null ? '-' : formatNumber(queue.myOrder)}번).
+        </InlineAlert>
       )}
       {queue.rejoined && (
         <InlineAlert status="info">
