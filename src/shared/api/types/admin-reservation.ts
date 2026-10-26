@@ -24,6 +24,10 @@ export type SyncJobType = 'REGISTER' | 'CANCEL'
 /** 관리자 목록 한 줄 */
 export type AdminPreorderSummary = Omit<PreorderSummary, 'imageUrl'> & {
   customerId: string
+  /** 가린 회원 이름(첫 글자와 **). 회원 정보를 받지 못하면 null */
+  customerName: string | null
+  /** 외부 등록(REGISTER) 작업 id — 일괄 재처리의 syncJobIds에 그대로 쓴다. 작업이 없으면 null */
+  registerSyncJobId: string | null
   /** 외부 등록 작업 상태. DEAD_LETTER면 재처리가 필요하다. 작업이 없으면 null */
   registerJobStatus: SyncJobStatus | null
 }
@@ -34,16 +38,27 @@ export type OffsetPage<TItem> = Pick<
   'items' | 'page' | 'size' | 'total'
 >
 
+/**
+ * 목록 순서. NEWEST(기본) 최신 접수순, OLDEST 오래된 접수순, QUEUE_POSITION 순번순(productId
+ * 필수), PAYMENT_DUE 결제 기한이 가까운 REGISTERED를 앞에 두고 나머지는 뒤에
+ */
+export type AdminPreorderSort =
+  'NEWEST' | 'OLDEST' | 'QUEUE_POSITION' | 'PAYMENT_DUE'
+
 export type AdminPreorderListParams = {
   status?: PreorderStatus
+  sort?: AdminPreorderSort
   productId?: string
   registerJobStatus?: SyncJobStatus
   /** 배송 차수 — 차수 번호는 상품마다 따로라 productId와 같이 보낸다 */
   batchNumber?: number
   /** 외부 예약 번호(정확히 같은 것만) */
   externalReference?: string
-  /** 접수 시각 하한(포함), ISO date-time */
+  /** 접수 시각 [from, to), ISO date-time */
   from?: string
+  to?: string
+  /** 회원 id — 한 회원의 예약만 */
+  customerId?: string
   page?: number
   /** 1~100(기본 20) */
   size?: number
@@ -106,10 +121,36 @@ export type ReprocessBatchRequest = {
 
 /** 일괄 재처리 시작 결과. 실제 재처리는 서버가 초당 ratePerSecond건씩 이어서 한다 */
 export type BatchReprocess = {
+  /** 진행 조회(reprocess-batches/{batchId})에 쓴다. 하루 동안 조회할 수 있다 */
+  batchId: string
   targetCount: number
   /** 지정한 id 중 없거나 재처리 조건 밖이라 건너뛴 수 */
   skippedCount: number
   estimatedSeconds: number
+}
+
+/** GET /admin/preorders/sync-jobs/reprocess-batches/{batchId} — 일괄 재처리 진행 */
+export type BatchReprocessProgress = {
+  batchId: string
+  targetCount: number
+  skippedCount: number
+  /** 재처리 요청을 남긴 수 */
+  sent: number
+  /** 다뤘지만 그사이 상태가 바뀌었거나 기록에 실패해 요청을 남기지 못한 수(결과로 세지 않는다) */
+  unsent: number
+  /** 보낸 뒤 외부 등록에 성공한 수 */
+  succeeded: number
+  /** 보낸 뒤 다시 실패해 DEAD_LETTER가 된 수 */
+  failed: number
+  /** 보낸 뒤 예약 취소로 무효가 된 수 */
+  canceled: number
+  /** 아직 보내지 않았거나 결과를 기다리는 수 */
+  pending: number
+  startedAt: string
+  /** 마지막으로 대상을 다룬 시각 — 끝나지 않았는데 오래 그대로면 보내기가 멈춘 것 */
+  lastProgressAt: string | null
+  /** 모든 대상을 다룬 시각. 아직이면 null */
+  finishedAt: string | null
 }
 
 /** 동기화 작업 상세 — 상세 응답에는 시도 기록이 붙는다 */
@@ -118,6 +159,8 @@ export type SyncJob = SyncJobSummary & { attempts: SyncAttempt[] }
 /** 관리자 예약 상세. 회원용 상세에 회원 id, 내부 메모, 동기화 작업, 상태 이력이 붙는다 */
 export type AdminPreorderDetail = Omit<PreorderDetail, 'imageUrl'> & {
   customerId: string
+  /** 가린 회원 이름(첫 글자와 **). 회원 정보를 받지 못하면 null */
+  customerName: string | null
   /** 회원에게 보이지 않는 관리자 메모(최대 1000자). 없으면 null */
   internalNote: string | null
   syncJobs: SyncJob[]
@@ -137,6 +180,18 @@ type OpenSyncJobCounts = Record<
   number
 >
 
+/** 서버가 10초마다 남긴 기록의 처음·끝 차이로 잰 최근 1분 속도 */
+export type StatsRates = {
+  /** 초당 접수 */
+  receivedPerSec: number
+  /** 초당 외부 등록 대기에서 빠져나간 수(등록 완료 + 등록 전 취소) */
+  registeredPerSec: number
+  /** 분당 외부 등록 대기 증감. 양수면 밀린다 */
+  backlogPerMin: number
+  /** 실제로 잰 구간(초). 기록이 빠지면 60보다 짧다 */
+  windowSeconds: number
+}
+
 /**
  * GET /admin/preorders/stats — 운영 현황. 최대 5초 늦을 수 있고, 0인 칸도 빠지지
  * 않고 온다.
@@ -150,20 +205,31 @@ export type PreorderStats = {
   deadLetters: { waiting: number; oldestWaitingAt: string | null }
   /** 결제 기한이 지났는데 아직 만료 처리 전인 예약 수 */
   paymentOverdue: number
-  /** 외부 등록을 기다리는 예약 중 가장 오래된 접수 시각. 없으면 null */
+  /** 외부 등록을 기다리는 예약 중 가장 오래된 접수 시각. 재처리 필요(DEAD_LETTER)도 센다. 없으면 null */
   oldestPendingSyncAt: string | null
+  /** 그중 등록 작업이 아직 도는(PENDING·PROCESSING·RETRY_SCHEDULED) 예약만의 가장 오래된 접수 시각 */
+  oldestInFlightSyncAt: string | null
+  /** 최근 1분 속도. 서버가 막 떴거나 접수 중이 아닌 상품이면 null */
+  rates: StatsRates | null
   countedAt: string
 }
 
-/**
- * 예약 응답엔 회원 id만 있어 이름을 따로 받는다. 가입 때 입력한 실명이고, 비어 있으면
- * 카카오 표시 이름이다(명세 예시는 '김**'처럼 가린 값이라 백엔드에 확인 중).
- */
-export type AdminMember = {
-  memberId: string
-  name: string
+/** GET /admin/preorders/stats/products 한 줄 — 운영 현황과 같은 칸에 회차 일정이 붙는다(속도는 없다) */
+export type ProductStatsItem = Omit<
+  PreorderStats,
+  'productId' | 'countedAt' | 'rates'
+> & {
+  productId: string
+  opensAt: string
+  closesAt: string
 }
 
-export type AdminMemberListResponse = {
-  items: AdminMember[]
+/** OPEN은 접수 중 회차를 마감이 가까운 순으로, CLOSED는 마감된 회차를 최근 마감순으로 */
+export type ProductStatsPhase = 'OPEN' | 'CLOSED'
+
+export type ProductStatsPage = {
+  items: ProductStatsItem[]
+  /** 마지막 쪽이면 null */
+  nextCursor: string | null
+  countedAt: string
 }

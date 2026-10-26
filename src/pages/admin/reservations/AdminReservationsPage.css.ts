@@ -107,3 +107,11 @@ export const failedRow = style({
 export const navigator = style({
   alignSelf: 'center',
 })
+
+// 회원 필터 안내 — 문구 옆에 푸는 버튼.
+export const customerFilter = style({
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: spacing[12],
+})

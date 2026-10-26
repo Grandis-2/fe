@@ -1,11 +1,7 @@
+import { toLocalInputValue } from '@shared/lib/period'
+
 const HOUR = 60 * 60 * 1000
 const DAY = 24 * HOUR
-
-const pad = (value: number) => String(value).padStart(2, '0')
-
-/** datetime-local 칸에 넣는 로컬 시각 'YYYY-MM-DDTHH:mm' */
-export const toLocalInputValue = (date: Date) =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
 
 /** 빨리 정하기 — 지금(분 단위로 내림)부터 days일 뒤 같은 시각까지 */
 export function quickPeriod(days: number, now = new Date()) {

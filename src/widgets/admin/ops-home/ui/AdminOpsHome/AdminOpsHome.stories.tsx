@@ -48,6 +48,7 @@ const statsOf = ({
   },
   paymentOverdue,
   oldestPendingSyncAt: slowSince ?? null,
+  oldestInFlightSyncAt: slowSince ?? null,
   countedAt: '2026-10-08T05:00:00Z',
 })
 
@@ -58,6 +59,8 @@ const queueProduct = (productId: string, waiting: number, credit: number) => ({
   waiting,
   credit,
   cap: 150,
+  // 서버처럼 대기 ÷ 초당 입장(올림), 멈췄으면 null
+  estimatedWaitSeconds: credit > 0 ? Math.ceil(waiting / credit) : null,
   opensAt: '2026-10-08T05:00:00Z',
   closesAt: '2026-10-08T07:00:00Z',
 })
@@ -75,15 +78,27 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
   )
   // 진행 중인 두 사전예약 — 실패는 아이폰에 몰려 있다.
   queryClient.setQueryData(
-    ['admin', 'reservations', 'stats', IPHONE],
-    statsOf({ ...counts, registerFailures: counts.registerFailures - 15 }),
-  )
-  queryClient.setQueryData(
-    ['admin', 'reservations', 'stats', GALAXY],
-    statsOf({
-      ...counts,
-      registerFailures: Math.min(15, counts.registerFailures),
-    }),
+    ['admin', 'reservations', 'stats-products', 'OPEN'],
+    [
+      {
+        ...statsOf({
+          ...counts,
+          registerFailures: counts.registerFailures - 15,
+        }),
+        productId: IPHONE,
+        opensAt: '2026-10-08T05:00:00Z',
+        closesAt: '2026-10-08T07:00:00Z',
+      },
+      {
+        ...statsOf({
+          ...counts,
+          registerFailures: Math.min(15, counts.registerFailures),
+        }),
+        productId: GALAXY,
+        opensAt: '2026-10-08T05:00:00Z',
+        closesAt: '2026-10-08T07:00:00Z',
+      },
+    ],
   )
   queryClient.setQueryData(['admin', 'waitingroom', 'status'], {
     nodeId: 'node-1',
@@ -101,37 +116,41 @@ const withData = (counts: Counts) => (Story: () => React.ReactNode) => {
     ],
   })
   queryClient.setQueryData(['admin', 'draws', 'list'], [])
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'PREPARING_ITEMS', size: 1 }],
-    orderPage(counts.shipping),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'READY_TO_SHIP', size: 1 }],
-    orderPage(0),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'AWAITING_CONFIRMATION', size: 1 }],
-    orderPage(52),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'SHIPPED', size: 1 }],
-    orderPage(210),
-  )
+  // 마지막 대조 검사 — 아이폰에서 불일치 3건.
+  queryClient.setQueryData(['admin', 'reconciliation', 'runs'], {
+    items: [
+      {
+        runId: 'run-1',
+        status: 'COMPLETED',
+        verdict: 'MISMATCHED',
+        productId: null,
+        finishedAt: '2026-10-08T02:00:00Z',
+        findingCount: 3,
+        findingCounts: { REGISTERED_NOT_IN_MOCK: 3 },
+        findingCountsByProduct: [{ productId: IPHONE, count: 3 }],
+      },
+    ],
+    page: 0,
+    size: 10,
+    total: 1,
+  })
+  queryClient.setQueryData(['admin', 'orders', 'stats'], {
+    byStatus: {
+      AWAITING_PAYMENT: 0,
+      AUTHORIZING: 0,
+      AWAITING_CONFIRMATION: 52,
+      PREPARING_ITEMS: counts.shipping,
+      READY_TO_SHIP: 0,
+      SHIPPED: 210,
+      DELIVERED: 0,
+      CANCELING: 0,
+      CANCELED: 0,
+    },
+    countedAt: '2026-10-08T05:00:00Z',
+  })
   queryClient.setQueryData(
     ['admin', 'products', 'list', { status: 'ACTIVE', size: 1 }],
     orderPage(42),
-  )
-  queryClient.setQueryData(
-    ['admin', 'products', 'list', { status: 'PAUSED', size: 1 }],
-    orderPage(3),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'AWAITING_CONFIRMATION', size: 1 }],
-    orderPage(52),
-  )
-  queryClient.setQueryData(
-    ['admin', 'orders', 'list', { status: 'SHIPPED', size: 1 }],
-    orderPage(210),
   )
   queryClient.setQueryData(
     ['admin', 'products', 'list', { status: 'ACTIVE', size: 1 }],

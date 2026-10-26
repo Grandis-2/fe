@@ -1,4 +1,4 @@
-import { expect } from 'storybook/test'
+import { expect, within } from 'storybook/test'
 
 import { StackedBar } from './StackedBar'
 
@@ -32,14 +32,13 @@ const meta = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-/** 막대는 그림 하나로, 범례 내용을 한 문장으로 읽어 준다 */
+/** 막대는 그림이라 숨기고, 범례가 이름·설명·건수를 모두 읽어 준다 */
 export const Default: Story = {
   play: async ({ canvas }) => {
-    await expect(
-      canvas.getByRole('img', {
-        name: '정상 응답 93건, 일시 실패 5건, 느림 2건',
-      }),
-    ).toBeVisible()
+    const items = within(canvas.getByRole('list')).getAllByRole('listitem')
+    await expect(items).toHaveLength(3)
+    await expect(items[0]).toHaveTextContent('정상 응답평균 약 0.99초93건')
+    await expect(canvas.queryByRole('img')).toBeNull()
   },
 }
 

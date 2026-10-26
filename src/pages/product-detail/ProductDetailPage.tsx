@@ -20,7 +20,7 @@ import {
   useProductPurchase,
   type PurchaseDraft,
 } from '@features/product-purchase'
-import { PAYMENT_PATH, resultPath } from '@shared/config/routes'
+import { PAYMENT_PATH, paymentPath, resultPath } from '@shared/config/routes'
 import { InlineAlert } from '@shared/ui'
 import {
   galleryImages,
@@ -45,6 +45,12 @@ const SECTION_LABELS = {
   review: '구매 후기',
 } as const satisfies Record<ProductPageTabKey, string>
 const SECTION_TABS = Object.keys(SECTION_LABELS) as ProductPageTabKey[]
+
+// 사전예약을 누른 뒤 버튼 문구 — 접수 요청을 보내는 중, 접수 뒤 외부 등록을 최대 5초 기다리는 중.
+const PREORDER_BUSY_LABEL = {
+  submitting: '예약 접수 중…',
+  registering: '예약 처리 중… (최대 5초)',
+} as const
 
 export function ProductDetailPage() {
   const navigate = useNavigate()
@@ -87,9 +93,10 @@ export function ProductDetailPage() {
   // 조회가 끝나지 않았거나 실패했거나, 고른 조합을 살 수 없거나, 접수 중이면 결제/사전예약을 막는다.
   const isCheckoutReady =
     Boolean(variant) && !unavailableReason && !preorderSubmit.isPending
-  const checkoutBusyLabel = preorderSubmit.isPending
-    ? '예약 접수 중…'
-    : undefined
+  const checkoutBusyLabel =
+    preorderSubmit.phase === null
+      ? undefined
+      : PREORDER_BUSY_LABEL[preorderSubmit.phase]
   // 이미 예약한 모델이면 그 예약으로 가는 버튼이라 옵션과 상관없이 켠다 — 접수 중에만 끈다.
   const checkoutDisabled =
     preorderSubmit.isPending ||
@@ -129,16 +136,21 @@ export function ProductDetailPage() {
         return
       }
       // 사전예약은 대기열 입장권으로 접수한다 — 입장권이 없으면 사전예약 페이지로 보낸다(줄은 거기서 선다).
-      // 접수되면 예약 접수 화면으로 간다 — 외부 등록(처리 중 → 구매 확정 가능)을 거기서 보여 준다.
-      // 접수 후엔 뒤로가기로 상세에 돌아와 다시 제출하지 않게 기록을 바꾼다.
+      // 접수 뒤 5초 안에 외부 등록이 끝나면 결제로 바로 가고, 늦으면 예약 접수 화면이 이어서 기다린다
+      // (처리 중 → 구매 확정 가능). 접수 후엔 뒤로가기로 상세에 돌아와 다시 제출하지 않게 기록을 바꾼다.
       preorderSubmit.submitPreorder(
         {
           productId: product.productId,
           productName: product.title,
           optionId: variant.variantId,
         },
-        ({ preorderId }) =>
-          navigate(resultPath('preorder', preorderId), { replace: true }),
+        ({ preorderId }, registered) =>
+          navigate(
+            registered
+              ? paymentPath(preorderId)
+              : resultPath('preorder', preorderId),
+            { replace: true },
+          ),
       )
     })
   }

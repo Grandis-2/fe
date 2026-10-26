@@ -62,6 +62,22 @@ describe('configDraft', () => {
     })
   })
 
+  it('켜진 꼬리의 0ms 경계를 기본값으로 바꾸지 않는다 — 다른 칸만 바꿔 저장해도 그대로 간다', () => {
+    const tail = {
+      ...config,
+      latencyTailRate: 0.05,
+      latencyTailMinMs: 0,
+      latencyTailMaxMs: 0,
+    }
+    const draft = { ...draftOf(tail), failure: '5' }
+    expect(updateOf(draft)).toMatchObject({
+      latencyTailRate: 0.05,
+      latencyTailMinMs: 0,
+      latencyTailMaxMs: 0,
+    })
+    expect(changesOf(tail, draftOf(tail))).toEqual([])
+  })
+
   it('꼬리가 평균을 다 잡아먹으면 막는다', () => {
     expect(problemOf(edited)).toBeUndefined()
     expect(problemOf({ ...edited, tailRate: '50' })).toMatch(

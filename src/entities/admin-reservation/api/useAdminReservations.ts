@@ -4,33 +4,45 @@ import {
   useQueries,
   useQuery,
   useQueryClient,
-  type QueryClient,
 } from '@tanstack/react-query'
 
 import {
+  freezeWhenDone,
   keepNewer,
   pollEvery,
   pollingRetry,
   queryPolicy,
 } from '@shared/api/queryPolicy'
-import type { PreorderStats, SyncJobStatus } from '@shared/api/types'
+import type {
+  BatchReprocessProgress,
+  PreorderStats,
+  ProductStatsItem,
+  ProductStatsPhase,
+  SyncJobStatus,
+} from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
 import {
   cancelAdminReservation,
-  getAdminMembers,
   getAdminReservation,
   getAdminReservationsPage,
-  getAllAdminReservations,
+  getProductStats,
+  getReprocessBatch,
   getReservationStats,
   getSyncJobErrorGroups,
   reprocessAdminReservation,
   reprocessAdminReservations,
   reprocessFailedRegistrations,
+  reprocessSyncJobs,
+  resolveCancelJob,
+  reprocessSyncJob,
+  targetsOf,
   toAdminReservationDetail,
   updateAdminReservationNote,
   type AdminReservationListParams,
 } from './adminReservation'
+
+import type { AdminReservation } from '../model/types'
 
 const RESERVATIONS_KEY = ['admin', 'reservations'] as const
 const POLL_INTERVAL_MS = 10_000
@@ -64,42 +76,6 @@ export const useAdminReservations = (
 }
 
 /**
- * 모든 예약. 외부 원장과 맞춰 보는 데만 쓴다. 서버가 한 쪽에 100건까지만 줘서 예약이
- * 2만 건이면 요청이 200번 넘게 나간다 — 화면에 들어와도 받지 않고(enabled: false) '대조
- * 실행'의 refetch로만 받는다. 상품은 받은 뒤 화면이 거른다 — 상품을 바꿀 때마다 다시 받지
- * 않으려고.
- * ponytail: 예약 수에 비례해 요청이 는다 — 서버 대조 API(reconciliation/runs)로 바꾸면 지운다.
- */
-export const useAllAdminReservations = () =>
-  useQuery({
-    // 재처리·취소 뒤 무효화(RESERVATIONS_KEY)에 끌려 혼자 다시 받으면 외부 원장과 받은
-    // 시점이 어긋난다 — 접두사 밖에 둔다.
-    queryKey: ['admin', 'reservations-snapshot'] as const,
-    queryFn: ({ signal }) => getAllAdminReservations(signal),
-    enabled: false,
-    ...queryPolicy.snapshot,
-  })
-
-const statsQuery = (
-  queryClient: QueryClient,
-  productId: string | undefined,
-  intervalMs: RefreshInterval,
-) => {
-  const queryKey = reservationStatsKey(productId)
-  return {
-    queryKey,
-    queryFn: ({ signal }: { signal: AbortSignal }) =>
-      getReservationStats(productId, signal),
-    // 소수 초 자릿수가 응답마다 달라(0·3·6자리) 문자열이 아니라 시각으로 비교한다.
-    structuralSharing: keepNewer<PreorderStats>(({ countedAt }) =>
-      Date.parse(countedAt),
-    ),
-    ...queryPolicy.live,
-    ...pollEvery(queryClient, queryKey, intervalMs),
-  }
-}
-
-/**
  * 지표 카드용 집계. 서버가 5초까지 캐시하므로 그보다 자주 받아도 같은 값이다.
  * keepPrevious면 상품을 바꿔 키가 바뀌는 동안 이전 숫자를 남겨 둔다(isPlaceholderData) — 숫자가 사라졌다 나타나지 않게.
  * 쓰는 쪽은 그동안 숫자를 흐리게 그려 이전 상품 숫자를 지금 값으로 읽지 않게 한다.
@@ -108,40 +84,44 @@ export const useReservationStats = (
   productId?: string,
   intervalMs: RefreshInterval = POLL_INTERVAL_MS,
   { keepPrevious = false } = {},
-) =>
-  useQuery({
-    ...statsQuery(useQueryClient(), productId, intervalMs),
-    placeholderData: keepPrevious ? keepPreviousData : undefined,
-  })
-
-/**
- * 여러 상품의 집계를 한꺼번에(상품마다 한 요청). 운영 홈이 진행 중인 사전예약마다
- * 상태를 나눠 보일 때 쓴다. 같은 키라 예약 현황의 상품별 집계와 캐시를 나눠 쓴다.
- */
-export const useReservationStatsByProduct = (
-  productIds: readonly string[],
-  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
 ) => {
   const queryClient = useQueryClient()
-  return useQueries({
-    queries: productIds.map((productId) =>
-      statsQuery(queryClient, productId, intervalMs),
+  const queryKey = reservationStatsKey(productId)
+  return useQuery({
+    queryKey,
+    queryFn: ({ signal }) => getReservationStats(productId, signal),
+    // 소수 초 자릿수가 응답마다 달라(0·3·6자리) 문자열이 아니라 시각으로 비교한다.
+    structuralSharing: keepNewer<PreorderStats>(({ countedAt }) =>
+      Date.parse(countedAt),
     ),
+    placeholderData: keepPrevious ? keepPreviousData : undefined,
+    ...queryPolicy.live,
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
 }
 
+// 모듈에 둬야 렌더마다 Map을 새로 만들지 않는다(select 함수가 같으면 결과를 재사용).
+const byProductId = (items: ProductStatsItem[]) =>
+  new Map(items.map((item) => [item.productId, item]))
+
 /**
- * 표에 보이는 회원 id를 이름으로 바꾼다. 이름은 예약만큼 자주 바뀌지 않아 폴링하지
- * 않는다. id 순서가 달라도 같은 캐시를 쓰도록 정렬해 키로 쓴다.
+ * 접수 중(OPEN)·마감된(CLOSED) 회차의 상품별 집계를 한 요청으로. 운영 대시보드와 대기열
+ * 관리가 사전예약마다 상태를 나눠 보일 때 쓴다. data는 상품 id → 집계다.
  */
-export const useAdminMembers = (memberIds: string[]) => {
-  const ids = [...new Set(memberIds)].sort()
+export const useProductStats = (
+  phase: ProductStatsPhase,
+  intervalMs: RefreshInterval = POLL_INTERVAL_MS,
+  { enabled = true }: { enabled?: boolean } = {},
+) => {
+  const queryClient = useQueryClient()
+  const queryKey = [...RESERVATIONS_KEY, 'stats-products', phase] as const
   return useQuery({
-    queryKey: ['admin', 'members', ids] as const,
-    queryFn: ({ signal }) => getAdminMembers(ids, signal),
-    select: (response) => response.items,
-    enabled: ids.length > 0,
-    ...queryPolicy.catalog,
+    queryKey,
+    queryFn: ({ signal }) => getProductStats(phase, signal),
+    select: byProductId,
+    enabled,
+    ...queryPolicy.live,
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
 }
 
@@ -154,6 +134,29 @@ export const useReprocessReservation = () => {
   return useMutation({
     mutationFn: reprocessAdminReservation,
     onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/** 실패한 외부 취소를 한 번 더 보낸다. 결과는 조금 뒤에 반영돼 다시 받는다 */
+export const useRetryCancelJob = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: reprocessSyncJob,
+    onSuccess: () =>
+      queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
+  })
+}
+
+/**
+ * 외부에서 확인한 뒤 멈춘 외부 취소를 끝낸다. 409(이미 끝남·그사이 바뀜)여도 지금 상태를
+ * 다시 받아 맞춘다.
+ */
+export const useResolveCancelJob = () => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: resolveCancelJob,
+    onSettled: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),
   })
 }
@@ -180,12 +183,82 @@ export const useSyncJobErrorGroups = (
   })
 }
 
+// 일괄 재처리 진행을 묻는 간격 — 결과가 다 나올 때까지만 묻는다.
+const BATCH_POLL_MS = 2_000
+
+/** 일괄 재처리 묶음들을 합친 진행. finished는 모든 묶음이 대상을 다 다루고 결과도 다 나왔을 때 */
+export type ReprocessBatchesProgress = Pick<
+  BatchReprocessProgress,
+  'targetCount' | 'unsent' | 'succeeded' | 'failed' | 'canceled' | 'pending'
+> & { finished: boolean }
+
+const isBatchDone = (batch: BatchReprocessProgress) =>
+  batch.finishedAt !== null && batch.pending === 0
+
+/**
+ * 일괄 재처리의 진행 — 시작할 때 받은 batchId들을 끝날 때까지 묻고 합친다. 하나라도 아직
+ * 못 받았으면 undefined(화면은 예상 시간으로 어림한다). 실패하면 백오프하고, expired(쓰는 쪽이
+ * 정한 마감)가 지나면 끝나지 않았어도 묻기를 멈춘다.
+ */
+export const useReprocessBatches = (
+  batchIds: readonly string[],
+  { expired = false }: { expired?: boolean } = {},
+) => {
+  const queryClient = useQueryClient()
+  const pollMs = (data: BatchReprocessProgress | undefined) =>
+    !expired && data && !isBatchDone(data) ? BATCH_POLL_MS : null
+  return useQueries({
+    queries: batchIds.map((batchId) => {
+      const queryKey = [
+        ...RESERVATIONS_KEY,
+        'reprocess-batch',
+        batchId,
+      ] as const
+      return {
+        queryKey,
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          getReprocessBatch(batchId, signal),
+        ...queryPolicy.live,
+        ...freezeWhenDone(isBatchDone),
+        // 첫 응답 전에도 묻는다 — 시작 직후라 아직 없을 수 있다.
+        refetchInterval: ({
+          state: { data },
+        }: {
+          state: { data?: BatchReprocessProgress }
+        }) => (expired || (data && isBatchDone(data)) ? false : BATCH_POLL_MS),
+        ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey)), {
+          expired: () => expired,
+        }),
+      }
+    }),
+    combine: (results): ReprocessBatchesProgress | undefined => {
+      const batches = results.map((result) => result.data)
+      if (batches.length === 0 || batches.some((batch) => !batch))
+        return undefined
+      const all = batches as BatchReprocessProgress[]
+      const sum = (
+        key: keyof ReprocessBatchesProgress & keyof BatchReprocessProgress,
+      ) => all.reduce((total, batch) => total + (batch[key] as number), 0)
+      return {
+        targetCount: sum('targetCount'),
+        unsent: sum('unsent'),
+        succeeded: sum('succeeded'),
+        failed: sum('failed'),
+        canceled: sum('canceled'),
+        pending: sum('pending'),
+        finished: all.every(isBatchDone),
+      }
+    },
+  })
+}
+
 /** 여러 예약 일괄 재처리. 응답은 시작한 건수뿐이라 결과는 다시 조회해 본다 */
 export const useReprocessReservations = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (preorderIds?: string[]) =>
-      reprocessAdminReservations(preorderIds),
+    // 목록 줄에 작업 id가 있어 작업 목록을 다시 받지 않고 바로 보낸다.
+    mutationFn: (reservations: readonly AdminReservation[]) =>
+      reprocessSyncJobs(targetsOf(reservations)),
     // 앞 묶음이 받아들여졌으면 뒤 묶음이 실패해도 목록은 바뀌었다 — 성공·실패 모두 다시 받는다.
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: RESERVATIONS_KEY }),

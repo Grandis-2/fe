@@ -28,12 +28,10 @@ export function StackedBar({
   className,
 }: StackedBarProps) {
   const total = segments.reduce((sum, segment) => sum + segment.value, 0)
-  const summary = segments
-    .map((segment) => `${segment.label} ${segment.value}${unit}`)
-    .join(', ')
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
-      <div className={styles.bar} role="img" aria-label={summary}>
+      {/* 막대는 그림일 뿐 — 같은 내용(설명까지)을 범례가 글로 읽어 준다. */}
+      <div className={styles.bar} aria-hidden="true">
         {total > 0 &&
           segments.map((segment) => (
             <span
@@ -43,10 +41,10 @@ export function StackedBar({
             />
           ))}
       </div>
-      <ul className={styles.legend} aria-hidden="true">
+      <ul className={styles.legend}>
         {segments.map((segment) => (
           <li key={segment.key} className={styles.item}>
-            <span className={styles.swatch[segment.tone]} />
+            <span className={styles.swatch[segment.tone]} aria-hidden="true" />
             <span className={styles.text}>
               {segment.label}
               {segment.caption && (

@@ -1,4 +1,5 @@
 export { AdminProductActions } from './ui/AdminProductActions'
 export type { AdminProductActionsProps } from './ui/AdminProductActions'
+export { useProductDelete } from './lib/useProductDelete'
 export { useProductSaleStatus } from './lib/useProductSaleStatus'
 export { useProductVisibility } from './lib/useProductVisibility'

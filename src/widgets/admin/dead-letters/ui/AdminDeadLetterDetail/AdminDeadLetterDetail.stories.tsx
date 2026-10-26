@@ -1,4 +1,6 @@
-import { expect } from 'storybook/test'
+import { expect, waitFor } from 'storybook/test'
+
+import { useModalStore } from '@shared/model/modalStore'
 
 import { AdminDeadLetterDetail } from './AdminDeadLetterDetail'
 
@@ -35,7 +37,7 @@ const deadLetter = {
 const meta = {
   component: AdminDeadLetterDetail,
   tags: ['ai-generated'],
-  args: { deadLetter },
+  args: { deadLetter, service: 'preorder' },
 } satisfies Meta<typeof AdminDeadLetterDetail>
 
 export default meta
@@ -124,5 +126,40 @@ export const RedriveFailed: Story = {
       canvas.getByText('되돌렸지만 또 실패해 새 메시지로 다시 쌓였어요'),
     ).toBeVisible()
     await expect(canvas.getByText('처리 결과 · 다시 실패')).toBeVisible()
+  },
+}
+
+/**
+ * 결제 DLQ — 관련 대상이 예약이 아니라 주문이고, 회원 id 줄이 없다. 환불 요청을 버리려 하면
+ * 주문이 취소 중에 멈춘다고 먼저 알린다.
+ */
+export const PaymentRefund: Story = {
+  args: {
+    service: 'payment',
+    deadLetter: {
+      ...deadLetter,
+      eventType: 'ORDER_REFUND_REQUESTED',
+      preorderId: undefined,
+      customerId: undefined,
+      orderId: '0199a3f2-8a10-7b21-9c32-4d5e6f708192',
+      sourceQueue: 'payment-events',
+      aggregateType: 'ORDER',
+      aggregateId: '0199a3f2-8a10-7b21-9c32-4d5e6f708192',
+      body: '{"eventType":"ORDER_REFUND_REQUESTED","payload":{"amount":1250000}}',
+    },
+  },
+  beforeEach: () => () => useModalStore.getState().close(),
+  play: async ({ canvas, userEvent }) => {
+    await expect(
+      canvas.getByRole('heading', { name: '환불 요청 처리' }),
+    ).toBeVisible()
+    await expect(canvas.getAllByText(/관련 주문/).length).toBeGreaterThan(0)
+    await expect(canvas.queryByText('회원 id')).toBeNull()
+    await userEvent.click(canvas.getByRole('button', { name: '버리기' }))
+    await waitFor(() =>
+      expect(useModalStore.getState().content?.description).toMatch(
+        /취소 중에 머물고/,
+      ),
+    )
   },
 }

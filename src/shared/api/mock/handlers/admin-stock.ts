@@ -7,6 +7,7 @@ import { url } from '../url'
 
 import type {
   AdminStockItem,
+  StockCorrectionPreview,
   StockCorrectionRequest,
   StockCorrectionResponse,
   StockOverviewResponse,
@@ -76,6 +77,32 @@ export const adminStockHandlers: RequestHandler[] = [
       options,
     })
   }),
+
+  // 보정 미리보기 — 바꾸지 않고 지금 장부와 주문 기준을 준다(판매 완료는 목이 세지 않아 0).
+  http.get(
+    url('/api/v1/admin/products/:productId/stock/options/:optionId/reconcile'),
+    ({ params }) => {
+      const productId = String(params.productId)
+      const optionId = String(params.optionId)
+      if (!productExists(productId)) return notFound()
+      const stock = findStockItem(productId, optionId)
+      const drift = drifts().find(
+        (item) => item.optionId === optionId && !item.correctedAt,
+      )
+      const reserved = stock?.reservedQuantity ?? 0
+      const expectedReserved = drift?.expectedReserved ?? reserved
+      return ok<StockCorrectionPreview>({
+        optionId,
+        registered: !!stock,
+        stockTotal: stock?.initialQuantity ?? 0,
+        stockReserved: reserved,
+        stockSold: 0,
+        expectedReserved,
+        expectedSold: 0,
+        matches: expectedReserved === reserved,
+      })
+    },
+  ),
 
   http.post(
     url('/api/v1/admin/products/:productId/stock/options/:optionId/reconcile'),

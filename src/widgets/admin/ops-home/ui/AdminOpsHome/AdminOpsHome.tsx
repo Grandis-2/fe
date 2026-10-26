@@ -5,6 +5,7 @@ import { CircleCheck, TriangleAlert } from 'lucide-react'
 import { useAdminDraws, useStuckDraws } from '@entities/admin-draw'
 import { useAdminOrderCounts } from '@entities/admin-order'
 import { useAdminProductCount } from '@entities/admin-product'
+import { useReconciliationRuns } from '@entities/admin-reconciliation'
 import {
   useReservationStats,
   useSyncJobErrorGroups,
@@ -12,7 +13,8 @@ import {
 import {
   isBraking,
   useWaitingroomStatusHistory,
-  waitEstimate,
+  productWaitEstimate,
+  productWaitSeconds,
 } from '@entities/admin-waitingroom'
 import {
   OpenPreorderPicker,
@@ -32,6 +34,10 @@ import { slopePerSecond } from '@shared/lib/samples'
 import { InlineAlert, RefreshStatus, Skeleton, SkeletonGroup } from '@shared/ui'
 
 import { ORDER_SUMMARY_STEPS } from '../../lib/orderSummary'
+import {
+  reconcileSummary,
+  type ReconcileSummary,
+} from '../../lib/reconcileSummary'
 import { useReprocessRun } from '../../lib/useReprocessRun'
 import { useScrolledPast } from '../../lib/useScrolledPast'
 import { DrawSummaryCard } from '../DrawSummaryCard'
@@ -94,15 +100,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     SLOW_POLL_MS,
   )
 
-  // 진행 중인 사전예약 — 동시에 여럿 열릴 수 있어 각각의 집계를 따로 받는다.
+  // 진행 중인 사전예약 — 동시에 여럿 열릴 수 있어 상품별 집계를 함께 받는다.
   const {
     queue,
     openProducts,
     items: openPreorders,
     nameOf,
     statsOf,
-    statsQueryOf,
-    refetchStats,
+    statsQuery,
   } = useOpenPreorders(productNames, POLL_INTERVAL_MS)
   const q = queue.data
   // 대시보드가 보는 범위 — 처음엔 전체(null). 고른 사전예약이 마감돼 목록에서 빠지면 전체로
@@ -124,14 +129,9 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     .filter((value) => value !== undefined)
   // 대기열 현황을 못 받으면 진행 중인 사전예약을 몰라 범위가 비는데, 그걸 0건으로 세지 않는다.
   const scopeLoaded = q !== undefined && scopeStats.length === scopeIds.length
-  const scopeQueries = scopeIds.map(statsQueryOf)
-  const scopePending =
-    queue.isPending || scopeQueries.some((query) => query?.isPending)
-  // 사전예약별 집계가 하나라도 실패하면 위 숫자가 비거나 멈춘다 — 전체 집계와 따로 알린다.
-  const scopeError =
-    scopeQueries
-      .map((query) => (query ? pollingError(query) : null))
-      .find((error) => error !== null) ?? null
+  const scopePending = queue.isPending || statsQuery.isPending
+  // 사전예약별 집계가 실패하면 위 숫자가 비거나 멈춘다 — 전체 집계와 따로 알린다.
+  const scopeError = pollingError(statsQuery)
   const countOf = (status: keyof (typeof scopeStats)[number]['preorders']) =>
     scopeLoaded
       ? scopeStats.reduce((total, value) => total + value.preorders[status], 0)
@@ -195,22 +195,17 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
         }
       : null
 
-  // 외부 등록을 기다리는 작업(재처리 필요는 빼고) — 0이면 오래 기다리는 접수 시각이
-  // 재처리 필요 건을 가리킬 수 있어 밀림으로 보지 않는다.
+  // 외부 등록을 기다리는 작업(재처리 필요는 빼고)
   const waitingRegister = t
     ? t.syncJobs.REGISTER.PENDING +
       t.syncJobs.REGISTER.PROCESSING +
       t.syncJobs.REGISTER.RETRY_SCHEDULED
     : 0
-  // ponytail: oldestPendingSyncAt엔 재처리 필요(DEAD_LETTER) 예약도 들어 있어, 실패가 있으면
-  // 그 접수 시각을 밀림으로 잘못 읽는다 — 실패가 있으면 밀림을 띄우지 않는다(실패 할 일이
-  // 먼저 뜬다). 서버가 처리 중인 것만의 시각을 주면 이 조건을 뺀다.
+  // 등록 작업이 아직 도는 예약만의 시각이라 재처리 필요(실패)가 있어도 밀림을 따로 본다.
   const slowAge =
-    t?.oldestPendingSyncAt &&
-    waitingRegister > 0 &&
-    t.syncJobs.REGISTER.DEAD_LETTER === 0 &&
-    now - Date.parse(t.oldestPendingSyncAt) > SLOW_AFTER_MS
-      ? ageOf(t.oldestPendingSyncAt, now)
+    t?.oldestInFlightSyncAt &&
+    now - Date.parse(t.oldestInFlightSyncAt) > SLOW_AFTER_MS
+      ? ageOf(t.oldestInFlightSyncAt, now)
       : null
 
   // 대기가 긴 사전예약 — 입장이 멈췄는데 줄이 있으면(초당 0) 끝이 없으니 같이 띄운다.
@@ -218,7 +213,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     (product) =>
       product.waiting > 0 &&
       (product.credit <= 0 ||
-        product.waiting / product.credit >= LONG_WAIT_SECONDS),
+        (productWaitSeconds(product) ?? 0) >= LONG_WAIT_SECONDS),
   )
 
   const reprocessPath = adminReservationsPath(
@@ -280,7 +275,7 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           title:
             product.credit <= 0
               ? `${nameOf(product.productId)} 입장 멈춤 · ${formatNumber(product.waiting)}명 대기`
-              : `${nameOf(product.productId)} 대기 ${waitEstimate(product.waiting, product.credit)}`,
+              : `${nameOf(product.productId)} 대기 ${productWaitEstimate(product)}`,
           action: { label: '속도 조절', to: ADMIN_WAITINGROOM_PATH },
         })),
         t.paymentOverdue > 0 && {
@@ -318,10 +313,27 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   })
   const stuckDraws = useStuckDraws(stuckCandidates, now)
 
+  // 대조는 하루 한 번·마감 뒤·요청 때만 돌아 5초 갱신에 넣지 않는다(훅이 1분마다 묻는다).
+  const runs = useReconciliationRuns()
+  // 처음부터 못 받았으면 '값 없음'과 구분하고, 받은 뒤 실패면 마지막 값이라고 붙인다.
+  const summary: ReconcileSummary =
+    runs.isError && !runs.data
+      ? { value: null, emptyText: '불러오지 못함' }
+      : reconcileSummary(runs.data, selected, runs.dataUpdatedAt)
+  // 받은 뒤 실패는 백오프하며 다시 묻는 동안 isError가 켜지지 않아 pollingError로 본다.
+  const reconcile =
+    pollingError(runs) !== null
+      ? {
+          ...summary,
+          caption: summary.caption && `${summary.caption} · 갱신 실패`,
+        }
+      : summary
+
   const refresh = () => {
+    void runs.refetch()
     void stats.refetch()
     void queue.refetch()
-    refetchStats()
+    void statsQuery.refetch()
     void draws.refetch()
     orders.refetch()
     void activeProducts.refetch()
@@ -333,9 +345,9 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   // 느리게 다시 받는 숫자(주문·상품 수, 럭키드로우)도 실패하면 멈춘 값이라고 알린다.
   const slowFailed =
     orders.isError ||
-    activeProducts.isError ||
-    pausedProducts.isError ||
-    draws.isError
+    [activeProducts, pausedProducts, draws].some(
+      (query) => pollingError(query) !== null,
+    )
 
   return (
     <div className={styles.root}>
@@ -440,16 +452,15 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
           tone={failures ? 'danger' : 'default'}
           loading={stats.isPending}
         />
-        {/* ponytail: 불일치 건수를 주는 API가 없어 자리만 둔다(값은 '—'). 대조는 예약 전체와
-            외부 원장 전체를 받아야 해서 5초 갱신에 넣지 않는다 — 백엔드에 stats 응답의 대조
-            요약을 요청해 뒀고, 생기면 value에 그 숫자를 넣는다. */}
         <OpsKpiCard
           label="외부 예약 대조"
           to={ADMIN_RECONCILIATION_PATH}
           linkLabel="대조하기"
-          value={null}
+          value={reconcile.value}
           unit="건"
-          emptyText="집계 준비 중"
+          emptyText={reconcile.emptyText}
+          caption={reconcile.caption}
+          loading={runs.isPending}
         />
         <OpsKpiCard
           // 주문은 상품으로 거를 수 없어 고른 사전예약과 상관없이 전체다.

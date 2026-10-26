@@ -66,9 +66,6 @@ const sortOptions: DropdownOption<ProductSort>[] = [
   { label: '상품명순', value: 'name' },
 ]
 
-// 서버가 한 번에 주는 최대 수 — 표가 이 안에서 페이지를 나눈다.
-const LIST_SIZE = 100
-
 const dateFormatter = new Intl.DateTimeFormat('ko-KR', {
   month: 'long',
   day: 'numeric',
@@ -90,7 +87,7 @@ const scheduleLabel = (product: AdminProduct) => {
 
 /**
  * 상품 목록. 검색어·브랜드·판매 상태·판매 방식은 서버가 걸러 준다. 정렬은 서버가 최근
- * 등록순만 지원해서 나머지는 받은 목록(최대 100개) 안에서 화면이 한다.
+ * 등록순만 지원해서, 조건에 맞는 상품을 전부 받아 화면이 정렬하고 10개씩 나눠 보인다.
  */
 export function AdminProductsPage() {
   const navigate = useNavigate()
@@ -120,7 +117,7 @@ export function AdminProductsPage() {
     isPending,
     isError,
     error,
-  } = useAdminProducts({ ...filters, saleMode, size: LIST_SIZE })
+  } = useAdminProducts({ ...filters, saleMode })
 
   // 오픈 시각이 없는 상품(일반 판매)은 뒤로 모은다 — 빈 값끼리는 순서를 바꾸지 않아
   // 서버가 준 최근 등록순이 남는다.

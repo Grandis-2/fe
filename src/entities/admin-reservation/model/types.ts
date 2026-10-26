@@ -1,5 +1,6 @@
 import type {
   AdminPreorderDetail,
+  AdminPreorderSort,
   AdminPreorderSummary,
   PreorderEvent,
   PreorderStats,
@@ -13,6 +14,7 @@ import type {
 export type AdminReservation = AdminPreorderSummary
 export type ReservationEvent = PreorderEvent
 export type ReservationSyncJob = SyncJob
+export type ReservationSort = AdminPreorderSort
 
 /**
  * 예약 상세. 목록 한 줄처럼 REGISTER 작업 상태를 붙여 둔다 — 상태 태그·재처리 판단을
@@ -69,6 +71,19 @@ export const formatShipPeriod = ({
 export const isReprocessable = (
   reservation: Pick<AdminReservation, 'registerJobStatus'>,
 ) => reservation.registerJobStatus === 'DEAD_LETTER'
+
+/**
+ * 외부 취소가 재시도까지 다 실패해 취소 중에 멈춘 작업. 관리자가 다시 보내거나, 외부에서
+ * 확인한 뒤 끝낸다. 없으면 undefined
+ */
+export const stuckCancelJob = (
+  reservation: Pick<AdminReservationDetail, 'status' | 'syncJobs'>,
+) =>
+  reservation.status === 'CANCELING'
+    ? reservation.syncJobs.find(
+        (job) => job.jobType === 'CANCEL' && job.status === 'DEAD_LETTER',
+      )
+    : undefined
 
 /* ------------------------------------------------------------------ *
  * 상태 열 — 예약이 어디까지 왔는지

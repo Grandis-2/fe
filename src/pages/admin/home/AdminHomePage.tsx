@@ -6,10 +6,7 @@ import { AdminOpsHome } from '@widgets/admin/ops-home'
  * 넘긴다. 제목은 갱신 시각과 한 줄에 두려고 위젯이 그린다.
  */
 export function AdminHomePage() {
-  const { data: products = [] } = useAdminProducts({
-    saleMode: 'PREORDER',
-    size: 100,
-  })
+  const { data: products = [] } = useAdminProducts({ saleMode: 'PREORDER' })
   const productNames = new Map(
     products.map((product) => [product.productId, product.name]),
   )

@@ -1,4 +1,5 @@
 import {
+  cartPayButton,
   confirmPreorder,
   collectPreorderSubmits,
   expect,
@@ -11,8 +12,10 @@ import {
   NOVA_FOLDABLE_3,
   passPreorderQueue,
   preorderSubmitButton,
+  readTossRequest,
   setKstClock,
   setMockFault,
+  setMockRegisterDelay,
   stubDaumPostcode,
   stubTossPayments,
   test,
@@ -240,6 +243,35 @@ test.describe('B. 기다리는 중', () => {
       timeout: 45_000,
     })
     await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
+    // 남은 시간은 차례가 온 때부터 센다 — 알약이 센 5초도 빠져 있다(목 입장권 120초 − 접수 여유 5초).
+    const timer = page.getByText(/안에 사전예약을 눌러 주세요/)
+    await expect(timer).toBeVisible()
+    const [, mm, ss] =
+      /(\d+):(\d+)/.exec((await timer.textContent()) ?? '') ?? []
+    expect(Number(mm) * 60 + Number(ss)).toBeLessThanOrEqual(115 - 5)
+  })
+
+  test('B14 대기열에 선 채로는 결제할 수 없고, 대기열 창을 다시 열 수 있다', async ({
+    page,
+  }) => {
+    await stubDaumPostcode(page)
+    await joinMacbookQueue(page)
+    await closeQueueDialog(page)
+    // 새로고침으로 되살린 줄은 창을 다시 띄운다.
+    await page.goto('/mypage?state=cart')
+    await closeQueueDialog(page)
+    await page.getByText('전체 선택').click()
+    await page.getByRole('button', { name: '결제하기', exact: true }).click()
+    await expect(page).toHaveURL(/\/payment\?cart=/)
+
+    await fillPaymentForm(page)
+    await cartPayButton(page).click()
+    const notice = page.getByRole('dialog', { name: '대기열에 서 있어요' })
+    await expect(notice).toBeVisible()
+    expect(await readTossRequest(page)).toBeNull()
+
+    await notice.getByRole('button', { name: '대기열 보기' }).click()
+    await expect(queueDialog(page)).toBeVisible()
   })
 })
 
@@ -413,14 +445,17 @@ test.describe('E. 여러 창', () => {
 })
 
 test.describe('F. 접수 뒤', () => {
-  test('F2 접수하면 결제로 바로 가지 않고, 예약 접수 화면이 처리 중에서 구매 확정 가능으로 바뀌는 걸 보여 준다', async ({
+  test('F2 외부 등록이 5초를 넘기면 결제로 가지 않고, 예약 접수 화면이 처리 중에서 구매 확정 가능으로 바뀌는 걸 보여 준다', async ({
     page,
   }) => {
     await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
+    // 상품 페이지는 등록을 5초까지만 기다린다 — 8초 걸리게 해 예약 접수 화면으로 넘긴다.
+    await setMockRegisterDelay(page, 8_000)
     await preorderSubmitButton(page).click()
-    await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/)
+    await expect(page).toHaveURL(/\/result\?status=preorder&preorderId=/, {
+      timeout: 15_000,
+    })
 
-    // 접수(202)는 외부 등록을 기다리지 않는다 — 목은 접수 5초 뒤 등록이 끝난다.
     await expect(
       page.getByRole('heading', { name: '예약 순서를 확보했어요' }),
     ).toBeVisible()

@@ -14,7 +14,6 @@ import {
   type AdminOrderStatus,
   type NextShippingStep,
 } from '@entities/admin-order'
-import { useAdminMembers } from '@entities/admin-reservation'
 import { ApiRequestError, getErrorMessage } from '@shared/api/client'
 import { copyText } from '@shared/lib/copyText'
 import {
@@ -81,10 +80,6 @@ const copy = (text: string, what: string) =>
  */
 export function AdminOrderDetail({ order }: AdminOrderDetailProps) {
   const advance = useAdvanceShipping()
-  const { data: members } = useAdminMembers([order.customerId])
-  const memberName = members?.find(
-    (member) => member.memberId === order.customerId,
-  )?.name
   const [failure, setFailure] = useState<string | null>(null)
   const next = nextShippingStepOf(order.status)
   const number = orderNo(order.orderId)
@@ -144,7 +139,7 @@ export function AdminOrderDetail({ order }: AdminOrderDetailProps) {
         </Tag>
         <span className={styles.summary}>
           {[
-            memberName,
+            order.customerName,
             formatWon(order.totalAmount),
             `${formatShortDateTime(order.createdAt)} 주문`,
           ]
@@ -156,10 +151,15 @@ export function AdminOrderDetail({ order }: AdminOrderDetailProps) {
       {failure && <InlineAlert status="error">{failure}</InlineAlert>}
 
       {/* 지금 할 일 — 빨강은 확인이 필요한 문제, 회색은 다음 단계·상황 설명이다. */}
+      {/* 취소 완료인데 환불 실패면 결제 확인 실패로 취소한 주문의 자동 환불이 실패한 경우다. */}
       {order.refundFailed && (
         <NoticeBanner
           tone="danger"
-          title="취소 중 환불이 실패했어요"
+          title={
+            order.status === 'CANCELED'
+              ? '주문은 취소됐지만 환불이 실패했어요'
+              : '취소 중 환불이 실패했어요'
+          }
           description="원인은 결제 기록에서 확인해 주세요."
         />
       )}
@@ -274,7 +274,7 @@ export function AdminOrderDetail({ order }: AdminOrderDetailProps) {
             <dl className={styles.list}>
               {[
                 { label: '출처', value: adminOrderSourceLabel[order.source] },
-                { label: '회원', value: memberName ?? '—' },
+                { label: '회원', value: order.customerName ?? '—' },
               ].map(({ label, value }) => (
                 <Fragment key={label}>
                   <dt className={styles.term}>{label}</dt>

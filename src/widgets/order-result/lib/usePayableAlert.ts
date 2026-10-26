@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 
 import type { ReservationDisplayStatus } from '@entities/preorder'
+import { alertTabTitle } from '@shared/lib/alertTabTitle'
 import { showToast } from '@shared/model/toastStore'
 
 const WAITING: ReservationDisplayStatus[] = ['RECEIVED', 'PROCESSING']
@@ -15,16 +16,6 @@ export function usePayableAlert(displayStatus?: ReservationDisplayStatus) {
     prev.current = displayStatus
     if (!was || !WAITING.includes(was) || displayStatus !== 'PAYABLE') return
     showToast('구매 확정이 가능해졌어요. 기한 안에 확정해 주세요.')
-    if (!document.hidden) return
-    const original = document.title
-    document.title = '(1) 구매 확정 가능'
-    const restore = () => {
-      if (!document.hidden) document.title = original
-    }
-    document.addEventListener('visibilitychange', restore)
-    return () => {
-      document.removeEventListener('visibilitychange', restore)
-      document.title = original
-    }
+    return alertTabTitle('(1) 구매 확정 가능')
   }, [displayStatus])
 }

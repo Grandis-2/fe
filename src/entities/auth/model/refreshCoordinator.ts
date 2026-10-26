@@ -15,8 +15,10 @@ const CROSS_TAB_FRESH_WINDOW_MS = 5000
 // retryable 401(서버 일시 장애)을 다시 보내기까지 기다리는 시간.
 const RETRY_DELAY_MS = 1000
 
+// login: 재발급이 아니라 새로 로그인한 세션 — 다른 회원일 수 있다.
 type BroadcastMessage =
-  { type: 'session-updated'; session: Session } | { type: 'session-cleared' }
+  | { type: 'session-updated'; session: Session; login?: boolean }
+  | { type: 'session-cleared' }
 
 let channel: BroadcastChannel | null = null
 let lastRefreshedAt = 0
@@ -30,6 +32,8 @@ function getChannel() {
     'message',
     (event: MessageEvent<BroadcastMessage>) => {
       if (event.data.type === 'session-updated') {
+        // 다른 탭의 새 로그인이면 이 탭의 앞 세션을 먼저 지워 그 회원의 캐시를 비운다(onSessionCleared).
+        if (event.data.login) useSessionStore.getState().clearSession()
         useSessionStore.getState().setSession(event.data.session)
         lastRefreshedAt = Date.now()
       } else {
@@ -50,11 +54,12 @@ export function broadcastSessionCleared() {
 
 // 로그인으로 받은 세션도 다른 탭에 알린다 — 안 알리면 로그아웃 상태로 열려 있던 탭은
 // 새로고침해야(재발급) 로그인이 반영된다.
-export function broadcastSessionUpdated(session: Session) {
+export function broadcastSessionUpdated(session: Session, login = false) {
   lastRefreshedAt = Date.now()
   getChannel()?.postMessage({
     type: 'session-updated',
     session,
+    login,
   } satisfies BroadcastMessage)
 }
 

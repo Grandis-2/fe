@@ -21,6 +21,7 @@ const queue = {
   leave: fn(),
   poll: { fetchStatus: 'idle', failureCount: 0 },
   mayHaveLeftQueue: false,
+  droppedFrom: null,
   rejoined: false,
 } as const
 
@@ -54,6 +55,11 @@ export const MayHaveLeftQueue: Story = {
       mayHaveLeftQueue: true,
     },
   },
+}
+
+// 연결이 끊긴 사이 줄에서 빠져 다시 섰더니 더 뒤로 갔다 — 순번이 말없이 뛰지 않게 알린다.
+export const Dropped: Story = {
+  args: { queue: { ...queue, droppedFrom: 12, myOrder: 3402 } },
 }
 
 // 움직이긴 하는데 1초에 1명이 안 된다 — 0으로 보이지 않게 한다.

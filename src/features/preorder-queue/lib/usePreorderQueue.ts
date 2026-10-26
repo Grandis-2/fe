@@ -34,8 +34,9 @@ const QUEUE_FULL_RETRY_MS = 10_000
 const UNAVAILABLE_RETRY_MS = 2_000
 // 예상 시간을 계산할 수 없을 때 서버가 주는 값 — 이 이상은 "오래 걸림".
 const UNKNOWN_ETA = 450
-// 진입 응답이 이만큼 안 오면 모달을 띄운다 — 바로 입장이면 그 전에 답이 와서 깜빡이지 않고,
-// 응답이 늦으면(최대 타임아웃 10초) 눌렀는데 아무 일도 없는 것처럼 보이지 않게.
+// 누른 뒤 이만큼 답이 없으면 '입장 확인 중' 알약을 띄운다 — 응답이 늦어도(최대 타임아웃 10초) 눌렀는데 아무 일도
+// 없는 것처럼 보이지 않게. 대기열 모달은 서버가 줄을 세웠을 때(WAITING)만 띄운다 — 바로 입장인데 대기열이
+// 떴다 사라지면 줄을 선 것처럼 보인다.
 const SLOW_ENTER_MS = 500
 // 이만큼 조회에 성공하지 못하면 줄에서 빠졌을 수 있다(명세: 250초 넘게 조회하지 않으면).
 // 안내만 바꾸고 조회는 계속한다. 운영자가 이탈 유예를 늘렸어도 구매자 응답엔 그 값이 없어 기본값을 쓴다.
@@ -186,16 +187,22 @@ export function usePreorderQueue({
       handleFail(getErrorMessage(poll.error, '대기 순번을 확인하지 못했어요.'))
   }, [poll.error])
 
-  // 마지막으로 성공한 조회부터 실패가 이어진 지 250초가 지났다.
+  // 마지막으로 성공한 조회부터 실패가 이어진 지 250초가 지났다. 오프라인이면 요청이 멈춰(paused) 실패로 세지지
+  // 않으므로 끊긴 시간도 같이 센다.
   const mayHaveLeftQueue = useDeadline(
-    poll.failureCount > 0,
+    poll.failureCount > 0 || poll.fetchStatus === 'paused',
     LEAVE_GRACE_MS,
     poll.dataUpdatedAt,
   ).passed
 
+  // 줄에서 빠져(NOT_IN_QUEUE) 다시 섰더니 더 뒤로 갔다 — 순번이 말없이 뛰지 않게 앞 순번을 남겨 알린다.
+  const [droppedFrom, setDroppedFrom] = useState<number | null>(null)
   const waiting = current?.status === 'WAITING' ? current : null
   // 렌더 중에 바로 맞춘다(이펙트에서 setState하면 react-hooks/set-state-in-effect에 걸린다).
   if (waiting && waiting !== lastWaiting) {
+    // 순번은 줄어들기만 한다 — 늘었으면 다시 진입해 뒤로 선 것이다.
+    if (lastWaiting && waiting.position > lastWaiting.position)
+      setDroppedFrom(lastWaiting.position)
     setLastWaiting(waiting)
     // 다시 진입해 더 뒤로 섰으면 그 순번부터 센다.
     if (startPosition === null || waiting.position > startPosition)
@@ -219,27 +226,26 @@ export function usePreorderQueue({
     })
   }
 
-  // 진입 응답이 늦어 한 번 띄웠으면, 그 뒤 바로 입장이 와도 닫지 않고 100%를 보여 주고 넘어간다.
-  const enterIsSlow = useDeadline(
-    enter.isPending,
-    SLOW_ENTER_MS,
-    enter.submittedAt,
-  ).passed
-  const [shownWhileEntering, setShownWhileEntering] = useState(false)
-  if (enterIsSlow && !shownWhileEntering) setShownWhileEntering(true)
-
-  // 진입에서 바로 입장(200)하면 대기열을 보여 주지 않고 넘어간다. 그래서 첫 응답이 SLOW_ENTER_MS 안에
-  // 오면 띄우지 않는다(띄웠다 바로 닫히며 깜빡이지 않게). 한 번이라도 기다렸거나, 진입 응답이 늦었거나,
-  // 다시 진입을 예약했으면 보여 준다.
-  const isHidden = lastWaiting === null && retry === null && !shownWhileEntering
+  // 진입에서 바로 입장(200)하면 대기열을 보여 주지 않고 넘어간다 — 응답이 늦었어도 마찬가지다. 한 번이라도
+  // 기다렸거나(WAITING) 다시 진입을 예약했으면(줄이 가득 참·일시 장애) 보여 준다.
+  const isHidden = lastWaiting === null && retry === null
 
   const status: QueueStatus =
     current?.status === 'ADMITTED' ? 'mine' : 'waiting'
+  // 대기열을 띄우기 전 답을 기다리는 중(진행 중 예약 확인 → 진입)이 SLOW_ENTER_MS를 넘겼다.
+  const checking = useDeadline(
+    isHidden && status !== 'mine' && !hasLeft,
+    SLOW_ENTER_MS,
+  ).passed
   // 입장했으면 맨 앞(1번), 진입 응답 전이면 모른다(null).
   const position = status === 'mine' ? 1 : (waiting?.position ?? null)
   const admissionTicket =
     current?.status === 'ADMITTED' ? current.admissionTicket : null
   const expiresIn = current?.status === 'ADMITTED' ? current.expiresIn : 0
+  // expiresIn은 응답 시점 기준이다 — 넘어갈 때(모달 0.8초·알약 5초 뒤) 세면 그만큼 늦게 끝나는 줄 알고,
+  // 남은 시간이 보이는데 눌러도 ADMISSION_TICKET_STALE로 줄 맨 뒤가 된다. 조회 응답은 받은 시각, 진입에서 바로
+  // 입장했으면 보낸 시각(조금 이르게 잡히는 쪽)을 기준으로 한다.
+  const admittedAt = poll.data ? poll.dataUpdatedAt : enter.submittedAt
 
   // 내 차례가 오면 모달이 닫혀 있어도 넘어간다. 모달이 열려 있으면 100%를 잠깐 보여 주고,
   // 닫혀 있으면 QueuePill이 moveIn초를 센 뒤 넘어간다(그 사이 누르면 모달이 열려 바로 넘어간다).
@@ -252,7 +258,7 @@ export function usePreorderQueue({
     // 키는 입장권에서 계산한다(admissionKey) — 같은 입장권을 다시 받은 창이 재전송으로 기존 예약을 받게.
     // 계산이 실패하면(보안 연결이 아님 — 줄 서기 전에 막지만 새로고침으로 되살린 줄은 여기로 온다) 100%에서 멈추지 않고 알린다.
     const complete = () => {
-      const expiresAt = Date.now() + expiresIn * 1000
+      const expiresAt = admittedAt + expiresIn * 1000
       void admissionKey(admissionTicket)
         .then((idempotencyKey) =>
           handleComplete({
@@ -278,14 +284,26 @@ export function usePreorderQueue({
     }
     const id = setTimeout(() => setMoveIn((s) => s - 1), TICK_MS)
     return () => clearTimeout(id)
-  }, [productId, admissionTicket, expiresIn, isHidden, isOpen, moveIn, hasLeft])
+  }, [
+    productId,
+    admissionTicket,
+    expiresIn,
+    admittedAt,
+    isHidden,
+    isOpen,
+    moveIn,
+    hasLeft,
+  ])
 
   return {
     status,
     isHidden,
+    checking,
     // 조회가 실패하고 있을 때의 안내용(PollingNotice).
     poll: { fetchStatus: poll.fetchStatus, failureCount: poll.failureCount },
     mayHaveLeftQueue,
+    // 줄에서 빠져 다시 섰을 때 앞 순번(없으면 null).
+    droppedFrom,
     isOpen,
     hasLeft,
     moveIn,

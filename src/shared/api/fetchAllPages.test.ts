@@ -85,4 +85,22 @@ describe('fetchConcatPage', () => {
       total: 12,
     })
   })
+
+  it('어느 쪽 크기·쪽 번호든 이어 붙인 목록을 그대로 자른 것과 같다', async () => {
+    const parts = [
+      source('a', 3),
+      source('b', 0),
+      source('c', 8),
+      source('d', 2),
+    ]
+    const all = (
+      await Promise.all(parts.map((fetchPage) => fetchPage(0, 100)))
+    ).flatMap((page) => page.items)
+    for (const size of [1, 2, 3, 4, 5, 7, 13]) {
+      for (let page = 0; page * size <= all.length; page += 1) {
+        const { items } = await fetchConcatPage(parts, page, size)
+        expect(items).toEqual(all.slice(page * size, page * size + size))
+      }
+    }
+  })
 })

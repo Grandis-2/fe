@@ -1,16 +1,25 @@
 import { useState } from 'react'
 
-import { useReservationStatsByProduct } from '@entities/admin-reservation'
+import { useProductStats } from '@entities/admin-reservation'
 import {
-  waitEstimate,
+  productWaitEstimate,
   type WaitingroomProductRate,
   type WaitingroomProductStatus,
 } from '@entities/admin-waitingroom'
 import { SLOW_AFTER_MS } from '@features/open-preorder-picker'
+import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 import { formatNumber } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
-import { Button, Chip, Skeleton, Tag, UsageCells } from '@shared/ui'
+import {
+  Button,
+  Chip,
+  InlineAlert,
+  Skeleton,
+  Tag,
+  UsageCells,
+} from '@shared/ui'
 
 import { formatSeconds, oldestSeconds } from '../../lib/duration'
 import { NumberSettingForm } from '../NumberSettingForm'
@@ -66,12 +75,13 @@ export function ProductCapList({
 }: ProductCapListProps) {
   const [phase, setPhase] = useState<Phase>('OPEN')
   const shown = products.filter((product) => product.phase === phase)
-  const productStats = useReservationStatsByProduct(
-    shown.map((product) => product.productId),
+  // 상품별 집계를 한 번에 받는다. 오픈 전 회차는 서버가 세지 않아 묻지 않는다.
+  const productStats = useProductStats(
+    phase === 'CLOSED' ? 'CLOSED' : 'OPEN',
     refreshInterval,
+    { enabled: phase !== 'BEFORE_OPEN' },
   )
-  const statsOf = (productId: string) =>
-    productStats[shown.findIndex((item) => item.productId === productId)]
+  const statsError = pollingError(productStats)
   const capOf = (productId: string) =>
     rates?.find((item) => item.productId === productId)?.cap
 
@@ -144,6 +154,14 @@ export function ProductCapList({
         ))}
       </div>
 
+      {/* 집계는 태그만 채운다 — 못 받아도 목록은 대기열 값으로 보인다. */}
+      {statsError !== null && (
+        <InlineAlert status="warning">
+          {getErrorMessage(statsError, '등록 현황을 불러오지 못했어요.')}{' '}
+          재처리·밀림 표시를 뺐어요.
+        </InlineAlert>
+      )}
+
       {loading ? (
         <Skeleton height={160} />
       ) : products.length === 0 ? (
@@ -162,23 +180,14 @@ export function ProductCapList({
             const cap = capOf(product.productId)?.value ?? product.cap
             const applied = product.cap !== cap ? product.cap : null
             const atCap = cap !== null && cap > 0 && product.credit >= cap
-            const query = statsOf(product.productId)
+            const stats = productStats.data?.get(product.productId)
             const oldest = oldestSeconds(
-              query?.data?.oldestPendingSyncAt,
-              query?.dataUpdatedAt ?? 0,
+              stats?.oldestInFlightSyncAt,
+              productStats.dataUpdatedAt,
             )
-            const register = query?.data?.syncJobs.REGISTER
-            // 가장 오래 기다린 시각엔 재처리 필요(DEAD_LETTER) 건도 들어 있어, 처리 중인
-            // 작업이 있고 실패가 없을 때만 밀림으로 본다(운영 대시보드와 같은 기준).
-            const slow =
-              register !== undefined &&
-              register.PENDING +
-                register.PROCESSING +
-                register.RETRY_SCHEDULED >
-                0 &&
-              register.DEAD_LETTER === 0 &&
-              oldest !== null &&
-              oldest * 1000 > SLOW_AFTER_MS
+            const register = stats?.syncJobs.REGISTER
+            // 등록 작업이 아직 도는 예약만의 시각이라 재처리 필요(실패)와 섞이지 않는다.
+            const slow = oldest !== null && oldest * 1000 > SLOW_AFTER_MS
             return (
               <li key={product.productId} className={styles.row}>
                 <div className={styles.name}>
@@ -201,7 +210,7 @@ export function ProductCapList({
                 <div className={styles.stat}>
                   <span className={styles.statLabel}>맨 뒤 대기</span>
                   <span className={styles.statValue}>
-                    {waitEstimate(product.waiting, product.credit) ?? '—'}
+                    {productWaitEstimate(product) ?? '—'}
                   </span>
                 </div>
                 <div className={styles.register}>

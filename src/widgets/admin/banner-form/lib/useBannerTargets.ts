@@ -1,7 +1,6 @@
 import { useAdminBanners, type BannerTargetType } from '@entities/admin-banner'
 import { useAdminProducts } from '@entities/admin-product'
 import { useAdminPromotions } from '@entities/admin-promotion'
-import { PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
 
 export type BannerTargetOption = {
   id: string
@@ -13,13 +12,10 @@ export type BannerTargetOption = {
 /**
  * 배너에 연결할 수 있는 대상 — 일반 판매 상품과 홍보. 사전예약 상품은 서버가 400으로
  * 거절해서 처음부터 빼고 받는다. 끝난 홍보는 걸어 봐야 고객에게 안 보여 뺀다(고치는 배너가
- * 이미 걸고 있으면 남긴다). ponytail: 상품은 첫 100개까지만 — 넘으면 검색어(q)로 받는다.
+ * 이미 걸고 있으면 남긴다).
  */
 export function useBannerTargets(bannerId?: string) {
-  const products = useAdminProducts({
-    saleMode: 'IN_STOCK',
-    size: PAGE_SIZE_MAX,
-  })
+  const products = useAdminProducts({ saleMode: 'IN_STOCK' })
   const promotions = useAdminPromotions()
   const banners = useAdminBanners()
 

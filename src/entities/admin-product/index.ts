@@ -7,6 +7,9 @@ export {
   useAdminProductDetails,
   useAdminProductStock,
   useClosePreorderCampaign,
+  useReopenPreorderCampaign,
+  useDeleteAdminProduct,
+  useConvertAdminProduct,
   RegistrationUnconfirmedError,
   useCreateAdminProduct,
   useSetAdminProductSaleStatus,
@@ -38,13 +41,24 @@ export {
   editSectionLabel,
   pendingEditLabels,
 } from './model/edit'
-export { useCorrectStockOption, useStockDrifts } from './api/useStockReconcile'
+export {
+  useCorrectStockOption,
+  usePreviewStockCorrection,
+  useStockDrifts,
+} from './api/useStockReconcile'
 export { toPreviewProduct, validateRegistration } from './model/registration'
-export { serverIssuesOf, validateProductBasics } from './model/validation'
+export {
+  DISCOUNT_RATE_MAX,
+  serverIssuesOf,
+  validateProductBasics,
+} from './model/validation'
 export type { FormField, FormIssue } from './model/validation'
 export {
   CANCEL_REASON_MAX,
   canClosePreorderEarly,
+  reopenPreorderOf,
+  deleteBlockedReason,
+  canConvertToInStock,
   saleStatusActionOf,
 } from './model/saleStatus'
 export type { SaleStatusAction } from './model/saleStatus'

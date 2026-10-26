@@ -2,6 +2,7 @@ import { useState } from 'react'
 
 import {
   useAdmissionRates,
+  useSettingChanges,
   useWaitingroomStatus,
 } from '@entities/admin-waitingroom'
 import { getErrorMessage } from '@shared/api/client'
@@ -20,6 +21,7 @@ import { LeaveGraceSetting } from '../LeaveGraceSetting'
 import { MaxWaitSetting } from '../MaxWaitSetting'
 import { ProductCapList } from '../ProductCapList'
 import { ServerStatusCard } from '../ServerStatusCard'
+import { SettingChangeLog } from '../SettingChangeLog'
 
 import * as styles from './AdminWaitingroom.css'
 
@@ -44,6 +46,8 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
     useState<RefreshInterval>(DEFAULT_INTERVAL)
   const status = useWaitingroomStatus(refreshInterval)
   const rates = useAdmissionRates(refreshInterval)
+  // 운영값을 바꾸면 같은 키 아래라 다시 받아 방금 바꾼 것이 맨 위에 붙는다.
+  const changes = useSettingChanges()
   const admission = useAdmissionChange()
 
   const view = status.data
@@ -183,6 +187,15 @@ export function AdminWaitingroom({ productNames }: AdminWaitingroomProps) {
             setting={rates.data?.maxWaitSeconds}
             loading={rates.isPending}
             admission={admission}
+          />
+          <SettingChangeLog
+            changes={changes.data}
+            loading={changes.isPending}
+            failed={changes.isError}
+            hasMore={changes.hasNextPage}
+            loadingMore={changes.isFetchingNextPage}
+            onLoadMore={() => void changes.fetchNextPage()}
+            nameOf={(productId) => productNames.get(productId) ?? productId}
           />
         </aside>
       </div>

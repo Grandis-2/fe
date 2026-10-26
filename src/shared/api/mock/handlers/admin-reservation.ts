@@ -3,7 +3,6 @@ import { http } from 'msw'
 import { deadLetterStore } from '../fixtures/admin-dead-letter'
 import {
   findReservation,
-  mockMembers,
   reservationStore,
 } from '../fixtures/admin-reservation'
 import { isOpenScenarioRunning, requeueForReprocess } from '../openScenario'
@@ -14,11 +13,15 @@ import type {
   AdminCancelRequest,
   AdminNoteRequest,
   AdminPreorderDetail,
+  AdminPreorderSort,
   AdminPreorderSummary,
   BatchReprocess,
+  BatchReprocessProgress,
   OffsetPage,
   PreorderStats,
   PreorderStatus,
+  ProductStatsPage,
+  StatsRates,
   ReprocessBatchRequest,
   SyncJob,
   SyncJobErrorGroup,
@@ -39,12 +42,60 @@ function toSummary(detail: AdminPreorderDetail): AdminPreorderSummary {
     syncJobs,
     ...summary
   } = detail
+  const register = syncJobs.find((job) => job.jobType === 'REGISTER')
   return {
     ...summary,
-    registerJobStatus:
-      syncJobs.find((job) => job.jobType === 'REGISTER')?.status ?? null,
+    registerJobStatus: register?.status ?? null,
+    registerSyncJobId: register?.syncJobId ?? null,
   }
 }
+
+// 목록 정렬(명세). 값이 같으면 예약 id로 한 번 더 정해 쪽을 넘겨도 겹치지 않는다.
+const dueOf = (item: AdminPreorderSummary) =>
+  item.status === 'REGISTERED' && item.paymentDueAt
+    ? Date.parse(item.paymentDueAt)
+    : Infinity
+const sorters: Record<
+  AdminPreorderSort,
+  (a: AdminPreorderSummary, b: AdminPreorderSummary) => number
+> = {
+  NEWEST: (a, b) =>
+    b.createdAt.localeCompare(a.createdAt) ||
+    b.preorderId.localeCompare(a.preorderId),
+  OLDEST: (a, b) =>
+    a.createdAt.localeCompare(b.createdAt) ||
+    a.preorderId.localeCompare(b.preorderId),
+  QUEUE_POSITION: (a, b) =>
+    a.queuePosition - b.queuePosition ||
+    a.preorderId.localeCompare(b.preorderId),
+  PAYMENT_DUE: (a, b) =>
+    dueOf(a) - dueOf(b) || a.preorderId.localeCompare(b.preorderId),
+}
+
+/** 외부 등록을 기다리는 예약 중 REGISTER 작업이 조건에 맞는 것의 가장 오래된 접수 시각 */
+const oldestReceived = (
+  details: AdminPreorderDetail[],
+  matches: (job: SyncJob) => boolean,
+) =>
+  details
+    .filter(
+      (detail) =>
+        detail.status === 'PENDING_SYNC' &&
+        detail.syncJobs.some(
+          (job) => job.jobType === 'REGISTER' && matches(job),
+        ),
+    )
+    .map((detail) => detail.createdAt)
+    .toSorted()[0] ?? null
+
+// 일괄 재처리 진행을 묻는 데 쓰는 기록 — 메모리라 새로 고치면 사라진다.
+type MockReprocessBatch = {
+  startedAt: number
+  rate: number
+  targets: (readonly [AdminPreorderDetail, SyncJob])[]
+  skipped: number
+}
+const reprocessBatches = new Map<string, MockReprocessBatch>()
 
 const OPEN_JOB_STATES = [
   'PENDING',
@@ -64,6 +115,31 @@ function countWaiting(preorderIds: ReadonlySet<string> | null) {
     waiting: waiting.length,
     oldestWaitingAt:
       waiting.map((item) => item.createdAt).toSorted()[0] ?? null,
+  }
+}
+
+// 서버처럼 10초마다 남긴 기록의 최근 1분으로 속도를 잰다(집계를 부를 때 따라잡는다).
+const STEP_MS = 10_000
+const RATE_WINDOW_MS = 60_000
+type StatsLogEntry = { at: number; received: number; pendingSync: number }
+const statsLog = new Map<string, StatsLogEntry[]>()
+
+function ratesOf(key: string, entry: StatsLogEntry): StatsRates | null {
+  const log = statsLog.get(key) ?? []
+  if (!log.length || entry.at - log.at(-1)!.at >= STEP_MS) log.push(entry)
+  while (entry.at - log[0].at > RATE_WINDOW_MS) log.shift()
+  statsLog.set(key, log)
+  const first = log[0]
+  const last = log.at(-1)!
+  const seconds = (last.at - first.at) / 1000
+  if (seconds <= 0) return null
+  const received = last.received - first.received
+  const backlog = last.pendingSync - first.pendingSync
+  return {
+    receivedPerSec: received / seconds,
+    registeredPerSec: Math.max(0, received - backlog) / seconds,
+    backlogPerMin: (backlog / seconds) * 60,
+    windowSeconds: Math.round(seconds),
   }
 }
 
@@ -100,20 +176,17 @@ function countStats(productId: string | null): PreorderStats {
     paymentOverdue: matched.filter(
       (detail) => detail.displayStatus === 'PAYMENT_EXPIRED',
     ).length,
-    // 재처리 필요(DEAD_LETTER)로 멈춘 예약은 빼고 아직 처리 중인 것만 본다.
-    // ponytail: 명세가 둘 중 무엇인지 말하지 않아(백엔드 요청서 Q3) 의미상 맞는 쪽으로 가정했다.
-    oldestPendingSyncAt:
-      matched
-        .filter(
-          (detail) =>
-            detail.status === 'PENDING_SYNC' &&
-            detail.syncJobs.some(
-              (job) =>
-                job.jobType === 'REGISTER' && job.status !== 'DEAD_LETTER',
-            ),
-        )
-        .map((detail) => detail.createdAt)
-        .toSorted()[0] ?? null,
+    // 명세: 앞의 것은 재처리 필요(DEAD_LETTER)까지, 뒤의 것은 등록 작업이 아직 도는 것만 센다.
+    oldestPendingSyncAt: oldestReceived(matched, () => true),
+    oldestInFlightSyncAt: oldestReceived(
+      matched,
+      (job) => job.status !== 'DEAD_LETTER',
+    ),
+    rates: ratesOf(productId ?? '', {
+      at: Date.now(),
+      received: Object.values(preorders).reduce((sum, n) => sum + n, 0),
+      pendingSync: preorders.PENDING_SYNC,
+    }),
     countedAt: new Date().toISOString(),
   }
 }
@@ -131,9 +204,9 @@ function groupByError(jobs: SyncJobSummary[]): SyncJobErrorGroup[] {
 
 /**
  * DEAD_LETTER 작업을 되돌린다. 실서버는 다시 등록을 보내는데, 목은 결과를 기다리지
- * 않고 바로 등록된 것으로 둔다.
+ * 않고 바로 등록된 것으로 둔다. 외부 예약 대조 목의 재처리도 쓴다.
  */
-function markReprocessed(detail: AdminPreorderDetail, job: SyncJob) {
+export function markReprocessed(detail: AdminPreorderDetail, job: SyncJob) {
   const at = new Date().toISOString()
   job.attempts.push({
     attemptNumber: job.attempts.length + 1,
@@ -170,6 +243,58 @@ function markReprocessed(detail: AdminPreorderDetail, job: SyncJob) {
   })
 }
 
+/**
+ * 관리자 취소. 목은 외부 취소를 기다리지 않고 바로 끝낸다. 외부 예약 대조 목의 예약 취소도
+ * 쓴다. 이미 취소 중·완료면 그대로 둔다.
+ */
+export function markCanceled(detail: AdminPreorderDetail, reason: string) {
+  if (detail.status === 'CANCELING' || detail.status === 'CANCELED') return
+  detail.events.push({
+    eventSequence: detail.events.length + 1,
+    fromStatus: detail.status,
+    toStatus: 'CANCELED',
+    actor: 'ADMIN',
+    reason,
+    createdAt: new Date().toISOString(),
+  })
+  Object.assign(detail, {
+    status: 'CANCELED',
+    displayStatus: 'CANCELED',
+    paymentDueAt: null,
+    cancelable: false,
+    version: detail.version + 1,
+  })
+}
+
+/** 멈춘 외부 취소를 끝낸다 — 작업은 성공, 예약은 취소 완료(재처리면 SYSTEM, 관리자 확인이면 ADMIN·사유) */
+function finishCancel(
+  detail: AdminPreorderDetail,
+  job: SyncJob,
+  actor: 'SYSTEM' | 'ADMIN',
+  reason: string | null,
+) {
+  const at = new Date().toISOString()
+  Object.assign(job, {
+    status: 'SUCCEEDED',
+    lastErrorCode: null,
+    deadLetteredAt: null,
+    updatedAt: at,
+  })
+  detail.events.push({
+    eventSequence: detail.events.length + 1,
+    fromStatus: 'CANCELING',
+    toStatus: 'CANCELED',
+    actor,
+    reason,
+    createdAt: at,
+  })
+  Object.assign(detail, {
+    status: 'CANCELED',
+    displayStatus: 'CANCELED',
+    version: detail.version + 1,
+  })
+}
+
 export const adminReservationHandlers: RequestHandler[] = [
   http.get(url(BASE), ({ request }) => {
     const query = new URL(request.url).searchParams
@@ -179,11 +304,22 @@ export const adminReservationHandlers: RequestHandler[] = [
     const batchNumber = query.get('batchNumber')
     const externalReference = query.get('externalReference')?.trim()
     const from = query.get('from')
+    const to = query.get('to')
+    const customerId = query.get('customerId')
     const size = Number(query.get('size') ?? 20)
     if (!Number.isInteger(size) || size < 1 || size > 100) {
       return invalid([{ field: 'size', message: '1~100이어야 합니다.' }])
     }
     const page = Number(query.get('page') ?? 0)
+    const sort = (query.get('sort') ?? 'NEWEST') as AdminPreorderSort
+    if (!(sort in sorters)) {
+      return invalid([{ field: 'sort', message: '알 수 없는 정렬입니다.' }])
+    }
+    if (sort === 'QUEUE_POSITION' && !productId) {
+      return invalid([
+        { field: 'productId', message: '순번순은 상품을 골라야 합니다.' },
+      ])
+    }
 
     const matched = reservationStore
       .filter(
@@ -199,10 +335,11 @@ export const adminReservationHandlers: RequestHandler[] = [
             item.registerJobStatus === registerJobStatus) &&
           (!batchNumber ||
             item.shipmentBatch.batchNumber === Number(batchNumber)) &&
-          (!from || Date.parse(item.createdAt) >= Date.parse(from)),
+          (!from || Date.parse(item.createdAt) >= Date.parse(from)) &&
+          (!to || Date.parse(item.createdAt) < Date.parse(to)) &&
+          (!customerId || item.customerId === customerId),
       )
-      // 최신 접수가 위로 온다.
-      .toSorted((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .toSorted(sorters[sort])
 
     const start = page * size
     return ok<OffsetPage<AdminPreorderSummary>>({
@@ -247,6 +384,40 @@ export const adminReservationHandlers: RequestHandler[] = [
   http.get(url(`${BASE}/stats`), ({ request }) =>
     ok(countStats(new URL(request.url).searchParams.get('productId'))),
   ),
+
+  // 목의 사전예약은 모두 접수 중이다(대기열 목과 같은 일정) — 마감된 회차는 없다.
+  http.get(url(`${BASE}/stats/products`), ({ request }) => {
+    const phase = new URL(request.url).searchParams.get('phase')
+    if (phase !== 'OPEN' && phase !== 'CLOSED') {
+      return invalid([
+        { field: 'phase', message: 'OPEN 또는 CLOSED여야 합니다.' },
+      ])
+    }
+    const now = Date.now()
+    const ids =
+      phase === 'OPEN'
+        ? [
+            ...new Set(reservationStore.map((item) => item.productId)),
+          ].toSorted()
+        : []
+    return ok<ProductStatsPage>({
+      items: ids.map((productId) => {
+        const {
+          countedAt: _countedAt,
+          rates: _rates,
+          ...stats
+        } = countStats(productId)
+        return {
+          ...stats,
+          productId,
+          opensAt: new Date(now - 30 * 60_000).toISOString(),
+          closesAt: new Date(now + 90 * 60_000).toISOString(),
+        }
+      }),
+      nextCursor: null,
+      countedAt: new Date(now).toISOString(),
+    })
+  }),
 
   http.get(url(`${BASE}/:preorderId`), ({ params }) => {
     const detail = findReservation(String(params.preorderId))
@@ -293,8 +464,16 @@ export const adminReservationHandlers: RequestHandler[] = [
       if (isOpenScenarioRunning()) requeueForReprocess(detail, job, rate)
       else markReprocessed(detail, job)
     }
+    const batchId = crypto.randomUUID()
+    reprocessBatches.set(batchId, {
+      startedAt: Date.now(),
+      rate,
+      targets,
+      skipped: ids.size === 0 ? 0 : ids.size - targets.length,
+    })
     return ok<BatchReprocess>(
       {
+        batchId,
         targetCount: targets.length,
         skippedCount: ids.size === 0 ? 0 : ids.size - targets.length,
         estimatedSeconds: Math.ceil(targets.length / rate),
@@ -303,7 +482,50 @@ export const adminReservationHandlers: RequestHandler[] = [
     )
   }),
 
-  // DEAD_LETTER인 REGISTER 작업만 되돌린다.
+  // 초당 rate건씩 보낸 것으로 세고, 보낸 것의 결과는 작업·예약 상태로 센다.
+  http.get(
+    url(`${BASE}/sync-jobs/reprocess-batches/:batchId`),
+    ({ params }) => {
+      const batchId = String(params.batchId)
+      const batch = reprocessBatches.get(batchId)
+      if (!batch)
+        return fail(404, {
+          code: 'REPROCESS_BATCH_NOT_FOUND',
+          message: '일괄 재처리를 찾을 수 없습니다.',
+        })
+      const now = Date.now()
+      const sentCount = Math.min(
+        batch.targets.length,
+        Math.floor(((now - batch.startedAt) / 1000) * batch.rate),
+      )
+      const sent = batch.targets.slice(0, sentCount)
+      const count = (match: (entry: (typeof sent)[number]) => boolean) =>
+        sent.filter(match).length
+      const canceled = count(
+        ([detail]) =>
+          detail.status === 'CANCELING' || detail.status === 'CANCELED',
+      )
+      const succeeded = count(([, job]) => job.status === 'SUCCEEDED')
+      const failed = count(([, job]) => job.status === 'DEAD_LETTER')
+      const done = sentCount === batch.targets.length
+      return ok<BatchReprocessProgress>({
+        batchId,
+        targetCount: batch.targets.length,
+        skippedCount: batch.skipped,
+        sent: sentCount,
+        unsent: 0,
+        succeeded,
+        failed,
+        canceled,
+        pending: batch.targets.length - succeeded - failed - canceled,
+        startedAt: new Date(batch.startedAt).toISOString(),
+        lastProgressAt: sentCount > 0 ? new Date(now).toISOString() : null,
+        finishedAt: done ? new Date(now).toISOString() : null,
+      })
+    },
+  ),
+
+  // DEAD_LETTER인 작업만 되돌린다. 외부 취소는 예약이 취소 중일 때만 — 목은 바로 성공한다.
   http.post(url(`${BASE}/sync-jobs/:syncJobId/reprocess`), ({ params }) => {
     const detail = reservationStore.find((item) =>
       item.syncJobs.some((job) => job.syncJobId === params.syncJobId),
@@ -324,11 +546,54 @@ export const adminReservationHandlers: RequestHandler[] = [
       })
     }
 
-    markReprocessed(detail, job)
+    if (job.jobType === 'CANCEL') {
+      if (detail.status !== 'CANCELING')
+        return fail(409, {
+          code: 'STATE_CONFLICT',
+          message: '취소 중인 예약이 아닙니다.',
+        })
+      finishCancel(detail, job, 'SYSTEM', null)
+    } else markReprocessed(detail, job)
     // 응답은 되돌린 직후의 작업 요약이다(시도 기록 없이).
     const { attempts: _attempts, ...summary } = job
     return ok({ ...summary, status: 'PENDING', deadLetteredAt: null }, 202)
   }),
+
+  // 외부에서 취소를 확인한 뒤 끝낸다 — 사유는 이력에 남는다.
+  http.post(
+    url(`${BASE}/sync-jobs/:syncJobId/resolve`),
+    async ({ request, params }) => {
+      const body = (await request.json().catch(() => null)) as {
+        reason?: string
+      } | null
+      const reason = body?.reason?.trim() ?? ''
+      if (reason.length < 5 || reason.length > 500)
+        return invalid([{ field: 'reason', message: '5~500자여야 합니다.' }])
+      const detail = reservationStore.find((item) =>
+        item.syncJobs.some((job) => job.syncJobId === params.syncJobId),
+      )
+      const job = detail?.syncJobs.find(
+        (item) => item.syncJobId === params.syncJobId,
+      )
+      if (!detail || !job)
+        return fail(404, {
+          code: 'SYNC_JOB_NOT_FOUND',
+          message: '작업을 찾을 수 없습니다.',
+        })
+      if (
+        job.jobType !== 'CANCEL' ||
+        job.status !== 'DEAD_LETTER' ||
+        detail.status !== 'CANCELING'
+      )
+        return fail(409, {
+          code: 'SYNC_JOB_NOT_RESOLVABLE',
+          message:
+            '끝낼 수 있는 외부 취소가 아닙니다. 상세를 다시 확인해 주세요.',
+        })
+      finishCancel(detail, job, 'ADMIN', reason)
+      return ok({ preorderId: detail.preorderId, status: detail.status })
+    },
+  ),
 
   // 관리자 취소 — 사유는 이력에 남는다. 목은 외부 취소를 기다리지 않고 바로 끝낸다.
   http.post(url(`${BASE}/:preorderId/cancel`), async ({ request, params }) => {
@@ -346,24 +611,7 @@ export const adminReservationHandlers: RequestHandler[] = [
     if (!reason || reason.length < 5 || reason.length > 500) {
       return invalid([{ field: 'reason', message: '5~500자여야 합니다.' }])
     }
-    if (detail.status !== 'CANCELING' && detail.status !== 'CANCELED') {
-      const at = new Date().toISOString()
-      detail.events.push({
-        eventSequence: detail.events.length + 1,
-        fromStatus: detail.status,
-        toStatus: 'CANCELED',
-        actor: 'ADMIN',
-        reason,
-        createdAt: at,
-      })
-      Object.assign(detail, {
-        status: 'CANCELED',
-        displayStatus: 'CANCELED',
-        paymentDueAt: null,
-        cancelable: false,
-        version: detail.version + 1,
-      })
-    }
+    markCanceled(detail, reason)
     return ok(
       {
         preorderId: detail.preorderId,
@@ -400,22 +648,5 @@ export const adminReservationHandlers: RequestHandler[] = [
     }
     detail.internalNote = note
     return ok(detail)
-  }),
-
-  // 보이는 id만 이름으로 바꾼다. 없는 회원은 빠진다(실서버와 같다).
-  http.get(url('/api/v1/admin/members'), ({ request }) => {
-    const ids = new URL(request.url).searchParams
-      .getAll('ids')
-      .flatMap((value) => value.split(','))
-      .filter(Boolean)
-    if (ids.length < 1 || ids.length > 100) {
-      return invalid([{ field: 'ids', message: '1~100개여야 합니다.' }])
-    }
-    // 서버처럼 첫 글자만 남기고 가린다(김철수 → 김**).
-    return ok({
-      items: mockMembers
-        .filter((member) => ids.includes(member.memberId))
-        .map((member) => ({ ...member, name: `${[...member.name][0]}**` })),
-    })
   }),
 ]

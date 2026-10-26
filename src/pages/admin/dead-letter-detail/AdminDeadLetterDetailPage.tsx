@@ -1,11 +1,13 @@
-import { useLocation, useParams } from 'react-router'
+import { useLocation, useParams, useSearchParams } from 'react-router'
 
 import {
   deadLetterEventLabel,
+  toDeadLetterService,
   useDeadLetter,
 } from '@entities/admin-dead-letter'
 import { getErrorMessage } from '@shared/api/client'
-import { ADMIN_DEAD_LETTERS_PATH, readBackTo } from '@shared/config/routes'
+import { pollingError } from '@shared/api/queryPolicy'
+import { adminDeadLettersPath, readBackTo } from '@shared/config/routes'
 import {
   Breadcrumb,
   InlineAlert,
@@ -19,11 +21,13 @@ import * as styles from './AdminDeadLetterDetailPage.css'
 /** 주소에서 메시지를 읽어 상세 위젯에 넘긴다. 조회 실패·로딩·갱신 시각은 여기서 보여준다 */
 export function AdminDeadLetterDetailPage() {
   const { deadLetterId = '' } = useParams()
-  const deadLetter = useDeadLetter(deadLetterId)
+  // 결제 DLQ 메시지는 ?service=payment로 온다.
+  const service = toDeadLetterService(useSearchParams()[0].get('service'))
+  const deadLetter = useDeadLetter(service, deadLetterId)
   // 목록에서 들어왔으면 고른 조건 그대로의 목록으로 돌아간다.
   const backTo = readBackTo(useLocation().state) ?? {
     label: '이벤트 DLQ',
-    to: ADMIN_DEAD_LETTERS_PATH,
+    to: adminDeadLettersPath(service),
   }
 
   if (!deadLetter.data) {
@@ -65,17 +69,22 @@ export function AdminDeadLetterDetailPage() {
         />
       </div>
 
-      {deadLetter.isError && (
+      {/* 다시 묻는(백오프) 동안엔 isError가 켜지지 않아 pollingError로 본다. */}
+      {pollingError(deadLetter) !== null && (
         <InlineAlert status="warning">
           {getErrorMessage(
-            deadLetter.error,
+            pollingError(deadLetter),
             '메시지를 다시 불러오지 못했습니다.',
           )}{' '}
           아래 내용은 마지막으로 받은 값입니다.
         </InlineAlert>
       )}
 
-      <AdminDeadLetterDetail deadLetter={deadLetter.data} />
+      <AdminDeadLetterDetail
+        deadLetter={deadLetter.data}
+        service={service}
+        stalled={deadLetter.stalled}
+      />
     </div>
   )
 }

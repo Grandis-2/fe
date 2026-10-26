@@ -1,9 +1,11 @@
 import { apiClient } from '@shared/api/client'
+import { toQueryString } from '@shared/api/queryString'
 import type {
   AdmissionRateView,
   GlobalCreditRequest,
   ProductCapRequest,
   SecondsRequest,
+  SettingChangesView,
   WaitingroomStatusView,
 } from '@shared/api/types'
 
@@ -18,6 +20,14 @@ export const getWaitingroomStatus = (signal?: AbortSignal) =>
 /** 지금 적용 중인 운영값과 출처 */
 export const getAdmissionRates = (signal?: AbortSignal) =>
   apiClient.request<AdmissionRateView>(`${BASE}/admission-rate`, { signal })
+
+// [waitingroom] GET /api/v1/admin/waitingroom/changes — 운영값 변경 이력
+/** 누가 언제 무엇을 바꿨는지 최신순. 다음 쪽은 nextCursor로 */
+export const getSettingChanges = (cursor?: string, signal?: AbortSignal) =>
+  apiClient.request<SettingChangesView>(
+    `${BASE}/changes${toQueryString({ cursor, size: 20 })}`,
+    { signal },
+  )
 
 // 바꾸는 API는 모두 바뀐 뒤의 전체 운영값을 돌려주고, 같은 요청을 여러 번 보내도 결과가
 // 같다(503이면 다시 보내거나 조회로 확인).

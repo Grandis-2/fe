@@ -51,8 +51,9 @@ export const title = style([
   { color: color.text.primary, fontVariantNumeric: 'tabular-nums' },
 ])
 
+// 띠의 남은 폭을 다 쓴다 — 짧으면 진행이 잘 안 보인다.
 export const bar = style({
-  maxWidth: '520px',
+  width: '100%',
   height: '8px',
   borderRadius: '9999px',
   background: color.primary.subtlerHover,

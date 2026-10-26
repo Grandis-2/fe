@@ -21,20 +21,24 @@ import {
   reservationStateVariant,
   reservationStateLabel,
   reservationStateOf,
-  useAdminMembers,
   useCancelReservation,
   useReprocessReservation,
+  useResolveCancelJob,
+  useRetryCancelJob,
+  stuckCancelJob,
   useSaveReservationNote,
   type AdminReservationDetail as Reservation,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
+import { adminReservationsPath } from '@shared/config/routes'
 import { formatDotDateTime } from '@shared/lib/formatDotDate'
 import { formatWon } from '@shared/lib/formatNumber'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import { showToast } from '@shared/model/toastStore'
 import {
   Button,
+  ButtonLink,
   InlineAlert,
   NoticeBanner,
   ProgressSteps,
@@ -66,27 +70,26 @@ export function AdminReservationDetail({
   reservation,
 }: AdminReservationDetailProps) {
   const reprocess = useReprocessReservation()
+  const retryCancel = useRetryCancelJob()
+  const resolveCancel = useResolveCancelJob()
   const cancel = useCancelReservation()
   const saveNote = useSaveReservationNote()
-  const { data: members } = useAdminMembers([reservation.customerId])
   // 이 예약에 반영되지 못한 처리(이벤트 DLQ). 한 예약에 몇 건 안 돼 한 번에 받는다.
-  const deadLetters = useDeadLetters({
+  const deadLetters = useDeadLetters('preorder', {
     preorderId: reservation.preorderId,
     size: 100,
   })
-  const redrive = useRedriveDeadLetter()
+  const redrive = useRedriveDeadLetter('preorder')
 
   const state = reservationStateOf(reservation)
   const payment = paymentStateOf(reservation)
   const due =
     payment === 'PENDING' ? paymentDueLabel(reservation.paymentDueAt) : null
   const number = reservationNo(reservation.preorderId)
-  const memberName = members?.find(
-    (member) => member.memberId === reservation.customerId,
-  )?.name
   const registerJob = reservation.syncJobs.find(
     (job) => job.jobType === 'REGISTER',
   )
+  const stuckCancel = stuckCancelJob(reservation)
   const cancelEvent = reservation.events.findLast(
     (event) => event.toStatus === 'CANCELING' || event.toStatus === 'CANCELED',
   )
@@ -94,6 +97,8 @@ export function AdminReservationDetail({
   // 지난 실패 문구가 남아 있으면 이번 시도의 결과처럼 보인다.
   const resetErrors = () => {
     reprocess.reset()
+    retryCancel.reset()
+    resolveCancel.reset()
     cancel.reset()
     redrive.reset()
   }
@@ -127,6 +132,50 @@ export function AdminReservationDetail({
           onSuccess: () => showToast('외부 등록을 다시 보냈습니다.'),
         })
       },
+    })
+  }
+
+  const confirmRetryCancel = (syncJobId: string) => {
+    resetErrors()
+    openModal({
+      theme: 'light',
+      title: '외부 취소를 다시 보낼까요?',
+      description: `${number}의 취소를 외부 예약 시스템에 한 번 더 보냅니다. 결과는 조금 뒤에 반영됩니다.`,
+      confirmLabel: '다시 보내기',
+      onConfirm: () => {
+        closeModal()
+        retryCancel.mutate(syncJobId, {
+          onSuccess: () => showToast('외부 취소를 다시 보냈습니다.'),
+        })
+      },
+    })
+  }
+
+  // 외부를 확인하지 않고 끝내면 외부엔 예약이 남는다 — 확인한 내용을 사유로 받는다(이력에 남는다).
+  const confirmResolveCancel = (syncJobId: string) => {
+    resetErrors()
+    openModal({
+      theme: 'light',
+      title: '외부에서 취소를 확인했나요?',
+      description: `외부 예약 시스템에서 ${number}이(가) 이미 취소됐거나 없는 걸 확인했을 때만 끝내세요.
+취소 완료로 바뀌고 회원에게 '사전예약 취소' 알림이 갑니다. 되돌릴 수 없습니다.`,
+      children: (
+        <ReasonForm
+          label="외부에서 확인한 내용"
+          placeholder="예: 외부 콘솔에서 취소 확인"
+          minLength={RESERVATION_CANCEL_REASON_MIN}
+          maxLength={RESERVATION_CANCEL_REASON_MAX}
+          confirmLabel="취소 끝내기"
+          onCancel={closeModal}
+          onConfirm={(reason) => {
+            closeModal()
+            resolveCancel.mutate(
+              { syncJobId, reason },
+              { onSuccess: () => showToast('취소를 끝냈습니다.') },
+            )
+          }}
+        />
+      ),
     })
   }
 
@@ -171,7 +220,12 @@ export function AdminReservationDetail({
     { label: '외부 번호', value: reservation.externalReference ?? '—' },
   ]
 
-  const busy = reprocess.isPending || cancel.isPending || redrive.isPending
+  const busy =
+    reprocess.isPending ||
+    retryCancel.isPending ||
+    resolveCancel.isPending ||
+    cancel.isPending ||
+    redrive.isPending
   // 0건과 조회 실패를 구분한다 — 실패를 '없음'으로 보이면 멈춘 결제를 놓친다.
   const deadLetterItems = deadLetters.data?.items ?? []
   const deadLetterError = pollingError(deadLetters)
@@ -190,7 +244,7 @@ export function AdminReservationDetail({
         </Tag>
         <span className={styles.summary}>
           {[
-            memberName,
+            reservation.customerName,
             `${reservation.productTitle} ${reservation.optionTitle}`,
             `순번 ${reservation.queuePosition.toLocaleString('ko-KR')}`,
           ]
@@ -216,6 +270,19 @@ export function AdminReservationDetail({
       {reprocess.isError && (
         <InlineAlert status="error">
           {getErrorMessage(reprocess.error, '재처리에 실패했습니다.')}
+        </InlineAlert>
+      )}
+      {retryCancel.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(
+            retryCancel.error,
+            '외부 취소를 다시 보내지 못했습니다.',
+          )}
+        </InlineAlert>
+      )}
+      {resolveCancel.isError && (
+        <InlineAlert status="error">
+          {getErrorMessage(resolveCancel.error, '취소를 끝내지 못했습니다.')}
         </InlineAlert>
       )}
       {cancel.isError && (
@@ -283,7 +350,43 @@ export function AdminReservationDetail({
         />
       )}
 
-      {reservation.status === 'CANCELING' && (
+      {stuckCancel && (
+        <NoticeBanner
+          tone="danger"
+          title="외부 예약 시스템에 취소를 보내지 못해 취소 중에 멈춰 있어요"
+          description={[
+            `시도 ${stuckCancel.attemptCount}회 모두 실패`,
+            stuckCancel.lastErrorCode &&
+              `마지막 오류 ${stuckCancel.lastErrorCode}`,
+            stuckCancel.deadLetteredAt &&
+              formatDotDateTime(stuckCancel.deadLetteredAt),
+            '외부에서 이미 취소됐다면 확인 후 끝내세요',
+          ]
+            .filter(Boolean)
+            .join(' · ')}
+          action={
+            <div className={styles.bannerActions}>
+              <Button
+                size="small"
+                disabled={busy}
+                onClick={() => confirmRetryCancel(stuckCancel.syncJobId)}
+              >
+                다시 보내기
+              </Button>
+              <Button
+                size="small"
+                variant="outline"
+                color="cancel"
+                disabled={busy}
+                onClick={() => confirmResolveCancel(stuckCancel.syncJobId)}
+              >
+                취소 확인 후 끝내기
+              </Button>
+            </div>
+          }
+        />
+      )}
+      {reservation.status === 'CANCELING' && !stuckCancel && (
         <NoticeBanner
           tone="info"
           title="외부 예약 시스템에 취소를 보내고 있어요"
@@ -346,12 +449,27 @@ export function AdminReservationDetail({
             className={styles.panel}
             aria-labelledby="reservation-member"
           >
-            <h2 id="reservation-member" className={styles.panelTitle}>
-              회원
-            </h2>
+            <div className={styles.panelHeader}>
+              <h2 id="reservation-member" className={styles.panelTitle}>
+                회원
+              </h2>
+              <ButtonLink
+                to={adminReservationsPath(
+                  'all',
+                  undefined,
+                  reservation.customerId,
+                )}
+                variant="outline"
+                size="small"
+              >
+                이 회원의 예약
+              </ButtonLink>
+            </div>
             <dl className={styles.list}>
               <dt className={styles.term}>이름</dt>
-              <dd className={styles.value}>{memberName ?? '—'}</dd>
+              <dd className={styles.value}>
+                {reservation.customerName ?? '—'}
+              </dd>
               <dt className={styles.term}>회원 id</dt>
               <dd className={styles.value}>{reservation.customerId}</dd>
             </dl>

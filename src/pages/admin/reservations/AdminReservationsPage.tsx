@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { CircleCheck } from 'lucide-react'
+import { CircleCheck, UserRound } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import {
@@ -20,11 +20,11 @@ import {
   reservationStateVariant,
   reservationStateLabel,
   reservationStateOf,
-  useAdminMembers,
   useAdminReservations,
   useReprocessReservations,
   useReservationStats,
   type AdminReservation,
+  type ReservationSort,
 } from '@entities/admin-reservation'
 import { getErrorMessage } from '@shared/api/client'
 import { pollingError } from '@shared/api/queryPolicy'
@@ -33,7 +33,10 @@ import {
   type RefreshInterval,
 } from '@shared/config/refreshInterval'
 import { adminReservationPath } from '@shared/config/routes'
+import { formatNumber } from '@shared/lib/formatNumber'
+import { periodRange, toPeriodOptions, type Period } from '@shared/lib/period'
 import { toggleInSet } from '@shared/lib/toggleInSet'
+import { useClampPage } from '@shared/lib/useClampPage'
 import { closeModal, openModal } from '@shared/model/modalStore'
 import {
   Button,
@@ -56,29 +59,12 @@ const ALL_PRODUCTS = '전체 상품'
 // 오픈 중엔 실패가 쌓이는 걸 바로 봐야 해서, 집계 캐시 하한(5초)을 기본으로 둔다.
 const DEFAULT_INTERVAL: RefreshInterval = 5_000
 
-/** 접수 기간 — 고른 순간을 기준으로 하한(from)을 잡는다 */
-type Period = 'all' | 'hour' | 'today' | 'week' | 'month'
-const periodOptions: DropdownOption<Period>[] = [
-  { label: '전체 기간', value: 'all' },
-  { label: '최근 1시간', value: 'hour' },
-  { label: '오늘', value: 'today' },
-  { label: '최근 7일', value: 'week' },
-  { label: '최근 30일', value: 'month' },
-]
-const DAY_MS = 24 * 60 * 60 * 1000
-const fromOf = (period: Period, now: number) => {
-  if (period === 'all') return undefined
-  if (period === 'today') return new Date(new Date(now).setHours(0, 0, 0, 0))
-  const span = { hour: 60 * 60 * 1000, week: 7 * DAY_MS, month: 30 * DAY_MS }
-  return new Date(now - span[period])
-}
+/** 접수 기간 — 고른 순간을 기준으로 [from, to)를 잡는다 */
+const periods: Period[] = ['all', 'hour', 'today', 'yesterday', 'week', 'month']
+const periodOptions = toPeriodOptions(periods)
 
-/**
- * 정렬 — 탭마다 볼 순서가 다르다(실패는 오래된 것부터, 결제 대기는 기한 임박순). 서버에
- * 정렬 조건이 없어 아직 고를 수 없다 — 화면에서 정렬하면 받은 한 페이지 안에서만 바뀌어
- * 전체 순서로 오해한다. 서버는 최신 접수순으로 준다.
- */
-const sortOptions: DropdownOption<string>[] = [
+/** 정렬 — 서버가 정렬해 쪽을 넘겨도 전체 순서가 이어진다. 순번순은 상품을 골라야 된다(명세) */
+const sortOptions: DropdownOption<ReservationSort>[] = [
   { label: '최신 접수순', value: 'NEWEST' },
   { label: '오래된 접수순', value: 'OLDEST' },
   { label: '대기 순번순', value: 'QUEUE_POSITION' },
@@ -110,32 +96,37 @@ const formatReceivedAt = (iso: string) => {
 // query는 탭이 서버에 보내는 조건이다. 서버는 상태를 하나만 거를 수 있어 묶인 탭은 상태를
 // 여럿 주고, 그 순서대로 이어 붙여 쪽을 나눈다(확정은 결제 대기 다음 결제 완료, 취소는 취소
 // 중 다음 취소 완료). 처리 중(PENDING_SYNC)엔 외부 등록 실패도 섞여 나온다 — 서버에 '실패
-// 빼고' 조건이 없다. 실패 행은 빨간 배경이라 구분된다.
+// 빼고' 조건이 없다. 실패 행은 빨간 배경이라 구분된다. sort는 탭의 기본 순서 — 실패·처리
+// 중은 오래 기다린 것부터, 확정은 결제 기한 임박순이다.
 const statusFilters = [
   {
     value: 'REPROCESS_NEEDED',
     stage: 'REPROCESS_NEEDED',
     query: { registerJobStatus: 'DEAD_LETTER' },
+    sort: 'OLDEST',
   },
   {
     value: 'PROCESSING',
     stage: 'PROCESSING',
     query: { statuses: ['PENDING_SYNC'] },
+    sort: 'OLDEST',
   },
   {
     value: 'CONFIRMED',
     stage: 'CONFIRMED',
     query: { statuses: ['REGISTERED', 'RESERVED'] },
+    sort: 'PAYMENT_DUE',
   },
   {
     value: 'CANCELED',
     stage: 'CANCELED',
     query: { statuses: ['CANCELING', 'CANCELED'] },
+    sort: 'NEWEST',
   },
-  { value: 'all', stage: 'ALL', query: {} },
+  { value: 'all', stage: 'ALL', query: {}, sort: 'NEWEST' },
 ] as const
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 10
 
 type StatusFilter = (typeof statusFilters)[number]['value']
 
@@ -166,41 +157,65 @@ export function AdminReservationsPage() {
   const pageParam = Number(searchParams.get('page'))
   const page = Number.isSafeInteger(pageParam) && pageParam >= 1 ? pageParam : 1
   // 쪽 말고 다른 조건이 바뀌면 첫 쪽으로 돌아간다 — 3쪽을 보다 탭을 바꾸면 빈 쪽이 뜬다.
-  const setParam = (key: string, value: string | undefined) =>
+  // clear: 이 조건에 딸려 같이 풀리는 조건(탭 → 정렬, 상품 → 차수).
+  const setParam = (
+    key: string,
+    value: string | undefined,
+    clear: readonly string[] = [],
+  ) =>
     setSearchParams(
       (prev) => {
         const params = new URLSearchParams(prev)
         if (value === undefined) params.delete(key)
         else params.set(key, value)
         if (key !== 'page') params.delete('page')
+        clear.forEach((name) => params.delete(name))
         return params
       },
       { replace: true },
     )
-  const toFirstPage = () => setParam('page', undefined)
-  const setStatusFilter = (next: StatusFilter) => setParam('status', next)
+  // 정렬·기간·차수·외부 예약 번호도 주소에 둔다 — 상세에 갔다 오거나 새로 고쳐도 같은 쪽에 같은
+  // 행이 보인다(쪽만 주소에 있고 조건이 풀리면 다른 행이 나온다). 모르는 값은 없는 것으로 본다.
+  // 고른 정렬. 없으면 탭의 기본 순서 — 탭을 바꾸면 그 탭의 기본으로 돌아간다.
+  const sortChoice = sortOptions.find(
+    ({ value }) => value === searchParams.get('sort'),
+  )?.value
+  const setStatusFilter = (next: StatusFilter) =>
+    setParam('status', next, ['sort'])
+  const selectSort = (next: ReservationSort) => setParam('sort', next)
   // 상품명은 겹칠 수 있어 이름이 아니라 productId로 고른다.
   const productId = searchParams.get('product') ?? undefined
+  // 예약 상세의 '이 회원의 예약'로 들어오면 그 회원 것만 본다.
+  const customerId = searchParams.get('customer') ?? undefined
   // 차수 번호는 상품마다 따로라, 상품을 바꾸면 차수를 비운다.
-  const [batchNumber, setBatchNumber] = useState<number>()
-  const setProductId = (next: string | undefined) => {
-    setParam('product', next)
-    setBatchNumber(undefined)
-  }
-  const selectBatch = (next: number | undefined) => {
-    setBatchNumber(next)
-    toFirstPage()
-  }
+  const batchParam = Number(searchParams.get('batch'))
+  const batchNumber =
+    Number.isSafeInteger(batchParam) && batchParam >= 1 ? batchParam : undefined
+  const setProductId = (next: string | undefined) =>
+    setParam('product', next, ['batch'])
+  const selectBatch = (next: number | undefined) =>
+    setParam('batch', next === undefined ? undefined : String(next))
   // 외부 예약 번호는 정확히 같은 것만 찾아서, 다 친 뒤(Enter) 보낸다 — 칠 때마다 묻지 않게.
-  const [referenceDraft, setReferenceDraft] = useState('')
-  const [externalReference, setExternalReference] = useState<string>()
-  const [period, setPeriod] = useState<Period>('all')
-  // shortcut: 고른 순간을 기준으로 하한을 고정한다 — '최근 1시간'을 오래 띄워 두면 창이 밀리지 않는다. 문제가 되면 갱신마다 다시 잡는다.
-  const [from, setFrom] = useState<string>()
+  const externalReference = searchParams.get('ref') ?? undefined
+  const [referenceDraft, setReferenceDraft] = useState(externalReference ?? '')
+  // 주소가 바뀌면(뒤로 가기·링크) 칸도 따라간다 — 칸과 결과가 어긋나지 않게.
+  const [syncedReference, setSyncedReference] = useState(externalReference)
+  if (externalReference !== syncedReference) {
+    setSyncedReference(externalReference)
+    setReferenceDraft(externalReference ?? '')
+  }
+  const setExternalReference = (next: string | undefined) =>
+    setParam('ref', next)
+  const period =
+    periods.find((item) => item === searchParams.get('period')) ?? 'all'
+  // 고른 순간을 기준으로 구간을 고정한다 — 쪽을 넘기는 동안 조회 키가 흔들리지 않는다. 주소로
+  // 들어오면(새로 고침·뒤로 가기) 그때가 기준이다.
+  // shortcut: '최근 1시간'을 오래 띄워 두면 창이 밀리지 않는다. 문제가 되면 갱신마다 다시 잡는다.
+  const [periodAt, setPeriodAt] = useState(() => Date.now())
+  const range = periodRange(period, periodAt)
   const selectPeriod = (next: Period) => {
-    setPeriod(next)
-    setFrom(fromOf(next, Date.now())?.toISOString())
-    toFirstPage()
+    setPeriodAt(Date.now())
+    setParam('period', next === 'all' ? undefined : next)
   }
   // 재처리할 예약(예약 id). 실제로 보내는 건 지금 표에서 재처리할 수 있는 것만이다.
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set())
@@ -208,15 +223,18 @@ export function AdminReservationsPage() {
   const [refreshInterval, setRefreshInterval] =
     useState<RefreshInterval>(DEFAULT_INTERVAL)
 
-  const { data: products = [] } = useAdminProducts({
-    saleMode: 'PREORDER',
-    size: 100,
-  })
+  const products = useAdminProducts({ saleMode: 'PREORDER' })
 
-  // 값이 undefined인 첫 항목이 '전체 상품' — 서버에 productId를 안 보낸다.
+  // 값이 undefined인 첫 항목이 '전체 상품' — 서버에 productId를 안 보낸다. 목록을 못 받으면
+  // 그 항목만 남아 상품이 없는 것처럼 보이니, 못 받았다고 같이 적는다(차수도 같다).
   const productOptions: DropdownOption<string | undefined>[] = [
-    { label: ALL_PRODUCTS, value: undefined },
-    ...products.map((product) => ({
+    {
+      label: products.isError
+        ? `${ALL_PRODUCTS} (목록을 못 불러옴)`
+        : ALL_PRODUCTS,
+      value: undefined,
+    },
+    ...(products.data ?? []).map((product) => ({
       label: product.name,
       value: product.productId,
     })),
@@ -226,21 +244,35 @@ export function AdminReservationsPage() {
     enabled: productId !== undefined,
   })
   const batchOptions: DropdownOption<number | undefined>[] = [
-    { label: '전체 차수', value: undefined },
+    {
+      label: batches.isError ? '전체 차수 (차수를 못 불러옴)' : '전체 차수',
+      value: undefined,
+    },
     ...(batches.data ?? []).map((batch) => ({
       label: `${batch.batchNumber}차`,
       value: batch.batchNumber,
     })),
   ]
 
+  // 순번순은 상품이 있어야 해서(없으면 400), 상품을 비우면 탭 기본 순서로 돌아간다.
+  const sort =
+    sortChoice === 'QUEUE_POSITION' && !productId
+      ? tab.sort
+      : (sortChoice ?? tab.sort)
+  const visibleSortOptions = productId
+    ? sortOptions
+    : sortOptions.filter((option) => option.value !== 'QUEUE_POSITION')
+
   // 탭·필터 모두 서버가 거르고, 쪽도 서버가 나눈다 — 100건이 넘어도 쪽을 넘겨 끝까지 본다.
   const list = useAdminReservations(
     {
       ...tab.query,
+      sort,
       productId,
       batchNumber: productId ? batchNumber : undefined,
       externalReference,
-      from,
+      ...range,
+      customerId,
       page: page - 1,
       size: PAGE_SIZE,
     },
@@ -249,6 +281,11 @@ export function AdminReservationsPage() {
   const { data, isPending, isError, error, dataUpdatedAt, refetch } = list
   const reservations = data?.items
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0
+  useClampPage(
+    page,
+    data && !list.isPlaceholderData ? totalPages : null,
+    (next) => setParam('page', next > 1 ? String(next) : undefined),
+  )
   // 아직 한 번도 못 받았으면 data가 undefined — 카드가 0건이 아니라 '조회 실패'로 보여야 한다.
   const stats = useReservationStats(productId, refreshInterval, {
     keepPrevious: true,
@@ -259,13 +296,6 @@ export function AdminReservationsPage() {
     (stats.data !== undefined ? pollingError(stats) : null)
 
   const reprocess = useReprocessReservations()
-
-  // 회원 이름은 예약 응답에 없어서 보이는 회원 id만 모아 이름으로 바꾼다.
-  const { data: members = [] } = useAdminMembers(
-    (reservations ?? []).map((reservation) => reservation.customerId),
-  )
-  const memberName = (memberId: string) =>
-    members.find((member) => member.memberId === memberId)?.name ?? '—'
 
   const openDetail = (reservation: AdminReservation) =>
     navigate(adminReservationPath(reservation.preorderId))
@@ -280,35 +310,34 @@ export function AdminReservationsPage() {
   // 탭·검색으로 보이는 것 중 재처리할 수 있는 것만 고를 수 있다 — 상태가 바뀌어 빠진 예약은
   // 고른 채로 남아도 보내지 않는다.
   const selectable = visibleReservations.filter(isReprocessable)
-  const selectedIds = selectable
-    .filter((reservation) => selected.has(reservation.preorderId))
-    .map((reservation) => reservation.preorderId)
+  const selectedRows = selectable.filter((reservation) =>
+    selected.has(reservation.preorderId),
+  )
   const allSelected =
-    selectable.length > 0 && selectedIds.length === selectable.length
+    selectable.length > 0 && selectedRows.length === selectable.length
   const toggle = (ids: string[], checked: boolean) =>
     setSelected((prev) => toggleInSet(prev, ids, checked))
 
   // 외부로 등록을 다시 보내는 조치라 한 번 더 묻는다. 끝나면 목록을 다시 받아 표를 갱신한다.
   const confirmReprocess = () => {
-    const ids = selectedIds
     openModal({
       theme: 'light',
-      title: `${ids.length.toLocaleString('ko-KR')}건을 재처리할까요?`,
+      title: `${formatNumber(selectedRows.length)}건을 재처리할까요?`,
       description:
         '고른 예약을 외부 예약 시스템에 다시 등록합니다. 차례로 처리돼서 반영까지 몇 초 걸릴 수 있습니다.',
       confirmLabel: '재처리',
       onConfirm: () => {
         closeModal()
         setFeedback(undefined)
-        reprocess.mutate(ids, {
+        reprocess.mutate(selectedRows, {
           onSuccess: ({ targetCount, skippedCount, estimatedSeconds }) => {
             setSelected(new Set())
             setFeedback({
               status: 'success',
               message: [
-                `${targetCount.toLocaleString('ko-KR')}건 재처리를 시작했습니다(약 ${estimatedSeconds}초).`,
+                `${formatNumber(targetCount)}건 재처리를 시작했습니다(약 ${estimatedSeconds}초).`,
                 skippedCount > 0 &&
-                  `${skippedCount.toLocaleString('ko-KR')}건은 이미 처리됐거나 상태가 바뀌어 건너뛰었습니다.`,
+                  `${formatNumber(skippedCount)}건은 이미 처리됐거나 상태가 바뀌어 건너뛰었습니다.`,
               ]
                 .filter(Boolean)
                 .join(' '),
@@ -339,16 +368,14 @@ export function AdminReservationsPage() {
           (stage === 'REPROCESS_NEEDED' &&
           stageCounts[stage] > 0 &&
           !stats.isPlaceholderData ? (
-            <CountBadge>
-              {stageCounts[stage].toLocaleString('ko-KR')}
-            </CountBadge>
+            <CountBadge>{formatNumber(stageCounts[stage])}</CountBadge>
           ) : (
             <span
               className={
                 stats.isPlaceholderData ? styles.tabCountStale : styles.tabCount
               }
             >
-              {stageCounts[stage].toLocaleString('ko-KR')}
+              {formatNumber(stageCounts[stage])}
             </span>
           ))}
       </span>
@@ -420,7 +447,7 @@ export function AdminReservationsPage() {
       header: '예약자',
       render: (reservation) => (
         <span className={styles.cellText}>
-          {memberName(reservation.customerId)}
+          {reservation.customerName ?? '—'}
         </span>
       ),
     },
@@ -430,7 +457,7 @@ export function AdminReservationsPage() {
       align: 'right',
       render: (reservation) => (
         <span className={styles.number}>
-          {reservation.queuePosition.toLocaleString('ko-KR')}
+          {formatNumber(reservation.queuePosition)}
         </span>
       ),
     },
@@ -536,13 +563,26 @@ export function AdminReservationsPage() {
       />
 
       {/* 탭 아래 — 서버가 거르는 조건과 정렬. 탭 건수는 상품만 따른다(집계 API 조건). */}
+      {customerId && (
+        <InlineAlert status="brand" icon={UserRound}>
+          <span className={styles.customerFilter}>
+            {reservations?.[0]?.customerName ?? '한 회원'}의 예약만 보고 있어요.
+            <Button
+              variant="outline"
+              size="small"
+              onClick={() => setParam('customer', undefined)}
+            >
+              모든 회원 보기
+            </Button>
+          </span>
+        </InlineAlert>
+      )}
       <div className={styles.filters}>
         <form
           className={styles.referenceField}
           onSubmit={(event) => {
             event.preventDefault()
             setExternalReference(referenceDraft.trim() || undefined)
-            toFirstPage()
           }}
         >
           <Input
@@ -552,10 +592,7 @@ export function AdminReservationsPage() {
             onChange={(event) => {
               setReferenceDraft(event.target.value)
               // 지우면 바로 조건을 푼다 — 빈 칸에 Enter를 또 누르게 하지 않는다.
-              if (!event.target.value.trim()) {
-                setExternalReference(undefined)
-                toFirstPage()
-              }
+              if (!event.target.value.trim()) setExternalReference(undefined)
             }}
           />
         </form>
@@ -586,24 +623,24 @@ export function AdminReservationsPage() {
           value={period}
           onSelect={selectPeriod}
         />
-        {/* 서버에 정렬 조건이 생기면 연다(백엔드 작업 후). */}
         <Dropdown
           className={styles.field}
-          label="정렬 · 백엔드 작업 후"
-          fieldLabel="정렬, 백엔드 작업 후 열려요"
-          options={sortOptions}
-          disabled
+          label="정렬"
+          fieldLabel="정렬"
+          options={visibleSortOptions}
+          value={sort}
+          onSelect={selectSort}
         />
       </div>
 
       {selectable.length > 0 && (
         <div className={styles.selectionBar}>
           <span className={styles.selectionCount}>
-            {selectedIds.length.toLocaleString('ko-KR')}건 선택됨
+            {formatNumber(selectedRows.length)}건 선택됨
           </span>
           <Button
             size="small"
-            disabled={selectedIds.length === 0 || reprocess.isPending}
+            disabled={selectedRows.length === 0 || reprocess.isPending}
             onClick={confirmReprocess}
           >
             {reprocess.isPending ? '재처리 요청 중…' : '선택한 예약 재처리'}
