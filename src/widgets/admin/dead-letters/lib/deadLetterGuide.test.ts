@@ -40,6 +40,16 @@ describe('deadLetterGuide', () => {
       /보냈고/,
     )
   })
+
+  it('기다린 지 오래돼 새로 고치기를 멈췄으면 멈췄을 수 있다고 알린다', () => {
+    const stalled = { stalled: true }
+    expect(
+      deadLetterGuide({ ...base, status: 'REDRIVING' }, stalled),
+    ).toMatchObject({ tone: 'warning', title: '보내기가 멈춘 것 같아요' })
+    expect(
+      deadLetterGuide({ ...base, status: 'REDRIVEN' }, stalled),
+    ).toMatchObject({ tone: 'warning', title: '처리 결과가 늦어요' })
+  })
 })
 
 describe('deadLetterSteps', () => {

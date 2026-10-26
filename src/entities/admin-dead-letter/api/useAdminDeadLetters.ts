@@ -6,8 +6,13 @@ import {
 } from '@tanstack/react-query'
 
 import { pollEvery, pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
-import type { DeadLetterListParams, DeadLetterStatus } from '@shared/api/types'
+import type {
+  DeadLetterDetail,
+  DeadLetterListParams,
+  DeadLetterStatus,
+} from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
+import { useDeadline } from '@shared/lib/useDeadline'
 
 import {
   deadLetterStatuses,
@@ -33,6 +38,16 @@ const RELATED_KEY: Record<DeadLetterService, readonly string[]> = {
 }
 // 되돌리기 결과를 기다리는 동안만 쓰는 짧은 간격.
 const IN_FLIGHT_POLL_MS = 3_000
+// 보내기 시작(REDRIVING)·보낸 뒤(REDRIVEN)부터 이만큼 지나도 그대로면 짧은 간격으로 묻기를
+// 멈춘다 — 서버는 1분 넘게 멈춘 보내기를 다시 되돌릴 수 있게 열고, 결과는 보통 1분 안에 온다.
+const IN_FLIGHT_LIMIT_MS = 2 * 60_000
+
+/** 되돌리기를 기다리기 시작한 때 — 보내는 중이면 보내기 시작, 보냈으면 보낸 시각(ms) */
+const inFlightSince = (detail: DeadLetterDetail) => {
+  const at =
+    detail.status === 'REDRIVING' ? detail.redriveStartedAt : detail.redrivenAt
+  return at ? Date.parse(at) : undefined
+}
 
 /** 목록 조건. statuses를 주면 그 상태들을 끝까지 받아 합치고(손댈 것만 모은 탭), 아니면 한 쪽만 */
 export type DeadLetterQuery = DeadLetterListParams & {
@@ -116,7 +131,10 @@ export const useDeadLetterCounts = (
   })
 }
 
-/** 메시지 상세. 되돌리기 결과를 기다리는 동안만 다시 받는다 */
+/**
+ * 메시지 상세. 되돌리기 결과를 기다리는 동안만 다시 받고 실패하면 백오프한다. 기다린 지 2분이
+ * 지나면 멈추고 stalled로 알린다 — 보내기가 멈췄거나 받는 쪽이 늦은 것이다.
+ */
 export const useDeadLetter = (
   service: DeadLetterService,
   deadLetterId: string,
@@ -128,16 +146,28 @@ export const useDeadLetter = (
     'detail',
     deadLetterId,
   ] as const
-  const pollMs = (
-    data: Awaited<ReturnType<typeof getDeadLetter>> | undefined,
-  ) => (data && isRedriveInFlight(data.status) ? IN_FLIGHT_POLL_MS : null)
-  return useQuery({
+  const cached = queryClient.getQueryData<DeadLetterDetail>(queryKey)
+  const inFlight = cached !== undefined && isRedriveInFlight(cached.status)
+  const deadline = useDeadline(
+    inFlight,
+    IN_FLIGHT_LIMIT_MS,
+    inFlight ? inFlightSince(cached) : undefined,
+  )
+  const pollMs = (data: DeadLetterDetail | undefined) =>
+    data && isRedriveInFlight(data.status) && !deadline.passed
+      ? IN_FLIGHT_POLL_MS
+      : null
+  const query = useQuery({
     queryKey,
     queryFn: ({ signal }) => getDeadLetter(service, deadLetterId, signal),
     ...queryPolicy.live,
     refetchInterval: ({ state: { data } }) => pollMs(data) ?? false,
-    ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey))),
+    ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey)), {
+      expired: () => deadline.passed,
+    }),
   })
+  // 2분 넘게 그대로라 저절로 묻기를 멈췄다 — 손으로 새로 고치면(refetch) 그대로 받는다.
+  return { ...query, stalled: deadline.passed }
 }
 
 // 메시지 상태와 그 서비스의 화면이 같이 바뀌므로 둘 다 다시 받는다(다른 서비스 DLQ는 그대로).

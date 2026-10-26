@@ -24,6 +24,7 @@ const progress = (deadLetterNow: number, sent = 860) => ({
   deadLetterNow,
   reduced: 900 - deadLetterNow,
   outcome: null,
+  timedOut: false,
 })
 
 const meta = {
@@ -145,6 +146,7 @@ export const Running: Story = {
       deadLetterNow: null,
       reduced: null,
       outcome: null,
+      timedOut: false,
     },
   },
 }
@@ -174,5 +176,14 @@ export const NotReduced: Story = {
   play: async ({ canvas }) => {
     const notice = await canvas.findByText(/아직 줄지 않았어요/)
     await waitFor(() => expect(notice).toBeVisible())
+  },
+}
+
+/** 3-c · 마감이 지나도록 끝을 확인하지 못함 — 결과를 단정하지 않고 예약 현황으로 보낸다 */
+export const TimedOut: Story = {
+  args: { run, result: { ...progress(880), timedOut: true } },
+  play: async ({ canvas }) => {
+    const title = await canvas.findByText('진행을 끝까지 확인하지 못했어요')
+    await waitFor(() => expect(title).toBeVisible())
   },
 }

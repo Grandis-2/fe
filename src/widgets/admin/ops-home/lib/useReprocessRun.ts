@@ -6,6 +6,7 @@ import {
   useReservationStats,
 } from '@entities/admin-reservation'
 import { formatNumber } from '@shared/lib/formatNumber'
+import { useDeadline } from '@shared/lib/useDeadline'
 import { showToast } from '@shared/model/toastStore'
 
 import {
@@ -18,10 +19,17 @@ import { retryOf, unsentAfterError, type Unsent } from './reprocessRetry'
 // 집계를 다시 받는 간격 — 대시보드의 집계 간격과 같다(같은 캐시를 쓴다).
 const POLL_MS = 5_000
 
+// 진행을 끝까지 묻는 마감 — 예상 시간의 세 배, 짧아도 2분. 서버가 끝을 알리지 않으면 영원히
+// 2초마다 묻게 되니, 넘으면 멈추고 결과는 예약 현황에서 보라고 한다.
+const deadlineOf = (estimatedSeconds: number) =>
+  Math.max(2 * 60_000, estimatedSeconds * 3 * 1000)
+
 // 서버가 센 결과가 있으면 그대로 알리고, 없으면(진행 조회 실패) 재처리 필요가 얼마나
 // 줄었는지와 확인할 곳만 알린다 — 그 값으로는 몇 건이 성공했는지 단정할 수 없다.
 const resultMessage = (progress: ReprocessProgress) => {
   const { outcome } = progress
+  if (progress.timedOut)
+    return '재처리 진행을 끝까지 확인하지 못했어요. 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요.'
   if (outcome)
     return [
       `재처리를 마쳤어요. ${formatNumber(outcome.succeeded)}건 등록`,
@@ -65,9 +73,17 @@ export function useReprocessRun(selected: string | null) {
   // 집계 시각은 서버가 센 시각(countedAt)을 쓴다 — 받은 시각(dataUpdatedAt)은 캐시된 옛 값도 새로 보인다.
   const countedAt = stats.data ? Date.parse(stats.data.countedAt) : 0
   // 서버 진행(보낸 수·결과)을 끝날 때까지 묻는다. 못 받는 동안은 시간으로 어림한다.
-  const batches = useReprocessBatches(run?.batchIds ?? [])
+  const deadline = useDeadline(
+    run !== null,
+    deadlineOf(run?.estimatedSeconds ?? 0),
+    run?.startedAt,
+  )
+  const batches = useReprocessBatches(run?.batchIds ?? [], {
+    expired: deadline.passed,
+  })
   const progress =
-    run && reprocessProgress(run, batches, deadLetterNow, countedAt)
+    run &&
+    reprocessProgress(run, batches, deadLetterNow, countedAt, deadline.passed)
   const finished = progress?.finished ?? false
 
   // 같은 재처리를 두 번 알리지 않게 알린 것의 시작 시각을 남긴다.

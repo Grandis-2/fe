@@ -33,7 +33,11 @@ const by = (who: string | null, iso: string | null) =>
  * 상세 맨 위 '지금 할 일' — 무엇이 멈췄고 지금 누를 버튼이 무엇인지 한 줄로 말한다.
  * 처리 대기는 실패 이유마다 할 일이 다르다(고친 뒤 되돌리기 / 배포 뒤 되돌리기 / 버리기).
  */
-export function deadLetterGuide(record: GuideInput): DeadLetterGuide {
+export function deadLetterGuide(
+  record: GuideInput,
+  /** 되돌리기를 기다린 지 2분이 지나 저절로 새로 고치기를 멈췄다(useDeadLetter의 stalled) */
+  { stalled = false }: { stalled?: boolean } = {},
+): DeadLetterGuide {
   switch (record.status) {
     case 'OPEN':
       if (record.failureReason === 'UNREADABLE_BODY') {
@@ -60,6 +64,13 @@ export function deadLetterGuide(record: GuideInput): DeadLetterGuide {
       }
     // 보내기에 실패하면 서버가 REDRIVING에 그대로 둔다 — 보냈다고 단정하지 않는다.
     case 'REDRIVING':
+      if (stalled)
+        return {
+          tone: 'warning',
+          title: '보내기가 멈춘 것 같아요',
+          description:
+            "2분 넘게 '보내는 중'이에요. 되돌리기 버튼이 보이면 다시 보내고, 안 보이면 개발팀에 알려 주세요. 저절로 새로 고치기는 멈췄어요 — 오른쪽 위 새로 고침으로 확인해요.",
+        }
       return {
         tone: 'info',
         title: '원래 큐로 보내는 중이에요',
@@ -67,6 +78,13 @@ export function deadLetterGuide(record: GuideInput): DeadLetterGuide {
           '보통 몇 초 안에 끝나요. 오래 이대로면 보내기에 실패한 것일 수 있어 개발팀에 알려 주세요.',
       }
     case 'REDRIVEN':
+      if (stalled)
+        return {
+          tone: 'warning',
+          title: '처리 결과가 늦어요',
+          description:
+            '보낸 지 2분이 넘었는데 결과가 오지 않았어요. 받는 서버 로그에서 messageId로 확인해 주세요. 저절로 새로 고치기는 멈췄어요 — 오른쪽 위 새로 고침으로 확인해요.',
+        }
       return {
         tone: 'info',
         title: '원래 큐로 보냈고, 처리 결과를 기다리는 중이에요',

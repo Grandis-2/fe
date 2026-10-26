@@ -1,7 +1,7 @@
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { fetchAllPages, PAGE_SIZE_MAX } from '@shared/api/fetchAllPages'
-import { queryPolicy } from '@shared/api/queryPolicy'
+import { pollEvery, queryPolicy } from '@shared/api/queryPolicy'
 import type { AdminProductListParams } from '@shared/api/types'
 import type { RefreshInterval } from '@shared/config/refreshInterval'
 
@@ -35,13 +35,16 @@ export const useAdminProductCount = (
   /** 자동으로 다시 받는 간격. 운영 대시보드처럼 열어 두는 화면이 준다 */
   intervalMs: RefreshInterval = false,
 ) => {
+  const queryClient = useQueryClient()
   const countParams = { ...params, size: 1 }
+  const queryKey = adminProductsKey(countParams)
   return useQuery({
-    queryKey: adminProductsKey(countParams),
+    queryKey,
     queryFn: ({ signal }) => getAdminProducts(countParams, signal),
     select: (paged) => paged.total,
     ...queryPolicy.live,
-    refetchInterval: intervalMs,
+    // 실패하면 그 간격에서 백오프하며 다시 묻는다.
+    ...pollEvery(queryClient, queryKey, intervalMs),
   })
 }
 

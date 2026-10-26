@@ -37,6 +37,8 @@ export type ReprocessProgress = {
   reduced: number | null
   /** 서버가 센 결과. 진행을 아직 못 받았으면 null */
   outcome: ReprocessOutcome | null
+  /** 마감이 지나도록 끝을 확인하지 못해 묻기를 멈췄다 — 결과는 예약 현황에서 본다 */
+  timedOut: boolean
 }
 
 /**
@@ -52,6 +54,8 @@ export function reprocessProgress(
   deadLetterNow: number | null,
   /** 그 집계를 서버가 센 시각(ms, countedAt) */
   countedAt: number,
+  /** 마감이 지났다(useReprocessRun이 잰다) — 끝나지 않았어도 끝난 것으로 보고 결과를 모른다고 한다 */
+  expired = false,
 ): ReprocessProgress {
   const durationMs = Math.max(1, run.estimatedSeconds) * 1000
   const elapsed = Math.max(0, countedAt - run.startedAt)
@@ -64,7 +68,19 @@ export function reprocessProgress(
     deadLetterAtStart: run.deadLetterAtStart,
     deadLetterNow,
     reduced,
+    timedOut: false,
   }
+  // 서버가 끝을 알리지 않는 채로 마감이 지나면 기다림을 끝낸다. 받은 진행은 끝난 결과가 아니라 쓰지 않는다.
+  if (expired && !batches?.finished)
+    return {
+      ...base,
+      sent: batches
+        ? batches.targetCount - batches.pending
+        : Math.round(run.target * Math.min(1, elapsed / durationMs)),
+      finished: true,
+      outcome: null,
+      timedOut: true,
+    }
   if (batches)
     return {
       ...base,

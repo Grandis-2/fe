@@ -95,4 +95,39 @@ describe('reprocessProgress', () => {
       ).finished,
     ).toBe(true)
   })
+
+  it('마감이 지나면 끝나지 않았어도 끝으로 보고, 받은 진행을 결과로 쓰지 않는다', () => {
+    const batches = {
+      targetCount: 860,
+      unsent: 0,
+      succeeded: 500,
+      failed: 10,
+      canceled: 0,
+      pending: 350,
+      finished: false,
+    }
+    const progress = reprocessProgress(
+      run,
+      batches,
+      900,
+      run.startedAt + 99_000,
+      true,
+    )
+    expect(progress).toMatchObject({
+      finished: true,
+      timedOut: true,
+      outcome: null,
+      sent: 510,
+    })
+    // 마감 전에 끝났으면 그대로 결과를 쓴다.
+    expect(
+      reprocessProgress(
+        run,
+        { ...batches, pending: 0, finished: true },
+        900,
+        run.startedAt + 99_000,
+        true,
+      ).timedOut,
+    ).toBe(false)
+  })
 })

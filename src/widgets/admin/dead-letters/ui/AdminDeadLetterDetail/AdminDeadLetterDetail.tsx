@@ -57,6 +57,8 @@ export type AdminDeadLetterDetailProps = {
   deadLetter: DeadLetterRecord
   /** 어느 서비스의 DLQ인지 — 되돌리기·버리기 주소와 관련 대상(예약/주문)이 갈린다 */
   service: DeadLetterService
+  /** 되돌리기를 기다린 지 오래돼 저절로 새로 고치기를 멈췄다 */
+  stalled?: boolean
 }
 
 type BodyView = 'pretty' | 'raw'
@@ -94,6 +96,7 @@ const NOW_INTERVAL_MS = 60_000
 export function AdminDeadLetterDetail({
   deadLetter,
   service,
+  stalled = false,
 }: AdminDeadLetterDetailProps) {
   const location = useLocation()
   const now = useNow(NOW_INTERVAL_MS).getTime()
@@ -102,7 +105,7 @@ export function AdminDeadLetterDetail({
   const busy = redrive.isPending || discard.isPending
   const pretty = prettyBody(deadLetter.body)
   const [view, setView] = useState<BodyView>('pretty')
-  const guide = deadLetterGuide(deadLetter)
+  const guide = deadLetterGuide(deadLetter, { stalled })
 
   // 지난 실패 문구가 남아 있으면 이번 시도의 결과처럼 보인다.
   const resetErrors = () => {

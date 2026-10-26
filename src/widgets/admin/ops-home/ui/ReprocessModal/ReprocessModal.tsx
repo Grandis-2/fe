@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { ChevronRight, CircleCheck, Clock } from 'lucide-react'
+import { ChevronRight, CircleCheck, Clock, TriangleAlert } from 'lucide-react'
 import { Link, useNavigate } from 'react-router'
 
 import { errorCodeMeaning } from '@entities/admin-reservation'
@@ -81,6 +81,7 @@ export function ReprocessModal({
       deadLetterNow: now,
       reduced,
       outcome,
+      timedOut,
     } = result
     const reservationsOfScope = adminReservationsPath(
       'REPROCESS_NEEDED',
@@ -113,8 +114,18 @@ export function ReprocessModal({
     return (
       <Modal
         {...modal}
-        title={<Headline tone="success">재처리 요청을 마쳤어요</Headline>}
-        description="외부 등록 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요."
+        title={
+          timedOut ? (
+            <Headline tone="warning">진행을 끝까지 확인하지 못했어요</Headline>
+          ) : (
+            <Headline tone="success">재처리 요청을 마쳤어요</Headline>
+          )
+        }
+        description={
+          timedOut
+            ? '예상보다 오래 걸려 진행 확인을 멈췄어요. 서버는 계속 보내고 있을 수 있어요 — 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요.'
+            : '외부 등록 결과는 예약 현황의 재처리 필요 탭에서 확인해 주세요.'
+        }
       >
         <dl className={styles.box}>
           {rows.map(([label, value]) => (
@@ -322,6 +333,7 @@ function ReprocessCauses({
 
 const badgeIcon = {
   success: CircleCheck,
+  warning: TriangleAlert,
 }
 
 // 결과 제목 — 위에 상태 아이콘을 얹는다(Modal은 제목이 맨 위라 제목 안에 둔다).

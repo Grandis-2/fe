@@ -190,27 +190,45 @@ const isBatchDone = (batch: BatchReprocessProgress) =>
 
 /**
  * 일괄 재처리의 진행 — 시작할 때 받은 batchId들을 끝날 때까지 묻고 합친다. 하나라도 아직
- * 못 받았으면 undefined(화면은 예상 시간으로 어림한다).
+ * 못 받았으면 undefined(화면은 예상 시간으로 어림한다). 실패하면 백오프하고, expired(쓰는 쪽이
+ * 정한 마감)가 지나면 끝나지 않았어도 묻기를 멈춘다.
  */
-export const useReprocessBatches = (batchIds: readonly string[]) =>
-  useQueries({
-    queries: batchIds.map((batchId) => ({
-      queryKey: [...RESERVATIONS_KEY, 'reprocess-batch', batchId] as const,
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        getReprocessBatch(batchId, signal),
-      ...queryPolicy.live,
-      // 끝난 묶음은 더 바뀌지 않는다 — 포커스·다른 예약 변경으로 다시 받지 않는다.
-      staleTime: ({
-        state: { data },
-      }: {
-        state: { data?: BatchReprocessProgress }
-      }) => (data && isBatchDone(data) ? Infinity : 0),
-      refetchInterval: ({
-        state: { data },
-      }: {
-        state: { data?: BatchReprocessProgress }
-      }) => (data && isBatchDone(data) ? false : BATCH_POLL_MS),
-    })),
+export const useReprocessBatches = (
+  batchIds: readonly string[],
+  { expired = false }: { expired?: boolean } = {},
+) => {
+  const queryClient = useQueryClient()
+  const pollMs = (data: BatchReprocessProgress | undefined) =>
+    !expired && data && !isBatchDone(data) ? BATCH_POLL_MS : null
+  return useQueries({
+    queries: batchIds.map((batchId) => {
+      const queryKey = [
+        ...RESERVATIONS_KEY,
+        'reprocess-batch',
+        batchId,
+      ] as const
+      return {
+        queryKey,
+        queryFn: ({ signal }: { signal: AbortSignal }) =>
+          getReprocessBatch(batchId, signal),
+        ...queryPolicy.live,
+        // 끝난 묶음은 더 바뀌지 않는다 — 포커스·다른 예약 변경으로 다시 받지 않는다.
+        staleTime: ({
+          state: { data },
+        }: {
+          state: { data?: BatchReprocessProgress }
+        }) => (data && isBatchDone(data) ? Infinity : 0),
+        // 첫 응답 전에도 묻는다 — 시작 직후라 아직 없을 수 있다.
+        refetchInterval: ({
+          state: { data },
+        }: {
+          state: { data?: BatchReprocessProgress }
+        }) => (expired || (data && isBatchDone(data)) ? false : BATCH_POLL_MS),
+        ...pollingRetry(() => pollMs(queryClient.getQueryData(queryKey)), {
+          expired: () => expired,
+        }),
+      }
+    }),
     combine: (results): ReprocessBatchesProgress | undefined => {
       const batches = results.map((result) => result.data)
       if (batches.length === 0 || batches.some((batch) => !batch))
@@ -230,6 +248,7 @@ export const useReprocessBatches = (batchIds: readonly string[]) =>
       }
     },
   })
+}
 
 /** 여러 예약 일괄 재처리. 응답은 시작한 건수뿐이라 결과는 다시 조회해 본다 */
 export const useReprocessReservations = () => {

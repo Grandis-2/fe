@@ -5,7 +5,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 
-import { queryPolicy } from '@shared/api/queryPolicy'
+import { pollingRetry, queryPolicy } from '@shared/api/queryPolicy'
 import type { OffsetPage, ReconciliationRun } from '@shared/api/types'
 
 import { isRunActive } from '../model/types'
@@ -36,17 +36,25 @@ const RUNS_SIZE = 10
  * 최근 검사들(요청 순). 결과는 검사가 끝날 때만 바뀌어서 평소엔 1분마다 한 번만 묻고,
  * 검사가 돌고 있으면 끝날 때까지 몇 초마다 묻는다.
  */
-export const useReconciliationRuns = () =>
-  useQuery({
+export const useReconciliationRuns = () => {
+  const queryClient = useQueryClient()
+  // 실패하면 이 간격에서 백오프하며 다시 묻는다(평소 1분은 상한보다 길어 그대로다).
+  const pollMs = (page: OffsetPage<ReconciliationRun> | undefined) =>
+    page?.items[0] && isRunActive(page.items[0]) ? ACTIVE_POLL_MS : IDLE_POLL_MS
+  return useQuery({
     queryKey: RUNS_KEY,
     queryFn: ({ signal }) => getReconciliationRuns(RUNS_SIZE, signal),
     select: (page) => page.items,
     ...queryPolicy.live,
-    refetchInterval: ({ state: { data } }) =>
-      data?.items[0] && isRunActive(data.items[0])
-        ? ACTIVE_POLL_MS
-        : IDLE_POLL_MS,
+    refetchInterval: ({ state: { data } }) => pollMs(data),
+    ...pollingRetry(() => {
+      const page =
+        queryClient.getQueryData<OffsetPage<ReconciliationRun>>(RUNS_KEY)
+      // 아직 한 번도 못 받았으면 폴링 중이 아니다(첫 조회는 한 번만 다시 묻는다).
+      return page ? pollMs(page) : null
+    }),
   })
+}
 
 /** 검사 하나의 불일치 한 쪽. 쪽·탭을 바꾸는 동안 이전 쪽을 둔다 */
 export const useReconciliationFindings = (

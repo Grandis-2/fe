@@ -6,6 +6,7 @@ import {
   useDeadLetter,
 } from '@entities/admin-dead-letter'
 import { getErrorMessage } from '@shared/api/client'
+import { pollingError } from '@shared/api/queryPolicy'
 import { adminDeadLettersPath, readBackTo } from '@shared/config/routes'
 import {
   Breadcrumb,
@@ -68,17 +69,22 @@ export function AdminDeadLetterDetailPage() {
         />
       </div>
 
-      {deadLetter.isError && (
+      {/* 다시 묻는(백오프) 동안엔 isError가 켜지지 않아 pollingError로 본다. */}
+      {pollingError(deadLetter) !== null && (
         <InlineAlert status="warning">
           {getErrorMessage(
-            deadLetter.error,
+            pollingError(deadLetter),
             '메시지를 다시 불러오지 못했습니다.',
           )}{' '}
           아래 내용은 마지막으로 받은 값입니다.
         </InlineAlert>
       )}
 
-      <AdminDeadLetterDetail deadLetter={deadLetter.data} service={service} />
+      <AdminDeadLetterDetail
+        deadLetter={deadLetter.data}
+        service={service}
+        stalled={deadLetter.stalled}
+      />
     </div>
   )
 }

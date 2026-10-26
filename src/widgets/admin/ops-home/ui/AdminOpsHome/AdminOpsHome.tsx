@@ -320,12 +320,14 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
     runs.isError && !runs.data
       ? { value: null, emptyText: '불러오지 못함' }
       : reconcileSummary(runs.data, selected, runs.dataUpdatedAt)
-  const reconcile = runs.isError
-    ? {
-        ...summary,
-        caption: summary.caption && `${summary.caption} · 갱신 실패`,
-      }
-    : summary
+  // 받은 뒤 실패는 백오프하며 다시 묻는 동안 isError가 켜지지 않아 pollingError로 본다.
+  const reconcile =
+    pollingError(runs) !== null
+      ? {
+          ...summary,
+          caption: summary.caption && `${summary.caption} · 갱신 실패`,
+        }
+      : summary
 
   const refresh = () => {
     void runs.refetch()
@@ -343,9 +345,9 @@ export function AdminOpsHome({ productNames }: AdminOpsHomeProps) {
   // 느리게 다시 받는 숫자(주문·상품 수, 럭키드로우)도 실패하면 멈춘 값이라고 알린다.
   const slowFailed =
     orders.isError ||
-    activeProducts.isError ||
-    pausedProducts.isError ||
-    draws.isError
+    [activeProducts, pausedProducts, draws].some(
+      (query) => pollingError(query) !== null,
+    )
 
   return (
     <div className={styles.root}>
