@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { faro } from '@grafana/faro-react'
 import { useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 
 import {
   activeReservationsQuery,
@@ -58,11 +58,13 @@ export function usePreorderSubmit() {
   const submit = useSubmitPreorder()
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
   const [isWaiting, setIsWaiting] = useState(false)
   const waitRef = useRef<AbortController>(null)
 
-  // 기다리는 중에 화면을 떠나면 묻기를 멈추고, 늦게 끝나도 다른 화면으로 끌고 가지 않는다.
-  useEffect(() => () => waitRef.current?.abort(), [])
+  // 접수·등록을 기다리는 중에 화면을 떠나면(다른 상품으로 옮겨 같은 페이지가 남아 있어도) 묻기를 멈추고,
+  // 늦게 끝나도 앞 상품의 결제·예약 화면으로 끌고 가지 않는다.
+  useEffect(() => () => waitRef.current?.abort(), [pathname])
 
   const submitPreorder = (
     { productId, productName, optionId }: SubmitTarget,
@@ -82,6 +84,8 @@ export function usePreorderSubmit() {
     // 버튼 속성 대신 여기서 동작 이름을 단다(Faro가 꺼져 있으면 api가 없다).
     faro.api?.startUserAction('preorder-apply')
     track('Preorder Apply Clicked', { productId, queued: false })
+    const controller = new AbortController()
+    waitRef.current = controller
     submit.mutate(
       {
         productId,
@@ -102,29 +106,34 @@ export function usePreorderSubmit() {
             )
             return
           }
+          // 같은 입장권(같은 키)으로 다시 보낸 접수는 새 예약이 아니라 기존 예약이다 — 또 예약된 것으로 읽히지 않게 알린다.
+          // 등록을 기다리다 화면을 떠나도 알리도록 기다리기 전에 띄운다.
+          if (accepted.replayed)
+            showToast('이미 접수된 예약이에요. 그 예약으로 이어서 진행해요.')
           // 재전송으로 돌아온 기존 예약이 이미 등록돼 있으면 기다리지 않는다.
           let registered = accepted.status === 'REGISTERED'
-          if (!registered) {
-            const controller = new AbortController()
-            waitRef.current = controller
+          if (!registered && !controller.signal.aborted) {
             setIsWaiting(true)
             registered = await waitForRegistration(
               accepted.preorderId,
               controller.signal,
             )
-            if (controller.signal.aborted) return
+            // 다른 상품으로 옮겨 이 페이지가 남아 있으면 버튼이 '처리 중'으로 남지 않게 늘 끈다.
             setIsWaiting(false)
           }
+          // 떠난 뒤에도 접수는 센다 — 결제로 바로 가지 않았으니 registered는 false다.
           // 재전송이면 기존 예약이 replayed로 다시 온다 — 예약 하나는 한 번만 센다.
+          const left = controller.signal.aborted
           track(
             'Preorder Submitted',
-            { productId, preorderId: accepted.preorderId, registered },
+            {
+              productId,
+              preorderId: accepted.preorderId,
+              registered: registered && !left,
+            },
             accepted.preorderId,
           )
-          // 같은 입장권(같은 키)으로 다시 보낸 접수는 새 예약이 아니라 기존 예약이다 — 또 예약된 것으로 읽히지 않게 알린다.
-          if (accepted.replayed)
-            showToast('이미 접수된 예약이에요. 그 예약으로 이어서 진행해요.')
-          onSuccess(accepted, registered)
+          if (!left) onSuccess(accepted, registered)
         },
         onError: (caught) => {
           // 이미 이 모델의 예약이 있다 — 다른 화면으로 옮기지 않고 알린 뒤, 그 예약을 다시 받아 버튼을 그 예약으로 바꾼다.
