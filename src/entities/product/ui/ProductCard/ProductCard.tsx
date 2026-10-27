@@ -91,6 +91,7 @@ export function ProductCard({
                   src={src}
                   alt={imageAlt}
                   className={styles.image}
+                  loading="lazy"
                 />
               ))}
             </Slider>

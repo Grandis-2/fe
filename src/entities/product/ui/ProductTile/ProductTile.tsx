@@ -36,7 +36,11 @@ export function ProductTile({
       onClick={onLinkClick}
     >
       <div className={styles.media}>
-        <ImageWithFallback src={imageUrl} className={styles.image} />
+        <ImageWithFallback
+          src={imageUrl}
+          className={styles.image}
+          loading="lazy"
+        />
       </div>
       <span className={[typography.body.subSemibold, styles.name].join(' ')}>
         {name}

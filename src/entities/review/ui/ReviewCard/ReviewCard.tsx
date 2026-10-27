@@ -46,7 +46,11 @@ export function ReviewCard({
   return (
     <div className={[styles.root, className].filter(Boolean).join(' ')}>
       {showProduct && (
-        <ImageWithFallback src={imageUrl} className={styles.thumbnail} />
+        <ImageWithFallback
+          src={imageUrl}
+          className={styles.thumbnail}
+          loading="lazy"
+        />
       )}
       <div className={styles.main}>
         <div className={styles.header}>

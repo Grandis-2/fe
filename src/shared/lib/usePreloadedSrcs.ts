@@ -9,6 +9,9 @@ export function usePreloadedSrcs(srcs: string[]) {
   const [shownKey, setShownKey] = useState(key)
 
   useEffect(() => {
+    // 이미 보여 주는 목록이면 미리 받을 게 없다 — 처음 마운트 때도 여기서 끝나야 화면 밖 카드의
+    // 사진까지 전부 받지 않고 <img loading="lazy">에 맡긴다.
+    if (key === shownKey) return
     let cancelled = false
     const next = key ? key.split('\n') : []
     Promise.allSettled(
@@ -23,7 +26,7 @@ export function usePreloadedSrcs(srcs: string[]) {
     return () => {
       cancelled = true
     }
-  }, [key])
+  }, [key, shownKey])
 
   if (shownKey === key) return srcs
   return shownKey ? shownKey.split('\n') : []

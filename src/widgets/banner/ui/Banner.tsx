@@ -125,6 +125,8 @@ export function Banner() {
             src={slide.imageUrl}
             alt={slide.imageAlt}
             className={styles.image}
+            // 홈의 첫 화면(LCP) 사진이다 — 아래 상품 사진보다 먼저 받게 한다.
+            fetchPriority="high"
           />
         </Link>
       </div>
