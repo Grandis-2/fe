@@ -91,7 +91,7 @@ function Countdown({
         ' ',
       )}
     >
-      <Timer size={16} aria-hidden="true" />
+      <Timer size={16} className={styles.icon} aria-hidden="true" />
       <span className={styles.text}>
         <span className={styles.time}>
           {minutes}:{seconds}
