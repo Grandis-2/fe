@@ -71,6 +71,16 @@ export function usePreorderSubmit() {
     onSuccess: (accepted: PreorderAccepted, registered: boolean) => void,
   ) => {
     if (!admission || admission.productId !== productId) {
+      // 이미 줄에 서 있으면(입장권이 만료돼 이 자리에서 다시 섰거나 다른 상품 줄) 사전예약 페이지로 보내지 않는다 —
+      // 같은 상품이면 닫아 둔 대기열 창을 다시 열고, 다른 상품이면 그 줄에 서 있다고 알린다.
+      if (usePreorderQueueStore.getState().ticket) {
+        joinPreorderQueue({
+          productId,
+          productName,
+          to: productPath(productId),
+        })
+        return
+      }
       showToast('사전예약 페이지에서 대기열을 거쳐야 예약할 수 있어요.')
       navigate(PREORDER_PATH)
       return
