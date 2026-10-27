@@ -299,6 +299,21 @@ test.describe('C. 입장권을 받은 뒤', () => {
     await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
   })
 
+  test('C5 다시 줄을 선 뒤 창을 닫고 사전예약하기를 누르면 사전예약 페이지로 보내지 않고 대기열 창을 다시 연다', async ({
+    page,
+  }) => {
+    await passPreorderQueue(page, '맥북 프로 14', MACBOOK_PRO_14)
+    await page.clock.fastForward(125_000)
+    await page.getByRole('button', { name: '다시 줄 서기' }).click()
+    await closeQueueDialog(page)
+    await expect(queueDialog(page)).toBeHidden()
+
+    await preorderSubmitButton(page).click()
+    await expect(queueDialog(page)).toBeVisible()
+    await expect(page).toHaveURL(`/products/${MACBOOK_PRO_14}`)
+    await expect(page.getByText(NEED_QUEUE)).toBeHidden()
+  })
+
   test('C3 새 창에는 입장권이 없어 사전예약 페이지로 보낸다', async ({
     page,
     context,
