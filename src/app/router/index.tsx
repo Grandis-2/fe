@@ -54,6 +54,13 @@ import {
 } from '@shared/config/routes'
 import { hasSeenOnboarding } from '@widgets/onboarding'
 
+// 처음 온 사용자가 홈 주소로 들어오면 라우터를 만들기 전에 주소를 온보딩으로 바꿔 둔다 — 홈 loader의
+// redirect만 두면 react-router가 홈 페이지 코드(lazy)를 다 받은 뒤에야 넘겨, 보지도 않을 MainPage를
+// 먼저 받느라 온보딩이 늦게 뜬다. 앱 안에서 홈으로 가는 경우는 아래 loader가 맡는다.
+if (window.location.pathname === HOME_PATH && !hasSeenOnboarding()) {
+  window.history.replaceState(null, '', ONBOARDING_PATH)
+}
+
 // 페이지는 lazy로 불러온다 — 처음 들어온 화면의 코드만 받고, 나머지는 그 경로로 갈 때 받는다
 // (전부 바로 import하면 홈 하나 열 때도 관리자·결제 화면까지 한 번들에 실린다).
 // 레이아웃과 ErrorPage는 어느 화면에서든 바로 필요해서 그대로 둔다.
