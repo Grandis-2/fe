@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 
-import { LoaderCircle } from 'lucide-react'
 import { useNavigate, useSearchParams } from 'react-router'
 
 import { confirmDrawEntryPayment } from '@features/payment'
@@ -8,7 +7,7 @@ import { getErrorMessage } from '@shared/api/client'
 import { DRAW_PATH, drawPath } from '@shared/config/routes'
 import { useUnmountSignal } from '@shared/lib/useUnmountSignal'
 import { showToast } from '@shared/model/toastStore'
-import { Container, InlineAlert } from '@shared/ui'
+import { LoadingScreen } from '@shared/ui'
 
 // 럭키 드로우 응모비를 토스에서 결제하고 돌아오는 곳. 결과가 어떻든 그 회차 화면으로 돌아가고,
 // 응모 상태(결제 대기·응모 완료)는 거기서 내 응모를 다시 받아 보여 준다.
@@ -83,11 +82,5 @@ export function DrawPaymentCallbackPage() {
       })
   }, [navigate, searchParams, signal])
 
-  return (
-    <Container>
-      <InlineAlert status="info" variant="big" icon={LoaderCircle}>
-        결제를 확인하고 있어요
-      </InlineAlert>
-    </Container>
-  )
+  return <LoadingScreen>결제를 확인하고 있어요</LoadingScreen>
 }
