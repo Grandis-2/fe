@@ -290,13 +290,16 @@ export function MypagePreorder() {
           (reservation.status === 'CANCELING' &&
             reservation.reservedAt !== null && (
               <div className={styles.refund}>
-                <InlineAlert status="info">
-                  결제한 금액을 환불하고 있어요. 환불이 끝나면 취소가 완료되고,
-                  환불 결과는 주문 내역에서도 볼 수 있어요.
-                </InlineAlert>
+                <div className={styles.refundNotice}>
+                  <InlineAlert status="info">
+                    결제한 금액을 환불하고 있어요. 환불이 끝나면 취소가
+                    완료되고, 환불 결과는 주문 내역에서도 볼 수 있어요.
+                  </InlineAlert>
+                </div>
                 <Button
-                  variant="outline"
-                  size="small"
+                  variant="subtle"
+                  color="cancel"
+                  className={styles.refundButton}
                   onClick={() => navigate(mypagePath('history'))}
                 >
                   주문 내역 보기
