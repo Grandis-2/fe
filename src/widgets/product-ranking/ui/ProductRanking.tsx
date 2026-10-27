@@ -95,6 +95,7 @@ export function ProductRanking() {
                     <ImageWithFallback
                       src={product.imageUrl}
                       className={styles.image}
+                      loading="lazy"
                     />
                   </div>
                 </div>

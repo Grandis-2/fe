@@ -2,13 +2,17 @@
 // 페이지 이동·클릭·폼 제출은 autocapture가 남긴다. track()은 autocapture가 모르는 업무 단계(퍼널)에만 쓴다.
 // SDK가 커서 켤 때만 따로 받는다 — 바로 import하면 꺼진 배포에도 첫 번들에 실린다.
 // main.tsx에서 일찍 import해 첫 페이지 조회부터 남긴다.
+import { afterPageLoad } from './afterPageLoad'
+
 const apiKey = import.meta.env.VITE_AMPLITUDE_API_KEY
 
 // window 확인: vanilla-extract가 .css.ts를 Node에서 실행할 때 배럴(@widgets/header 등)을 타고
 // 이 파일까지 불러온다 — 그때 SDK를 켜면 document가 없어 dev 서버가 죽는다.
+// 받기는 페이지 load 뒤로 미룬다 — 켜질 때 지금 페이지 조회를 남기고, 그 전 track()은 기다렸다 보낸다.
 const sdk =
   apiKey && typeof window !== 'undefined'
-    ? import('@amplitude/analytics-browser')
+    ? afterPageLoad()
+        .then(() => import('@amplitude/analytics-browser'))
         .then((amplitude) => {
           amplitude.init(apiKey, { autocapture: true })
           return amplitude
