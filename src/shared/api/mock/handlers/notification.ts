@@ -18,16 +18,20 @@ const minutesAgo = (minutes: number) =>
 const notificationUuid = (n: number) =>
   `90000000-0000-4000-8000-${String(n).padStart(12, '0')}`
 
-const preorderProductId =
-  products.find((product) => product.saleMode === 'PREORDER')?.productId ?? ''
+const preorderProduct = products.find(
+  (product) => product.saleMode === 'PREORDER',
+)
+const preorderProductId = preorderProduct?.productId ?? ''
+const openedMessage = `알림 신청하신 ${preorderProduct?.title ?? '상품'} 사전예약이 시작됐어요.`
 
 // ponytail: 메모리 목록이라 새로고침하면 읽음이 되돌아간다. 새 알림은 생기지 않는다.
+// 백엔드가 보내는 6종류(be contracts/notification-events.md)를 하나씩 둔다 — 제목·본문도 그 표 그대로다.
 let notifications: NotificationItem[] = [
   {
     notificationId: notificationUuid(1),
     kind: 'PREORDER_OPENED',
     title: '사전예약 오픈',
-    message: '알림 신청하신 상품의 사전예약이 시작됐어요.',
+    message: openedMessage,
     target: { type: 'PRODUCT', id: preorderProductId },
     read: false,
     createdAt: minutesAgo(3),
@@ -45,15 +49,36 @@ let notifications: NotificationItem[] = [
     notificationId: notificationUuid(3),
     kind: 'DRAW_WON',
     title: '럭키 드로우 당첨',
-    message: '축하해요! 응모하신 럭키 드로우에 당첨됐어요.',
+    message: '축하해요! 럭키 드로우에 당첨됐어요.',
     target: { type: 'DRAW', id: draws[0]?.drawId ?? '' },
     read: false,
     createdAt: minutesAgo(60 * 5),
   },
+  // 사전예약 결제가 나중에 실패로 확정돼 결제 대기로 돌아갔다. 배지 수(3)가 그대로이게 읽은 것으로 둔다.
+  {
+    notificationId: notificationUuid(26),
+    kind: 'PREORDER_PAYMENT_FAILED',
+    title: '결제 실패',
+    message: '결제가 완료되지 않았어요. 내 예약에서 결제 상태를 확인해 주세요.',
+    target: { type: 'PREORDER', id: crypto.randomUUID() },
+    read: true,
+    createdAt: minutesAgo(60 * 24),
+  },
+  // 장바구니·바로 구매 주문의 결제 결과를 끝내 몰라 취소했다. ORDER는 프론트가 갈 곳을 몰라 눌러도 이동하지 않는다.
+  {
+    notificationId: notificationUuid(27),
+    kind: 'PAYMENT_UNCONFIRMED',
+    title: '결제 확인 실패',
+    message:
+      '결제를 확인하지 못해 주문이 취소됐어요. 결제된 금액이 있으면 자동으로 환불돼요.',
+    target: { type: 'ORDER', id: crypto.randomUUID() },
+    read: true,
+    createdAt: minutesAgo(60 * 24 * 2),
+  },
   {
     notificationId: notificationUuid(4),
     kind: 'PREORDER_CANCELED',
-    title: '사전예약 취소 완료',
+    title: '사전예약 취소',
     message: '결제 기한이 지나 사전예약이 취소됐어요.',
     target: { type: 'PREORDER', id: crypto.randomUUID() },
     read: true,
@@ -64,7 +89,7 @@ let notifications: NotificationItem[] = [
     notificationId: notificationUuid(5 + i),
     kind: 'PREORDER_OPENED',
     title: '사전예약 오픈',
-    message: `알림 신청하신 상품의 사전예약이 시작됐어요. (${i + 1}일 전)`,
+    message: `${openedMessage} (${i + 1}일 전)`,
     target: { type: 'PRODUCT', id: preorderProductId },
     read: true,
     createdAt: minutesAgo(60 * 24 * (4 + i)),
