@@ -51,6 +51,7 @@ export function PreorderCard({ data, now, className }: PreorderCardProps) {
         src={imageSrc}
         alt={imageAlt}
         className={styles.image}
+        loading="lazy"
       />
       <span className={[styles.dday, styles.ddayColor[status]].join(' ')}>
         {ddayLabel}

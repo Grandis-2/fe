@@ -48,7 +48,11 @@ export function DrawCard({ data, className }: DrawCardProps) {
         .join(' ')}
     >
       <div className={styles.thumb}>
-        <ImageWithFallback src={gift.imageUrl} className={styles.image} />
+        <ImageWithFallback
+          src={gift.imageUrl}
+          className={styles.image}
+          loading="lazy"
+        />
       </div>
       <div className={styles.body}>
         <div className={styles.badges}>
