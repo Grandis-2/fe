@@ -1,22 +1,17 @@
-import { LoaderCircle } from 'lucide-react'
-
 import { useKakaoCallback } from '@features/login'
-import { Container, InlineAlert } from '@shared/ui'
+import { Container, InlineAlert, LoadingScreen } from '@shared/ui'
 
 export function KakaoCallbackPage() {
   const { status, message } = useKakaoCallback()
 
+  if (status === 'processing')
+    return <LoadingScreen>카카오 로그인 처리 중이에요</LoadingScreen>
+
   return (
     <Container>
-      {status === 'processing' ? (
-        <InlineAlert status="info" variant="big" icon={LoaderCircle}>
-          카카오 로그인 처리 중이에요
-        </InlineAlert>
-      ) : (
-        <InlineAlert status="error" variant="big">
-          {message}
-        </InlineAlert>
-      )}
+      <InlineAlert status="error" variant="big">
+        {message}
+      </InlineAlert>
     </Container>
   )
 }
